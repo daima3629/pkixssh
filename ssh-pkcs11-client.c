@@ -1,0 +1,417 @@
+/* $OpenBSD: ssh-pkcs11-client.c,v 1.8 2018/02/05 05:37:46 tb Exp $ */
+/*
+ * Copyright (c) 2010 Markus Friedl.  All rights reserved.
+ * Copyright (c) 2016-2018 Roumen Petrov.  All rights reserved.
+ *
+ * Permission to use, copy, modify, and distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
+#include "includes.h"
+
+#ifdef ENABLE_PKCS11
+
+#ifndef HAVE_RSA_PKCS1_OPENSSL
+# undef RSA_PKCS1_OpenSSL
+# define RSA_PKCS1_OpenSSL RSA_PKCS1_SSLeay
+#endif
+
+#include <sys/types.h>
+#ifdef HAVE_SYS_TIME_H
+# include <sys/time.h>
+#endif
+#include <sys/socket.h>
+
+#include <stdarg.h>
+#include <string.h>
+#include <unistd.h>
+#include <errno.h>
+
+#include <openssl/rsa.h>
+#include "evp-compat.h"
+
+#include "pathnames.h"
+#include "xmalloc.h"
+#include "buffer.h"
+#include "log.h"
+#include "misc.h"
+#include "sshxkey.h"
+#include "key.h"
+#include "authfd.h"
+#include "atomicio.h"
+#include "ssh-pkcs11.h"
+
+/* borrows code from sftp-server and ssh-agent */
+
+int fd = -1;
+pid_t pid = -1;
+
+static int
+helper_msg_sign_request(
+    struct sshbuf *buf, Key *key,
+    const unsigned char *dgst, int dlen
+) {
+	int r = 0;
+	const char *pkalg;;
+	u_char *blob = NULL;
+	size_t blen;
+
+	/* Use method with algorithm nevertheless that sign request
+	 * to helper is only with pure plain keys! Actually key-blob
+	 * below is used by helper only to find key.
+	 */
+	pkalg = sshkey_ssh_name(key);
+	r = Xkey_to_blob(pkalg, key, &blob, &blen);
+	if (r != 0) goto done;
+
+	if ((r = sshbuf_put_u8(buf, SSH2_AGENTC_SIGN_REQUEST)) != 0 ||
+	    (r = sshbuf_put_string(buf, blob, blen)) != 0 ||
+	    (r = sshbuf_put_string(buf, dgst, (size_t) dlen)) != 0 ||
+	    (r = sshbuf_put_u32(buf, 0)) != 0
+	) goto done;
+
+done:
+	free(blob);
+
+	return r;
+}
+
+static void
+send_msg(Buffer *m)
+{
+	u_char buf[4];
+	int mlen = buffer_len(m);
+
+	put_u32(buf, mlen);
+	if (atomicio(vwrite, fd, buf, 4) != 4 ||
+	    atomicio(vwrite, fd, buffer_ptr(m),
+	    buffer_len(m)) != buffer_len(m))
+		error("write to helper failed");
+	buffer_consume(m, mlen);
+}
+
+static int
+recv_msg(Buffer *m)
+{
+	u_int l, len;
+	u_char buf[1024];
+
+	if ((len = atomicio(read, fd, buf, 4)) != 4) {
+		error("read from helper failed: %u", len);
+		return (0); /* XXX */
+	}
+	len = get_u32(buf);
+	if (len > 256 * 1024)
+		fatal("response too long: %u", len);
+	/* read len bytes into m */
+	buffer_clear(m);
+	while (len > 0) {
+		l = len;
+		if (l > sizeof(buf))
+			l = sizeof(buf);
+		if (atomicio(read, fd, buf, l) != l) {
+			error("response from helper failed.");
+			return (0); /* XXX */
+		}
+		buffer_append(m, buf, l);
+		len -= l;
+	}
+	return (buffer_get_char(m));
+}
+
+int
+pkcs11_init(int interactive)
+{
+	(void)interactive;
+	return (0);
+}
+
+void
+pkcs11_terminate(void)
+{
+	if (fd >= 0)
+		close(fd);
+}
+
+static int
+pkcs11_rsa_private_encrypt(int flen, const u_char *from, u_char *to, RSA *rsa,
+    int padding)
+{
+	struct sshkey key;	/* XXX */
+	u_char *signature = NULL;
+	u_int slen = 0;
+	int ret = -1;
+	Buffer msg;
+
+	if (padding != RSA_PKCS1_PADDING)
+		return (-1);
+	key.type = KEY_RSA;
+	key.rsa = rsa;
+	buffer_init(&msg);
+	if (helper_msg_sign_request(&msg, &key, from, flen) != 0)
+		return -1;
+	send_msg(&msg);
+	buffer_clear(&msg);
+
+	if (recv_msg(&msg) == SSH2_AGENT_SIGN_RESPONSE) {
+		signature = buffer_get_string(&msg, &slen);
+		if (slen <= (u_int)RSA_size(rsa)) {
+			memcpy(to, signature, slen);
+			ret = slen;
+		}
+		free(signature);
+	}
+	else {
+		PKCS11err(PKCS11_RSA_PRIVATE_ENCRYPT, PKCS11_SIGNREQ_FAIL);
+	}
+	buffer_free(&msg);
+	return (ret);
+}
+
+#ifdef OPENSSL_HAS_ECC
+static ECDSA_SIG*
+pkcs11_ecdsa_do_sign(
+	const unsigned char *dgst, int dlen,
+	const BIGNUM *inv, const BIGNUM *rp,
+	EC_KEY *ec
+) {
+	ECDSA_SIG* ret = NULL;
+	Key key;
+	Buffer msg;
+
+	(void)inv;
+	(void)rp;
+
+	key.type = KEY_ECDSA;
+	key.ecdsa = ec;
+	key.ecdsa_nid = sshkey_ecdsa_key_to_nid(ec);
+	buffer_init(&msg);
+	if (helper_msg_sign_request(&msg, &key, dgst, dlen) != 0)
+		goto done;
+	send_msg(&msg);
+
+	buffer_clear(&msg);
+
+	if (recv_msg(&msg) == SSH2_AGENT_SIGN_RESPONSE) {
+		u_char *signature;
+		u_int slen = 0;
+
+		signature = buffer_get_string(&msg, &slen);
+		if (signature == NULL) {
+			buffer_free(&msg);
+			goto done;
+		}
+
+		{	/* decode ECDSA signature */
+			const unsigned char *p = signature;
+			ret = d2i_ECDSA_SIG(NULL, &p, slen);
+		}
+		free(signature);
+	}
+	else {
+		PKCS11err(PKCS11_ECDSA_DO_SIGN, PKCS11_SIGNREQ_FAIL);
+	}
+	buffer_free(&msg);
+
+done:
+	return (ret);
+}
+
+#ifdef HAVE_EC_KEY_METHOD_NEW
+static int
+pkcs11_ecdsa_sign(int type,
+	const unsigned char *dgst, int dlen,
+	unsigned char *sig, unsigned int *siglen,
+	const BIGNUM *inv, const BIGNUM *rp,
+	EC_KEY *ec
+) {
+	ECDSA_SIG *s;
+
+	debug3("pkcs11_ecdsa_sign");
+	(void)type;
+
+	s = pkcs11_ecdsa_do_sign(dgst, dlen, inv, rp, ec);
+	if (s == NULL) {
+		*siglen = 0;
+		return (0);
+	}
+
+	*siglen = i2d_ECDSA_SIG(s, &sig);
+
+	ECDSA_SIG_free(s);
+	return (1);
+}
+#endif /*def HAVE_EC_KEY_METHOD_NEW*/
+#endif /*def OPENSSL_HAS_ECC*/
+
+/* redirect the private key encrypt operation to the ssh-pkcs11-helper */
+static int
+wrap_rsa_key(RSA *rsa)
+{
+	static RSA_METHOD *helper_rsa = NULL;
+
+	if (helper_rsa == NULL) {
+		helper_rsa = RSA_meth_dup(RSA_PKCS1_OpenSSL());
+		if (helper_rsa == NULL)
+			return (-1);
+
+		if (!RSA_meth_set1_name(helper_rsa, "ssh-pkcs11-helper")
+		||  !RSA_meth_set_priv_enc(helper_rsa, pkcs11_rsa_private_encrypt)
+		) {
+			RSA_meth_free(helper_rsa);
+			helper_rsa = NULL;
+			return (-1);
+		}
+	}
+
+	if (!RSA_set_method(rsa, helper_rsa))
+		return (-1);
+	return (0);
+}
+
+#ifdef OPENSSL_HAS_ECC
+static int
+wrap_ec_key(EC_KEY *ec)
+{
+#ifdef HAVE_EC_KEY_METHOD_NEW
+	static EC_KEY_METHOD *helper_ec = NULL;
+
+	if (helper_ec == NULL) {
+		helper_ec = EC_KEY_METHOD_new(EC_KEY_OpenSSL());
+		if (helper_ec == NULL)
+			return (-1);
+
+		EC_KEY_METHOD_set_sign(helper_ec,
+		    pkcs11_ecdsa_sign,
+		    NULL /* *sign_setup */,
+		    pkcs11_ecdsa_do_sign);
+	}
+	EC_KEY_set_method(ec, helper_ec);
+#else
+	static ECDSA_METHOD *helper_ec = NULL;
+
+	if (helper_ec == NULL) {
+		helper_ec = ECDSA_METHOD_new(ECDSA_OpenSSL());
+		if (helper_ec == NULL)
+			return (-1);
+
+		ECDSA_METHOD_set_sign(helper_ec,
+		    pkcs11_ecdsa_do_sign);
+	}
+	ECDSA_set_method(ec, helper_ec);
+#endif
+	return (0);
+}
+#endif /*def OPENSSL_HAS_ECC*/
+
+static int
+wrap_key(Key *key) {
+	switch(X509KEY_BASETYPE(key)) {
+	case KEY_RSA: return (wrap_rsa_key(key->rsa));
+#ifdef OPENSSL_HAS_ECC
+	case KEY_ECDSA: return (wrap_ec_key(key->ecdsa));
+#endif
+	default:      return (-1);
+	}
+}
+
+static int
+pkcs11_start_helper(void)
+{
+	int pair[2];
+
+	if (socketpair(AF_UNIX, SOCK_STREAM, 0, pair) == -1) {
+		error("socketpair: %s", strerror(errno));
+		return (-1);
+	}
+	if ((pid = fork()) == -1) {
+		error("fork: %s", strerror(errno));
+		return (-1);
+	} else if (pid == 0) {
+		if ((dup2(pair[1], STDIN_FILENO) == -1) ||
+		    (dup2(pair[1], STDOUT_FILENO) == -1)) {
+			fprintf(stderr, "dup2: %s\n", strerror(errno));
+			_exit(1);
+		}
+		close(pair[0]);
+		close(pair[1]);
+		execlp(_PATH_SSH_PKCS11_HELPER, _PATH_SSH_PKCS11_HELPER,
+		    (char *)NULL);
+		fprintf(stderr, "exec: %s: %s\n", _PATH_SSH_PKCS11_HELPER,
+		    strerror(errno));
+		_exit(1);
+	}
+	close(pair[1]);
+	fd = pair[0];
+	return (0);
+}
+
+int
+pkcs11_add_provider(char *name, char *pin, Key ***keysp)
+{
+	struct sshkey *k;
+	int i, nkeys;
+	u_char *blob;
+	u_int blen;
+	Buffer msg;
+
+	if (fd < 0 && pkcs11_start_helper() < 0)
+		return (-1);
+
+	buffer_init(&msg);
+	buffer_put_char(&msg, SSH_AGENTC_ADD_SMARTCARD_KEY);
+	buffer_put_cstring(&msg, name);
+	buffer_put_cstring(&msg, pin);
+	send_msg(&msg);
+	buffer_clear(&msg);
+
+	if (recv_msg(&msg) == SSH2_AGENT_IDENTITIES_ANSWER) {
+		nkeys = buffer_get_int(&msg);
+		*keysp = xcalloc(nkeys, sizeof(Key *));
+		for (i = 0; i < nkeys; i++) {
+			blob = buffer_get_string(&msg, &blen);
+			free(buffer_get_string(&msg, NULL));
+			k = key_from_blob(blob, blen);
+			if (wrap_key(k) < 0) {
+				key_free(k);
+				k = NULL;
+			}
+			(*keysp)[i] = k;
+			free(blob);
+		}
+	} else {
+		nkeys = -1;
+	}
+	buffer_free(&msg);
+	return (nkeys);
+}
+
+int
+pkcs11_del_provider(char *name)
+{
+	int ret = -1;
+	Buffer msg;
+
+	buffer_init(&msg);
+	buffer_put_char(&msg, SSH_AGENTC_REMOVE_SMARTCARD_KEY);
+	buffer_put_cstring(&msg, name);
+	buffer_put_cstring(&msg, "");
+	send_msg(&msg);
+	buffer_clear(&msg);
+
+	if (recv_msg(&msg) == SSH_AGENT_SUCCESS)
+		ret = 0;
+	buffer_free(&msg);
+	return (ret);
+}
+
+#endif /* ENABLE_PKCS11 */
