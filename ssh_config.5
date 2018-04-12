@@ -42,8 +42,8 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: ssh_config.5,v 1.270 2018/04/05 22:54:28 djm Exp $
-.Dd $Mdocdate: April 5 2018 $
+.\" $OpenBSD: ssh_config.5,v 1.272 2018/04/07 13:50:10 jmc Exp $
+.Dd $Mdocdate: April 7 2018 $
 .Dt SSH_CONFIG 5
 .Os
 .Sh NAME
@@ -1086,9 +1086,11 @@ If one argument is specified, it is used as the packet class unconditionally.
 If two values are specified, the first is automatically selected for
 interactive sessions and the second for non-interactive sessions.
 The default is
-.Cm lowdelay
+.Cm af21
+(Low-Latency Data)
 for interactive sessions and
-.Cm throughput
+.Cm cs1
+(Lower Effort)
 for non-interactive sessions.
 .It Cm KbdInteractiveAuthentication
 Specifies whether to use keyboard-interactive authentication.
