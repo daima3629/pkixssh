@@ -3256,9 +3256,9 @@ elif test ! -z "$OPENSSL_SEEDS_ITSELF" ; then
 		[Define if you want the OpenSSL internally seeded PRNG only])
 	RAND_MSG="OpenSSL internal ONLY"
 elif test "x$openssl" = "xno" ; then
-	AC_MSG_WARN([OpenSSH will use /dev/urandom as a source of random numbers. It will fail if this device is not supported or accessible])
+	AC_MSG_WARN([PKIX-SSH will use /dev/urandom as a source of random numbers. It will fail if this device is not supported or accessible])
 else
-	AC_MSG_ERROR([OpenSSH has no source of random numbers. Please configure OpenSSL with an entropy source or re-run configure using one of the --with-prngd-port or --with-prngd-socket options])
+	AC_MSG_ERROR([PKIX-SSH has no source of random numbers. Please configure OpenSSL with an entropy source or re-run configure using one of the --with-prngd-port or --with-prngd-socket options])
 fi
 
 # Check for PAM libs
@@ -4055,7 +4055,7 @@ AC_CHECK_TYPES([struct timespec])
 if test "x$ac_cv_have_int64_t" = "xno" && \
 	test "x$ac_cv_sizeof_long_int" != "x8" && \
 	test "x$ac_cv_sizeof_long_long_int" = "x0" ; then
-	echo "OpenSSH requires int64_t support.  Contact your vendor or install"
+	echo "PKIX-SSH requires int64_t support.  Contact your vendor or install"
 	echo "an alternative compiler (I.E., GCC) before continuing."
 	echo ""
 	exit 1;
@@ -5738,7 +5738,7 @@ I=`eval echo ${user_path}` ; I=`eval echo ${I}`
 J=`eval echo ${superuser_path}` ; J=`eval echo ${J}`
 
 echo ""
-echo "OpenSSH has been configured with the following options:"
+echo "PKIX-SSH has been configured with the following options:"
 echo "                     User binaries: $B"
 echo "                   System binaries: $C"
 echo "               Configuration files: $D"
