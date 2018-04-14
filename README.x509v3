@@ -1,6 +1,6 @@
                                                           Roumen Petrov
                                                         Sofia, Bulgaria
-                                                        Sat May 27 2017
+                                                        Thu Apr 12 2018
 
 How to use X.509 certificates with SSH?
 
@@ -89,9 +89,9 @@ both in PEM format.
 
 NOTES:
 - versions before 7.1 use rsa-md5 first. Starting from 7.1 rsa-sha1 is
-  prefered and client and server identify itself as PKIX in comment
+  preffered and client and server identify itself as PKIX in comment
   section of ssh identification string.
-- ECDSA support was added in version 8.0. In version 10.0 implemenation
+- ECDSA support was added in version 8.0. In version 10.0 implementation
   is corrected to conform strictly to RFC 6187 description.
 - x509v3-ssh-* support was added in version 10.0.
 
@@ -172,8 +172,8 @@ read access.
   "x509v3-ssh-dss".
 
 - When SSH is build with "--disable-x509store" YOU CANNOT USE
-"Distinguished Name" format. You shold use ONLY "blob" format.
-  Option "--disable-x509store" was removed in PKIX-SSH verion 9.0.
+"Distinguished Name" format. You should use ONLY "blob" format.
+  Option "--disable-x509store" was removed in PKIX-SSH version 9.0.
 
 
 2.) client settings:
@@ -400,14 +400,14 @@ Engine e_nss
 $ ssh -E ssh_engine \
   -i engine:e_nss:"\"SSH RSA test certificate(rsa_sha1) -....\"" \
   ....
-  where dots replease part of actual nickname, -E specify engine
+  where dots replace part of actual nickname, -E specify engine
   configuration file instead default one, -i specify IdentityFile in
   format engine:[ENGNAME]:[KEY_SEARCH_CRITERIA]
   Note quote of nickname is it contain space characters
 
 3.1.2.7.) FIPS capable openssl:
   Starting from version 7.1 of X.509 certificate support all programs
-  initialise openssl in FIPS mode if enviroment variable OPENSSL_FIPS
+  initialize openssl in FIPS mode if environment variable OPENSSL_FIPS
   is set.
   Note that you could run X.509 certificate tests in FIPS mode but
   you must ensure that test certificates are created in fips mode.
@@ -476,13 +476,13 @@ shell.rc:
 3-cre_certs.sh:
   Create client/server certificates.
   This command create files with mask
-  "PATH_TO_KEYFILEn-<SIGNATURE_ALGORITHM>[.<EXTENTION>]"
+  "PATH_TO_KEYFILEn-<SIGNATURE_ALGORITHM>[.<SUFFIX>]"
   , where <SIGNATURE_ALGORITHM> is in format "rsa_<DIGEST>" or "dsa".
   DIGEST are form variable "RSA_DIGEST_LIST" specified in "config"
-  file. Files without extention are SSH identity or hostkey files.
-  File with .pub extention contain SSH public key (BLOB format).
-  File with .crt extention contain OpenSSL "text output" for identity
-  files. Files with .p12 extention are for "Microsoft Windows keystore".
+  file. Files without suffix are SSH identity or hostkey files.
+  File with .pub suffix contain SSH public key (BLOB format).
+  File with .crt suffix contain OpenSSL "text output" for identity
+  files. Files with .p12 suffix are for "Microsoft Windows keystore".
   Note: .p12 = .pfx for Windows.
 
 4-cre_crls.sh:
@@ -496,7 +496,7 @@ verify.sh:
   testid_*.crt and testhostkey_*.crt files in current directory.
 
 functions:
-  Common usefull functions.
+  Common useful functions.
 
 ssh_tests.sh:
   Main test script - call other testscripts.
@@ -605,7 +605,7 @@ A.) Note that host keys are password less!
 
 Q.) How to import CA certificates and/or CRLs in LDAP?
 A.) You should create a ldif file with LDAP entries that contains
-  binary atributes "cACertificate" and/or "certificateRevocationList"
+  binary attributes "cACertificate" and/or "certificateRevocationList"
   and to specify path to file with certificate or CRL in DER format.
   Entry should contain objectClass "pkiCA". See definition in core
   LDAP schema. After this to use command ldapadd or ldapmodify to

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2002-2015 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2002-2018 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -20,9 +20,9 @@
 #  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 # DESCRIPTION: Test client authentication:
-#  - "IdentityFile" contain private key and x509 certificate;
+#  - "IdentityFile" contain private key and X.509 certificate;
 #  - "AuthorizedKeysFile" contain certificate "Distinguished Name"/
-#    "Subject" in varios formats.
+#    "Subject" in various formats.
 #
 
 
@@ -67,7 +67,7 @@ testDNautorizations1 () {
   ; do
     echo "${sshkeytype} ${subtype} ${subject}" > "${AUTHORIZEDKEYSFILE}"
     runTest "${type} ${warn}${subtype}${norm}" "${identity_file}" \
-      "autorization type" "Yes" || return $?
+      "authorization type" "Yes" || return $?
   done
 
   subtype="Subject"
@@ -89,7 +89,7 @@ testDNautorizations1 () {
 # ===
 
 do_test () {
-  echo "* ${extd}against ${attn}CACertificateFile${norm} and autorization by x509 ${attn}'Distinguished Name'${norm}:"
+  echo "* ${extd}against ${attn}CACertificateFile${norm} and authorization by X.509 ${attn}'Distinguished Name'${norm}:"
 
   creTestSSHDcfgFile
   cat >> "$SSHD_CFG" <<EOF

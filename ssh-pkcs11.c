@@ -1087,7 +1087,7 @@ pkcs11_fetch_keys_filter(struct pkcs11_provider *p, CK_ULONG slotidx,
 			int r;
 
 			if (attribs[2].ulValueLen != (unsigned long) blen) {
-				debug3("%s: invalid atribute length", __func__);
+				debug3("%s: invalid attribute length", __func__);
 				continue;
 			}
 

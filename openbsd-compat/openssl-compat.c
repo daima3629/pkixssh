@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2005 Darren Tucker <dtucker@zip.com.au>
- * Copyright (c) 2011-2017 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2018 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -220,7 +220,7 @@ ssh_OpenSSL_shuthdown() {
 #ifdef HAVE_OPENSSL_CLEANUP
 	OPENSSL_cleanup();
 #else
-	/* clean configuraton before engine:
+	/* clean configuration before engine:
 	 * - it should clean internaly initialized engines */
 	CONF_modules_unload(1);
 	/* engine may provide rand implementation:

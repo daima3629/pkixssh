@@ -1,5 +1,5 @@
 #! /bin/sh
-# Copyright (c) 2002-2015 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2002-2018 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -20,7 +20,7 @@
 #  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 # DESCRIPTION: Verify all testid_*.crt testhostkey_*.crt files in current
-# directory agains "Test CA".
+# directory against "Test CA".
 #
 
 CWD=`pwd`

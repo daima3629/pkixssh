@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004-2007,2011 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2004-2018 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -441,7 +441,7 @@ ssh_ocsp_conn_new(const char *url) {
 	conn->url = xstrdup(url); /*fatal on error*/
 	conn->data = xstrdup(url); /*fatal on error*/
 
-	/* chech for protocol */
+	/* check for protocol */
 	p = conn->data;
 	q = strchr(p, ':');
 	if (q == NULL) goto error;
@@ -468,7 +468,7 @@ ssh_ocsp_conn_new(const char *url) {
 		goto error;
 	}
 
-	/* chech for host and port */
+	/* check for host and port */
 	if (*++p == '\x0') {
 		error("ssh_ocsp_conn_new: missing host in url '%.512s'", url);
 		goto error;
@@ -482,7 +482,7 @@ ssh_ocsp_conn_new(const char *url) {
 	}
 	/*else q is NULL !!!*/
 
-	/* chech for port */
+	/* check for port */
 	p = strrchr(conn->host, ':');
 	if (p != NULL) {
 		*p = '\x0';
@@ -677,7 +677,7 @@ error:
 /*
  * Method return value:
  *  1 - all cert.-s are good
- * -1 - error or at least one cert. with status unknow
+ * -1 - error or at least one cert. with status unknown
  *  0 - otherwise, i.e. at least one cert. is revoked and rest are good
  */
 static int
@@ -766,7 +766,7 @@ ssh_ocsp_check_validity(
 
 		if (status != V_OCSP_CERTSTATUS_REVOKED) {
 			ret = -1;
-			error("ssh_ocsp_check_validity: unknow certificate status");
+			error("ssh_ocsp_check_validity: unknown certificate status");
 			break;
 		}
 

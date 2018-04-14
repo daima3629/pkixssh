@@ -1,5 +1,5 @@
 
-/* $OpenBSD: servconf.c,v 1.327 2018/04/04 15:12:17 job Exp $ */
+/* $OpenBSD: servconf.c,v 1.328 2018/04/10 00:10:49 djm Exp $ */
 /*
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
@@ -1397,7 +1397,7 @@ skip_purpose:
 		goto parse_flag;
 
 	case sCACertificateFile:
-		/* X509StoreOptions prefered type is 'const char*' */
+		/* X509StoreOptions preffered type is 'const char*' */
 		charptr = (char**)&options->ca.certificate_file;
 parse_string:
 		arg = strdelim(&cp);
@@ -1408,28 +1408,28 @@ parse_string:
 		break;
 
 	case sCACertificatePath:
-		/* X509StoreOptions prefered type is 'const char*' */
+		/* X509StoreOptions preffered type is 'const char*' */
 		charptr = (char**)&options->ca.certificate_path;
 		goto parse_string;
 
 	case sCARevocationFile:
-		/* X509StoreOptions prefered type is 'const char*' */
+		/* X509StoreOptions preffered type is 'const char*' */
 		charptr = (char**)&options->ca.revocation_file;
 		goto parse_string;
 
 	case sCARevocationPath:
-		/* X509StoreOptions prefered type is 'const char*' */
+		/* X509StoreOptions preffered type is 'const char*' */
 		charptr = (char**)&options->ca.revocation_path;
 		goto parse_string;
 
 #ifdef LDAP_ENABLED
 	case sCAldapVersion:
-		/* X509StoreOptions prefered type is 'const char*' */
+		/* X509StoreOptions preffered type is 'const char*' */
 		charptr = (char**)&options->ca.ldap_ver;
 		goto parse_string;
 
 	case sCAldapURL:
-		/* X509StoreOptions prefered type is 'const char*' */
+		/* X509StoreOptions preffered type is 'const char*' */
 		charptr = (char**)&options->ca.ldap_url;
 		goto parse_string;
 #endif /*def LDAP_ENABLED*/
@@ -1452,12 +1452,12 @@ parse_string:
 		break;
 
 	case sVACertificateFile:
-		/* VAOptions prefered type is 'const char*' */
+		/* VAOptions preffered type is 'const char*' */
 		charptr = (char**)&options->va.certificate_file;
 		goto parse_string;
 
 	case sVAOCSPResponderURL:
-		/* VAOptions prefered type is 'const char*' */
+		/* VAOptions preffered type is 'const char*' */
 		charptr = (char**)&options->va.responder_url;
 		goto parse_string;
 #endif /*def SSH_OCSP_ENABLED*/
@@ -2225,7 +2225,7 @@ parse_string:
 	case sAuthenticationMethods:
 		if (options->num_auth_methods == 0) {
 			value = 0; /* seen "any" pseudo-method */
-			value2 = 0; /* sucessfully parsed any method */
+			value2 = 0; /* successfully parsed any method */
 			while ((arg = strdelim(&cp)) && *arg != '\0') {
 				if (strcmp(arg, "any") == 0) {
 					if (options->num_auth_methods > 0) {
@@ -2418,7 +2418,7 @@ int parse_server_match_testspec(struct connection_info *ci, char *spec)
  *
  * If the preauth flag is set, we do not bother copying the string or
  * array values that are not used pre-authentication, because any that we
- * do use must be explictly sent in mm_getpwnamallow().
+ * do use must be explicitly sent in mm_getpwnamallow().
  */
 void
 copy_set_server_options(ServerOptions *dst, ServerOptions *src, int preauth)

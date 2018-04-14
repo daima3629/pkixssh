@@ -1,5 +1,5 @@
 #! /bin/sh
-# Copyright (c) 2002-2015 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2002-2018 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -45,7 +45,7 @@ database        = \$dir/index-$1.txt       # database index file.
 new_certs_dir   = \$dir/newcerts        # default place for new certs.
 serial          = \$dir/serial          # The current serial number
 
-#x509_extensions = usr_cert            # The default extentions to add to the cert
+#x509_extensions = usr_cert            # The default extensions to add to the cert
 default_days    = $SSH_CACERTDAYS                   # how long to certify for
 default_crl_days= $SSH_CACRLDAYS                   # how long before next CRL
 policy          = policy_match
@@ -340,7 +340,7 @@ database        = \$dir/index-root.txt  # database index file.
 new_certs_dir   = \$dir/newcerts        # default place for new certs.
 serial          = \$dir/serial          # The current serial number
 
-#x509_extensions = usr_cert            # The default extentions to add to the cert
+#x509_extensions = usr_cert            # The default extensions to add to the cert
 default_days    = $SSH_CACERTDAYS                   # how long to certify for
 default_crl_days= $SSH_CACRLDAYS                   # how long before next CRL
 policy          = ca_policy_match
@@ -412,7 +412,7 @@ cre_db () {
   else
     count=`getNextDirName "${var}"` || exit $?
     if test -d "${var}"; then
-      printf '%s' "saving old directoty as ${attn}${var}.${warn}${count}${norm} ... "
+      printf '%s' "saving old directory as ${attn}${var}.${warn}${count}${norm} ... "
       mv "${var}" "${var}.${count}"; show_status $? || exit $?
     fi
   fi

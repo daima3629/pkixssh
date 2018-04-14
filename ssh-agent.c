@@ -815,7 +815,7 @@ process_message(u_int socknum)
 
 	debug("%s: socket %u (fd=%d) type %d", __func__, socknum, e->fd, type);
 
-	/* check wheter agent is locked */
+	/* check whether agent is locked */
 	if (locked && type != SSH_AGENTC_UNLOCK) {
 		sshbuf_reset(e->request);
 		switch (type) {

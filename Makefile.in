@@ -1,4 +1,4 @@
-# uncomment if you run a non bourne compatable shell. Ie. csh
+# uncomment if you run a non bourne compatible shell. Ie. csh
 #SHELL = @SH@
 
 AUTORECONF=autoreconf
@@ -693,7 +693,7 @@ package: $(CONFIGFILES) $(MANPAGES) $(TARGETS)
 		sh buildpkg.sh; \
 	fi
 
-# Usefull only if build is in source tree.
+# Useful only if build is in source tree.
 # Outside source tree (VPATH build) result is not correct.
 depend:
 	(cd openbsd-compat && $(MAKE) $@)

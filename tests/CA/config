@@ -1,4 +1,4 @@
-# Copyright (c) 2002-2015 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2002-2018 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -29,9 +29,9 @@
 # on some system (with pam?, AIX?, when port is below 1024, etc.) we
 # might use sudo command to start sshd when current user isn`t root or
 # to run tests as root.
-# Prefered user for tests is NOT root :-) !
+# Preferred user for tests is NOT root :-) !
 SUDO=${SUDO-}
-# uncomment to override enviroment
+# uncomment to override environment
 #SUDO=sudo
 
 
@@ -84,7 +84,7 @@ fi
 if test -z "${OPENSSL}"; then
   OPENSSL=`which openssl 2>/dev/null`
   if test -z "${OPENSSL}"; then
-    echo "error:cannot find openssl is your path !" >&2
+    echo "error: cannot find openssl is your path !" >&2
     exit 1
   fi
 fi
@@ -109,7 +109,7 @@ openssl_nopkcs8_keys=false
 if test -n "$OPENSSL_FIPS"; then
   #NOTE
   # - 1.0.0* and 1.1+ does not support FIPS build
-  # - Usualy in FIPS mode keys are in PKCS8 format by default
+  # - Usually in FIPS mode keys are in PKCS8 format by default
   # - Only OpenSSL 1.0.1* before 1.0.1d does not create keys in PKCS8 format
   # - Do conversion only for 1.0.1* branch
   case $openssl_version in
@@ -119,7 +119,7 @@ if test -n "$OPENSSL_FIPS"; then
   esac
 fi
 
-# Uncoment and modify next if you would like to load(seed) file(s)
+# Uncomment and modify next if you would like to load(seed) file(s)
 # into the random number generator.
 # Note that some openssl forks fail to process -rand option!
 #random_seed_files=/etc/random-seed
@@ -233,7 +233,7 @@ else
   OPENSSL_NAMEOPT=
 fi
 
-# OpenSSL control type distiguished item type with string_mask
+# OpenSSL control type distinguished item type with string_mask
 # option in [req] section from configuration file.
 # By default option is set to
 # - nombstr (0.9.7x and 0.9.8x)
@@ -241,7 +241,7 @@ fi
 SSH_DN_FORCE_UTF8=${SSH_DN_FORCE_UTF8-no}
 case $openssl_version in
   *0.9.6*)
-    # not supported so override enviroment settings
+    # not supported so override environment settings
     SSH_DN_FORCE_UTF8=no
     ;;
 esac

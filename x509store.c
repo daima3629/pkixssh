@@ -840,7 +840,7 @@ ssh_verify_cert(X509_STORE_CTX *_csc) {
 		/* NOTE: negative result is returned only if certificate to check
 		 * is not set in context. This function is called if _cert is non
 		 * NULL, i.e. certificate has to be set in context!
-		 * Lets log (posible in future) cases with negative value.
+		 * Lets log (possible in future) cases with negative value.
 		 */
 		logit("ssh_verify_cert: X509_verify_cert return unexpected negative value: '%d'", flag);
 		return(-1);
@@ -927,7 +927,7 @@ donecsc:
  * RFC2560(OCSP)^
  *
  * About OpenSSH implementation:
- * 1.) We preffer to delegate validation of issuer certificates to
+ * 1.) We prefer to delegate validation of issuer certificates to
  * 'OCSP Provider'. It is easy and simple to configure an OCSP
  * responder to return revoked state for all certificates issued
  * by a CA. Usually 'OCSP Provider' admins shall be first informed

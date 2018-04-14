@@ -729,7 +729,7 @@ check_authkey_line(struct ssh *ssh, struct passwd *pw, struct sshkey *key,
 		: sshkey_fingerprint(found, options.fingerprint_hash, SSH_FP_DEFAULT);
 	if (fp == NULL) {
 		if (sshkey_is_x509(found))
-			error("%s: extract of X.509 distingushed name failed", __func__);
+			error("%s: extract of X.509 distinguished name failed", __func__);
 		else
 			error("%s: fingerprint failed", __func__);
 		goto out;

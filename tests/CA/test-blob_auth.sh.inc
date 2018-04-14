@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2002-2017 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2002-2018 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -81,7 +81,7 @@ testPUBKEYautorization () {
 do_test () {
   retval=0
   echo "* ${extd}with ${attn}CACertificateFile${norm} and"
-  echo "* ${extd}autorization${norm} by encoded ${attn}public identity${norm}:"
+  echo "* ${extd}authorization${norm} by encoded ${attn}public identity${norm}:"
 
   creTestSSHDcfgFile
   cat >> "$SSHD_CFG" <<EOF
@@ -95,14 +95,14 @@ EOF
   (
     for SSH_CLIENTKEY in $TEST_SSH_CLIENTKEYS; do
       printSeparator
-      echo "Begin tests with autorization by encoded ${attn}X.509${norm} certificate ..."
+      echo "Begin tests with authorization by encoded ${attn}X.509${norm} certificate ..."
 
       for type in $SSH_SIGN_TYPES; do
         testX509autorization || exit $?
       done
 
       printSeparator
-      echo "Begin tests with autorization by encoded ${attn}public${norm} key ..."
+      echo "Begin tests with authorization by encoded ${attn}public${norm} key ..."
       for type in $SSH_SIGN_TYPES; do
         testPUBKEYautorization || exit $?
       done

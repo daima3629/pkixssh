@@ -344,7 +344,7 @@ get_escsymbol(const u_char* str, size_t len, u_long *value) {
 	v = ssh_hctol(*str);
 	if (v < 0) {
 		/*a character is escaped ?*/
-		if (*str > 127) { /*ASCII comparision !*/
+		if (*str > 127) { /*ASCII comparison !*/
 			/* there is no reason symbol above 127
                            to be escaped in this way */
 			error("get_escsymbol:"
@@ -1138,7 +1138,7 @@ void
 x509key_move_identity(struct sshkey *from, struct sshkey *to) {
 	/* Temporary controls for key types based on enumerate.
 	 *
-	 * Caller is responsible to perform all controlls before to call this
+	 * Caller is responsible to perform all controls before to call this
 	 * method. For instance public key of X.509 certificate has to match
 	 * plain public key.
 	 * NOTE X.509 certificate may contain only distinguished name!
@@ -2213,7 +2213,7 @@ ssh_x509_key_size(const struct sshkey *key) {
 		} break;
 #endif
 	default:
-		fatal("ssh_x509_key_size: unknow EVP_PKEY type %d", EVP_PKEY_id(pkey));
+		fatal("ssh_x509_key_size: unknown EVP_PKEY type %d", EVP_PKEY_id(pkey));
 		/*unreachable code*/
 	}
 	EVP_PKEY_free(pkey);
@@ -2242,7 +2242,7 @@ ssh_x509_set_cert(struct sshkey *key, X509 *x509, STACK_OF(X509) *untrusted) {
 	xd = key->x509_data;
 	if (xd != NULL) {
 		if (xd->cert != NULL) {
-			fatal("%s: X.509 certificate is alreasy set", __func__);
+			fatal("%s: X.509 certificate is already set", __func__);
 			goto done; /*unreachable code*/
 		}
 	} else

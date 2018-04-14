@@ -1,6 +1,6 @@
 #
 # Copyright (c) 1999-2004 Damien Miller
-# Copyright (c) 2002-2017 Roumen Petrov
+# Copyright (c) 2002-2018 Roumen Petrov
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -278,7 +278,7 @@ typedef void foo(const char *, ...) __attribute__((format(printf, 1, 2)));]],
     [ AC_MSG_RESULT([yes]) ],
     [ AC_MSG_RESULT([no])
       AC_DEFINE(NO_ATTRIBUTE_ON_PROTOTYPE_ARGS, 1,
-	 [compiler does not accept __attribute__ on protoype args]) ]
+	 [compiler does not accept __attribute__ on prototype args]) ]
 )
 
 if test "x$no_attrib_nonnull" != "x1" ; then
@@ -553,7 +553,7 @@ case "$host" in
 	# Some versions of VAC won't allow macro redefinitions at
 	# -qlanglevel=ansi, and autoconf 2.60 sometimes insists on using that
 	# particularly with older versions of vac or xlc.
-	# It also throws errors about null macro argments, but these are
+	# It also throws errors about null macro arguments, but these are
 	# not fatal.
 	AC_MSG_CHECKING([if compiler allows macro redefinitions])
 	AC_COMPILE_IFELSE(
@@ -795,7 +795,7 @@ main() { if (NSVersionOfRunTimeLibrary("System") >= (60 << 16))
 	PATH="$PATH:/usr/etc"
 	AC_DEFINE([WITH_IRIX_ARRAY], [1],
 		[Define if you have/want arrays
-		(cluster-wide session managment, not C arrays)])
+		(cluster-wide session management, not C arrays)])
 	AC_DEFINE([WITH_IRIX_PROJECT], [1],
 		[Define if you want IRIX project management])
 	AC_DEFINE([WITH_IRIX_AUDIT], [1],
@@ -1256,7 +1256,7 @@ esac
 
 dnl adjust TEST_SHELL to autotools norms:
 if test -n "$CONFIG_SHELL"; then
-	dnl set(overide) TEST_SHELL to the autoconf one
+	dnl set(override) TEST_SHELL to the autoconf one
 	TEST_SHELL=$CONFIG_SHELL
 fi
 
@@ -3145,7 +3145,7 @@ LIBS="$saved_LIBS"
 
 ### Configure cryptographic random number support
 
-# Check wheter OpenSSL seeds itself
+# Check whether OpenSSL seeds itself
 if test "x$openssl" = "xyes" ; then
 	AC_MSG_CHECKING([whether OpenSSL's PRNG is internally seeded])
 	AC_RUN_IFELSE(
@@ -4049,7 +4049,7 @@ fi
 
 AC_CHECK_TYPES([struct timespec])
 
-# We need int64_t or else certian parts of the compile will fail.
+# We need int64_t or else certain parts of the compile will fail.
 if test "x$ac_cv_have_int64_t" = "xno" && \
 	test "x$ac_cv_sizeof_long_int" != "x8" && \
 	test "x$ac_cv_sizeof_long_long_int" = "x0" ; then
@@ -5074,7 +5074,7 @@ AC_ARG_ENABLE([ocsp],
 		ssh_ocsp=yes
 	else
 		ssh_ocsp=no
-		AC_MSG_NOTICE([x509store is disabled - skiping OCSP])
+		AC_MSG_NOTICE([x509store is disabled - skipping OCSP])
 	fi
 	])
 if test "x$ssh_ocsp" = "xyes"; then
@@ -5150,7 +5150,7 @@ if test "x$ssh_x509store" = "xyes"; then
 		ldap_search_ext_s \
 	])
 else
-	AC_MSG_NOTICE([x509store is disabled - skiping LDAP])
+	AC_MSG_NOTICE([x509store is disabled - skipping LDAP])
 fi
 
 
@@ -5282,7 +5282,7 @@ AC_CHECK_FUNCS([ \
 if test "x$ac_cv_func_OSSL_STORE_open" = xyes ; then
   AC_DEFINE(
     [USE_OPENSSL_STORE2],
-    [1], [Use OpenSSL STORE functionallity])
+    [1], [Use OpenSSL STORE functionality])
 fi
 
 # functions hidden in openssl compatible libraries

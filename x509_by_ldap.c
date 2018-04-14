@@ -180,7 +180,7 @@ openssl_add_ldap_error(int err) {
 
 
 /* ================================================================== */
-/* wrappers to some depricated functions */
+/* wrappers to some deprecated functions */
 static void
 ldaplookup_parse_result (
 	LDAP *ld,

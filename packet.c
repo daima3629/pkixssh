@@ -292,7 +292,7 @@ ssh_packet_set_connection(struct ssh *ssh, int fd_in, int fd_out)
 	if (ssh == NULL)
 		ssh = ssh_alloc_session_state();
 	if (ssh == NULL) {
-		error("%s: cound not allocate state", __func__);
+		error("%s: could not allocate state", __func__);
 		return NULL;
 	}
 	state = ssh->state;
@@ -599,7 +599,7 @@ ssh_packet_close_internal(struct ssh *ssh, int do_close)
 		state->newkeys[mode] = NULL;
 		ssh_clear_newkeys(ssh, mode);		/* next keys */
 	}
-	/* comression state is in shared mem, so we can only release it once */
+	/* compression state is in shared mem, so we can only release it once */
 	if (do_close && state->compression_buffer) {
 		sshbuf_free(state->compression_buffer);
 		if (state->compression_out_started) {
@@ -972,7 +972,7 @@ ssh_packet_need_rekeying(struct ssh *ssh, u_int outbound_packet_len)
 	    state->p_read.packets > MAX_PACKETS)
 		return 1;
 
-	/* Rekey after (cipher-specific) maxiumum blocks */
+	/* Rekey after (cipher-specific) maximum blocks */
 	out_blocks = ROUNDUP(outbound_packet_len,
 	    state->newkeys[MODE_OUT]->enc.block_size);
 	return (state->max_blocks_out &&

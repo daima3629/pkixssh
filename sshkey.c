@@ -4,7 +4,7 @@
  * Copyright (c) 2008 Alexander von Gernler.  All rights reserved.
  * Copyright (c) 2010,2011 Damien Miller.  All rights reserved.
  * X509 certificate support,
- * Copyright (c) 2002-2017 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2018 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -1471,7 +1471,7 @@ fingerprint_randomart(const char *alg, u_char *dgst_raw, size_t dgst_raw_len,
 		*p++ = '-';
 #ifdef OPENSSL_FIPS
 	if (FIPS_mode()) {
-		/* width is enought to write over text*/
+		/* width is enough to write over text*/
 		strcpy(p - 6, "[FIPS]");
 	}
 #endif

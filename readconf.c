@@ -12,7 +12,7 @@
  * called by a name other than "ssh" or "Secure Shell".
  *
  * X509 certificate support,
- * Copyright (c) 2002-2017 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2018 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -985,63 +985,63 @@ skip_purpose:
 		goto parse_flag;
 
 	case oCACertificateFile:
-		/*X509StoreOptions prefered type is 'const char*' */
+		/*X509StoreOptions preffered type is 'const char*' */
 		charptr = (char**)&options->ca.certificate_file;
 		goto parse_string;
 
 	case oCACertificatePath:
-		/*X509StoreOptions prefered type is 'const char*' */
+		/*X509StoreOptions preffered type is 'const char*' */
 		charptr = (char**)&options->ca.certificate_path;
 		goto parse_string;
 
 	case oCARevocationFile:
-		/*X509StoreOptions prefered type is 'const char*' */
+		/*X509StoreOptions preffered type is 'const char*' */
 		charptr = (char**)&options->ca.revocation_file;
 		goto parse_string;
 
 	case oCARevocationPath:
-		/*X509StoreOptions prefered type is 'const char*' */
+		/*X509StoreOptions preffered type is 'const char*' */
 		charptr = (char**)&options->ca.revocation_path;
 		goto parse_string;
 
 	case oUserCACertificateFile:
-		/*X509StoreOptions prefered type is 'const char*' */
+		/*X509StoreOptions preffered type is 'const char*' */
 		charptr = (char**)&options->userca.certificate_file;
 		goto parse_string;
 
 	case oUserCACertificatePath:
-		/*X509StoreOptions prefered type is 'const char*' */
+		/*X509StoreOptions preffered type is 'const char*' */
 		charptr = (char**)&options->userca.certificate_path;
 		goto parse_string;
 
 	case oUserCARevocationFile:
-		/*X509StoreOptions prefered type is 'const char*' */
+		/*X509StoreOptions preffered type is 'const char*' */
 		charptr = (char**)&options->userca.revocation_file;
 		goto parse_string;
 
 	case oUserCARevocationPath:
-		/*X509StoreOptions prefered type is 'const char*' */
+		/*X509StoreOptions preffered type is 'const char*' */
 		charptr = (char**)&options->userca.revocation_path;
 		goto parse_string;
 
 #ifdef LDAP_ENABLED
 	case oCAldapVersion:
-		/*X509StoreOptions prefered type is 'const char*' */
+		/*X509StoreOptions preffered type is 'const char*' */
 		charptr = (char**)&options->ca.ldap_ver;
 		goto parse_string;
 
 	case oCAldapURL:
-		/*X509StoreOptions prefered type is 'const char*' */
+		/*X509StoreOptions preffered type is 'const char*' */
 		charptr = (char**)&options->ca.ldap_url;
 		goto parse_string;
 
 	case oUserCAldapVersion:
-		/*X509StoreOptions prefered type is 'const char*' */
+		/*X509StoreOptions preffered type is 'const char*' */
 		charptr = (char**)&options->userca.ldap_ver;
 		goto parse_string;
 
 	case oUserCAldapURL:
-		/*X509StoreOptions prefered type is 'const char*' */
+		/*X509StoreOptions preffered type is 'const char*' */
 		charptr = (char**)&options->userca.ldap_url;
 		goto parse_string;
 #endif /*def LDAP_ENABLED*/
@@ -1064,12 +1064,12 @@ skip_purpose:
 		break;
 
 	case oVACertificateFile:
-		/* VAOptions prefered type is 'const char*' */
+		/* VAOptions preffered type is 'const char*' */
 		charptr = (char**)&options->va.certificate_file;
 		goto parse_string;
 
 	case oVAOCSPResponderURL:
-		/* VAOptions prefered type is 'const char*' */
+		/* VAOptions preffered type is 'const char*' */
 		charptr = (char**)&options->va.responder_url;
 		goto parse_string;
 #endif /*def SSH_OCSP_ENABLED*/

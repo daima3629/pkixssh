@@ -10,7 +10,7 @@ dnl     LDAP_LIBS
 dnl     LDAP_CPPFLAGS
 dnl - conditional:
 dnl     LDAP_ON   (e.g. '' or '#')
-dnl     LDAP_OFF  (e.g. '#' or '' - oposite of LDAP_ON)
+dnl     LDAP_OFF  (e.g. '#' or '' - opposite of LDAP_ON)
 dnl - paths:
 dnl     LDAP_BINDIR
 dnl     LDAP_LIBEXECDIR
@@ -104,7 +104,7 @@ dnl  fi
   AC_ARG_WITH([ldap-libdir],
     [AS_HELP_STRING(
       [--with-ldap-libdir=PATH],
-      [Prefix where LDAP libaries are installed (optional)]
+      [Prefix where LDAP libraries are installed (optional)]
     )],
     [LDAP_LDFLAGS="-L$withval"],
     [

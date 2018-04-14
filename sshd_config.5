@@ -1001,7 +1001,7 @@ Specifies whether only encoded public key or X.509 certificate listed in
 can allow self-signed X.509 certificate to be used for user authentication.
 The default is
 .Dq no .
-Unsupported if deamon is build without
+Unsupported if daemon is build without
 .Dq X509 store .
 .Pp
 A certificate (including self-signed) is accepted for user authentication
@@ -1153,7 +1153,7 @@ The list of available MAC algorithms may also be obtained using
 option:
 Specifies whether CRL must present in store for all certificates in
 .Dq certificate chain
-with atribute
+with attribute
 .Dq X509v3 CRL Distribution Points .
 The default is
 .Cm no .
@@ -1705,7 +1705,7 @@ and
 to verify responder certificate.
 .It Cm ValidateFirst
 Specifies whether first to perform validation of X.509 certificate
-and then autorization of public key.
+and then authorization of public key.
 Process is applicable for x509v3-* public key algorithms.
 The default is
 .Cm no ,
@@ -2018,11 +2018,11 @@ and optional
 .Ar signature-identifier .
 When
 .Ar signature-identifier
-is omited
+is omitted
 .Ar key-type-name
 is used as identifier.
 .Pp
-For compatibility with old versions following signatures are suported:
+For compatibility with old versions following signatures are supported:
 .Bl -tag -compact -offset indent
 .It Cm sha256
 .It Cm sha384
@@ -2033,7 +2033,7 @@ Server
 .Xr sshd 8
 and client
 .Xr ssh 1
-switch automatically to above signature if is detected old verson.
+switch automatically to above signature if is detected old version.
 .Sh FILES
 .Bl -tag -width Ds
 .It Pa /etc/ssh/sshd_config

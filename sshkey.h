@@ -3,7 +3,7 @@
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * X.509 certificates support,
- * Copyright (c) 2002-2017 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2018 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -134,7 +134,7 @@ X509*		SSH_X509_get_cert(SSH_X509 *xd);
  *   a key to be used with multiple names.
  * Temporary solution.
  * - macro X509KEY_BASETYPE that return KEY_{RSA|DSA|ECDSA};
- * - use macro where is posible;
+ * - use macro where is possible;
  * - remove macro after implementation of a) and b).
  */
 

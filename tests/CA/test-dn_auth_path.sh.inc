@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2002-2017 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2002-2018 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -20,10 +20,10 @@
 #  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 # DESCRIPTION: Test client authentication:
-#  - "IdentityFile" contain private key and x509 certificate;
+#  - "IdentityFile" contain private key and X.509 certificate;
 #  - "AuthorizedKeysFile" contain certificate Subject;
 #  - authorization against exact intermediate CA certificate in
-#    server x509 store (legacy public key algorithm);
+#    server X.509 store (legacy public key algorithm);
 #  - not applicable for RFC6187 key algorithms.
 
 
@@ -66,7 +66,7 @@ testDNautorizations2 () {
 #env. vars:
 #  catype
 do_test_catype () {
-  echo "  - autorization by x509 ${attn}Subject${norm} against CA key ${attn}${catype}${norm}"
+  echo "  - authorization by X.509 ${attn}Subject${norm} against CA key ${attn}${catype}${norm}"
 
   for type in ${SSH_SIGN_TYPES}; do
     testDNautorizations2 "${catype}" "${type}" || return $?

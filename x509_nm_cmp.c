@@ -117,7 +117,7 @@ ssh_printable_casecmp(const u_char *pa, int la, const u_char *pb, int lb)
 /*
  * Be careful: this method work fine only in "C(POSIX)" locale.
  * Since OpenSSH now run without to set locale, i.e.
- * following comparision is OK.
+ * following comparison is OK.
  * This implementation should be changed for other locales !!!
  *
  * Note pa or pb may contain utf8 characters !
@@ -300,7 +300,7 @@ fprintf(stderr, "ssh_ASN1_PRINTABLESTRING_cmp: return %d\n", n);
  * with method that ignore cases and spaces and convert to utf8
  * if necessary.
  *
- * Note calling method shoud ensure that both strings are
+ * Note calling method should ensure that both strings are
  * DirectoryString !!!
  */
 static int

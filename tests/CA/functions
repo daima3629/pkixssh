@@ -18,7 +18,7 @@
 #  OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 #  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-# DESCRIPTION: Usefull functions.
+# DESCRIPTION: Useful functions.
 #
 
 
@@ -28,8 +28,8 @@
 #
 #    \033          ascii ESCape
 #    \033[<NUM>G   move to column <NUM> (linux console, xterm, not vt100)
-#    \033[<NUM>C   move <NUM> columns forward but only upto last column
-#    \033[<NUM>D   move <NUM> columns backward but only upto first column
+#    \033[<NUM>C   move <NUM> columns forward but only up to last column
+#    \033[<NUM>D   move <NUM> columns backward but only up to first column
 #    \033[<NUM>A   move <NUM> rows up
 #    \033[<NUM>B   move <NUM> rows down
 #    \033[1m       switch bold on

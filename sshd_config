@@ -50,7 +50,7 @@
 #KeyAllowSelfIssued no
 
 # Specifies whether CRL must present in store for all certificates in
-# certificate chain with atribute "cRLDistributionPoints"
+# certificate chain with attribute "cRLDistributionPoints"
 #MandatoryCRL no
 
 # A file with multiple certificates of certificate signers

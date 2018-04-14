@@ -6,7 +6,7 @@ draft-ietf-secsh-dns-05.txt. The document contains very brief instructions
 on how to use this feature. Configuring DNS is out of the scope of this
 document.
 Note that public host key file may contain X.509 certificate. In this case
-is used CERT RR as is descibed in rfc2538 obsoleted by rfc4398.
+is used CERT RR as is described in rfc2538 obsoleted by rfc4398.
 
 
 (1) Server: Generate and publish the DNS RR
