@@ -1411,7 +1411,6 @@ main(int ac, char **av)
 		    (char *)NULL);
 		free(cp);
 	}
-	free(conn_hash_hex);
 
 	if (config_test) {
 		dump_client_config(&options, host);
