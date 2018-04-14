@@ -60,19 +60,11 @@ int	x509key_write(const struct sshkey *key, struct sshbuf *b);
  */
 int	Xkey_write_subject(const char *pkalg, const struct sshkey *key, FILE *f);
 
-/*
- * The patched configure script define OPENSSH_KEYS_USE_BIO
- * depending from OpenSSH version
- */
-
 void	x509key_parse_cert(struct sshkey *key, EVP_PKEY *pk, BIO *bio);
 void	x509key_load_certs(const char *pkalg, struct sshkey *key, const char *filename);
 void	x509key_build_chain(struct sshkey *key);
 
 int/*bool*/	x509key_write_identity_bio_pem(BIO *bio, const struct sshkey *key);
-#ifndef OPENSSH_KEYS_USE_BIO
-int/*bool*/	x509key_save_identity_pem(FILE *fp, const struct sshkey *key);
-#endif
 
 int	ssh_x509_equal(const struct sshkey *a, const struct sshkey *b);
 

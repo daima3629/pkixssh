@@ -5024,11 +5024,6 @@ if $libressl_26plus ; then
 fi
 
 
-# Starting from version 5.7 OpenSSH use memory BIO buffer
-# to read/write keys instead file streams.
-AC_DEFINE(
-    [OPENSSH_KEYS_USE_BIO], [1],
-    [Define if OpenSSH use memory BIO buffer to read/write keys])
 # Reserved for future use
 #AC_DEFINE(
 #    [X509_DISABLED], [1],

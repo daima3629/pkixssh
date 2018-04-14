@@ -1546,34 +1546,6 @@ done:
 }
 
 
-#ifndef OPENSSH_KEYS_USE_BIO
-int/*bool*/
-x509key_save_identity_pem(FILE *fp, const struct sshkey *key) {
-	int  flag;
-	BIO *out;
-
-	out = BIO_new_fp(fp, BIO_NOCLOSE);
-	if (out == NULL) return(0);
-
-#ifdef VMS
-	{
-		BIO *tmpbio = BIO_new(BIO_f_linebuffer());
-		if (tmpbio == NULL) {
-			BIO_free_all(out);
-			return(0);
-		}
-		out = BIO_push(tmpbio, out);
-	}
-#endif
-	flag = x509key_write_identity_bio_pem(bio, key);
-
-	BIO_free_all(out);
-
-	return(flag);
-}
-#endif /*ndef OPENSSH_KEYS_USE_BIO*/
-
-
 /*
  * We can check only by Subject (Distinguished Name):
  *   - sshd receive from client only x509 certificate !!!
