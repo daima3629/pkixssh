@@ -1,6 +1,7 @@
 /* $OpenBSD: digest.h,v 1.8 2017/05/08 22:57:38 djm Exp $ */
 /*
  * Copyright (c) 2013 Damien Miller <djm@mindrot.org>
+ * Copyright (c) 2018 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -40,6 +41,9 @@ const char *ssh_digest_alg_name(int alg);
 
 /* Returns the algorithm's digest length in bytes or 0 for invalid algorithm */
 size_t ssh_digest_bytes(int alg);
+
+/* Returns the digest algorithm with maximum digest length */
+int ssh_digest_maxbytes(void);
 
 /* Returns the block size of the digest, e.g. for implementing HMAC */
 size_t ssh_digest_blocksize(struct ssh_digest_ctx *ctx);

@@ -151,6 +151,19 @@ ssh_digest_bytes(int alg)
 	return digest == NULL ? 0 : digest->digest_len;
 }
 
+int
+ssh_digest_maxbytes(void) {
+	int k;
+
+	/*NOTE digest table is sorted in ascending order by digest length*/
+	for (k = SSH_DIGEST_MAX - 1; k >= 0; k--) {
+		const struct ssh_digest *d = ssh_digest_by_alg(k);
+		if (d == NULL) continue;
+		return digests[k].id;
+	}
+	return -1;
+}
+
 size_t
 ssh_digest_blocksize(struct ssh_digest_ctx *ctx)
 {

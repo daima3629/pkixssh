@@ -1,4 +1,4 @@
-/* $OpenBSD: sshd.c,v 1.507 2018/04/10 00:10:49 djm Exp $ */
+/* $OpenBSD: sshd.c,v 1.508 2018/04/13 03:57:26 dtucker Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -22,7 +22,7 @@
  * Copyright (c) 2002 Niels Provos.  All rights reserved.
  *
  * X.509 certificates support:
- * Copyright (c) 2002-2017 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2018 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -1534,6 +1534,45 @@ set_process_rdomain(struct ssh *ssh, const char *name)
 #endif
 }
 
+static void
+accumulate_host_timing_secret(struct sshbuf *server_cfg,
+    const struct sshkey *key)
+{
+	static struct ssh_digest_ctx *ctx;
+	int digest_alg;
+	u_char *hash;
+	size_t len;
+	struct sshbuf *buf;
+	int r;
+
+	digest_alg = ssh_digest_maxbytes();
+	if (ctx == NULL && (ctx = ssh_digest_start(digest_alg)) == NULL)
+		fatal("%s: ssh_digest_start", __func__);
+	if (key == NULL) { /* finalize */
+		/* add server config in case we are using agent for host keys */
+		if (ssh_digest_update(ctx, sshbuf_ptr(server_cfg),
+		    sshbuf_len(server_cfg)) != 0)
+			fatal("%s: ssh_digest_update", __func__);
+		len = ssh_digest_bytes(digest_alg);
+		hash = xmalloc(len);
+		if (ssh_digest_final(ctx, hash, len) != 0)
+			fatal("%s: ssh_digest_final", __func__);
+		options.timing_secret = PEEK_U64(hash);
+		freezero(hash, len);
+		ssh_digest_free(ctx);
+		ctx = NULL;
+		return;
+	}
+	if ((buf = sshbuf_new()) == NULL)
+		fatal("%s could not allocate buffer", __func__);
+	if ((r = sshkey_private_serialize(key, buf)) != 0)
+		fatal("sshkey_private_serialize: %s", ssh_err(r));
+	if (ssh_digest_update(ctx, sshbuf_ptr(buf), sshbuf_len(buf)) != 0)
+		fatal("%s: ssh_digest_update", __func__);
+	sshbuf_reset(buf);
+	sshbuf_free(buf);
+}
+
 /*
  * Main program for the daemon.
  */
@@ -1865,6 +1904,7 @@ main(int ac, char **av)
 			keytype = X509KEY_BASETYPE(pubkey);
 		} else if (key != NULL) {
 			keytype = X509KEY_BASETYPE(key);
+			accumulate_host_timing_secret(&cfg, key);
 		} else {
 			error("Could not load host key: %s",
 			    options.host_key_files[i]);
@@ -1890,6 +1930,7 @@ main(int ac, char **av)
 		    key ? "private" : "agent", i, sshkey_ssh_name(pubkey), fp);
 		free(fp);
 	}
+	accumulate_host_timing_secret(&cfg, NULL);
 	if (!sensitive_data.have_ssh2_key) {
 		logit("sshd: no hostkeys available -- exiting.");
 		exit(1);

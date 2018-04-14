@@ -1,6 +1,7 @@
 /* $OpenBSD: digest-openssl.c,v 1.7 2017/05/08 22:57:38 djm Exp $ */
 /*
  * Copyright (c) 2013 Damien Miller <djm@mindrot.org>
+ * Copyright (c) 2018 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -109,6 +110,19 @@ ssh_digest_bytes(int alg)
 	const struct ssh_digest *digest = ssh_digest_by_alg(alg);
 
 	return digest == NULL ? 0 : digest->digest_len;
+}
+
+int
+ssh_digest_maxbytes(void) {
+	int k;
+
+	/*NOTE digest table is sorted in ascending order by digest length*/
+	for (k = SSH_DIGEST_MAX - 1; k >= 0; k--) {
+		const struct ssh_digest *d = ssh_digest_by_alg(k);
+		if (d == NULL) continue;
+		return digests[k].id;
+	}
+	return -1;
 }
 
 size_t
