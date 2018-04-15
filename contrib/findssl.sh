@@ -3,8 +3,8 @@
 # findssl.sh
 #	Search for all instances of OpenSSL headers and libraries
 #	and print their versions.
-#	Intended to help diagnose OpenSSH's "OpenSSL headers do not
-#	match your library" errors.
+#	Intended to help diagnose configuration message:
+#	"OpenSSL headers do not match your library" errors.
 #
 #	Written by Darren Tucker (dtucker at zip dot com dot au)
 #	This file is placed in the public domain.
@@ -16,7 +16,7 @@
 #	2004-12-13: Add traps to cleanup temp files, from Amarendra Godbole.
 #
 # "OpenSSL headers do not match your library" are usually caused by
-# OpenSSH's configure picking up an older version of OpenSSL headers
+# package configure picking up an older version of OpenSSL headers
 # or libraries.  You can use the following # procedure to help identify
 # the cause.
 #
