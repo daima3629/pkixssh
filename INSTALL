@@ -60,10 +60,14 @@ libraries and headers.
 GNOME:
 http://www.gnome.org/
 
-Alternatively, Jim Knoble <jmknoble@pobox.com> has written an excellent X11
-passphrase requester. This is maintained separately at:
+Alternatively, Jim Knoble <jmknoble@pobox.com> has written an X11
+passphrase requester. It was maintained separately at:
 
 http://www.jmknoble.net/software/x11-ssh-askpass/
+
+Remarks: obsolete since 2011, does not work with UTF-8.
+A mirror could be found here:
+https://github.com/sigmavirus24/x11-ssh-askpass
 
 S/Key Libraries:
 
