@@ -22,6 +22,10 @@ ssh-copy-id:
 Phil Hands' <phil@hands.com> shell script to automate the process of adding
 your public key to a remote machine's ~/.ssh/authorized_keys file.
 
+ssh-askpass-kdialog:
+
+A born shell passphrase requester that wraps KDialog.
+
 gnome-ssh-askpass[12]:
 
 A GNOME and Gtk2 passphrase requesters. Use "make gnome-ssh-askpass1" or

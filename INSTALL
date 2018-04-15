@@ -54,6 +54,12 @@ Solaris PAM:	http://www.sun.com/software/solaris/pam/
 Linux PAM:	http://www.kernel.org/pub/linux/libs/pam/
 OpenPAM:	http://www.openpam.org/
 
+ASKPASS:
+
+You could use a number of X Window "dialog"-like programs for
+passphrase requester. For instance in sub-directory contrib you could
+found born shell script that wraps KDialog.
+
 If you wish to build the GNOME passphrase requester, you will need the GNOME
 libraries and headers.
 
