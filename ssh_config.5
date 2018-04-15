@@ -1,11 +1,3 @@
-.\" Implement .Dd with the Mdocdate RCS keyword
-.rn Dd xD
-.de Dd
-.ie \\$1$Mdocdate: \{\
-.	xD \\$2 \\$3, \\$4
-.\}
-.el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
-..
 .\"
 .\" Author: Tatu Ylonen <ylo@cs.hut.fi>
 .\" Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -43,7 +35,15 @@
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
 .\" $OpenBSD: ssh_config.5,v 1.273 2018/04/10 00:10:49 djm Exp $
-.Dd $Mdocdate: Appril 12 2018 $
+.\" Implement .Dd with the Mdocdate RCS keyword
+.rn Dd xD
+.de Dd
+.ie \\$1$Mdocdate: \{\
+.	xD \\$2 \\$3, \\$4
+.\}
+.el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
+..
+.Dd $Mdocdate: April 15 2018 $
 .Dt SSH_CONFIG 5
 .Os
 .Sh NAME
@@ -223,7 +223,7 @@ If this option is set to
 .Cm ask ,
 .Xr ssh 1
 will require confirmation using the
-.Ev SSH_ASKPASS
+.Xr ssh-askpass 1
 program before adding a key (see
 .Xr ssh-add 1
 for details).

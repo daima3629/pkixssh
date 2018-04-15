@@ -14,7 +14,7 @@
 .\" Copyright (c) 1999,2000 Markus Friedl.  All rights reserved.
 .\" Copyright (c) 1999 Aaron Campbell.  All rights reserved.
 .\" Copyright (c) 1999 Theo de Raadt.  All rights reserved.
-.\" Copyright (c) 2002-2017 Roumen Petrov.  All rights reserved.
+.\" Copyright (c) 2002-2018 Roumen Petrov.  All rights reserved.
 .\"
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions
@@ -44,7 +44,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: August 29 2017 $
+.Dd $Mdocdate: April 15 2018 $
 .Dt SSH-ADD 1
 .Os
 .Sh NAME
@@ -180,9 +180,14 @@ and
 .Ev SSH_ASKPASS
 are set, it will execute the program specified by
 .Ev SSH_ASKPASS
-(by default
-.Dq ssh-askpass )
-and open an X11 window to read the passphrase.
+that may open a X11 window to read the passphrase.
+Note if
+.Ev SSH_ASKPASS
+is not set will be executed program
+.Nm ssh-askpass
+located in
+.Dq libexec
+directory.
 This is particularly useful when calling
 .Nm
 from a
