@@ -60,6 +60,15 @@ You could use a number of X Window "dialog"-like programs for
 passphrase requester. For instance in sub-directory contrib you could
 found born shell script that wraps KDialog.
 
+Also you may use KDE alternative which stores key password in KWallet:
+ksshaskpass:	https://github.com/KDE/ksshaskpass
+
+Git projects distributes Tcl/Tk based alternative: git-gui--askpass.
+Mirror:	https://github.com/git/git
+
+Seahorse GNOME project distributes another alternative: git-seahorse-ssh-askpass.
+Mirror: https://github.com/GNOME/seahorse
+
 If you wish to build the GNOME passphrase requester, you will need the GNOME
 libraries and headers.
 
