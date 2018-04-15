@@ -1,0 +1,8 @@
+/ssh-askpass-gnome
+/ssh-askpass-gtk+2
+/ssh-askpass-gtk+3
+
+#obsolete - still used in redhat/openssh.spec (TODO)
+/gnome-ssh-askpass1
+/gnome-ssh-askpass2
+/gnome-ssh-askpass

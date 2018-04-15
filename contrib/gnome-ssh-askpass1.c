@@ -75,7 +75,7 @@ passphrase_dialog(char *message)
 	grab_server = (getenv("GNOME_SSH_ASKPASS_GRAB_SERVER") != NULL);
 	grab_pointer = (getenv("GNOME_SSH_ASKPASS_GRAB_POINTER") != NULL);
 
-	dialog = gnome_dialog_new("OpenSSH", GNOME_STOCK_BUTTON_OK,
+	dialog = gnome_dialog_new("Secure SHELL dialog", GNOME_STOCK_BUTTON_OK,
 	    GNOME_STOCK_BUTTON_CANCEL, NULL);
 
 	messages = g_strsplit(message, "\\n", 0);
@@ -162,7 +162,7 @@ main(int argc, char **argv)
 	if (argc == 2)
 		message = argv[1];
 	else
-		message = "Enter your OpenSSH passphrase:";
+		message = "Enter your passphrase:";
 
 	setvbuf(stdout, 0, _IONBF, 0);
 	result = passphrase_dialog(message);

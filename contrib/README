@@ -26,10 +26,12 @@ ssh-askpass-kdialog:
 
 A born shell passphrase requester that wraps KDialog.
 
-gnome-ssh-askpass[12]:
+gnome-ssh-askpass[12].c:
 
-A GNOME and Gtk2 passphrase requesters. Use "make gnome-ssh-askpass1" or
-"make gnome-ssh-askpass2" to build.
+A GNOME and GTK+ passphrase requesters. Use "make ssh-askpass-gnome" or
+"make ssh-askpass-gtk+2" or "make ssh-askpass2-gtk+3" to build.
+For compatibility with existing installations you could use
+"make gnome-ssh-askpass1" or "make gnome-ssh-askpass2".
 
 sshd.pam.generic:
 

@@ -112,7 +112,7 @@ passphrase_dialog(char *message)
 	gtk_widget_grab_focus(entry);
 	gtk_widget_show(entry);
 
-	gtk_window_set_title(GTK_WINDOW(dialog), "OpenSSH");
+	gtk_window_set_title(GTK_WINDOW(dialog), "Secure SHELL dialog");
 	gtk_window_set_position (GTK_WINDOW(dialog), GTK_WIN_POS_CENTER);
 	gtk_window_set_keep_above(GTK_WINDOW(dialog), TRUE);
 
@@ -214,7 +214,7 @@ main(int argc, char **argv)
 	if (argc > 1) {
 		message = g_strjoinv(" ", argv + 1);
 	} else {
-		message = g_strdup("Enter your OpenSSH passphrase:");
+		message = g_strdup("Enter your passphrase:");
 	}
 
 	setvbuf(stdout, 0, _IONBF, 0);
