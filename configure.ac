@@ -1263,7 +1263,7 @@ fi
 
 
 AC_MSG_CHECKING([compiler and flags for sanity])
-AC_RUN_IFELSE([AC_LANG_PROGRAM([[ #include <stdio.h> ]], [[ exit(0); ]])],
+AC_RUN_IFELSE([AC_LANG_PROGRAM([[]], [[]])],
 	[	AC_MSG_RESULT([yes]) ],
 	[
 		AC_MSG_RESULT([no])
@@ -1536,6 +1536,7 @@ AC_CACHE_CHECK([whether struct dirent allocates space for d_name],
 AC_RUN_IFELSE(
 	[AC_LANG_PROGRAM([[
 #include <sys/types.h>
+#include <stdlib.h>
 #include <dirent.h>]],
 	[[
 	struct dirent d;
@@ -2139,6 +2140,10 @@ AC_CHECK_FUNCS([setresuid], [
 	AC_MSG_CHECKING([if setresuid seems to work])
 	AC_RUN_IFELSE(
 		[AC_LANG_PROGRAM([[
+#ifdef HAVE_UNISTD_H
+# define _GNU_SOURCE
+# include <unistd.h>
+#endif
 #include <stdlib.h>
 #include <errno.h>
 		]], [[
@@ -2162,6 +2167,10 @@ AC_CHECK_FUNCS([setresgid], [
 	AC_MSG_CHECKING([if setresgid seems to work])
 	AC_RUN_IFELSE(
 		[AC_LANG_PROGRAM([[
+#ifdef HAVE_UNISTD_H
+# define _GNU_SOURCE
+# include <unistd.h>
+#endif
 #include <stdlib.h>
 #include <errno.h>
 		]], [[
@@ -2208,7 +2217,7 @@ AC_CHECK_FUNCS([realpath], [
 
 AC_CACHE_CHECK([for working fflush(NULL)], [ssh_cv_func_fflush_null], [
 AC_RUN_IFELSE(
-	[AC_LANG_PROGRAM([[#include <stdio.h>]], [[fflush(NULL); exit(0);]])],
+	[AC_LANG_PROGRAM([[#include <stdio.h>]], [[fflush(NULL);]])],
 	[ ssh_cv_func_fflush_null=yes ],
 	[ ssh_cv_func_fflush_null=no ],
 	[ ssh_cv_func_fflush_null=cross ]
@@ -2250,7 +2259,10 @@ AC_CHECK_FUNC([getpagesize],
 if test "x$ac_cv_func_snprintf" = "xyes" ; then
 	AC_MSG_CHECKING([whether snprintf correctly terminates long strings])
 	AC_RUN_IFELSE(
-		[AC_LANG_PROGRAM([[ #include <stdio.h> ]],
+		[AC_LANG_PROGRAM([[
+	#include <stdio.h>
+	#include <stdlib.h>
+	]],
 		[[
 	char b[5];
 	snprintf(b,5,"123456789");
@@ -2342,6 +2354,9 @@ AC_MSG_CHECKING([for (overly) strict mkstemp])
 AC_RUN_IFELSE(
 	[AC_LANG_PROGRAM([[
 #include <stdlib.h>
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 	]], [[
 	char template[]="conftest.mkstemp-test";
 	if (mkstemp(template) == -1)
@@ -2372,6 +2387,13 @@ if test ! -z "$check_for_openpty_ctty_bug"; then
 #include <sys/fcntl.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <stdlib.h>
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
+#ifdef HAVE_PTY_H
+# include <pty.h>
+#endif
 		]], [[
 	pid_t pid;
 	int fd, ptyfd, ttyfd, status;
@@ -4065,6 +4087,7 @@ dnl test snprintf (broken on SCO w/gcc)
 		[AC_LANG_SOURCE([[
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #ifdef HAVE_SNPRINTF
 main()
 {
@@ -4166,6 +4189,7 @@ AC_CACHE_CHECK([for msg_accrights field in struct msghdr],
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
+#include <stdlib.h>
 		]], [[
 #ifdef msg_accrights
 #error "msg_accrights is a macro"
@@ -4227,6 +4251,7 @@ AC_CACHE_CHECK([for msg_control field in struct msghdr],
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
+#include <stdlib.h>
 		]], [[
 #ifdef msg_control
 #error "msg_control is a macro"
@@ -4247,7 +4272,7 @@ if test "x$ac_cv_have_control_in_msghdr" = "xyes" ; then
 fi
 
 AC_CACHE_CHECK([if libc defines __progname], ac_cv_libc_defines___progname, [
-	AC_LINK_IFELSE([AC_LANG_PROGRAM([[]],
+	AC_LINK_IFELSE([AC_LANG_PROGRAM([[ #include <stdio.h> ]],
 		[[ extern char *__progname; printf("%s", __progname); ]])],
 	[ ac_cv_libc_defines___progname="yes" ],
 	[ ac_cv_libc_defines___progname="no"
@@ -4319,7 +4344,7 @@ if test "x$ac_cv_have_getopt_optreset" = "xyes" ; then
 fi
 
 AC_CACHE_CHECK([if libc defines sys_errlist], ac_cv_libc_defines_sys_errlist, [
-	AC_LINK_IFELSE([AC_LANG_PROGRAM([[]],
+	AC_LINK_IFELSE([AC_LANG_PROGRAM([[ #include <stdio.h> ]],
 [[ extern const char *const sys_errlist[]; printf("%s", sys_errlist[0]);]])],
 	[ ac_cv_libc_defines_sys_errlist="yes" ],
 	[ ac_cv_libc_defines_sys_errlist="no"
@@ -4332,7 +4357,7 @@ fi
 
 
 AC_CACHE_CHECK([if libc defines sys_nerr], ac_cv_libc_defines_sys_nerr, [
-	AC_LINK_IFELSE([AC_LANG_PROGRAM([[]],
+	AC_LINK_IFELSE([AC_LANG_PROGRAM([[ #include <stdio.h> ]],
 [[ extern int sys_nerr; printf("%i", sys_nerr);]])],
 	[ ac_cv_libc_defines_sys_nerr="yes" ],
 	[ ac_cv_libc_defines_sys_nerr="no"
@@ -4645,6 +4670,7 @@ AC_ARG_WITH([maildir],
 		[AC_LANG_PROGRAM([[
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #ifdef HAVE_PATHS_H
 #include <paths.h>
 #endif
