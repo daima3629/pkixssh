@@ -2303,9 +2303,11 @@ connect_to_server(char *path, char **args, int *in, int *out)
 			_exit(1);
 		}
 		close(*in);
-		close(*out);
+		if (*in != *out)
+			close(*out);
 		close(c_in);
-		close(c_out);
+		if (c_in != c_out)
+			close(c_out);
 
 		/*
 		 * The underlying ssh is in the same process group, so we must
@@ -2329,7 +2331,8 @@ connect_to_server(char *path, char **args, int *in, int *out)
 	signal(SIGTTOU, suspchild);
 	signal(SIGCHLD, sigchld_handler);
 	close(c_in);
-	close(c_out);
+	if (c_in != c_out)
+		close(c_out);
 }
 
 static void
@@ -2559,11 +2562,13 @@ main(int argc, char **argv)
 
 #if !defined(USE_PIPES)
 	shutdown(in, SHUT_RDWR);
-	shutdown(out, SHUT_RDWR);
+	if (in != out)
+		shutdown(out, SHUT_RDWR);
 #endif
 
 	close(in);
-	close(out);
+	if (in != out)
+		close(out);
 	if (batchmode)
 		fclose(infile);
 
