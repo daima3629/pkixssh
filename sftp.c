@@ -2572,10 +2572,12 @@ main(int argc, char **argv)
 	if (batchmode)
 		fclose(infile);
 
-	while (waitpid(sshpid, NULL, 0) == -1)
+	while (waitpid(sshpid, NULL, 0) == -1) {
+		if (errno == ECHILD) break;
 		if (errno != EINTR)
 			fatal("Couldn't wait for ssh process: %s",
 			    strerror(errno));
+	}
 
 	exit(err == 0 ? 0 : 1);
 }
