@@ -18,14 +18,14 @@ OpenSSL http://www.openssl.org/ ; or
 LibreSSL http://www.libressl.org/
 
 libcrypto should be compiled as a position-independent library
-(i.e. with -fPIC) otherwise OpenSSH will not be able to link with it.
+(i.e. with -fPIC) otherwise PKIX-SSH will not be able to link with it.
 If you must use a non-position-independent libcrypto, then you may need
-to configure OpenSSH --without-pie.
+to configure PKIX-SSH --without-pie.
 
 The remaining items are optional.
 
 NB. If you operating system supports /dev/random, you should configure
-libcrypto to use it. OpenSSH relies on libcrypto's
+libcrypto to use it. PKIX-SSH relies on libcrypto's
 direct support of /dev/random, or failing that, either prngd or egd
 
 PRNGD:
@@ -44,7 +44,7 @@ http://egd.sourceforge.net/
 
 PAM:
 
-OpenSSH can utilise Pluggable Authentication Modules (PAM) if your
+PKIX-SSH can utilise Pluggable Authentication Modules (PAM) if your
 system supports it. PAM is standard most Linux distributions, Solaris,
 HP-UX 11, AIX >= 5.2, FreeBSD and NetBSD.
 
@@ -121,20 +121,16 @@ Native BSM support is known to exist in Solaris from at least 2.5.1,
 FreeBSD 6.1 and OS X.  Alternatively, you may use the OpenBSM
 implementation (http://www.openbsm.org).
 
-
-X.509 certificate support:
-http://roumenpetrov.info/openssh
-
 2. Building / Installation
 --------------------------
 
-To install OpenSSH with default options:
+To install PKIX-SSH with default options:
 
 ./configure
 make
 make install
 
-This will install the OpenSSH binaries in /usr/local/bin, configuration files
+This will install the PKIX-SSH binaries in /usr/local/bin, configuration files
 in /usr/local/etc, the server in /usr/local/sbin, etc. To specify a different
 installation prefix, use the --prefix option to configure:
 
@@ -142,7 +138,7 @@ installation prefix, use the --prefix option to configure:
 make
 make install
 
-Will install OpenSSH in /opt/{bin,etc,lib,sbin}. You can also override
+Will install PKIX-SSH in /opt/{bin,etc,lib,sbin}. You can also override
 specific paths, for example:
 
 ./configure --prefix=/opt --sysconfdir=/etc/ssh
@@ -222,16 +218,16 @@ created.
 
 --with-xauth=PATH specifies the location of the xauth binary
 
---with-ssl-dir=DIR allows you to specify where your Libre/OpenSSL
+--with-ssl-dir=DIR allows you to specify where your OpenSSL
 libraries are installed.
 
---with-ssl-engine enables Libre/OpenSSL's (hardware) ENGINE support
+--with-ssl-engine enables OpenSSL's (hardware) ENGINE support
 
 --with-4in6 Check for IPv4 in IPv6 mapped addresses and convert them to
 real (AF_INET) IPv4 addresses. Works around some quirks on Linux.
 
 --with-sshca-dir=PATH   allows you to specify location of ssh CA root
-used by ssh "x509 store" to verify certificates.
+used by ssh "X.509 store" to verify certificates.
 
 If you need to pass special options to the compiler or linker, you
 can specify these as environment variables before running ./configure.
@@ -263,7 +259,7 @@ Replacing /etc/ssh with the correct path to the configuration directory.
 (${prefix}/etc or whatever you specified with --sysconfdir during
 configuration)
 
-If you have configured OpenSSH with EGD support, ensure that EGD is
+If you have configured PKIX-SSH with EGD support, ensure that EGD is
 running and has collected some Entropy.
 
 For more information on configuration, please refer to the manual pages
@@ -280,12 +276,12 @@ $ make send-survey
 This will send configuration information for the currently configured
 host to a survey address.  This will help determine which configurations
 are actually in use, and what valid combinations of configure options
-exist.  The raw data is available only to the OpenSSH developers, however
+exist.  The raw data is available only to the PKIX-SSH developers, however
 summary data may be published.
 
 5. Problems?
 ------------
 
-If you experience problems compiling, installing or running OpenSSH.
-Please refer to the "reporting bugs" section of the webpage at
-https://www.openssh.com/
+If you experience problems compiling, installing or running PKIX-SSH,
+please refer to the "Support" section of the webpage at
+http://roumenpetrov.info/secsh/#support
