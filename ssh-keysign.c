@@ -269,6 +269,8 @@ main(int argc, char **argv)
 	key_fd[i++] = open(_PATH_HOST_ED25519_KEY_FILE, O_RDONLY);
 #ifdef WITH_XMSS
 	key_fd[i++] = open(_PATH_HOST_XMSS_KEY_FILE, O_RDONLY);
+#else
+	key_fd[i++] = -1;
 #endif
 	key_fd[i++] = open(_PATH_HOST_RSA_KEY_FILE, O_RDONLY);
 
