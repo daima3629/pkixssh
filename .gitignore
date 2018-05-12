@@ -3,6 +3,7 @@
 buildpkg.sh
 config.h
 config.h.in
+config.log
 config.status
 configure
 openssh.xml
@@ -26,3 +27,6 @@ survey.sh
 /ssh-keysign
 /ssh-pkcs11-helper
 /sshd
+
+# fipshmac (FIPS-140-2 checksum files)
+/.ssh*.hmac
