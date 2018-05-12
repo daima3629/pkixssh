@@ -1,4 +1,4 @@
-/* $OpenBSD: sftp.c,v 1.184 2018/04/13 05:04:12 djm Exp $ */
+/* $OpenBSD: sftp.c,v 1.185 2018/04/26 14:47:03 bluhm Exp $ */
 /*
  * Copyright (c) 2001-2004 Damien Miller <djm@openbsd.org>
  *
@@ -94,7 +94,7 @@ FILE* infile;
 int batchmode = 0;
 
 /* PID of ssh transport process */
-static pid_t sshpid = -1;
+static volatile pid_t sshpid = -1;
 
 /* Suppress diagnositic messages */
 int quiet = 0;
@@ -277,8 +277,10 @@ sigchld_handler(int sig)
 	/* Report if ssh transport process dies. */
 	while ((pid = waitpid(sshpid, NULL, WNOHANG)) == -1 && errno == EINTR)
 		continue;
-	if (pid == sshpid)
+	if (pid == sshpid) {
 		(void)write(STDERR_FILENO, msg, sizeof(msg) - 1);
+		sshpid = -1;
+	}
 
 	errno = save_errno;
 }
@@ -2572,7 +2574,7 @@ main(int argc, char **argv)
 	if (batchmode)
 		fclose(infile);
 
-	while (waitpid(sshpid, NULL, 0) == -1) {
+	if (sshpid > 1) while (waitpid(sshpid, NULL, 0) == -1) {
 		if (errno == ECHILD) break;
 		if (errno != EINTR)
 			fatal("Couldn't wait for ssh process: %s",
