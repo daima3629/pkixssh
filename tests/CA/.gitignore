@@ -1,0 +1,9 @@
+Makefile
+env
+ca-test/
+ldap/
+testid_*
+testhostkey_*
+testocsp_*
+selfid_*
+*.log
