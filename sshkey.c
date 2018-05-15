@@ -363,12 +363,13 @@ sshkey_names_valid2(const char *names, int allow_wildcard)
 					    loc >= 0;
 					    loc = ssh_xkalg_ind(&xkalg, loc)
 					) {
-						if (match_pattern_list(xkalg->name,
-						    p, 0) == 1)
+						if (match_pattern_list(
+						    xkalg->name, p, 0) == 1) {
 							break;
+						}
 					}
 					if (loc >= 0)
-						break;
+						continue;
 				}
 				for (kt = keytypes; kt->type != -1; kt++) {
 					if (match_pattern_list(kt->name,
