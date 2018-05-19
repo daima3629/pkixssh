@@ -1,5 +1,5 @@
 #! /bin/sh
-# Copyright (c) 2002-2015 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2002-2018 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -39,7 +39,7 @@ cre_crlfile() {
 (
   type="$1"
 
-  cd "${SSH_CACRLDIR}" || exit $?
+  cd "$SSH_CAROOT/crl" || exit $?
 
   FILE="${CAKEY_PREFIX}-${type}.crl.pem"
 
@@ -67,7 +67,7 @@ cre_crlfile() {
 # ===
 cre_crlindir () {
   echo "=== create a new CRL ===" >> "$CA_LOG"
-  rm -f "${SSH_CACRLDIR}"/* 2>/dev/null
+  rm -f "$SSH_CAROOT/crl"/* 2>/dev/null
 
   printf '%s\n' "creating ${extd}CA CRL file${norm} for ..."
   for type in ${SSH_SIGN_TYPES}; do
@@ -92,13 +92,13 @@ cre_CAcrlfile () {
     (
       if test -n "$OPENSSL_NAMEOPT"; then
         $OPENSSL crl $OPENSSL_NAMEOPT \
-        -in "$SSH_CACRLDIR/$CAKEY_PREFIX-$type.crl.pem" \
+        -in "$SSH_CAROOT/crl/$CAKEY_PREFIX-$type.crl.pem" \
         -issuer -noout \
         2>> "$CA_LOG" &&
         echo "============================================================"
       fi &&
       $OPENSSL crl \
-      -in "$SSH_CACRLDIR/$CAKEY_PREFIX-$type.crl.pem" \
+      -in "$SSH_CAROOT/crl/$CAKEY_PREFIX-$type.crl.pem" \
       -text \
       2>> "$CA_LOG" \
       && echo && echo

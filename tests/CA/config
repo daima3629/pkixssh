@@ -187,13 +187,9 @@ KEY_PASS="change_it"
 CAKEY_PREFIX="catest"
 
 SSH_CAROOT="`pwd`/ca-test"
-SSH_CAKEYDIR="${SSH_CAROOT}/keys"
 
 CACERTFILE="catest-bundle.crt"
 CACRLFILE="catest-bundle.crl"
-
-SSH_CACERTDIR="${SSH_CAROOT}/crt"
-SSH_CACRLDIR="${SSH_CAROOT}/crl"
 
 CACONFIG="catest.config"
 SSH_CACFGFILE="${SSH_CAROOT}/${CACONFIG}"

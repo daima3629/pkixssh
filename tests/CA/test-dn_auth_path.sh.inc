@@ -118,9 +118,9 @@ PubkeyAlgorithms x509v3-sign-*
         ( cd "$CRT_TEST_DIR" &&
           rm -f "$CRT_TEST_DIR"/* &&
           for level in 0; do
-            cre_hash_link "$SSH_CACERTDIR/$CAKEY_PREFIX"-root${level}.crt.pem || exit $?
+            cre_hash_link "$SSH_CAROOT/crt/$CAKEY_PREFIX-root${level}.crt.pem" || exit $?
           done
-          cre_hash_link "$SSH_CACERTDIR/$CAKEY_PREFIX"-$catype.crt.pem
+          cre_hash_link "$SSH_CAROOT/crt/$CAKEY_PREFIX-$catype.crt.pem"
         ) &&
         do_test_catype; retval=$?
         rm -f "$CRT_TEST_DIR"/*

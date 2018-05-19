@@ -31,7 +31,7 @@ SCRIPTDIR=`echo $0 | sed 's/verify.sh//'`
 
 for VERIFY in \
   "$OPENSSL verify -CAfile $SSH_CAROOT/$CACERTFILE" \
-  "$OPENSSL verify -CApath $SSH_CACERTDIR" \
+  "$OPENSSL verify -CApath $SSH_CAROOT/crt" \
 ; do
   echo ${attn}$VERIFY ....${norm}
   for F in \

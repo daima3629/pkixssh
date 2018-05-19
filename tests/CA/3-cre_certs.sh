@@ -270,7 +270,7 @@ cre_p12 () {
   fi
   printf '%s' "- ${extd}PKCS #12${norm} file"
   ( cat "$SSH_BASE_KEY-$type$subtype"
-    cat "$SSH_CACERTDIR/$CAKEY_PREFIX-$type".crt.pem
+    cat "$SSH_CAROOT/crt/$CAKEY_PREFIX-$type.crt.pem"
   ) | \
   $OPENSSL pkcs12 $P12_OPT \
     -passin pass: \

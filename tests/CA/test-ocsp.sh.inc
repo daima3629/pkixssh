@@ -117,7 +117,7 @@ runResponder() {
   printf '  %s' "starting OCSP ${extd}responder${norm}(${attn}${type}${norm}) on ${attn}${SSHD_LISTENADDRESS}:${port}${norm}"
   (
   ${OPENSSL} ocsp \
-    -CA      "${SSH_CACERTDIR}/${CAKEY_PREFIX}-${type}.crt.pem" \
+    -CA      "$SSH_CAROOT/crt/${CAKEY_PREFIX}-${type}.crt.pem" \
     -rsigner "${OCSP_RESPKEY}-${type}.crt" \
     -rkey    "${OCSP_RESPKEY}" \
     -index   "${SSH_CAROOT}/index-${type}.txt" \

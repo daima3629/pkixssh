@@ -1,5 +1,5 @@
 #! /bin/sh
-# Copyright (c) 2002-2015 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2002-2018 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -32,6 +32,14 @@ SCRIPTDIR=`echo $0 | sed 's/2-cre_cakeys.sh$//'`
 CA_LOG="$CWD/ca-2.log"
 create_empty_file .delmy &&
 update_file .delmy "$CA_LOG" > /dev/null || exit $?
+
+
+# ===
+top_srcdir=`cd $SCRIPTDIR/../..; pwd`
+
+install_sh () {
+  $top_srcdir/install-sh ${1+"$@"}
+}
 
 
 # ===
@@ -155,10 +163,10 @@ cre_root () {
   || return $?
 
   F="$CAKEY_PREFIX"-root0.key
-  update_file "$TMPDIR/$F" "$SSH_CAKEYDIR/$F"
+  update_file "$TMPDIR/$F" "$SSH_CAROOT/keys/$F"
 
   F="$CAKEY_PREFIX"-root0.crt
-  move_as_trusted_x509 "$TMPDIR/$F" "$SSH_CACERTDIR/$F".pem
+  move_as_trusted_x509 "$TMPDIR/$F" "$SSH_CAROOT/crt/$F.pem"
 }
 
 
@@ -272,7 +280,7 @@ for type in $SSH_SIGN_TYPES; do
 
   sync
   $OPENSSL verify \
-    -CAfile "$SSH_CACERTDIR/$CAKEY_PREFIX"-root0.crt.pem \
+    -CAfile "$SSH_CAROOT/crt/$CAKEY_PREFIX-root0.crt.pem" \
     "$TMPDIR/${CAKEY_PREFIX}-${type}".crt \
   ; retval=$?
   # exit code always is 0 :(
@@ -301,16 +309,9 @@ crt2bundle () {
 
 # ===
 cre_dirs () {
-  for D in \
-    "$SSH_CAROOT" \
-    "$SSH_CAKEYDIR" \
-    "$SSH_CACERTDIR" \
-  ; do
-    if test ! -d "$D"; then
-      mkdir -p "$D" || return $?
-    fi
-  done
-  chmod 700 "$SSH_CAKEYDIR"
+  install_sh -d "$SSH_CAROOT" &&
+  install_sh -d -m 700 "$SSH_CAROOT/keys" &&
+  install_sh -d "$SSH_CAROOT/crt"
 }
 
 
@@ -320,21 +321,21 @@ install () {
 
   for type in rsa dsa; do
     F="${CAKEY_PREFIX}-${type}.key"
-    update_file "${TMPDIR}/${F}" "${SSH_CAKEYDIR}/${F}"
+    update_file "$TMPDIR/$F" "$SSH_CAROOT/keys/$F"
   done
 
   for type in ${SSH_SIGN_TYPES}; do
     F="${CAKEY_PREFIX}-${type}.crt"
-    move_as_trusted_x509 "${TMPDIR}/${F}" "${SSH_CACERTDIR}/${F}.pem" || exit $?
+    move_as_trusted_x509 "$TMPDIR/$F" "$SSH_CAROOT/crt/$F.pem" || exit $?
   done
 
   create_empty_file "${TMPDIR}/${CACERTFILE}" &&
   for level in 0; do
-    F="$SSH_CACERTDIR/$CAKEY_PREFIX"-root${level}.crt.pem
+    F="$SSH_CAROOT/crt/$CAKEY_PREFIX-root${level}.crt.pem"
     crt2bundle "$SSH_DN_O level $level" "$F" >> "$TMPDIR/$CACERTFILE" || exit $?
   done
   for type in ${SSH_SIGN_TYPES}; do
-    F="${SSH_CACERTDIR}/${CAKEY_PREFIX}-${type}.crt.pem"
+    F="$SSH_CAROOT/crt/$CAKEY_PREFIX-$type.crt.pem"
     crt2bundle "${SSH_DN_O}-${type}" "${F}" >> "${TMPDIR}/${CACERTFILE}" || exit $?
   done
 
@@ -370,9 +371,9 @@ cre_hash_link () {
 
 cre_hashs () {
 #(!) openssl script "c_rehash" is missing in some installations :-(
-#  c_rehash "${SSH_CACERTDIR}"
+#  c_rehash "$SSH_CAROOT/crt"
 (
-  cd "${SSH_CACERTDIR}" || exit $?
+  cd "$SSH_CAROOT/crt" || exit $?
 
   for F in [0-9a-f]*.[0-9]; do
     # we must use test -L, but on ?-OSes ... :-(

@@ -87,7 +87,7 @@ creTestLDAPDCAldifFile() {
     N="$CAKEY_PREFIX"-root$level.crt
     if test ! -f ldap/"$N".der; then
       $OPENSSL x509 \
-        -in "$SSH_CACERTDIR/$N".pem \
+        -in "$SSH_CAROOT/crt/$N.pem" \
         -out ldap/"$N".der -outform DER
       retval=$?
       if test $retval -ne 0; then
@@ -101,7 +101,7 @@ creTestLDAPDCAldifFile() {
     N="$CAKEY_PREFIX"-$type.crt
     if test ! -f ldap/"$N".der; then
       $OPENSSL x509 \
-        -in "$SSH_CACERTDIR/$N".pem \
+        -in "$SSH_CAROOT/crt/$N.pem" \
         -out ldap/"$N".der -outform DER
       retval=$?
       if test $retval -ne 0; then
@@ -113,7 +113,7 @@ creTestLDAPDCAldifFile() {
     N="$CAKEY_PREFIX"-$type.crl
     if test ! -f ldap/"$N".der; then
       $OPENSSL crl \
-        -in "$SSH_CACRLDIR/$N".pem \
+        -in "$SSH_CAROOT/crl/$N.pem" \
         -out ldap/"$N".der -outform DER
       retval=$?
       if test $retval -ne 0; then

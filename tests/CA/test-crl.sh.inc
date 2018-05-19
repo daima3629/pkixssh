@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2002-2015 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2002-2018 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -106,7 +106,7 @@ test_crldir () {
 CACertificateFile ${SSH_CAROOT}/${CACERTFILE}
 CACertificatePath /path/not/found
 CARevocationFile  /crlfile/not/found
-CARevocationPath  ${SSH_CACRLDIR}
+CARevocationPath  $SSH_CAROOT/crl
 EOF
 
   runSSHdaemon || return $?
@@ -128,7 +128,7 @@ test_crlbytype () {
   printf "  creating ${attn}${crltype}${norm} crlfile in hash dir"
   #printf "${warn}"
     rm -f "${CRL_TEST_DIR}"/* 2> /dev/null
-    FILE="${SSH_CACRLDIR}/${CAKEY_PREFIX}-${crltype}.crl.pem"
+    FILE="$SSH_CAROOT/crl/$CAKEY_PREFIX-$crltype.crl.pem"
     HASH=`${OPENSSL} crl -out /dev/null -in "${FILE}" -hash`; retval=$?
     if test ${retval} -eq 0; then
       hashfile="${CRL_TEST_DIR}/${HASH}.r0"

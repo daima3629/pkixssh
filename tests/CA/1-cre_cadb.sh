@@ -355,10 +355,10 @@ cert_opt        = compatible
 default_md      = sha1
 
 # The private key (!)
-private_key     = "${SSH_CAKEYDIR}/${CAKEY_PREFIX}-root0.key"
+private_key     = \$dir/keys/$CAKEY_PREFIX-root0.key
 
 #The CA certificate (!)
-certificate     = "${SSH_CACERTDIR}/${CAKEY_PREFIX}-root0.crt.pem"
+certificate     = \$dir/crt/$CAKEY_PREFIX-root0.crt.pem
 EOF
 
 
@@ -374,10 +374,10 @@ EOF
 default_md      = ${DIGEST}
 
 # The private key (!)
-private_key     = "${SSH_CAKEYDIR}/${CAKEY_PREFIX}-rsa.key"
+private_key     = \$dir/keys/$CAKEY_PREFIX-rsa.key
 
 #The CA certificate  (!)
-certificate     = "${SSH_CACERTDIR}/${CAKEY_PREFIX}-rsa_${DIGEST}.crt.pem"
+certificate     = \$dir/crt/$CAKEY_PREFIX-rsa_${DIGEST}.crt.pem
 EOF
 ) >> "$1"
 done
@@ -393,10 +393,10 @@ EOF
 default_md      = sha1
 
 # The private key (!)
-private_key     = "${SSH_CAKEYDIR}/${CAKEY_PREFIX}-dsa.key"
+private_key     = \$dir/keys/$CAKEY_PREFIX-dsa.key
 
 #The CA certificate  (!)
-certificate     = "${SSH_CACERTDIR}/${CAKEY_PREFIX}-dsa.crt.pem"
+certificate     = \$dir/crt/$CAKEY_PREFIX-dsa.crt.pem
 EOF
 ) >> "$1"
 }

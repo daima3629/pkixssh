@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2006-2017 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2006-2018 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -161,7 +161,7 @@ test_pkey_yes () {
   # 'error 18 at 0 depth lookup:self signed certificate'
   # buggy if return extra:
   # 'error 20 at 0 depth lookup:unable to get local issuer certificate'
-  if $OPENSSL verify "$SSH_CACERTDIR"/"$CAKEY_PREFIX"-root0.crt.pem | grep 'error 20' > /dev/null ; then
+  if $OPENSSL verify "$SSH_CAROOT/crt/$CAKEY_PREFIX-root0.crt.pem" | grep 'error 20' > /dev/null ; then
     echo "${warn}skipped due to openssl verification bug${norm}" >&2
     echo "(see email thread ${attn}1.0.2beta2 and X.509 certificate verification${norm})" >&2
     return 0
