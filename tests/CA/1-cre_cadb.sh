@@ -37,18 +37,23 @@ fi
 # ===
 # args:
 #   $1 - type
-echo_CA_common_options () {
+#   $2 - policy section
+echo_CA_section_start () {
+  printf '\n\n[ ca_test_%s ]\n' "$1"
 cat <<EOF
 certs           = \$dir/crt             # Where the issued certs are kept
 crl_dir         = \$dir/crl             # Where the issued crl are kept
-database        = \$dir/index-$1.txt       # database index file.
+# database index file:
+database        = \$dir/index-$1.txt
 new_certs_dir   = \$dir/newcerts        # default place for new certs.
 serial          = \$dir/serial          # The current serial number
 
 #x509_extensions = usr_cert            # The default extensions to add to the cert
-default_days    = $SSH_CACERTDAYS                   # how long to certify for
-default_crl_days= $SSH_CACRLDAYS                   # how long before next CRL
-policy          = policy_match
+# how long to certify for:
+default_days    = $SSH_CACERTDAYS
+# how long before next CRL:
+default_crl_days= $SSH_CACRLDAYS
+policy          = $2
 
 # print options (internal use)
 #name_opt        = oneline,-space_eq,-esc_msb # print UTF-8
@@ -56,6 +61,30 @@ policy          = policy_match
 cert_opt        = compatible
 
 EOF
+}
+
+
+# ===
+# args:
+#   $1 - CA level
+#   $2 - policy section
+#   $3 - digest
+#   $4 - key sub-string
+#   $5 - cert sub-string
+echo_CA_section () {
+(
+  echo_CA_section_start "$1" "$2"
+cat << EOF
+# which md to use:
+default_md      = $3
+
+# The private key (!)
+private_key     = \$dir/keys/$CAKEY_PREFIX-$4.key
+
+#The CA certificate (!)
+certificate     = \$dir/crt/$CAKEY_PREFIX-$5.crt.pem
+EOF
+)
 }
 
 
@@ -330,75 +359,13 @@ EOF
 fi
 
 
-cat << EOF >> "$1"
+echo_CA_section root ca_policy_match sha1 root0 root0 >> "$1"
 
-
-[ ca_test_root ]
-certs           = \$dir/crt             # Where the issued certs are kept
-crl_dir         = \$dir/crl             # Where the issued crl are kept
-database        = \$dir/index-root.txt  # database index file.
-new_certs_dir   = \$dir/newcerts        # default place for new certs.
-serial          = \$dir/serial          # The current serial number
-
-#x509_extensions = usr_cert            # The default extensions to add to the cert
-default_days    = $SSH_CACERTDAYS                   # how long to certify for
-default_crl_days= $SSH_CACRLDAYS                   # how long before next CRL
-policy          = ca_policy_match
-
-# print options (internal use)
-#name_opt        = oneline,-space_eq,-esc_msb # print UTF-8
-#name_opt        = utf8,sep_comma_plus
-cert_opt        = compatible
-
-
-# which md to use:
-default_md      = sha1
-
-# The private key (!)
-private_key     = \$dir/keys/$CAKEY_PREFIX-root0.key
-
-#The CA certificate (!)
-certificate     = \$dir/crt/$CAKEY_PREFIX-root0.crt.pem
-EOF
-
-
-for DIGEST in ${RSA_DIGEST_LIST}; do
-( cat << EOF
-
-
-[ ca_test_rsa_$DIGEST ]
-EOF
-  echo_CA_common_options "rsa_${DIGEST}"
-  cat << EOF
-# which md to use:
-default_md      = ${DIGEST}
-
-# The private key (!)
-private_key     = \$dir/keys/$CAKEY_PREFIX-rsa.key
-
-#The CA certificate  (!)
-certificate     = \$dir/crt/$CAKEY_PREFIX-rsa_${DIGEST}.crt.pem
-EOF
-) >> "$1"
+for DIGEST in $RSA_DIGEST_LIST; do
+  echo_CA_section rsa_$DIGEST policy_match $DIGEST rsa rsa_$DIGEST >> "$1"
 done
 
-( cat << EOF
-
-
-[ ca_test_dsa ]
-EOF
-  echo_CA_common_options "dsa"
-  cat << EOF
-# which md to use:
-default_md      = sha1
-
-# The private key (!)
-private_key     = \$dir/keys/$CAKEY_PREFIX-dsa.key
-
-#The CA certificate  (!)
-certificate     = \$dir/crt/$CAKEY_PREFIX-dsa.crt.pem
-EOF
-) >> "$1"
+echo_CA_section dsa policy_match sha1 dsa dsa >> "$1"
 }
 
 
