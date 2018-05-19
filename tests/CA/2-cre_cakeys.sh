@@ -319,13 +319,13 @@ install () {
 (
   update_file "$TMPDIR/${CAKEY_PREFIX}-dsa.prm" "$SSH_CAROOT/${CAKEY_PREFIX}-dsa.prm" || exit $?
 
-  for type in rsa dsa; do
-    F="${CAKEY_PREFIX}-${type}.key"
+  for type in $SSH_CAKEY_TYPES; do
+    F="$CAKEY_PREFIX-$type.key"
     update_file "$TMPDIR/$F" "$SSH_CAROOT/keys/$F"
   done
 
-  for type in ${SSH_SIGN_TYPES}; do
-    F="${CAKEY_PREFIX}-${type}.crt"
+  for type in $SSH_SIGN_TYPES; do
+    F="$CAKEY_PREFIX-$type.crt"
     move_as_trusted_x509 "$TMPDIR/$F" "$SSH_CAROOT/crt/$F.pem" || exit $?
   done
 

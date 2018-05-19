@@ -102,12 +102,19 @@ cat << EOF
 EOF
   printf "authorityInfoAccess = "
 (
-  port=${SSH_VA_BASEPORT}
-  for DIGEST in ${RSA_DIGEST_LIST}; do
-    printf "OCSP;URI:http://${SSHD_LISTENADDRESS}:${port},"
-    port=`expr ${port} + 1`
+  port=`expr $SSH_VA_BASEPORT - 1`
+  for DIGEST in $RSA_DIGEST_LIST ; do
+    port=`expr $port + 1`
+    if test port -eq $SSH_VA_BASEPORT ; then
+      printf "OCSP;URI:http://$SSHD_LISTENADDRESS:$port"
+    else
+      printf ",OCSP;URI:http://$SSHD_LISTENADDRESS:$port"
+    fi
   done
-    printf "OCSP;URI:http://${SSHD_LISTENADDRESS}:${port}"
+  if expr "$SSH_CAKEY_TYPES" : .*dsa > /dev/null ; then
+    port=`expr $port + 1`
+    printf ",OCSP;URI:http://$SSHD_LISTENADDRESS:$port"
+  fi
 )
   printf "\n"
 fi
@@ -361,11 +368,13 @@ fi
 
 echo_CA_section root ca_policy_match sha1 root0 root0 >> "$1"
 
-for DIGEST in $RSA_DIGEST_LIST; do
+for DIGEST in $RSA_DIGEST_LIST ; do
   echo_CA_section rsa_$DIGEST policy_match $DIGEST rsa rsa_$DIGEST >> "$1"
 done
 
-echo_CA_section dsa policy_match sha1 dsa dsa >> "$1"
+if expr "$SSH_CAKEY_TYPES" : .*dsa > /dev/null ; then
+  echo_CA_section dsa policy_match sha1 dsa dsa >> "$1"
+fi
 }
 
 

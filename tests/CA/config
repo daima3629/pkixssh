@@ -141,25 +141,18 @@ fi
 # tests to sha1 only. Comment next line to restore.
 RSA_DIGEST_LIST=${RSA_DIGEST_LIST-sha1}
 
-if test -z "${RSA_DIGEST_LIST}"; then
+if test -z "$RSA_DIGEST_LIST"; then
   for DIGEST in sha1 md5 mdc2 md4 rmd160; do
-    if "${OPENSSL}" dgst -${DIGEST} "${OPENSSL}" >/dev/null 2>&1; then
-      RSA_DIGEST_LIST="${RSA_DIGEST_LIST} ${DIGEST}"
+    if "$OPENSSL" dgst -$DIGEST "$OPENSSL" >/dev/null 2>&1; then
+      RSA_DIGEST_LIST="$RSA_DIGEST_LIST $DIGEST"
     fi
   done
 fi
-if test -z "${RSA_DIGEST_LIST}"; then
+if test -z "$RSA_DIGEST_LIST"; then
   echo "RSA_DIGEST_LIST is empty" >&2
   exit 1
 fi
-echo "RSA digest list: ${RSA_DIGEST_LIST}"
-
-
-SSH_SIGN_TYPES=""
-for DIGEST in ${RSA_DIGEST_LIST}; do
-  SSH_SIGN_TYPES="${SSH_SIGN_TYPES} rsa_${DIGEST}"
-done
-  SSH_SIGN_TYPES="${SSH_SIGN_TYPES} dsa"
+echo "RSA digest list: $RSA_DIGEST_LIST"
 
 
 # === server section:
@@ -193,6 +186,19 @@ CACRLFILE="catest-bundle.crl"
 
 CACONFIG="catest.config"
 SSH_CACFGFILE="${SSH_CAROOT}/${CACONFIG}"
+
+# always use intermediate CA with rsa key
+SSH_CAKEY_TYPES=rsa
+# comment next to skip intermediate CA with dsa key
+SSH_CAKEY_TYPES="$SSH_CAKEY_TYPES dsa"
+
+SSH_SIGN_TYPES=
+for DIGEST in $RSA_DIGEST_LIST ; do
+  SSH_SIGN_TYPES="$SSH_SIGN_TYPES rsa_${DIGEST}"
+done
+if expr "$SSH_CAKEY_TYPES" : .*dsa > /dev/null ; then
+  SSH_SIGN_TYPES="$SSH_SIGN_TYPES dsa"
+fi
 
 SSH_CACERTDAYS=60
 SSH_CACRLDAYS=60
