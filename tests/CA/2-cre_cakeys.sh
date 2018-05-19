@@ -109,6 +109,38 @@ move_as_trusted_x509() {
 
 # ===
 #args:
+#  $1 - key file
+#  $2 - key algorithm
+# NOTE: available in OpenSSL >= 1.0.0
+gen_pkey () {
+( umask 077
+  GEN_OPT=
+  # genpkey does not support rand option
+  #if test -n "$random_seed_files" ; then
+  #  GEN_OPT="$GEN_OPT -rand $random_seed_files"
+  #fi
+
+  rm -f "$1" 2>/dev/null
+
+openssl_nopkcs8_keys=:
+echo openssl_nopkcs8_keys="$openssl_nopkcs8_keys" >&2
+  if $openssl_nopkcs8_keys; then
+    rm -f "$1"-trad 2>/dev/null
+    $OPENSSL genpkey $GEN_OPT -algorithm $2 \
+      -out "$1"-trad &&
+    $OPENSSL pkcs8 -topk8 -v2 aes256 -in "$1"-trad \
+      -out "$1" -passout pass:$KEY_PASS
+    rm "$1"-trad
+  else
+    $OPENSSL genpkey $GEN_OPT -algorithm $2 \
+      -out "$1" -pass pass:$KEY_PASS
+  fi
+) 2>> "$CA_LOG"
+}
+
+
+# ===
+#args:
 #  $1 - rsa keyfile
 gen_rsa_key () {
 ( umask 077
@@ -237,6 +269,21 @@ gen_dsa () {
 
 
 # ===
+gen_ed25519 () {
+  expr "$SSH_CAKEY_TYPES" : .*ed25519 > /dev/null || return 0
+  gen_pkey "$TMPDIR/$CAKEY_PREFIX"-ed25519.key ED25519 \
+  ; show_status $? "generating ${extd}TEST CA${norm} ${attn}ed25519${norm} private key"
+}
+
+
+gen_ed448() {
+  expr "$SSH_CAKEY_TYPES" : .*ed448 > /dev/null || return 0
+  gen_pkey "$TMPDIR/$CAKEY_PREFIX"-ed448.key ED448 \
+  ; show_status $? "generating ${extd}TEST CA${norm} ${attn}ed448${norm} private key"
+}
+
+
+# ===
 cre_crt () {
 for type in $SSH_SIGN_TYPES; do
   rm -f "$TMPDIR/$CAKEY_PREFIX"-${type}.crt 2>/dev/null
@@ -244,6 +291,8 @@ for type in $SSH_SIGN_TYPES; do
   case $type in
       *rsa*) keyfile="$TMPDIR/$CAKEY_PREFIX"-rsa.key;;
       *dsa*) keyfile="$TMPDIR/$CAKEY_PREFIX"-dsa.key;;
+      *ed25519*) keyfile="$TMPDIR/$CAKEY_PREFIX"-ed25519.key;;
+      *ed448*) keyfile="$TMPDIR/$CAKEY_PREFIX"-ed448.key;;
       *) return 99;;
   esac
 
@@ -401,6 +450,8 @@ cre_dirs &&
 cre_root &&
 gen_rsa &&
 gen_dsa &&
+gen_ed25519 &&
+gen_ed448 &&
 cre_crt &&
 install &&
 cre_hashs; retval=$?

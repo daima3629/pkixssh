@@ -115,6 +115,14 @@ EOF
     port=`expr $port + 1`
     printf ",OCSP;URI:http://$SSHD_LISTENADDRESS:$port"
   fi
+  if expr "$SSH_CAKEY_TYPES" : .*ed25519 > /dev/null ; then
+    port=`expr ${port} + 1`
+    printf ",OCSP;URI:http://$SSHD_LISTENADDRESS:$port"
+  fi
+  if expr "$SSH_CAKEY_TYPES" : .*ed448 > /dev/null ; then
+    port=`expr ${port} + 1`
+    printf ",OCSP;URI:http://$SSHD_LISTENADDRESS:$port"
+  fi
 )
   printf "\n"
 fi
@@ -374,6 +382,14 @@ done
 
 if expr "$SSH_CAKEY_TYPES" : .*dsa > /dev/null ; then
   echo_CA_section dsa policy_match sha1 dsa dsa >> "$1"
+fi
+
+if expr "$SSH_CAKEY_TYPES" : .*ed25519 > /dev/null ; then
+  echo_CA_section ed25519 policy_match null ed25519 ed25519 >> "$1"
+fi
+
+if expr "$SSH_CAKEY_TYPES" : .*ed448 > /dev/null ; then
+  echo_CA_section ed448 policy_match null ed448 ed448 >> "$1"
 fi
 }
 
