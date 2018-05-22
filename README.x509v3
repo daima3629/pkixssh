@@ -1,6 +1,6 @@
                                                           Roumen Petrov
                                                         Sofia, Bulgaria
-                                                        Thu Apr 12 2018
+                                                        Thu May 22 2018
 
 How to use X.509 certificates with SSH?
 
@@ -543,7 +543,7 @@ Tip: configure SSH with prefix for example $HOME/test
 ssh-rand-helper
 rm -f $HOME/.rnd
 ln -s .ssh/prng_seed $HOME/.rnd
-Note: ssh-rand-helper was removed in OpenSSH 5.9.
+Note: Support for ssh-rand-helper was removed in 2011.
 
 4.1.2.3.) test openssl with command:
 /usr/local/ssl/bin/openssl genrsa -des3 -passout pass:change_it
