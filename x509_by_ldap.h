@@ -1,7 +1,7 @@
 #ifndef X509_BY_LDAP_H
 #define X509_BY_LDAP_H
 /*
- * Copyright (c) 2004-2015 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2004-2018 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -24,7 +24,6 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/* openssh specific includes */
 #include "includes.h"
 #ifndef LDAP_ENABLED
 #  include "error: LDAP is disabled"

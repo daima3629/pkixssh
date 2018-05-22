@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005-2017 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2005-2018 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -376,7 +376,7 @@ logit("TRACE_XKALG add_default_xkalg:");
 	 */
 	if (ssh_add_x509key_alg("x509v3-sign-dss,dss-asn1") < 0)
 		fatal("ssh_init_xkalg: oops");
-	/* - some non OpenSSH implementations incompatible with
+	/* - some secsh implementations incompatible with
 	 * draft-ietf-secsh-transport-NN.txt where NN <= 12
 	 */
 	if (ssh_add_x509key_alg("x509v3-sign-dss,dss-raw") < 0)
@@ -821,7 +821,7 @@ default_publickey_algorithms(void) {
 	if (buffer_len(&b) > 0) buffer_append(&b, ",", 1);
 	buffer_append(&b, p, strlen(p));
 
-	/* With OpenSSH 7.0 ssh-dss is not listed in KEX_DEFAULT_PK_ALG */
+	/* Since PKIX-SSH 8.5 ssh-dss is not listed in KEX_DEFAULT_PK_ALG */
 	p = "ssh-dss";
 	buffer_append(&b, ",", 1);
 	buffer_append(&b, p, strlen(p));

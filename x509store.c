@@ -905,7 +905,7 @@ donecsc:
 #ifdef SSH_OCSP_ENABLED
 	if (ret > 0) {
 /*
- * OpenSSH implementation first verify and validate certificate by
+ * PKIX-SSH implementation first verify and validate certificate by
  * "X.509 store" with certs and crls from file system. It is fast
  * check. After this when certificate chain is correct and
  * certificate is not revoked we send a status request to an OCSP
@@ -926,7 +926,7 @@ donecsc:
  * ...
  * RFC2560(OCSP)^
  *
- * About OpenSSH implementation:
+ * About PKIX-SSH implementation:
  * 1.) We prefer to delegate validation of issuer certificates to
  * 'OCSP Provider'. It is easy and simple to configure an OCSP
  * responder to return revoked state for all certificates issued
