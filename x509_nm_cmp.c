@@ -80,7 +80,10 @@ ssh_ASN1_OBJECT_cmp(ASN1_OBJECT *a, ASN1_OBJECT *b) {
 #endif /*def COMPARE_X509_NAME_ENTRY_OBJECT*/
 
 
-static int
+/* NOTE: used only for  encoded as IA5String [PKCS9] emailAddress,
+ * i.e. irrelevant to application locale.
+ */
+static inline int
 ssh_ASN1_STRING_casecmp(ASN1_STRING *a, ASN1_STRING *b) {
 	const u_char *sa, *sb;
 	int la, lb;
@@ -114,13 +117,12 @@ ssh_ASN1_STRING_casecmp(ASN1_STRING *a, ASN1_STRING *b) {
 static int
 ssh_printable_casecmp(const u_char *pa, int la, const u_char *pb, int lb)
 {
-/*
- * Be careful: this method work fine only in "C(POSIX)" locale.
- * Since OpenSSH now run without to set locale, i.e.
- * following comparison is OK.
- * This implementation should be changed for other locales !!!
- *
- * Note pa or pb may contain utf8 characters !
+/* NOTE:  This method is used only if one of compared attributes is
+ * PrintableString. By definition  string type PrintableString
+ * supports very basic Latin letters: [a-zA-Z =()+,-./:?]
+ * (for instance see RFC5280).
+ * This mean that application locale is practically irrelevant to
+ * case insensitive compare in this method.
  */
 	/* skip leading spaces */
 	for (; la > 0 && isspace((int)*pa); la--, pa++);
@@ -292,7 +294,7 @@ fprintf(stderr, "ssh_ASN1_PRINTABLESTRING_cmp: return %d\n", n);
  *    single space.
  * =====================================================================
  *
- * OpenSSH implementation:
+ * PKIX-SSH implementation:
  * - assume that all DirectoryStrings represent same strings regardless
  * of type. When strings are from different types they will be converted
  * to utf8 before comparison.
@@ -320,7 +322,7 @@ ssh_ASN1_DIRECTORYSTRING_cmp(ASN1_STRING *a, ASN1_STRING *b) {
 	tagA = ASN1_STRING_type(a);
 	tagB = ASN1_STRING_type(b);
 
-	/* just in case of PrintableString - see caling method ;-) */
+	/* just in case of PrintableString - see calling method ;-) */
 	if ((tagA == V_ASN1_PRINTABLESTRING) ||
 	    (tagB == V_ASN1_PRINTABLESTRING) ) {
 		/*
@@ -330,6 +332,7 @@ ssh_ASN1_DIRECTORYSTRING_cmp(ASN1_STRING *a, ASN1_STRING *b) {
 		return(ssh_ASN1_PRINTABLESTRING_cmp(a, b));
 	}
 /*....*/
+	/* TODO always convert to utf8 for RFC5280 conformance */
 	if (tagA == tagB) {
 		ssh_ASN1_STRING_get0_data(a, &pa, &la);
 		ssh_ASN1_STRING_get0_data(b, &pb, &lb);
@@ -356,6 +359,10 @@ fprintf(stderr, "ssh_ASN1_DIRECTORYSTRING_cmp ub='%s'\n", ub);
 		pb = (const char *)ub;
 	}
 
+	/* TODO RFC5280 conforming, requires internal or external
+	 * source that perform UNICODE normalization according
+	 * rules from appendix B.2 of RFC3454.
+	 */
 	n = memcmp(pa, pb, (size_t)MIN(la, lb));
 #ifdef SSHX509TEST_DBGCMP
 fprintf(stderr, "ssh_ASN1_DIRECTORYSTRING_cmp n=%d, la=%d, lb=%d\n", n, la, lb);
@@ -503,6 +510,11 @@ trynextentry:
 				error("ssh_X509_NAME_cmp: incorrect type for emailAddress(b) %d(%.30s)", tag, ASN1_tag2str(tag));
 			}
 
+			/* NOTE: [PKCS9] emailAddress attribute must be encoded as
+			 * IA5String, which is limited to the set of ASCII characters.
+			 * This mean that application locale is practically irrelevant
+			 * to case insensitive compare below.
+			 */
 			n = ssh_ASN1_STRING_casecmp(nvA, nvB);
 			if (n == 0) goto entryisok;
 
