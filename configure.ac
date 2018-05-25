@@ -49,7 +49,8 @@ AC_PATH_PROG([NROFF], [nroff])
 AC_PATH_PROG([MANDOC], [mandoc])
 AC_SUBST([TEST_SHELL], [sh])
 
-dnl select manpage formatter
+AC_ARG_VAR([MANFMT],[manpage formatter])
+if test -z "$MANFMT" ; then
 if test "x$MANDOC" != "x" ; then
 	MANFMT="$MANDOC"
 elif test "x$NROFF" != "x" ; then
@@ -60,7 +61,7 @@ else
 	AC_MSG_WARN([no manpage formatted found])
 	MANFMT="false"
 fi
-AC_SUBST([MANFMT])
+fi
 
 dnl for buildpkg.sh
 AC_PATH_PROG([PATH_GROUPADD_PROG], [groupadd], [groupadd],
