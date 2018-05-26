@@ -864,10 +864,8 @@ from the default set instead of replacing them.
 The default for this option is:
 The default for this option depend from
 .Cm X509KeyAlgorithm .
-It contain first X509KeyAlgorithm for RSA key,
-followed by X509KeyAlgorithms for ECDSA keys,
-followed by first X509KeyAlgorithm for DSA key,
-followed by
+By default it contain unique list build from names of X509KeyAlgorithm
+defined for ECDSA, RSA and DSA keys, followed by
 .Bd -literal -offset 3n
 ecdsa-sha2-nistp256-cert-v01@openssh.com,
 ecdsa-sha2-nistp384-cert-v01@openssh.com,
@@ -875,7 +873,9 @@ ecdsa-sha2-nistp521-cert-v01@openssh.com,
 ssh-ed25519-cert-v01@openssh.com,
 ssh-rsa-cert-v01@openssh.com,
 ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ecdsa-sha2-nistp521,
-ssh-ed25519,ssh-rsa
+ssh-ed25519,
+rsa-sha2-256,rsa-sha2-512,ssh-rsa,
+ssh-dss
 .Ed
 .Pp
 If hostkeys are known for the destination host then this default is modified
