@@ -122,8 +122,6 @@ gen_pkey () {
 
   rm -f "$1" 2>/dev/null
 
-openssl_nopkcs8_keys=:
-echo openssl_nopkcs8_keys="$openssl_nopkcs8_keys" >&2
   if $openssl_nopkcs8_keys; then
     rm -f "$1"-trad 2>/dev/null
     $OPENSSL genpkey $GEN_OPT -algorithm $2 \
