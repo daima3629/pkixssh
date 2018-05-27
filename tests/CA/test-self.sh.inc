@@ -49,33 +49,33 @@ test_self() {
       SSH_CLIENTKEY="selfid_$type"
 
       identity_file="$SSH_CLIENTKEY-$type"
+      echo "  using identity file $identity_file"
 
-      # public key
       if test yes = $encoded_fail; then
         blob_msg="encoded ${warn}public${norm} key"
       else
         blob_msg="encoded ${extd}public${norm} key"
       fi
+      # public key
       cat "$SSH_CLIENTKEY.pub" > "$AUTHORIZEDKEYSFILE" &&
-      runTest '' "$identity_file" "$type $blob_msg" $encoded_fail \
+      runTest "$type" "$identity_file" "$blob_msg" $encoded_fail \
       || return $?
 
-      # X.509 certificate
       if test yes = $encoded_fail; then
         blob_msg="encoded ${warn}X.509${norm} certificate"
       else
         blob_msg="encoded ${extd}X.509${norm} certificate"
       fi
+      # X.509 certificate
       cat "$identity_file.pub" > "$AUTHORIZEDKEYSFILE" &&
-      runTest '' "$identity_file" "$type $blob_msg" $encoded_fail \
+      runTest "$type" "$identity_file" "$blob_msg" $encoded_fail \
       || return $?
 
-      # X.509 certificate distinguished name
       sshkeytype=`getSSHkeyType "$identity_file"` || return $?
       subject=`getSubject "$identity_file"` || return $?
-
+      # X.509 certificate distinguished name
       echo "$sshkeytype Subject: $subject" > "$AUTHORIZEDKEYSFILE" &&
-      runTest '' "$identity_file" "$type $dn_msg" "$2" \
+      runTest "$type" "$identity_file" "$dn_msg" "$2" \
       || return $?
     done
 }
