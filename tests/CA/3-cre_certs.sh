@@ -317,10 +317,21 @@ cre_all2 () {
 # ===
 cre_all () {
 (
-  subtype=""
-  for type in ${SSH_SIGN_TYPES}; do
+  subtype=
+  if test "$SSH_SELFCERT" = "yes" ; then
+    # NOTE self-issued use name in format "selfid_${keytype}"
+    keytype=`echo $SSH_BASE_KEY | sed 's/^selfid_//'`
+    if test "$SSH_BASE_KEY" = "$keytype" ; then
+      echo "For self-issued ${warn}cannot obtain keytype from keyname - ${attn}$SSH_BASE_KEY${norm}" >&2
+      exit 1
+    fi
+    type=$keytype
     cre_all2 || exit $?
-  done
+  else
+    for type in $SSH_SIGN_TYPES ; do
+      cre_all2 || exit $?
+    done
+  fi
 
   if test "$SSH_X509V3_EXTENSIONS" = "srv_cert" || \
      test "$SSH_SELFCERT" = "yes" \

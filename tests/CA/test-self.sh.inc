@@ -45,24 +45,10 @@ test_self() {
       dn_msg="${extd}Distinguished Name${norm}";;
   esac
 
-  for keytype in rsa dsa; do
-    SSH_CLIENTKEY="selfid_${keytype}"
+    for type in rsa dsa ; do
+      SSH_CLIENTKEY="selfid_$type"
 
-    for type in ${SSH_SIGN_TYPES}; do
-      case $keytype in
-        rsa)
-          case $type in
-            *dsa*) continue;;
-          esac
-          ;;
-        dsa)
-          case $type in
-            *rsa*) continue;;
-          esac
-          ;;
-      esac
-
-      identity_file="${SSH_CLIENTKEY}-${type}"
+      identity_file="$SSH_CLIENTKEY-$type"
 
       # public key
       if test yes = $encoded_fail; then
@@ -92,7 +78,6 @@ test_self() {
       runTest '' "$identity_file" "$type $dn_msg" "$2" \
       || return $?
     done
-  done
 }
 
 # ===
