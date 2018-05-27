@@ -475,6 +475,8 @@ for t in ${SSH_KEYTYPES}; do
 		rm -f $OBJ/$t
 		${SSHKEYGEN} -q -N '' -t $t  -f $OBJ/$t ||\
 			fail "ssh-keygen for $t failed"
+		# use key as host key, too
+		cp $OBJ/$t $OBJ/host.$t
 	fi
 
 	# known hosts file for client
@@ -487,8 +489,6 @@ for t in ${SSH_KEYTYPES}; do
 	cat $OBJ/$t.pub >> $OBJ/authorized_keys_$USER
 	echo IdentityFile $OBJ/$t >> $OBJ/ssh_config
 
-	# use key as host key, too
-	$SUDO cp $OBJ/$t $OBJ/host.$t
 	echo HostKey $OBJ/host.$t >> $OBJ/sshd_config
 
 	# don't use SUDO for proxy connect
