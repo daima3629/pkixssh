@@ -20,16 +20,16 @@
 #  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 # DESCRIPTION: Test client authentication:
-#  - "IdentityFile" contain private key and self-signed x509 certificate;
+#  - "IdentityFile" contain private key and self-issued X.509 certificate;
 #  - "AuthorizedKeysFile" contain encoded either public key or X.509
-#   certificate or certificate DN.
+#   certificate or certificate Distinguished Name.
 #
 
 
 # ===
 #args:
 #  $1 - request to fail flag for encoded identity
-#  $2 - request to fail flag for DN
+#  $2 - request to fail flag for distinguished name
 test_self() {
 
   case $1 in
@@ -40,9 +40,9 @@ test_self() {
   esac
   case $2 in
     Y|y|Yes|yes|YES|1)
-      dn_msg="${warn}DN${norm}";;
+      dn_msg="${warn}Distinguished Name${norm}";;
     *)
-      dn_msg="${extd}DN${norm}";;
+      dn_msg="${extd}Distinguished Name${norm}";;
   esac
 
   for keytype in rsa dsa; do
@@ -99,7 +99,7 @@ test_self() {
 
 test_store () {
   retval=0
-  echo "  - ${attn}with${norm} self-signed trusted by ${extd}x509store${norm}:"
+  echo "  - ${attn}with${norm} self-issued trusted by ${extd}x509store${norm}:"
   printSeparator
 
   cat selfid_*.crt > $CWD/selfid-bundle
@@ -127,7 +127,7 @@ EOF
 
 test_pkey_no () {
   retval=0
-  echo "  - ${attn}without${norm} self-signed allowed by encoded ${extd}public identity${norm}:"
+  echo "  - ${attn}without${norm} allowed self-issued trusted by ${extd}public identity${norm}:"
   printSeparator
 
   creTestSSHDcfgFile
@@ -152,10 +152,10 @@ EOF
 
 test_pkey_yes () {
   retval=0
-  echo "  - ${attn}with${norm} self-signed allowed by encoded ${extd}public identity${norm}:"
+  echo "  - ${attn}with${norm} allowed self-issued trusted by ${extd}public identity${norm}:"
   printSeparator
 
-  # check if exist X.509 verification bug
+  echo "${extd}check if exist X.509 verification bug${norm} ..."
   # (see mail thread "1.0.2beta2 and X.509 certificate verification")
   # expected if only
   # 'error 18 at 0 depth lookup:self signed certificate'
@@ -166,6 +166,9 @@ test_pkey_yes () {
     echo "(see email thread ${attn}1.0.2beta2 and X.509 certificate verification${norm})" >&2
     return 0
   fi
+  echo "... ${extd}none found!${norm}"
+
+  printSeparator
 
   creTestSSHDcfgFile
   cat >> "$SSHD_CFG" <<EOF
