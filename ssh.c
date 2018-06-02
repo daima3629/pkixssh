@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh.c,v 1.477 2018/04/14 21:50:41 djm Exp $ */
+/* $OpenBSD: ssh.c,v 1.478 2018/06/01 03:11:49 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -588,7 +588,7 @@ main(int ac, char **av)
 	struct ssh *ssh = NULL;
 	int i, r, opt, exit_status, use_syslog, direct, timeout_ms;
 	int was_addr, config_test = 0, opt_terminated = 0;
-	char *p, *cp, *line, buf[PATH_MAX], *logfile;
+	char *p, *cp, *line, *argv0, buf[PATH_MAX], *logfile;
 	char cname[NI_MAXHOST];
 	struct stat st;
 	struct passwd *pw;
@@ -603,7 +603,8 @@ main(int ac, char **av)
 	/* Ensure that fds 0, 1 and 2 are open or directed to /dev/null */
 	sanitise_stdfd();
 
-	__progname = ssh_get_progname(av[0]);
+	argv0 = av[0];
+	__progname = ssh_get_progname(argv0);
 	ssh_OpenSSL_startup();
 #ifdef OPENSSL_FIPS
 	if (FIPS_mode()) {
@@ -1259,6 +1260,14 @@ main(int ac, char **av)
 	 */
 	if (options.jump_host != NULL) {
 		char port_s[8];
+		const char *sshbin = argv0;
+
+		/*
+		 * Try to use SSH executable indicated by argv[0], but fall
+		 * back to "ssh" if it is not executable.
+		 */
+		if (strchr(sshbin, '/') != NULL && access(sshbin, X_OK) != 0)
+			sshbin = "ssh";
 
 		/* Consistency check */
 		if (options.proxy_command != NULL)
@@ -1267,7 +1276,8 @@ main(int ac, char **av)
 		options.proxy_use_fdpass = 0;
 		snprintf(port_s, sizeof(port_s), "%d", options.jump_port);
 		xasprintf(&options.proxy_command,
-		    "ssh%s%s%s%s%s%s%s%s%s%.*s -W '[%%h]:%%p' %s",
+		    "%s%s%s%s%s%s%s%s%s%s%.*s -W '[%%h]:%%p' %s",
+		    sshbin,
 		    /* Optional "-l user" argument if jump_user set */
 		    options.jump_user == NULL ? "" : " -l ",
 		    options.jump_user == NULL ? "" : options.jump_user,
