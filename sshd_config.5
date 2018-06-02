@@ -73,7 +73,9 @@ keywords are case-insensitive and arguments are case-sensitive):
 Specifies the publickey algorithms as a comma-separated pattern
 list that will be announced to client if client supports extension
 negotiation mechanism.
-See PATTERNS in
+See
+.Em PATTERNS
+in
 .Xr ssh_config 5
 for more information on patterns.
 The default
@@ -155,7 +157,9 @@ The allow/deny directives are processed in the following order:
 and finally
 .Cm AllowGroups .
 .Pp
-See PATTERNS in
+See
+.Em PATTERNS
+in
 .Xr ssh_config 5
 for more information on patterns.
 .It Cm AllowStreamLocalForwarding
@@ -215,7 +219,9 @@ The allow/deny directives are processed in the following order:
 and finally
 .Cm AllowGroups .
 .Pp
-See PATTERNS in
+See
+.Em PATTERNS
+in
 .Xr ssh_config 5
 for more information on patterns.
 .It Cm AuthenticationMethods
@@ -286,7 +292,7 @@ If no arguments are specified then the username of the target user is used.
 .Pp
 The program should produce on standard output zero or
 more lines of authorized_keys output (see
-.Sx AUTHORIZED_KEYS
+.Em AUTHORIZED_KEYS
 in
 .Xr sshd 8 ) .
 If a key supplied by
@@ -314,7 +320,7 @@ will refuse to start.
 .It Cm AuthorizedKeysFile
 Specifies the file that contains the public keys used for user authentication.
 The format is described in the
-.Sx AUTHORIZED_KEYS FILE FORMAT
+.Em AUTHORIZED_KEYS FILE FORMAT
 section of
 .Xr sshd 8 .
 Arguments to
@@ -379,7 +385,7 @@ When using certificates signed by a key listed in
 this file lists names, one of which must appear in the certificate for it
 to be accepted for authentication.
 Names are listed one per line preceded by key options (as described in
-.Sx AUTHORIZED_KEYS FILE FORMAT
+.Em AUTHORIZED_KEYS FILE FORMAT
 in
 .Xr sshd 8 ) .
 Empty lines and comments starting with
@@ -636,7 +642,9 @@ The allow/deny directives are processed in the following order:
 and finally
 .Cm AllowGroups .
 .Pp
-See PATTERNS in
+See
+.Em PATTERNS
+in
 .Xr ssh_config 5
 for more information on patterns.
 .It Cm DenyUsers
@@ -657,7 +665,9 @@ The allow/deny directives are processed in the following order:
 and finally
 .Cm AllowGroups .
 .Pp
-See PATTERNS in
+See
+.Em PATTERNS
+in
 .Xr ssh_config 5
 for more information on patterns.
 .It Cm DisableForwarding
@@ -754,7 +764,9 @@ Option compatibility. See
 Specifies the publickey algorithms that will be accepted in
 .Dq hostbased
 authentication as a comma-separated pattern list.
-See PATTERNS in
+See
+.Em PATTERNS
+in
 .Xr ssh_config 5
 for more information on patterns.
 The default
@@ -1192,7 +1204,7 @@ on which the connection was received.)
 .Pp
 The match patterns may consist of single entries or comma-separated
 lists and may use the wildcard and negation operators described in the
-.Sx PATTERNS
+.Em PATTERNS
 section of
 .Xr ssh_config 5 .
 .Pp
@@ -1458,7 +1470,9 @@ Option compatibility. See
 Specifies the publickey algorithms that will be accepted for
 .Dq publickey
 authentication as a comma-separated pattern list.
-See PATTERNS in
+See
+.Em PATTERNS
+in
 .Xr ssh_config 5
 for more information on patterns.
 The default
