@@ -16,6 +16,7 @@ survey.sh
 *.a
 *.0
 *.out
+*.exe
 /scp
 /sftp
 /sftp-server
