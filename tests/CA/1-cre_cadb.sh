@@ -105,7 +105,7 @@ EOF
   port=`expr $SSH_VA_BASEPORT - 1`
   for DIGEST in $RSA_DIGEST_LIST ; do
     port=`expr $port + 1`
-    if test port -eq $SSH_VA_BASEPORT ; then
+    if test $port -eq $SSH_VA_BASEPORT ; then
       printf "OCSP;URI:http://$SSHD_LISTENADDRESS:$port"
     else
       printf ",OCSP;URI:http://$SSHD_LISTENADDRESS:$port"
@@ -116,11 +116,11 @@ EOF
     printf ",OCSP;URI:http://$SSHD_LISTENADDRESS:$port"
   fi
   if expr "$SSH_CAKEY_TYPES" : .*ed25519 > /dev/null ; then
-    port=`expr ${port} + 1`
+    port=`expr $port + 1`
     printf ",OCSP;URI:http://$SSHD_LISTENADDRESS:$port"
   fi
   if expr "$SSH_CAKEY_TYPES" : .*ed448 > /dev/null ; then
-    port=`expr ${port} + 1`
+    port=`expr $port + 1`
     printf ",OCSP;URI:http://$SSHD_LISTENADDRESS:$port"
   fi
 )
