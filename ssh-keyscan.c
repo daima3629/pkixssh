@@ -7,7 +7,7 @@
  * OpenBSD project by leaving this copyright notice intact.
  *
  * X.509 certificates support,
- * Copyright (c) 2002-2017 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2018 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -57,9 +57,8 @@
 #include "xmalloc.h"
 #include "ssh.h"
 #include "sshbuf.h"
-#include "sshkey.h"
 #include "ssh-x509.h"
-#include "ssh-xkalg.h"
+#include "match.h"
 #include "version.h"
 #include "cipher.h"
 #include "kex.h"
@@ -81,7 +80,7 @@ int IPv4or6 = AF_UNSPEC;
 
 int ssh_port = SSH_DEFAULT_PORT;
 
-char* get_keynames = NULL;
+char *keynames_filter = NULL;
 
 int hash_hosts = 0;		/* Hash hostname on output */
 
@@ -355,11 +354,6 @@ conalloc(char *iname, char *oname, const char *keyname)
 {
 	char *namebase, *name, *namelist;
 	int s;
-	int k_type;
-
-	k_type = sshkey_type_from_name((char*)keyname);
-	if (k_type == KEY_UNSPEC)
-		return (-1);
 
 	namebase = namelist = xstrdup(iname);
 
@@ -386,13 +380,7 @@ conalloc(char *iname, char *oname, const char *keyname)
 	fdcon[s].c_data = (char *) &fdcon[s].c_plen;
 	fdcon[s].c_len = 4;
 	fdcon[s].c_off = 0;
-{
-	struct sshkey *k = sshkey_new(k_type);
-	if (sshkey_type_plain(k->type) == KEY_ECDSA)
-		k->ecdsa_nid = sshkey_ecdsa_nid_from_name((char*)keyname);
 	fdcon[s].c_keyname = keyname;
-	sshkey_free(k);
-}
 	monotime_tv(&fdcon[s].c_tv);
 	fdcon[s].c_tv.tv_sec += timeout;
 	TAILQ_INSERT_TAIL(&tq, &fdcon[s], c_link);
@@ -611,16 +599,30 @@ do_host(char *host)
 {
 	char *name = strnnsep(&host, " \t\n");
 	const char *keyname;
+	const char *filter = keynames_filter != NULL ? keynames_filter : "*";
+	char *alglist;
 
 	if (name == NULL)
 		return;
+
+	/* Do not free as some list element are used later on connection as keyname!
+	 * NOTE: sshkey_alg_list() initialize internally list with default X.509
+	 * algorithms, i.e call fill_default_xkalg().
+	 */
+	alglist = sshkey_alg_list(0, 1, 1, ',');
+
 	for (
-	    keyname = strtok(get_keynames, ",");
+	    keyname = strtok(alglist, ",");
 	    keyname != NULL;
 	    keyname = strtok(NULL, ",")
 	) {
 		while (ncon >= MAXCON)
 			conloop();
+		if (match_pattern_list(keyname, filter, 0) != 1 ) {
+			debug("%s: %s host key not permitted by filter",
+			    __func__, keyname);
+			continue;
+		}
 		conalloc(name, *host ? host : name, keyname);
 	}
 }
@@ -651,7 +653,7 @@ main(int argc, char **argv)
 {
 	int debug_flag = 0, log_level = SYSLOG_LEVEL_INFO;
 	int opt, fopt_count = 0, j;
-	char *tname, *cp, line[NI_MAXHOST];
+	char *cp, line[NI_MAXHOST];
 	FILE *fp;
 	u_long linenum;
 
@@ -669,23 +671,6 @@ main(int argc, char **argv)
 	if (argc <= 1)
 		usage();
 
-	fill_default_xkalg();
-	get_keynames = xstrdup(
-		 /* list all protocol v2 keys by default */
-		"x509v3-ecdsa-sha2-nistp256," /*RFC6187 ecdsa*/
-		"x509v3-ecdsa-sha2-nistp384," /*RFC6187 ecdsa*/
-		"x509v3-ecdsa-sha2-nistp521," /*RFC6187 ecdsa*/
-		"x509v3-ssh-rsa," /*RFC6187 rsa*/
-		"x509v3-ssh-dss," /*RFC6187 dsa*/
-		"x509v3-sign-rsa,"
-		"x509v3-sign-dss,"
-		"ecdsa-sha2-nistp256,"
-		"ecdsa-sha2-nistp384,"
-		"ecdsa-sha2-nistp521,"
-		"ssh-ed25519,"
-		"ssh-rsa,"
-		"ssh-dss"
-	);
 	while ((opt = getopt(argc, argv, "DHv46p:T:t:f:")) != -1) {
 		switch (opt) {
 		case 'H':
@@ -724,13 +709,10 @@ main(int argc, char **argv)
 			argv[fopt_count++] = optarg;
 			break;
 		case 't':
-			get_keynames = xstrdup(optarg);
-			tname = strtok(optarg, ",");
-			while (tname) {
-				int type = sshkey_type_from_name(tname);
-				if (type == KEY_UNSPEC)
-					fatal("unknown key type %s", tname);
-				tname = strtok(NULL, ",");
+			keynames_filter = xstrdup(optarg);
+			if (!sshkey_names_valid2(keynames_filter, 1)) {
+				fatal("Bad hostkey key algorithms '%s'",
+					keynames_filter);
 			}
 			break;
 		case '4':
