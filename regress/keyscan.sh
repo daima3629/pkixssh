@@ -8,7 +8,7 @@ rm -f ${OBJ}/host.dsa
 
 start_sshd
 
-KEYTYPES=`${SSH} -Q key-plain`
+KEYTYPES=`${SSH} -Q key-plain | grep -v "^x509v3-"`
 for t in $KEYTYPES; do
 	trace "keyscan type $t"
 	${SSHKEYSCAN} -t $t -p $PORT 127.0.0.1 127.0.0.1 127.0.0.1 \
