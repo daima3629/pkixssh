@@ -2326,6 +2326,12 @@ fill_default_options(Options * options)
 	CLEAR_ON_NONE(options->proxy_command);
 	CLEAR_ON_NONE(options->control_path);
 	CLEAR_ON_NONE(options->revoked_host_keys);
+	if (options->jump_host != NULL &&
+	    strcmp(options->jump_host, "none") == 0 &&
+	    options->jump_port == 0 && options->jump_user == NULL) {
+		free(options->jump_host);
+		options->jump_host = NULL;
+	}
 	/* options->identity_agent distinguishes NULL from 'none' */
 	/* options->user will be set in the main program if appropriate */
 	/* options->hostname will be set in the main program if appropriate */
@@ -2645,6 +2651,14 @@ parse_jump(const char *s, Options *o, int active)
 	int ret = -1, port = -1, first;
 
 	active &= o->proxy_command == NULL && o->jump_host == NULL;
+
+	if (strcasecmp(s, "none") == 0) {
+		if (active) {
+			o->jump_host = xstrdup("none");
+			o->jump_port = 0;
+		}
+		return 0;
+	}
 
 	orig = sdup = xstrdup(s);
 	first = active;
