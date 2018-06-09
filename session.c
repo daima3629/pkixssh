@@ -975,12 +975,6 @@ copy_environment_blacklist(char **source, char ***env, u_int *envsize,
 	}
 }
 
-void
-copy_environment(char **source, char ***env, u_int *envsize)
-{
-	copy_environment_blacklist(source, env, envsize, NULL);
-}
-
 static char **
 do_setup_env(struct ssh *ssh, Session *s, const char *shell)
 {
@@ -1007,7 +1001,7 @@ do_setup_env(struct ssh *ssh, Session *s, const char *shell)
 		char **p;
 
 		p = fetch_windows_environment();
-		copy_environment(p, &env, &envsize);
+		copy_environment_blacklist(p, &env, &envsize, NULL);
 		free_windows_environment(p);
 	}
 #endif
@@ -1062,76 +1056,6 @@ do_setup_env(struct ssh *ssh, Session *s, const char *shell)
 	if (getenv("TZ"))
 		child_set_env(&env, &envsize, "TZ", getenv("TZ"));
 
-#ifdef __ANDROID__
-{
-#define COPY_ANDROID_ENV(name)	{			\
-	char *s = getenv(name);				\
-	if (s)	child_set_env(&env, &envsize, name, s); }
-
-	/* from /init.rc */
-	COPY_ANDROID_ENV("ANDROID_BOOTLOGO");
-	COPY_ANDROID_ENV("ANDROID_ROOT");
-	COPY_ANDROID_ENV("ANDROID_ASSETS");
-	COPY_ANDROID_ENV("ANDROID_DATA");
-	COPY_ANDROID_ENV("ASEC_MOUNTPOINT");
-	COPY_ANDROID_ENV("LOOP_MOUNTPOINT");
-	COPY_ANDROID_ENV("BOOTCLASSPATH");
-
-	/* FIXME: keep android property workspace open
-	 * (see openbsd-compat/bsd-closefrom.c)
-	 */
-	COPY_ANDROID_ENV("ANDROID_PROPERTY_WORKSPACE");
-
-	COPY_ANDROID_ENV("EXTERNAL_STORAGE");		/* ??? */
-	COPY_ANDROID_ENV("SECONDARY_STORAGE");		/* ??? */
-	COPY_ANDROID_ENV("SD_EXT_DIRECTORY");		/* ??? */
-
-	/* may contain path to custom libraries */
-	COPY_ANDROID_ENV("LD_LIBRARY_PATH");
-#undef COPY_ANDROID_ENV
-}
-#endif
-
-	/* Set custom environment options from pubkey authentication. */
-	if (options.permit_user_env) {
-		for (n = 0 ; n < auth_opts->nenv; n++) {
-			ocp = xstrdup(auth_opts->env[n]);
-			cp = strchr(ocp, '=');
-			if (*cp == '=') {
-				*cp = '\0';
-				child_set_env(&env, &envsize, ocp, cp + 1);
-			}
-			free(ocp);
-		}
-	}
-
-	/* SSH_CLIENT deprecated */
-	snprintf(buf, sizeof buf, "%.50s %d %d",
-	    ssh_remote_ipaddr(ssh), ssh_remote_port(ssh),
-	    ssh_local_port(ssh));
-	child_set_env(&env, &envsize, "SSH_CLIENT", buf);
-
-	laddr = get_local_ipaddr(packet_get_connection_in());
-	snprintf(buf, sizeof buf, "%.50s %d %.50s %d",
-	    ssh_remote_ipaddr(ssh), ssh_remote_port(ssh),
-	    laddr, ssh_local_port(ssh));
-	free(laddr);
-	child_set_env(&env, &envsize, "SSH_CONNECTION", buf);
-
-	if (tun_fwd_ifnames != NULL)
-		child_set_env(&env, &envsize, "SSH_TUNNEL", tun_fwd_ifnames);
-	if (auth_info_file != NULL)
-		child_set_env(&env, &envsize, "SSH_USER_AUTH", auth_info_file);
-	if (s->ttyfd != -1)
-		child_set_env(&env, &envsize, "SSH_TTY", s->tty);
-	if (s->term)
-		child_set_env(&env, &envsize, "TERM", s->term);
-	if (s->display)
-		child_set_env(&env, &envsize, "DISPLAY", s->display);
-	if (original_command)
-		child_set_env(&env, &envsize, "SSH_ORIGINAL_COMMAND",
-		    original_command);
-
 	/*
 	 * Since we clear KRB5CCNAME at startup, if it's set now then it
 	 * must have been set by a native authentication method (eg AIX or
@@ -1176,16 +1100,86 @@ do_setup_env(struct ssh *ssh, Session *s, const char *shell)
 	}
 #endif /* USE_PAM */
 
-	if (auth_sock_name != NULL)
-		child_set_env(&env, &envsize, SSH_AUTHSOCKET_ENV_NAME,
-		    auth_sock_name);
-
+	/* Set custom environment options from pubkey authentication. */
+	if (options.permit_user_env) {
+		for (n = 0 ; n < auth_opts->nenv; n++) {
+			ocp = xstrdup(auth_opts->env[n]);
+			cp = strchr(ocp, '=');
+			if (*cp == '=') {
+				*cp = '\0';
+				child_set_env(&env, &envsize, ocp, cp + 1);
+			}
+			free(ocp);
+		}
+	}
 	/* read $HOME/.ssh/environment. */
 	if (options.permit_user_env) {
 		snprintf(buf, sizeof buf, "%.200s/.ssh/environment",
 		    strcmp(pw->pw_dir, "/") ? pw->pw_dir : "");
 		read_environment_file(&env, &envsize, buf);
 	}
+
+	/* SSH_CLIENT deprecated */
+	snprintf(buf, sizeof buf, "%.50s %d %d",
+	    ssh_remote_ipaddr(ssh), ssh_remote_port(ssh),
+	    ssh_local_port(ssh));
+	child_set_env(&env, &envsize, "SSH_CLIENT", buf);
+
+	laddr = get_local_ipaddr(packet_get_connection_in());
+	snprintf(buf, sizeof buf, "%.50s %d %.50s %d",
+	    ssh_remote_ipaddr(ssh), ssh_remote_port(ssh),
+	    laddr, ssh_local_port(ssh));
+	free(laddr);
+	child_set_env(&env, &envsize, "SSH_CONNECTION", buf);
+
+	if (tun_fwd_ifnames != NULL)
+		child_set_env(&env, &envsize, "SSH_TUNNEL", tun_fwd_ifnames);
+	if (auth_info_file != NULL)
+		child_set_env(&env, &envsize, "SSH_USER_AUTH", auth_info_file);
+	if (s->ttyfd != -1)
+		child_set_env(&env, &envsize, "SSH_TTY", s->tty);
+	if (s->term)
+		child_set_env(&env, &envsize, "TERM", s->term);
+	if (s->display)
+		child_set_env(&env, &envsize, "DISPLAY", s->display);
+	if (original_command)
+		child_set_env(&env, &envsize, "SSH_ORIGINAL_COMMAND",
+		    original_command);
+
+	if (auth_sock_name != NULL)
+		child_set_env(&env, &envsize, SSH_AUTHSOCKET_ENV_NAME,
+		    auth_sock_name);
+
+#ifdef __ANDROID__
+{
+#define COPY_ANDROID_ENV(name) { \
+	if ((cp = getenv(name)) != NULL) \
+		child_set_env(&env, &envsize, name, s); }
+
+	/* from /init.rc */
+	COPY_ANDROID_ENV("ANDROID_BOOTLOGO");
+	COPY_ANDROID_ENV("ANDROID_ROOT");
+	COPY_ANDROID_ENV("ANDROID_ASSETS");
+	COPY_ANDROID_ENV("ANDROID_DATA");
+	COPY_ANDROID_ENV("ASEC_MOUNTPOINT");
+	COPY_ANDROID_ENV("LOOP_MOUNTPOINT");
+	COPY_ANDROID_ENV("BOOTCLASSPATH");
+
+	/* FIXME: keep android property workspace open
+	 * (see openbsd-compat/bsd-closefrom.c)
+	 */
+	COPY_ANDROID_ENV("ANDROID_PROPERTY_WORKSPACE");
+
+	COPY_ANDROID_ENV("EXTERNAL_STORAGE");		/* ??? */
+	COPY_ANDROID_ENV("SECONDARY_STORAGE");		/* ??? */
+	COPY_ANDROID_ENV("SD_EXT_DIRECTORY");		/* ??? */
+
+	/* may contain path to custom libraries */
+	COPY_ANDROID_ENV("LD_LIBRARY_PATH");
+#undef COPY_ANDROID_ENV
+}
+#endif
+
 	if (debug_flag) {
 		/* dump the environment */
 		fprintf(stderr, "Environment:\n");
