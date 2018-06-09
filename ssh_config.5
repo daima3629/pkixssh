@@ -34,7 +34,7 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: ssh_config.5,v 1.273 2018/04/10 00:10:49 djm Exp $
+.\" $OpenBSD: ssh_config.5,v 1.276 2018/06/09 03:01:12 djm Exp $
 .\" Implement .Dd with the Mdocdate RCS keyword
 .rn Dd xD
 .de Dd
@@ -43,7 +43,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: April 15 2018 $
+.Dd $Mdocdate: June 9 2018 $
 .Dt SSH_CONFIG 5
 .Os
 .Sh NAME
@@ -1515,6 +1515,12 @@ The default is not to send any environment variables.
 See
 .Sx PATTERNS
 for more information on patterns.
+.It Cm SetEnv
+Directly specify one or more environment variables and their contents to
+be sent to the server.
+Similarly to
+.Cm SendEnv ,
+the server must be prepared to accept the environment variable.
 .It Cm ServerAliveCountMax
 Sets the number of server alive messages (see below) which may be
 sent without

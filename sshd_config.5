@@ -42,8 +42,8 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: sshd_config.5,v 1.266 2018/05/15 05:40:11 jmc Exp $
-.Dd $Mdocdate: May 15 2018 $
+.\" $OpenBSD: sshd_config.5,v 1.273 2018/06/09 03:01:12 djm Exp $
+.Dd $Mdocdate: June 9 2018 $
 .Dt SSHD_CONFIG 5
 .Os
 .Sh NAME
@@ -91,6 +91,8 @@ the session's
 .Xr environ 7 .
 See
 .Cm SendEnv
+and
+.Cm SetEnv
 in
 .Xr ssh_config 5
 for how to configure the client.
