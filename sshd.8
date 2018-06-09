@@ -608,10 +608,10 @@ Disables execution of
 Forbids X11 forwarding when this key is used for authentication.
 Any X11 forward requests by the client will return an error.
 .It Cm permitopen="host:port"
-Limit local port forwarding with
+Limit local port forwarding requested with the
 .Xr ssh 1
 .Fl L
-such that it may only connect to the specified host and port.
+option such that it may only connect to the specified host and port.
 IPv6 addresses can be specified by enclosing the address in square brackets.
 Multiple
 .Cm permitopen
