@@ -1,4 +1,4 @@
-/* $OpenBSD: session.c,v 1.294 2018/03/03 03:15:51 djm Exp $ */
+/* $OpenBSD: session.c,v 1.300 2018/06/09 03:03:10 djm Exp $ */
 /*
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
@@ -1117,6 +1117,19 @@ do_setup_env(struct ssh *ssh, Session *s, const char *shell)
 		snprintf(buf, sizeof buf, "%.200s/.ssh/environment",
 		    strcmp(pw->pw_dir, "/") ? pw->pw_dir : "");
 		read_environment_file(&env, &envsize, buf);
+	}
+
+	/* Environment specified by admin */
+	for (i = 0; i < options.num_setenv; i++) {
+		ocp = xstrdup(options.setenv[i]);
+		cp = strchr(ocp, '=');
+		if (cp == NULL) {
+			/* shouldn't happen; vars are checked in servconf.c */
+			fatal("Invalid config SetEnv: %s", options.setenv[i]);
+		}
+		*cp = '\0';
+		child_set_env(&env, &envsize, ocp, cp + 1);
+		free(ocp);
 	}
 
 	/* SSH_CLIENT deprecated */

@@ -1,5 +1,5 @@
 
-/* $OpenBSD: servconf.c,v 1.328 2018/04/10 00:10:49 djm Exp $ */
+/* $OpenBSD: servconf.c,v 1.332 2018/06/09 03:03:10 djm Exp $ */
 /*
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
@@ -197,6 +197,7 @@ initialize_server_options(ServerOptions *options)
 	options->client_alive_count_max = -1;
 	options->num_authkeys_files = 0;
 	options->num_accept_env = 0;
+	options->num_setenv = 0;
 	options->permit_tun = -1;
 	options->permitted_opens = NULL;
 	options->adm_forced_command = NULL;
@@ -557,7 +558,7 @@ typedef enum {
 	sHostKeyAlgorithms,
 	sClientAliveInterval, sClientAliveCountMax, sAuthorizedKeysFile,
 	sGssAuthentication, sGssCleanupCreds, sGssStrictAcceptor,
-	sAcceptEnv, sPermitTunnel,
+	sAcceptEnv, sSetEnv, sPermitTunnel,
 	sMatch, sPermitOpen, sForceCommand, sChrootDirectory,
 	sUsePrivilegeSeparation, sAllowAgentForwarding,
 	sHostCertificate,
@@ -706,6 +707,7 @@ static struct {
 	{ "authorizedkeysfile2", sDeprecated, SSHCFG_ALL },
 	{ "useprivilegeseparation", sUsePrivilegeSeparation, SSHCFG_GLOBAL},
 	{ "acceptenv", sAcceptEnv, SSHCFG_ALL },
+	{ "setenv", sSetEnv, SSHCFG_ALL },
 	{ "permittunnel", sPermitTunnel, SSHCFG_ALL },
 	{ "permittty", sPermitTTY, SSHCFG_ALL },
 	{ "permituserrc", sPermitUserRC, SSHCFG_ALL },
@@ -2043,6 +2045,19 @@ parse_string:
 		}
 		break;
 
+	case sSetEnv:
+		uvalue = options->num_setenv;
+		while ((arg = strdelimw(&cp)) && *arg != '\0') {
+			if (strchr(arg, '=') == NULL)
+				fatal("%s line %d: Invalid environment.",
+				    filename, linenum);
+			if (!*activep || uvalue != 0)
+				continue;
+			array_append(filename, linenum, "SetEnv",
+			    &options->setenv, &options->num_setenv, arg);
+		}
+		break;
+
 	case sPermitTunnel:
 		intptr = &options->permit_tun;
 		arg = strdelim(&cp);
@@ -2851,6 +2866,7 @@ dump_config(ServerOptions *o)
 	dump_cfg_strarray(sAllowGroups, o->num_allow_groups, o->allow_groups);
 	dump_cfg_strarray(sDenyGroups, o->num_deny_groups, o->deny_groups);
 	dump_cfg_strarray(sAcceptEnv, o->num_accept_env, o->accept_env);
+	dump_cfg_strarray(sSetEnv, o->num_setenv, o->setenv);
 	dump_cfg_strarray_oneline(sAuthenticationMethods,
 	    o->num_auth_methods, o->auth_methods);
 

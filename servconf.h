@@ -1,4 +1,4 @@
-/* $OpenBSD: servconf.h,v 1.131 2018/04/13 03:57:26 dtucker Exp $ */
+/* $OpenBSD: servconf.h,v 1.134 2018/06/09 03:03:10 djm Exp $ */
 
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
@@ -185,6 +185,8 @@ typedef struct {
 
 	u_int num_accept_env;
 	char   **accept_env;
+	u_int num_setenv;
+	char   **setenv;
 
 	int	max_startups_begin;
 	int	max_startups_rate;
@@ -289,6 +291,7 @@ struct connection_info {
 		M_CP_STRARRAYOPT(allow_groups, num_allow_groups); \
 		M_CP_STRARRAYOPT(deny_groups, num_deny_groups); \
 		M_CP_STRARRAYOPT(accept_env, num_accept_env); \
+		M_CP_STRARRAYOPT(setenv, num_setenv); \
 		M_CP_STRARRAYOPT(auth_methods, num_auth_methods); \
 		M_CP_STRARRAYOPT(permitted_opens, num_permitted_opens); \
 	} while (0)
