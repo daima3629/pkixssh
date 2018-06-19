@@ -1272,7 +1272,7 @@ process_server_config_line(ServerOptions *options, char *line,
 	SyslogFacility *log_facility_ptr;
 	LogLevel *log_level_ptr;
 	ServerOpCodes opcode;
-	u_int i, flags = 0;
+	u_int i, uvalue, flags = 0;
 	size_t len;
 	long long val64;
 	const struct multistate *multistate_ptr;
