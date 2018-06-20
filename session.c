@@ -292,26 +292,43 @@ prepare_auth_info_file(struct passwd *pw, struct sshbuf *info)
 }
 
 static void
-set_permitopen_from_authopts(struct ssh *ssh, const struct sshauthopt *opts)
+set_fwdpermit_from_authopts(struct ssh *ssh, const struct sshauthopt *opts)
 {
 	char *tmp, *cp, *host;
 	int port;
 	size_t i;
 
-	if ((options.allow_tcp_forwarding & FORWARD_LOCAL) == 0)
-		return;
-	channel_clear_permitted_opens(ssh);
-	for (i = 0; i < auth_opts->npermitopen; i++) {
-		tmp = cp = xstrdup(auth_opts->permitopen[i]);
-		/* This shouldn't fail as it has already been checked */
-		if ((host = hpdelim(&cp)) == NULL)
-			fatal("%s: internal error: hpdelim", __func__);
-		host = cleanhostname(host);
-		if (cp == NULL || (port = permitopen_port(cp)) < 0)
-			fatal("%s: internal error: permitopen port",
-			    __func__);
-		channel_add_permitted_opens(ssh, host, port);
-		free(tmp);
+	if ((options.allow_tcp_forwarding & FORWARD_LOCAL) != 0) {
+		channel_clear_permission(ssh, FORWARD_USER, FORWARD_LOCAL);
+		for (i = 0; i < auth_opts->npermitopen; i++) {
+			tmp = cp = xstrdup(auth_opts->permitopen[i]);
+			/* This shouldn't fail as it has already been checked */
+			if ((host = hpdelim(&cp)) == NULL)
+				fatal("%s: internal error: hpdelim", __func__);
+			host = cleanhostname(host);
+			if (cp == NULL || (port = permitopen_port(cp)) < 0)
+				fatal("%s: internal error: permitopen port",
+				    __func__);
+			channel_add_permission(ssh,
+			    FORWARD_USER, FORWARD_LOCAL, host, port);
+			free(tmp);
+		}
+	}
+	if ((options.allow_tcp_forwarding & FORWARD_REMOTE) != 0) {
+		channel_clear_permission(ssh, FORWARD_USER, FORWARD_REMOTE);
+		for (i = 0; i < auth_opts->npermitlisten; i++) {
+			tmp = cp = xstrdup(auth_opts->permitlisten[i]);
+			/* This shouldn't fail as it has already been checked */
+			if ((host = hpdelim(&cp)) == NULL)
+				fatal("%s: internal error: hpdelim", __func__);
+			host = cleanhostname(host);
+			if (cp == NULL || (port = permitopen_port(cp)) < 0)
+				fatal("%s: internal error: permitlisten port",
+				    __func__);
+			channel_add_permission(ssh,
+			    FORWARD_USER, FORWARD_REMOTE, host, port);
+			free(tmp);
+		}
 	}
 }
 
@@ -324,14 +341,22 @@ do_authenticated(struct ssh *ssh, Authctxt *authctxt)
 
 	/* setup the channel layer */
 	/* XXX - streamlocal? */
-	set_permitopen_from_authopts(ssh, auth_opts);
-	if (!auth_opts->permit_port_forwarding_flag ||
-	    options.disable_forwarding ||
-	    (options.allow_tcp_forwarding & FORWARD_LOCAL) == 0)
-		channel_disable_adm_local_opens(ssh);
-	else
-		channel_permit_all_opens(ssh);
+	set_fwdpermit_from_authopts(ssh, auth_opts);
 
+	if (!auth_opts->permit_port_forwarding_flag ||
+	    options.disable_forwarding) {
+		channel_disable_admin(ssh, FORWARD_LOCAL);
+		channel_disable_admin(ssh, FORWARD_REMOTE);
+	} else {
+		if ((options.allow_tcp_forwarding & FORWARD_LOCAL) == 0)
+			channel_disable_admin(ssh, FORWARD_LOCAL);
+		else
+			channel_permit_all(ssh, FORWARD_LOCAL);
+		if ((options.allow_tcp_forwarding & FORWARD_REMOTE) == 0)
+			channel_disable_admin(ssh, FORWARD_REMOTE);
+		else
+			channel_permit_all(ssh, FORWARD_REMOTE);
+	}
 	auth_debug_send();
 
 	prepare_auth_info_file(authctxt->pw, authctxt->session_info);

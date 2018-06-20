@@ -42,8 +42,8 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: sshd.8,v 1.299 2018/03/14 06:56:20 jmc Exp $
-.Dd $Mdocdate: March 14 2018 $
+.\" $OpenBSD: sshd.8,v 1.302 2018/06/19 02:59:41 djm Exp $
+.Dd $Mdocdate: June 19 2018 $
 .Dt SSHD 8
 .Os
 .Sh NAME
@@ -607,6 +607,32 @@ Disables execution of
 .It Cm no-X11-forwarding
 Forbids X11 forwarding when this key is used for authentication.
 Any X11 forward requests by the client will return an error.
+.It Cm permitlisten="[host:]port"
+Limit remote port forwarding requested with the
+.Xr ssh 1
+.Fl R
+option such that it may only listen on the specified host (optional) and port.
+IPv6 addresses can be specified by enclosing the address in square brackets.
+Multiple
+.Cm permitlisten
+options may be applied separated by commas.
+Hostnames may include wildcards as described in the PATTERNS section in
+.Xr ssh_config 5 .
+A port specification of
+.Cm *
+matches any port.
+Note that the setting of
+.Cm GatewayPorts
+may further restrict listen addresses.
+Note that
+.Xr ssh 1
+will send a hostname of
+.Dq localhost
+if a listen host was not specified when the forwarding was requested, and
+that his name is treated differently to the explicit localhost addresses
+.Dq 127.0.0.1
+and
+.Dq ::1 .
 .It Cm permitopen="host:port"
 Limit local port forwarding requested with the
 .Xr ssh 1
@@ -674,6 +700,8 @@ AAAAB2...19Q== john@example.net
 command="dump /home",no-pty,no-port-forwarding ssh-dss
 AAAAC3...51R== example.net
 permitopen="192.0.2.1:80",permitopen="192.0.2.2:25" ssh-dss
+AAAAB5...21S==
+permitlisten="localhost:8080",permitopen="localhost:22000" ssh-dss
 AAAAB5...21S==
 x509v3-sign-dss subject=/C=XX/ST=World/O=SecSH Test Team...
 tunnel="0",command="sh /etc/netstart tun0" ssh-rsa AAAA...==

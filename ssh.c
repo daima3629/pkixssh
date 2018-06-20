@@ -1741,10 +1741,10 @@ ssh_confirm_remote_forward(struct ssh *ssh, int type, u_int32_t seq, void *ctxt)
 			logit("Allocated port %u for remote forward to %s:%d",
 			    rfwd->allocated_port,
 			    rfwd->connect_host, rfwd->connect_port);
-			channel_update_permitted_opens(ssh,
+			channel_update_permission(ssh,
 			    rfwd->handle, rfwd->allocated_port);
 		} else {
-			channel_update_permitted_opens(ssh, rfwd->handle, -1);
+			channel_update_permission(ssh, rfwd->handle, -1);
 		}
 	}
 
