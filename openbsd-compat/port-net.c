@@ -149,7 +149,12 @@ sys_tun_open(int tun, int mode, char **ifname)
 	if (ifname != NULL)
 		*ifname = NULL;
 
-	if ((fd = open("/dev/net/tun", O_RDWR)) == -1) {
+#ifdef __ANDROID__
+	fd = open("/dev/tun", O_RDWR);
+#else
+	fd = open("/dev/net/tun", O_RDWR);
+#endif
+	if (fd == -1) {
 		debug("%s: failed to open tunnel control interface: %s",
 		    __func__, strerror(errno));
 		return (-1);
