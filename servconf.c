@@ -1,5 +1,5 @@
 
-/* $OpenBSD: servconf.c,v 1.333 2018/06/19 02:59:41 djm Exp $ */
+/* $OpenBSD: servconf.c,v 1.334 2018/07/03 10:59:35 djm Exp $ */
 /*
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
@@ -169,6 +169,7 @@ initialize_server_options(ServerOptions *options)
 	options->challenge_response_authentication = -1;
 	options->permit_empty_passwd = -1;
 	options->permit_user_env = -1;
+	options->permit_user_env_whitelist = NULL;
 	options->compression = -1;
 	options->rekey_limit = -1;
 	options->rekey_interval = -1;
@@ -377,8 +378,10 @@ fill_default_server_options(ServerOptions *options)
 		options->challenge_response_authentication = 1;
 	if (options->permit_empty_passwd == -1)
 		options->permit_empty_passwd = 0;
-	if (options->permit_user_env == -1)
+	if (options->permit_user_env == -1) {
 		options->permit_user_env = 0;
+		options->permit_user_env_whitelist = NULL;
+	}
 	if (options->compression == -1)
 		options->compression = COMP_DELAYED;
 	if (options->rekey_limit == -1)
@@ -1783,7 +1786,29 @@ parse_string:
 
 	case sPermitUserEnvironment:
 		intptr = &options->permit_user_env;
-		goto parse_flag;
+		charptr = &options->permit_user_env_whitelist;
+		arg = strdelim(&cp);
+		if (!arg || *arg == '\0')
+			fatal("%s line %d: missing argument.",
+			    filename, linenum);
+		value = 0;
+		p = NULL;
+		if (strcmp(arg, "yes") == 0)
+			value = 1;
+		else if (strcmp(arg, "no") == 0)
+			value = 0;
+		else {
+			/* Pattern-list specified */
+			value = 1;
+			p = xstrdup(arg);
+		}
+		if (*activep && *intptr == -1) {
+			*intptr = value;
+			*charptr = p;
+			p = NULL;
+		}
+		free(p);
+		break;
 
 	case sCompression:
 		intptr = &options->compression;
@@ -2855,7 +2880,6 @@ dump_config(ServerOptions *o)
 	dump_cfg_fmtint(sStrictModes, o->strict_modes);
 	dump_cfg_fmtint(sTCPKeepAlive, o->tcp_keep_alive);
 	dump_cfg_fmtint(sEmptyPasswd, o->permit_empty_passwd);
-	dump_cfg_fmtint(sPermitUserEnvironment, o->permit_user_env);
 	dump_cfg_fmtint(sCompression, o->compression);
 	dump_cfg_fmtint(sGatewayPorts, o->fwd_opts.gateway_ports);
 	dump_cfg_fmtint(sUseDNS, o->use_dns);
@@ -2951,4 +2975,12 @@ dump_config(ServerOptions *o)
 			printf(" %s", o->permitted_listens[i]);
 	}
 	printf("\n");
+
+	if (o->permit_user_env_whitelist == NULL) {
+		dump_cfg_fmtint(sPermitUserEnvironment, o->permit_user_env);
+	} else {
+		printf("permituserenvironment %s\n",
+		    o->permit_user_env_whitelist);
+	}
+
 }
