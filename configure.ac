@@ -1905,6 +1905,7 @@ AC_CHECK_FUNCS([ \
 	getaddrinfo \
 	getcwd \
 	getgrouplist \
+	getline \
 	getnameinfo \
 	getopt \
 	getpagesize \

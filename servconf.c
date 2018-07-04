@@ -2451,7 +2451,8 @@ parse_string:
 void
 load_server_config(const char *filename, Buffer *conf)
 {
-	char line[4096], *cp;
+	char *line = NULL, *cp;
+	size_t linesize = 0;
 	FILE *f;
 	int lineno = 0;
 
@@ -2461,10 +2462,8 @@ load_server_config(const char *filename, Buffer *conf)
 		exit(1);
 	}
 	buffer_clear(conf);
-	while (fgets(line, sizeof(line), f)) {
+	while (getline(&line, &linesize, f) != -1) {
 		lineno++;
-		if (strlen(line) == sizeof(line) - 1)
-			fatal("%s line %d too long", filename, lineno);
 		/*
 		 * Trim out comments and strip whitespace
 		 * NB - preserve newlines, they are needed to reproduce
@@ -2476,6 +2475,7 @@ load_server_config(const char *filename, Buffer *conf)
 
 		buffer_append(conf, cp, strlen(cp));
 	}
+	free(line);
 	buffer_append(conf, "\0", 1);
 	fclose(f);
 	debug2("%s: done config len = %d", __func__, buffer_len(conf));

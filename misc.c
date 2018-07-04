@@ -1054,31 +1054,6 @@ percent_expand(const char *string, ...)
 #undef EXPAND_MAX_KEYS
 }
 
-/*
- * Read an entire line from a public key file into a static buffer, discarding
- * lines that exceed the buffer size.  Returns 0 on success, -1 on failure.
- */
-int
-read_keyfile_line(FILE *f, const char *filename, char *buf, size_t bufsz,
-   u_long *lineno)
-{
-	while (fgets(buf, bufsz, f) != NULL) {
-		if (buf[0] == '\0')
-			continue;
-		(*lineno)++;
-		if (buf[strlen(buf) - 1] == '\n' || feof(f)) {
-			return 0;
-		} else {
-			debug("%s: %s line %lu exceeds size limit", __func__,
-			    filename, *lineno);
-			/* discard remainder of line */
-			while (fgetc(f) != '\n' && !feof(f))
-				;	/* nothing */
-		}
-	}
-	return -1;
-}
-
 int
 tun_open(int tun, int mode, char **ifname)
 {

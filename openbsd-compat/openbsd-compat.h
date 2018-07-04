@@ -61,6 +61,11 @@ int bindresvport_sa(int sd, struct sockaddr *sa);
 void closefrom(int);
 #endif
 
+#ifndef HAVE_GETLINE
+ssize_t getdelim(char **, size_t *, int, FILE *);
+ssize_t getline(char **, size_t *, FILE *);
+#endif
+
 #ifndef HAVE_GETPAGESIZE
 int getpagesize(void);
 #endif

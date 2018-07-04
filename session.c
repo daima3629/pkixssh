@@ -884,18 +884,18 @@ read_environment_file(char ***env, u_int *envsize,
 	const char *filename, const char *whitelist)
 {
 	FILE *f;
-	char buf[4096];
-	char *cp, *value;
+	char *line = NULL, *cp, *value;
+	size_t linesize = 0;
 	u_int lineno = 0;
 
 	f = fopen(filename, "r");
 	if (!f)
 		return;
 
-	while (fgets(buf, sizeof(buf), f)) {
+	while (getline(&line, &linesize, f) != -1) {
 		if (++lineno > 1000)
 			fatal("Too many lines in environment file %s", filename);
-		for (cp = buf; *cp == ' ' || *cp == '\t'; cp++)
+		for (cp = line; *cp == ' ' || *cp == '\t'; cp++)
 			;
 		if (!*cp || *cp == '#' || *cp == '\n')
 			continue;
@@ -919,6 +919,7 @@ read_environment_file(char ***env, u_int *envsize,
 			continue;
 		child_set_env(env, envsize, cp, value);
 	}
+	free(line);
 	fclose(f);
 }
 
