@@ -1,4 +1,4 @@
-/* $OpenBSD: readconf.c,v 1.291 2018/06/10 23:45:41 djm Exp $ */
+/* $OpenBSD: readconf.c,v 1.292 2018/07/04 13:49:31 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -2152,6 +2152,8 @@ fill_default_options_for_canonicalization(Options *options)
 void
 fill_default_options(Options * options)
 {
+	char *all_cipher, *all_mac, *all_kex;
+
 	if (options->forward_agent == -1)
 		options->forward_agent = 0;
 	if (options->forward_x11 == -1)
@@ -2309,10 +2311,21 @@ fill_default_options(Options * options)
 		options->fingerprint_hash = SSH_FP_HASH_DEFAULT;
 	if (options->update_hostkeys == -1)
 		options->update_hostkeys = 0;
-	if (kex_assemble_names(KEX_CLIENT_ENCRYPT, &options->ciphers) != 0 ||
-	    kex_assemble_names(KEX_CLIENT_MAC, &options->macs) != 0 ||
-	    kex_assemble_names(KEX_CLIENT_KEX, &options->kex_algorithms) != 0)
+
+	/* Expand KEX name lists */
+	all_cipher = cipher_alg_list(',', 0);
+	all_mac = mac_alg_list(',');
+	all_kex = kex_alg_list(',');
+	if (kex_assemble_names(&options->ciphers,
+	    KEX_CLIENT_ENCRYPT, all_cipher) != 0 ||
+	    kex_assemble_names(&options->macs,
+	    KEX_CLIENT_MAC, all_mac) != 0 ||
+	    kex_assemble_names(&options->kex_algorithms,
+	    KEX_CLIENT_KEX, all_kex) != 0)
 		fatal("%s: kex_assemble_names failed", __func__);
+	free(all_cipher);
+	free(all_mac);
+	free(all_kex);
 
 #define CLEAR_ON_NONE(v) \
 	do { \
@@ -2359,17 +2372,19 @@ fill_default_options(Options * options)
 
 	if (options->hostkeyalgorithms != NULL) {
 		char *alg = options->hostkeyalgorithms;
-		if (*alg == '+') alg++;
+		if (*alg == '+' || *alg == '-') alg++;
 		if (!sshkey_names_valid2(alg, 1))
 			fatal("Bad protocol 2 hostkey algorithms '%s'.",
 			    options->hostkeyalgorithms);
 	}
 {	/* see use of hostkeyalgorithms in sshconnect2.c */
 	char *p = default_publickey_algorithms();
+	char *all_key;
 
-	if (kex_assemble_names(p, &options->hostkeyalgorithms) != 0)
+	all_key = sshkey_alg_list(0, 0, 1, ','); /*only for compatibility*/
+	if (kex_assemble_names(&options->hostkeyalgorithms, p, all_key) != 0)
 		fatal("%s: kex_assemble_names failed", __func__);
-
+	free(all_key);
 	free(p);
 }
 

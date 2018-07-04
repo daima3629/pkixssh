@@ -34,7 +34,7 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: ssh_config.5,v 1.277 2018/06/09 06:36:31 jmc Exp $
+.\" $OpenBSD: ssh_config.5,v 1.279 2018/07/04 13:49:31 djm Exp $
 .\" Implement .Dd with the Mdocdate RCS keyword
 .rn Dd xD
 .de Dd
@@ -43,7 +43,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: June 9 2018 $
+.Dd $Mdocdate: July 4 2018 $
 .Dt SSH_CONFIG 5
 .Os
 .Sh NAME
@@ -861,7 +861,6 @@ If the specified value begins with a
 .Sq -
 character, then the specified key types (including wildcards) will be removed
 from the default set instead of replacing them.
-The default for this option is:
 The default for this option depend from
 .Cm X509KeyAlgorithm .
 By default it contain unique list build from names of X509KeyAlgorithm
