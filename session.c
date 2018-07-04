@@ -881,8 +881,9 @@ check_quietlogin(Session *s, const char *command)
  */
 static void
 read_environment_file(char ***env, u_int *envsize,
-	const char *filename, const char *whitelist)
+	const char *filename)
 {
+	const char *whitelist = options.permit_user_env_whitelist;
 	FILE *f;
 	char *line = NULL, *cp, *value;
 	size_t linesize = 0;
@@ -1152,8 +1153,7 @@ do_setup_env(struct ssh *ssh, Session *s, const char *shell)
 	if (options.permit_user_env) {
 		snprintf(buf, sizeof buf, "%.200s/.ssh/environment",
 		    strcmp(pw->pw_dir, "/") ? pw->pw_dir : "");
-		read_environment_file(&env, &envsize, buf,
-		    options.permit_user_env_whitelist);
+		read_environment_file(&env, &envsize, buf);
 	}
 
 	/* Environment specified by admin */
