@@ -1,4 +1,4 @@
-/* $OpenBSD: sshd.c,v 1.508 2018/04/13 03:57:26 dtucker Exp $ */
+/* $OpenBSD: sshd.c,v 1.509 2018/07/03 11:39:54 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -751,16 +751,30 @@ err:
 	fatal("cannot prepare hotkey algorithm list");
 }
 
+static void
+append_hostkey_type(struct sshbuf *b, const char *s)
+{
+	int r;
+
+	if (match_pattern_list(s, options.hostkeyalgorithms, 0) != 1) {
+		debug3("%s: %s key not permitted by HostkeyAlgorithms",
+		    __func__, s);
+		return;
+	}
+	if ((r = sshbuf_putf(b, "%s%s", sshbuf_len(b) > 0 ? "," : "", s)) != 0)
+		fatal("%s: sshbuf_putf: %s", __func__, ssh_err(r));
+}
+
 static char *
 list_hostkey_types(void)
 {
-	Buffer b;
-	const char *p;
+	struct sshbuf *b;
+	struct sshkey *key;
 	char *ret;
 	u_int i;
-	struct sshkey *key;
 
-	buffer_init(&b);
+	if ((b = sshbuf_new()) == NULL)
+		fatal("%s: sshbuf_new failed", __func__);
 	for (i = 0; i < options.num_host_key_files; i++) {
 		key = sensitive_data.host_keys[i];
 		if (key == NULL)
@@ -768,7 +782,7 @@ list_hostkey_types(void)
 		if (key == NULL)
 			continue;
 
-		add_hostkey_algoritms(i, &b);
+		add_hostkey_algoritms(i, b);
 
 		/* If the private key has a cert peer, then list that too */
 		key = sensitive_data.host_certificates[i];
@@ -780,17 +794,14 @@ list_hostkey_types(void)
 		case KEY_ECDSA_CERT:
 		case KEY_ED25519_CERT:
 		case KEY_XMSS_CERT:
-			if (buffer_len(&b) > 0)
-				buffer_append(&b, ",", 1);
-			p = key_ssh_name(key);
-			buffer_append(&b, p, strlen(p));
+			append_hostkey_type(b, sshkey_ssh_name(key));
 			break;
 		}
 	}
-	if ((ret = sshbuf_dup_string(&b)) == NULL)
+	if ((ret = sshbuf_dup_string(b)) == NULL)
 		fatal("%s: sshbuf_dup_string failed", __func__);
-	buffer_free(&b);
-	debug("list_hostkey_types: %s", ret);
+	sshbuf_free(b);
+	debug("%s: %s", __func__, ret);
 	return ret;
 }
 
