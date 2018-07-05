@@ -6,7 +6,7 @@
  * Copyright (c) 1996, David Mazieres <dm@uun.org>
  * Copyright (c) 2008, Damien Miller <djm@openbsd.org>
  * Copyright (c) 2013, Markus Friedl <markus@openbsd.org>
- * Copyright (c) 2014, Roumen Petrov
+ * Copyright (c) 2014-2018, Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -48,6 +48,8 @@
 #ifdef OPENSSL_FIPS
   /* synchronize HAVE_ARC4RANDOM_<...> with defined.h */
 # define HAVE_ARC4RANDOM_BUF
+
+#include <openssl/rand.h>
 
 /* Size of key to use */
 #define SEED_SIZE 20
@@ -91,10 +93,9 @@ arc4random_stir(void) {
 
 u_int32_t
 arc4random(void) {
-	if (FIPS_mode())
-		fips_arc4random();
-	else
-		save_arc4random();
+	return FIPS_mode()
+		? fips_arc4random()
+		: save_arc4random();
 }
 
 # define arc4random_stir	save_arc4random_stir
