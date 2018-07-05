@@ -800,6 +800,7 @@ get_hostkey_by_type(int type, int subtype, int need_private, struct ssh *ssh)
 	u_int i;
 	struct sshkey *key;
 
+	(void)ssh;
 	for (i = 0; i < options.num_host_key_files; i++) {
 		switch (type) {
 		case KEY_RSA_CERT:
@@ -827,10 +828,10 @@ get_hostkey_by_type(int type, int subtype, int need_private, struct ssh *ssh)
 
 static struct sshkey*
 get_hostkey_by_alg(const char* alg, int need_private, struct ssh *ssh) {
-	int i;
+	u_int i;
 	struct sshkey *key;
 
-	(void) ssh;
+	(void)ssh;
 	for (i = 0; i < options.num_host_key_files; i++) {
 		key = sensitive_data.host_keys[i];
 		if (key == NULL && !need_private)
@@ -882,27 +883,29 @@ get_hostkey_private_by_alg(const char* alg, struct ssh *ssh)
 }
 
 struct sshkey *
-get_hostkey_by_index(int ind)
+get_hostkey_by_index(u_int ind)
 {
-	if (ind < 0 || (u_int)ind >= options.num_host_key_files)
-		return (NULL);
-	return (sensitive_data.host_keys[ind]);
+	return ind < options.num_host_key_files
+		? sensitive_data.host_keys[ind]
+		: NULL;
 }
 
 struct sshkey *
-get_hostkey_public_by_index(int ind, struct ssh *ssh)
+get_hostkey_public_by_index(u_int ind, struct ssh *ssh)
 {
-	if (ind < 0 || (u_int)ind >= options.num_host_key_files)
-		return (NULL);
-	return (sensitive_data.host_pubkeys[ind]);
+	(void)ssh;
+	return ind < options.num_host_key_files
+		? sensitive_data.host_pubkeys[ind]
+		: NULL;
 }
 
 static const char**
-get_hostkey_alg_by_index(int ind, struct ssh *ssh)
+get_hostkey_alg_by_index(u_int ind, struct ssh *ssh)
 {
-	if (ind < 0 || ind >= options.num_host_key_files)
-		return (NULL);
-	return (sensitive_data.host_algorithms[ind]);
+	(void)ssh;
+	return ind < options.num_host_key_files
+		? sensitive_data.host_algorithms[ind]
+		: NULL;
 }
 
 int
@@ -910,6 +913,7 @@ get_hostkey_index(struct sshkey *key, int compare, struct ssh *ssh)
 {
 	u_int i;
 
+	(void)ssh;
 	for (i = 0; i < options.num_host_key_files; i++) {
 		if (key_is_cert(key)) {
 			if (key == sensitive_data.host_certificates[i] ||

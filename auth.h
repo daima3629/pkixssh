@@ -4,7 +4,7 @@
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  *
  * X.509 certificates support,
- * Copyright (c) 2014-2017 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2014-2018 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -211,8 +211,8 @@ check_key_in_hostfiles(struct passwd *, struct sshkey *, const char *,
     const char *, const char *);
 
 /* hostkey handling */
-struct sshkey	*get_hostkey_by_index(int);
-struct sshkey	*get_hostkey_public_by_index(int, struct ssh *);
+struct sshkey	*get_hostkey_by_index(u_int);
+struct sshkey	*get_hostkey_public_by_index(u_int, struct ssh *);
 struct sshkey	*get_hostkey_public_by_alg(const char*, struct ssh *);
 struct sshkey	*get_hostkey_private_by_alg(const char*, struct ssh *);
 int	 get_hostkey_index(struct sshkey *, int, struct ssh *);
