@@ -15,7 +15,7 @@
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  *
  * X509 certificate support,
- * Copyright (c) 2002-2017 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2018 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -348,8 +348,8 @@ Xssh_agent_sign(int sock, ssh_sign_ctx *ctx,
     const u_char *data, size_t datalen)
 {
 	struct sshbuf *msg;
-	u_char *blob = NULL, type;
-	size_t blen = 0, len = 0;
+	u_char type;
+	size_t len = 0;
 	u_int flags = 0;
 	int r = SSH_ERR_INTERNAL_ERROR;
 
@@ -362,11 +362,9 @@ Xssh_agent_sign(int sock, ssh_sign_ctx *ctx,
 		flags |= SSH_AGENT_RFC6187_OPAQUE_ECDSA_SIGNATURE;
 	if ((msg = sshbuf_new()) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
-	if ((r = Xkey_to_blob(ctx->alg, ctx->key, &blob, &blen)) != 0)
-		goto out;
 	flags |= agent_encode_alg(ctx->key, ctx->alg);
 	if ((r = sshbuf_put_u8(msg, SSH2_AGENTC_SIGN_REQUEST)) != 0 ||
-	    (r = sshbuf_put_string(msg, blob, blen)) != 0 ||
+	    (r = Xkey_puts(ctx->alg, ctx->key, msg)) != 0 ||
 	    (r = sshbuf_put_string(msg, data, datalen)) != 0 ||
 	    (r = sshbuf_put_u32(msg, flags)) != 0)
 		goto out;
@@ -386,10 +384,6 @@ Xssh_agent_sign(int sock, ssh_sign_ctx *ctx,
 	*lenp = len;
 	r = 0;
  out:
-	if (blob != NULL) {
-		explicit_bzero(blob, blen);
-		free(blob);
-	}
 	sshbuf_free(msg);
 	return r;
 }
