@@ -4,7 +4,7 @@
  * Copyright (c) 2008 Damien Miller.  All rights reserved.
  *
  * X509 certificate support,
- * Copyright (c) 2006-2017 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2006-2018 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -324,7 +324,7 @@ int	input_gssapi_errtok(int, u_int32_t, struct ssh *);
 
 void	userauth(Authctxt *, char *);
 
-static int sign_and_send_pubkey(Authctxt *, Identity *);
+static int sign_and_send_pubkey(struct ssh *ssh, Authctxt *, Identity *);
 static void pubkey_prepare(Authctxt *);
 static void pubkey_cleanup(Authctxt *);
 static void pubkey_reset(Authctxt *);
@@ -628,7 +628,7 @@ input_userauth_pk_ok(int type, u_int32_t seq, struct ssh *ssh)
 	 */
 	TAILQ_FOREACH_REVERSE(id, &authctxt->keys, idlist, next) {
 		if (sshkey_equal(key, id->key)) {
-			sent = sign_and_send_pubkey(authctxt, id);
+			sent = sign_and_send_pubkey(ssh, authctxt, id);
 			break;
 		}
 	}
@@ -1092,59 +1092,35 @@ id_filename_matches(Identity *id, Identity *private_id)
 }
 
 static int
-sign_and_send_pubkey(Authctxt *authctxt, Identity *id)
+sign_and_send_pubkey(struct ssh *ssh, Authctxt *authctxt, Identity *id)
 {
-	Buffer b;
-	Identity *private_id;
-	u_char *blob, *signature;
-	size_t slen;
-	u_int bloblen, skip = 0;
-	int matched, ret = -1, have_sig = 1;
-	char *fp;
-	const char *pkalg;
+	const char *pkalg = id->pkalg;
+	struct sshbuf *b = NULL;
+	Identity *private_id, *sign_id = NULL;
+	u_char *signature = NULL;
+	size_t slen = 0, skip = 0;
+	int r, sent = 0;
+	char *fp = NULL;
 
-	pkalg = id->pkalg;
 	if ((fp = sshkey_fingerprint(id->key, options.fingerprint_hash,
 	    SSH_FP_DEFAULT)) == NULL)
 		return 0;
-	debug3("%s: %s %s", __func__, sshkey_type(id->key), fp);
-	free(fp);
 
-	if (xkey_to_blob(pkalg, id->key, &blob, &bloblen) == 0) {
-		/* we cannot handle this key */
-		debug3("sign_and_send_pubkey: cannot handle key");
-		return 0;
-	}
-	/* data to be signed */
-	buffer_init(&b);
-	if (datafellows & SSH_OLD_SESSIONID) {
-		buffer_append(&b, session_id2, session_id2_len);
-		skip = session_id2_len;
-	} else {
-		buffer_put_string(&b, session_id2, session_id2_len);
-		skip = buffer_len(&b);
-	}
-	buffer_put_char(&b, SSH2_MSG_USERAUTH_REQUEST);
-	buffer_put_cstring(&b, authctxt->server_user);
-	buffer_put_cstring(&b, authctxt->service);
-	buffer_put_cstring(&b, authctxt->method->name);
-	buffer_put_char(&b, have_sig);
-	buffer_put_cstring(&b, pkalg);
-	buffer_put_string(&b, blob, bloblen);
+	debug3("%s: %s %s", __func__, sshkey_type(id->key), fp);
 
 	/*
 	 * If the key is an certificate, try to find a matching private key
 	 * and use it to complete the signature.
 	 * If no such private key exists, fall back to trying the certificate
 	 * key itself in case it has a private half already loaded.
+	 * This will try to set sign_id to the private key that will perform
+	 * the signature.
 	 */
 	if (sshkey_is_cert(id->key)) {
-		matched = 0;
 		TAILQ_FOREACH(private_id, &authctxt->keys, next) {
 			if (sshkey_equal_public(id->key, private_id->key) &&
 			    id->key->type != private_id->key->type) {
-				id = private_id;
-				matched = 1;
+				sign_id = private_id;
 				break;
 			}
 		}
@@ -1155,18 +1131,18 @@ sign_and_send_pubkey(Authctxt *authctxt, Identity *id)
 		 * of keeping just a private key file and public
 		 * certificate on disk.
 		 */
-		if (!matched && !id->isprivate && id->agent_fd == -1 &&
+		if (sign_id == NULL &&
+		    !id->isprivate && id->agent_fd == -1 &&
 		    (id->key->flags & SSHKEY_FLAG_EXT) == 0) {
 			TAILQ_FOREACH(private_id, &authctxt->keys, next) {
 				if (private_id->key == NULL &&
 				    id_filename_matches(id, private_id)) {
-					id = private_id;
-					matched = 1;
+					sign_id = private_id;
 					break;
 				}
 			}
 		}
-		if (matched) {
+		if (sign_id != NULL) {
 			debug2("%s: using private key \"%s\"%s for "
 			    "certificate", __func__, id->filename,
 			    id->agent_fd != -1 ? " from agent" : "");
@@ -1176,56 +1152,101 @@ sign_and_send_pubkey(Authctxt *authctxt, Identity *id)
 		}
 	}
 
-	/* generate signature */
-{	ssh_compat ctx_compat = { datafellows, xcompat };
-	ssh_sign_ctx ctx = { pkalg, NULL, &ctx_compat };
+	/*
+	 * If the above didn't select another identity to do the signing
+	 * then default to the one we started with.
+	 */
+	if (sign_id == NULL)
+		sign_id = id;
 
-	ret = identity_sign(id, &ctx, &signature, &slen, buffer_ptr(&b), buffer_len(&b));
-}
-	if (ret != 0) {
-		if (ret != SSH_ERR_KEY_NOT_FOUND)
-			error("%s: signing failed: %s", __func__, ssh_err(ret));
-		free(blob);
-		buffer_free(&b);
-		return 0;
+	while (1) { /*synchronize indent*/
+		if ((b = sshbuf_new()) == NULL)
+			fatal("%s: sshbuf_new failed", __func__);
+		if (datafellows & SSH_OLD_SESSIONID) {
+			if ((r = sshbuf_put(b, session_id2,
+			    session_id2_len)) != 0) {
+				fatal("%s: sshbuf_put: %s",
+				    __func__, ssh_err(r));
+			}
+		} else {
+			if ((r = sshbuf_put_string(b, session_id2,
+			    session_id2_len)) != 0) {
+				fatal("%s: sshbuf_put_string: %s",
+				    __func__, ssh_err(r));
+			}
+		}
+		skip = sshbuf_len(b);
+		if ((r = sshbuf_put_u8(b, SSH2_MSG_USERAUTH_REQUEST)) != 0 ||
+		    (r = sshbuf_put_cstring(b, authctxt->server_user)) != 0 ||
+		    (r = sshbuf_put_cstring(b, authctxt->service)) != 0 ||
+		    (r = sshbuf_put_cstring(b, authctxt->method->name)) != 0 ||
+		    (r = sshbuf_put_u8(b, 1)) != 0 ||
+		    (r = sshbuf_put_cstring(b, pkalg)) != 0 ||
+		    (r = Xkey_puts(pkalg, id->key, b)) != 0) {
+			fatal("%s: assemble signed data: %s",
+			    __func__, ssh_err(r));
+		}
+
+		/* generate signature */
+	{	ssh_compat ctx_compat = { datafellows, xcompat };
+		ssh_sign_ctx ctx = { pkalg, NULL, &ctx_compat };
+
+		r = identity_sign(sign_id, &ctx, &signature, &slen, sshbuf_ptr(b), sshbuf_len(b));
 	}
-#ifdef DEBUG_PK
-	buffer_dump(&b);
-#endif
-	free(blob);
+		if (r == 0)
+			break;
+		if (r == SSH_ERR_KEY_NOT_FOUND)
+			goto out; /* soft failure */
+		error("%s: signing failed: %s", __func__, ssh_err(r));
+		goto out;
+	}
+
+	if (slen == 0 || signature == NULL) /* shouldn't happen */
+		fatal("%s: no signature", __func__);
 
 	/* append signature */
-	buffer_put_string(&b, signature, slen);
-	free(signature);
+	if ((r = sshbuf_put_string(b, signature, slen)) != 0)
+		fatal("%s: append signature: %s", __func__, ssh_err(r));
+
+#ifdef DEBUG_PK
+	sshbuf_dump(b, stderr);
+#endif
 
 	/* skip session id and packet type */
-	if (buffer_len(&b) < skip + 1)
-		fatal("userauth_pubkey: internal error");
-	buffer_consume(&b, skip + 1);
+	if ((r = sshbuf_consume(b, skip + 1)) != 0)
+		fatal("%s: consume: %s", __func__, ssh_err(r));
 
 	/* put remaining data from buffer into packet */
-	packet_start(SSH2_MSG_USERAUTH_REQUEST);
-	packet_put_raw(buffer_ptr(&b), buffer_len(&b));
-	buffer_free(&b);
-	packet_send();
+	if ((r = sshpkt_start(ssh, SSH2_MSG_USERAUTH_REQUEST)) != 0 ||
+	    (r = sshpkt_putb(ssh, b)) != 0 ||
+	    (r = sshpkt_send(ssh)) != 0)
+		fatal("%s: enqueue request: %s", __func__, ssh_err(r));
 
-	return 1;
+	/* success */
+	sent = 1;
+
+ out:
+	free(fp);
+	sshbuf_free(b);
+	freezero(signature, slen);
+	return sent;
 }
 
 static int
-send_pubkey_test(Authctxt *authctxt, Identity *id)
+send_pubkey_test(struct ssh *ssh, Authctxt *authctxt, Identity *id)
 {
-	u_char *blob;
+	const char *pkalg = id->pkalg;
+	u_char *blob = NULL;
 	u_int bloblen, have_sig = 0;
-	const char *pkalg;
+	int sent = 0;
 
-	pkalg = id->pkalg;
+	(void)ssh;
 	debug3("send_pubkey_test: %s", pkalg);
 
 	if (xkey_to_blob(pkalg, id->key, &blob, &bloblen) == 0) {
 		/* we cannot handle this key */
-		debug3("send_pubkey_test: cannot handle key");
-		return 0;
+		debug3("%s: cannot handle key", __func__);
+		goto out;
 	}
 	/* register callback for USERAUTH_PK_OK message */
 	dispatch_set(SSH2_MSG_USERAUTH_PK_OK, &input_userauth_pk_ok);
@@ -1237,9 +1258,12 @@ send_pubkey_test(Authctxt *authctxt, Identity *id)
 	packet_put_char(have_sig);
 	packet_put_cstring(pkalg);
 	packet_put_string(blob, bloblen);
-	free(blob);
 	packet_send();
-	return 1;
+	/* success */
+	sent = 1;
+out:
+	free(blob);
+	return sent;
 }
 
 static struct sshkey *
@@ -1496,14 +1520,12 @@ pkalg_match(const char *pkalg, const char *pattern) {
 }
 
 static int
-try_identity(Identity *id)
+try_identity(struct ssh *ssh, Identity *id)
 {
-	struct ssh *ssh = active_state; /* TODO ssh session */
 	struct sshkey *key = id->key;
 
 	if (ssh == NULL) return (0);
-	if (key == NULL)
-		return (0);
+	if (key == NULL) return (0);
 	if (sshkey_is_cert(key)) {
 		id->pkalg = sshkey_ssh_name(key);
 		return 1;
@@ -1598,6 +1620,7 @@ done:
 int
 userauth_pubkey(Authctxt *authctxt)
 {
+	struct ssh *ssh = active_state; /* XXX */
 	Identity *id;
 	int sent = 0;
 	char *fp;
@@ -1614,7 +1637,7 @@ userauth_pubkey(Authctxt *authctxt)
 		 * private key instead
 		 */
 		if (id->key != NULL) {
-			if (try_identity(id)) {
+			if (try_identity(ssh, id)) {
 				if ((fp = sshkey_fingerprint(id->key,
 				    options.fingerprint_hash,
 				    SSH_FP_DEFAULT)) == NULL) {
@@ -1625,15 +1648,15 @@ userauth_pubkey(Authctxt *authctxt)
 				debug("Offering public key: %s %s %s",
 				    sshkey_type(id->key), fp, id->filename);
 				free(fp);
-				sent = send_pubkey_test(authctxt, id);
+				sent = send_pubkey_test(ssh, authctxt, id);
 			}
 		} else {
 			debug("Trying private key: %s", id->filename);
 			id->key = load_identity_file(id);
 			if (id->key != NULL) {
-				if (try_identity(id)) {
+				if (try_identity(ssh, id)) {
 					id->isprivate = 1;
-					sent = sign_and_send_pubkey(
+					sent = sign_and_send_pubkey(ssh,
 					    authctxt, id);
 				}
 				sshkey_free(id->key);
@@ -1854,7 +1877,7 @@ ssh_keysign(struct sshkey *key, u_char **sigp, size_t *lenp,
 int
 userauth_hostbased(Authctxt *authctxt)
 {
-	struct ssh *ssh = active_state;
+	struct ssh *ssh = active_state; /* XXX */
 	struct sshkey *private = NULL;
 	struct sshbuf *b = NULL;
 	const char *pkalg;
