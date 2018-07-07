@@ -141,7 +141,6 @@ struct kex {
 	char	*hostkey_alg;
 	u_int	kex_type;
 	char	*pkalgs;
-	int	rsa_sha2;
 	int	ext_info_c;
 	struct sshbuf *my;
 	struct sshbuf *peer;

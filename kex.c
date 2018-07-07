@@ -475,22 +475,6 @@ preset_pkalgs(struct kex *kex, char *pkalgs) {
 		new_pkalgs[--n] = '\0';
 
 	kex->pkalgs = new_pkalgs;
-#ifdef HAVE_EVP_SHA256
-	if (new_pkalgs != NULL) {
-		char *found;
-
-		found = match_list("rsa-sha2-512", new_pkalgs, NULL);
-		if (found != NULL) {
-			kex->rsa_sha2 = 512;
-			free(found);
-		}
-		found = match_list("rsa-sha2-256", new_pkalgs, NULL);
-		if (found != NULL) {
-			kex->rsa_sha2 = 256;
-			free(found);
-		}
-	}
-#endif /*def HAVE_EVP_SHA256*/
 done:
 	free(pkalgs);
 }
