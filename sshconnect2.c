@@ -95,9 +95,11 @@ u_int session_id2_len = 0;
 char *xxx_host;
 struct sockaddr *xxx_hostaddr;
 
+/* ARGSUSED */
 static int
 verify_host_key_callback(struct sshkey *hostkey, struct ssh *ssh)
 {
+	UNUSED(ssh);
 	if (verify_host_key(xxx_host, xxx_hostaddr, hostkey) == -1)
 		fatal("Host key verification failed.");
 	return 0;
@@ -428,6 +430,8 @@ input_userauth_service_accept(int type, u_int32_t seq, struct ssh *ssh)
 	Authctxt *authctxt = ssh->authctxt;
 	int r;
 
+	UNUSED(type);
+	UNUSED(seq);
 	if (ssh_packet_remaining(ssh) > 0) {
 		char *reply;
 
@@ -454,11 +458,10 @@ input_userauth_service_accept(int type, u_int32_t seq, struct ssh *ssh)
 	return r;
 }
 
-/* ARGSUSED */
 int
-input_userauth_ext_info(int type, u_int32_t seqnr, struct ssh *ssh)
+input_userauth_ext_info(int type, u_int32_t seq, struct ssh *ssh)
 {
-	return kex_input_ext_info(type, seqnr, ssh);
+	return kex_input_ext_info(type, seq, ssh);
 }
 
 void
@@ -501,6 +504,8 @@ userauth(Authctxt *authctxt, char *authlist)
 int
 input_userauth_error(int type, u_int32_t seq, struct ssh *ssh)
 {
+	UNUSED(seq);
+	UNUSED(ssh);
 	fatal("input_userauth_error: bad message during authentication: "
 	    "type %d", type);
 	return 0;
@@ -513,6 +518,9 @@ input_userauth_banner(int type, u_int32_t seq, struct ssh *ssh)
 	char *msg, *lang;
 	u_int len;
 
+	UNUSED(type);
+	UNUSED(seq);
+	UNUSED(ssh);
 	debug3("%s", __func__);
 	msg = packet_get_string(&len);
 	lang = packet_get_string(NULL);
@@ -529,6 +537,8 @@ input_userauth_success(int type, u_int32_t seq, struct ssh *ssh)
 {
 	Authctxt *authctxt = ssh->authctxt;
 
+	UNUSED(type);
+	UNUSED(seq);
 	if (authctxt == NULL)
 		fatal("input_userauth_success: no authentication context");
 	free(authctxt->authlist);
@@ -541,11 +551,14 @@ input_userauth_success(int type, u_int32_t seq, struct ssh *ssh)
 	return 0;
 }
 
+/* ARGSUSED */
 int
 input_userauth_success_unexpected(int type, u_int32_t seq, struct ssh *ssh)
 {
 	Authctxt *authctxt = ssh->authctxt;
 
+	UNUSED(type);
+	UNUSED(seq);
 	if (authctxt == NULL)
 		fatal("%s: no authentication context", __func__);
 
@@ -562,6 +575,8 @@ input_userauth_failure(int type, u_int32_t seq, struct ssh *ssh)
 	char *authlist = NULL;
 	int partial;
 
+	UNUSED(type);
+	UNUSED(seq);
 	if (authctxt == NULL)
 		fatal("input_userauth_failure: no authentication context");
 
@@ -592,6 +607,8 @@ input_userauth_pk_ok(int type, u_int32_t seq, struct ssh *ssh)
 	char *pkalg, *fp;
 	u_char *pkblob;
 
+	UNUSED(type);
+	UNUSED(seq);
 	if (authctxt == NULL)
 		fatal("input_userauth_pk_ok: no authentication context");
 
@@ -929,13 +946,15 @@ userauth_passwd(Authctxt *authctxt)
  */
 /* ARGSUSED */
 int
-input_userauth_passwd_changereq(int type, u_int32_t seqnr, struct ssh *ssh)
+input_userauth_passwd_changereq(int type, u_int32_t seq, struct ssh *ssh)
 {
 	Authctxt *authctxt = ssh->authctxt;
 	char *info, *lang, *password = NULL, *retype = NULL;
 	char prompt[256];
 	const char *host;
 
+	UNUSED(type);
+	UNUSED(seq);
 	debug2("input_userauth_passwd_changereq");
 
 	if (authctxt == NULL)
@@ -1240,7 +1259,7 @@ send_pubkey_test(struct ssh *ssh, Authctxt *authctxt, Identity *id)
 	u_int bloblen, have_sig = 0;
 	int sent = 0;
 
-	(void)ssh;
+	UNUSED(ssh);
 	debug3("send_pubkey_test: %s", pkalg);
 
 	if (xkey_to_blob(pkalg, id->key, &blob, &bloblen) == 0) {
@@ -1704,6 +1723,7 @@ userauth_kbdint(Authctxt *authctxt)
 /*
  * parse INFO_REQUEST, prompt user and send INFO_RESPONSE
  */
+/* ARGSUSED */
 int
 input_userauth_info_req(int type, u_int32_t seq, struct ssh *ssh)
 {
@@ -1712,6 +1732,8 @@ input_userauth_info_req(int type, u_int32_t seq, struct ssh *ssh)
 	u_int num_prompts, i;
 	int echo = 0;
 
+	UNUSED(type);
+	UNUSED(seq);
 	debug2("input_userauth_info_req");
 
 	if (authctxt == NULL)
@@ -1759,6 +1781,7 @@ input_userauth_info_req(int type, u_int32_t seq, struct ssh *ssh)
 	return 0;
 }
 
+/* ARGSUSED */
 static int
 ssh_keysign(struct sshkey *key, u_char **sigp, size_t *lenp,
     const u_char *data, size_t datalen)
@@ -1770,6 +1793,7 @@ ssh_keysign(struct sshkey *key, u_char **sigp, size_t *lenp,
 	u_char rversion = 0, version = 2;
 	void (*osigchld)(int);
 
+	UNUSED(key);
 	*sigp = NULL;
 	*lenp = 0;
 

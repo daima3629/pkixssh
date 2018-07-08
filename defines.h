@@ -2,7 +2,7 @@
  * Copyright (c) 1999-2003 Damien Miller.  All rights reserved.
  *
  * X.509 certificates support,
- * Copyright (c) 2011-2017 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2018 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -893,6 +893,9 @@ struct winsize {
 # define USE_SYSTEM_GLOB
 #endif
 
+#ifndef UNUSED
+# define UNUSED(x)	(void)(x)
+#endif
 
 /* secure shell typedefs */
 typedef struct ssh_compat_st ssh_compat;
