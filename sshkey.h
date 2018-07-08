@@ -225,7 +225,10 @@ const char	*sshkey_ssh_name_plain(const struct sshkey *);
 int		 sshkey_names_valid2(const char *, int);
 char		*sshkey_alg_list(int, int, int, char);
 
-int	sshkey_ind_alg(const char **name, int loc);
+#define SSHKEY_ALG_PLAINKEY	(1<<0)
+#define SSHKEY_ALG_CUSTCERT	(1<<1)
+#define SSHKEY_ALG_ALL		(SSHKEY_ALG_PLAINKEY|SSHKEY_ALG_CUSTCERT)
+int	 sshkey_algind(const char **name, u_int filter, int loc);
 
 int	 sshkey_from_blob(const u_char *, size_t, struct sshkey **);
 int	 sshkey_fromb(struct sshbuf *, struct sshkey **);

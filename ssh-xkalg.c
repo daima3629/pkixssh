@@ -873,10 +873,20 @@ ssh_get_allnames(char sep, int sigflag, const char* pattern) {
 	}
 }
 {	const char *name;
+	/*
+	 * According RFC8308 protocol extension "server-sig-algs",
+	 * despite of it name, list public key algorithms that the
+	 * server is able to process.
+	 * OpenBSD version is still broken and does not list algorithms
+	 * that use custom certificates. Broken behaviour will be keep
+	 * until is fixed in OpenBSD version. Note that brokenness is
+	 * keep as well in check for allowed keys - see sshconnect2.c
+	 * function try_identity().
+	 */
 	for (
-	    loc = sshkey_ind_alg(&name, -1);
+	    loc = sshkey_algind(&name, SSHKEY_ALG_PLAINKEY, -1);
 	    loc >= 0;
-	    loc = sshkey_ind_alg(&name, loc)
+	    loc = sshkey_algind(&name, SSHKEY_ALG_PLAINKEY, loc)
 	) {
 		const char *p;
 

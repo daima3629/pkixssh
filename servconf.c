@@ -537,7 +537,7 @@ fill_default_server_options(ServerOptions *options)
 		options->accepted_algorithms = xstrdup("*");
 
 	server_pkalgs = ssh_get_allnames(',', 0, options->accepted_algorithms);
-	debug("annonced algorithms: %s", server_pkalgs);
+	verbose("announced algorithms: %s", server_pkalgs);
 }
 
 /* Keyword tokens. */

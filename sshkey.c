@@ -314,9 +314,11 @@ sshkey_alg_list(int certs_only, int plain_only, int include_sigonly, char sep)
 }
 
 int
-sshkey_ind_alg(const char **name, int loc) {
+sshkey_algind(const char **name, u_int filter, int loc) {
 	int k, n;
 	const struct keytype *p;
+	int plain = (filter & SSHKEY_ALG_PLAINKEY) != 0;
+	int cert  = (filter & SSHKEY_ALG_CUSTCERT) != 0;
 
 	k = (loc < 0) ? 0 : (loc + 1);
 	n = sizeof(keytypes) / sizeof(keytypes[0]);
@@ -324,7 +326,11 @@ sshkey_ind_alg(const char **name, int loc) {
 
 	for (; k < n; k++, p++) {
 		if (p->name == NULL) continue;
-		if (p->cert)	continue;
+		if (p->cert) {
+			if (!cert) continue;
+		} else {
+			if (!plain) continue;
+		}
 
 		if (name != NULL)
 			*name = p->name;
