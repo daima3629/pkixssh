@@ -509,7 +509,7 @@ match_principals_command(struct ssh *ssh, struct passwd *user_pw,
 	pid_t pid;
 	char *tmp, *username = NULL, *command = NULL, **av = NULL;
 	char *ca_fp = NULL, *key_fp = NULL, *catext = NULL, *keytext = NULL;
-	char serial_s[16];
+	char serial_s[16], uidstr[32];
 	void (*osigchld)(int);
 
 	if (authoptsp != NULL)
@@ -569,8 +569,11 @@ match_principals_command(struct ssh *ssh, struct passwd *user_pw,
 	}
 	snprintf(serial_s, sizeof(serial_s), "%llu",
 	    (unsigned long long)cert->serial);
+	snprintf(uidstr, sizeof(uidstr), "%llu",
+	    (unsigned long long)user_pw->pw_uid);
 	for (i = 1; i < ac; i++) {
 		tmp = percent_expand(av[i],
+		    "U", uidstr,
 		    "u", user_pw->pw_name,
 		    "h", user_pw->pw_dir,
 		    "t", sshkey_ssh_name(key),
@@ -1001,7 +1004,7 @@ user_key_command_allowed2(struct ssh *ssh, struct passwd *user_pw,
 	int i, uid_swapped = 0, ac = 0;
 	pid_t pid;
 	char *username = NULL, *key_fp = NULL, *keytext = NULL;
-	char *tmp, *command = NULL, **av = NULL;
+	char uidstr[32], *tmp, *command = NULL, **av = NULL;
 	void (*osigchld)(int);
 
 	if (authoptsp != NULL)
@@ -1051,8 +1054,11 @@ user_key_command_allowed2(struct ssh *ssh, struct passwd *user_pw,
 		    command);
 		goto out;
 	}
+	snprintf(uidstr, sizeof(uidstr), "%llu",
+	    (unsigned long long)user_pw->pw_uid);
 	for (i = 1; i < ac; i++) {
 		tmp = percent_expand(av[i],
+		    "U", uidstr,
 		    "u", user_pw->pw_name,
 		    "h", user_pw->pw_dir,
 		    "t", sshkey_ssh_name(key),

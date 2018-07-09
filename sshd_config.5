@@ -2046,24 +2046,26 @@ The serial number of the certificate.
 The type of the CA key.
 .It %t
 The key or certificate type.
+.It \&%U
+The numeric user ID of the target user.
 .It %u
 The username.
 .El
 .Pp
 .Cm AuthorizedKeysCommand
-accepts the tokens %%, %f, %h, %k, %t, and %u.
+accepts the tokens %%, %f, %h, %k, %t, %U, and %u.
 .Pp
 .Cm AuthorizedKeysFile
-accepts the tokens %%, %h, and %u.
+accepts the tokens %%, %h, %U, and %u.
 .Pp
 .Cm AuthorizedPrincipalsCommand
-accepts the tokens %%, %F, %f, %h, %i, %K, %k, %s, %T, %t, and %u.
+accepts the tokens %%, %F, %f, %h, %i, %K, %k, %s, %T, %t, %U, and %u.
 .Pp
 .Cm AuthorizedPrincipalsFile
-accepts the tokens %%, %h, and %u.
+accepts the tokens %%, %h, %U, and %u.
 .Pp
 .Cm ChrootDirectory
-accepts the tokens %%, %h, and %u.
+accepts the tokens %%, %h, %U, and %u.
 .Pp
 .Cm RoutingDomain
 accepts the token %D.
