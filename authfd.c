@@ -1,4 +1,4 @@
-/* $OpenBSD: authfd.c,v 1.109 2018/04/10 00:10:49 djm Exp $ */
+/* $OpenBSD: authfd.c,v 1.110 2018/07/03 11:39:54 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -352,7 +352,7 @@ Xssh_agent_sign(int sock, ssh_sign_ctx *ctx,
     const u_char *data, size_t datalen)
 {
 	struct sshbuf *msg;
-	u_char type;
+	u_char *sig = NULL, type = 0;
 	size_t len = 0;
 	u_int flags = 0;
 	int r = SSH_ERR_INTERNAL_ERROR;
@@ -383,11 +383,19 @@ Xssh_agent_sign(int sock, ssh_sign_ctx *ctx,
 		r = SSH_ERR_INVALID_FORMAT;
 		goto out;
 	}
-	if ((r = sshbuf_get_string(msg, sigp, &len)) != 0)
+	if ((r = sshbuf_get_string(msg, &sig, &len)) != 0)
 		goto out;
+	/* Check what we actually got back from the agent. */
+	if ((r = Xkey_check_sigalg(ctx, sig, len)) != 0)
+		goto out;
+	/* success */
+	*sigp = sig;
 	*lenp = len;
+	sig = NULL;
+	len = 0;
 	r = 0;
  out:
+	freezero(sig, len);
 	sshbuf_free(msg);
 	return r;
 }

@@ -1015,47 +1015,6 @@ input_userauth_passwd_changereq(int type, u_int32_t seq, struct ssh *ssh)
 }
 
 static int
-Xssh_agent_sign_check(int sock, ssh_sign_ctx *ctx,
-    u_char **sigp, size_t *lenp,
-    const u_char *data, size_t datalen
-) {
-	int r;
-	u_char *sig;
-	size_t len;
-
-	if (sigp != NULL) *sigp = NULL;
-	if (lenp != NULL) *lenp = 0;
-
-	r = Xssh_agent_sign(sock, ctx, &sig, &len, data, datalen);
-	if (r < 0) goto out;
-
-	if (sigp != NULL) *sigp = sig;
-	if (lenp != NULL) *lenp = len;
-
-{	const struct sshkey *key = ctx->key;
-	if (sshkey_is_x509(key) || sshkey_is_cert(key)) goto out;
-}
-/*
- * Some agents will return ssh-rsa signatures when asked to make a
- * rsa-sha2-* signature. Check what they actually gave back and warn the
- * user if the agent has returned an unexpected format.
- */
-{	char *sigalg = NULL;
-
-	if (sshkey_sigtype(sig, len, &sigalg) < 0) goto out;
-
-	if (strcmp(sigalg, ctx->alg) != 0) {
-		logit("warning: agent returned different signature format %s "
-		    "(expected %s)", sigalg, ctx->alg);
-	}
-	free(sigalg);
-}
-
-out:
-	return r;
-}
-
-static int
 identity_sign(struct identity *id, ssh_sign_ctx *id_ctx,
     u_char **sigp, size_t *lenp, const u_char *data, size_t datalen)
 {
@@ -1063,19 +1022,24 @@ identity_sign(struct identity *id, ssh_sign_ctx *id_ctx,
 	int r;
 	ssh_sign_ctx ctx = { id_ctx->alg, id->key, id_ctx->compat };
 
-	/* the agent supports this key */
+	/* The agent supports this key. */
 	if (id->key != NULL && id->agent_fd != -1)
-		return Xssh_agent_sign_check(id->agent_fd, &ctx,
+		return Xssh_agent_sign(id->agent_fd, &ctx,
 		    sigp, lenp, data, datalen);
 
 	/*
-	 * we have already loaded the private key or
-	 * the private key is stored in external hardware
+	 * We have already loaded the private key or the private key is
+	 * stored in external hardware.
 	 */
 	if (id->key != NULL &&
-	    (id->isprivate || (id->key->flags & SSHKEY_FLAG_EXT)))
-		return Xkey_sign(&ctx, sigp, lenp, data, datalen);
-	/* load the private key from the file */
+	    (id->isprivate || (id->key->flags & SSHKEY_FLAG_EXT))) {
+		r = Xkey_sign(&ctx, sigp, lenp, data, datalen);
+		if (r != 0) return r;
+
+		return Xkey_check_sigalg(&ctx, *sigp, *lenp);
+	}
+
+	/* Load the private key from the file. */
 	if ((prv = load_identity_file(id)) == NULL)
 		return SSH_ERR_KEY_NOT_FOUND;
 	if (id->key != NULL && !sshkey_equal_public(prv, id->key)) {

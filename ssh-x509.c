@@ -2081,6 +2081,35 @@ xkey_sign(ssh_sign_ctx *ctx, u_char **sigp, u_int *lenp, const u_char *data, u_i
 }
 
 
+int
+Xkey_check_sigalg(ssh_sign_ctx *ctx, const u_char *sig, size_t siglen) {
+	int r;
+	const SSHX509KeyAlgs *p;
+
+	/* check if public algorithm is with X.509 certificates */
+	if (ssh_xkalg_nameind(ctx->alg, &p, -1) < 0)
+		return sshkey_check_sigtype(sig, siglen, ctx->alg);
+
+{	char *sigalg = NULL;
+	const char *expalg;
+
+	r = sshkey_sigtype(sig, siglen, &sigalg);
+	if (r < 0) goto out;
+
+	expalg = X509PUBALG_SIGNAME(p);
+	if (strcmp(expalg, sigalg) != 0) {
+		r = SSH_ERR_SIGN_ALG_UNSUPPORTED;
+		error("different signature algorithm - expected %s, got %s",
+		    expalg, sigalg);
+	}
+	free(sigalg);
+}
+
+out:
+	return r;
+}
+
+
 static int
 sshkey_verify_base(
     struct sshkey *key, const u_char *sig, size_t siglen,

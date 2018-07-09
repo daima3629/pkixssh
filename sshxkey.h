@@ -51,6 +51,7 @@ struct ssh_signature_context_st {
 };
 
 int	Xkey_sign(ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp, const u_char *data, size_t datalen);
+int	Xkey_check_sigalg(ssh_sign_ctx *ctx, const u_char *sig, size_t siglen);
 int	Xkey_verify(ssh_sign_ctx *ctx, const u_char *sig, size_t siglen, const u_char *data, size_t dlen);
 
 #endif /* SSHXKEY_H */

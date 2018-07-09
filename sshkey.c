@@ -2643,6 +2643,50 @@ sshkey_sigtype(const u_char *sig, size_t siglen, char **sigtypep)
 	return r;
 }
 
+/*
+ * Returns the expected signature algorithm for a given public key algorithm.
+ */
+const char *
+sshkey_sigalg_by_name(const char *name)
+{
+	const struct keytype *kt;
+
+	for (kt = keytypes; kt->type != -1; kt++) {
+		if (strcmp(kt->name, name) != 0)
+			continue;
+		if (kt->sigalg != NULL)
+			return kt->sigalg;
+		if (!kt->cert)
+			return kt->name;
+		return sshkey_ssh_name_from_type_nid(
+		    sshkey_type_plain(kt->type), kt->nid);
+	}
+	return NULL;
+}
+
+/*
+ * Verifies that the signature algorithm appearing inside the signature blob
+ * matches that which was requested.
+ */
+int
+sshkey_check_sigtype(const u_char *sig, size_t siglen,
+    const char *requested_alg)
+{
+	const char *expected_alg;
+	char *sigtype = NULL;
+	int r;
+
+	if (requested_alg == NULL)
+		return 0;
+	if ((expected_alg = sshkey_sigalg_by_name(requested_alg)) == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+	if ((r = sshkey_sigtype(sig, siglen, &sigtype)) != 0)
+		return r;
+	r = strcmp(expected_alg, sigtype) == 0;
+	free(sigtype);
+	return r ? 0 : SSH_ERR_SIGN_ALG_UNSUPPORTED;
+}
+
 int
 sshkey_sign(const struct sshkey *key,
     u_char **sigp, size_t *lenp,
