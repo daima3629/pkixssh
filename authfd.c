@@ -330,13 +330,17 @@ ssh_free_identitylist(struct ssh_identitylist *idl)
 static u_int
 agent_encode_alg(const struct sshkey *key, const char *alg)
 {
+	if (alg == NULL) return 0;
+	if (key->type != KEY_RSA) return 0;
 #ifdef HAVE_EVP_SHA256
-	if (alg != NULL && key->type == KEY_RSA) {
-		if (strcmp(alg, "rsa-sha2-256") == 0)
-			return SSH_AGENT_RSA_SHA2_256;
-		else if (strcmp(alg, "rsa-sha2-512") == 0)
-			return SSH_AGENT_RSA_SHA2_512;
-	}
+	if (strcmp(alg, "rsa-sha2-256") == 0)
+		return SSH_AGENT_RSA_SHA2_256;
+	if (strcmp(alg, "rsa-sha2-512") == 0)
+		return SSH_AGENT_RSA_SHA2_512;
+	if (strcmp(alg, "rsa-sha2-256-cert-v01@openssh.com") == 0)
+		return SSH_AGENT_RSA_SHA2_256;
+	if (strcmp(alg, "rsa-sha2-512-cert-v01@openssh.com") == 0)
+		return SSH_AGENT_RSA_SHA2_512;
 #endif /*def HAVE_EVP_SHA256*/
 	return 0;
 }

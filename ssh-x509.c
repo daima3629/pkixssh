@@ -2107,9 +2107,14 @@ Xkey_verify(ssh_sign_ctx *ctx,
 {	/* check if public algorithm is with X.509 certificates */
 	const SSHX509KeyAlgs *p;
 
-	if (ssh_xkalg_nameind(ctx->alg, &p, -1) < 0)
+	if (ssh_xkalg_nameind(ctx->alg, &p, -1) < 0) {
+		if (ctx->key->type == KEY_RSA_CERT &&
+		    (ctx->compat->datafellows & SSH_BUG_SIGTYPE) != 0) {
+			ctx->alg = NULL;
+		}
 		return sshkey_verify_base(ctx->key, sig, siglen,
 		     data, dlen, ctx->alg, ctx->compat->datafellows);
+	}
 }
 
 	return ssh_x509_verify(ctx, sig, siglen, data, dlen);

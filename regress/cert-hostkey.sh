@@ -1,4 +1,4 @@
-#	$OpenBSD: cert-hostkey.sh,v 1.15 2017/04/30 23:34:55 djm Exp $
+#	$OpenBSD: cert-hostkey.sh,v 1.16 2018/07/03 11:43:49 djm Exp $
 #	Placed in the Public Domain.
 
 tid="certified host keys"
@@ -8,12 +8,23 @@ rm -f $OBJ/cert_host_key* $OBJ/host_krl_*
 
 # Allow all hostkey/pubkey types, prefer certs for the client
 types=""
-for i in `$SSH -Q key`; do
+for i in `$SSH -Q key | grep -v "^x509v3-"`; do
 	if [ -z "$types" ]; then
 		types="$i"
 		continue
 	fi
+	if config_defined HAVE_EVP_SHA256 ; then
+		# special treatment for RSA keys:
+		case "$i" in
+		*rsa*cert*)
+			i="rsa-sha2-256-cert-v01@openssh.com,$i"
+			i="rsa-sha2-512-cert-v01@openssh.com,$i";;
+		*rsa*)
+			i="rsa-sha2-256,rsa-sha2-512,$i";;
+		esac
+	fi
 	case "$i" in
+	# Prefer certificate to plain keys.
 	*cert*)	types="$i,$types";;
 	*)	types="$types,$i";;
 	esac

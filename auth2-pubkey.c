@@ -1,4 +1,4 @@
-/* $OpenBSD: auth2-pubkey.c,v 1.77 2018/03/03 03:15:51 djm Exp $ */
+/* $OpenBSD: auth2-pubkey.c,v 1.80 2018/07/03 11:39:54 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  *
@@ -136,7 +136,7 @@ userauth_pubkey(struct ssh *ssh)
 	pktype = sshkey_type_from_name(pkalg);
 	if (pktype == KEY_UNSPEC) {
 		/* this is perfectly legal */
-		logit("%s: unsupported public key algorithm: %s",
+		verbose("%s: unsupported public key algorithm: %s",
 		    __func__, pkalg);
 		goto done;
 	}

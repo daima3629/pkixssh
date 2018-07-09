@@ -1,4 +1,4 @@
-/* $OpenBSD: sshkey.c,v 1.64 2018/03/22 07:05:48 markus Exp $ */
+/* $OpenBSD: sshkey.c,v 1.66 2018/07/03 13:20:25 djm Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Alexander von Gernler.  All rights reserved.
@@ -90,48 +90,60 @@ static int sshkey_from_blob_internal(struct sshbuf *buf,
 struct keytype {
 	const char *name;
 	const char *shortname;
+	const char *sigalg;
 	int type;
 	int nid;
 	int cert;
 	int sigonly;
 };
 static const struct keytype keytypes[] = {
-	{ "ssh-ed25519", "ED25519", KEY_ED25519, 0, 0, 0 },
-	{ "ssh-ed25519-cert-v01@openssh.com", "ED25519-CERT",
+	{ "ssh-ed25519", "ED25519", NULL, KEY_ED25519, 0, 0, 0 },
+	{ "ssh-ed25519-cert-v01@openssh.com", "ED25519-CERT", NULL,
 	    KEY_ED25519_CERT, 0, 1, 0 },
 #ifdef WITH_XMSS
-	{ "ssh-xmss@openssh.com", "XMSS", KEY_XMSS, 0, 0, 0 },
-	{ "ssh-xmss-cert-v01@openssh.com", "XMSS-CERT",
+	{ "ssh-xmss@openssh.com", "XMSS", NULL, KEY_XMSS, 0, 0, 0 },
+	{ "ssh-xmss-cert-v01@openssh.com", "XMSS-CERT", NULL,
 	    KEY_XMSS_CERT, 0, 1, 0 },
 #endif /* WITH_XMSS */
 #ifdef WITH_OPENSSL
-	{ "ssh-rsa", "RSA", KEY_RSA, 0, 0, 0 },
+	{ "ssh-rsa", "RSA", NULL, KEY_RSA, 0, 0, 0 },
 #ifdef HAVE_EVP_SHA256
-	{ "rsa-sha2-256", "RSA", KEY_RSA, 0, 0, 1 },
-	{ "rsa-sha2-512", "RSA", KEY_RSA, 0, 0, 1 },
+	{ "rsa-sha2-256", "RSA", NULL, KEY_RSA, 0, 0, 1 },
+	{ "rsa-sha2-512", "RSA", NULL, KEY_RSA, 0, 0, 1 },
 #endif /*def HAVE_EVP_SHA256*/
-	{ "ssh-dss", "DSA", KEY_DSA, 0, 0, 0 },
+	{ "ssh-dss", "DSA", NULL, KEY_DSA, 0, 0, 0 },
 # ifdef OPENSSL_HAS_ECC
-	{ "ecdsa-sha2-nistp256", "ECDSA", KEY_ECDSA, NID_X9_62_prime256v1, 0, 0 },
-	{ "ecdsa-sha2-nistp384", "ECDSA", KEY_ECDSA, NID_secp384r1, 0, 0 },
+	{ "ecdsa-sha2-nistp256", "ECDSA", NULL,
+	    KEY_ECDSA, NID_X9_62_prime256v1, 0, 0 },
+	{ "ecdsa-sha2-nistp384", "ECDSA", NULL,
+	    KEY_ECDSA, NID_secp384r1, 0, 0 },
 #  ifdef OPENSSL_HAS_NISTP521
-	{ "ecdsa-sha2-nistp521", "ECDSA", KEY_ECDSA, NID_secp521r1, 0, 0 },
+	{ "ecdsa-sha2-nistp521", "ECDSA", NULL,
+	    KEY_ECDSA, NID_secp521r1, 0, 0 },
 #  endif /* OPENSSL_HAS_NISTP521 */
 # endif /* OPENSSL_HAS_ECC */
-	{ "ssh-rsa-cert-v01@openssh.com", "RSA-CERT", KEY_RSA_CERT, 0, 1, 0 },
-	{ "ssh-dss-cert-v01@openssh.com", "DSA-CERT", KEY_DSA_CERT, 0, 1, 0 },
+	{ "ssh-rsa-cert-v01@openssh.com", "RSA-CERT", NULL,
+	    KEY_RSA_CERT, 0, 1, 0 },
+#ifdef HAVE_EVP_SHA256
+	{ "rsa-sha2-256-cert-v01@openssh.com", "RSA-CERT",
+	    "rsa-sha2-256", KEY_RSA_CERT, 0, 1, 1 },
+	{ "rsa-sha2-512-cert-v01@openssh.com", "RSA-CERT",
+	    "rsa-sha2-512", KEY_RSA_CERT, 0, 1, 1 },
+#endif /*def HAVE_EVP_SHA256*/
+	{ "ssh-dss-cert-v01@openssh.com", "DSA-CERT", NULL,
+	    KEY_DSA_CERT, 0, 1, 0 },
 # ifdef OPENSSL_HAS_ECC
-	{ "ecdsa-sha2-nistp256-cert-v01@openssh.com", "ECDSA-CERT",
+	{ "ecdsa-sha2-nistp256-cert-v01@openssh.com", "ECDSA-CERT", NULL,
 	    KEY_ECDSA_CERT, NID_X9_62_prime256v1, 1, 0 },
-	{ "ecdsa-sha2-nistp384-cert-v01@openssh.com", "ECDSA-CERT",
+	{ "ecdsa-sha2-nistp384-cert-v01@openssh.com", "ECDSA-CERT", NULL,
 	    KEY_ECDSA_CERT, NID_secp384r1, 1, 0 },
 #  ifdef OPENSSL_HAS_NISTP521
-	{ "ecdsa-sha2-nistp521-cert-v01@openssh.com", "ECDSA-CERT",
+	{ "ecdsa-sha2-nistp521-cert-v01@openssh.com", "ECDSA-CERT", NULL,
 	    KEY_ECDSA_CERT, NID_secp521r1, 1, 0 },
 #  endif /* OPENSSL_HAS_NISTP521 */
 # endif /* OPENSSL_HAS_ECC */
 #endif /* WITH_OPENSSL */
-	{ NULL, NULL, -1, -1, 0, 0 }
+	{ NULL, NULL, NULL, -1, -1, 0, 0 }
 };
 
 const char *

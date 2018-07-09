@@ -790,6 +790,12 @@ list_hostkey_types(void)
 			continue;
 		switch (key->type) {
 		case KEY_RSA_CERT:
+			/* for RSA we also support SHA2 signatures */
+			append_hostkey_type(b,
+			    "rsa-sha2-256-cert-v01@openssh.com");
+			append_hostkey_type(b,
+			    "rsa-sha2-512-cert-v01@openssh.com");
+			/* FALLTHROUGH */
 		case KEY_DSA_CERT:
 		case KEY_ECDSA_CERT:
 		case KEY_ED25519_CERT:
