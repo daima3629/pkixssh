@@ -1611,8 +1611,6 @@ ssh_x509key_name(const struct sshkey *k) {
 }
 
 
-extern const char* sshkey_name_from_types(int type, int subtype);
-
 const char**
 Xkey_algoriths(const struct sshkey *key) {
 	const char **ret;

@@ -1505,20 +1505,63 @@ pkalg_match(const char *pkalg, const char *pattern) {
 static int
 try_identity(struct ssh *ssh, Identity *id)
 {
-	struct sshkey *key = id->key;
+	struct sshkey *key;
+	struct kex *kex;
+	int kt;
+	const char *pkalg;
 
-	if (ssh == NULL) return (0);
-	if (key == NULL) return (0);
-	if (sshkey_is_cert(key)) {
-		id->pkalg = sshkey_ssh_name(key);
-		return 1;
+	if (ssh == NULL) return 0;
+	if (id == NULL) return 0;
+	key = id->key;
+	if (key == NULL) return 0;
+
+	kex = ssh->kex;
+	kt = key->type;
+
+	if (!sshkey_is_cert(key)) goto x509_cert;
+
+{	/* custom certificates:
+	 * Follow broken OpenBSD implementation - extension that list
+	 * supported public key algorithms is not correct. In
+	 * consequence we cannot search into list offered by server
+	 * as custom certificate algorithms are not listed at all!
+	 * As work around we will check for respective 'plain'
+	 * algorithms.
+	 * On top on this version 7.8 is first that implements
+	 * RSA-SHA2 algorithms for custom certificates, i.e.
+	 * this requires specific processing.
+	 */
+	const char *pkalg0;
+
+	if ((key->type == KEY_RSA_CERT) &&
+	    !(ssh->compat & SSH_BUG_SIGTYPE)) {
+		pkalg = "rsa-sha2-256-cert-v01@openssh.com";
+		pkalg0 = "rsa-sha2-256";
+		if (pkalg_match(pkalg, options.pubkey_algorithms) &&
+		    pkalg_match(pkalg0, kex->pkalgs))
+			goto cust_cert_done;
+
+		pkalg = "rsa-sha2-512-cert-v01@openssh.com";
+		pkalg0 = "rsa-sha2-512";
+		if (pkalg_match(pkalg, options.pubkey_algorithms) &&
+		    pkalg_match(pkalg0, kex->pkalgs))
+			goto cust_cert_done;
 	}
 
-{	struct kex *kex = ssh->kex;
-	const char *pkalg;
-	int kt;
+	pkalg = sshkey_ssh_name(key);
+	pkalg0 = sshkey_ssh_name_plain(key);
+	if (pkalg_match(pkalg, options.pubkey_algorithms) &&
+	    pkalg_match(pkalg0, kex->pkalgs))
+		goto cust_cert_done;
 
-	kt = key->type;
+	return 0;
+
+cust_cert_done:
+	id->pkalg = pkalg;
+	return 1;
+}
+
+x509_cert:
 	if (!sshkey_is_x509(key)) goto plain;
 
 {	/* try "X.509" algorithms only */
@@ -1527,7 +1570,7 @@ try_identity(struct ssh *ssh, Identity *id)
 	int k = 0, frms[3];
 
 	if (kex->pkalgs != NULL) {
-		/* preffer RFC6187 algorithms if algorithm extension is available */
+		/* prefer RFC6187 algorithms if algorithm extension is available */
 		frms[0] = X509FORMAT_RFC6187;
 		frms[1] = X509FORMAT_LEGACY;
 		frms[2] = -1;
@@ -1568,14 +1611,14 @@ plain:	/* try "plain" key algorithm */
 	if (kt == KEY_RSA && (kex->pkalgs != NULL)) {
 		/* server must announce support for following algorithms */
 		pkalg = "rsa-sha2-256";
-		if (match_pattern_list(pkalg, kex->pkalgs, 0) == 1)
-			if (pkalg_match(pkalg, options.pubkey_algorithms))
-				goto done;
+		if ((match_pattern_list(pkalg, kex->pkalgs, 0) == 1) &&
+		    pkalg_match(pkalg, options.pubkey_algorithms))
+			goto done;
 
 		pkalg = "rsa-sha2-512";
-		if (match_pattern_list(pkalg, kex->pkalgs, 0) == 1)
-			if (pkalg_match(pkalg, options.pubkey_algorithms))
-				goto done;
+		if ((match_pattern_list(pkalg, kex->pkalgs, 0) == 1) &&
+		    pkalg_match(pkalg, options.pubkey_algorithms))
+			goto done;
 	}
 #endif /*def HAVE_EVP_SHA256*/
 
@@ -1597,7 +1640,6 @@ done:
 
 	id->pkalg = pkalg;
 	return 1;
-}
 }
 
 int

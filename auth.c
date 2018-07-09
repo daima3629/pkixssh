@@ -290,7 +290,7 @@ format_method_key(Authctxt *authctxt)
 	if (key_is_cert(key)) {
 		fp = sshkey_fingerprint(key->cert->signature_key,
 		    options.fingerprint_hash, SSH_FP_DEFAULT);
-		xasprintf(&ret, "%s ID %s (serial %llu) CA %s %s%s%s",
+		xasprintf(&ret, "%s ID \"%s\" (serial %llu) CA %s %s%s%s",
 		    sshkey_type(key), key->cert->key_id,
 		    (unsigned long long)key->cert->serial,
 		    sshkey_type(key->cert->signature_key),

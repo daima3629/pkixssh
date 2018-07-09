@@ -34,7 +34,7 @@ grep -v IdentityFile $OBJ/ssh_proxy.orig > $OBJ/ssh_proxy
 opts="-oProtocol=2 -F $OBJ/ssh_proxy -oIdentitiesOnly=yes"
 certopts="$opts -i $OBJ/user_key3 -oCertificateFile=$OBJ/cert_user_key3.pub"
 
-config_defined HAVE_EVP_SHA256 && extra_algs=",rsa-sha2-*"
+config_defined HAVE_EVP_SHA256 && extra_algs=",rsa-sha2-256,rsa-sha2-512"
 
 echo mekmitasdigoat > $OBJ/authorized_principals_$USER
 cat $OBJ/user_key1.pub > $OBJ/authorized_keys_$USER
@@ -92,7 +92,7 @@ ${SSH} $opts -i $OBJ/user_key2 proxy true || fatal "key2 failed"
 # Allow only DSA in main config, Ed25519 for user.
 verbose "match w/ matching"
 prepare_config "PubkeyAcceptedKeyTypes ssh-dss" \
-	"Match user $USER" "PubkeyAcceptedKeyTypes ssh-rsa-cert-v01@openssh.com,ssh-ed25519"
+	"Match user $USER" "PubkeyAcceptedKeyTypes *rsa*-cert-v01@openssh.com,ssh-ed25519"
 ${SSH} $certopts proxy true || fatal "cert failed"
 ${SSH} $opts -i $OBJ/user_key1 proxy true || fatal "key1 failed"
 ${SSH} $opts -i $OBJ/user_key4 proxy true && fatal "key4 succeeded"

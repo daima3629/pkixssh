@@ -214,9 +214,6 @@ sshkey_ssh_name_plain(const struct sshkey *k)
 	    k->ecdsa_nid);
 }
 
-/* for internal use in extended key support */
-extern const char * sshkey_name_from_types(int type, int subtype);
-
 const char *
 sshkey_name_from_types(int type, int subtype) {
 	return sshkey_ssh_name_from_type_nid(type, subtype);
