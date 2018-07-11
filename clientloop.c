@@ -2187,7 +2187,7 @@ client_session2_setup(struct ssh *ssh, int id, int want_tty, int want_subsystem,
 		packet_put_int((u_int)ws.ws_ypixel);
 		if (tiop == NULL)
 			tiop = get_saved_tio();
-		tty_make_modes(-1, tiop);
+		ssh_tty_make_modes(ssh, -1, tiop);
 		packet_send();
 		/* XXX wait for reply */
 		c->client_tty = 1;
