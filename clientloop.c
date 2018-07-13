@@ -155,7 +155,7 @@ static time_t control_persist_exit_time = 0;
 volatile sig_atomic_t quit_pending; /* Set non-zero to quit the loop. */
 static int last_was_cr;		/* Last character was a newline. */
 static int exit_status;		/* Used to store the command exit status. */
-static Buffer stderr_buffer;	/* Used for final exit message. */
+static struct sshbuf *stderr_buffer;	/* Used for final exit message. */
 static int connection_in;	/* Connection to server (input). */
 static int connection_out;	/* Connection to server (output). */
 static int need_rekeying;	/* Set to non-zero if rekeying is requested. */
@@ -495,7 +495,7 @@ client_wait_until_can_do_something(struct ssh *ssh,
 	struct timeval tv, *tvp;
 	int timeout_secs;
 	time_t minwait_secs = 0, server_alive_time = 0, now = monotime();
-	int ret;
+	int r, ret;
 
 	/* Add any selections by the channel mechanism. */
 	channel_prepare_select(active_state, readsetp, writesetp, maxfdp,
@@ -548,8 +548,6 @@ client_wait_until_can_do_something(struct ssh *ssh,
 
 	ret = select((*maxfdp)+1, *readsetp, *writesetp, NULL, tvp);
 	if (ret < 0) {
-		char buf[100];
-
 		/*
 		 * We have to clear the select masks, because we return.
 		 * We have to return, because the mainloop checks for the flags
@@ -561,8 +559,9 @@ client_wait_until_can_do_something(struct ssh *ssh,
 		if (errno == EINTR)
 			return;
 		/* Note: we might still have data in the buffers. */
-		snprintf(buf, sizeof buf, "select: %s\r\n", strerror(errno));
-		buffer_append(&stderr_buffer, buf, strlen(buf));
+		if ((r = sshbuf_putf(stderr_buffer,
+		    "select: %s\r\n", strerror(errno))) != 0)
+			fatal("%s: buffer error: %s", __func__, ssh_err(r));
 		quit_pending = 1;
 	} else if (ret == 0) {
 		/*
@@ -604,8 +603,8 @@ client_suspend_self(Buffer *bin, Buffer *bout, Buffer *berr)
 static void
 client_process_net_input(fd_set *readset)
 {
-	int len;
 	char buf[SSH_IOBUFSZ];
+	int r, len;
 
 	/*
 	 * Read input from the server, and add any such data to the buffer of
@@ -619,10 +618,11 @@ client_process_net_input(fd_set *readset)
 			 * Received EOF.  The remote host has closed the
 			 * connection.
 			 */
-			snprintf(buf, sizeof buf,
+			if ((r = sshbuf_putf(stderr_buffer,
 			    "Connection to %.300s closed by remote host.\r\n",
-			    host);
-			buffer_append(&stderr_buffer, buf, strlen(buf));
+			    host)) != 0)
+				fatal("%s: buffer error: %s",
+				    __func__, ssh_err(r));
 			quit_pending = 1;
 			return;
 		}
@@ -639,10 +639,11 @@ client_process_net_input(fd_set *readset)
 			 * An error has encountered.  Perhaps there is a
 			 * network problem.
 			 */
-			snprintf(buf, sizeof buf,
+			if ((r = sshbuf_putf(stderr_buffer,
 			    "Read from remote host %.300s: %.100s\r\n",
-			    host, strerror(errno));
-			buffer_append(&stderr_buffer, buf, strlen(buf));
+			    host, strerror(errno))) != 0)
+				fatal("%s: buffer error: %s",
+				    __func__, ssh_err(r));
 			quit_pending = 1;
 			return;
 		}
@@ -1255,8 +1256,9 @@ client_loop(struct ssh *ssh, int have_pty, int escape_char_arg,
 
 	quit_pending = 0;
 
-	/* Initialize buffers. */
-	buffer_init(&stderr_buffer);
+	/* Initialize buffer. */
+	if ((stderr_buffer = sshbuf_new()) == NULL)
+		fatal("%s: sshbuf_new failed", __func__);
 
 	client_init_dispatch();
 
@@ -1413,24 +1415,25 @@ client_loop(struct ssh *ssh, int have_pty, int escape_char_arg,
 	 * that the connection has been closed.
 	 */
 	if (have_pty && options.log_level != SYSLOG_LEVEL_QUIET) {
-		snprintf(buf, sizeof buf,
-		    "Connection to %.64s closed.\r\n", host);
-		buffer_append(&stderr_buffer, buf, strlen(buf));
+		if ((r = sshbuf_putf(stderr_buffer,
+		    "Connection to %.64s closed.\r\n", host)) != 0)
+			fatal("%s: buffer error: %s", __func__, ssh_err(r));
 	}
 
 	/* Output any buffered data for stderr. */
-	if (buffer_len(&stderr_buffer) > 0) {
+	if (sshbuf_len(stderr_buffer) > 0) {
 		len = atomicio(vwrite, fileno(stderr),
-		    buffer_ptr(&stderr_buffer), buffer_len(&stderr_buffer));
-		if (len < 0 || (u_int)len != buffer_len(&stderr_buffer))
+		    sshbuf_mutable_ptr(stderr_buffer),
+		    sshbuf_len(stderr_buffer));
+		if (len < 0 || (u_int)len != sshbuf_len(stderr_buffer))
 			error("Write failed flushing stderr buffer.");
-		else
-			buffer_consume(&stderr_buffer, len);
+		else if ((r = sshbuf_consume(stderr_buffer, len)) != 0)
+			fatal("%s: buffer error: %s", __func__, ssh_err(r));
 	}
 
 	/* Clear and free any buffers. */
 	explicit_bzero(buf, sizeof(buf));
-	buffer_free(&stderr_buffer);
+	sshbuf_free(stderr_buffer);
 
 	/* Report bytes transferred, and transfer rates. */
 	total_time = monotime_double() - start_time;
