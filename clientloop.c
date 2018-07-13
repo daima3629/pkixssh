@@ -1,4 +1,4 @@
-/* $OpenBSD: clientloop.c,v 1.314 2018/06/26 02:02:36 djm Exp $ */
+/* $OpenBSD: clientloop.c,v 1.316 2018/07/09 21:20:26 markus Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -189,8 +189,6 @@ struct global_confirm {
 TAILQ_HEAD(global_confirms, global_confirm);
 static struct global_confirms global_confirms =
     TAILQ_HEAD_INITIALIZER(global_confirms);
-
-void ssh_process_session2_setup(int, int, int, Buffer *);
 
 /* Restores stdin to blocking mode. */
 
@@ -575,15 +573,15 @@ client_wait_until_can_do_something(struct ssh *ssh,
 }
 
 static void
-client_suspend_self(Buffer *bin, Buffer *bout, Buffer *berr)
+client_suspend_self(struct sshbuf *bin, struct sshbuf *bout, struct sshbuf *berr)
 {
 	/* Flush stdout and stderr buffers. */
-	if (buffer_len(bout) > 0)
-		atomicio(vwrite, fileno(stdout), buffer_ptr(bout),
-		    buffer_len(bout));
-	if (buffer_len(berr) > 0)
-		atomicio(vwrite, fileno(stderr), buffer_ptr(berr),
-		    buffer_len(berr));
+	if (sshbuf_len(bout) > 0)
+		atomicio(vwrite, fileno(stdout), sshbuf_mutable_ptr(bout),
+		    sshbuf_len(bout));
+	if (sshbuf_len(berr) > 0)
+		atomicio(vwrite, fileno(stderr), sshbuf_mutable_ptr(berr),
+		    sshbuf_len(berr));
 
 	leave_raw_mode(options.request_tty == REQUEST_TTY_FORCE);
 
@@ -656,7 +654,7 @@ client_status_confirm(struct ssh *ssh, int type, Channel *c, void *ctx)
 {
 	struct channel_reply_ctx *cr = (struct channel_reply_ctx *)ctx;
 	char errmsg[256];
-	int tochan;
+	int r, tochan;
 
 	/*
 	 * If a TTY was explicitly requested, then a failure to allocate
@@ -691,7 +689,10 @@ client_status_confirm(struct ssh *ssh, int type, Channel *c, void *ctx)
 		 * their stderr.
 		 */
 		if (tochan) {
-			buffer_append(c->extended, errmsg, strlen(errmsg));
+			if ((r = sshbuf_put(c->extended, errmsg,
+			    strlen(errmsg))) != 0)
+				fatal("%s: buffer error %s", __func__,
+				    ssh_err(r));
 		} else
 			error("%s", errmsg);
 		if (cr->action == CONFIRM_TTY) {
@@ -895,14 +896,15 @@ static struct escape_help_text esc_txt[] = {
 };
 
 static void
-print_escape_help(Buffer *b, int escape_char, int mux_client, int using_stderr)
+print_escape_help(struct sshbuf *b, int escape_char, int mux_client,
+    int using_stderr)
 {
 	unsigned int i, suppress_flags;
-	char string[1024];
+	int r;
 
-	snprintf(string, sizeof string, "%c?\r\n"
-	    "Supported escape sequences:\r\n", escape_char);
-	buffer_append(b, string, strlen(string));
+	if ((r = sshbuf_putf(b,
+	    "%c?\r\nSupported escape sequences:\r\n", escape_char)) != 0)
+		fatal("%s: buffer error: %s", __func__, ssh_err(r));
 
 	suppress_flags =
 	    (mux_client ? SUPPRESS_MUXCLIENT : 0) |
@@ -912,16 +914,16 @@ print_escape_help(Buffer *b, int escape_char, int mux_client, int using_stderr)
 	for (i = 0; i < sizeof(esc_txt)/sizeof(esc_txt[0]); i++) {
 		if (esc_txt[i].flags & suppress_flags)
 			continue;
-		snprintf(string, sizeof string, " %c%-3s - %s\r\n",
-		    escape_char, esc_txt[i].cmd, esc_txt[i].text);
-		buffer_append(b, string, strlen(string));
+		if ((r = sshbuf_putf(b, " %c%-3s - %s\r\n",
+		    escape_char, esc_txt[i].cmd, esc_txt[i].text)) != 0)
+			fatal("%s: buffer error: %s", __func__, ssh_err(r));
 	}
 
-	snprintf(string, sizeof string,
+	if ((r = sshbuf_putf(b,
 	    " %c%c   - send the escape character by typing it twice\r\n"
 	    "(Note that escapes are only recognized immediately after "
-	    "newline.)\r\n", escape_char, escape_char);
-	buffer_append(b, string, strlen(string));
+	    "newline.)\r\n", escape_char, escape_char)) != 0)
+		fatal("%s: buffer error: %s", __func__, ssh_err(r));
 }
 
 /*
@@ -929,12 +931,11 @@ print_escape_help(Buffer *b, int escape_char, int mux_client, int using_stderr)
  */
 static int
 process_escapes(struct ssh *ssh, Channel *c,
-    Buffer *bin, Buffer *bout, Buffer *berr,
+    struct sshbuf *bin, struct sshbuf *bout, struct sshbuf *berr,
     char *buf, int len)
 {
-	char string[1024];
 	pid_t pid;
-	int bytes = 0;
+	int r, bytes = 0;
 	u_int i;
 	u_char ch;
 	char *s;
@@ -960,10 +961,10 @@ process_escapes(struct ssh *ssh, Channel *c,
 			switch (ch) {
 			case '.':
 				/* Terminate the connection. */
-				snprintf(string, sizeof string, "%c.\r\n",
-				    efc->escape_char);
-				buffer_append(berr, string, strlen(string));
-
+				if ((r = sshbuf_putf(berr, "%c.\r\n",
+				    efc->escape_char)) != 0)
+					fatal("%s: buffer error: %s",
+					    __func__, ssh_err(r));
 				if (c && c->ctl_chan != -1) {
 					chan_read_failed(ssh, c);
 					chan_write_failed(ssh, c);
@@ -972,7 +973,7 @@ process_escapes(struct ssh *ssh, Channel *c,
 						    c->self, NULL);
 					}
 					c->type = SSH_CHANNEL_ABANDONED;
-					buffer_clear(c->input);
+					sshbuf_reset(c->input);
 					chan_ibuf_empty(ssh, c);
 					return 0;
 				} else
@@ -988,18 +989,20 @@ process_escapes(struct ssh *ssh, Channel *c,
 						snprintf(b, sizeof b, "^Z");
 					else
 						snprintf(b, sizeof b, "%c", ch);
-					snprintf(string, sizeof string,
+					if ((r = sshbuf_putf(berr,
 					    "%c%s escape not available to "
 					    "multiplexed sessions\r\n",
-					    efc->escape_char, b);
-					buffer_append(berr, string,
-					    strlen(string));
+					    efc->escape_char, b)) != 0)
+						fatal("%s: buffer error: %s",
+						    __func__, ssh_err(r));
 					continue;
 				}
 				/* Suspend the program. Inform the user */
-				snprintf(string, sizeof string,
-				    "%c^Z [suspend ssh]\r\n", efc->escape_char);
-				buffer_append(berr, string, strlen(string));
+				if ((r = sshbuf_putf(berr,
+				    "%c^Z [suspend ssh]\r\n",
+				    efc->escape_char)) != 0)
+					fatal("%s: buffer error: %s",
+					    __func__, ssh_err(r));
 
 				/* Restore terminal modes and suspend. */
 				client_suspend_self(bin, bout, berr);
@@ -1008,12 +1011,15 @@ process_escapes(struct ssh *ssh, Channel *c,
 				continue;
 
 			case 'B':
-				snprintf(string, sizeof string,
-				    "%cB\r\n", efc->escape_char);
-				buffer_append(berr, string, strlen(string));
+				if ((r = sshbuf_putf(berr,
+				    "%cB\r\n", efc->escape_char)) != 0)
+					fatal("%s: buffer error: %s",
+					    __func__, ssh_err(r));
 				channel_request_start(ssh, c->self, "break", 0);
-				packet_put_int(1000);
-				packet_send();
+				if ((r = sshpkt_put_u32(ssh, 1000)) != 0 ||
+				    (r = sshpkt_send(ssh)) != 0)
+					fatal("%s: %s", __func__,
+					    ssh_err(r));
 				continue;
 
 			case 'R':
@@ -1030,11 +1036,11 @@ process_escapes(struct ssh *ssh, Channel *c,
 				if (c && c->ctl_chan != -1)
 					goto noescape;
 				if (!log_is_on_stderr()) {
-					snprintf(string, sizeof string,
+					if ((r = sshbuf_putf(berr,
 					    "%c%c [Logging to syslog]\r\n",
-					     efc->escape_char, ch);
-					buffer_append(berr, string,
-					    strlen(string));
+					    efc->escape_char, ch)) != 0)
+						fatal("%s: buffer error: %s",
+						    __func__, ssh_err(r));
 					continue;
 				}
 				if (ch == 'V' && options.log_level >
@@ -1043,11 +1049,12 @@ process_escapes(struct ssh *ssh, Channel *c,
 				if (ch == 'v' && options.log_level <
 				    SYSLOG_LEVEL_DEBUG3)
 					log_change_level(++options.log_level);
-				snprintf(string, sizeof string,
+				if ((r = sshbuf_putf(berr,
 				    "%c%c [LogLevel %s]\r\n",
 				    efc->escape_char, ch,
-				    log_level_name(options.log_level));
-				buffer_append(berr, string, strlen(string));
+				    log_level_name(options.log_level))) != 0)
+					fatal("%s: buffer error: %s",
+					    __func__, ssh_err(r));
 				continue;
 
 			case '&':
@@ -1065,9 +1072,11 @@ process_escapes(struct ssh *ssh, Channel *c,
 				/* Stop listening for new connections. */
 				channel_stop_listening(ssh);
 
-				snprintf(string, sizeof string,
-				    "%c& [backgrounded]\n", efc->escape_char);
-				buffer_append(berr, string, strlen(string));
+				if ((r = sshbuf_putf(berr,
+				    "%c& [backgrounded]\n", efc->escape_char))
+				     != 0)
+					fatal("%s: buffer error: %s",
+					    __func__, ssh_err(r));
 
 				/* Fork into background. */
 				pid = fork();
@@ -1080,8 +1089,10 @@ process_escapes(struct ssh *ssh, Channel *c,
 					exit(0);
 				}
 				/* The child continues serving connections. */
-				buffer_append(bin, "\004", 1);
 				/* fake EOF on stdin */
+				if ((r = sshbuf_put_u8(bin, 4)) != 0)
+					fatal("%s: buffer error: %s",
+					    __func__, ssh_err(r));
 				return -1;
 			case '?':
 				print_escape_help(berr, efc->escape_char,
@@ -1090,11 +1101,14 @@ process_escapes(struct ssh *ssh, Channel *c,
 				continue;
 
 			case '#':
-				snprintf(string, sizeof string, "%c#\r\n",
-				    efc->escape_char);
-				buffer_append(berr, string, strlen(string));
+				if ((r = sshbuf_putf(berr, "%c#\r\n",
+				    efc->escape_char)) != 0)
+					fatal("%s: buffer error: %s",
+					    __func__, ssh_err(r));
 				s = channel_open_message(ssh);
-				buffer_append(berr, s, strlen(s));
+				if ((r = sshbuf_put(berr, s, strlen(s))) != 0)
+					fatal("%s: buffer error: %s",
+					    __func__, ssh_err(r));
 				free(s);
 				continue;
 
@@ -1106,7 +1120,10 @@ process_escapes(struct ssh *ssh, Channel *c,
 
 			default:
 				if (ch != efc->escape_char) {
-					buffer_put_char(bin, efc->escape_char);
+					if ((r = sshbuf_put_u8(bin,
+					    efc->escape_char)) != 0)
+						fatal("%s: buffer error: %s",
+						    __func__, ssh_err(r));
 					bytes++;
 				}
 				/* Escaped characters fall through here */
@@ -1132,7 +1149,8 @@ process_escapes(struct ssh *ssh, Channel *c,
 		 * and append it to the buffer.
 		 */
 		last_was_cr = (ch == '\r' || ch == '\n');
-		buffer_put_char(bin, ch);
+		if ((r = sshbuf_put_u8(bin, ch)) != 0)
+			fatal("%s: buffer error: %s", __func__, ssh_err(r));
 		bytes++;
 	}
 	return bytes;
@@ -2160,7 +2178,8 @@ client_input_global_request(int type, u_int32_t seq, struct ssh *ssh)
 
 void
 client_session2_setup(struct ssh *ssh, int id, int want_tty, int want_subsystem,
-    const char *term, struct termios *tiop, int in_fd, Buffer *cmd, char **env)
+    const char *term, struct termios *tiop, int in_fd, struct sshbuf *cmd,
+    char **env)
 {
 	int i, j, matched, len;
 	char *name, *val;
@@ -2246,23 +2265,23 @@ client_session2_setup(struct ssh *ssh, int id, int want_tty, int want_subsystem,
 		free(name);
 	}
 
-	len = buffer_len(cmd);
+	len = sshbuf_len(cmd);
 	if (len > 0) {
 		if (len > 900)
 			len = 900;
 		if (want_subsystem) {
 			debug("Sending subsystem: %.*s",
-			    len, (u_char*)buffer_ptr(cmd));
+			    len, sshbuf_ptr(cmd));
 			channel_request_start(ssh, id, "subsystem", 1);
 			client_expect_confirm(ssh, id, "subsystem",
 			    CONFIRM_CLOSE);
 		} else {
 			debug("Sending command: %.*s",
-			    len, (u_char*)buffer_ptr(cmd));
+			    len, sshbuf_ptr(cmd));
 			channel_request_start(ssh, id, "exec", 1);
 			client_expect_confirm(ssh, id, "exec", CONFIRM_CLOSE);
 		}
-		packet_put_string(buffer_ptr(cmd), buffer_len(cmd));
+		packet_put_string(sshbuf_ptr(cmd), sshbuf_len(cmd));
 		packet_send();
 	} else {
 		channel_request_start(ssh, id, "shell", 1);
