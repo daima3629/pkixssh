@@ -2345,7 +2345,7 @@ do_gen_krl(struct passwd *pw, int updating, int argc, char **argv)
 		fatal("Couldn't generate KRL");
 	if ((fd = open(identity_file, O_WRONLY|O_CREAT|O_TRUNC, 0644)) == -1)
 		fatal("open %s: %s", identity_file, strerror(errno));
-	if (atomicio(vwrite, fd, (void *)sshbuf_ptr(kbuf), sshbuf_len(kbuf)) !=
+	if (atomicio(vwrite, fd, sshbuf_mutable_ptr(kbuf), sshbuf_len(kbuf)) !=
 	    sshbuf_len(kbuf))
 		fatal("write %s: %s", identity_file, strerror(errno));
 	close(fd);

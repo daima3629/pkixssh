@@ -2,7 +2,7 @@
 /*
  * Copyright (c) 2000, 2013 Markus Friedl.  All rights reserved.
  * X509 certificate support,
- * Copyright (c) 2002-2006,2011,2012 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2018 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -62,7 +62,7 @@ sshkey_save_private_blob(struct sshbuf *keybuf, const char *filename)
 
 	if ((fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0600)) < 0)
 		return SSH_ERR_SYSTEM_ERROR;
-	if (atomicio(vwrite, fd, (u_char *)sshbuf_ptr(keybuf),
+	if (atomicio(vwrite, fd, sshbuf_mutable_ptr(keybuf),
 	    sshbuf_len(keybuf)) != sshbuf_len(keybuf)) {
 		oerrno = errno;
 		close(fd);

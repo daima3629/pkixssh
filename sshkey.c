@@ -4032,7 +4032,7 @@ sshkey_parse_private2(struct sshbuf *blob, int type, const char *passphrase,
 	}
 
 	/* decode base64 */
-	if ((r = sshbuf_b64tod(decoded, (char *)sshbuf_ptr(encoded))) != 0)
+	if ((r = sshbuf_b64tod(decoded, sshbuf_mutable_ptr(encoded))) != 0)
 		goto out;
 
 	/* check magic */
