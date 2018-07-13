@@ -87,7 +87,7 @@ extern char *__progname;
 
 #include "xmalloc.h"
 #include "buffer.h"
-#include "key.h"
+#include "ssherr.h"
 #include "hostfile.h"
 #include "auth.h"
 #include "auth-pam.h"
@@ -105,7 +105,7 @@ extern char *__progname;
 #include "monitor_wrap.h"
 
 extern ServerOptions options;
-extern Buffer loginmsg;
+extern struct sshbuf *loginmsg;
 extern u_int utmp_len;
 
 /* so we don't silently change behaviour */
@@ -563,8 +563,7 @@ sshpam_store_conv(int n, sshpam_const struct pam_message **msg,
     struct pam_response **resp, void *data)
 {
 	struct pam_response *reply;
-	int i;
-	size_t len;
+	int r, i;
 
 	debug3("PAM: %s called with %d messages", __func__, n);
 	*resp = NULL;
@@ -579,9 +578,10 @@ sshpam_store_conv(int n, sshpam_const struct pam_message **msg,
 		switch (PAM_MSG_MEMBER(msg, i, msg_style)) {
 		case PAM_ERROR_MSG:
 		case PAM_TEXT_INFO:
-			len = strlen(PAM_MSG_MEMBER(msg, i, msg));
-			buffer_append(&loginmsg, PAM_MSG_MEMBER(msg, i, msg), len);
-			buffer_append(&loginmsg, "\n", 1 );
+			if ((r = sshbuf_putf(loginmsg, "%s\n",
+			    PAM_MSG_MEMBER(msg, i, msg))) != 0)
+				fatal("%s: buffer error: %s",
+				    __func__, ssh_err(r));
 			reply[i].resp_retcode = PAM_SUCCESS;
 			break;
 		default:
@@ -749,6 +749,7 @@ sshpam_query(void *ctx, char **name, char **info,
 	u_char type;
 	char *msg;
 	size_t len, mlen;
+	int r;
 
 	debug3("PAM: %s entering", __func__);
 	buffer_init(&buffer);
@@ -807,8 +808,10 @@ sshpam_query(void *ctx, char **name, char **info,
 			if (**prompts != NULL) {
 				/* drain any accumulated messages */
 				debug("PAM: %s", **prompts);
-				buffer_append(&loginmsg, **prompts,
-				    strlen(**prompts));
+				if ((r = sshbuf_put(loginmsg, **prompts,
+				    strlen(**prompts))) != 0)
+					fatal("%s: buffer error: %s",
+					    __func__, ssh_err(r));
 				free(**prompts);
 				**prompts = NULL;
 			}
@@ -1176,7 +1179,7 @@ sshpam_passwd_conv(int n, sshpam_const struct pam_message **msg,
     struct pam_response **resp, void *data)
 {
 	struct pam_response *reply;
-	int i;
+	int r, i;
 	size_t len;
 
 	debug3("PAM: %s called with %d messages", __func__, n);
@@ -1202,9 +1205,10 @@ sshpam_passwd_conv(int n, sshpam_const struct pam_message **msg,
 		case PAM_TEXT_INFO:
 			len = strlen(PAM_MSG_MEMBER(msg, i, msg));
 			if (len > 0) {
-				buffer_append(&loginmsg,
-				    PAM_MSG_MEMBER(msg, i, msg), len);
-				buffer_append(&loginmsg, "\n", 1);
+				if ((r = sshbuf_putf(loginmsg, "%s\n",
+				    PAM_MSG_MEMBER(msg, i, msg))) != 0)
+					fatal("%s: buffer error: %s",
+					    __func__, ssh_err(r));
 			}
 			if ((reply[i].resp = strdup("")) == NULL)
 				goto fail;

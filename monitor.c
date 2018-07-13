@@ -1018,17 +1018,19 @@ mm_answer_pam_start(int sock, Buffer *m)
 }
 
 int
-mm_answer_pam_account(int sock, Buffer *m)
+mm_answer_pam_account(int sock, struct sshbuf *m)
 {
 	u_int ret;
+	int r;
 
 	if (!options.use_pam)
 		fatal("%s: PAM not enabled", __func__);
 
 	ret = do_pam_account();
 
-	buffer_put_int(m, ret);
-	buffer_put_string(m, buffer_ptr(&loginmsg), buffer_len(&loginmsg));
+	if ((r = sshbuf_put_u32(m, ret)) != 0 ||
+	    (r = sshbuf_put_stringb(m, loginmsg)) != 0)
+		fatal("%s: buffer error: %s", __func__, ssh_err(r));
 
 	mm_request_send(sock, MONITOR_ANS_PAM_ACCOUNT, m);
 

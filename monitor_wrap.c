@@ -617,25 +617,29 @@ mm_start_pam(Authctxt *authctxt)
 u_int
 mm_do_pam_account(void)
 {
-	Buffer m;
-	u_int ret;
+	struct sshbuf *m;
+	u_int32_t ret;
 	char *msg;
+	size_t msglen;
+	int r;
 
 	debug3("%s entering", __func__);
 	if (!options.use_pam)
 		fatal("UsePAM=no, but ended up in %s anyway", __func__);
 
-	buffer_init(&m);
-	mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_PAM_ACCOUNT, &m);
+	if ((m = sshbuf_new()) == NULL)
+		fatal("%s: sshbuf_new failed", __func__);
+	mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_PAM_ACCOUNT, m);
 
 	mm_request_receive_expect(pmonitor->m_recvfd,
-	    MONITOR_ANS_PAM_ACCOUNT, &m);
-	ret = buffer_get_int(&m);
-	msg = buffer_get_string(&m, NULL);
-	buffer_append(&loginmsg, msg, strlen(msg));
-	free(msg);
+	    MONITOR_ANS_PAM_ACCOUNT, m);
+	if ((r = sshbuf_get_u32(m, &ret)) != 0 ||
+	    (r = sshbuf_get_cstring(m, &msg, &msglen)) != 0 ||
+	    (r = sshbuf_put(loginmsg, msg, msglen)) != 0)
+		fatal("%s: buffer error: %s", __func__, ssh_err(r));
 
-	buffer_free(&m);
+	free(msg);
+	sshbuf_free(m);
 
 	debug3("%s returning %d", __func__, ret);
 
