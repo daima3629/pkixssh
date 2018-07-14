@@ -26,6 +26,7 @@
 
 #include "includes.h"
 #include "sshkey.h"
+#include "sshbuf.h"
 
 /* extended key support */
 

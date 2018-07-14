@@ -43,7 +43,11 @@ struct sshauthopt;
 
 void mm_log_handler(LogLevel, const char *, void *);
 int mm_is_monitor(void);
+#ifdef WITH_OPENSSL
+  /* for "typedef struct dh_st DH;" in OpenSSL before 0.9.8 */
+# include <openssl/dh.h>
 DH *mm_choose_dh(int, int, int);
+#endif
 int mm_xkey_sign(ssh_sign_ctx *ctx, u_char **sigp, u_int *lenp, const u_char *data, u_int datalen);
 void mm_inform_authserv(char *, char *);
 struct passwd *mm_getpwnamallow(const char *);

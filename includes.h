@@ -166,6 +166,7 @@
 
 #ifdef WITH_OPENSSL
 #include <openssl/opensslv.h> /* For OPENSSL_VERSION_NUMBER */
+#include <openssl/ossl_typ.h> /* For all OpenSSL defines and types */
 #endif
 
 #ifndef WITH_OPENSSL
