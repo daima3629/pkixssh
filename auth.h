@@ -231,7 +231,7 @@ void	 auth_log_authopts(const char *, const struct sshauthopt *, int);
 /* debug messages during authentication */
 void	 auth_debug_add(const char *fmt,...)
     __attribute__((format(printf, 1, 2)));
-void	 auth_debug_send(void);
+void	 auth_debug_send(struct ssh *);
 void	 auth_debug_reset(void);
 
 struct passwd *fakepw(void);
