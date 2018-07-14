@@ -1,7 +1,7 @@
 #ifndef SSH_XKALG_H
 #define SSH_XKALG_H
 /*
- * Copyright (c) 2005-2017 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2005-2018 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -68,7 +68,7 @@ int	ssh_xkalg_typeind(int type, int subtype, const SSHX509KeyAlgs **q, int loc);
 int	ssh_xkalg_typeformind(int type, int subtype, int frm, const SSHX509KeyAlgs **q, int loc);
 int	ssh_xkalg_ind(const SSHX509KeyAlgs **q, int loc);
 
-void	ssh_xkalg_listall(Buffer *b, const char *sep);
+void	ssh_xkalg_listall(struct sshbuf *b, const char *sep);
 
 char*	default_publickey_algorithms(void);
 

@@ -22,11 +22,14 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "ssh-xkalg.h"
 #include <string.h>
 #include <openssl/sha.h>
+#include <openssl/evp.h>
 
+#include "ssh-xkalg.h"
 #include "sshkey.h"
+#include "sshbuf.h"
+#include "ssherr.h"
 #include "log.h"
 #include "match.h"
 #include "myproposal.h"
@@ -745,7 +748,7 @@ ssh_xkalg_ind(const SSHX509KeyAlgs **q, int loc) {
 
 
 static void
-ssh_xkalg_list(int type, Buffer *b, const char *sep) {
+ssh_xkalg_list(int type, struct sshbuf *b, const char *sep) {
 	const SSHX509KeyAlgs *xkalg;
 	int loc;
 	int seplen;
@@ -776,7 +779,7 @@ defined in "sshd.c".
 	    loc = ssh_xkalg_typeind(type, -1, &xkalg, loc)
 	) {
 		const char *p;
-		int dupl, k;
+		int dupl, k, r;
 
 		/* exclude duplicate names */
 		p = xkalg->name;
@@ -793,14 +796,20 @@ defined in "sshd.c".
 		}
 		if (dupl) continue;
 
-		if (buffer_len(b) > 0) buffer_append(b, sep, seplen);
-		buffer_append(b, p, strlen(p));
+		if (sshbuf_len(b) > 0) {
+			if ((r = sshbuf_put(b, sep, seplen)) != 0)
+				fatal("%s: buffer error: %s",
+				    __func__, ssh_err(r));
+		}
+		if ((r = sshbuf_put(b, p, strlen(p))) != 0)
+			fatal("%s: buffer error: %s",
+			    __func__, ssh_err(r));
 	}
 }
 
 
 void
-ssh_xkalg_listall(Buffer *b, const char *sep) {
+ssh_xkalg_listall(struct sshbuf *b, const char *sep) {
 	ssh_xkalg_list(KEY_ECDSA, b, sep);
 	ssh_xkalg_list(KEY_RSA, b, sep);
 	ssh_xkalg_list(KEY_DSA, b, sep);
@@ -809,28 +818,31 @@ ssh_xkalg_listall(Buffer *b, const char *sep) {
 
 char*
 default_publickey_algorithms(void) {
-	Buffer b;
+	struct sshbuf *b;
 	char *p;
+	int r;
 
-	/* NOTE: fatal on error in buffer allocation or xstrdup */
-	buffer_init(&b);
+	b = sshbuf_new();
+	if (b == NULL)
+		fatal("%s: sshbuf_new failed", __func__);
 
-	ssh_xkalg_listall(&b, ",");
+	ssh_xkalg_listall(b, ",");
 
 	p = KEX_DEFAULT_PK_ALG;
-	if (buffer_len(&b) > 0) buffer_append(&b, ",", 1);
-	buffer_append(&b, p, strlen(p));
+	if ((r = sshbuf_put(b, ",", 1)) != 0 ||
+	    (r = sshbuf_put(b, p, strlen(p))) != 0)
+		fatal("%s: buffer error: %s", __func__, ssh_err(r));
 
 	/* Since PKIX-SSH 8.5 ssh-dss is not listed in KEX_DEFAULT_PK_ALG */
 	p = "ssh-dss";
-	buffer_append(&b, ",", 1);
-	buffer_append(&b, p, strlen(p));
+	if ((r = sshbuf_put(b, ",", 1)) != 0 ||
+	    (r = sshbuf_put(b, p, strlen(p))) != 0 ||
+	    (r = sshbuf_put(b, "\0", 1)) != 0)
+		fatal("%s: buffer error: %s", __func__, ssh_err(r));
 
-	buffer_append(&b, "\0", 1);
+	p = xstrdup(sshbuf_ptr(b));
 
-	p = xstrdup(buffer_ptr(&b));
-
-	buffer_free(&b);
+	sshbuf_free(b);
 
 	return p;
 }
