@@ -289,16 +289,17 @@ sshkey_alg_list(int certs_only, int plain_only, int include_sigonly, char sep)
 	const struct keytype *kt;
 
 	if (!certs_only || !plain_only) {
-		Buffer b;
+		struct sshbuf *b;
 
 		fill_default_xkalg();
-		buffer_init(&b);
+		if ((b = sshbuf_new()) == NULL)
+			fatal("%s: sshbuf_new failed", __func__);
 	{	char sep_s[2] = { sep, '\0' };
-		ssh_xkalg_listall(&b, sep_s);
+		ssh_xkalg_listall(b, sep_s);
 	}
-		ret = xstrdup(buffer_ptr(&b));
-		rlen = buffer_len(&b);
-		buffer_free(&b);
+		ret = xstrdup(sshbuf_ptr(b));
+		rlen = sshbuf_len(b);
+		sshbuf_free(b);
 	}
 
 	for (kt = keytypes; kt->type != -1; kt++) {
@@ -4355,7 +4356,7 @@ sshkey_parse_private_pem_fileblob(struct sshbuf *blob, int type,
 	debug3("read PEM private key begin");
 	if (sshbuf_len(blob) == 0 || sshbuf_len(blob) > INT_MAX)
 		return SSH_ERR_INVALID_ARGUMENT;
-	bio = BIO_new_mem_buf(buffer_ptr(blob), buffer_len(blob));
+	bio = BIO_new_mem_buf(sshbuf_ptr(blob), sshbuf_len(blob));
 	if (bio == NULL )
 		return SSH_ERR_ALLOC_FAIL;
 
@@ -4429,7 +4430,7 @@ sshkey_parse_private_pem_fileblob(struct sshbuf *blob, int type,
 	}
 	if (prv) {
 		BIO_free(bio);
-		bio = BIO_new_mem_buf(buffer_ptr(blob), buffer_len(blob));
+		bio = BIO_new_mem_buf(sshbuf_ptr(blob), sshbuf_len(blob));
 		if (bio != NULL) {
 			x509key_parse_cert(prv, pk, bio);
 		} else {
