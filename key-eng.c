@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2018 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -668,7 +668,7 @@ ssh_engine_reset(const char *engine) {
 
 #define WHITESPACE " \t\r\n"
 /* hold list with names of used engines to free at shutdown */
-static Buffer	eng_list;
+static struct sshbuf *eng_list = NULL;
 
 /* name of currect engine to process */
 static char *eng_name = NULL;
@@ -680,7 +680,7 @@ process_engconfig_line(char *line, const char *filename, int linenum) {
 	size_t len;
 	char *s, *keyword, *arg;
 	ENGINE *e;
-	int ctrl_ret;
+	int ctrl_ret, r;
 
 	/* strip trailing whitespace */
 	len = strlen(line);
@@ -727,7 +727,9 @@ process_engconfig_line(char *line, const char *filename, int linenum) {
 		if (eng_name != NULL)
 			free(eng_name);
 		eng_name = xstrdup(arg); /*fatal on error*/
-		buffer_put_cstring(&eng_list, eng_name);
+		r = sshbuf_put_cstring(eng_list, eng_name);
+		if (r != 0)
+			fatal("%s: buffer error: %s", __func__, ssh_err(r));
 	}
 	else {
 		if (eng_name == NULL)
@@ -952,7 +954,9 @@ done:
 void
 ssh_engines_startup() {
 #ifdef USE_OPENSSL_ENGINE
-	buffer_init(&eng_list);
+	eng_list = sshbuf_new();
+	if (eng_list == NULL)
+		fatal("%s: sshbuf_new failed", __func__);
 #endif
 	(void) setup_ssh_ui_method();
 }
@@ -964,15 +968,18 @@ ssh_engines_shutdown() {
 	free(eng_name);
 	eng_name = NULL;
 
-	while (buffer_len(&eng_list) > 0) {
-		u_int   k = 0;
-		char    *s;
+	while (sshbuf_len(eng_list) > 0) {
+		char *s;
+		int r;
 
-		s = buffer_get_cstring_ret(&eng_list, &k);
+		r = sshbuf_get_cstring(eng_list, &s, NULL);
+		if (r != 0)
+			fatal("%s: buffer error: %s", __func__, ssh_err(r));
 		ssh_engine_reset(s);
 		free(s);
 	};
-	buffer_free(&eng_list);
+	sshbuf_free(eng_list);
+	eng_list = NULL;
 #endif
 	destroy_ssh_ui_method();
 }
