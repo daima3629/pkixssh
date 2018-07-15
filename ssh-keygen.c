@@ -65,6 +65,7 @@
 #include <unistd.h>
 #include <limits.h>
 #include <locale.h>
+#include <time.h>
 
 #include "xmalloc.h"
 #include "sshxkey.h"

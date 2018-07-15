@@ -30,6 +30,7 @@
 #include <unistd.h>
 
 #include "openbsd-compat/sys-queue.h"
+#include "xmalloc.h"
 #include "log.h"
 #include "misc.h"
 #include "sshbuf.h"
