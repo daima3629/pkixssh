@@ -1086,7 +1086,7 @@ X509key_encode_identity(const char *pkalg, const struct sshkey *key, struct sshb
 		if (ret == SSH_ERR_SUCCESS)
 			ret = sshbuf_put_stringb(b, d);
 
-		buffer_free(d);
+		sshbuf_free(d);
 	} else {
 		ret = sshbuf_put_x509(b, key->x509_data->cert);
 	}
@@ -2553,7 +2553,7 @@ Xkey_puts(const char *pkalg, const struct sshkey *key, struct sshbuf *b) {
 		else
 			r = sshbuf_put_stringb(b, d);
 
-		buffer_free(d);
+		sshbuf_free(d);
 	} else
 		r = sshbuf_put_x509(b, key->x509_data->cert);
 

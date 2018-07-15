@@ -278,13 +278,16 @@ ciphers_valid(const char *names)
 char*
 only_fips_valid_ciphers(const char* names)
 {
-	Buffer b;
+	struct sshbuf *b;
 	char *fips_names, *cp, *p;
+	int r;
 
 	if (names == NULL || *names == '\0')
 		return NULL;
 
-	buffer_init(&b);
+	b = sshbuf_new();
+	if (b == NULL)
+		fatal("%s: sshbuf_new failed", __func__);
 
 	/* default set in myproposals.h */
 	cp = xstrdup(names);
@@ -294,15 +297,23 @@ only_fips_valid_ciphers(const char* names)
 	) {
 		if (cipher_by_name(p) == NULL) continue;
 
-		if (buffer_len(&b) > 0)
-			buffer_append(&b, ",", 1);
-		buffer_append(&b, p, strlen(p));
+		if (sshbuf_len(b) > 0) {
+			r = sshbuf_put(b, ",", 1);
+			if (r != 0)
+				fatal("%s: buffer error: %s",
+				    __func__, ssh_err(r));
+		}
+		r = sshbuf_put(b, p, strlen(p));
+		if (r != 0)
+			fatal("%s: buffer error: %s", __func__, ssh_err(r));
 	}
-	buffer_append(&b, "\0", 1);
+	r = sshbuf_put(b, "\0", 1);
+	if (r != 0)
+		fatal("%s: buffer error: %s", __func__, ssh_err(r));
 
-	fips_names = xstrdup(buffer_ptr(&b));
+	fips_names = xstrdup(sshbuf_ptr(b));
 
-	buffer_free(&b);
+	sshbuf_free(b);
 
 	debug3("%s: ciphers: [%s]", __func__, fips_names);
 	return fips_names;
