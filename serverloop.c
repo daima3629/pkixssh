@@ -1,4 +1,4 @@
-/* $OpenBSD: serverloop.c,v 1.206 2018/06/08 01:55:40 djm Exp $ */
+/* $OpenBSD: serverloop.c,v 1.207 2018/07/09 21:29:36 markus Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -15,7 +15,7 @@
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  *
  * X.509 certificates support,
- * Copyright (c) 2017 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2017-2018 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions

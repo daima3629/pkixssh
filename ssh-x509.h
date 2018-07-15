@@ -27,7 +27,7 @@
 #include "includes.h"
 #include "sshxkey.h"
 #include "sshkey.h"
-#include "buffer.h"
+#include "sshbuf.h"
 
 
 /*

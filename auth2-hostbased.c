@@ -1,9 +1,9 @@
-/* $OpenBSD: auth2-hostbased.c,v 1.34 2018/07/03 11:39:54 djm Exp $ */
+/* $OpenBSD: auth2-hostbased.c,v 1.35 2018/07/09 21:35:50 markus Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  *
  * X.509 certificates support,
- * Copyright (c) 2004-2017 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2004-2018 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -37,7 +37,7 @@
 #include "xmalloc.h"
 #include "ssh2.h"
 #include "packet.h"
-#include "buffer.h"
+#include "sshbuf.h"
 #include "log.h"
 #include "misc.h"
 #include "servconf.h"

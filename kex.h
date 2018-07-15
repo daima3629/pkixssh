@@ -1,10 +1,10 @@
-/* $OpenBSD: kex.h,v 1.85 2018/07/04 13:49:31 djm Exp $ */
+/* $OpenBSD: kex.h,v 1.89 2018/07/09 21:56:06 markus Exp $ */
 
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  *
  * X.509 certificates support,
- * Copyright (c) 2014-2017 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2014-2018 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -30,7 +30,6 @@
 #define KEX_H
 
 #include "mac.h"
-#include "buffer.h" /* XXX for typedef */
 #include "sshxkey.h"
 
 #ifdef WITH_LEAKMALLOC
