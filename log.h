@@ -17,6 +17,7 @@
 
 /*  syslog.h include is required to get define for LOG_AUTHPRIV */
 #include <syslog.h>
+#include <stdarg.h>	/* va_list */
 
 /* Supported syslog facilities and levels. */
 typedef enum {
