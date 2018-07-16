@@ -4356,7 +4356,7 @@ sshkey_parse_private_pem_fileblob(struct sshbuf *blob, int type,
 	debug3("read PEM private key begin");
 	if (sshbuf_len(blob) == 0 || sshbuf_len(blob) > INT_MAX)
 		return SSH_ERR_INVALID_ARGUMENT;
-	bio = BIO_new_mem_buf(sshbuf_ptr(blob), sshbuf_len(blob));
+	bio = BIO_new_mem_buf(sshbuf_mutable_ptr(blob), sshbuf_len(blob));
 	if (bio == NULL )
 		return SSH_ERR_ALLOC_FAIL;
 
@@ -4430,7 +4430,7 @@ sshkey_parse_private_pem_fileblob(struct sshbuf *blob, int type,
 	}
 	if (prv) {
 		BIO_free(bio);
-		bio = BIO_new_mem_buf(sshbuf_ptr(blob), sshbuf_len(blob));
+		bio = BIO_new_mem_buf(sshbuf_mutable_ptr(blob), sshbuf_len(blob));
 		if (bio != NULL) {
 			x509key_parse_cert(prv, pk, bio);
 		} else {
