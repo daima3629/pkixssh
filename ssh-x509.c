@@ -2056,30 +2056,6 @@ log_ssh_err(const char *func, int r) {
 
 
 int
-xkey_sign(ssh_sign_ctx *ctx, u_char **sigp, u_int *lenp, const u_char *data, u_int datalen) {
-	int r;
-	u_char *sig;
-	size_t siglen;
-
-	if (sigp != NULL) *sigp = NULL;
-	if (lenp != NULL) *lenp = 0;
-
-	r = Xkey_sign(ctx, &sig, &siglen, data, datalen);
-	if (r != 0) {
-		log_ssh_err(__func__, r);
-		return -1;
-	}
-	if (siglen > INT_MAX)
-		fatal("%s: giant len %zu", __func__, siglen);
-
-	if (sigp != NULL) *sigp = sig;
-	if (lenp != NULL) *lenp = siglen;
-
-	return 0;
-}
-
-
-int
 Xkey_check_sigalg(ssh_sign_ctx *ctx, const u_char *sig, size_t siglen) {
 	int r;
 	const SSHX509KeyAlgs *p;
@@ -2145,18 +2121,6 @@ Xkey_verify(ssh_sign_ctx *ctx,
 }
 
 	return ssh_x509_verify(ctx, sig, siglen, data, dlen);
-}
-
-
-int
-xkey_verify(ssh_sign_ctx *ctx, const u_char *sig, u_int siglen, const u_char *data, u_int dlen) {
-	int r;
-
-	/* sizeof (u_int) <= sizeof(size_t) */
-	r = Xkey_verify(ctx, sig, siglen, data, dlen);
-	if (r == SSH_ERR_SUCCESS) return 1;
-
-	return (r == SSH_ERR_SIGNATURE_INVALID) ? 0 : -1;
 }
 
 

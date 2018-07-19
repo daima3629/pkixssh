@@ -4,7 +4,7 @@
  * Copyright (c) 1999, 2000, 2001 Markus Friedl.  All rights reserved.
  *
  * X.509 certificates support:
- * Copyright (c) 2017 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2017-2018 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -107,4 +107,6 @@ check_compat_x509(ssh_compat *compat, u_int flag) {
 	return compat != NULL ? (flag & compat->xcompat) != 0 : 0;
 }
 
+int	sshbuf_get_compat(struct sshbuf *b, ssh_compat *v);
+int	sshbuf_put_compat(struct sshbuf *b, const ssh_compat *v);
 #endif

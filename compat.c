@@ -3,7 +3,7 @@
  * Copyright (c) 1999, 2000, 2001, 2002 Markus Friedl.  All rights reserved.
  *
  * X.509 certificates support:
- * Copyright (c) 2017 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2017-2018 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -318,4 +318,33 @@ ssh_compatibility(ssh_compat *flags, const char *remote_version) {
 	}
 	flags->datafellows = compat_datafellows(remote_version);
 	flags->xcompat = xkey_compatibility(remote_version);
+}
+
+
+int
+sshbuf_get_compat(struct sshbuf *b, ssh_compat *v) {
+	u_int32_t v1, v2;
+	int r;
+
+	r = sshbuf_get_u32(b, &v1);
+	if (r != 0) return r;
+	r = sshbuf_get_u32(b, &v2);
+	if (r != 0) return r;
+
+	v->datafellows = v1;
+	v->xcompat = v2;
+	return 0;
+}
+
+
+int
+sshbuf_put_compat(struct sshbuf *b, const ssh_compat *v) {
+	int r;
+
+	r = sshbuf_put_u32(b, v->datafellows);
+	if (r != 0) return r;
+	r = sshbuf_put_u32(b, v->xcompat);
+	if (r != 0) return r;
+
+	return 0;
 }

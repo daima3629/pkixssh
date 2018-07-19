@@ -1,4 +1,4 @@
-/* $OpenBSD: monitor_wrap.c,v 1.104 2018/07/10 09:13:30 djm Exp $ */
+/* $OpenBSD: monitor_wrap.c,v 1.106 2018/07/11 18:53:29 markus Exp $ */
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * Copyright 2002 Markus Friedl <markus@openbsd.org>
@@ -75,6 +75,7 @@
 #include "ssh-gss.h"
 #endif
 #include "monitor_wrap.h"
+#include "compat.h"
 #include "atomicio.h"
 #include "monitor_fdpass.h"
 #include "misc.h"
@@ -229,13 +230,13 @@ mm_choose_dh(int min, int nbits, int max)
 #endif
 
 int
-mm_xkey_sign(ssh_sign_ctx *ctx, u_char **sigp, u_int *lenp, const u_char *data, u_int datalen)
-{
+mm_Xkey_sign(ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
+    const u_char *data, size_t datalen
+) {
 	const char *hostkey_alg = ctx->alg;
 	struct sshkey *key = ctx->key;
 	struct kex *kex = *pmonitor->m_pkex;
 	struct sshbuf *m;
-	size_t xxxlen;
 	u_int ndx = kex->host_key_index(key, 0, active_state);
 	int r;
 
@@ -245,18 +246,16 @@ mm_xkey_sign(ssh_sign_ctx *ctx, u_char **sigp, u_int *lenp, const u_char *data, 
 		fatal("%s: sshbuf_new failed", __func__);
 	if ((r = sshbuf_put_u32(m, ndx)) != 0 ||
 	    (r = sshbuf_put_string(m, data, datalen)) != 0 ||
-	    (r = sshbuf_put_cstring(m, hostkey_alg)) != 0)
+	    (r = sshbuf_put_cstring(m, hostkey_alg)) != 0 ||
+	    (r = sshbuf_put_compat(m, ctx->compat)) != 0)
 		fatal("%s: buffer error: %s", __func__, ssh_err(r));
 
 	mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_SIGN, m);
 
 	debug3("%s: waiting for MONITOR_ANS_SIGN", __func__);
 	mm_request_receive_expect(pmonitor->m_recvfd, MONITOR_ANS_SIGN, m);
-	if ((r = sshbuf_get_string(m, sigp, &xxxlen)) != 0)
+	if ((r = sshbuf_get_string(m, sigp, lenp)) != 0)
 		fatal("%s: buffer error: %s", __func__, ssh_err(r));
-	if (xxxlen > 0xffffffff)
-		fatal("%s: bad length %zu", __func__, xxxlen);
-	*lenp = xxxlen; /* XXX fix API: size_t vs u_int */
 	sshbuf_free(m);
 
 	return (0);

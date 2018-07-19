@@ -1,4 +1,4 @@
-/* $OpenBSD: monitor.c,v 1.184 2018/07/10 09:13:30 djm Exp $ */
+/* $OpenBSD: monitor.c,v 1.185 2018/07/11 18:53:29 markus Exp $ */
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * Copyright 2002 Markus Friedl <markus@openbsd.org>
@@ -641,13 +641,15 @@ mm_answer_sign(int sock, struct sshbuf *m)
 	size_t datlen, siglen, alglen;
 	int r, is_proof = 0;
 	u_int32_t keyid;
+	ssh_compat compat = { datafellows, xcompat };
 	const char proof_req[] = "hostkeys-prove-00@openssh.com";
 
 	debug3("%s", __func__);
 
 	if ((r = sshbuf_get_u32(m, &keyid)) != 0 ||
 	    (r = sshbuf_get_string(m, &p, &datlen)) != 0 ||
-	    (r = sshbuf_get_cstring(m, &alg, &alglen)) != 0)
+	    (r = sshbuf_get_cstring(m, &alg, &alglen)) != 0 ||
+	    (r = sshbuf_get_compat(m, &compat)) != 0)
 		fatal("%s: buffer error: %s", __func__, ssh_err(r));
 	if (keyid > INT32_MAX)
 		fatal("%s: invalid key ID", __func__);
@@ -695,8 +697,6 @@ mm_answer_sign(int sock, struct sshbuf *m)
 		memcpy(session_id2, p, session_id2_len);
 	}
 
-{	ssh_compat compat = { datafellows, xcompat };
-
 	if ((key = get_hostkey_by_index(keyid)) != NULL) {
 		ssh_sign_ctx ctx = { alg, key, &compat };
 		if ((r = Xkey_sign(&ctx, &signature, &siglen, p, datlen)) != 0)
@@ -712,7 +712,6 @@ mm_answer_sign(int sock, struct sshbuf *m)
 		}
 	} else
 		fatal("%s: no hostkey from index %d", __func__, keyid);
-}
 
 	debug3("%s: %s signature %p(%zu)", __func__,
 	    is_proof ? "KEX" : "hostkey proof", signature, siglen);

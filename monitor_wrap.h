@@ -1,11 +1,11 @@
-/* $OpenBSD: monitor_wrap.h,v 1.37 2018/03/03 03:15:51 djm Exp $ */
+/* $OpenBSD: monitor_wrap.h,v 1.38 2018/07/11 18:53:29 markus Exp $ */
 
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * All rights reserved.
  *
  * X.509 certificates support,
- * Copyright (c) 2017 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2017-2018 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -48,7 +48,8 @@ int mm_is_monitor(void);
 # include <openssl/dh.h>
 DH *mm_choose_dh(int, int, int);
 #endif
-int mm_xkey_sign(ssh_sign_ctx *ctx, u_char **sigp, u_int *lenp, const u_char *data, u_int datalen);
+int mm_Xkey_sign(ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
+    const u_char *data, size_t datalen);
 void mm_inform_authserv(char *, char *);
 struct passwd *mm_getpwnamallow(const char *);
 char *mm_auth2_read_banner(void);

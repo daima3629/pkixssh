@@ -87,8 +87,6 @@ int	parse_key_from_blob(const u_char *blob, size_t blen,
 	    struct sshkey **keyp, char **pkalgp);
 
 
-int	xkey_sign(ssh_sign_ctx *ctx, u_char **sigp, u_int *lenp, const u_char *data, u_int datalen);
-int	xkey_verify(ssh_sign_ctx *ctx, const u_char *sig, u_int siglen, const u_char *data, u_int dlen);
 int	xkey_validate_cert(const struct sshkey *k);
 
 
