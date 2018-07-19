@@ -87,8 +87,6 @@
 #include "ssherr.h"
 
 /* Imports */
-extern z_stream incoming_stream;
-extern z_stream outgoing_stream;
 extern struct monitor *pmonitor;
 extern struct sshbuf *loginmsg;
 extern ServerOptions options;
