@@ -445,7 +445,7 @@ eng_key_load_private_type(int type, const char *filename,
 	const char *passphrase, struct sshkey **keyp, char **commentp
 ) {
 	int ret;
-	char *engkeyid;
+	char *engkeyid = NULL;
 	const char *name = "<no key>";
 	ENGINE *e = NULL;
 	EVP_PKEY *pk = NULL;
@@ -500,7 +500,7 @@ int
 eng_key_try_load_public(struct sshkey *k, const char *filename, char **commentp) {
 	int ret = SSH_ERR_INTERNAL_ERROR;
 	char *keyid = NULL;
-	char *engkeyid;
+	char *engkeyid = NULL;
 	ENGINE *e = NULL;
 	EVP_PKEY *pk = NULL;
 
