@@ -1,4 +1,4 @@
-/* $OpenBSD: session.c,v 1.302 2018/07/09 21:20:26 markus Exp $ */
+/* $OpenBSD: session.c,v 1.304 2018/07/11 18:53:29 markus Exp $ */
 /*
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
@@ -76,7 +76,6 @@
 #include "uidswap.h"
 #include "compat.h"
 #include "channels.h"
-#include "key.h"
 #include "cipher.h"
 #ifdef GSSAPI
 #include "ssh-gss.h"
