@@ -1,4 +1,4 @@
-/* $OpenBSD: msg.c,v 1.16 2015/01/15 09:40:00 djm Exp $ */
+/* $OpenBSD: msg.c,v 1.17 2018/07/09 21:59:10 markus Exp $ */
 /*
  * Copyright (c) 2002 Markus Friedl.  All rights reserved.
  *

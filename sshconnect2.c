@@ -1,4 +1,4 @@
-/* $OpenBSD: sshconnect2.c,v 1.278 2018/07/09 21:03:30 markus Exp $ */
+/* $OpenBSD: sshconnect2.c,v 1.280 2018/07/11 18:55:11 markus Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Damien Miller.  All rights reserved.
