@@ -1,4 +1,4 @@
-/* $OpenBSD: sshconnect.c,v 1.299 2018/07/09 21:03:30 markus Exp $ */
+/* $OpenBSD: sshconnect.c,v 1.300 2018/07/11 18:53:29 markus Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -78,7 +78,6 @@
 #include "packet.h"
 #include "uidswap.h"
 #include "compat.h"
-#include "key.h"
 #include "ssh-x509.h"
 #include "sshconnect.h"
 #include "hostfile.h"
@@ -790,7 +789,7 @@ check_host_cert(const char *host, const struct sshkey *host_key)
 {
 	const char *reason;
 
-	if (key_cert_check_authority(host_key, 1, 0, host, &reason) != 0) {
+	if (sshkey_cert_check_authority(host_key, 1, 0, host, &reason) != 0) {
 		error("%s", reason);
 		return 0;
 	}
@@ -1554,9 +1553,9 @@ show_other_keys(struct hostkeys *hostkeys, struct sshkey *key)
 		logit("WARNING: %s key found for host %s\n"
 		    "in %s:%lu\n"
 		    "%s key fingerprint %s.",
-		    key_type(found->key),
+		    sshkey_type(found->key),
 		    found->host, found->file, found->line,
-		    key_type(found->key), fp);
+		    sshkey_type(found->key), fp);
 		if (sshkey_is_x509(found->key)) {
 			char *subject = x509key_subject(found->key);
 			logit("Distinguished name found is '%s'.", subject);
@@ -1591,7 +1590,7 @@ warn_changed_key(struct sshkey *host_key)
 	error("Someone could be eavesdropping on you right now (man-in-the-middle attack)!");
 	error("It is also possible that a host key has just been changed.");
 	error("The fingerprint for the %s key sent by the remote host is\n%s.",
-	    key_type(host_key), fp);
+	    sshkey_type(host_key), fp);
 	if (sshkey_is_x509(host_key)) {
 		char *subject = x509key_subject(host_key);
 		error("Distinguished name sent by remote host is '%s'.", subject);
