@@ -61,8 +61,6 @@
 #include <signal.h>
 #include <time.h>
 
-#include <zlib.h>
-
 #include "xmalloc.h"
 #include "crc32.h"
 #include "compat.h"
@@ -79,6 +77,12 @@
 #include "packet.h"
 #include "ssherr.h"
 #include "sshbuf.h"
+
+/* Include zlib last to avoid clash between OpenSSL function argument
+ * free_func and zlib typedef with same name.
+ * Should avoid "syntax error before 'free_func'".
+ */
+#include <zlib.h>
 
 #ifdef PACKET_DEBUG
 #define DBG(x) x
