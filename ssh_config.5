@@ -34,7 +34,7 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: ssh_config.5,v 1.279 2018/07/04 13:49:31 djm Exp $
+.\" $OpenBSD: ssh_config.5,v 1.280 2018/07/19 10:28:47 dtucker Exp $
 .\" Implement .Dd with the Mdocdate RCS keyword
 .rn Dd xD
 .de Dd
@@ -43,7 +43,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: July 4 2018 $
+.Dd $Mdocdate: July 19 2018 $
 .Dt SSH_CONFIG 5
 .Os
 .Sh NAME
@@ -281,17 +281,9 @@ or
 Use the specified address on the local machine as the source address of
 the connection.
 Only useful on systems with more than one address.
-Note that this option does not work if
-.Cm UsePrivilegedPort
-is set to
-.Cm yes .
 .It Cm BindInterface
 Use the address of the specified interface on the local machine as the
 source address of the connection.
-Note that this option does not work if
-.Cm UsePrivilegedPort
-is set to
-.Cm yes .
 .It Cm CACertificateFile
 .Dq X509 store
 option:
@@ -1718,17 +1710,6 @@ Presently, only
 some ssh servers support the
 .Qq hostkeys@openssh.com
 protocol extension used to inform the client of all the server's hostkeys.
-.It Cm UsePrivilegedPort
-Specifies whether to use a privileged port for outgoing connections.
-The argument must be
-.Cm yes
-or
-.Cm no
-(the default).
-If set to
-.Cm yes ,
-.Xr ssh 1
-must be setuid root.
 .It Cm User
 Specifies the user to log in as.
 This can be useful when a different user name is used on different machines.
