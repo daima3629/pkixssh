@@ -331,7 +331,7 @@ process_sign_request2(SocketEntry *e)
 	int r, ok = -1;
 	struct sshbuf *msg;
 	struct sshkey *key = NULL;
-	char *pkalg;
+	char *pkalg = NULL;
 	struct identity *id;
 	int kt = KEY_UNSPEC;
 

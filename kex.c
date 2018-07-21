@@ -897,7 +897,7 @@ kex_choose_conf(struct ssh *ssh)
 	char **cprop, **sprop;
 	int nenc, nmac, ncomp;
 	u_int mode, ctos, need, dh_need, authlen;
-	int r, first_kex_follows;
+	int r, first_kex_follows = 0;
 
 	debug2("local %s KEXINIT proposal", kex->server ? "server" : "client");
 	if ((r = kex_buf2prop(kex->my, NULL, &my)) != 0)
