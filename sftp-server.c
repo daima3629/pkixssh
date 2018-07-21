@@ -46,7 +46,6 @@
 #include "log.h"
 #include "misc.h"
 #include "match.h"
-#include "uidswap.h"
 
 #include "sftp.h"
 #include "sftp-common.h"

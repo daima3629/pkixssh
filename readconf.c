@@ -1,4 +1,4 @@
-/* $OpenBSD: readconf.c,v 1.292 2018/07/04 13:49:31 djm Exp $ */
+/* $OpenBSD: readconf.c,v 1.293 2018/07/18 11:34:04 dtucker Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -87,7 +87,6 @@
 #include "kex.h"
 #include "ssh-xkalg.h"
 #include "mac.h"
-#include "uidswap.h"
 #include "myproposal.h"
 #include "digest.h"
 
@@ -558,9 +557,6 @@ execute_in_shell(const char *cmd)
 	/* Fork and execute the command. */
 	if ((pid = fork()) == 0) {
 		char *argv[4];
-
-		/* Child.  Permanently give up superuser privileges. */
-		permanently_drop_suid(original_real_uid);
 
 		/* Redirect child stdin and stdout. Leave stderr */
 		if (dup2(devnull, STDIN_FILENO) == -1)
