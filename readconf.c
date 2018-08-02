@@ -1,4 +1,4 @@
-/* $OpenBSD: readconf.c,v 1.295 2018/07/27 05:13:02 dtucker Exp $ */
+/* $OpenBSD: readconf.c,v 1.296 2018/07/27 05:34:42 dtucker Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -2344,11 +2344,7 @@ fill_default_options(Options * options)
 	fill_default_xkalg();
 	ssh_x509flags_defaults(options->x509flags);
 	X509StoreOptions_system_defaults(&options->ca);
-
-	{
-		extern uid_t original_real_uid;
-		X509StoreOptions_user_defaults(&options->userca, original_real_uid);
-	}
+	X509StoreOptions_user_defaults(&options->userca, getuid());
 
 	(void)ssh_x509store_addlocations(&options->userca);
 	(void)ssh_x509store_addlocations(&options->ca);
