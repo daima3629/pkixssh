@@ -42,6 +42,7 @@ known_hosts-cert
 known_hosts.*
 krl-*
 ls.copy
+mkdtemp
 modpipe
 netcat
 no_identity_config
