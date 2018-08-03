@@ -88,15 +88,11 @@ userauth_hostbased(struct ssh *ssh)
 	Authctxt *authctxt = ssh->authctxt;
 	struct sshbuf *b;
 	struct sshkey *key = NULL;
-	char *pkalg, *cuser, *chost;
-	u_char *pkblob, *sig;
+	char *pkalg = NULL, *cuser = NULL, *chost = NULL;
+	u_char *pkblob = NULL, *sig = NULL;
 	size_t alen, blen, slen;
 	int r, pktype, authenticated = 0;
 
-	if (!authctxt->valid) {
-		debug2("%s: disabled because of invalid user", __func__);
-		return 0;
-	}
 	/* XXX use sshkey_froms() */
 	if ((r = sshpkt_get_cstring(ssh, &pkalg, &alen)) != 0 ||
 	    (r = sshpkt_get_string(ssh, &pkblob, &blen)) != 0 ||
@@ -138,6 +134,10 @@ userauth_hostbased(struct ssh *ssh)
 	    (ssh->compat & SSH_BUG_RSASIGMD5) != 0) {
 		error("Refusing RSA key because peer uses unsafe "
 		    "signature format");
+		goto done;
+	}
+	if (!authctxt->valid || authctxt->user == NULL) {
+		debug2("%s: disabled because of invalid user", __func__);
 		goto done;
 	}
 
