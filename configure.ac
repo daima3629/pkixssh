@@ -1569,55 +1569,6 @@ else
 	AC_MSG_RESULT([no])
 fi
 
-# Check whether user wants S/Key support
-SKEY_MSG="no"
-AC_ARG_WITH([skey],
-	[  --with-skey[[=PATH]]      Enable S/Key support (optionally in PATH)],
-	[
-		if test "x$withval" != "xno" ; then
-
-			if test "x$withval" != "xyes" ; then
-				CPPFLAGS="$CPPFLAGS -I${withval}/include"
-				LDFLAGS="$LDFLAGS -L${withval}/lib"
-			fi
-
-			AC_DEFINE([SKEY], [1], [Define if you want S/Key support])
-			LIBS="-lskey $LIBS"
-			SKEY_MSG="yes"
-
-			AC_MSG_CHECKING([for s/key support])
-			AC_LINK_IFELSE(
-				[AC_LANG_PROGRAM([[
-#include <stdio.h>
-#include <skey.h>
-				]], [[
-	char *ff = skey_keyinfo(""); ff="";
-	exit(0);
-				]])],
-				[AC_MSG_RESULT([yes])],
-				[
-					AC_MSG_RESULT([no])
-					AC_MSG_ERROR([** Incomplete or missing s/key libraries.])
-				])
-			AC_MSG_CHECKING([if skeychallenge takes 4 arguments])
-			AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
-#include <stdio.h>
-#include <skey.h>
-				]], [[
-	(void)skeychallenge(NULL,"name","",0);
-				]])],
-			[
-				AC_MSG_RESULT([yes])
-				AC_DEFINE([SKEYCHALLENGE_4ARG], [1],
-					[Define if your skeychallenge()
-					function takes 4 arguments (NetBSD)])],
-			[
-				AC_MSG_RESULT([no])
-			])
-		fi
-	]
-)
-
 # Check whether user wants TCP wrappers support
 TCPW_MSG="no"
 AC_ARG_WITH([tcp-wrappers],
@@ -5795,7 +5746,6 @@ echo "                   OSF SIA support: $SIA_MSG"
 echo "                 KerberosV support: $KRB5_MSG"
 echo "                   SELinux support: $SELINUX_MSG"
 echo "                   PKCS#11 support: $PKCS11_MSG"
-echo "                     S/KEY support: $SKEY_MSG"
 echo "              TCP Wrappers support: $TCPW_MSG"
 echo "              MD5 password support: $MD5_MSG"
 echo "               X.509 store support: $ssh_x509store"
