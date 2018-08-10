@@ -44,9 +44,6 @@ X509_STORE_set_verify_cb(X509_STORE *ctx, int (*verify_cb) (int, X509_STORE_CTX 
 }
 #endif /*ndef HAVE_X509_STORE_SET_VERIFY_CB*/
 
-/* "bye, bye xfree()" ;) */
-#define xfree free
-
 
 SSH_X509Flags
 ssh_x509flags = {
@@ -295,7 +292,7 @@ ssh_x509store_cb(int ok, X509_STORE_CTX *ctx) {
 			ctx_error,
 			X509_STORE_CTX_get_error_depth(ctx),
 			X509_verify_cert_error_string(ctx_error));
-		xfree(buf);
+		free(buf);
 	}
 #ifdef SSH_CHECK_REVOKED
 	if (ok && !self_signed) {
@@ -453,11 +450,11 @@ ssh_X509_is_selfsigned(X509 *_cert) {
 
 		buf = ssh_X509_NAME_oneline(issuer);  /*fatal on error*/
 		debug3("%s: issuer='%s'", __func__, buf);
-		xfree(buf);
+		free(buf);
 
 		buf = ssh_X509_NAME_oneline(subject); /*fatal on error*/
 		debug3("%s: subject='%s'", __func__, buf);
-		xfree(buf);
+		free(buf);
 	}
 
 	return (ssh_X509_NAME_cmp(issuer, subject) == 0);
@@ -514,7 +511,7 @@ tilde_expand_filename2(const char **_fn, const char* _default, uid_t uid) {
 	} else {
 		const char *p = *_fn;
 		*_fn = tilde_expand_filename(p, uid);
-		xfree((void*)p);
+		free((void*)p);
 	}
 }
 
@@ -879,7 +876,7 @@ ssh_x509store_verify_cert(X509 *_cert, STACK_OF(X509) *_chain) {
 		char *buf;
 		buf = ssh_X509_NAME_oneline(X509_get_subject_name(_cert)); /*fatal on error*/
 		debug3("%s: for '%s'", __func__, buf);
-		xfree(buf);
+		free(buf);
 	}
 
 	csc = X509_STORE_CTX_new();
@@ -1140,7 +1137,7 @@ ssh_check_crl(X509_STORE_CTX *_ctx, X509* _issuer, X509_CRL *_crl) {
 
 		debug3("ssh_check_crl: Issuer: %s", p);
 
-		xfree(p);
+		free(p);
 		BIO_free(bio);
 	}
 
@@ -1162,7 +1159,7 @@ ssh_check_crl(X509_STORE_CTX *_ctx, X509* _issuer, X509_CRL *_crl) {
 			" must present in issuer certificate '%s' with hash=0x%08lx"
 			, buf, hash
 		);
-		xfree(buf);
+		free(buf);
 		return(0);
 	}
 
@@ -1183,7 +1180,7 @@ ssh_check_crl(X509_STORE_CTX *_ctx, X509* _issuer, X509_CRL *_crl) {
 				, buf, hash
 			);
 			X509_STORE_CTX_set_error(_ctx, X509_V_ERR_CRL_SIGNATURE_FAILURE);
-			xfree(buf);
+			free(buf);
 			EVP_PKEY_free(pkey);
 			return(0);
 		}
@@ -1207,7 +1204,7 @@ ssh_check_crl(X509_STORE_CTX *_ctx, X509* _issuer, X509_CRL *_crl) {
 			, buf, hash
 		);
 		X509_STORE_CTX_set_error(_ctx, X509_V_ERR_ERROR_IN_CRL_LAST_UPDATE_FIELD);
-		xfree(buf);
+		free(buf);
 		return(0);
 	}
 	if (k > 0) {
@@ -1219,7 +1216,7 @@ ssh_check_crl(X509_STORE_CTX *_ctx, X509* _issuer, X509_CRL *_crl) {
 			, buf, hash
 		);
 		X509_STORE_CTX_set_error(_ctx, X509_V_ERR_CRL_NOT_YET_VALID);
-		xfree(buf);
+		free(buf);
 		return(0);
 	}
 
@@ -1233,7 +1230,7 @@ ssh_check_crl(X509_STORE_CTX *_ctx, X509* _issuer, X509_CRL *_crl) {
 			, buf, hash
 		);
 		X509_STORE_CTX_set_error(_ctx, X509_V_ERR_ERROR_IN_CRL_NEXT_UPDATE_FIELD);
-		xfree(buf);
+		free(buf);
 		return(0);
 	}
 #if 0
@@ -1257,7 +1254,7 @@ ssh_check_crl(X509_STORE_CTX *_ctx, X509* _issuer, X509_CRL *_crl) {
 			, buf, hash
 		);
 		X509_STORE_CTX_set_error(_ctx, X509_V_ERR_CRL_HAS_EXPIRED);
-		xfree(buf);
+		free(buf);
 		return(0);
 	}
 
@@ -1302,9 +1299,9 @@ ssh_is_cert_revoked(X509_STORE_CTX *_ctx, X509_CRL *_crl, X509 *_cert) {
 
 	error("certificate '%s' with serial '%.40s' revoked from issuer '%s'"
 		, dn, ser, in);
-	xfree(dn);
-	xfree(ser);
-	xfree(in);
+	free(dn);
+	free(ser);
+	free(in);
 }
 done:
 	if (revoked) X509_REVOKED_free(revoked);
@@ -1332,11 +1329,11 @@ ssh_x509revoked_cb(int ok, X509_STORE_CTX *ctx) {
 
 		buf = ssh_X509_NAME_oneline(X509_get_issuer_name(cert)); /*fatal on error*/
 		debug3("ssh_x509revoked_cb: Issuer: %s", buf);
-		xfree(buf);
+		free(buf);
 
 		buf = ssh_X509_NAME_oneline(X509_get_subject_name(cert)); /*fatal on error*/
 		debug3("ssh_x509revoked_cb: Subject: %s", buf);
-		xfree(buf);
+		free(buf);
 	}
 
 /* TODO:

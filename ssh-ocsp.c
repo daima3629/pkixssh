@@ -41,8 +41,6 @@
 #ifdef SSH_WITH_SSLOCSP
 #  include <openssl/ssl.h>
 #endif
-/* "bye, bye xfree()" ;) */
-#define xfree free
 
 #if defined(sk_OPENSSL_STRING_new_null) || defined(HAVE_SK_OPENSSL_STRING_NEW_NULL)
 /*
@@ -54,13 +52,13 @@
  */
 #define ssh_sk_OPENSSL_STRING		STACK_OF(OPENSSL_STRING)
 
-static void OPENSSL_STRING_xfree(OPENSSL_STRING p) {
-/* xfree warnings for OpenSSL 1+:
+static void OPENSSL_STRING_free(OPENSSL_STRING p) {
+/* free warnings for OpenSSL 1+:
 .../ssh-ocsp.c: In function 'ssh_ocsp_validate2':
 .../ssh-ocsp.c:845: warning: pointer type mismatch in conditional expression
 .../ssh-ocsp.c:845: warning: ISO C forbids conversion of object pointer to function pointer type
 */
-  xfree(p);
+  free(p);
 }
 
 #else /* !def sk_OPENSSL_STRING_new_null */
@@ -74,8 +72,8 @@ static void OPENSSL_STRING_xfree(OPENSSL_STRING p) {
 # define sk_OPENSSL_STRING_value	sk_STRING_value
 # define sk_OPENSSL_STRING_pop_free	sk_STRING_pop_free
 
-static void OPENSSL_STRING_xfree(STRING p) {
-  xfree(p);
+static void OPENSSL_STRING_free(STRING p) {
+  free(p);
 }
 
 #else /* !def sk_STRING_new_null */
@@ -87,7 +85,7 @@ static void OPENSSL_STRING_xfree(STRING p) {
 # define sk_OPENSSL_STRING_value	sk_value
 # define sk_OPENSSL_STRING_pop_free	sk_pop_free
 
-#define OPENSSL_STRING_xfree		xfree
+#define OPENSSL_STRING_free		free
 
 #endif
 
@@ -162,11 +160,11 @@ ssh_set_vatype(int type) {
 void
 ssh_set_validator(const VAOptions *_va) {
 	if (va.certificate_file != NULL) {
-		xfree((void*)va.certificate_file);
+		free((void*)va.certificate_file);
 		va.certificate_file = NULL;
 	}
 	if (va.responder_url != NULL) {
-		xfree((void*)va.responder_url);
+		free((void*)va.responder_url);
 		va.responder_url = NULL;
 	}
 	if (_va == NULL) {
@@ -394,10 +392,10 @@ ssh_ocsp_conn_free(ssh_ocsp_conn **pconn) {
 	*pconn = NULL;
 
 	/* we don't need to clean items */
-	if (conn->path != NULL) xfree((void*)conn->path);
-	if (conn->data != NULL) xfree(conn->data);
-	if (conn->url  != NULL) xfree((void*)conn->url );
-	xfree(conn);
+	if (conn->path != NULL) free((void*)conn->path);
+	if (conn->data != NULL) free(conn->data);
+	if (conn->url  != NULL) free((void*)conn->url );
+	free(conn);
 }
 
 
@@ -619,7 +617,7 @@ for (k = 0; k < sk_X509_num(vacrts); k++) {
 	X509 *x = sk_X509_value(vacrts, k);
 	buf = ssh_X509_NAME_oneline(X509_get_subject_name(x)); /*fatal on error*/
 	logit("ssh_ocsp_get_basicresp: VA[%d] subject='%s'", k, buf);
-	xfree(buf);
+	free(buf);
 }
 }
 #endif /*def SSHOCSPTEST*/
@@ -754,11 +752,11 @@ ssh_ocsp_check_validity(
 		if (get_log_level() >= SYSLOG_LEVEL_DEBUG3) {
 			char *p = ssh_ASN1_GENERALIZEDTIME_2_string(thisupd);
 			debug3("ssh_ocsp_check_validity: This Update=%.128s", p);
-			xfree(p);
+			free(p);
 			if (nextupd != NULL) {
 				p = ssh_ASN1_GENERALIZEDTIME_2_string(nextupd);
 				debug3("ssh_ocsp_check_validity: Next Update=%.128s", p);
-				xfree(p);
+				free(p);
 			}
 		}
 
@@ -774,7 +772,7 @@ ssh_ocsp_check_validity(
 		if (get_log_level() >= SYSLOG_LEVEL_DEBUG3) {
 			char *p = ssh_ASN1_GENERALIZEDTIME_2_string(rev);
 			debug3("ssh_ocsp_check_validity: Revocation Time=%.128s", p);
-			xfree(p);
+			free(p);
 			if (reason != -1) {
 				debug3("ssh_ocsp_check_validity:"
 					" Revocation Reason='%.128s'"
@@ -841,7 +839,7 @@ ssh_ocsp_validate2(
 exit:
 	if (br     != NULL)	OCSP_BASICRESP_free(br);
 	if (resp   != NULL)	OCSP_RESPONSE_free(resp);
-	if (subjs  != NULL)	sk_OPENSSL_STRING_pop_free(subjs, OPENSSL_STRING_xfree);
+	if (subjs  != NULL)	sk_OPENSSL_STRING_pop_free(subjs, OPENSSL_STRING_free);
 	if (ids    != NULL)	sk_OCSP_CERTID_free(ids);
 	if (req    != NULL)	OCSP_REQUEST_free(req);
 	if (vacrts != NULL)	sk_X509_pop_free(vacrts, X509_free);
@@ -1022,7 +1020,7 @@ ssh_ocsp_validate(X509 *cert, X509_STORE *x509store) {
 	if (get_log_level() >= SYSLOG_LEVEL_DEBUG3) {
 		char *buf = ssh_X509_NAME_oneline(X509_get_subject_name(cert)); /*fatal on error*/
 		debug3("ssh_ocsp_validate: for '%s'", buf);
-		xfree(buf);
+		free(buf);
 	}
 
 	switch (va.type) {
