@@ -2229,13 +2229,13 @@ client_session2_setup(struct ssh *ssh, int id, int want_tty, int want_subsystem,
 
 			matched = 0;
 			for (j = 0; j < options.num_send_env; j++) {
-				if (match_pattern(name, options.send_env[j])) {
-					matched = 1;
-					break;
-				}
+				matched = match_pattern_list(name, options.send_env[j], 0);
+				if (matched != 0) break;
 			}
-			if (!matched) {
-				debug3("Ignored env %s", name);
+			if (matched != 1) {
+				debug3("%s env %s",
+				    (matched == -1 ? "Ignored" : "Skipped"),
+				    name);
 				free(name);
 				continue;
 			}

@@ -1493,6 +1493,10 @@ For more information on KRLs, see the KEY REVOCATION LISTS section in
 Specifies what variables from the local
 .Xr environ 7
 should be sent to the server.
+Variables are specified by name as pattern-list.
+Lists may be separated by whitespace or spread across multiple
+.Cm SendEnv
+directives.
 The server must also support it, and the server must be configured to
 accept these environment variables.
 Note that the
@@ -1504,16 +1508,11 @@ Refer to
 in
 .Xr sshd_config 5
 for how to configure the server.
-Variables are specified by name, which may contain wildcard characters.
-Multiple environment variables may be separated by whitespace or spread
-across multiple
-.Cm SendEnv
-directives.
-The default is not to send any environment variables.
 .Pp
 See
 .Sx PATTERNS
-for more information on patterns.
+for more information on pattern-list.
+The default is not to send any environment variables.
 .It Cm ServerAliveCountMax
 Sets the number of server alive messages (see below) which may be
 sent without

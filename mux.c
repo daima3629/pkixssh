@@ -257,7 +257,7 @@ mux_master_control_cleanup_cb(struct ssh *ssh, int cid, void *unused)
 static int
 env_permitted(char *env)
 {
-	int i, ret;
+	int i, matched, ret;
 	char name[1024], *cp;
 
 	if ((cp = strchr(env, '=')) == NULL || cp == env)
@@ -268,11 +268,12 @@ env_permitted(char *env)
 		return 0;
 	}
 
-	for (i = 0; i < options.num_send_env; i++)
-		if (match_pattern(name, options.send_env[i]))
-			return 1;
-
-	return 0;
+	matched = 0;
+	for (i = 0; i < options.num_send_env; i++) {
+		matched = match_pattern_list(name, options.send_env[i], 0);
+		if (matched != 0) break;
+	}
+	return matched == 1;
 }
 
 /* Mux master protocol message handlers */
