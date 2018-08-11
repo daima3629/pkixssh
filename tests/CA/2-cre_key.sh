@@ -30,4 +30,5 @@ SCRIPTDIR=`echo $0 | sed 's/2-cre_key.sh$//'`
 
 test "x$TEST_SSH_SSHKEYGEN" = "x" && { echo "${warn}Please define ${attn}TEST_SSH_SSHKEYGEN${norm}" >&2 ; exit 1; }
 
-$TEST_SSH_SSHKEYGEN ${1+"$@"}
+# X.509 keys require portable PEM format instead proprietary
+$TEST_SSH_SSHKEYGEN -m PEM ${1+"$@"}

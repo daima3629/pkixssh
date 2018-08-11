@@ -1,4 +1,4 @@
-#	$OpenBSD: test-exec.sh,v 1.63 2018/05/22 00:22:49 djm Exp $
+#	$OpenBSD: test-exec.sh,v 1.64 2018/08/10 01:35:49 dtucker Exp $
 #	Placed in the Public Domain.
 
 #SUDO=sudo
@@ -487,9 +487,21 @@ rm -f $OBJ/known_hosts $OBJ/authorized_keys_$USER
 
 SSH_KEYTYPES="rsa ed25519"
 
+case $SCRIPT in
+*/fips-*)
+  OPENSSL_FIPS=1
+  #do not export OPENSSL_FIPS here
+  SSH_KEYTYPES="rsa"
+  SSHKEYGEN="$SSHKEYGEN -m PEM"
+  ;;
+esac
+
 trace "generate keys"
 for t in ${SSH_KEYTYPES}; do
 	# generate user key
+	if test -n "$OPENSSL_FIPS" ; then
+		rm -f $OBJ/$t
+	fi
 	if [ ! -f $OBJ/$t ] || [ ${SSHKEYGEN_BIN} -nt $OBJ/$t ]; then
 		rm -f $OBJ/$t
 		${SSHKEYGEN} -q -N '' -t $t  -f $OBJ/$t ||\
@@ -547,10 +559,13 @@ if test "$REGRESS_INTEROP_PUTTY" = "yes" ; then
 	    >> $OBJ/authorized_keys_$USER
 
 	# Convert rsa2 host key to PuTTY format
-	${SRC}/ssh2putty.sh 127.0.0.1 $PORT $OBJ/rsa > \
+	cp $OBJ/rsa $OBJ/rsa_oldfmt
+	${SSHKEYGEN} -p -N '' -m PEM -f $OBJ/rsa_oldfmt >/dev/null
+	${SRC}/ssh2putty.sh 127.0.0.1 $PORT $OBJ/rsa_oldfmt > \
 	    ${OBJ}/.putty/sshhostkeys
-	${SRC}/ssh2putty.sh 127.0.0.1 22 $OBJ/rsa >> \
+	${SRC}/ssh2putty.sh 127.0.0.1 22 $OBJ/rsa_oldfmt >> \
 	    ${OBJ}/.putty/sshhostkeys
+	rm -f $OBJ/rsa_oldfmt
 
 	# Setup proxied session
 	mkdir -p ${OBJ}/.putty/sessions
@@ -574,12 +589,9 @@ fi
 	echo proxycommand ${SUDO} sh ${SRC}/sshd-log-wrapper.sh ${TEST_SSHD_LOGFILE} ${SSHD} -i -f $OBJ/sshd_proxy
 ) > $OBJ/ssh_proxy
 
-case $SCRIPT in
-  */fips-*)
-    OPENSSL_FIPS=1
-    export OPENSSL_FIPS
-    ;;
-esac
+if test -n "$OPENSSL_FIPS" ; then
+  export OPENSSL_FIPS
+fi
 
 # check proxy config
 ${SSHD} -t -f $OBJ/sshd_proxy	|| fatal "sshd_proxy broken"

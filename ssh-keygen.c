@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keygen.c,v 1.318 2018/07/09 21:59:10 markus Exp $ */
+/* $OpenBSD: ssh-keygen.c,v 1.319 2018/08/08 01:16:01 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1994 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -209,7 +209,7 @@ char *key_type_name = NULL;
 char *pkcs11provider = NULL;
 
 /* Use new OpenSSH private key format when writing SSH2 keys instead of PEM */
-int use_new_format = 0;
+int use_new_format = 1;
 
 /* Cipher for new-format private keys */
 char *new_format_cipher = NULL;
@@ -2462,6 +2462,7 @@ main(int argc, char **argv)
 			fatal("FIPS integrity verification test failed.");
 	#endif
 		fprintf(stderr, "%s runs in FIPS mode\n", __progname);
+		use_new_format = 0;
 	}
 #endif /*def OPENSSL_FIPS*/
 	ssh_engines_startup();
@@ -2533,6 +2534,7 @@ main(int argc, char **argv)
 			}
 			if (strcasecmp(optarg, "PEM") == 0) {
 				convert_format = FMT_PEM;
+				use_new_format = 0;
 				break;
 			}
 			fatal("Unsupported conversion format \"%s\"", optarg);
@@ -2693,8 +2695,7 @@ main(int argc, char **argv)
 
 #ifdef OPENSSL_FIPS
 	if (FIPS_mode() && use_new_format) {
-		fprintf(stderr, "'New format' is not allowed in FIPS mode");
-		exit(1);
+		fatal("OpenSSH proprietary key format is not allowed in FIPS mode");
 	}
 #endif
 

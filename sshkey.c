@@ -4251,6 +4251,9 @@ sshkey_private_to_fileblob(struct sshkey *key, struct sshbuf *blob,
     const char *passphrase, const char *comment,
     int force_new_format, const char *new_format_cipher, int new_format_rounds)
 {
+	/* never use proprietary format for X.509 keys */
+	if (sshkey_is_x509(key)) force_new_format = 0;
+
 	switch (X509KEY_BASETYPE(key)) {
 #ifdef WITH_OPENSSL
 	case KEY_DSA:
