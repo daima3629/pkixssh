@@ -1,4 +1,4 @@
-/* $OpenBSD: readconf.c,v 1.296 2018/07/27 05:34:42 dtucker Exp $ */
+/* $OpenBSD: readconf.c,v 1.297 2018/08/12 20:19:13 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -76,6 +76,7 @@
 
 #include "xmalloc.h"
 #include "ssh.h"
+#include "ssherr.h"
 #include "compat.h"
 #include "cipher.h"
 #include "pathnames.h"
@@ -2143,6 +2144,7 @@ void
 fill_default_options(Options * options)
 {
 	char *all_cipher, *all_mac, *all_kex;
+	int r;
 
 	if (options->forward_agent == -1)
 		options->forward_agent = 0;
@@ -2304,13 +2306,16 @@ fill_default_options(Options * options)
 	all_cipher = cipher_alg_list(',', 0);
 	all_mac = mac_alg_list(',');
 	all_kex = kex_alg_list(',');
-	if (kex_assemble_names(&options->ciphers,
-	    KEX_CLIENT_ENCRYPT, all_cipher) != 0 ||
-	    kex_assemble_names(&options->macs,
-	    KEX_CLIENT_MAC, all_mac) != 0 ||
-	    kex_assemble_names(&options->kex_algorithms,
-	    KEX_CLIENT_KEX, all_kex) != 0)
-		fatal("%s: kex_assemble_names failed", __func__);
+#define ASSEMBLE(what, defaults, all) \
+	do { \
+		if ((r = kex_assemble_names(&options->what, \
+		    defaults, all)) != 0) \
+			fatal("%s: %s: %s", __func__, #what, ssh_err(r)); \
+	} while (0)
+	ASSEMBLE(ciphers, KEX_SERVER_ENCRYPT, all_cipher);
+	ASSEMBLE(macs, KEX_SERVER_MAC, all_mac);
+	ASSEMBLE(kex_algorithms, KEX_SERVER_KEX, all_kex);
+#undef ASSEMBLE
 	free(all_cipher);
 	free(all_mac);
 	free(all_kex);
