@@ -48,10 +48,10 @@ rpl_calloc(size_t nmemb, size_t size)
 void *
 rpl_realloc(void *ptr, size_t size)
 {
-	if (ptr == NULL)
-		return malloc(size);
 	if (size == 0)
 		size = 1;
+	if (ptr == NULL)
+		return malloc(size);
 	return realloc(ptr, size);
 }
 #endif
