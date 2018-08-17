@@ -1,13 +1,10 @@
 /* Placed in the public domain */
 
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
+#include "includes.h"
 
 #ifndef HAVE_GETPAGESIZE
 
 #include <unistd.h>
-#include <limits.h>
 
 int
 getpagesize(void)
