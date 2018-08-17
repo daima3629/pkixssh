@@ -325,8 +325,8 @@ msetlocale(void)
 		if ((strcasestr(cp, "UTF-8") != NULL ||
 		    strcasestr(cp, "UTF8") != NULL) &&
 		    (setlocale(LC_CTYPE, "C.UTF-8") != NULL ||
-		    setlocale(LC_CTYPE, "POSIX.UTF-8") != NULL ||
-		    setlocale(LC_CTYPE, "en_US.UTF-8") != NULL))
+		    setlocale(LC_CTYPE, "en_US.UTF-8") != NULL ||
+		    setlocale(LC_CTYPE, "POSIX.UTF-8") != NULL))
 			return;
 		setlocale(LC_CTYPE, "C");
 		return;
