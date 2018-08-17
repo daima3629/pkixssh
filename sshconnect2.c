@@ -1236,7 +1236,6 @@ sign_and_send_pubkey(struct ssh *ssh, Authctxt *authctxt, Identity *id)
 		error("%s: signing failed: %s", __func__, ssh_err(r));
 		goto out;
 	}
-
 	if (slen == 0 || signature == NULL) /* shouldn't happen */
 		fatal("%s: no signature", __func__);
 
@@ -1247,7 +1246,6 @@ sign_and_send_pubkey(struct ssh *ssh, Authctxt *authctxt, Identity *id)
 #ifdef DEBUG_PK
 	sshbuf_dump(b, stderr);
 #endif
-
 	/* skip session id and packet type */
 	if ((r = sshbuf_consume(b, skip + 1)) != 0)
 		fatal("%s: consume: %s", __func__, ssh_err(r));

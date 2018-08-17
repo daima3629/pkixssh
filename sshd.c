@@ -848,7 +848,6 @@ get_hostkey_by_type(int type, int subtype, int need_private, struct ssh *ssh)
 	return NULL;
 }
 
-
 static struct sshkey*
 get_hostkey_by_alg(const char* alg, int need_private, struct ssh *ssh) {
 	u_int i;
@@ -875,7 +874,6 @@ get_hostkey_by_alg(const char* alg, int need_private, struct ssh *ssh) {
 	}
 	return NULL;
 }
-
 
 struct sshkey *
 get_hostkey_public_by_alg(const char* alg, struct ssh *ssh)

@@ -19,7 +19,6 @@
 /* OPENBSD ORIGINAL: lib/libc/string/strnlen.c */
 
 #include "includes.h"
-
 #if !defined(HAVE_STRNLEN) || defined(BROKEN_STRNLEN)
 #include <sys/types.h>
 

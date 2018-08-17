@@ -226,7 +226,8 @@ user_specific_delay(const char *user)
 	len = ssh_digest_bytes(digest_alg);
 	hash = xmalloc(len);
 
-	(void)snprintf(b, sizeof b, "%llu%s", (long long unsigned)options.timing_secret, user);
+	(void)snprintf(b, sizeof b, "%llu%s",
+	     (unsigned long long)options.timing_secret, user);
 	if (ssh_digest_memory(digest_alg, b, strlen(b), hash, len) != 0)
 		fatal("%s: ssh_digest_memory", __func__);
 	/* 0-4.2 ms of delay */

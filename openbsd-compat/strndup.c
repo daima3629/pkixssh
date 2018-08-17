@@ -17,7 +17,6 @@
  */
 
 #include "includes.h"
-
 #if !defined(HAVE_STRNDUP) || defined(BROKEN_STRNDUP)
 #include <sys/types.h>
 
