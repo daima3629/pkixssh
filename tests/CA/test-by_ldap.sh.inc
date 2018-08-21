@@ -267,7 +267,9 @@ EOF
     rm -f "${CWD}/ldap/data"/*
     runLDAPdaemon
     (
-      initLDAPdb || exit $?
+      initLDAPdb
+      retval=$?
+      show_status $retval "    initialization of ${extd}LDAP database${norm}" || exit $retval
 
       test_all_keys "" "" "${warn}!${norm}" "Yes"
     ); retval=$?
