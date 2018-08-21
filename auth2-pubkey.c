@@ -221,7 +221,6 @@ userauth_pubkey(struct ssh *ssh)
 			sshbuf_ptr(b), sshbuf_len(b))) == 0) {
 			authenticated = 1;
 		}
-		sshbuf_free(b);
 		auth2_record_key(authctxt, authenticated, key);
 	} else {
 		debug("%s: test pkalg %s pkblob %s%s%s",
@@ -266,6 +265,7 @@ done:
 
 	sshauthopt_free(authopts);
 	sshkey_free(key);
+	sshbuf_free(b);
 	free(userstyle);
 	free(pkalg);
 	free(pkblob);
