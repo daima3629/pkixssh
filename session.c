@@ -201,7 +201,13 @@ auth_input_request_forwarding(struct ssh *ssh, struct passwd * pw)
 	temporarily_use_uid(pw);
 
 	/* Allocate a buffer for the socket name, and format the name. */
-	auth_sock_dir = xstrdup("/tmp/ssh-XXXXXXXXXX");
+{	char *template = mkdtemp_template("ssh-");
+	if (template == NULL) {
+		restore_uid();
+		goto authsock_err;
+	}
+	auth_sock_dir = template;
+}
 
 	/* Create private directory for socket */
 	if (mkdtemp(auth_sock_dir) == NULL) {
@@ -269,7 +275,13 @@ prepare_auth_info_file(struct passwd *pw, struct sshbuf *info)
 		return;
 
 	temporarily_use_uid(pw);
-	auth_info_file = xstrdup("/tmp/sshauth.XXXXXXXXXXXXXXX");
+{	char *template = mkdtemp_template("sshauth.");
+	if (template == NULL) {
+		error("%s: error in template string", __func__);
+		goto out;
+	}
+	auth_info_file = template;
+}
 	if ((fd = mkstemp(auth_info_file)) == -1) {
 		error("%s: mkstemp: %s", __func__, strerror(errno));
 		goto out;

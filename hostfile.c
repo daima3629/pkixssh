@@ -574,7 +574,7 @@ hostfile_replace_entries(const char *filename, const char *host, const char *ip,
 	/*
 	 * Prepare temporary file for in-place deletion.
 	 */
-	if ((r = asprintf(&temp, "%s.XXXXXXXXXXX", filename)) < 0 ||
+	if ((r = asprintf(&temp, "%s.XXXXXXXXXX", filename)) < 0 ||
 	    (r = asprintf(&back, "%s.old", filename)) < 0) {
 		r = SSH_ERR_ALLOC_FAIL;
 		goto fail;

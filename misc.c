@@ -1419,6 +1419,26 @@ bandwidth_limit(struct bwlimit *bw, size_t read_len)
 	monotime_tv(&bw->bwstart);
 }
 
+/* Make a template path for mk[sd]temp() taking into account
+ * environment variable TMPDIR.
+ * Template uses 10 "X"-es although POSIX requires six.
+ */
+char*
+mkdtemp_template(char *prefix) {
+	const char *tmpdir;
+	char template[PATH_MAX];
+	int r;
+
+	tmpdir = getenv("TMPDIR");
+	if (tmpdir == NULL) tmpdir = "/tmp";
+
+	r = snprintf(template, sizeof(template), "%s/%sXXXXXXXXXX",
+	    tmpdir, prefix);
+	return (r < 0 || (size_t)r >= sizeof(template))
+		? NULL
+		: xstrdup(template);
+}
+
 /* Make a template filename for mk[sd]temp() */
 void
 mktemp_proto(char *s, size_t len)
@@ -1427,11 +1447,11 @@ mktemp_proto(char *s, size_t len)
 	int r;
 
 	if ((tmpdir = getenv("TMPDIR")) != NULL) {
-		r = snprintf(s, len, "%s/ssh-XXXXXXXXXXXX", tmpdir);
+		r = snprintf(s, len, "%s/ssh-XXXXXXXXXX", tmpdir);
 		if (r > 0 && (size_t)r < len)
 			return;
 	}
-	r = snprintf(s, len, "/tmp/ssh-XXXXXXXXXXXX");
+	r = snprintf(s, len, "/tmp/ssh-XXXXXXXXXX");
 	if (r < 0 || (size_t)r >= len)
 		fatal("%s: template string too short", __func__);
 }

@@ -145,6 +145,7 @@ void bandwidth_limit(struct bwlimit *, size_t);
 
 int parse_ipqos(const char *);
 const char *iptos2str(int);
+char *mkdtemp_template(char *prefix);
 void mktemp_proto(char *, size_t);
 
 void	 child_set_env(char ***envp, u_int *envsizep, const char *name,

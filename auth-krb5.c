@@ -242,8 +242,12 @@ ssh_krb5_cc_gen(krb5_context ctx, krb5_ccache *ccache) {
 	char ccname[40];
 	mode_t old_umask;
 
+{	const char *tmpdir = getenv("TMPDIR");
+	if (tmpdir == NULL) tmpdir = "/tmp";
+
 	ret = snprintf(ccname, sizeof(ccname),
-	    "FILE:/tmp/krb5cc_%d_XXXXXXXXXX", geteuid());
+	    "FILE:%s/krb5cc_%d_XXXXXXXXXX", tmpdir, geteuid());
+}
 	if (ret < 0 || (size_t)ret >= sizeof(ccname))
 		return ENOMEM;
 
