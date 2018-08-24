@@ -209,7 +209,7 @@ char *key_type_name = NULL;
 char *pkcs11provider = NULL;
 
 /* Use new OpenSSH private key format when writing SSH2 keys instead of PEM */
-int use_new_format = 1;
+int use_new_format = 0;
 
 /* Cipher for new-format private keys */
 char *new_format_cipher = NULL;

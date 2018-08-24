@@ -161,12 +161,14 @@ option.
 If invoked without any arguments,
 .Nm
 will generate an RSA key.
-By default key is stored in proprietary OpenSSH format.
+.Pp
+By default key is stored in PEM format.
 Option
-.Op Fl m Ar PEM
-could be used to store key in more portable PEM format.
-Note X.509 keys require PEM format and this is default.
-Those keys can not be stored in proprietary format.
+.Op Fl p Fl m Ar PEM
+could be used to convert private key from proprietary
+in more portable and widely used PEM format.
+Note if key contain X.509 certificate PEM format is required.
+For those keys request to store in proprietary format is ignored.
 .Pp
 .Nm
 is also used to generate groups for use in Diffie-Hellman group
@@ -519,6 +521,12 @@ The
 is a comma-separated list of one or more address/netmask pairs in CIDR
 format.
 .El
+.It Fl o
+Causes
+.Nm
+to save private keys using the proprietary OpenSSH format rather than
+the more compatible PEM format.
+Ed25519 keys always use the proprietary key format.
 .It Fl P Ar passphrase
 Provides the (old) passphrase.
 .It Fl p
