@@ -22,11 +22,11 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "ssh-xkalg.h"
 #include <string.h>
 #include <openssl/sha.h>
 #include <openssl/evp.h>
 
-#include "ssh-xkalg.h"
 #include "sshkey.h"
 #include "sshbuf.h"
 #include "ssherr.h"
