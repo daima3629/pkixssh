@@ -283,6 +283,7 @@ arc4random_stir(void)
 }
 # endif /*ndef HAVE_ARC4RANDOM_STIR*/
 
+# if 0 /*UNUSED*/
 void
 arc4random_addrandom(u_char *dat, int datlen)
 {
@@ -299,6 +300,7 @@ arc4random_addrandom(u_char *dat, int datlen)
 	}
 	_ARC4_UNLOCK();
 }
+# endif /*UNUSED*/
 
 # ifndef HAVE_ARC4RANDOM
 u_int32_t
