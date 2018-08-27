@@ -854,13 +854,6 @@ struct winsize {
 # undef HAVE_ARC4RANDOM_UNIFORM
 #endif
 
-#ifndef HAVE_ARC4RANDOM_STIR
-# ifdef HAVE_ARC4RANDOM
-#  define HAVE_ARC4RANDOM_STIR 1
-   static inline void arc4random_stir(void) {}
-# endif
-#endif
-
 #ifndef HAVE_VA_COPY
 # ifdef HAVE___VA_COPY
 #  define va_copy(dest, src) __va_copy(dest, src)

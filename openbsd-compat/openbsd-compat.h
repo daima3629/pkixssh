@@ -2,7 +2,7 @@
  * Copyright (c) 1999-2003 Damien Miller.  All rights reserved.
  * Copyright (c) 2003 Ben Lindstrom. All rights reserved.
  * Copyright (c) 2002 Tim Rice.  All rights reserved.
- * Copyright (c) 2013-2017 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2013-2018 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -203,6 +203,9 @@ int getpeereid(int , uid_t *, gid_t *);
 
 #if !HAVE_DECL_ARC4RANDOM
 unsigned int arc4random(void);
+#endif
+
+#if !HAVE_DECL_ARC4RANDOM_STIR
 void arc4random_stir(void);
 #endif
 

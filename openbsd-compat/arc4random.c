@@ -43,7 +43,7 @@
 # include <sys/random.h>
 #endif
 
-#ifndef HAVE_ARC4RANDOM
+#if !defined(HAVE_ARC4RANDOM) || !defined(HAVE_ARC4RANDOM_STIR)
 
 #ifdef OPENSSL_FIPS
   /* synchronize HAVE_ARC4RANDOM_<...> with defined.h */
@@ -253,6 +253,7 @@ _rs_random_buf(void *_buf, size_t n)
 	}
 }
 
+# ifndef HAVE_ARC4RANDOM
 static inline void
 _rs_random_u32(u_int32_t *val)
 {
@@ -264,14 +265,23 @@ _rs_random_u32(u_int32_t *val)
 	rs_have -= sizeof(*val);
 	return;
 }
+# endif /*ndef HAVE_ARC4RANDOM*/
 
+# ifndef HAVE_ARC4RANDOM_STIR
 void
 arc4random_stir(void)
 {
+#  if defined(HAVE_ARC4RANDOM) && defined(HAVE_ARC4RANDOM_UNIFORM)
+   /* platforms that have arc4random_uniform() and not
+    * arc4random_stir() should not need the latter.
+    */
+#  else
 	_ARC4_LOCK();
 	_rs_stir();
 	_ARC4_UNLOCK();
+#  endif
 }
+# endif /*ndef HAVE_ARC4RANDOM_STIR*/
 
 void
 arc4random_addrandom(u_char *dat, int datlen)
@@ -290,6 +300,7 @@ arc4random_addrandom(u_char *dat, int datlen)
 	_ARC4_UNLOCK();
 }
 
+# ifndef HAVE_ARC4RANDOM
 u_int32_t
 arc4random(void)
 {
@@ -300,12 +311,13 @@ arc4random(void)
 	_ARC4_UNLOCK();
 	return val;
 }
+# endif /*ndef HAVE_ARC4RANDOM*/
 
 /*
  * If we are providing arc4random, then we can provide a more efficient 
  * arc4random_buf().
  */
-# ifndef HAVE_ARC4RANDOM_BUF
+# if !defined(HAVE_ARC4RANDOM_BUF) && !defined(HAVE_ARC4RANDOM)
 void
 arc4random_buf(void *buf, size_t n)
 {
@@ -313,13 +325,14 @@ arc4random_buf(void *buf, size_t n)
 	_rs_random_buf(buf, n);
 	_ARC4_UNLOCK();
 }
-# endif /* !HAVE_ARC4RANDOM_BUF */
+# endif /*!defined(HAVE_ARC4RANDOM_BUF) && !defined(HAVE_ARC4RANDOM)*/
+
 #ifdef OPENSSL_FIPS
  /* to use arc4random_buf based on arc4random */
 # define HAVE_ARC4RANDOM
 # undef HAVE_ARC4RANDOM_BUF
 #endif
-#endif /* !HAVE_ARC4RANDOM */
+#endif /*!defined(HAVE_ARC4RANDOM) || !defined(HAVE_ARC4RANDOM_STIR)*/
 
 /* arc4random_buf() that uses platform arc4random() */
 #if !defined(HAVE_ARC4RANDOM_BUF) && defined(HAVE_ARC4RANDOM)
