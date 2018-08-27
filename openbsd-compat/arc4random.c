@@ -43,6 +43,14 @@
 # include <sys/random.h>
 #endif
 
+#ifdef OPENSSL_FIPS
+/* for FIPS build always use functions from "compat" library */
+# undef HAVE_ARC4RANDOM
+# undef HAVE_ARC4RANDOM_STIR
+# undef HAVE_ARC4RANDOM_BUF
+# undef HAVE_ARC4RANDOM_UNIFORM
+#endif
+
 #if !defined(HAVE_ARC4RANDOM) || !defined(HAVE_ARC4RANDOM_STIR)
 
 #ifdef WITH_OPENSSL
@@ -51,7 +59,7 @@
 #endif
 
 #ifdef OPENSSL_FIPS
-  /* synchronize HAVE_ARC4RANDOM_<...> with defined.h */
+/* define to avoid use of 'efficient' arc4random_buf() */
 # define HAVE_ARC4RANDOM_BUF
 
 /* Size of key to use */
@@ -103,7 +111,7 @@ arc4random(void) {
 
 # define arc4random_stir	save_arc4random_stir
 # define arc4random		save_arc4random
-#endif
+#endif /*def OPENSSL_FIPS*/
 
 
 #include "log.h"
@@ -269,9 +277,12 @@ _rs_random_u32(u_int32_t *val)
 void
 arc4random_stir(void)
 {
-#  if defined(HAVE_ARC4RANDOM) && defined(HAVE_ARC4RANDOM_UNIFORM)
+#  if (defined(HAVE_ARC4RANDOM) && defined(HAVE_ARC4RANDOM_UNIFORM)) \
+      || defined(OPENSSL_FIPS)
    /* platforms that have arc4random_uniform() and not
     * arc4random_stir() should not need the latter.
+    * also exclude in FIPS build as there is no need to call
+    * arc4random_stir() before using arc4random_buf().
     */
 #  else
 	_ARC4_LOCK();
@@ -328,10 +339,11 @@ arc4random_buf(void *buf, size_t n)
 # endif /*!defined(HAVE_ARC4RANDOM_BUF) && !defined(HAVE_ARC4RANDOM)*/
 
 #ifdef OPENSSL_FIPS
- /* to use arc4random_buf based on arc4random */
+/* redefine to use arc4random_buf() based on arc4random() */
 # define HAVE_ARC4RANDOM
 # undef HAVE_ARC4RANDOM_BUF
 #endif
+
 #endif /*!defined(HAVE_ARC4RANDOM) || !defined(HAVE_ARC4RANDOM_STIR)*/
 
 /* arc4random_buf() that uses platform arc4random() */

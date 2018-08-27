@@ -848,12 +848,6 @@ struct winsize {
 # endif
 #endif
 
-#ifdef OPENSSL_FIPS
-# undef HAVE_ARC4RANDOM
-# undef HAVE_ARC4RANDOM_BUF
-# undef HAVE_ARC4RANDOM_UNIFORM
-#endif
-
 #ifndef HAVE_VA_COPY
 # ifdef HAVE___VA_COPY
 #  define va_copy(dest, src) __va_copy(dest, src)
