@@ -45,11 +45,14 @@
 
 #if !defined(HAVE_ARC4RANDOM) || !defined(HAVE_ARC4RANDOM_STIR)
 
+#ifdef WITH_OPENSSL
+#include <openssl/rand.h>
+#include <openssl/err.h>
+#endif
+
 #ifdef OPENSSL_FIPS
   /* synchronize HAVE_ARC4RANDOM_<...> with defined.h */
 # define HAVE_ARC4RANDOM_BUF
-
-#include <openssl/rand.h>
 
 /* Size of key to use */
 #define SEED_SIZE 20
@@ -102,11 +105,6 @@ arc4random(void) {
 # define arc4random		save_arc4random
 #endif
 
-
-#ifdef WITH_OPENSSL
-#include <openssl/rand.h>
-#include <openssl/err.h>
-#endif
 
 #include "log.h"
 
