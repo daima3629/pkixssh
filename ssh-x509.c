@@ -90,7 +90,7 @@ SSH_X509_new() {
 	xd->cert = NULL;
 	xd->chain = NULL;
 
-	return(xd);
+	return xd;
 }
 
 
@@ -119,7 +119,7 @@ SSH_X509_free(SSH_X509* xd) {
 
 X509*
 SSH_X509_get_cert(SSH_X509 *xd) {
-	return((xd != NULL) ? xd->cert : NULL);
+	return (xd != NULL) ? xd->cert : NULL;
 }
 
 
@@ -131,12 +131,12 @@ ssh_X509_NAME_print(BIO* bio, X509_NAME *xn) {
 					  ~XN_FLAG_SEP_MASK) | \
 					 XN_FLAG_SEP_COMMA_PLUS);
 
-	if (xn == NULL) return(-1);
+	if (xn == NULL) return -1;
 
 	X509_NAME_print_ex(bio, xn, 0, print_flags);
 	(void)BIO_flush(bio);
 
-	return(BIO_pending(bio));
+	return BIO_pending(bio);
 }
 
 
@@ -146,10 +146,10 @@ ssh_X509_NAME_oneline(X509_NAME *xn) {
 	int size;
 	BIO* mbio = NULL;
 
-	if (xn == NULL) return(NULL);
+	if (xn == NULL) return NULL;
 
 	mbio = BIO_new(BIO_s_mem());
-	if (mbio == NULL) return(buf);
+	if (mbio == NULL) return buf;
 
 	size = ssh_X509_NAME_print(mbio, xn);
 	if (size <= 0) {
@@ -170,7 +170,7 @@ done:
 	/* This call will walk the chain freeing all the BIOs */
 	BIO_free_all(mbio);
 
-	return(buf);
+	return buf;
 }
 
 
@@ -188,17 +188,17 @@ ssh_x509_support_plain_type(int k_type) {
 
 int/*bool*/
 sshkey_is_x509(const struct sshkey *k) {
-	if (k == NULL) return(0);
+	if (k == NULL) return 0;
 
 	if ( (k->type == KEY_X509_RSA) ||
 #ifdef OPENSSL_HAS_ECC
 	     (k->type == KEY_X509_ECDSA) ||
 #endif
 	     (k->type == KEY_X509_DSA) ) {
-		return(1);
+		return 1;
 	}
 
-	return(0);
+	return 0;
 }
 
 
@@ -218,7 +218,7 @@ x509key_find_subject(const char* s) {
 
 	if (s == NULL) {
 		error("x509key_find_subject: no input data");
-		return(NULL);
+		return NULL;
 	}
 	for (; *s && ISSPACE(*s); s++)
 	{/*skip space*/}
@@ -231,14 +231,14 @@ x509key_find_subject(const char* s) {
 		{/*skip space*/}
 		if (!*p) {
 			error("x509key_find_subject: no data after keyword");
-			return(NULL);
+			return NULL;
 		}
 		if (*p == ':' || *p == '=') {
 			for (p++; *p && ISSPACE(*p); p++)
 			{/*skip space*/}
 			if (!*p) {
 				error("x509key_find_subject: no data after separator");
-				return(NULL);
+				return NULL;
 			}
 		}
 		if (*p == '/' || *p == ',') {
@@ -247,12 +247,12 @@ x509key_find_subject(const char* s) {
 			{/*skip space*/}
 			if (!*p) {
 				error("x509key_find_subject: no data");
-				return(NULL);
+				return NULL;
 			}
 		}
-		return(p);
+		return p;
 	}
-	return(NULL);
+	return NULL;
 }
 
 
@@ -262,17 +262,11 @@ ssh_hctol(u_char ch) {
 /* 'A'-'F' = 0x41 - 0x46 (ascii) */
 /* 'a'-'f' = 0x61 - 0x66 (ascii) */
 /* should work for EBCDIC */
-	if (('0' <= ch) && (ch <= '9')) {
-		return((long)(ch - '0'));
-	}
-	if (('A' <= ch) && (ch <= 'F')) {
-		return((long)(ch - ('A' - 10)));
-	}
-	if (('a' <= ch) && (ch <= 'f')) {
-		return((long)(ch - ('a' - 10)));
-	}
+	if (('0' <= ch) && (ch <= '9')) return (long)(ch - '0');
+	if (('A' <= ch) && (ch <= 'F')) return (long)(ch - ('A' - 10));
+	if (('a' <= ch) && (ch <= 'f')) return (long)(ch - ('a' - 10));
 
-	return(-1);
+	return -1;
 }
 
 
@@ -283,10 +277,10 @@ ssh_hatol(const u_char *str, size_t maxsize) {
 
 	for(k = maxsize; k > 0; k--, str++) {
 		v = ssh_hctol(*str);
-		if (v < 0) return(-1);
+		if (v < 0) return -1;
 		ret = (ret << 4) + v;
 	}
-	return(ret);
+	return ret;
 }
 
 
@@ -298,7 +292,7 @@ get_escsymbol(const u_char* str, size_t len, u_long *value) {
 	if (len < 1) {
 		error("get_escsymbol:"
 		" missing characters in escape sequence");
-		return(-1);
+		return -1;
 	}
 
 	/*escape formats:
@@ -309,37 +303,37 @@ get_escsymbol(const u_char* str, size_t len, u_long *value) {
 	*/
 	if (ch == '\\') {
 		if (value) *value = ch;
-		return(1);
+		return 1;
 	}
 	if (ch == 'W') {
 		if (len < 9) {
 			error("get_escsymbol:"
 			" to short 32-bit escape sequence");
-			return(-1);
+			return -1;
 		}
 		v = ssh_hatol(++str, 8);
 		if (v < 0) {
 			error("get_escsymbol:"
 			" invalid character in 32-bit hex sequence");
-			 return(-1);
+			 return -1;
 		}
 		if (value) *value = v;
-		return(9);
+		return 9;
 	}
 	if (ch == 'U') {
 		if (len < 5) {
 			error("get_escsymbol:"
 			" to short 16-bit escape sequence");
-			return(-1);
+			return -1;
 		}
 		v = ssh_hatol(++str, 4);
 		if (v < 0) {
 			error("get_escsymbol:"
 			" invalid character in 16-bit hex sequence");
-			 return(-1);
+			 return -1;
 		}
 		if (value) *value = v;
-		return(5);
+		return 5;
 	}
 	v = ssh_hctol(*str);
 	if (v < 0) {
@@ -349,10 +343,10 @@ get_escsymbol(const u_char* str, size_t len, u_long *value) {
                            to be escaped in this way */
 			error("get_escsymbol:"
 			" non-ascii character in escape sequence");
-			return(-1);
+			return -1;
 		}
 		if (value) *value = *str;
-		return(1);
+		return 1;
 	}
 
 	/*two hex numbers*/
@@ -361,18 +355,18 @@ get_escsymbol(const u_char* str, size_t len, u_long *value) {
 		if (len < 2) {
 			error("get_escsymbol:"
 			" to short 8-bit escape sequence");
-			return(-1);
+			return -1;
 		}
 		vlo = ssh_hctol(*++str);
 		if (vlo < 0) {
 			error("get_escsymbol:"
 			" invalid character in 8-bit hex sequence");
-			 return(-1);
+			 return -1;
 		}
 		v = (v << 4) + vlo;
 	}
 	if (value) *value = v;
-	return(2);
+	return 2;
 }
 
 
@@ -403,18 +397,18 @@ ssh_X509_NAME_add_entry_by_NID(X509_NAME* name, int nid, const u_char* str, size
 		if (*q == '\0') {
 			error("ssh_X509_NAME_add_entry_by_NID:"
 			" unsupported zero(NIL) symbol in name");
-			return(0);
+			return 0;
 		}
 		if (*q == '\\') {
 			len--;
 			if (len <= 0) {
 				error("ssh_X509_NAME_add_entry_by_NID:"
 				" escape sequence without data");
-				return(0);
+				return 0;
 			}
 
 			ret = get_escsymbol(++q, len, &ch);
-			if (ret < 0) return(0);
+			if (ret < 0) return 0;
 			if (ret == 2) {
 				/*escaped two hex numbers*/
 				ch_utf8 = 0;
@@ -425,7 +419,7 @@ ssh_X509_NAME_add_entry_by_NID(X509_NAME* name, int nid, const u_char* str, size
 				error("ssh_X509_NAME_add_entry_by_NID:"
 				" cannot get next symbol(%.32s)"
 				, q);
-				return(0);
+				return 0;
 			}
 		}
 		len -= ret;
@@ -437,7 +431,7 @@ ssh_X509_NAME_add_entry_by_NID(X509_NAME* name, int nid, const u_char* str, size
 			if (ret < 0) {
 				error("ssh_X509_NAME_add_entry_by_NID:"
 				" UTF8_putc fail for symbol %ld", ch);
-				return(0);
+				return 0;
 			}
 		} else {
 			*p = (u_char)ch;
@@ -449,7 +443,7 @@ ssh_X509_NAME_add_entry_by_NID(X509_NAME* name, int nid, const u_char* str, size
 	if (len > 0) {
 		error("ssh_X509_NAME_add_entry_by_NID:"
 		" too long data");
-		return(0);
+		return 0;
 	}
 	*p = '\0';
 
@@ -474,7 +468,7 @@ ssh_X509_NAME_add_entry_by_NID(X509_NAME* name, int nid, const u_char* str, size
 		, nid, OBJ_nid2ln(nid)
 		, str);
 	}
-	return(ret);
+	return ret;
 }
 
 
@@ -566,7 +560,7 @@ x509key_str2X509NAME(const char* _str, X509_NAME *_name) {
 
 	free(str);
 	debug3("x509key_str2X509NAME: return %d", ret);
-	return(ret);
+	return ret;
 }
 
 
@@ -580,19 +574,19 @@ x509key_from_subject(int _keytype, const char* _cp) {
 	    _keytype != KEY_X509_ECDSA &&
 	    _keytype != KEY_X509_DSA) {
 		debug3("x509key_from_subject: %d is not x509 key type", _keytype);
-		return(NULL);
+		return NULL;
 	}
 	debug3("x509key_from_subject(%d, [%.1024s]) called",
 		_keytype, (_cp ? _cp : ""));
 	subject = x509key_find_subject(_cp);
 	if (subject == NULL)
-		return(NULL);
+		return NULL;
 
 	debug3("x509key_from_subject: subject=[%.1024s]", subject);
 	key = sshkey_new(KEY_UNSPEC);
 	if (key == NULL) {
 		error("x509key_from_subject: out of memory");
-		return(NULL);
+		return NULL;
 	}
 
 	x = X509_new();
@@ -633,7 +627,7 @@ err:
 
 done:
 	debug3("x509key_from_subject: return %p", (void*)key);
-	return(key);
+	return key;
 }
 
 
@@ -655,7 +649,7 @@ X509key_from_subject(const char *pkalg, const char *cp, char **ep) {
 		*ep = (char*)cp + strlen(cp);
 	}
 
-	return(ret);
+	return ret;
 }
 
 
@@ -670,7 +664,7 @@ x509_to_key(X509 *x509) {
 		openssl_errormsg(ebuf, sizeof(ebuf));
 		error("x509_to_key: X509_get_pubkey fail %.*s",
 			(int)sizeof(ebuf), ebuf);
-		return(NULL);
+		return NULL;
 	}
 	/*else*/
 	debug3("x509_to_key: X509_get_pubkey done!");
@@ -729,12 +723,12 @@ x509_to_key(X509 *x509) {
 	}
 
 	EVP_PKEY_free(env_pkey);
-	return(key);
+	return key;
 
 err:
 	EVP_PKEY_free(env_pkey);
 	sshkey_free(key);
-	return(NULL);
+	return NULL;
 }
 
 
@@ -1007,19 +1001,19 @@ x509key_check(const char* method, const struct sshkey *key) {
 	SSH_X509 *xd;
 
 	if (key == NULL)
-		{ error("%.50s: no key", method); return(0); }
+		{ error("%.50s: no key", method); return 0; }
 
 	if (!sshkey_is_x509(key))
-		{ error("%.50s: cannot handle key type %d", method, key->type); return(0); }
+		{ error("%.50s: cannot handle key type %d", method, key->type); return 0; }
 
 	xd = key->x509_data;
 	if (xd == NULL)
-		{ error("%.50s: no X.509 identity", method); return(0); }
+		{ error("%.50s: no X.509 identity", method); return 0; }
 
 	if (xd->cert == NULL)
-		{ error("%.50s: no X.509 certificate", method); return(0); }
+		{ error("%.50s: no X.509 certificate", method); return 0; }
 
-	return(1);
+	return 1;
 }
 
 
@@ -1046,7 +1040,7 @@ sshbuf_put_x509_f(
 
 	free(p);
 
-	return(r);
+	return r;
 }
 
 
@@ -1224,7 +1218,7 @@ xkey_to_buf2(const char *pkalg, const struct sshkey *key, struct sshbuf *b) {
 	int   r;
 	u_int n;
 
-	if (!x509key_check("xkey_to_buf2", key)) return(0);
+	if (!x509key_check("xkey_to_buf2", key)) return 0;
 
 	/* RFC6187 key format */
 	chain = key->x509_data->chain;
@@ -1280,11 +1274,11 @@ char*
 x509key_subject(const struct sshkey *key) {
 	X509_NAME *dn;
 
-	if (!x509key_check("x509key_subject", key)) return(NULL);
+	if (!x509key_check("x509key_subject", key)) return NULL;
 
 	/* match format used in Xkey_write_subject */
 	dn = X509_get_subject_name(key->x509_data->cert);
-	return(ssh_X509_NAME_oneline(dn)); /*fatal on error*/
+	return ssh_X509_NAME_oneline(dn); /*fatal on error*/
 }
 
 
@@ -1317,12 +1311,12 @@ int
 Xkey_write_subject(const char *pkalg, const struct sshkey *key, FILE *f) {
 	BIO  *out;
 
-	if (!x509key_check("Xkey_write_subject", key)) return(0);
+	if (!x509key_check("Xkey_write_subject", key)) return 0;
 
 	if (pkalg == NULL) pkalg = sshkey_ssh_name(key);
 
 	out = BIO_new_fp(f, BIO_NOCLOSE);
-	if (out == NULL) return(0);
+	if (out == NULL) return 0;
 #ifdef VMS
 	{
 		BIO *tmpbio = BIO_new(BIO_f_linebuffer());
@@ -1335,7 +1329,7 @@ Xkey_write_subject(const char *pkalg, const struct sshkey *key, FILE *f) {
 	ssh_X509_NAME_print(out, X509_get_subject_name(key->x509_data->cert));
 
 	BIO_free_all(out);
-	return(1);
+	return 1;
 }
 
 
@@ -1347,7 +1341,7 @@ x509key_load_certs_bio(struct sshkey *key, BIO *bio) {
 	chain = sk_X509_new_null();
 	if (chain == NULL) {
 		fatal("x509key_load_certs_bio: out of memory");
-		return(-1); /*unreachable code*/
+		return -1; /*unreachable code*/
 	}
 
 	do {
@@ -1369,7 +1363,7 @@ x509key_load_certs_bio(struct sshkey *key, BIO *bio) {
 
 	ret = sk_X509_num(chain);
 
-	return(ret);
+	return ret;
 }
 
 
@@ -1509,7 +1503,7 @@ x509key_write_bio_cert(BIO *out, X509 *x509) {
 			__func__, (int)sizeof(ebuf), ebuf);
 	}
 
-	return(ret);
+	return ret;
 }
 
 
@@ -1523,7 +1517,7 @@ x509key_write_identity_bio_pem(
 	STACK_OF(X509) *chain;
 	int k;
 
-	if (!x509key_check("save_identity_pem", key)) return(0);
+	if (!x509key_check("save_identity_pem", key)) return 0;
 
 	x = key->x509_data->cert;
 	flag = x509key_write_bio_cert(bio, x);
@@ -1542,7 +1536,7 @@ x509key_write_identity_bio_pem(
 	}
 
 done:
-	return(flag);
+	return flag;
 }
 
 
@@ -1557,8 +1551,8 @@ ssh_x509_equal(const struct sshkey *a, const struct sshkey *b) {
 	X509 *xa;
 	X509 *xb;
 
-	if (!x509key_check("ssh_x509_equal", a)) return(1);
-	if (!x509key_check("ssh_x509_equal", b)) return(-1);
+	if (!x509key_check("ssh_x509_equal", a)) return 1;
+	if (!x509key_check("ssh_x509_equal", b)) return -1;
 
 	xa = a->x509_data->cert;
 	xb = b->x509_data->cert;
@@ -1570,10 +1564,10 @@ ssh_x509_equal(const struct sshkey *a, const struct sshkey *b) {
 	{
 		X509_NAME *nameA = X509_get_subject_name(xa);
 		X509_NAME *nameB = X509_get_subject_name(xb);
-		return(ssh_X509_NAME_cmp(nameA, nameB));
+		return ssh_X509_NAME_cmp(nameA, nameB);
 	}
 #else
-	return(X509_subject_name_cmp(xa, xb));
+	return X509_subject_name_cmp(xa, xb);
 #endif
 }
 
@@ -1585,11 +1579,11 @@ ssh_x509key_type(const char *name) {
 
 	if (name == NULL) {
 		fatal("ssh_x509key_type: name is NULL");
-		return(KEY_UNSPEC); /*unreachable code*/
+		return KEY_UNSPEC; /*unreachable code*/
 	}
 
 	k = ssh_xkalg_nameind(name, &p, -1);
-	return((k >= 0) ? p->type : KEY_UNSPEC);
+	return (k >= 0) ? p->type : KEY_UNSPEC;
 }
 
 
@@ -1600,14 +1594,14 @@ ssh_x509key_name(const struct sshkey *k) {
 
 	if (k == NULL) {
 		fatal("ssh_x509key_name: key is NULL");
-		return(NULL); /*unreachable code*/
+		return NULL; /*unreachable code*/
 	}
-	if (!sshkey_is_x509(k)) return(NULL);
+	if (!sshkey_is_x509(k)) return NULL;
 
 	n = ssh_xkalg_typeind(k->type, k->ecdsa_nid, &p, -1);
-	if (n >= 0) return(p->name);
+	if (n >= 0) return p->name;
 
-	return(NULL);
+	return NULL;
 }
 
 
@@ -2186,7 +2180,7 @@ ssh_x509_key_size(const struct sshkey *key) {
 	}
 	EVP_PKEY_free(pkey);
 done:
-	return((u_int) k);
+	return (u_int) k;
 }
 
 
@@ -2229,17 +2223,17 @@ ssh_x509_set_cert(struct sshkey *key, X509 *x509, STACK_OF(X509) *untrusted) {
 
 	ret = 1;
 done:
-	return(ret);
+	return ret;
 }
 
 
 int
 ssh_x509_cmp_cert(const struct sshkey *key1, const struct sshkey *key2) {
 	/* only dns.c call this function so skip checks ...
-	if (!x509key_check("cmp_cert", key1)) return(-1);
-	if (!x509key_check("cmp_cert", key2)) return(1);
+	if (!x509key_check("cmp_cert", key1)) return -1;
+	if (!x509key_check("cmp_cert", key2)) return 1;
 	*/
-	return(X509_cmp(key1->x509_data->cert, key2->x509_data->cert));
+	return X509_cmp(key1->x509_data->cert, key2->x509_data->cert);
 }
 
 
