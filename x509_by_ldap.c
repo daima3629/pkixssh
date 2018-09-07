@@ -48,7 +48,7 @@ X509_STORE_get0_objects(X509_STORE *store) {
 #ifndef HAVE_X509_STORE_LOCK
 static inline int
 X509_STORE_lock(X509_STORE *s) {
-	(void)s;
+	UNUSED(s);
 #ifdef CRYPTO_LOCK_X509_STORE
 	CRYPTO_w_lock(CRYPTO_LOCK_X509_STORE);
 #endif
@@ -57,7 +57,7 @@ X509_STORE_lock(X509_STORE *s) {
 
 static inline int
 X509_STORE_unlock(X509_STORE *s) {
-	(void)s;
+	UNUSED(s);
 #ifdef CRYPTO_LOCK_X509_STORE
 	CRYPTO_w_unlock(CRYPTO_LOCK_X509_STORE);
 #endif
@@ -318,8 +318,8 @@ static int
 ldaplookup_ctrl(X509_LOOKUP *ctx, int cmd, const char *argc, long argl, char **retp) {
 	int ret = 0;
 
-	(void)argl;
-	(void)retp;
+	UNUSED(argl);
+	UNUSED(retp);
 #ifdef TRACE_BY_LDAP
 fprintf(stderr, "TRACE_BY_LDAP ldaplookup_ctrl: cmd=%d, argc=%s\n", cmd, argc);
 #endif
@@ -375,7 +375,7 @@ ldaplookup_init(X509_LOOKUP *ctx) {
 #ifdef TRACE_BY_LDAP
 fprintf(stderr, "TRACE_BY_LDAP ldaplookup_init:\n");
 #endif
-	(void)ctx;
+	UNUSED(ctx);
 	return(1);
 }
 
@@ -385,7 +385,7 @@ ldaplookup_shutdown(X509_LOOKUP *ctx) {
 #ifdef TRACE_BY_LDAP
 fprintf(stderr, "TRACE_BY_LDAP ldaplookup_shutdown:\n");
 #endif
-	(void)ctx;
+	UNUSED(ctx);
 	return(1);
 }
 
