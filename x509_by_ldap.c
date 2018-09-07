@@ -40,7 +40,7 @@ extern int     ssh_X509_NAME_cmp(X509_NAME *a, X509_NAME *b);
 #ifndef HAVE_X509_STORE_GET0_OBJECTS
 static inline STACK_OF(X509_OBJECT)*
 X509_STORE_get0_objects(X509_STORE *store) {
-	return(store->objs);
+	return store->objs;
 }
 #endif /*ndef HAVE_X509_STORE_GET0_OBJECTS*/
 
@@ -52,7 +52,7 @@ X509_STORE_lock(X509_STORE *s) {
 #ifdef CRYPTO_LOCK_X509_STORE
 	CRYPTO_w_lock(CRYPTO_LOCK_X509_STORE);
 #endif
-	return(1);
+	return 1;
 }
 
 static inline int
@@ -61,7 +61,7 @@ X509_STORE_unlock(X509_STORE *s) {
 #ifdef CRYPTO_LOCK_X509_STORE
 	CRYPTO_w_unlock(CRYPTO_LOCK_X509_STORE);
 #endif
-	return(1);
+	return 1;
 }
 #endif /*def HAVE_X509_STORE_LOCK*/
 
@@ -168,7 +168,7 @@ ERR_load_X509byLDAP_strings(void) {
 static char*
 ldap_errormsg(char *buf, size_t len, int err) {
 	snprintf(buf, len, "ldaperror=0x%x(%.256s)", err, ldap_err2string(err));
-	return(buf);
+	return buf;
 }
 
 
@@ -228,7 +228,7 @@ fprintf(stderr, "TRACE_BY_LDAP ldaplookup_bind_s:"
 " ldap_XXX_bind_s return 0x%x(%s)\n"
 , result, ldap_err2string(result));
 #endif
-	return(result);
+	return result;
 }
 
 
@@ -258,7 +258,7 @@ fprintf(stderr, "TRACE_BY_LDAP ldaplookup_search_s:"
 , base, filter
 , result, ldap_err2string(result));
 #endif
-	return(result);
+	return result;
 }
 
 
@@ -310,7 +310,7 @@ X509_LOOKUP_METHOD x509_ldap_lookup = {
 
 X509_LOOKUP_METHOD*
 X509_LOOKUP_ldap(void) {
-	return(&x509_ldap_lookup);
+	return &x509_ldap_lookup;
 }
 
 
@@ -334,7 +334,7 @@ fprintf(stderr, "TRACE_BY_LDAP ldaplookup_ctrl: cmd=%d, argc=%s\n", cmd, argc);
 		X509byLDAPerr(X509byLDAP_F_LOOKUPCRTL, X509byLDAP_R_INVALID_CRTLCMD);
 		break;
 	}
-	return(ret);
+	return ret;
 }
 
 
@@ -343,11 +343,10 @@ ldaplookup_new(X509_LOOKUP *ctx) {
 #ifdef TRACE_BY_LDAP
 fprintf(stderr, "TRACE_BY_LDAP ldaplookup_new:\n");
 #endif
-	if (ctx == NULL)
-		return(0);
+	if (ctx == NULL) return 0;
 
 	ctx->method_data = NULL;
-	return(1);
+	return 1;
 }
 
 
@@ -358,8 +357,7 @@ ldaplookup_free(X509_LOOKUP *ctx) {
 fprintf(stderr, "TRACE_BY_LDAP ldaplookup_free:\n");
 #endif
 
-	if (ctx == NULL)
-		return;
+	if (ctx == NULL) return;
 
 	p = (ldaphost*) ctx->method_data;
 	while (p != NULL) {
@@ -376,7 +374,7 @@ ldaplookup_init(X509_LOOKUP *ctx) {
 fprintf(stderr, "TRACE_BY_LDAP ldaplookup_init:\n");
 #endif
 	UNUSED(ctx);
-	return(1);
+	return 1;
 }
 
 
@@ -386,7 +384,7 @@ ldaplookup_shutdown(X509_LOOKUP *ctx) {
 fprintf(stderr, "TRACE_BY_LDAP ldaplookup_shutdown:\n");
 #endif
 	UNUSED(ctx);
-	return(1);
+	return 1;
 }
 
 
@@ -396,7 +394,7 @@ ldaphost_new(const char *url) {
 	int          ret;
 
 	p = OPENSSL_malloc(sizeof(ldaphost));
-	if (p == NULL) return(NULL);
+	if (p == NULL) return NULL;
 
 	memset(p, 0, sizeof(ldaphost));
 
@@ -454,10 +452,10 @@ fprintf(stderr, "TRACE_BY_LDAP ldaphost_new: using ldap v%d protocol\n", version
 #endif
 	}
 
-	return(p);
+	return p;
 error:
 	ldaphost_free(p);
-	return(NULL);
+	return NULL;
 }
 
 
@@ -486,16 +484,16 @@ static int/*bool*/
 ldaplookup_add_search(X509_LOOKUP *ctx, const char *url) {
 	ldaphost *p, *q;
 
-	if (ctx == NULL) return(0);
-	if (url == NULL) return(0);
+	if (ctx == NULL) return 0;
+	if (url == NULL) return 0;
 
 	q = ldaphost_new(url);
-	if (q == NULL) return(0);
+	if (q == NULL) return 0;
 
 	p = (ldaphost*) ctx->method_data;
 	if (p == NULL) {
 		ctx->method_data = (void*) q;
-		return(1);
+		return 1;
 	}
 
 	for(; p->next != NULL; p = p->next) {
@@ -503,7 +501,7 @@ ldaplookup_add_search(X509_LOOKUP *ctx, const char *url) {
 	}
 	p->next = q;
 
-	return(1);
+	return 1;
 }
 
 
@@ -516,18 +514,18 @@ ldaplookup_set_protocol(X509_LOOKUP *ctx, const char *ver) {
 #ifdef TRACE_BY_LDAP
 fprintf(stderr, "TRACE_BY_LDAP ldaplookup_set_protocol(..., %s)\n", ver);
 #endif
-	if (ctx == NULL) return(0);
-	if (ver == NULL) return(0);
+	if (ctx == NULL) return 0;
+	if (ver == NULL) return 0;
 
 	p = (ldaphost*) ctx->method_data;
 #ifdef TRACE_BY_LDAP
 fprintf(stderr, "TRACE_BY_LDAP ldaplookup_set_protocol(..., %s) p=%p\n", ver, (void*)p);
 #endif
-	if (p == NULL) return(0);
+	if (p == NULL) return 0;
 
 	n = (int) strtol(ver, &q, 10);
-	if (*q != '\0') return(0);
-	if ((n < LDAP_VERSION_MIN) || (n > LDAP_VERSION_MAX)) return(0);
+	if (*q != '\0') return 0;
+	if ((n < LDAP_VERSION_MIN) || (n > LDAP_VERSION_MAX)) return 0;
 
 	for(; p->next != NULL; p = p->next) {
 		/*find list end*/
@@ -543,11 +541,11 @@ fprintf(stderr, "TRACE_BY_LDAP ldaplookup_set_protocol(...): ver=%d\n", n);
 		if (ret != LDAP_OPT_SUCCESS) {
 			X509byLDAPerr(X509byLDAP_F_SET_PROTOCOL, X509byLDAP_R_UNABLE_TO_SET_PROTOCOL_VERSION);
 			openssl_add_ldap_error(ret);
-			return(0);
+			return 0;
 		}
 	}
 
-	return(1);
+	return 1;
 }
 
 
@@ -558,7 +556,7 @@ ldaplookup_attr(ASN1_STRING *nv) {
 	BIO *mbio;
 
 	mbio = BIO_new(BIO_s_mem());
-	if (mbio == NULL) return(NULL);
+	if (mbio == NULL) return NULL;
 
 	k = ASN1_STRING_print_ex(mbio, nv, XN_FLAG_RFC2253);
 	p = OPENSSL_malloc(k + 1);
@@ -569,7 +567,7 @@ ldaplookup_attr(ASN1_STRING *nv) {
 
 done:
 	BIO_free_all(mbio);
-	return(p);
+	return p;
 }
 
 
@@ -580,7 +578,7 @@ ldaplookup_filter(X509_NAME *name, const char *attribute) {
 	BIO *mbio;
 
 	mbio = BIO_new(BIO_s_mem());
-	if (mbio == NULL) return(NULL);
+	if (mbio == NULL) return NULL;
 
 	BIO_puts(mbio, "(&");
 
@@ -649,7 +647,7 @@ fprintf(stderr, "TRACE_BY_LDAP ldaplookup_filter: p=%.512s\n", p);
 
 done:
 	BIO_free_all(mbio);
-	return(p);
+	return p;
 }
 
 
@@ -659,12 +657,12 @@ ldaplookup_check_attr(
 	const char *attr
 ) {
 	if (type == X509_LU_X509)
-		return(strncmp(attr, ATTR_CACERT, sizeof(ATTR_CACERT)) != 0);
+		return strncmp(attr, ATTR_CACERT, sizeof(ATTR_CACERT)) != 0;
 
 	if (type == X509_LU_CRL)
-		return(strncmp(attr, ATTR_CACRL, sizeof(ATTR_CACRL)) != 0);
+		return strncmp(attr, ATTR_CACRL, sizeof(ATTR_CACRL)) != 0;
 
-	return(0);
+	return 0;
 }
 
 
@@ -684,13 +682,13 @@ ldaplookup_data2store(
 	int ok = 0;
 	BIO *mbio;
 
-	if (name == NULL) return(0);
-	if (buf == NULL) return(0);
-	if (len <= 0) return(0);
-	if (store == NULL) return(0);
+	if (name == NULL) return 0;
+	if (buf == NULL) return 0;
+	if (len <= 0) return 0;
+	if (store == NULL) return 0;
 
 	mbio = BIO_new_mem_buf(buf, len);
-	if (mbio == NULL) return(0);
+	if (mbio == NULL) return 0;
 
 	switch (type) {
 	case X509_LU_X509: {
@@ -717,7 +715,7 @@ exit:
 #ifdef TRACE_BY_LDAP
 fprintf(stderr, "TRACE_BY_LDAP ldaplookup_data2store: ok=%d\n", ok);
 #endif
-	return(ok);
+	return ok;
 }
 
 
@@ -785,7 +783,7 @@ done:
 #ifdef TRACE_BY_LDAP
 fprintf(stderr, "TRACE_BY_LDAP ldaplookup_result2store: count=%d\n", count);
 #endif
-	return(count);
+	return count;
 }
 
 
@@ -802,11 +800,11 @@ ldaplookup_by_subject(
 	char *filter = NULL;
 
 
-	if (ctx == NULL) return(0);
-	if (name == NULL) return(0);
+	if (ctx == NULL) return 0;
+	if (name == NULL) return 0;
 
 	lh = (ldaphost*) ctx->method_data;
-	if (lh == NULL) return(0);
+	if (lh == NULL) return 0;
 
 	switch(type) {
 	case X509_LU_X509: {
@@ -908,5 +906,5 @@ fprintf(stderr, "TRACE_BY_LDAP ldaplookup_by_subject: tmp=%p\n", (void*)tmp);
 
 done:
 	if (filter != NULL) OPENSSL_free(filter);
-	return(count > 0);
+	return count > 0;
 }
