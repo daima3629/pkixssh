@@ -34,6 +34,27 @@ extern int     ssh_X509_NAME_cmp(X509_NAME *a, X509_NAME *b);
 #endif
 #include <ldap.h>
 
+#ifdef TRACE_BY_LDAP
+#undef TRACE_BY_LDAP
+static void
+TRACE_BY_LDAP(const char *f, const char *fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    fputs("TRACE_BY_LDAP ", stderr);
+    fputs(f, stderr);
+    fputs(":  ", stderr);
+    vfprintf(stderr, fmt, ap);
+    va_end(ap);
+    fputs("\n", stderr);
+}
+#else
+static inline void
+TRACE_BY_LDAP(const char *f, const char *fmt, ...) {
+    UNUSED(f);
+    UNUSED(fmt);
+}
+#endif
+
 
 /* ================================================================== */
 /* backport OpenSSL 1.1 functions */
@@ -223,11 +244,8 @@ ldaplookup_bind_s(LDAP *ld) {
 	result = ldap_simple_bind_s(ld, NULL/*binddn*/, NULL/*bindpw*/);
 #endif
 
-#ifdef TRACE_BY_LDAP
-fprintf(stderr, "TRACE_BY_LDAP ldaplookup_bind_s:"
-" ldap_XXX_bind_s return 0x%x(%s)\n"
+TRACE_BY_LDAP(__func__, "ldap_XXX_bind_s return 0x%x(%s)"
 , result, ldap_err2string(result));
-#endif
 	return result;
 }
 
@@ -251,13 +269,9 @@ ldaplookup_search_s(
 	result = ldap_search_s(ld, base, scope, filter, attrs, attrsonly, res);
 #endif
 
-#ifdef TRACE_BY_LDAP
-fprintf(stderr, "TRACE_BY_LDAP ldaplookup_search_s:"
-"\n base=%s\n filter=%s\n"
-" ldap_search_{XXX}s return 0x%x(%s)\n"
-, base, filter
-, result, ldap_err2string(result));
-#endif
+TRACE_BY_LDAP(__func__, "..."
+"\n  base: '%s'\n  filter: '%s'\n  ldap_search_{XXX}s return 0x%x(%s)"
+, base, filter, result, ldap_err2string(result));
 	return result;
 }
 
@@ -320,9 +334,7 @@ ldaplookup_ctrl(X509_LOOKUP *ctx, int cmd, const char *argc, long argl, char **r
 
 	UNUSED(argl);
 	UNUSED(retp);
-#ifdef TRACE_BY_LDAP
-fprintf(stderr, "TRACE_BY_LDAP ldaplookup_ctrl: cmd=%d, argc=%s\n", cmd, argc);
-#endif
+TRACE_BY_LDAP(__func__, "cmd: %d, argc: '%s'", cmd, argc);
 	switch (cmd) {
 	case X509_L_LDAP_HOST:
 		ret = ldaplookup_add_search(ctx, argc);
@@ -340,9 +352,7 @@ fprintf(stderr, "TRACE_BY_LDAP ldaplookup_ctrl: cmd=%d, argc=%s\n", cmd, argc);
 
 static int
 ldaplookup_new(X509_LOOKUP *ctx) {
-#ifdef TRACE_BY_LDAP
-fprintf(stderr, "TRACE_BY_LDAP ldaplookup_new:\n");
-#endif
+TRACE_BY_LDAP(__func__, "...");
 	if (ctx == NULL) return 0;
 
 	ctx->method_data = NULL;
@@ -353,9 +363,7 @@ fprintf(stderr, "TRACE_BY_LDAP ldaplookup_new:\n");
 static void
 ldaplookup_free(X509_LOOKUP *ctx) {
 	ldaphost *p;
-#ifdef TRACE_BY_LDAP
-fprintf(stderr, "TRACE_BY_LDAP ldaplookup_free:\n");
-#endif
+TRACE_BY_LDAP(__func__, "...");
 
 	if (ctx == NULL) return;
 
@@ -370,9 +378,7 @@ fprintf(stderr, "TRACE_BY_LDAP ldaplookup_free:\n");
 
 static int
 ldaplookup_init(X509_LOOKUP *ctx) {
-#ifdef TRACE_BY_LDAP
-fprintf(stderr, "TRACE_BY_LDAP ldaplookup_init:\n");
-#endif
+TRACE_BY_LDAP(__func__, "...");
 	UNUSED(ctx);
 	return 1;
 }
@@ -380,9 +386,7 @@ fprintf(stderr, "TRACE_BY_LDAP ldaplookup_init:\n");
 
 static int
 ldaplookup_shutdown(X509_LOOKUP *ctx) {
-#ifdef TRACE_BY_LDAP
-fprintf(stderr, "TRACE_BY_LDAP ldaplookup_shutdown:\n");
-#endif
+TRACE_BY_LDAP(__func__, "...");
 	UNUSED(ctx);
 	return 1;
 }
@@ -415,22 +419,18 @@ ldaphost_new(const char *url) {
 		openssl_add_ldap_error(ret);
 		goto error;
 	}
-#ifdef TRACE_BY_LDAP
-fprintf(stderr, "TRACE_BY_LDAP ldaphost_new: ldap_url_desc2str=%s\n", ldap_url_desc2str(p->ldapurl));
-fprintf(stderr, "TRACE_BY_LDAP ldaphost_new: ldapurl->%s://%s:%d\n", p->ldapurl->lud_scheme, p->ldapurl->lud_host, p->ldapurl->lud_port);
-#endif
+TRACE_BY_LDAP(__func__, "ldap_url_desc2str: '%s'", ldap_url_desc2str(p->ldapurl));
+TRACE_BY_LDAP(__func__, "ldapurl: '%s://%s:%d'", p->ldapurl->lud_scheme, p->ldapurl->lud_host, p->ldapurl->lud_port);
 
 	/* open ldap connection */
 #ifdef HAVE_LDAP_INITIALIZE
+TRACE_BY_LDAP(__func__, "ldap_initialize(..., url='%s')", p->url);
 	ret = ldap_initialize(&p->ld, p->url);
 	if (ret != LDAP_SUCCESS) {
 		X509byLDAPerr(X509byLDAP_F_LDAPHOST_NEW, X509byLDAP_R_INITIALIZATION_ERROR);
 		openssl_add_ldap_error(ret);
 		goto error;
 	}
-#ifdef TRACE_BY_LDAP
-fprintf(stderr, "TRACE_BY_LDAP ldaphost_new: ldap_initialize(..., url=%s)\n", p->url);
-#endif
 #else /*ndef HAVE_LDAP_INITIALIZE*/
 	p->ld = ldap_init(p->ldapurl->lud_host, p->ldapurl->lud_port);
 	if(p->ld == NULL) {
@@ -447,9 +447,7 @@ fprintf(stderr, "TRACE_BY_LDAP ldaphost_new: ldap_initialize(..., url=%s)\n", p-
 			X509byLDAPerr(X509byLDAP_F_LDAPHOST_NEW, X509byLDAP_R_UNABLE_TO_GET_PROTOCOL_VERSION );
 			goto error;
 		}
-#ifdef TRACE_BY_LDAP
-fprintf(stderr, "TRACE_BY_LDAP ldaphost_new: using ldap v%d protocol\n", version);
-#endif
+TRACE_BY_LDAP(__func__, "using protocol v%d", version);
 	}
 
 	return p;
@@ -461,9 +459,7 @@ error:
 
 static void
 ldaphost_free(ldaphost *p) {
-#ifdef TRACE_BY_LDAP
-fprintf(stderr, "TRACE_BY_LDAP ldaphost_free:\n");
-#endif
+TRACE_BY_LDAP(__func__, "...");
 	if (p == NULL) return;
 	if (p->url    != NULL) OPENSSL_free(p->url);
 	if (p->binddn != NULL) OPENSSL_free(p->binddn);
@@ -511,16 +507,12 @@ ldaplookup_set_protocol(X509_LOOKUP *ctx, const char *ver) {
 	char *q = NULL;
 	int n;
 
-#ifdef TRACE_BY_LDAP
-fprintf(stderr, "TRACE_BY_LDAP ldaplookup_set_protocol(..., %s)\n", ver);
-#endif
+TRACE_BY_LDAP(__func__, "ver: '%s'  ...", ver);
 	if (ctx == NULL) return 0;
 	if (ver == NULL) return 0;
 
 	p = (ldaphost*) ctx->method_data;
-#ifdef TRACE_BY_LDAP
-fprintf(stderr, "TRACE_BY_LDAP ldaplookup_set_protocol(..., %s) p=%p\n", ver, (void*)p);
-#endif
+TRACE_BY_LDAP(__func__, "p=%p", (void*)p);
 	if (p == NULL) return 0;
 
 	n = (int) strtol(ver, &q, 10);
@@ -530,9 +522,7 @@ fprintf(stderr, "TRACE_BY_LDAP ldaplookup_set_protocol(..., %s) p=%p\n", ver, (v
 	for(; p->next != NULL; p = p->next) {
 		/*find list end*/
 	}
-#ifdef TRACE_BY_LDAP
-fprintf(stderr, "TRACE_BY_LDAP ldaplookup_set_protocol(...): ver=%d\n", n);
-#endif
+TRACE_BY_LDAP(__func__, "ver: %d", n);
 	{
 		int ret;
 		const int version = n;
@@ -605,10 +595,8 @@ ldaplookup_filter(X509_NAME *name, const char *attribute) {
 			char *q, *s;
 
 			q = ldaplookup_attr(nv);
+TRACE_BY_LDAP(__func__, "ldaplookup_attr(nv) return '%s'", (q ? q : "<?>"));
 			if (q == NULL) goto done;
-#ifdef TRACE_BY_LDAP
-fprintf(stderr, "TRACE_BY_LDAP ldaplookup_filter: ldaplookup_attr(nv) return '%.512s'\n", q);
-#endif
 			/* escape some charecters according to RFC2254 */
 			for (s=q; *s; s++) {
 				if ((*s == '*') ||
@@ -641,9 +629,7 @@ fprintf(stderr, "TRACE_BY_LDAP ldaplookup_filter: ldaplookup_attr(nv) return '%.
 
 	k = BIO_read(mbio, p, k);
 	p[k] = '\0';
-#ifdef TRACE_BY_LDAP
-fprintf(stderr, "TRACE_BY_LDAP ldaplookup_filter: p=%.512s\n", p);
-#endif
+TRACE_BY_LDAP(__func__, "result: '%.1024s'%s", p, (k > 1024 ? "...": ""));
 
 done:
 	BIO_free_all(mbio);
@@ -712,9 +698,7 @@ ldaplookup_data2store(
 
 exit:
 	BIO_free_all(mbio);
-#ifdef TRACE_BY_LDAP
-fprintf(stderr, "TRACE_BY_LDAP ldaplookup_data2store: ok=%d\n", ok);
-#endif
+TRACE_BY_LDAP(__func__, "ok: %d", ok);
 	return ok;
 }
 
@@ -737,9 +721,7 @@ ldaplookup_result2store(
 		ldaplookup_parse_result (ld, res);
 		goto done;
 	}
-#ifdef TRACE_BY_LDAP
-fprintf(stderr, "TRACE_BY_LDAP ldaplookup_result2store: ldap_count_entries=%d\n", result);
-#endif
+TRACE_BY_LDAP(__func__, "ldap_count_entries: %d", result);
 
 	for(entry = ldap_first_entry(ld, res);
 	    entry != NULL;
@@ -750,7 +732,7 @@ fprintf(stderr, "TRACE_BY_LDAP ldaplookup_result2store: ldap_count_entries=%d\n"
 #ifdef TRACE_BY_LDAP
 {
 char *dn = ldap_get_dn(ld, entry);
-fprintf(stderr, "TRACE_BY_LDAP ldaplookup_result2store(): ldap_get_dn=%s\n", dn);
+TRACE_BY_LDAP(__func__, "ldap_get_dn: '%s'", dn);
 ldap_memfree(dn);
 }
 #endif
@@ -761,9 +743,7 @@ ldap_memfree(dn);
 			struct berval **vals;
 			struct berval **p;
 
-#ifdef TRACE_BY_LDAP
-fprintf(stderr, "TRACE_BY_LDAP ldaplookup_result2store: attr=%s\n", attr);
-#endif
+TRACE_BY_LDAP(__func__, "attr: '%s'", attr);
 			if (!ldaplookup_check_attr(type, attr))	continue;
 
 			vals = ldap_get_values_len(ld, entry, attr);
@@ -780,9 +760,7 @@ fprintf(stderr, "TRACE_BY_LDAP ldaplookup_result2store: attr=%s\n", attr);
 		ber_free(ber, 0);
 	}
 done:
-#ifdef TRACE_BY_LDAP
-fprintf(stderr, "TRACE_BY_LDAP ldaplookup_result2store: count=%d\n", count);
-#endif
+TRACE_BY_LDAP(__func__, "count: %d", count);
 	return count;
 }
 
@@ -825,9 +803,7 @@ ldaplookup_by_subject(
 		X509byLDAPerr(X509byLDAP_F_GET_BY_SUBJECT, X509byLDAP_R_UNABLE_TO_GET_FILTER);
 		goto done;
 	}
-#ifdef TRACE_BY_LDAP
-fprintf(stderr, "TRACE_BY_LDAP ldaplookup_by_subject: filter=%s\n", filter);
-#endif
+TRACE_BY_LDAP(__func__, "filter: '%s'", filter);
 
 	for (; lh != NULL; lh = lh->next) {
 		LDAPMessage *res = NULL;
@@ -838,9 +814,7 @@ fprintf(stderr, "TRACE_BY_LDAP ldaplookup_by_subject: filter=%s\n", filter);
 int version = -1;
 
 ldap_get_option(lh->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
-fprintf(stderr, "TRACE_BY_LDAP ldaplookup_by_subject:"
-" bind to \"%s://%s:%d\""
-" using ldap v%d protocol\n"
+TRACE_BY_LDAP(__func__, "bind to '%s://%s:%d' using protocol v%d"
 , lh->ldapurl->lud_scheme, lh->ldapurl->lud_host, lh->ldapurl->lud_port
 , version
 );
@@ -879,9 +853,7 @@ fprintf(stderr, "TRACE_BY_LDAP ldaplookup_by_subject:"
 		/*do not call ldap_unbind_s*/
 	}
 
-#ifdef TRACE_BY_LDAP
-fprintf(stderr, "TRACE_BY_LDAP ldaplookup_by_subject: count=%d\n", count);
-#endif
+TRACE_BY_LDAP(__func__, "count: %d", count);
 	if (count > 0) {
 		X509_OBJECT *tmp;
 
@@ -891,9 +863,7 @@ fprintf(stderr, "TRACE_BY_LDAP ldaplookup_by_subject: count=%d\n", count);
 			tmp = X509_OBJECT_retrieve_by_subject(objs, type, name);
 		}
 		X509_STORE_unlock(ctx->store_ctx);
-#ifdef TRACE_BY_LDAP
-fprintf(stderr, "TRACE_BY_LDAP ldaplookup_by_subject: tmp=%p\n", (void*)tmp);
-#endif
+TRACE_BY_LDAP(__func__, "tmp=%p", (void*)tmp);
 
 		if (tmp == NULL) {
 			count = 0;
