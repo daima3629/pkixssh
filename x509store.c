@@ -89,7 +89,7 @@ SSH_X509_STORE_CTX_DATA_new(void) {
 	if (p != NULL) {
 		p->check_time = 0;
 	}
-	return (p);
+	return p;
 }
 
 static inline void
@@ -123,7 +123,7 @@ X509_OBJECT_new(void) {
 		memset(xobj, '\0', sizeof(*xobj));
 		xobj->type = X509_LU_FAIL;
 	}
-	return(xobj);
+	return xobj;
 }
 
 static inline void
@@ -142,7 +142,7 @@ X509_OBJECT_get0_X509(const X509_OBJECT *xobj) {
 	if (xobj == NULL) return NULL;
 	if (xobj->type != X509_LU_X509) return NULL;
 
-	return(xobj->data.x509);
+	return xobj->data.x509;
 }
 
 static inline X509_CRL*
@@ -150,7 +150,7 @@ X509_OBJECT_get0_X509_CRL(const X509_OBJECT *xobj) {
 	if (xobj == NULL) return NULL;
 	if (xobj->type != X509_LU_CRL) return NULL;
 
-	return(xobj->data.crl);
+	return xobj->data.crl;
 }
 #endif /*ndef HAVE_X509_OBJECT_GET0_X509*/
 
@@ -173,13 +173,13 @@ ssh_ASN1_INTEGER_2_string(ASN1_INTEGER *_asni) {
 
 	if (_asni == NULL) {
 		error("ssh_ASN1_INTEGER_2_string: _asni is NULL");
-		return(NULL);
+		return NULL;
 	}
 
 	bio = BIO_new(BIO_s_mem());
 	if (bio == NULL) {
 		fatal("ssh_ASN1_INTEGER_2_string: out of memory");
-		return(NULL); /* ;-) */
+		return NULL; /* ;-) */
 	}
 
 	i2a_ASN1_INTEGER(bio, _asni);
@@ -189,7 +189,7 @@ ssh_ASN1_INTEGER_2_string(ASN1_INTEGER *_asni) {
 	p[k] = '\0';
 	BIO_free_all(bio);
 
-	return(p);
+	return p;
 }
 #endif /*def SSH_CHECK_REVOKED*/
 
@@ -205,7 +205,7 @@ ssh_x509store_lookup(X509_STORE *store, int type, X509_NAME *name, X509_OBJECT *
 		openssl_errormsg(ebuf, sizeof(ebuf));
 		error("ssh_x509store_lookup: X509_STORE_CTX_new failed with '%.*s'",
 		      (int)sizeof(ebuf), ebuf);
-		return(-1);
+		return -1;
 	}
 
 	if (X509_STORE_CTX_init(csc, store, NULL, NULL) <= 0) {
@@ -219,7 +219,7 @@ ssh_x509store_lookup(X509_STORE *store, int type, X509_NAME *name, X509_OBJECT *
 done:
 	X509_STORE_CTX_free(csc);
 
-	return(ret);
+	return ret;
 }
 
 
@@ -233,7 +233,7 @@ ssh_x509store_get_cert_by_subject(X509_STORE *store, X509_NAME *name) {
 	xobj = X509_OBJECT_new();
 	if (xobj == NULL) {
 		error("ssh_x509store_get_cert_by_subject: cannot allocate X509_OBJECT");
-		return(NULL);
+		return NULL;
 	}
 
 	if (ssh_x509store_lookup(store, X509_LU_X509, name, xobj) > 0)
@@ -242,7 +242,7 @@ ssh_x509store_get_cert_by_subject(X509_STORE *store, X509_NAME *name) {
 	X509_OBJECT_free(xobj);
 }
 
-	return(ret);
+	return ret;
 }
 
 
@@ -256,7 +256,7 @@ ssh_x509store_get_crl_by_subject(X509_STORE *store, X509_NAME *name) {
 	xobj = X509_OBJECT_new();
 	if (xobj == NULL) {
 		error("ssh_X509_STORE_get_X509_CRL_by_subject: cannot allocate X509_OBJECT");
-		return(NULL);
+		return NULL;
 	}
 
 	if (ssh_x509store_lookup(store, X509_LU_CRL, name, xobj) > 0)
@@ -265,7 +265,7 @@ ssh_x509store_get_crl_by_subject(X509_STORE *store, X509_NAME *name) {
 	X509_OBJECT_free(xobj);
 }
 
-	return(ret);
+	return ret;
 }
 
 
@@ -299,7 +299,7 @@ ssh_x509store_cb(int ok, X509_STORE_CTX *ctx) {
 		ok = ssh_x509revoked_cb(ok, ctx);
 	}
 #endif
-	return(ok);
+	return ok;
 }
 
 
@@ -346,17 +346,17 @@ get_cert_purpose(const char* _purpose_synonym, CertPurposes *_purposes) {
 	for (i = 0; _purposes[i].synonyms; i++) {
 		const char *q = _purposes[i].synonyms[0];
 		if (strcasecmp(_purpose_synonym, q) == 0) {
-			return(q);
+			return q;
 		} else {
 			const char **p;
 			for (p = (_purposes[i].synonyms) + 1; *p; p++) {
 				if (strcasecmp(_purpose_synonym, *p) == 0 ) {
-					return(q);
+					return q;
 				}
 			}
 		}
 	}
-	return(NULL);
+	return NULL;
 }
 
 
@@ -409,9 +409,9 @@ ssh_get_x509purpose_s(int _is_server, const char* _purpose_synonym) {
 				"X509_PURPOSE_get_by_sname fail for argument '%.30s(%.40s)'",
 				(_is_server ? "server" : "client"),
 				sslpurpose, _purpose_synonym);
-		return(purpose_index);
+		return purpose_index;
 	}
-	return(-1);
+	return -1;
 }
 
 
@@ -422,9 +422,9 @@ format_x509_purpose(int purpose_index) {
 	xp = X509_PURPOSE_get0(purpose_index);
 	if (xp == NULL) {
 		fatal("format_x509_purpose: cannot get purpose from index");
-		return("skip"); /* ;-) */
+		return "skip"; /* ;-) */
 	}
-	return(X509_PURPOSE_get0_sname(xp));
+	return X509_PURPOSE_get0_sname(xp);
 }
 
 
@@ -457,7 +457,7 @@ ssh_X509_is_selfsigned(X509 *_cert) {
 		free(buf);
 	}
 
-	return (ssh_X509_NAME_cmp(issuer, subject) == 0);
+	return ssh_X509_NAME_cmp(issuer, subject) == 0;
 #endif
 }
 
@@ -573,18 +573,18 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 
 	if (_locations == NULL) {
 		error("ssh_x509store_addlocations: _locations is NULL");
-		return(0);
+		return 0;
 	}
 	if ((_locations->certificate_path == NULL) &&
 	    (_locations->certificate_file == NULL)) {
 		error("ssh_x509store_addlocations: certificate path and file are NULLs");
-		return(0);
+		return 0;
 	}
 #ifdef SSH_CHECK_REVOKED
 	if ((_locations->revocation_path == NULL) &&
 	    (_locations->revocation_file == NULL)) {
 		error("ssh_x509store_addlocations: revocation path and file are NULLs");
-		return(0);
+		return 0;
 	}
 #endif
 	ssh_x509store_initcontext();
@@ -600,7 +600,7 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 		X509_LOOKUP *lookup = X509_STORE_add_lookup(x509store, X509_LOOKUP_hash_dir());
 		if (lookup == NULL) {
 			fatal("ssh_x509store_addlocations: cannot add hash dir lookup !");
-			return(0); /* ;-) */
+			return 0; /* ;-) */
 		}
 		if (X509_LOOKUP_add_dir(lookup, _locations->certificate_path, X509_FILETYPE_PEM)) {
 			debug2("hash dir '%.400s' added to x509 store", _locations->certificate_path);
@@ -612,7 +612,7 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 		X509_LOOKUP *lookup = X509_STORE_add_lookup(x509store, X509_LOOKUP_file());
 		if (lookup == NULL) {
 			fatal("ssh_x509store_addlocations: cannot add file lookup !");
-			return(0); /* ;-) */
+			return 0; /* ;-) */
 		}
 		if (X509_LOOKUP_load_file(lookup, _locations->certificate_file, X509_FILETYPE_PEM)) {
 			debug2("file '%.400s' added to x509 store", _locations->certificate_file);
@@ -621,7 +621,7 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 		ERR_clear_error();
 	}
 	/*at least one lookup should succeed*/
-	if (flag == 0) return(0);
+	if (flag == 0) return 0;
 
 	flag = 0;
 #ifdef SSH_CHECK_REVOKED
@@ -636,7 +636,7 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 		X509_LOOKUP *lookup = X509_STORE_add_lookup(x509revoked, X509_LOOKUP_hash_dir());
 		if (lookup == NULL) {
 			fatal("ssh_x509store_addlocations: cannot add hash dir revocation lookup !");
-			return(0); /* ;-) */
+			return 0; /* ;-) */
 		}
 		if (X509_LOOKUP_add_dir(lookup, _locations->revocation_path, X509_FILETYPE_PEM)) {
 			debug2("hash dir '%.400s' added to x509 revocation store", _locations->revocation_path);
@@ -648,7 +648,7 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 		X509_LOOKUP *lookup = X509_STORE_add_lookup(x509revoked, X509_LOOKUP_file());
 		if (lookup == NULL) {
 			fatal("ssh_x509store_addlocations: cannot add file revocation lookup !");
-			return(0); /* ;-) */
+			return 0; /* ;-) */
 		}
 		if (X509_LOOKUP_load_file(lookup, _locations->revocation_file, X509_FILETYPE_PEM)) {
 			debug2("file '%.400s' added to x509 revocation store", _locations->revocation_file);
@@ -666,7 +666,7 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 	flag = 1;
 #endif /*ndef SSH_CHECK_REVOKED*/
 	/*at least one revocation lookup should succeed*/
-	if (flag == 0) return(0);
+	if (flag == 0) return 0;
 
 #ifdef LDAP_ENABLED
 {
@@ -678,7 +678,7 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 		lookup = X509_STORE_add_lookup(x509store, lookup_method);
 		if (lookup == NULL) {
 			fatal("ssh_x509store_addlocations: cannot add ldap lookup !");
-			return(0); /* ;-) */
+			return 0; /* ;-) */
 		}
 		if (X509_LOOKUP_add_ldap(lookup, _locations->ldap_url)) {
 			debug2("ldap url '%.400s' added to x509 store", _locations->ldap_url);
@@ -686,7 +686,7 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 		if (_locations->ldap_ver != NULL) {
 			if (!X509_LOOKUP_set_protocol(lookup, _locations->ldap_ver)) {
 				fatal("ssh_x509store_addlocations: cannot set ldap version !");
-				return(0); /* ;-) */
+				return 0; /* ;-) */
 			}
 		}
 		/*ERR_clear_error();*/
@@ -695,7 +695,7 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 		lookup = X509_STORE_add_lookup(x509revoked, lookup_method);
 		if (lookup == NULL) {
 			fatal("ssh_x509store_addlocations: cannot add ldap lookup(revoked) !");
-			return(0); /* ;-) */
+			return 0; /* ;-) */
 		}
 		if (X509_LOOKUP_add_ldap(lookup, _locations->ldap_url)) {
 			debug2("ldap url '%.400s' added to x509 store(revoked)", _locations->ldap_url);
@@ -703,7 +703,7 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 		if (_locations->ldap_ver != NULL) {
 			if (!X509_LOOKUP_set_protocol(lookup, _locations->ldap_ver)) {
 				fatal("ssh_x509store_addlocations: cannot set ldap version(revoked) !");
-				return(0); /* ;-) */
+				return 0; /* ;-) */
 			}
 		}
 		/*ERR_clear_error();*/
@@ -712,7 +712,7 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 }
 #endif /*def LDAP_ENABLED*/
 
-	return(1);
+	return 1;
 }
 
 
@@ -765,7 +765,7 @@ ssh_verify_cert(X509_STORE_CTX *_csc) {
 		int purpose;
 		if (xptmp == NULL) {
 			fatal("ssh_verify_cert: cannot get purpose from index");
-			return(-1); /* ;-) */
+			return -1; /* ;-) */
 		}
 		purpose = X509_PURPOSE_get_id(xptmp);
 		flag = X509_STORE_CTX_purpose_inherit(_csc, def_purpose, purpose, 0);
@@ -795,7 +795,7 @@ ssh_verify_cert(X509_STORE_CTX *_csc) {
 			openssl_errormsg(ebuf, sizeof(ebuf));
 			error("ssh_verify_cert: X509_STORE_CTX_purpose_inherit failed with '%.256s'"
 				, ebuf);
-			return(-1);
+			return -1;
 		}
 	}
 
@@ -840,17 +840,17 @@ ssh_verify_cert(X509_STORE_CTX *_csc) {
 		 * Lets log (possible in future) cases with negative value.
 		 */
 		logit("ssh_verify_cert: X509_verify_cert return unexpected negative value: '%d'", flag);
-		return(-1);
+		return -1;
 	}
 	if (flag == 0) {
 		int ecode = X509_STORE_CTX_get_error(_csc);
 		error("ssh_verify_cert: verify error, code=%d, msg='%.200s'"
 			, ecode
 			, X509_verify_cert_error_string(ecode));
-		return(-1);
+		return -1;
 	}
 
-	return(1);
+	return 1;
 }
 
 
@@ -953,7 +953,7 @@ done:
 	msg = (ret > 0) ? msg_ok : (ret < 0 ? "error" : "rejected");
 	debug3("%s: return %d(%s)", __func__, ret, msg);
 }
-	return(ret);
+	return ret;
 }
 
 
@@ -969,7 +969,7 @@ ssh_build_certchain_cb(int ok, X509_STORE_CTX *ctx) {
 		free(buf);
 	}
 
-	return(ok);
+	return ok;
 }
 
 
@@ -981,12 +981,12 @@ ssh_x509store_build_certchain(X509 *cert, STACK_OF(X509) *untrusted) {
 	if (cert == NULL) {
 		/*already checked but ...*/
 		error("%s: cert is NULL", __func__);
-		return(NULL);
+		return NULL;
 	}
 	/* _chain could be NULL */
 	if (x509store == NULL) {
 		error("%s: X.509 store in not initialized", __func__);
-		return(NULL);
+		return NULL;
 	}
 
 	csc = X509_STORE_CTX_new();
@@ -995,7 +995,7 @@ ssh_x509store_build_certchain(X509 *cert, STACK_OF(X509) *untrusted) {
 		openssl_errormsg(ebuf, sizeof(ebuf));
 		error("%s: X509_STORE_CTX_new failed with '%.*s'", __func__,
 		      (int)sizeof(ebuf), ebuf);
-		return(NULL);
+		return NULL;
 	}
 
 	if (X509_STORE_CTX_init(csc, x509store, cert, untrusted) <= 0) {
@@ -1021,7 +1021,7 @@ ssh_x509store_build_certchain(X509 *cert, STACK_OF(X509) *untrusted) {
 
 donecsc:
 	X509_STORE_CTX_free(csc);
-	return(ret);
+	return ret;
 }
 
 
@@ -1085,12 +1085,12 @@ X509_STORE_CTX_get_verify_check_time(X509_STORE_CTX *ctx) {
 		data = X509_STORE_CTX_get_ex_data(ctx, ssh_X509_STORE_CTX_index);
 
 	if (data != NULL)
-		return(data->check_time);
+		return data->check_time;
 
 {	/*failback to current time*/
 	time_t check_time;
 	time(&check_time);
-	return(check_time);
+	return check_time;
 }
 #endif
 }
@@ -1105,11 +1105,11 @@ ssh_check_crl(X509_STORE_CTX *_ctx, X509* _issuer, X509_CRL *_crl) {
 
 	if (_issuer == NULL) {
 		error("ssh_check_crl: issuer is NULL");
-		return(0);
+		return 0;
 	}
 	if (_crl == NULL) {
 		debug("ssh_check_crl: crl is NULL");
-		return(1);
+		return 1;
 	}
 
 	if (get_log_level() >= SYSLOG_LEVEL_DEBUG3) {
@@ -1119,7 +1119,7 @@ ssh_check_crl(X509_STORE_CTX *_ctx, X509* _issuer, X509_CRL *_crl) {
 		bio = BIO_new(BIO_s_mem());
 		if (bio == NULL) {
 			fatal("ssh_check_crl: out of memory");
-			return(0); /* ;-) */
+			return 0; /* ;-) */
 		}
 
 		ssh_X509_NAME_print(bio, X509_CRL_get_issuer(_crl));
@@ -1160,7 +1160,7 @@ ssh_check_crl(X509_STORE_CTX *_ctx, X509* _issuer, X509_CRL *_crl) {
 			, buf, hash
 		);
 		free(buf);
-		return(0);
+		return 0;
 	}
 
 	{
@@ -1168,7 +1168,7 @@ ssh_check_crl(X509_STORE_CTX *_ctx, X509* _issuer, X509_CRL *_crl) {
 		if (pkey == NULL) {
 			error("ssh_check_crl: unable to decode issuer public key");
 			X509_STORE_CTX_set_error(_ctx, X509_V_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY);
-			return(0);
+			return 0;
 		}
 
 		if (X509_CRL_verify(_crl, pkey) <= 0) {
@@ -1182,7 +1182,7 @@ ssh_check_crl(X509_STORE_CTX *_ctx, X509* _issuer, X509_CRL *_crl) {
 			X509_STORE_CTX_set_error(_ctx, X509_V_ERR_CRL_SIGNATURE_FAILURE);
 			free(buf);
 			EVP_PKEY_free(pkey);
-			return(0);
+			return 0;
 		}
 		EVP_PKEY_free(pkey);
 	}
@@ -1205,7 +1205,7 @@ ssh_check_crl(X509_STORE_CTX *_ctx, X509* _issuer, X509_CRL *_crl) {
 		);
 		X509_STORE_CTX_set_error(_ctx, X509_V_ERR_ERROR_IN_CRL_LAST_UPDATE_FIELD);
 		free(buf);
-		return(0);
+		return 0;
 	}
 	if (k > 0) {
 		char *buf;
@@ -1217,7 +1217,7 @@ ssh_check_crl(X509_STORE_CTX *_ctx, X509* _issuer, X509_CRL *_crl) {
 		);
 		X509_STORE_CTX_set_error(_ctx, X509_V_ERR_CRL_NOT_YET_VALID);
 		free(buf);
-		return(0);
+		return 0;
 	}
 
 	k = X509_cmp_time(X509_CRL_get0_nextUpdate(_crl), pcheck_time);
@@ -1231,7 +1231,7 @@ ssh_check_crl(X509_STORE_CTX *_ctx, X509* _issuer, X509_CRL *_crl) {
 		);
 		X509_STORE_CTX_set_error(_ctx, X509_V_ERR_ERROR_IN_CRL_NEXT_UPDATE_FIELD);
 		free(buf);
-		return(0);
+		return 0;
 	}
 #if 0
 	/*test "extend time limit"*/
@@ -1255,10 +1255,10 @@ ssh_check_crl(X509_STORE_CTX *_ctx, X509* _issuer, X509_CRL *_crl) {
 		);
 		X509_STORE_CTX_set_error(_ctx, X509_V_ERR_CRL_HAS_EXPIRED);
 		free(buf);
-		return(0);
+		return 0;
 	}
 
-	return(1);
+	return 1;
 }
 
 
@@ -1269,7 +1269,7 @@ ssh_is_cert_revoked(X509_STORE_CTX *_ctx, X509_CRL *_crl, X509 *_cert) {
 	int ret = 1;
 	int k;
 
-	if (_crl == NULL) return(1);
+	if (_crl == NULL) return 1;
 
 	revoked = X509_REVOKED_new();
 	if (revoked == NULL) {
@@ -1277,7 +1277,7 @@ ssh_is_cert_revoked(X509_STORE_CTX *_ctx, X509_CRL *_crl, X509 *_cert) {
 		openssl_errormsg(ebuf, sizeof(ebuf));
 		error("%s: X509_REVOKED_new failed with '%.*s'", __func__,
 		      (int)sizeof(ebuf), ebuf);
-		return(1);
+		return 1;
 	}
 
 	serial = X509_get_serialNumber(_cert);
@@ -1305,7 +1305,7 @@ ssh_is_cert_revoked(X509_STORE_CTX *_ctx, X509_CRL *_crl, X509 *_cert) {
 }
 done:
 	if (revoked) X509_REVOKED_free(revoked);
-	return (ret);
+	return ret;
 }
 
 
@@ -1314,14 +1314,14 @@ ssh_x509revoked_cb(int ok, X509_STORE_CTX *ctx) {
 	X509     *cert;
 	X509_CRL *crl;
 
-	if (!ok) return(0);
+	if (!ok) return 0;
 	if (x509revoked == NULL)
-		return(ok); /* XXX:hmm */
+		return ok; /* XXX:hmm */
 
 	cert = X509_STORE_CTX_get_current_cert(ctx);
 	if (cert == NULL) {
 		error("ssh_x509revoked_cb: missing current certificate in x509store context");
-		return(0);
+		return 0;
 	}
 
 	if (get_log_level() >= SYSLOG_LEVEL_DEBUG3) {
@@ -1378,7 +1378,7 @@ ssh_x509revoked_cb(int ok, X509_STORE_CTX *ctx) {
 			}
 		}
 	}
-	if (!ok) return(0);
+	if (!ok) return 0;
 
 	crl = ssh_x509store_get_crl_by_subject(
 	      x509revoked,
@@ -1387,8 +1387,8 @@ ssh_x509revoked_cb(int ok, X509_STORE_CTX *ctx) {
 	if (crl != NULL) {
 		ok = !ssh_is_cert_revoked(ctx, crl, cert);
 	}
-	if (!ok) return(0);
+	if (!ok) return 0;
 
-	return(ok);
+	return ok;
 }
 #endif
