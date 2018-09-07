@@ -311,7 +311,7 @@ dns_read_cert(ssh_dns_cert_param *param, const struct sshkey *key)
 	ret = 1;
 
 done:
-	if (bio) BIO_free_all(bio);
+	BIO_free_all(bio);
 	return(ret);
 }
 

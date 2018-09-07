@@ -711,7 +711,7 @@ ldaplookup_data2store(
 	}
 
 exit:
-	if (mbio != NULL) BIO_free_all(mbio);
+	BIO_free_all(mbio);
 #ifdef TRACE_BY_LDAP
 fprintf(stderr, "TRACE_BY_LDAP ldaplookup_data2store: ok=%d\n", ok);
 #endif

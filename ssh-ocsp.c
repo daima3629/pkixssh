@@ -293,7 +293,7 @@ ssh_load_x509certs(const char *certs_file, const char* certs_descrip) {
 	}
 
 exit:
-	if (fbio != NULL) BIO_free_all(fbio);
+	BIO_free_all(fbio);
 	if (ret_certs != NULL) {
 		debug3("ssh_load_x509certs: return %d certs", (int)sk_X509_num(ret_certs));
 	} else {
@@ -559,7 +559,7 @@ ssh_ocsp_get_response(const ssh_ocsp_conn *conn, OCSP_REQUEST *req) {
 	}
 
 exit:
-	if (bio_conn != NULL) BIO_free_all(bio_conn);
+	BIO_free_all(bio_conn);
 #ifdef SSH_WITH_SSLOCSP
 	if (ctx      != NULL) SSL_CTX_free(ctx);
 #endif
