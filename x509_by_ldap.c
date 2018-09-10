@@ -201,7 +201,8 @@ openssl_add_ldap_error(int err) {
 
 
 /* ================================================================== */
-/* wrappers to some deprecated functions */
+/* wrappers for some deprecated functions */
+
 static void
 ldaplookup_parse_result (
 	LDAP *ld,
@@ -277,10 +278,7 @@ TRACE_BY_LDAP(__func__, "..."
 
 
 /* ================================================================== */
-/* LOOKUP by LDAP */
-
-static const char ATTR_CACERT[] = "cACertificate";
-static const char ATTR_CACRL[] = "certificateRevocationList";
+/* LDAP connection details */
 
 typedef struct ldaphost_s ldaphost;
 struct ldaphost_s {
@@ -296,6 +294,95 @@ struct ldaphost_s {
 static ldaphost* ldaphost_new(const char *url);
 static void ldaphost_free(ldaphost *p);
 
+
+static ldaphost*
+ldaphost_new(const char *url) {
+	ldaphost *p;
+	int ret;
+
+TRACE_BY_LDAP(__func__, "url: '%s')", url);
+	p = OPENSSL_malloc(sizeof(ldaphost));
+	if (p == NULL) return NULL;
+
+	memset(p, 0, sizeof(ldaphost));
+
+	p->url = OPENSSL_malloc(strlen(url) + 1);
+	if (p->url == NULL) goto error;
+	strcpy(p->url, url);
+
+	/*ldap://hostport/dn[?attrs[?scope[?filter[?exts]]]] */
+	ret = ldap_is_ldap_url(url);
+	if (ret < 0) {
+		X509byLDAPerr(X509byLDAP_F_LDAPHOST_NEW, X509byLDAP_R_NOT_LDAP_URL);
+		goto error;
+	}
+
+	ret = ldap_url_parse(p->url, &p->ldapurl);
+	if (ret != 0) {
+		X509byLDAPerr(X509byLDAP_F_LDAPHOST_NEW, X509byLDAP_R_INVALID_URL);
+		openssl_add_ldap_error(ret);
+		goto error;
+	}
+TRACE_BY_LDAP(__func__, "ldap_url_desc2str: '%s'", ldap_url_desc2str(p->ldapurl));
+TRACE_BY_LDAP(__func__, "ldapurl: '%s://%s:%d'", p->ldapurl->lud_scheme, p->ldapurl->lud_host, p->ldapurl->lud_port);
+
+	/* allocate connection without to open */
+#ifdef HAVE_LDAP_INITIALIZE
+	ret = ldap_initialize(&p->ld, p->url);
+	if (ret != LDAP_SUCCESS) {
+		X509byLDAPerr(X509byLDAP_F_LDAPHOST_NEW, X509byLDAP_R_INITIALIZATION_ERROR);
+		openssl_add_ldap_error(ret);
+		goto error;
+	}
+#else /*ndef HAVE_LDAP_INITIALIZE*/
+	p->ld = ldap_init(p->ldapurl->lud_host, p->ldapurl->lud_port);
+	if(p->ld == NULL) {
+		X509byLDAPerr(X509byLDAP_F_LDAPHOST_NEW, X509byLDAP_R_INITIALIZATION_ERROR);
+		goto error;
+	}
+#endif /*ndef HAVE_LDAP_INITIALIZE*/
+
+{	int version = -1;
+
+	ret = ldap_get_option(p->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
+	if (ret != LDAP_OPT_SUCCESS) {
+		X509byLDAPerr(X509byLDAP_F_LDAPHOST_NEW, X509byLDAP_R_UNABLE_TO_GET_PROTOCOL_VERSION );
+		goto error;
+	}
+TRACE_BY_LDAP(__func__, "using protocol v%d (default)", version);
+}
+
+	return p;
+error:
+	ldaphost_free(p);
+	return NULL;
+}
+
+
+static void
+ldaphost_free(ldaphost *p) {
+TRACE_BY_LDAP(__func__, "...");
+	if (p == NULL) return;
+	if (p->url    != NULL) OPENSSL_free(p->url);
+	if (p->binddn != NULL) OPENSSL_free(p->binddn);
+	if (p->bindpw != NULL) OPENSSL_free(p->bindpw);
+	if (p->ldapurl != NULL) {
+		ldap_free_urldesc(p->ldapurl);
+		p->ldapurl = NULL;
+	}
+	if (p->ld != NULL) {
+		/* how to free ld ???*/
+		p->ld = NULL;
+	}
+	OPENSSL_free(p);
+}
+
+
+/* ================================================================== */
+/* LOOKUP by LDAP */
+
+static const char ATTR_CACERT[] = "cACertificate";
+static const char ATTR_CACRL[] = "certificateRevocationList";
 
 static int  ldaplookup_ctrl(X509_LOOKUP *ctx, int cmd, const char *argp, long argl, char **ret);
 static int  ldaplookup_new(X509_LOOKUP *ctx);
@@ -389,90 +476,6 @@ ldaplookup_shutdown(X509_LOOKUP *ctx) {
 TRACE_BY_LDAP(__func__, "...");
 	UNUSED(ctx);
 	return 1;
-}
-
-
-static ldaphost*
-ldaphost_new(const char *url) {
-	ldaphost *p;
-	int          ret;
-
-	p = OPENSSL_malloc(sizeof(ldaphost));
-	if (p == NULL) return NULL;
-
-	memset(p, 0, sizeof(ldaphost));
-
-	p->url = OPENSSL_malloc(strlen(url) + 1);
-	if (p->url == NULL) goto error;
-	strcpy(p->url, url);
-
-	/*ldap://hostport/dn[?attrs[?scope[?filter[?exts]]]] */
-	ret = ldap_is_ldap_url(url);
-	if (ret < 0) {
-		X509byLDAPerr(X509byLDAP_F_LDAPHOST_NEW, X509byLDAP_R_NOT_LDAP_URL);
-		goto error;
-	}
-
-	ret = ldap_url_parse(p->url, &p->ldapurl);
-	if (ret != 0) {
-		X509byLDAPerr(X509byLDAP_F_LDAPHOST_NEW, X509byLDAP_R_INVALID_URL);
-		openssl_add_ldap_error(ret);
-		goto error;
-	}
-TRACE_BY_LDAP(__func__, "ldap_url_desc2str: '%s'", ldap_url_desc2str(p->ldapurl));
-TRACE_BY_LDAP(__func__, "ldapurl: '%s://%s:%d'", p->ldapurl->lud_scheme, p->ldapurl->lud_host, p->ldapurl->lud_port);
-
-	/* open ldap connection */
-#ifdef HAVE_LDAP_INITIALIZE
-TRACE_BY_LDAP(__func__, "ldap_initialize(..., url='%s')", p->url);
-	ret = ldap_initialize(&p->ld, p->url);
-	if (ret != LDAP_SUCCESS) {
-		X509byLDAPerr(X509byLDAP_F_LDAPHOST_NEW, X509byLDAP_R_INITIALIZATION_ERROR);
-		openssl_add_ldap_error(ret);
-		goto error;
-	}
-#else /*ndef HAVE_LDAP_INITIALIZE*/
-	p->ld = ldap_init(p->ldapurl->lud_host, p->ldapurl->lud_port);
-	if(p->ld == NULL) {
-		X509byLDAPerr(X509byLDAP_F_LDAPHOST_NEW, X509byLDAP_R_INITIALIZATION_ERROR);
-		goto error;
-	}
-#endif /*ndef HAVE_LDAP_INITIALIZE*/
-
-	{
-		int version = -1;
-
-		ret = ldap_get_option(p->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
-		if (ret != LDAP_OPT_SUCCESS) {
-			X509byLDAPerr(X509byLDAP_F_LDAPHOST_NEW, X509byLDAP_R_UNABLE_TO_GET_PROTOCOL_VERSION );
-			goto error;
-		}
-TRACE_BY_LDAP(__func__, "using protocol v%d", version);
-	}
-
-	return p;
-error:
-	ldaphost_free(p);
-	return NULL;
-}
-
-
-static void
-ldaphost_free(ldaphost *p) {
-TRACE_BY_LDAP(__func__, "...");
-	if (p == NULL) return;
-	if (p->url    != NULL) OPENSSL_free(p->url);
-	if (p->binddn != NULL) OPENSSL_free(p->binddn);
-	if (p->bindpw != NULL) OPENSSL_free(p->bindpw);
-	if (p->ldapurl != NULL) {
-		ldap_free_urldesc(p->ldapurl);
-		p->ldapurl = NULL;
-	}
-	if (p->ld != NULL) {
-		/* how to free ld ???*/
-		p->ld = NULL;
-	}
-	OPENSSL_free(p);
 }
 
 
