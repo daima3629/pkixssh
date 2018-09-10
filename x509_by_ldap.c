@@ -381,6 +381,88 @@ TRACE_BY_LDAP(__func__, "...");
 
 
 /* ================================================================== */
+/* LDAP result iterator */
+
+typedef struct ldapsearch_result_st ldapsearch_result;
+struct ldapsearch_result_st {
+	LDAP *ld;
+	LDAPMessage *entry;
+	/* loop on attribute */
+	char *attr;
+	BerElement *attr_ber;
+	/* loop on attribute values */
+	struct berval **vals;
+	struct berval **p;
+	int eom;
+};
+
+
+static ldapsearch_result*
+ldapsearch_iterator(LDAP *ld, LDAPMessage *res) {
+{	int k = ldap_count_entries(ld, res);
+TRACE_BY_LDAP(__func__, "ldap_count_entries: %d", k);
+	if (k < 0) {
+		X509byLDAPerr(X509byLDAP_F_RESULT2STORE, X509byLDAP_R_UNABLE_TO_COUNT_ENTRIES);
+		ldaplookup_parse_result (ld, res);
+		return NULL;
+	}
+}
+{
+	ldapsearch_result *ret = OPENSSL_malloc(sizeof(ldapsearch_result));
+	if (ret == NULL) return NULL;
+
+	memset(ret, 0, sizeof(ldapsearch_result));
+
+	ret->ld = ld;
+	ret->entry = ldap_first_entry(ld, res);
+	return ret;
+}
+}
+
+
+static int
+ldapsearch_advance(ldapsearch_result* r) {
+	while(r->entry != NULL) {
+#ifdef TRACE_BY_LDAP_ENABLED
+{
+char *dn = ldap_get_dn(r->ld, r->entry);
+TRACE_BY_LDAP(__func__, "ldap_get_dn: '%s'", dn);
+ldap_memfree(dn);
+}
+#endif
+		if (r->attr == NULL)
+			r->attr = ldap_first_attribute(r->ld, r->entry, &r->attr_ber);
+
+		while(r->attr != NULL) {
+TRACE_BY_LDAP(__func__, "attr: '%s'", r->attr);
+
+			if (r->p == NULL) {
+				r->vals = ldap_get_values_len(r->ld, r->entry, r->attr);
+				r->p = r->vals;
+TRACE_BY_LDAP(__func__, "r->p[0]=%p'", *r->p);
+				return 1;
+			}
+
+			r->p++;
+TRACE_BY_LDAP(__func__, "r->p[x]=%p'", *r->p);
+			if (*r->p != NULL)
+				return 1;
+
+			ldap_value_free_len(r->vals);
+
+			r->attr = ldap_next_attribute(r->ld, r->entry, r->attr_ber);
+		}
+
+		ber_free(r->attr_ber, 0);
+
+		r->entry = ldap_next_entry(r->ld, r->entry);
+	}
+TRACE_BY_LDAP(__func__, "end");
+	return 0;
+}
+
+
+/* ================================================================== */
 /* LOOKUP by LDAP */
 
 static const char ATTR_CACERT[] = "cACertificate";
@@ -709,68 +791,6 @@ TRACE_BY_LDAP(__func__, "ok: %d", ok);
 
 
 static int
-ldaplookup_result2store(
-	int          type,
-	X509_NAME*   name,
-	LDAP*        ld,
-	LDAPMessage* res,
-	X509_STORE*  store
-) {
-	int count = 0;
-	int result;
-	LDAPMessage *entry;
-
-	result = ldap_count_entries(ld, res);
-	if (result < 0) {
-		X509byLDAPerr(X509byLDAP_F_RESULT2STORE, X509byLDAP_R_UNABLE_TO_COUNT_ENTRIES);
-		ldaplookup_parse_result (ld, res);
-		goto done;
-	}
-TRACE_BY_LDAP(__func__, "ldap_count_entries: %d", result);
-
-	for(entry = ldap_first_entry(ld, res);
-	    entry != NULL;
-	    entry = ldap_next_entry(ld, entry)
-	) {
-		char *attr;
-		BerElement *ber;
-#ifdef TRACE_BY_LDAP_ENABLED
-{
-char *dn = ldap_get_dn(ld, entry);
-TRACE_BY_LDAP(__func__, "ldap_get_dn: '%s'", dn);
-ldap_memfree(dn);
-}
-#endif /*def TRACE_BY_LDAP_ENABLED*/
-		for(attr = ldap_first_attribute(ld, entry, &ber);
-		    attr != NULL;
-		    attr = ldap_next_attribute(ld, entry, ber)
-		) {
-			struct berval **vals;
-			struct berval **p;
-
-TRACE_BY_LDAP(__func__, "attr: '%s'", attr);
-			if (!ldaplookup_check_attr(type, attr))	continue;
-
-			vals = ldap_get_values_len(ld, entry, attr);
-			if (vals == NULL) continue;
-
-			for(p = vals; *p; p++) {
-				struct berval *q = *p;
-				if (ldaplookup_data2store(type, name, q->bv_val, q->bv_len, store)) {
-					count++;
-				}
-			}
-			ldap_value_free_len(vals);
-		}
-		ber_free(ber, 0);
-	}
-done:
-TRACE_BY_LDAP(__func__, "count: %d", count);
-	return count;
-}
-
-
-static int
 ldaplookup_by_subject(
 	X509_LOOKUP *ctx,
 	int          type,
@@ -782,7 +802,7 @@ ldaplookup_by_subject(
 	const char *attrs[2];
 	char *filter = NULL;
 
-
+TRACE_BY_LDAP(__func__, "type: %d", type);
 	if (ctx == NULL) return 0;
 	if (name == NULL) return 0;
 
@@ -850,8 +870,22 @@ TRACE_BY_LDAP(__func__, "bind to '%s://%s:%d' using protocol v%d"
 			continue;
 		}
 
-		result = ldaplookup_result2store(type, name, lh->ld, res, ctx->store_ctx);
-		if (result > 0) count += result;
+	{	X509_STORE *store = ctx->store_ctx;
+		ldapsearch_result *it = ldapsearch_iterator(lh->ld, res);
+
+		while (ldapsearch_advance(it)) {
+			struct berval *q;
+			if (!ldaplookup_check_attr(type, it->attr))
+				continue;
+
+			q = *it->p;
+			count += ldaplookup_data2store(type, name,
+			    q->bv_val, q->bv_len, store)
+			    ? 1 : 0;
+		}
+
+		OPENSSL_free(it);
+	}
 
 		ldap_msgfree(res);
 
@@ -860,14 +894,15 @@ TRACE_BY_LDAP(__func__, "bind to '%s://%s:%d' using protocol v%d"
 
 TRACE_BY_LDAP(__func__, "count: %d", count);
 	if (count > 0) {
+		X509_STORE *store = ctx->store_ctx;
 		X509_OBJECT *tmp;
 
-		X509_STORE_lock(ctx->store_ctx);
+		X509_STORE_lock(store);
 		{	STACK_OF(X509_OBJECT) *objs;
-			objs = X509_STORE_get0_objects(ctx->store_ctx);
+			objs = X509_STORE_get0_objects(store);
 			tmp = X509_OBJECT_retrieve_by_subject(objs, type, name);
 		}
-		X509_STORE_unlock(ctx->store_ctx);
+		X509_STORE_unlock(store);
 TRACE_BY_LDAP(__func__, "tmp=%p", (void*)tmp);
 
 		if (tmp == NULL) {
