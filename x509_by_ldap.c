@@ -34,8 +34,10 @@ extern int     ssh_X509_NAME_cmp(X509_NAME *a, X509_NAME *b);
 #endif
 #include <ldap.h>
 
+#undef TRACE_BY_LDAP_ENABLED
 #ifdef TRACE_BY_LDAP
 #undef TRACE_BY_LDAP
+#define TRACE_BY_LDAP_ENABLED 1
 static void
 TRACE_BY_LDAP(const char *f, const char *fmt, ...) {
     va_list ap;
@@ -732,13 +734,13 @@ TRACE_BY_LDAP(__func__, "ldap_count_entries: %d", result);
 	) {
 		char *attr;
 		BerElement *ber;
-#ifdef TRACE_BY_LDAP
+#ifdef TRACE_BY_LDAP_ENABLED
 {
 char *dn = ldap_get_dn(ld, entry);
 TRACE_BY_LDAP(__func__, "ldap_get_dn: '%s'", dn);
 ldap_memfree(dn);
 }
-#endif
+#endif /*def TRACE_BY_LDAP_ENABLED*/
 		for(attr = ldap_first_attribute(ld, entry, &ber);
 		    attr != NULL;
 		    attr = ldap_next_attribute(ld, entry, ber)
@@ -812,7 +814,7 @@ TRACE_BY_LDAP(__func__, "filter: '%s'", filter);
 		LDAPMessage *res = NULL;
 		int result;
 
-#ifdef TRACE_BY_LDAP
+#ifdef TRACE_BY_LDAP_ENABLED
 {
 int version = -1;
 
@@ -822,7 +824,7 @@ TRACE_BY_LDAP(__func__, "bind to '%s://%s:%d' using protocol v%d"
 , version
 );
 }
-#endif
+#endif /*def TRACE_BY_LDAP_ENABLED*/
 
 		result = ldaplookup_bind_s(lh->ld);
 		if (result != LDAP_SUCCESS) {
