@@ -325,7 +325,13 @@ TRACE_BY_LDAP(__func__, "url: '%s')", url);
 		openssl_add_ldap_error(ret);
 		goto error;
 	}
-TRACE_BY_LDAP(__func__, "ldap_url_desc2str: '%s'", ldap_url_desc2str(p->ldapurl));
+#ifdef TRACE_BY_LDAP_ENABLED
+{
+char *uri = ldap_url_desc2str(p->ldapurl);
+TRACE_BY_LDAP(__func__, "ldap_url_desc2str: '%s'", uri);
+ldap_memfree(uri);
+}
+#endif /*def TRACE_BY_LDAP_ENABLED*/
 TRACE_BY_LDAP(__func__, "ldapurl: '%s://%s:%d'", p->ldapurl->lud_scheme, p->ldapurl->lud_host, p->ldapurl->lud_port);
 
 	/* allocate connection without to open */
@@ -373,7 +379,7 @@ TRACE_BY_LDAP(__func__, "...");
 		p->ldapurl = NULL;
 	}
 	if (p->ld != NULL) {
-		/* how to free ld ???*/
+		ldap_unbind_ext(p->ld, NULL, NULL);
 		p->ld = NULL;
 	}
 	OPENSSL_free(p);
@@ -429,7 +435,7 @@ char *dn = ldap_get_dn(r->ld, r->entry);
 TRACE_BY_LDAP(__func__, "ldap_get_dn: '%s'", dn);
 ldap_memfree(dn);
 }
-#endif
+#endif /*def TRACE_BY_LDAP_ENABLED*/
 		if (r->attr == NULL)
 			r->attr = ldap_first_attribute(r->ld, r->entry, &r->attr_ber);
 
@@ -784,6 +790,10 @@ ldaplookup_data2store(
 		if (ssh_X509_NAME_cmp(name, X509_get_subject_name(x509)) != 0) goto exit;
 
 		ok = X509_STORE_add_cert(store, x509);
+		/* X509_STORE_add...() increase "object" reference,
+		 * so here object must be released unconditionally.
+		 */
+		X509_free(x509);
 		} break;
 	case X509_LU_CRL: {
 		X509_CRL *crl = d2i_X509_CRL_bio(mbio, NULL);
@@ -792,6 +802,7 @@ ldaplookup_data2store(
 		if (ssh_X509_NAME_cmp(name, X509_CRL_get_issuer(crl)) != 0) goto exit;
 
 		ok = X509_STORE_add_crl(store, crl);
+		X509_CRL_free(crl);
 		} break;
 	}
 
@@ -901,7 +912,9 @@ TRACE_BY_LDAP(__func__, "bind to '%s://%s:%d' using protocol v%d"
 
 		ldap_msgfree(res);
 
-		/*do not call ldap_unbind_s*/
+		/* NOTE: do not call ldap_unbind... here!
+		 * Function ldaphost_free() unbind LDAP structure.
+		 */
 	}
 
 TRACE_BY_LDAP(__func__, "count: %d", count);
