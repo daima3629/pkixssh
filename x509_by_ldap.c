@@ -505,7 +505,7 @@ ldaplookup_ctrl(X509_LOOKUP *ctx, int cmd, const char *argc, long argl, char **r
 
 	UNUSED(argl);
 	UNUSED(retp);
-TRACE_BY_LDAP(__func__, "cmd: %d, argc: '%s'", cmd, argc);
+TRACE_BY_LDAP(__func__, "ctx=%p, cmd: %d, argc: '%s'", ctx, cmd, argc);
 	switch (cmd) {
 	case X509_L_LDAP_HOST:
 		ret = ldaplookup_add_search(ctx, argc);
@@ -523,7 +523,7 @@ TRACE_BY_LDAP(__func__, "cmd: %d, argc: '%s'", cmd, argc);
 
 static int
 ldaplookup_new(X509_LOOKUP *ctx) {
-TRACE_BY_LDAP(__func__, "...");
+TRACE_BY_LDAP(__func__, "ctx=%p", ctx);
 	if (ctx == NULL) return 0;
 
 	ctx->method_data = NULL;
@@ -534,7 +534,7 @@ TRACE_BY_LDAP(__func__, "...");
 static void
 ldaplookup_free(X509_LOOKUP *ctx) {
 	ldaphost *p;
-TRACE_BY_LDAP(__func__, "...");
+TRACE_BY_LDAP(__func__, "ctx=%p", ctx);
 
 	if (ctx == NULL) return;
 
@@ -549,7 +549,7 @@ TRACE_BY_LDAP(__func__, "...");
 
 static int
 ldaplookup_init(X509_LOOKUP *ctx) {
-TRACE_BY_LDAP(__func__, "...");
+TRACE_BY_LDAP(__func__, "ctx=%p", ctx);
 	UNUSED(ctx);
 	return 1;
 }
@@ -557,7 +557,7 @@ TRACE_BY_LDAP(__func__, "...");
 
 static int
 ldaplookup_shutdown(X509_LOOKUP *ctx) {
-TRACE_BY_LDAP(__func__, "...");
+TRACE_BY_LDAP(__func__, "ctx=%p", ctx);
 	UNUSED(ctx);
 	return 1;
 }
@@ -802,7 +802,7 @@ ldaplookup_by_subject(
 	const char *attrs[2];
 	char *filter = NULL;
 
-TRACE_BY_LDAP(__func__, "type: %d", type);
+TRACE_BY_LDAP(__func__, "ctx=%p, type: %d", ctx, type);
 	if (ctx == NULL) return 0;
 	if (name == NULL) return 0;
 
