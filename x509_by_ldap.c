@@ -386,13 +386,13 @@ TRACE_BY_LDAP(__func__, "...");
 typedef struct ldapsearch_result_st ldapsearch_result;
 struct ldapsearch_result_st {
 	LDAP *ld;
-	LDAPMessage *entry;
+	LDAPMessage *entry;	/* pointer to current message */
 	/* loop on attribute */
-	char *attr;
+	char *attr;		/* pointer to current attribute */
 	BerElement *attr_ber;
 	/* loop on attribute values */
+	struct berval **p;	/* pointer to current value */
 	struct berval **vals;
-	struct berval **p;
 	int eom;
 };
 
@@ -438,18 +438,30 @@ TRACE_BY_LDAP(__func__, "attr: '%s'", r->attr);
 
 			if (r->p == NULL) {
 				r->vals = ldap_get_values_len(r->ld, r->entry, r->attr);
+				/* silently ignore error if return value is NULL */
+				if (r->vals == NULL) goto next_attr;
+
 				r->p = r->vals;
 TRACE_BY_LDAP(__func__, "r->p[0]=%p'", *r->p);
+				/* just in case */
+				if (*r->p == NULL) goto end_vals;
+
+				/* advance to first value / index zero */
 				return 1;
 			}
 
+			/* advance to next value */
 			r->p++;
 TRACE_BY_LDAP(__func__, "r->p[x]=%p'", *r->p);
 			if (*r->p != NULL)
 				return 1;
 
+end_vals:
 			ldap_value_free_len(r->vals);
+			r->p = NULL;
 
+next_attr:
+			ldap_memfree(r->attr);
 			r->attr = ldap_next_attribute(r->ld, r->entry, r->attr_ber);
 		}
 
