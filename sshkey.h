@@ -169,7 +169,6 @@ struct sshkey	*sshkey_new(int);
 int		 sshkey_add_private(struct sshkey *);
 struct sshkey	*sshkey_new_private(int);
 void		 sshkey_free(struct sshkey *);
-int		 sshkey_demote(const struct sshkey *, struct sshkey **);
 int		 sshrsa_equal_public(const RSA*, const RSA*);
 int		 sshdsa_equal_public(const DSA*, const DSA*);
 int		 sshkey_equal_public(const struct sshkey *,
