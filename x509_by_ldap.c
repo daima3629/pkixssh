@@ -279,6 +279,21 @@ TRACE_BY_LDAP(__func__, "..."
 }
 
 
+static int
+ldaplookup_unbind_s(LDAP *ld) {
+	int result;
+#ifdef HAVE_LDAP_UNBIND_EXT_S
+	result = ldap_unbind_ext_s(ld, NULL, NULL);
+#else
+	result = ldap_unbind_s(ld);
+#endif
+
+TRACE_BY_LDAP(__func__, "ldap_XXX_unbind_s return 0x%x(%s)"
+, result, ldap_err2string(result));
+	return result;
+}
+
+
 /* ================================================================== */
 /* LDAP connection details */
 
@@ -379,7 +394,7 @@ TRACE_BY_LDAP(__func__, "...");
 		p->ldapurl = NULL;
 	}
 	if (p->ld != NULL) {
-		ldap_unbind_ext(p->ld, NULL, NULL);
+		(void)ldaplookup_unbind_s(p->ld);
 		p->ld = NULL;
 	}
 	OPENSSL_free(p);

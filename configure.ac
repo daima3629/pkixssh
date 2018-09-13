@@ -5132,6 +5132,7 @@ if test "x$ssh_x509store" = "xyes"; then
 		ldap_parse_result \
 		ldap_sasl_bind_s \
 		ldap_search_ext_s \
+		ldap_unbind_ext_s \
 	])
 else
 	AC_MSG_NOTICE([x509store is disabled - skipping LDAP])
