@@ -827,7 +827,10 @@ if ((SSHX_RFC6187_MISSING_KEY_IDENTIFIER & xcompat) == 0) {
 	while ((loc = ssh_xkalg_nameind(pkalg, &xkalg, loc)) >= 0) {
 		if (xkalg->chain) break;
 	}
-	if (loc < 0) return SSH_ERR_INVALID_ARGUMENT;
+	if (loc < 0) {
+		free(pkalg);
+		return SSH_ERR_INVALID_ARGUMENT;
+	}
 	xkalg = NULL;
 }
 }
@@ -956,7 +959,9 @@ err:
 		if (pkalg == NULL)
 			pkalg = xstrdup(xkalg->name);
 		*pkalgp = pkalg;
+		pkalg = NULL;
 	}
+	free(pkalg);
 	return SSH_ERR_SUCCESS;
 }
 
