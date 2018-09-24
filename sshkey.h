@@ -167,8 +167,6 @@ struct sshkey {
 #define	ED25519_PK_SZ	crypto_sign_ed25519_PUBLICKEYBYTES
 
 struct sshkey	*sshkey_new(int);
-int		 sshkey_add_private(struct sshkey *);
-struct sshkey	*sshkey_new_private(int);
 void		 sshkey_free(struct sshkey *);
 int		 sshrsa_equal_public(const RSA*, const RSA*);
 int		 sshdsa_equal_public(const DSA*, const DSA*);
@@ -274,8 +272,9 @@ int	sshkey_parse_private_fileblob_type(struct sshbuf *blob, int type,
 int	sshrsa_verify_length(int bits);
 int	sshrsa_check_length(const RSA *rsa);
 
-/* XXX should be internal, but used by ssh-keygen */
-int ssh_rsa_generate_additional_parameters(struct sshkey *);
+/* XXX should be internal, but defined in ssh-rsa.c
+ * and used by ssh-keygen.c and sshkey.c */
+int sshrsa_complete_crt_parameters(struct sshkey *key, const BIGNUM *rsa_iqmp);
 
 /* stateful keys (e.g. XMSS) */
 #ifdef NO_ATTRIBUTE_ON_PROTOTYPE_ARGS

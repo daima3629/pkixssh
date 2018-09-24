@@ -199,13 +199,13 @@ sshkey_tests(void)
 	ASSERT_PTR_NE(k1, NULL);
 	ASSERT_PTR_NE(k1->rsa, NULL);
 {
-	const BIGNUM *n = NULL, *e = NULL, *p = NULL;
+	const BIGNUM *n, *e, *p;
 
 	RSA_get0_key(k1->rsa, &n, &e, NULL);
 	RSA_get0_factors(k1->rsa, &p, NULL);
 
-	ASSERT_PTR_NE(n, NULL);
-	ASSERT_PTR_NE(e, NULL);
+	ASSERT_PTR_EQ(n, NULL);
+	ASSERT_PTR_EQ(e, NULL);
 	ASSERT_PTR_EQ(p, NULL);
 }
 	sshkey_free(k1);
@@ -216,12 +216,12 @@ sshkey_tests(void)
 	ASSERT_PTR_NE(k1, NULL);
 	ASSERT_PTR_NE(k1->dsa, NULL);
 {
-	const BIGNUM *g = NULL, *priv_key = NULL;
+	const BIGNUM *g, *priv_key;
 
 	DSA_get0_pqg(k1->dsa, NULL, NULL, &g);
 	DSA_get0_key(k1->dsa, NULL, &priv_key);
 
-	ASSERT_PTR_NE(g, NULL);
+	ASSERT_PTR_EQ(g, NULL);
 	ASSERT_PTR_EQ(priv_key, NULL);
 }
 	sshkey_free(k1);
@@ -242,41 +242,6 @@ sshkey_tests(void)
 	/* These should be blank until key loaded or generated */
 	ASSERT_PTR_EQ(k1->ed25519_sk, NULL);
 	ASSERT_PTR_EQ(k1->ed25519_pk, NULL);
-	sshkey_free(k1);
-	TEST_DONE();
-
-	TEST_START("new_private KEY_RSA");
-	k1 = sshkey_new_private(KEY_RSA);
-	ASSERT_PTR_NE(k1, NULL);
-	ASSERT_PTR_NE(k1->rsa, NULL);
-{
-	const BIGNUM *n = NULL, *e = NULL, *p = NULL;
-
-	RSA_get0_key(k1->rsa, &n, &e, NULL);
-	RSA_get0_factors(k1->rsa, &p, NULL);
-
-	ASSERT_PTR_NE(n, NULL);
-	ASSERT_PTR_NE(e, NULL);
-	ASSERT_PTR_NE(p, NULL);
-}
-	ASSERT_INT_EQ(sshkey_add_private(k1), 0);
-	sshkey_free(k1);
-	TEST_DONE();
-
-	TEST_START("new_private KEY_DSA");
-	k1 = sshkey_new_private(KEY_DSA);
-	ASSERT_PTR_NE(k1, NULL);
-	ASSERT_PTR_NE(k1->dsa, NULL);
-{
-	const BIGNUM *g = NULL, *priv_key = NULL;
-
-	DSA_get0_pqg(k1->dsa, NULL, NULL, &g);
-	DSA_get0_key(k1->dsa, NULL, &priv_key);
-
-	ASSERT_PTR_NE(g, NULL);
-	ASSERT_PTR_NE(priv_key, NULL);
-}
-	ASSERT_INT_EQ(sshkey_add_private(k1), 0);
 	sshkey_free(k1);
 	TEST_DONE();
 

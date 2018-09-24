@@ -552,8 +552,8 @@ do_convert_private_ssh2_from_blob(u_char *blob, u_int blen)
 		free(type);
 		return NULL;
 	}
-	if ((key = sshkey_new_private(ktype)) == NULL)
-		fatal("sshkey_new_private failed");
+	if ((key = sshkey_new(ktype)) == NULL)
+		fatal("sshkey_new failed");
 	free(type);
 
 	switch (key->type) {
@@ -562,14 +562,21 @@ do_convert_private_ssh2_from_blob(u_char *blob, u_int blen)
 		BIGNUM *p = NULL, *q = NULL, *g = NULL;
 		BIGNUM *pub_key = NULL, *priv_key = NULL;
 
-		DSA_get0_pqg(key->dsa, (const BIGNUM**)&p, (const BIGNUM**)&q, (const BIGNUM**)&g);
-		DSA_get0_key(key->dsa, (const BIGNUM**)&pub_key, (const BIGNUM**)&priv_key);
-
+		if ((p = BN_new()) == NULL ||
+		    (q = BN_new()) == NULL ||
+		    (g = BN_new()) == NULL ||
+		    (pub_key = BN_new()) == NULL ||
+		    (priv_key = BN_new()) == NULL)
+			fatal("%s: BN_new", __func__);
 		buffer_get_bignum_bits(b, p);
 		buffer_get_bignum_bits(b, g);
 		buffer_get_bignum_bits(b, q);
 		buffer_get_bignum_bits(b, pub_key);
 		buffer_get_bignum_bits(b, priv_key);
+		if (!DSA_set0_pqg(key->dsa, p, q, g))
+			fatal("%s: DSA_set0_pqg failed", __func__);
+		if (!DSA_set0_key(key->dsa, pub_key, priv_key))
+			fatal("%s: DSA_set0_key failed", __func__);
 		}
 		break;
 	case KEY_RSA:
@@ -591,22 +598,32 @@ do_convert_private_ssh2_from_blob(u_char *blob, u_int blen)
 			e += e3;
 			debug("e %lx", e);
 		}
-		RSA_get0_key(key->rsa, (const BIGNUM**)&n, (const BIGNUM**)&rsa_e, (const BIGNUM**)&d);
+		if ((rsa_e = BN_new()) == NULL)
+			fatal("%s: BN_new", __func__);
 		if (!BN_set_word(rsa_e, e)) {
+			BN_clear_free(rsa_e);
 			sshbuf_free(b);
 			sshkey_free(key);
 			return NULL;
 		}
-		RSA_get0_crt_params(key->rsa, NULL, NULL, (const BIGNUM**)&iqmp);
-		RSA_get0_factors(key->rsa, (const BIGNUM**)&p, (const BIGNUM**)&q);
-
+		if ((n = BN_new()) == NULL ||
+		    (d = BN_new()) == NULL ||
+		    (p = BN_new()) == NULL ||
+		    (q = BN_new()) == NULL ||
+		    (iqmp = BN_new()) == NULL)
+			fatal("%s: BN_new", __func__);
 		buffer_get_bignum_bits(b, d);
 		buffer_get_bignum_bits(b, n);
 		buffer_get_bignum_bits(b, iqmp);
 		buffer_get_bignum_bits(b, q);
 		buffer_get_bignum_bits(b, p);
-		if ((r = ssh_rsa_generate_additional_parameters(key)) != 0)
+		if (!RSA_set0_key(key->rsa, n, rsa_e, d))
+			fatal("%s: RSA_set0_key failed", __func__);
+		if (!RSA_set0_factors(key->rsa, p, q))
+			fatal("%s: RSA_set0_factors failed", __func__);
+		if ((r = sshrsa_complete_crt_parameters(key, iqmp)) != 0)
 			fatal("generate RSA parameters failed: %s", ssh_err(r));
+		BN_clear_free(iqmp);
 		}
 		break;
 	}

@@ -29,13 +29,13 @@
 #include <stdarg.h>
 #include <string.h>
 
+#include "evp-compat.h"
 #include "sshbuf.h"
 #include "compat.h"
 #include "ssherr.h"
 #define SSHKEY_INTERNAL
 #include "sshkey.h"
 #include "digest.h"
-#include "evp-compat.h"
 #include "xmalloc.h"
 #include "log.h"
 
@@ -126,11 +126,11 @@ sshrsa_check_length(const RSA *rsa) {
 #  define BN_FLG_CONSTTIME 0x0 /* OpenSSL < 0.9.8 */
 #endif
 int
-ssh_rsa_generate_additional_parameters(struct sshkey *key)
+sshrsa_complete_crt_parameters(struct sshkey *key, const BIGNUM *rsa_iqmp)
 {
-	BIGNUM *aux = NULL;
 	BN_CTX *ctx = NULL;
-	BIGNUM *d = NULL;
+	BIGNUM *aux = NULL, *d = NULL;
+	BIGNUM *dmq1 = NULL, *dmp1 = NULL, *iqmp = NULL;
 	int r;
 
 	if (key == NULL || key->rsa == NULL ||
@@ -139,27 +139,25 @@ ssh_rsa_generate_additional_parameters(struct sshkey *key)
 
 	if ((ctx = BN_CTX_new()) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
-	if ((aux = BN_new()) == NULL) {
+	if ((aux = BN_new()) == NULL ||
+	    (iqmp = BN_dup(rsa_iqmp)) == NULL ||
+	    (dmq1 = BN_new()) == NULL ||
+	    (dmp1 = BN_new()) == NULL) {
 		r = SSH_ERR_ALLOC_FAIL;
 		goto out;
 	}
 	BN_set_flags(aux, BN_FLG_CONSTTIME);
 
-	if ((d = BN_new()) == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto out;
-	}
-
-{	const BIGNUM *p = NULL, *q = NULL;
-	BIGNUM *dmp1 = NULL, *dmq1 = NULL;
+{	const BIGNUM *p, *q;
 	RSA *rsa = key->rsa;
-
 	RSA_get0_factors(rsa, &p, &q);
-	RSA_get0_crt_params(rsa, (const BIGNUM**)&dmp1, (const BIGNUM**)&dmq1, NULL);
-
 	{	const BIGNUM *key_d;
 		RSA_get0_key(rsa, NULL, NULL, &key_d);
-		BN_with_flags(d, key_d, BN_FLG_CONSTTIME);
+		if ((d = BN_dup(key_d)) == NULL) {
+			r = SSH_ERR_ALLOC_FAIL;
+			goto out;
+		}
+		BN_set_flags(d, BN_FLG_CONSTTIME);
 	}
 
 	if ((BN_sub(aux, q, BN_value_one()) == 0) ||
@@ -170,11 +168,19 @@ ssh_rsa_generate_additional_parameters(struct sshkey *key)
 		goto out;
 	}
 }
-	r = 0;
+	if (!RSA_set0_crt_params(key->rsa, dmp1, dmq1, iqmp)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto out;
+	}
+	dmp1 = dmq1 = iqmp = NULL; /* transferred */
+
+	r = SSH_ERR_SUCCESS;
  out:
-/* !	BN_clear_free(d) - erroneous clear of shared data in OpenSSL < 1.1.1 */
-	BN_free(d);
 	BN_clear_free(aux);
+	BN_clear_free(d);
+	BN_clear_free(dmp1);
+	BN_clear_free(dmq1);
+	BN_clear_free(iqmp);
 	BN_CTX_free(ctx);
 	return r;
 }
