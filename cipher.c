@@ -551,7 +551,7 @@ cipher_get_keyiv_len(const struct sshcipher_ctx *cc)
 }
 
 int
-cipher_get_keyiv(struct sshcipher_ctx *cc, u_char *iv, u_int len)
+cipher_get_keyiv(struct sshcipher_ctx *cc, u_char *iv, size_t len)
 {
 #ifdef WITH_OPENSSL
 	const struct sshcipher *c = cc->cipher;
@@ -578,7 +578,7 @@ cipher_get_keyiv(struct sshcipher_ctx *cc, u_char *iv, u_int len)
 		return 0;
 	else if (evplen < 0)
 		return SSH_ERR_LIBCRYPTO_ERROR;
-	if ((u_int)evplen != len)
+	if ((size_t)evplen != len)
 		return SSH_ERR_INVALID_ARGUMENT;
 #ifndef OPENSSL_HAVE_EVPCTR
 	if (c->evptype == evp_aes_128_ctr)
@@ -587,7 +587,7 @@ cipher_get_keyiv(struct sshcipher_ctx *cc, u_char *iv, u_int len)
 #endif
 	if (cipher_authlen(c)) {
 		if (!EVP_CIPHER_CTX_ctrl(cc->evp, EVP_CTRL_GCM_IV_GEN,
-		   len, iv))
+		   evplen, iv))
 		       return SSH_ERR_LIBCRYPTO_ERROR;
 	} else
 		memcpy(iv, EVP_CIPHER_CTX_iv(cc->evp), len);
@@ -595,8 +595,9 @@ cipher_get_keyiv(struct sshcipher_ctx *cc, u_char *iv, u_int len)
 	return 0;
 }
 
+#if 0 /*UNUSED*/
 int
-cipher_set_keyiv(struct sshcipher_ctx *cc, const u_char *iv)
+cipher_set_keyiv(struct sshcipher_ctx *cc, const u_char *iv, size_t len)
 {
 #ifdef WITH_OPENSSL
 	const struct sshcipher *c = cc->cipher;
@@ -612,10 +613,12 @@ cipher_set_keyiv(struct sshcipher_ctx *cc, const u_char *iv)
 	evplen = EVP_CIPHER_CTX_iv_length(cc->evp);
 	if (evplen <= 0)
 		return SSH_ERR_LIBCRYPTO_ERROR;
+	if ((size_t)evplen != len)
+		return SSH_ERR_INVALID_ARGUMENT;
 #ifndef OPENSSL_HAVE_EVPCTR
 	/* XXX iv arg is const, but ssh_aes_ctr_iv isn't */
 	if (c->evptype == evp_aes_128_ctr)
-		ssh_aes_ctr_iv(cc->evp, 1, (u_char *)iv, evplen);
+		ssh_aes_ctr_iv(cc->evp, 1, (u_char *)iv, len);
 	else
 #endif
 	if (cipher_authlen(c)) {
@@ -624,7 +627,8 @@ cipher_set_keyiv(struct sshcipher_ctx *cc, const u_char *iv)
 		    EVP_CTRL_GCM_SET_IV_FIXED, -1, (void *)iv))
 			return SSH_ERR_LIBCRYPTO_ERROR;
 	} else
-		memcpy(EVP_CIPHER_CTX_iv_noconst(cc->evp), iv, evplen);
+		memcpy(EVP_CIPHER_CTX_iv_noconst(cc->evp), iv, len);
 #endif
 	return 0;
 }
+#endif /*UNUSED*/
