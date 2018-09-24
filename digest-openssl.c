@@ -27,11 +27,9 @@
 
 #include <openssl/evp.h>
 
-#include "openbsd-compat/openssl-compat.h"
-
+#include "evp-compat.h"
 #include "sshbuf.h"
 #include "digest.h"
-#include "evp-compat.h"
 #include "ssherr.h"
 
 #ifndef HAVE_EVP_RIPEMD160
@@ -140,13 +138,12 @@ ssh_digest_start(int alg)
 	if (digest == NULL || ((ret = calloc(1, sizeof(*ret))) == NULL))
 		return NULL;
 	ret->alg = alg;
-	ret->mdctx = EVP_MD_CTX_new();
-	if (ret->mdctx == NULL) {
+	if ((ret->mdctx = EVP_MD_CTX_new()) == NULL) {
 		free(ret);
 		return NULL;
 	}
 	if (EVP_DigestInit_ex(ret->mdctx, digest->mdfunc(), NULL) != 1) {
-		free(ret);
+		ssh_digest_free(ret);
 		return NULL;
 	}
 	return ret;
@@ -197,11 +194,10 @@ ssh_digest_final(struct ssh_digest_ctx *ctx, u_char *d, size_t dlen)
 void
 ssh_digest_free(struct ssh_digest_ctx *ctx)
 {
-	if (ctx != NULL) {
-		EVP_MD_CTX_free(ctx->mdctx);
-		explicit_bzero(ctx, sizeof(*ctx));
-		free(ctx);
-	}
+	if (ctx == NULL)
+		return;
+	EVP_MD_CTX_free(ctx->mdctx);
+	freezero(ctx, sizeof(*ctx));
 }
 
 int
