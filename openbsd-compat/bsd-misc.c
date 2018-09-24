@@ -317,26 +317,12 @@ getsid(pid_t pid)
 #undef fflush
 int _ssh_compat_fflush(FILE *f)
 {
-	int r1, r2, r3;
+	int r1, r2;
 
 	if (f == NULL) {
-r1 = 0; /*TODO: unassigned value!? - NO COMMENT!
-From 58fd4c5c0140f6636227ca7acbb149ab0c2509b9 Mon Sep 17 00:00:00 2001
-From: Darren Tucker <dtucker@dtucker.net>
-Date: Mon, 5 Mar 2018 19:28:08 +1100
-Subject: [PATCH 1/6] Check for and work around buggy fflush(NULL).
-
-Some really old platforms (eg SunOS4) segfault on fflush(NULL) so check
-for and work around.  With klausz at haus-gisela.de.
----
- configure.ac              | 10 ++++++++++
- openbsd-compat/bsd-misc.c | 16 ++++++++++++++++
- openbsd-compat/bsd-misc.h |  4 ++++
- 3 files changed, 30 insertions(+)
-*/
-		r2 = fflush(stdout);
-		r3 = fflush(stderr);
-		if (r1 == -1 || r2 == -1 || r3 == -1)
+		r1 = fflush(stdout);
+		r2 = fflush(stderr);
+		if (r1 == -1 || r2 == -1)
 			return -1;
 		return 0;
 	}
