@@ -46,6 +46,7 @@
 # endif /* OPENSSL_HAS_ECC */
 #include <openssl/x509.h>
 #else /* WITH_OPENSSL */
+# define BIGNUM		void
 # define RSA		void
 # define DSA		void
 # define EC_KEY		void
