@@ -1038,6 +1038,7 @@ to_blob_buf(const struct sshkey *key, struct sshbuf *b, int force_plain,
 	int type, ret = SSH_ERR_INTERNAL_ERROR;
 	const char *typename;
 
+	UNUSED(opts);
 	if (key == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;
 
@@ -3103,6 +3104,7 @@ sshkey_private_serialize_opt(const struct sshkey *key, struct sshbuf *b,
 	const char *pkalg;
 	int r = SSH_ERR_INTERNAL_ERROR;
 
+	UNUSED(opts);
 	pkalg = sshkey_ssh_name(key);
 	if ((r = sshbuf_put_cstring(b, pkalg)) != 0)
 		goto out;
@@ -3876,6 +3878,7 @@ sshkey_parse_private2(struct sshbuf *blob, int type, const char *passphrase,
 	u_char *key = NULL, *salt = NULL, *dp, pad, last;
 	u_int blocksize, rounds, nkeys, encrypted_len, check1, check2;
 
+	UNUSED(type);
 	if (keyp != NULL)
 		*keyp = NULL;
 	if (commentp != NULL)
@@ -4092,6 +4095,7 @@ sshkey_private_pem_to_blob(struct sshkey *key, struct sshbuf *blob,
 	char *bptr;
 	BIO *bio = NULL;
 
+	UNUSED(comment);
 	if (len > 0 && len <= 4)
 		return SSH_ERR_PASSPHRASE_TOO_SHORT;
 	if ((bio = BIO_new(BIO_s_mem())) == NULL)
@@ -4456,24 +4460,30 @@ int
 sshkey_private_serialize_maxsign(const struct sshkey *k, struct sshbuf *b,
     u_int32_t maxsign, sshkey_printfn *pr)
 {
+	UNUSED(maxsign);
+	UNUSED(pr);
 	return sshkey_private_serialize_opt(k, b, SSHKEY_SERIALIZE_DEFAULT);
 }
 
 u_int32_t
 sshkey_signatures_left(const struct sshkey *k)
 {
+	UNUSED(k);
 	return 0;
 }
 
 int
 sshkey_enable_maxsign(struct sshkey *k, u_int32_t maxsign)
 {
+	UNUSED(k);
+	UNUSED(maxsign);
 	return SSH_ERR_INVALID_ARGUMENT;
 }
 
 int
 sshkey_set_filename(struct sshkey *k, const char *filename)
 {
+	UNUSED(filename);
 	if (k == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;
 	return 0;

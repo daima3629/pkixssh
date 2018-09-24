@@ -663,6 +663,7 @@ do_convert_from_ssh2(struct passwd *pw, struct sshkey **k, int *private)
 	char encoded[8096];
 	FILE *fp;
 
+	UNUSED(pw);
 	if ((fp = fopen(identity_file, "r")) == NULL)
 		fatal("%s: %s: %s", __progname, identity_file, strerror(errno));
 	encoded[0] = '\0';
@@ -708,6 +709,7 @@ do_convert_from_pkcs8(struct sshkey **k, int *private)
 	EVP_PKEY *pubkey;
 	FILE *fp;
 
+	UNUSED(private);
 	if ((fp = fopen(identity_file, "r")) == NULL)
 		fatal("%s: %s: %s", __progname, identity_file, strerror(errno));
 	if ((pubkey = PEM_read_PUBKEY(fp, NULL, NULL, NULL)) == NULL) {
@@ -751,6 +753,7 @@ do_convert_from_pem(struct sshkey **k, int *private)
 	FILE *fp;
 	RSA *rsa;
 
+	UNUSED(private);
 	if ((fp = fopen(identity_file, "r")) == NULL)
 		fatal("%s: %s: %s", __progname, identity_file, strerror(errno));
 	if ((rsa = PEM_read_RSAPublicKey(fp, NULL, NULL, NULL)) != NULL) {
@@ -852,6 +855,7 @@ do_download(struct passwd *pw)
 	int fptype;
 	char *fp, *ra;
 
+	UNUSED(pw);
 	fptype = print_bubblebabble ? SSH_DIGEST_SHA1 : fingerprint_hash;
 	rep =    print_bubblebabble ? SSH_FP_BUBBLEBABBLE : SSH_FP_DEFAULT;
 
@@ -1492,6 +1496,7 @@ do_print_resource_record(struct passwd *pw, char *fname, char *hname)
 	struct stat st;
 	int r;
 
+	UNUSED(pw);
 	if (fname == NULL)
 		fatal("%s: no filename", __func__);
 	if (stat(fname, &st) < 0) {
@@ -2363,6 +2368,7 @@ do_check_krl(struct passwd *pw, int argc, char **argv)
 	struct ssh_krl *krl;
 	struct sshkey *k;
 
+	UNUSED(pw);
 	if (*identity_file == '\0')
 		fatal("KRL checking requires an input file");
 	load_krl(identity_file, &krl);
