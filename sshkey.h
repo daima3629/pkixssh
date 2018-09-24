@@ -271,6 +271,9 @@ int	sshkey_parse_private_fileblob(struct sshbuf *buffer,
 int	sshkey_parse_private_fileblob_type(struct sshbuf *blob, int type,
     const char *passphrase, struct sshkey **keyp, char **commentp);
 
+int	sshrsa_verify_length(int bits);
+int	sshrsa_check_length(const RSA *rsa);
+
 /* XXX should be internal, but used by ssh-keygen */
 int ssh_rsa_generate_additional_parameters(struct sshkey *);
 

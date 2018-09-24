@@ -1864,8 +1864,9 @@ rsa_generate_private_key(u_int bits, RSA **rsap)
 
 	if (rsap == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;
-	if (bits < SSH_RSA_MINIMUM_MODULUS_SIZE ||
-	    bits > SSHBUF_MAX_BIGNUM * 8)
+	ret = sshrsa_verify_length(bits);
+	if (ret != 0) return ret;
+	if (bits > SSHBUF_MAX_BIGNUM * 8)
 		return SSH_ERR_KEY_LENGTH;
 	*rsap = NULL;
 	if ((private = RSA_new()) == NULL || (f4 = BN_new()) == NULL) {
@@ -2426,11 +2427,9 @@ sshkey_from_blob_internal(struct sshbuf *b, struct sshkey **keyp,
 			ret = SSH_ERR_INVALID_FORMAT;
 			goto out;
 		}
-		if (BN_num_bits(n) < SSH_RSA_MINIMUM_MODULUS_SIZE) {
-			ret = SSH_ERR_KEY_LENGTH;
+		}
+		if ((ret = sshrsa_check_length(key->rsa)) != 0)
 			goto out;
-		}
-		}
 #ifdef DEBUG_PK
 		RSA_print_fp(stderr, key->rsa, 8);
 #endif
@@ -3387,10 +3386,8 @@ sshkey_private_deserialize(struct sshbuf *buf, struct sshkey **kp)
 		    (r = sshbuf_get_bignum2(buf, q)) != 0 ||
 		    (r = ssh_rsa_generate_additional_parameters(k)) != 0)
 			goto out;
-		if (BN_num_bits(n) < SSH_RSA_MINIMUM_MODULUS_SIZE) {
-			r = SSH_ERR_KEY_LENGTH;
-			goto out;
-		}
+		r = sshrsa_check_length(k->rsa);
+		if (r != 0) goto out;
 		}
 		break;
 	case KEY_RSA_CERT:
@@ -3410,10 +3407,8 @@ sshkey_private_deserialize(struct sshbuf *buf, struct sshkey **kp)
 		    (r = sshbuf_get_bignum2(buf, q)) != 0 ||
 		    (r = ssh_rsa_generate_additional_parameters(k)) != 0)
 			goto out;
-		if (BN_num_bits(n) < SSH_RSA_MINIMUM_MODULUS_SIZE) {
-			r = SSH_ERR_KEY_LENGTH;
-			goto out;
-		}
+		r = sshrsa_check_length(k->rsa);
+		if (r != 0) goto out;
 		}
 		break;
 #endif /* WITH_OPENSSL */
@@ -4276,15 +4271,8 @@ sshkey_parse_private_pem_fileblob(struct sshbuf *blob, int type,
 			r = SSH_ERR_LIBCRYPTO_ERROR;
 			goto out;
 		}
-		{
-		const BIGNUM *n = NULL;
-		RSA_get0_key(prv->rsa, &n, NULL, NULL);
-
-		if (BN_num_bits(n) < SSH_RSA_MINIMUM_MODULUS_SIZE) {
-			r = SSH_ERR_KEY_LENGTH;
+		if ((r = sshrsa_check_length(prv->rsa)) != 0)
 			goto out;
-		}
-		}
 	} else if (EVP_PKEY_id(pk) == EVP_PKEY_DSA &&
 	    (type == KEY_UNSPEC || type == KEY_DSA)) {
 		if ((prv = sshkey_new(KEY_UNSPEC)) == NULL) {

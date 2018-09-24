@@ -109,6 +109,19 @@ rsa_hash_alg_nid(int type)
 	}
 }
 
+int
+sshrsa_verify_length(int bits) {
+	return bits < SSH_RSA_MINIMUM_MODULUS_SIZE
+	    ? SSH_ERR_KEY_LENGTH : 0;
+}
+
+int
+sshrsa_check_length(const RSA *rsa) {
+	const BIGNUM *n = NULL;
+	RSA_get0_key(rsa, &n, NULL, NULL);
+	return sshrsa_verify_length(BN_num_bits(n));
+}
+
 #ifndef BN_FLG_CONSTTIME
 #  define BN_FLG_CONSTTIME 0x0 /* OpenSSL < 0.9.8 */
 #endif
@@ -174,7 +187,7 @@ ssh_rsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 	u_char *sig = NULL;
 	size_t slen = 0;
 	u_int len;
-	int nid, hash_alg, ret = SSH_ERR_INTERNAL_ERROR;
+	int nid, hash_alg, ret;
 	struct sshbuf *b = NULL;
 
 	if (lenp != NULL)
@@ -190,11 +203,10 @@ ssh_rsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 	if (key == NULL || key->rsa == NULL || hash_alg == -1 ||
 	    sshkey_type_plain(key->type) != KEY_RSA)
 		return SSH_ERR_INVALID_ARGUMENT;
-{	const BIGNUM *n = NULL;
-	RSA_get0_key(key->rsa, &n, NULL, NULL);
-	if (BN_num_bits(n) < SSH_RSA_MINIMUM_MODULUS_SIZE)
-		return SSH_ERR_KEY_LENGTH;
-}
+
+	ret = sshrsa_check_length(key->rsa);
+	if (ret != 0) return ret;
+
 	slen = RSA_size(key->rsa);
 	if (slen <= 0 || slen > SSHBUF_MAX_BIGNUM)
 		return SSH_ERR_INVALID_ARGUMENT;
@@ -329,11 +341,9 @@ ssh_rsa_verify(const struct sshkey *key,
 	    sshkey_type_plain(key->type) != KEY_RSA ||
 	    sig == NULL || siglen == 0)
 		return SSH_ERR_INVALID_ARGUMENT;
-{	const BIGNUM *n = NULL;
-	RSA_get0_key(key->rsa, &n, NULL, NULL);
-	if (BN_num_bits(n) < SSH_RSA_MINIMUM_MODULUS_SIZE)
-		return SSH_ERR_KEY_LENGTH;
-}
+
+	ret = sshrsa_check_length(key->rsa);
+	if (ret != 0) return ret;
 
 	if ((b = sshbuf_from(sig, siglen)) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
