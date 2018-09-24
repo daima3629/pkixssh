@@ -2378,9 +2378,6 @@ sshkey_from_blob_internal(struct sshbuf *b, struct sshkey **keyp,
 	size_t len;
 	u_char *pk = NULL;
 	struct sshbuf *copy;
-#if defined(WITH_OPENSSL) && defined(OPENSSL_HAS_ECC)
-	EC_POINT *q = NULL;
-#endif /* WITH_OPENSSL && OPENSSL_HAS_ECC */
 
 #ifdef DEBUG_PK /* XXX */
 	sshbuf_dump(b, stderr);
@@ -2499,27 +2496,36 @@ sshkey_from_blob_internal(struct sshbuf *b, struct sshkey **keyp,
 			ret = SSH_ERR_EC_CURVE_INVALID;
 			goto out;
 		}
+		{
+		EC_POINT *q;
+		ret = 0;
 		if ((q = EC_POINT_new(EC_KEY_get0_group(key->ecdsa))) == NULL) {
 			ret = SSH_ERR_ALLOC_FAIL;
 			goto out;
 		}
 		if (sshbuf_get_ec(b, q, EC_KEY_get0_group(key->ecdsa)) != 0) {
 			ret = SSH_ERR_INVALID_FORMAT;
-			goto out;
+			goto clear_ecdsa;
 		}
 		if (sshkey_ec_validate_public(EC_KEY_get0_group(key->ecdsa),
 		    q) != 0) {
 			ret = SSH_ERR_KEY_INVALID_EC_VALUE;
-			goto out;
+			goto clear_ecdsa;
 		}
 		if (EC_KEY_set_public_key(key->ecdsa, q) != 1) {
 			/* XXX assume it is a allocation error */
 			ret = SSH_ERR_ALLOC_FAIL;
-			goto out;
+			goto clear_ecdsa;
 		}
 #ifdef DEBUG_PK
 		sshkey_dump_ec_point(EC_KEY_get0_group(key->ecdsa), q);
 #endif
+
+		clear_ecdsa:
+			EC_POINT_free(q);
+
+		if (ret != 0) goto out;
+		}
 		break;
 # endif /* OPENSSL_HAS_ECC */
 #endif /* WITH_OPENSSL */
@@ -2600,9 +2606,6 @@ sshkey_from_blob_internal(struct sshbuf *b, struct sshkey **keyp,
 	free(ktype);
 	free(curve);
 	free(pk);
-#if defined(WITH_OPENSSL) && defined(OPENSSL_HAS_ECC)
-	EC_POINT_free(q);
-#endif /* WITH_OPENSSL && OPENSSL_HAS_ECC */
 	return ret;
 }
 
