@@ -3,7 +3,7 @@
  * Copyright (c) 2001 Markus Friedl.  All rights reserved.
  *
  * X.509 certificates support,
- * Copyright (c) 2014-2017 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2014-2018 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -99,13 +99,16 @@ input_kex_dh_init(int type, u_int32_t seq, struct ssh *ssh)
 {
 	struct kex *kex = ssh->kex;
 	BIGNUM *shared_secret = NULL, *dh_client_pub = NULL;
-	const BIGNUM *pub_key = NULL;
+	const BIGNUM *pub_key;
 	struct sshkey *server_host_public, *server_host_private;
 	u_char *kbuf = NULL, *signature = NULL, *server_host_key_blob = NULL;
 	u_char hash[SSH_DIGEST_MAX_LENGTH];
 	size_t sbloblen, slen;
 	size_t klen = 0, hashlen;
 	int kout, r;
+
+	UNUSED(type);
+	UNUSED(seq);
 
 	r = kex_load_host_keys(kex, ssh, &server_host_public, &server_host_private);
 	if (r != SSH_ERR_SUCCESS)
@@ -116,6 +119,7 @@ input_kex_dh_init(int type, u_int32_t seq, struct ssh *ssh)
 		r = SSH_ERR_ALLOC_FAIL;
 		goto out;
 	}
+	DH_get0_key(kex->dh, &pub_key, NULL);
 	if ((r = sshpkt_get_bignum2(ssh, dh_client_pub)) != 0 ||
 	    (r = sshpkt_get_end(ssh)) != 0)
 		goto out;
@@ -125,11 +129,6 @@ input_kex_dh_init(int type, u_int32_t seq, struct ssh *ssh)
 	BN_print_fp(stderr, dh_client_pub);
 	fprintf(stderr, "\n");
 	debug("bits %d", BN_num_bits(dh_client_pub));
-#endif
-
-	DH_get0_key(kex->dh, &pub_key, NULL);
-
-#ifdef DEBUG_KEXDH
 	DHparams_print_fp(stderr, kex->dh);
 	fprintf(stderr, "pub= ");
 	BN_print_fp(stderr, pub_key);

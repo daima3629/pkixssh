@@ -28,13 +28,10 @@
 
 #ifdef WITH_OPENSSL
 
-#include <sys/types.h>
-
-#include <openssl/evp.h>
 #include <signal.h>
 
-#include "sshkey.h"
-#include "cipher.h"
+#include <openssl/bn.h>
+
 #include "kex.h"
 #include "ssh2.h"
 #include "ssherr.h"

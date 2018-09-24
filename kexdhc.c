@@ -3,7 +3,7 @@
  * Copyright (c) 2001 Markus Friedl.  All rights reserved.
  *
  * X.509 certificates support,
- * Copyright (c) 2014-2017 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2014-2018 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -88,7 +88,6 @@ kexdh_client(struct ssh *ssh)
 	debug("sending SSH2_MSG_KEXDH_INIT");
 	if ((r = dh_gen_key(kex->dh, kex->we_need * 8)) != 0)
 		goto out;
-	pub_key = NULL;
 	DH_get0_key(kex->dh, &pub_key, NULL);
 	if ((r = sshpkt_start(ssh, SSH2_MSG_KEXDH_INIT)) != 0 ||
 	    (r = sshpkt_put_bignum2(ssh, pub_key)) != 0 ||
@@ -112,11 +111,15 @@ input_kex_dh(int type, u_int32_t seq, struct ssh *ssh)
 {
 	struct kex *kex = ssh->kex;
 	BIGNUM *dh_server_pub = NULL, *shared_secret = NULL;
+	const BIGNUM *pub_key;
 	struct sshkey *server_host_key = NULL;
 	u_char *kbuf = NULL, *server_host_key_blob = NULL, *signature = NULL;
 	u_char hash[SSH_DIGEST_MAX_LENGTH];
 	size_t klen = 0, slen, sbloblen, hashlen;
 	int kout, r;
+
+	UNUSED(type);
+	UNUSED(seq);
 
 	if (kex->verify_host_key == NULL) {
 		r = SSH_ERR_INVALID_ARGUMENT;
@@ -174,12 +177,8 @@ input_kex_dh(int type, u_int32_t seq, struct ssh *ssh)
 	dump_digest("shared secret", kbuf, kout);
 #endif
 
-{
-	const BIGNUM *pub_key = NULL;
-
-	DH_get0_key(kex->dh, &pub_key, NULL);
-
 	/* calc and verify H */
+	DH_get0_key(kex->dh, &pub_key, NULL);
 	hashlen = sizeof(hash);
 	if ((r = kex_dh_hash(
 	    kex->hash_alg,
@@ -193,7 +192,6 @@ input_kex_dh(int type, u_int32_t seq, struct ssh *ssh)
 	    shared_secret,
 	    hash, &hashlen)) != 0)
 		goto out;
-}
 
 {	ssh_compat ctx_compat = { ssh->compat, xcompat }; /* TODO-Xkey_verify compat */
 	ssh_sign_ctx ctx = { kex->hostkey_alg, server_host_key, &ctx_compat };

@@ -4,7 +4,7 @@
  * Copyright (c) 2001 Markus Friedl.  All rights reserved.
  *
  * X.509 certificates support,
- * Copyright (c) 2014-2017 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2014-2018 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -76,6 +76,7 @@ input_kex_dh_gex_request(int type, u_int32_t seq, struct ssh *ssh)
 	struct kex *kex = ssh->kex;
 	int r;
 	u_int min = 0, max = 0, nbits = 0;
+	const BIGNUM *dh_p, *dh_g;
 
 	debug("SSH2_MSG_KEX_DH_GEX_REQUEST received");
 	if ((r = sshpkt_get_u32(ssh, &min)) != 0 ||
@@ -105,17 +106,12 @@ input_kex_dh_gex_request(int type, u_int32_t seq, struct ssh *ssh)
 		goto out;
 	}
 	debug("SSH2_MSG_KEX_DH_GEX_GROUP sent");
-{
-	const BIGNUM *p = NULL, *g = NULL;
-
-	DH_get0_pqg(kex->dh, &p, NULL, &g);
-
+	DH_get0_pqg(kex->dh, &dh_p, NULL, &dh_g);
 	if ((r = sshpkt_start(ssh, SSH2_MSG_KEX_DH_GEX_GROUP)) != 0 ||
-	    (r = sshpkt_put_bignum2(ssh, p)) != 0 ||
-	    (r = sshpkt_put_bignum2(ssh, g)) != 0 ||
+	    (r = sshpkt_put_bignum2(ssh, dh_p)) != 0 ||
+	    (r = sshpkt_put_bignum2(ssh, dh_g)) != 0 ||
 	    (r = sshpkt_send(ssh)) != 0)
 		goto out;
-}
 
 	/* Compute our exchange value in parallel with the client */
 	if ((r = dh_gen_key(kex->dh, kex->we_need * 8)) != 0)
@@ -133,7 +129,7 @@ input_kex_dh_gex_init(int type, u_int32_t seq, struct ssh *ssh)
 {
 	struct kex *kex = ssh->kex;
 	BIGNUM *shared_secret = NULL, *dh_client_pub = NULL;
-	const BIGNUM *pub_key = NULL;
+	const BIGNUM *pub_key, *dh_p, *dh_g;
 	struct sshkey *server_host_public, *server_host_private;
 	u_char *kbuf = NULL, *signature = NULL, *server_host_key_blob = NULL;
 	u_char hash[SSH_DIGEST_MAX_LENGTH];
@@ -154,16 +150,14 @@ input_kex_dh_gex_init(int type, u_int32_t seq, struct ssh *ssh)
 	    (r = sshpkt_get_end(ssh)) != 0)
 		goto out;
 
+	DH_get0_key(kex->dh, &pub_key, NULL);
+	DH_get0_pqg(kex->dh, &dh_p, NULL, &dh_g);
+
 #ifdef DEBUG_KEXDH
 	fprintf(stderr, "dh_client_pub= ");
 	BN_print_fp(stderr, dh_client_pub);
 	fprintf(stderr, "\n");
 	debug("bits %d", BN_num_bits(dh_client_pub));
-#endif
-
-	DH_get0_key(kex->dh, &pub_key, NULL);
-
-#ifdef DEBUG_KEXDH
 	DHparams_print_fp(stderr, kex->dh);
 	fprintf(stderr, "pub= ");
 	BN_print_fp(stderr, pub_key);
@@ -196,11 +190,6 @@ input_kex_dh_gex_init(int type, u_int32_t seq, struct ssh *ssh)
 	dump_digest("server public key:", server_host_key_blob, sbloblen);
 #endif
 
-{
-	const BIGNUM *p = NULL, *g = NULL;
-
-	DH_get0_pqg(kex->dh, &p, NULL, &g);
-
 	/* calc H */
 	hashlen = sizeof(hash);
 	if ((r = kexgex_hash(
@@ -211,13 +200,12 @@ input_kex_dh_gex_init(int type, u_int32_t seq, struct ssh *ssh)
 	    sshbuf_ptr(kex->my), sshbuf_len(kex->my),
 	    server_host_key_blob, sbloblen,
 	    kex->min, kex->nbits, kex->max,
-	    p, g,
+	    dh_p, dh_g,
 	    dh_client_pub,
 	    pub_key,
 	    shared_secret,
 	    hash, &hashlen)) != 0)
 		goto out;
-}
 
 	/* save session id := H */
 	if (kex->session_id == NULL) {
