@@ -32,7 +32,6 @@
 
 #include <sys/types.h>
 #include <sys/socket.h>
-#include "openbsd-compat/sys-tree.h"
 #include <sys/wait.h>
 
 #include <errno.h>
@@ -64,7 +63,9 @@
 #include "evp-compat.h"
 #endif
 
+#include "openbsd-compat/sys-tree.h"
 #include "openbsd-compat/sys-queue.h"
+
 #include "atomicio.h"
 #include "xmalloc.h"
 #include "ssh.h"
@@ -596,13 +597,13 @@ mm_answer_moduli(int sock, struct sshbuf *m)
 			fatal("%s: buffer error: %s", __func__, ssh_err(r));
 		return (0);
 	} else {
-		const BIGNUM *p = NULL, *g = NULL;
+		const BIGNUM *dh_p = NULL, *dh_g = NULL;
 
-		DH_get0_pqg(dh, &p, NULL, &g);
 		/* Send first bignum */
+		DH_get0_pqg(dh, &dh_p, NULL, &dh_g);
 		if ((r = sshbuf_put_u8(m, 1)) != 0 ||
-		    (r = sshbuf_put_bignum2(m, p)) != 0 ||
-		    (r = sshbuf_put_bignum2(m, g)) != 0)
+		    (r = sshbuf_put_bignum2(m, dh_p)) != 0 ||
+		    (r = sshbuf_put_bignum2(m, dh_g)) != 0)
 			fatal("%s: buffer error: %s", __func__, ssh_err(r));
 
 		DH_free(dh);
