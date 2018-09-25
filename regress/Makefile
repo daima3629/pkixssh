@@ -242,15 +242,23 @@ unit:
 		V="" ; \
 		test "x${USE_VALGRIND}" = "x" || \
 		    V=${.CURDIR}/valgrind-unit.sh ; \
+	test "x$$UNITTEST_SSHBUF" = "xskip" || \
 		$$V ${.OBJDIR}/unittests/sshbuf/test_sshbuf ; \
+	test "x$$UNITTEST_SSHKEY" = "xskip" || \
 		$$V ${.OBJDIR}/unittests/sshkey/test_sshkey \
 			-d ${.CURDIR}/unittests/sshkey/testdata ; \
+	test "x$$UNITTEST_BITMAP" = "xskip" || \
 		$$V ${.OBJDIR}/unittests/bitmap/test_bitmap ; \
+	test "x$$UNITTEST_CONVERSION" = "xskip" || \
 		$$V ${.OBJDIR}/unittests/conversion/test_conversion ; \
+	test "x$$UNITTEST_KEX" = "xskip" || \
 		$$V ${.OBJDIR}/unittests/kex/test_kex ; \
+	test "x$$UNITTEST_HOSTKEYS" = "xskip" || \
 		$$V ${.OBJDIR}/unittests/hostkeys/test_hostkeys \
 			-d ${.CURDIR}/unittests/hostkeys/testdata ; \
+	test "x$$UNITTEST_MATCH" = "xskip" || \
 		$$V ${.OBJDIR}/unittests/match/test_match ; \
+	test "x$$UNITTEST_UTF8" = "xskip" || \
 		if test "x${TEST_SSH_UTF8}" = "xyes"  ; then \
 			$$V ${.OBJDIR}/unittests/utf8/test_utf8 ; \
 		fi \
