@@ -182,8 +182,7 @@ ssh_free(struct ssh *ssh)
 		TAILQ_REMOVE(&ssh->private_keys, k, next);
 		free(k);
 	}
-	if (ssh->kex)
-		kex_free(ssh->kex);
+	kex_free(ssh->kex);
 	free(ssh);
 }
 

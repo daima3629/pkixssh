@@ -633,11 +633,8 @@ ssh_packet_close_internal(struct ssh *ssh, int do_close)
 		ssh->remote_ipaddr = NULL;
 		free(ssh->state);
 		ssh->state = NULL;
-
-		if (ssh->kex != NULL) {
-			kex_free(ssh->kex);
-			ssh->kex = NULL;
-		}
+		kex_free(ssh->kex);
+		ssh->kex = NULL;
 	}
 }
 
@@ -2163,13 +2160,12 @@ static int
 kex_to_blob(struct sshbuf *m, struct kex *kex)
 {
 	int r;
-	const char *s = kex->hostkey_alg;
 
 	if ((r = sshbuf_put_string(m, kex->session_id,
 	    kex->session_id_len)) != 0 ||
 	    (r = sshbuf_put_u32(m, kex->we_need)) != 0 ||
 	    /* TODO why to send hostkey_foo as is not set? */
-	    (r = sshbuf_put_cstring(m, (s ? s : ""))) != 0 ||
+	    (r = sshbuf_put_cstring(m, kex->hostkey_alg)) != 0 ||
 	    (r = sshbuf_put_u32(m, kex->kex_type)) != 0 ||
 	    (r = sshbuf_put_stringb(m, kex->my)) != 0 ||
 	    (r = sshbuf_put_stringb(m, kex->peer)) != 0 ||
@@ -2341,16 +2337,17 @@ kex_from_blob(struct sshbuf *m, struct kex **kexp)
 	    (r = sshbuf_get_cstring(m, &kex->client_version_string, NULL)) != 0 ||
 	    (r = sshbuf_get_cstring(m, &kex->server_version_string, NULL)) != 0)
 		goto out;
+	/* as hostkey_alg is not set we receive empty string - so free it */
+	if (kex->hostkey_alg[0] == '\0') {
+		free(kex->hostkey_alg);
+		kex->hostkey_alg = NULL;
+	}
 	kex->server = 1;
 	kex->done = 1;
 	r = 0;
  out:
 	if (r != 0 || kexp == NULL) {
-		if (kex != NULL) {
-			sshbuf_free(kex->my);
-			sshbuf_free(kex->peer);
-			free(kex);
-		}
+		kex_free(kex);
 		if (kexp != NULL)
 			*kexp = NULL;
 	} else {
@@ -2371,6 +2368,8 @@ ssh_packet_set_state(struct ssh *ssh, struct sshbuf *m)
 	size_t ilen, olen;
 	int r;
 
+	kex_free(ssh->kex);
+	ssh->kex = NULL;
 	if ((r = kex_from_blob(m, &ssh->kex)) != 0 ||
 	    (r = newkeys_from_blob(m, ssh, MODE_OUT)) != 0 ||
 	    (r = newkeys_from_blob(m, ssh, MODE_IN)) != 0 ||

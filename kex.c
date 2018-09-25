@@ -717,6 +717,8 @@ kex_free(struct kex *kex)
 {
 	u_int mode;
 
+	if (kex == NULL) return;
+
 #ifdef WITH_OPENSSL
 	DH_free(kex->dh);
 #ifdef OPENSSL_HAS_ECC
