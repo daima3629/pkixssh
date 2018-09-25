@@ -306,11 +306,11 @@ int vsnprintf(char *, size_t, const char *, va_list);
 #endif
 
 #ifndef HAVE_USER_FROM_UID
-char *user_from_uid(uid_t, int);
+const char *user_from_uid(uid_t, int);
 #endif
 
 #ifndef HAVE_GROUP_FROM_GID
-char *group_from_gid(gid_t, int);
+const char *group_from_gid(gid_t, int);
 #endif
 
 #ifndef HAVE_TIMINGSAFE_BCMP

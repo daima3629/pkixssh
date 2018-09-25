@@ -44,7 +44,7 @@
 #define	MASK	(NCACHE - 1)		/* bits to store with */
 
 #ifndef HAVE_USER_FROM_UID
-char *
+const char *
 user_from_uid(uid_t uid, int nouser)
 {
 	static struct ncache {
@@ -79,7 +79,7 @@ user_from_uid(uid_t uid, int nouser)
 #endif
 
 #ifndef HAVE_GROUP_FROM_GID
-char *
+const char *
 group_from_gid(gid_t gid, int nogroup)
 {
 	static struct ncache {
