@@ -10,5 +10,9 @@ void kex_tests(void);
 void
 tests(void)
 {
+	ssh_crypto_init();
+
 	kex_tests();
+
+	ssh_crypto_fini();
 }

@@ -18,10 +18,11 @@ void sshkey_fuzz_tests(void);
 void
 tests(void)
 {
-	OpenSSL_add_all_algorithms();
-	ERR_load_CRYPTO_strings();
+	ssh_crypto_init();
 
 	sshkey_tests();
 	sshkey_file_tests();
 	sshkey_fuzz_tests();
+
+	ssh_crypto_fini();
 }

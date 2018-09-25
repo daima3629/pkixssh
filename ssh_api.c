@@ -3,7 +3,7 @@
  * Copyright (c) 2012 Markus Friedl.  All rights reserved.
  *
  * X.509 certificates support,
- * Copyright (c) 2014-2017 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2014-2018 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -21,6 +21,7 @@
 #include "includes.h"
 
 #include "ssh_api.h"
+#include "openbsd-compat/openssl-compat.h"
 #include "compat.h"
 #include "log.h"
 #include "authfile.h"
@@ -80,21 +81,37 @@ _ssh_host_key_sign(
 
 /* API */
 
+static int crypto_status = 0;
+
+void
+ssh_crypto_init() {
+	if (!crypto_status) {
+#ifdef WITH_OPENSSL
+		ssh_OpenSSL_startup();
+#endif /* WITH_OPENSSL */
+		crypto_status = 1;
+	}
+}
+
+void
+ssh_crypto_fini() {
+	if (crypto_status) {
+#ifdef WITH_OPENSSL
+		ssh_OpenSSL_shuthdown();
+#endif /* WITH_OPENSSL */
+		crypto_status = 0;
+	}
+}
+
 int
 ssh_init(struct ssh **sshp, int is_server, struct kex_params *kex_params)
 {
         char *myproposal[PROPOSAL_MAX] = { KEX_CLIENT };
 	struct ssh *ssh;
 	char **proposal;
-	static int called;
 	int r;
 
-	if (!called) {
-#ifdef WITH_OPENSSL
-		OpenSSL_add_all_algorithms();
-#endif /* WITH_OPENSSL */
-		called = 1;
-	}
+	ssh_crypto_init();
 
 	if ((ssh = ssh_packet_set_connection(NULL, -1, -1)) == NULL)
 		return SSH_ERR_ALLOC_FAIL;

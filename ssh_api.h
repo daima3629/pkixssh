@@ -1,6 +1,7 @@
 /* $OpenBSD: ssh_api.h,v 1.2 2018/04/10 00:10:49 djm Exp $ */
 /*
  * Copyright (c) 2012 Markus Friedl.  All rights reserved.
+ * Copyright (c) 2018 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -35,6 +36,21 @@ struct kex_params {
 };
 
 /* public SSH API functions */
+
+/*
+ * ssh_crypto_init() initialize cryptographic library.
+ */
+void	ssh_crypto_init(void);
+
+/*
+ * ssh_crypto_fini() finalize cryptographic library - release resources.
+ */
+void	ssh_crypto_fini(void);
+
+/*
+ * release ssh connection state.
+ */
+void	ssh_free(struct ssh *);
 
 /*
  * ssh_init() create a ssh connection object with given (optional)

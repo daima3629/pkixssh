@@ -9,7 +9,7 @@ test "x$OBJ" = "x" && OBJ=$PWD
 # This mostly replicates the logic in test-exec.sh for running the
 # regress tests under valgrind, except that we unconditionally enable
 # leak checking because the unit tests should be clean.
-VG_LEAK="--leak-check=full"
+VG_LEAK="--leak-check=full --show-leak-kinds=all"
 VG_TEST=`basename $UNIT_BINARY`
 VG_LOG="$OBJ/valgrind-out/${VG_TEST}.%p"
 VG_OPTS="--track-origins=yes $VG_LEAK --log-file=${VG_LOG}"
