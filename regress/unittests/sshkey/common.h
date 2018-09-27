@@ -1,4 +1,4 @@
-/* 	$OpenBSD: common.h,v 1.1 2014/06/24 01:14:18 djm Exp $ */
+/* 	$OpenBSD: common.h,v 1.2 2018/09/13 09:03:20 djm Exp $ */
 /*
  * Helpers for key API tests
  *
