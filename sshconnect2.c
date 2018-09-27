@@ -1572,7 +1572,7 @@ set_keytype(struct sshkey *k, int kt) {
 	n1 = sshkey_ssh_name(k);
 	k->type = kt;
 	n2 = sshkey_ssh_name(k);
-	debug("Offering key-type '%s', original was '%s'", n2, n1);
+	verbose("Offering key-type '%s', original was '%s'", n2, n1);
 }
 
 static inline int
@@ -1742,12 +1742,12 @@ userauth_pubkey(Authctxt *authctxt)
 		if (id->key != NULL) {
 			if (try_identity(ssh, id)) {
 				const char *ident = format_identity(id);
-				debug("Offering public key: %s", ident);
+				verbose("Offering public key: %s", ident);
 				free(ident);
 				sent = send_pubkey_test(ssh, authctxt, id);
 			}
 		} else {
-			debug("Trying private key: %s", id->filename);
+			verbose("Trying private key: %s", id->filename);
 			id->key = load_identity_file(id);
 			if (id->key != NULL) {
 				if (try_identity(ssh, id)) {

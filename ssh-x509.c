@@ -1232,8 +1232,8 @@ xkey_to_buf2(const char *pkalg, const struct sshkey *key, struct sshbuf *b) {
 		 * certificate. Empty chain is protocol error for
 		 * keys in RFC6187 format, but we accept them.
 		 */
-		verbose("%s: X.509 certificate chain is not set."
-		    " Some server may refuse key.", __func__);
+		verbose("X.509 certificate chain is not set."
+		    " Remote host may refuse key.");
 	}
 
 	/* NOTE: sk_num returns -1 if argument is null */

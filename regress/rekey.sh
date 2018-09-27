@@ -21,7 +21,7 @@ ssh_data_rekeying()
 	fi
 	rm -f ${COPY} ${LOG}
 	_opts="$_opts -oCompression=no"
-	${SSH} <${DATA} $_opts -v -F $OBJ/ssh_proxy somehost "cat > ${COPY}"
+	${SSH} <${DATA} $_opts -vv -F $OBJ/ssh_proxy somehost "cat > ${COPY}"
 	if [ $? -ne 0 ]; then
 		fail "ssh failed ($@)"
 	fi

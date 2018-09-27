@@ -854,7 +854,7 @@ main(int ac, char **av)
 		case 'v':
 			if (debug_flag == 0) {
 				debug_flag = 1;
-				options.log_level = SYSLOG_LEVEL_DEBUG1;
+				options.log_level = SYSLOG_LEVEL_VERBOSE;
 			} else {
 				if (options.log_level < SYSLOG_LEVEL_DEBUG3) {
 					debug_flag++;
@@ -1286,7 +1286,7 @@ main(int ac, char **av)
 		    config == NULL ? "" : config,
 		    /* Optional "-v" arguments if -v set */
 		    debug_flag ? " -" : "",
-		    debug_flag, "vvv",
+		    debug_flag, "vvvv",
 		    /* Mandatory hostname */
 		    options.jump_host);
 		debug("Setting implicit ProxyCommand from ProxyJump: %s",
