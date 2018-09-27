@@ -2608,6 +2608,27 @@ sshkey_sigtype(const u_char *sig, size_t siglen, char **sigtypep)
 }
 
 /*
+ *
+ * Checks whether a certificate's signature type is allowed.
+ * Returns 0 (success) if the certificate signature type appears in the
+ * "allowed" pattern-list, or the key is not a certificate to begin with.
+ * Otherwise returns a ssherr.h code.
+ */
+int
+sshkey_check_cert_sigtype(const struct sshkey *key, const char *allowed)
+{
+	if (key == NULL || allowed == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+	if (!sshkey_type_is_cert(key->type))
+		return 0;
+	if (key->cert == NULL || key->cert->signature_type == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+	if (match_pattern_list(key->cert->signature_type, allowed, 0) != 1)
+		return SSH_ERR_SIGN_ALG_UNSUPPORTED;
+	return 0;
+}
+
+/*
  * Returns the expected signature algorithm for a given public key algorithm.
  */
 const char *

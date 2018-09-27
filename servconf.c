@@ -1,5 +1,5 @@
 
-/* $OpenBSD: servconf.c,v 1.340 2018/08/12 20:19:13 djm Exp $ */
+/* $OpenBSD: servconf.c,v 1.342 2018/09/20 23:40:16 djm Exp $ */
 /*
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
@@ -184,6 +184,7 @@ initialize_server_options(ServerOptions *options)
 	options->ciphers = NULL;
 	options->macs = NULL;
 	options->kex_algorithms = NULL;
+	options->ca_sign_algorithms = NULL;
 	options->fwd_opts.gateway_ports = -1;
 	options->fwd_opts.streamlocal_bind_mask = (mode_t)-1;
 	options->fwd_opts.streamlocal_bind_unlink = -1;
@@ -230,12 +231,13 @@ option_clear_or_none(const char *o)
 static void
 assemble_algorithms(ServerOptions *o)
 {
-	char *all_cipher, *all_mac, *all_kex;
+	char *all_cipher, *all_mac, *all_kex, *all_sig;
 	int r;
 
 	all_cipher = cipher_alg_list(',', 0);
 	all_mac = mac_alg_list(',');
 	all_kex = kex_alg_list(',');
+	all_sig = sshkey_alg_list(0, 1, 1, ',');
 #define ASSEMBLE(what, defaults, all) \
 	do { \
 		if ((r = kex_assemble_names(&o->what, defaults, all)) != 0) \
@@ -244,10 +246,12 @@ assemble_algorithms(ServerOptions *o)
 	ASSEMBLE(ciphers, KEX_SERVER_ENCRYPT, all_cipher);
 	ASSEMBLE(macs, KEX_SERVER_MAC, all_mac);
 	ASSEMBLE(kex_algorithms, KEX_SERVER_KEX, all_kex);
+	ASSEMBLE(ca_sign_algorithms, SSH_ALLOWED_CA_SIGALGS, all_sig);
 #undef ASSEMBLE
 	free(all_cipher);
 	free(all_mac);
 	free(all_kex);
+	free(all_sig);
 }
 
 static void
@@ -589,7 +593,7 @@ typedef enum {
 	sHostCertificate,
 	sRevokedKeys, sTrustedUserCAKeys, sAuthorizedPrincipalsFile,
 	sAuthorizedPrincipalsCommand, sAuthorizedPrincipalsCommandUser,
-	sKexAlgorithms, sIPQoS, sVersionAddendum,
+	sKexAlgorithms, sCASignatureAlgorithms, sIPQoS, sVersionAddendum,
 	sAuthorizedKeysCommand, sAuthorizedKeysCommandUser,
 	sAuthenticationMethods, sHostKeyAgent, sPermitUserRC,
 	sStreamLocalBindMask, sStreamLocalBindUnlink,
@@ -760,6 +764,7 @@ static struct {
 	{ "disableforwarding", sDisableForwarding, SSHCFG_ALL },
 	{ "exposeauthinfo", sExposeAuthInfo, SSHCFG_ALL },
 	{ "rdomain", sRDomain, SSHCFG_ALL },
+	{ "casignaturealgorithms", sCASignatureAlgorithms, SSHCFG_ALL },
 	{ NULL, sBadOption, 0 }
 };
 
@@ -1703,6 +1708,10 @@ parse_string:
 		if (*activep && *charptr == NULL)
 			*charptr = xstrdup(arg);
 		break;
+
+	case sCASignatureAlgorithms:
+		charptr = &options->ca_sign_algorithms;
+		goto parse_keytypes;
 
 	case sPubkeyAuthentication:
 		intptr = &options->pubkey_authentication;
@@ -2935,6 +2944,7 @@ dump_config(ServerOptions *o)
 	dump_cfg_string(sHostKeyAgent, o->host_key_agent);
 	dump_cfg_string(sKexAlgorithms,
 	    o->kex_algorithms ? o->kex_algorithms : KEX_SERVER_KEX);
+	dump_cfg_string(sCASignatureAlgorithms, o->ca_sign_algorithms);
 	dump_cfg_string(sHostKeyAlgorithms, o->hostkeyalgorithms);
 	dump_cfg_string(sRDomain, o->routing_domain);
 

@@ -1,4 +1,4 @@
-/* $OpenBSD: auth2-hostbased.c,v 1.35 2018/07/09 21:35:50 markus Exp $ */
+/* $OpenBSD: auth2-hostbased.c,v 1.38 2018/09/20 03:28:06 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  *
@@ -136,6 +136,14 @@ userauth_hostbased(struct ssh *ssh)
 		    "signature format");
 		goto done;
 	}
+	if ((r = sshkey_check_cert_sigtype(key,
+	    options.ca_sign_algorithms)) != 0) {
+		logit("%s: certificate signature algorithm %s: %s", __func__,
+		    (key->cert == NULL || key->cert->signature_type == NULL) ?
+		    "(null)" : key->cert->signature_type, ssh_err(r));
+		goto done;
+	}
+
 	if (!authctxt->valid || authctxt->user == NULL) {
 		debug2("%s: disabled because of invalid user", __func__);
 		goto done;

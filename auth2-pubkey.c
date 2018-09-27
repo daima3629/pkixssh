@@ -1,4 +1,4 @@
-/* $OpenBSD: auth2-pubkey.c,v 1.85 2018/08/28 12:25:53 mestre Exp $ */
+/* $OpenBSD: auth2-pubkey.c,v 1.86 2018/09/20 03:28:06 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  *
@@ -162,6 +162,13 @@ userauth_pubkey(struct ssh *ssh)
 	}
 	if (auth2_key_already_used(authctxt, key)) {
 		logit("refusing previously-used %s key", sshkey_type(key));
+		goto done;
+	}
+	if ((r = sshkey_check_cert_sigtype(key,
+	    options.ca_sign_algorithms)) != 0) {
+		logit("%s: certificate signature algorithm %s: %s", __func__,
+		    (key->cert == NULL || key->cert->signature_type == NULL) ?
+		    "(null)" : key->cert->signature_type, ssh_err(r));
 		goto done;
 	}
 
