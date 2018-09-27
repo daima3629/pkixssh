@@ -125,13 +125,13 @@ extern u_int utmp_len;
  * pthreads, which unconditionally define pthread_t via sys/types.h
  * (e.g. Linux)
  */
-typedef pthread_t sp_pthread_t;
+typedef pthread_t ssh_pthread_t;
 #else
-typedef pid_t sp_pthread_t;
+typedef pid_t ssh_pthread_t;
 #endif
 
 struct pam_ctxt {
-	sp_pthread_t	 pam_thread;
+	ssh_pthread_t	 pam_thread;
 	int		 pam_psock;
 	int		 pam_csock;
 	int		 pam_done;
@@ -144,6 +144,10 @@ static struct pam_ctxt *cleanup_ctxt;
 /*
  * Simulate threads with processes.
  */
+#define pthread_exit	ssh_pthread_exit
+#define pthread_create	ssh_pthread_create
+#define pthread_cancel	ssh_pthread_cancel
+#define pthread_join	ssh_pthread_join
 
 static int sshpam_thread_status = -1;
 static mysig_t sshpam_oldsig;
@@ -174,21 +178,21 @@ sshpam_sigchld_handler(int sig)
 		sigdie("PAM: authentication thread exited uncleanly");
 }
 
-/* ARGSUSED */
 static void
 pthread_exit(void *value)
 {
+	UNUSED(value);
 	_exit(0);
 }
 
-/* ARGSUSED */
 static int
-pthread_create(sp_pthread_t *thread, const void *attr,
+pthread_create(ssh_pthread_t *thread, const void *attr,
     void *(*thread_start)(void *), void *arg)
 {
 	pid_t pid;
 	struct pam_ctxt *ctx = arg;
 
+	UNUSED(attr);
 	sshpam_thread_status = -1;
 	switch ((pid = fork())) {
 	case -1:
@@ -209,18 +213,18 @@ pthread_create(sp_pthread_t *thread, const void *attr,
 }
 
 static int
-pthread_cancel(sp_pthread_t thread)
+pthread_cancel(ssh_pthread_t thread)
 {
 	signal(SIGCHLD, sshpam_oldsig);
 	return (kill(thread, SIGTERM));
 }
 
-/* ARGSUSED */
 static int
-pthread_join(sp_pthread_t thread, void **value)
+pthread_join(ssh_pthread_t thread, void **value)
 {
 	int status;
 
+	UNUSED(value);
 	if (sshpam_thread_status != -1)
 		return (sshpam_thread_status);
 	signal(SIGCHLD, sshpam_oldsig);
