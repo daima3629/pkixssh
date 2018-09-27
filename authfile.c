@@ -297,14 +297,19 @@ sshkey_try_load_public(struct sshkey *k, const char *filename, char **commentp)
 	if (commentp != NULL)
 		*commentp = NULL;
 
+/* NOTE: For external keys simulate "missing" file.
+ * This suppress extra messages due to faulty load control in ssh.c
+ */
 #ifdef USE_OPENSSL_STORE2
 	if (strncmp(filename, "store:", 6) == 0) {
-		return store_try_load_public(k, filename + 6, commentp);
+		errno = ENOENT;
+		return SSH_ERR_SYSTEM_ERROR;
 	}
 #endif
 #ifdef USE_OPENSSL_ENGINE
 	if (strncmp(filename, "engine:", 7) == 0) {
-		return eng_key_try_load_public(k, filename + 7, commentp);
+		errno = ENOENT;
+		return SSH_ERR_SYSTEM_ERROR;
 	}
 #endif
 
@@ -366,7 +371,17 @@ sshkey_load_public(const char *filename, struct sshkey **keyp, char **commentp)
 
 	if ((pub = sshkey_new(KEY_UNSPEC)) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
-	debug3("%s() filename/1=%s", __func__, (filename ? filename : "?!?"));
+	debug3("%s() filename=%s", __func__, (filename ? filename : "?!?"));
+#ifdef USE_OPENSSL_STORE2
+	if (strncmp(filename, "store:", 6) == 0) {
+		return store_try_load_public(pub, filename + 6, commentp);
+	}
+#endif
+#ifdef USE_OPENSSL_ENGINE
+	if (strncmp(filename, "engine:", 7) == 0) {
+		return eng_key_try_load_public(pub, filename + 7, commentp);
+	}
+#endif
 	if ((r = sshkey_try_load_public(pub, filename, commentp)) == 0) {
 		if (keyp != NULL) {
 			*keyp = pub;
