@@ -779,12 +779,27 @@ main(int ac, char **av)
 				cp = kex_alg_list('\n');
 			else if (strcmp(optarg, "key") == 0)
 				cp = sshkey_alg_list(0, 0, 0, '\n');
+			else if (strcmp(optarg, "key-alg") == 0)
+				cp = sshkey_alg_list(0, 0, 1, '\n');
 			else if (strcmp(optarg, "key-cert") == 0)
 				cp = sshkey_alg_list(1, 0, 0, '\n');
 			else if (strcmp(optarg, "key-plain") == 0)
 				cp = sshkey_alg_list(0, 1, 0, '\n');
-			else if (strcmp(optarg, "protocol-version") == 0) {
+			else if (strcmp(optarg, "sig") == 0)
+		#if 0 /* Useless and faulty!
+		Algorithm determine key type, how to encode key material
+		and signature (algorithm and encoding format). */
+				cp = sshkey_alg_list(0, 1, 1, '\n');
+		#else
+				cp = xstrdup("");
+		#endif
+			else if (strcmp(optarg, "protocol-version") == 0)
 				cp = xstrdup("2");
+			else if (strcmp(optarg, "help") == 0) {
+				cp = xstrdup(
+				    "cipher\ncipher-auth\nkex"
+				    "\nkey\nkey-alg\nkey-cert\nkey-plain"
+				    "\nmac\nprotocol-version");
 			}
 			if (cp == NULL)
 				fatal("Unsupported query \"%s\"", optarg);

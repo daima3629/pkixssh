@@ -288,7 +288,7 @@ sshkey_alg_list(int certs_only, int plain_only, int include_sigonly, char sep)
 	size_t nlen, rlen = 0;
 	const struct keytype *kt;
 
-	if (!certs_only || !plain_only) {
+	if (!certs_only || plain_only) {
 		struct sshbuf *b;
 
 		fill_default_xkalg();

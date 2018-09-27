@@ -514,18 +514,26 @@ The available features are:
 (supported symmetric ciphers),
 .Ar cipher-auth
 (supported symmetric ciphers that support authenticated encryption),
+.Ar help
+(supported query terms for use with the
+.Fl Q
+flag),
 .Ar mac
 (supported message integrity codes),
 .Ar kex
 (key exchange algorithms),
 .Ar key
 (key types),
+.Ar key-alg
+(public key algorithms),
 .Ar key-cert
 (OpenSSH custom certificate key types),
 .Ar key-plain
-(non-certificate key types), and
+(non-certificate key types),
 .Ar protocol-version
-(supported SSH protocol versions).
+(supported SSH protocol versions), and
+.Ar sig
+(compatibility option).
 This option must be specified last as other options may impact list
 of supported algorithms.
 .Pp
