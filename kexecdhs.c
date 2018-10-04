@@ -201,4 +201,3 @@ input_kex_ecdh_init(int type, u_int32_t seq, struct ssh *ssh)
 	return r;
 }
 #endif /* defined(WITH_OPENSSL) && defined(OPENSSL_HAS_ECC) */
-
