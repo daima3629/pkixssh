@@ -1051,6 +1051,8 @@ static void
 channel_pre_listener(struct ssh *ssh, Channel *c,
     fd_set *readset, fd_set *writeset)
 {
+	UNUSED(ssh);
+	UNUSED(writeset);
 	FD_SET(c->sock, readset);
 }
 
@@ -1058,6 +1060,8 @@ static void
 channel_pre_connecting(struct ssh *ssh, Channel *c,
     fd_set *readset, fd_set *writeset)
 {
+	UNUSED(ssh);
+	UNUSED(readset);
 	debug3("channel %d: waiting for connection", c->self);
 	FD_SET(c->sock, writeset);
 }
@@ -1641,6 +1645,7 @@ channel_post_x11_listener(struct ssh *ssh, Channel *c,
 	socklen_t addrlen;
 	char buf[16384], *remote_ipaddr;
 
+	UNUSED(writeset);
 	if (!FD_ISSET(c->sock, readset))
 		return;
 
@@ -1772,6 +1777,7 @@ channel_post_port_listener(struct ssh *ssh, Channel *c,
 	socklen_t addrlen;
 	char *rtype;
 
+	UNUSED(writeset);
 	if (!FD_ISSET(c->sock, readset))
 		return;
 
@@ -1831,6 +1837,7 @@ channel_post_auth_listener(struct ssh *ssh, Channel *c,
 	struct sockaddr_storage addr;
 	socklen_t addrlen;
 
+	UNUSED(writeset);
 	if (!FD_ISSET(c->sock, readset))
 		return;
 
@@ -1858,6 +1865,7 @@ channel_post_connecting(struct ssh *ssh, Channel *c,
 	int err = 0, sock, isopen, r;
 	socklen_t sz = sizeof(err);
 
+	UNUSED(readset);
 	if (!FD_ISSET(c->sock, writeset))
 		return;
 	if (!c->have_remote_id)
@@ -1932,6 +1940,7 @@ channel_handle_rfd(struct ssh *ssh, Channel *c,
 	ssize_t len;
 	int r, force;
 
+	UNUSED(writeset);
 	force = c->isatty && c->detach_close && c->istate != CHAN_INPUT_CLOSED;
 
 	if (c->rfd == -1 || (!force && !FD_ISSET(c->rfd, readset)))
@@ -1984,6 +1993,7 @@ channel_handle_wfd(struct ssh *ssh, Channel *c,
 	size_t dlen, olen = 0;
 	int r, len;
 
+	UNUSED(readset);
 	if (c->wfd == -1 || !FD_ISSET(c->wfd, writeset) ||
 	    sshbuf_len(c->output) == 0)
 		return 1;
@@ -2076,6 +2086,7 @@ channel_handle_efd_write(struct ssh *ssh, Channel *c,
 	int r;
 	ssize_t len;
 
+	UNUSED(readset);
 	if (!FD_ISSET(c->efd, writeset) || sshbuf_len(c->extended) == 0)
 		return 1;
 
@@ -2106,6 +2117,7 @@ channel_handle_efd_read(struct ssh *ssh, Channel *c,
 	int r;
 	ssize_t len;
 
+	UNUSED(writeset);
 	if (!c->detach_close && !FD_ISSET(c->efd, readset))
 		return 1;
 
@@ -2221,6 +2233,7 @@ channel_post_mux_client_read(struct ssh *ssh, Channel *c,
 {
 	u_int need;
 
+	UNUSED(writeset);
 	if (c->rfd == -1 || !FD_ISSET(c->rfd, readset))
 		return;
 	if (c->istate != CHAN_INPUT_OPEN && c->istate != CHAN_INPUT_WAIT_DRAIN)
@@ -2259,6 +2272,7 @@ channel_post_mux_client_write(struct ssh *ssh, Channel *c,
 	ssize_t len;
 	int r;
 
+	UNUSED(readset);
 	if (c->wfd == -1 || !FD_ISSET(c->wfd, writeset) ||
 	    sshbuf_len(c->output) == 0)
 		return;
@@ -2294,6 +2308,7 @@ channel_post_mux_listener(struct ssh *ssh, Channel *c,
 	uid_t euid;
 	gid_t egid;
 
+	UNUSED(writeset);
 	if (!FD_ISSET(c->sock, readset))
 		return;
 
@@ -2870,6 +2885,7 @@ channel_proxy_upstream(Channel *c, int type, u_int32_t seq, struct ssh *ssh)
 	size_t len;
 	int r;
 
+	UNUSED(seq);
 	/*
 	 * When receiving packets from the peer we need to check whether we
 	 * need to forward the packets to the mux client. In this case we
@@ -4218,6 +4234,8 @@ connect_to_helper(struct ssh *ssh, const char *name, int port, int socktype,
 	int sock = -1;
 	char strport[NI_MAXSERV];
 
+	UNUSED(ctype);
+	UNUSED(rname);
 	if (port == PORT_STREAMLOCAL) {
 		struct sockaddr_un *sunaddr;
 		struct addrinfo *ai;
