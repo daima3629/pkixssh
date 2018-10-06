@@ -4225,71 +4225,6 @@ sshkey_private_to_fileblob(struct sshkey *key, struct sshbuf *blob,
 
 #ifdef WITH_OPENSSL
 static int
-translate_libcrypto_error(unsigned long pem_err)
-{
-	int pem_reason = ERR_GET_REASON(pem_err);
-
-	switch (ERR_GET_LIB(pem_err)) {
-	case 0:
-		return (pem_reason == 0)
-		    ?	/*crypto build with FIPS 1.2* module*/
-			SSH_ERR_KEY_WRONG_PASSPHRASE
-		    : SSH_ERR_LIBCRYPTO_ERROR;
-	case ERR_LIB_PEM:
-		switch (pem_reason) {
-		case PEM_R_BAD_PASSWORD_READ:
-		case PEM_R_PROBLEMS_GETTING_PASSWORD:
-		case PEM_R_BAD_DECRYPT:
-			return SSH_ERR_KEY_WRONG_PASSPHRASE;
-		default:
-			return SSH_ERR_INVALID_FORMAT;
-		}
-	case ERR_LIB_EVP:
-		switch (pem_reason) {
-		case EVP_R_BAD_DECRYPT:
-			return SSH_ERR_KEY_WRONG_PASSPHRASE;
-#ifdef EVP_R_BN_DECODE_ERROR	/*OpenSSL < 1.1*/
-		case EVP_R_BN_DECODE_ERROR:
-#endif
-		case EVP_R_DECODE_ERROR:
-#ifdef EVP_R_PRIVATE_KEY_DECODE_ERROR
-		case EVP_R_PRIVATE_KEY_DECODE_ERROR:
-#endif
-			return SSH_ERR_INVALID_FORMAT;
-		default:
-			return SSH_ERR_LIBCRYPTO_ERROR;
-		}
-	case ERR_LIB_ASN1:
-		return SSH_ERR_INVALID_FORMAT;
-	}
-	return SSH_ERR_LIBCRYPTO_ERROR;
-}
-
-static void
-clear_libcrypto_errors(void)
-{
-	while (ERR_get_error() != 0)
-		;
-}
-
-/*
- * Translate OpenSSL error codes to determine whether
- * passphrase is required/incorrect.
- */
-static int
-convert_libcrypto_error(void)
-{
-	/*
-	 * Some password errors are reported at the beginning
-	 * of the error queue.
-	 */
-	if (translate_libcrypto_error(ERR_peek_error()) ==
-	    SSH_ERR_KEY_WRONG_PASSPHRASE)
-		return SSH_ERR_KEY_WRONG_PASSPHRASE;
-	return translate_libcrypto_error(ERR_peek_last_error());
-}
-
-static int
 sshkey_parse_private_pem_fileblob(struct sshbuf *blob, int type,
     const char *passphrase, struct sshkey **keyp)
 {
@@ -4308,10 +4243,12 @@ sshkey_parse_private_pem_fileblob(struct sshbuf *blob, int type,
 	if (bio == NULL )
 		return SSH_ERR_ALLOC_FAIL;
 
-	clear_libcrypto_errors();
+	ERR_clear_error();
 	if ((pk = PEM_read_bio_PrivateKey(bio, NULL, NULL,
 	    (char *)passphrase)) == NULL) {
-		r = convert_libcrypto_error();
+		debug3("read PEM private key fail");
+		log_crypto_errors(SYSLOG_LEVEL_DEBUG3, __func__);
+		r = SSH_ERR_KEY_WRONG_PASSPHRASE;
 		goto out;
 	}
 	if (EVP_PKEY_id(pk) == EVP_PKEY_RSA &&
