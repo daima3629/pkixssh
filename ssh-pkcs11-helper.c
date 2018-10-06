@@ -239,17 +239,8 @@ process_sign(void)
 		if ((found = lookup_key(key)) != NULL) {
 #ifdef WITH_OPENSSL
 			ok = process_key_sign(dlen, data, found, &signature, &slen);
-			if (ok != 0) {
-				const char *emsg;
-				char ebuf[1024];
-				for (
-				    emsg = crypto_errormsg_last(ebuf, sizeof(ebuf));
-				    emsg != NULL;
-				    emsg = crypto_errormsg_last(ebuf, sizeof(ebuf))
-				) {
-					error("%s: crypto message: %s", __func__, emsg);
-				}
-			}
+			if (ok != 0)
+				log_crypto_errors(SYSLOG_LEVEL_ERROR, __func__);
 #endif /* WITH_OPENSSL */
 		}
 		sshkey_free(key);

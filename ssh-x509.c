@@ -47,20 +47,6 @@ STACK_OF(X509)* (*pssh_x509store_build_certchain)(X509 *cert, STACK_OF(X509) *un
 
 static int xkey_to_buf2(const char *pkalg, const struct sshkey *key, struct sshbuf *b);
 
-static void
-error_crypto(const char *f) {
-	const char *emsg;
-	char ebuf[1024];
-
-	for (
-	    emsg = crypto_errormsg_last(ebuf, sizeof(ebuf));
-	    emsg != NULL;
-	    emsg = crypto_errormsg_last(ebuf, sizeof(ebuf))
-	) {
-		error("%s: crypto message: %s", f, emsg);
-	}
-}
-
 
 /* Temporary solution, see key.h */
 #define TO_X509_KEY_TYPE(key)	SET_X509_KEY_TYPE(key, key->type)
@@ -1761,7 +1747,7 @@ ssh_x509_sign(
 
 	if (res <= 0) {
 		error("ssh_x509_sign: EVP_PKEY_set1_XXX: fail");
-		error_crypto(__func__);
+		log_crypto_errors(SYSLOG_LEVEL_ERROR, __func__);
 		r = SSH_ERR_LIBCRYPTO_ERROR;
 		goto end_sign_pkey;
 	}
@@ -1769,7 +1755,7 @@ ssh_x509_sign(
 	keylen = EVP_PKEY_size(privkey);
 	if (keylen <= 0) {
 		error("ssh_x509_sign: cannot get key size");
-		error_crypto(__func__);
+		log_crypto_errors(SYSLOG_LEVEL_ERROR, __func__);
 		r = SSH_ERR_LIBCRYPTO_ERROR;
 		goto end_sign_pkey;
 	}
@@ -1794,7 +1780,7 @@ ssh_x509_sign(
 	res = ssh_x509_EVP_PKEY_sign(privkey, &dgst, sigret, &siglen, data, len);
 }
 	if (res <= 0) {
-		error_crypto(__func__);
+		log_crypto_errors(SYSLOG_LEVEL_ERROR, __func__);
 		r = SSH_ERR_LIBCRYPTO_ERROR;
 	}
 }
@@ -1988,7 +1974,7 @@ end_sign_blob:
 		ret = ssh_xkalg_verify(pubkey, dgst, sigblob, len, data, datalen);
 		if (ret > 0) break;
 
-		error_crypto(__func__);
+		log_crypto_errors(SYSLOG_LEVEL_ERROR, __func__);
 	}
 	if (ret <= 0) {
 		debug3("ssh_x509_verify: failed for all digests");
@@ -2019,7 +2005,7 @@ sshkey_sign_base(
 	key->type = X509KEY_BASETYPE(key);
 	ret = sshkey_sign(key, sigp, lenp, data, datalen, alg, compat);
 	if (ret == SSH_ERR_LIBCRYPTO_ERROR)
-		error_crypto(__func__);
+		log_crypto_errors(SYSLOG_LEVEL_ERROR, __func__);
 	key->type = key_type;
 
 	return ret;

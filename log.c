@@ -199,6 +199,8 @@ sigdie(const char *fmt,...)
 	va_start(args, fmt);
 	do_log(SYSLOG_LEVEL_FATAL, fmt, args);
 	va_end(args);
+#else
+	UNUSED(fmt);
 #endif
 	_exit(1);
 }
@@ -407,17 +409,11 @@ get_log_level(void) {
 	return log_level;
 }
 
-char*
-crypto_errormsg_last(char *buf, size_t len) {
+static char*
+get_one_crypto_error(char *buf, size_t len) {
 	unsigned long err_code;
 	const char *err_data;
 	int err_flags;
-
-	/* special case - if buffer is not set clear all(!) errors */
-	if (buf == NULL) {
-		ERR_clear_error();
-		return NULL;
-	}
 
 	err_code = ERR_get_error_line_data(NULL, NULL, &err_data, &err_flags);
 	if (err_code == 0) return NULL;
@@ -434,6 +430,20 @@ crypto_errormsg_last(char *buf, size_t len) {
 }
 
 	return buf;
+}
+
+void
+log_crypto_errors(LogLevel level, const char *fn) {
+	char ebuf[1024];
+	const char *emsg;
+
+	for (
+	    emsg = get_one_crypto_error(ebuf, sizeof(ebuf));
+	    emsg != NULL;
+	    emsg = get_one_crypto_error(ebuf, sizeof(ebuf))
+	) {
+		do_log2(level, "%s: crypto message: %s", fn, emsg);
+	}
 }
 
 char*
