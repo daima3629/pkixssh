@@ -201,16 +201,17 @@ ssh_x509store_lookup(X509_STORE *store, int type, X509_NAME *name, X509_OBJECT *
 
 	csc = X509_STORE_CTX_new();
 	if (csc == NULL) {
-		char ebuf[256];
-		openssl_errormsg(ebuf, sizeof(ebuf));
-		error("ssh_x509store_lookup: X509_STORE_CTX_new failed with '%.*s'",
-		      (int)sizeof(ebuf), ebuf);
+		char ebuf[1024];
+		crypto_errormsg(ebuf, sizeof(ebuf));
+		error("%s: X509_STORE_CTX_new failed with '%s'"
+		    , __func__, ebuf);
 		return -1;
 	}
 
 	if (X509_STORE_CTX_init(csc, store, NULL, NULL) <= 0) {
 		/*memory allocation error*/
-		error("ssh_x509store_lookup: cannot initialize x509store context");
+		error("%s: cannot initialize x509store context"
+		    , __func__);
 		goto done;
 	}
 	ret = X509_STORE_get_by_subject(csc, type, name, xobj);
@@ -785,16 +786,16 @@ ssh_verify_cert(X509_STORE_CTX *_csc) {
 			 * as ssh option "AllowedCertPurpose=skip".
 			 */
 			int ecode;
-			char ebuf[256];
+			char ebuf[1024];
 
 			ecode = X509_STORE_CTX_get_error(_csc);
 			error("ssh_verify_cert: context purpose error, code=%d, msg='%.200s'"
 				, ecode
 				, X509_verify_cert_error_string(ecode));
 
-			openssl_errormsg(ebuf, sizeof(ebuf));
-			error("ssh_verify_cert: X509_STORE_CTX_purpose_inherit failed with '%.256s'"
-				, ebuf);
+			crypto_errormsg(ebuf, sizeof(ebuf));
+			error("%s: X509_STORE_CTX_purpose_inherit failed with '%s'"
+			    , __func__, ebuf);
 			return -1;
 		}
 	}
@@ -881,10 +882,10 @@ ssh_x509store_verify_cert(X509 *_cert, STACK_OF(X509) *_chain) {
 
 	csc = X509_STORE_CTX_new();
 	if (csc == NULL) {
-		char ebuf[256];
-		openssl_errormsg(ebuf, sizeof(ebuf));
-		error("%s: X509_STORE_CTX_new failed with '%.*s'", __func__,
-		      (int)sizeof(ebuf), ebuf);
+		char ebuf[1024];
+		crypto_errormsg(ebuf, sizeof(ebuf));
+		error("%s: X509_STORE_CTX_new failed with '%s'"
+		    , __func__, ebuf);
 		ret = -1;
 		goto done;
 	}
@@ -991,10 +992,10 @@ ssh_x509store_build_certchain(X509 *cert, STACK_OF(X509) *untrusted) {
 
 	csc = X509_STORE_CTX_new();
 	if (csc == NULL) {
-		char ebuf[512];
-		openssl_errormsg(ebuf, sizeof(ebuf));
-		error("%s: X509_STORE_CTX_new failed with '%.*s'", __func__,
-		      (int)sizeof(ebuf), ebuf);
+		char ebuf[1024];
+		crypto_errormsg(ebuf, sizeof(ebuf));
+		error("%s: X509_STORE_CTX_new failed with '%s'"
+		    , __func__, ebuf);
 		return NULL;
 	}
 
@@ -1273,10 +1274,10 @@ ssh_is_cert_revoked(X509_STORE_CTX *_ctx, X509_CRL *_crl, X509 *_cert) {
 
 	revoked = X509_REVOKED_new();
 	if (revoked == NULL) {
-		char ebuf[256];
-		openssl_errormsg(ebuf, sizeof(ebuf));
-		error("%s: X509_REVOKED_new failed with '%.*s'", __func__,
-		      (int)sizeof(ebuf), ebuf);
+		char ebuf[1024];
+		crypto_errormsg(ebuf, sizeof(ebuf));
+		error("%s: X509_REVOKED_new failed with '%s'"
+		    , __func__, ebuf);
 		return 1;
 	}
 

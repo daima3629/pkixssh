@@ -476,15 +476,6 @@ out:
 	return buf;
 }
 
-char*
-openssl_errormsg(char *buf, size_t len) {
-	ERR_error_string_n(ERR_get_error(), buf, len);
-
-	/* clear rest of errors in OpenSSL "error buffer" */
-	ERR_clear_error();
-	return(buf);
-}
-
 
 #define MSGBUFSIZ 1024
 

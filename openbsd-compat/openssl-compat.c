@@ -137,12 +137,13 @@ ssh_FIPS_mode(int onoff)
 		return(1);
 
 	if (!FIPS_mode_set(onoff)) {
-		char ebuf[512];
+		char ebuf[1024];
 
 		ERR_load_crypto_strings();
+		crypto_errormsg(ebuf, sizeof(ebuf));
 		fatal("FIPS_mode_set(%s) failed: %s",
 		      (onoff ? "on" : "off"),
-		      openssl_errormsg(ebuf, sizeof(ebuf)));
+		      ebuf);
 	}
 
 #if OPENSSL_VERSION_NUMBER < 0x10000000L

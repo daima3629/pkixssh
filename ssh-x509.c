@@ -26,10 +26,12 @@
 #include <ctype.h>
 #include <string.h>
 
+#include <openssl/pem.h>
+#include <openssl/err.h>
+#include "evp-compat.h"
+
 #include "ssh-xkalg.h"
 #include "x509store.h"
-#include <openssl/pem.h>
-#include "evp-compat.h"
 #include "compat.h"
 #include "xmalloc.h"
 #include "ssherr.h"
@@ -445,14 +447,10 @@ ssh_X509_NAME_add_entry_by_NID(X509_NAME* name, int nid, const u_char* str, size
 	ret = X509_NAME_add_entry_by_NID(name, nid, type, buf, (int)k, -1, 0);
 	if (!ret) {
 		char ebuf[1024];
-		openssl_errormsg(ebuf, sizeof(ebuf));
-		error("ssh_X509_NAME_add_entry_by_NID: X509_NAME_add_entry_by_NID"
-		" fail with errormsg='%.*s'"
-		" for nid=%d/%.32s"
-		" and data='%.512s'"
-		, (int)sizeof(ebuf), ebuf
-		, nid, OBJ_nid2ln(nid)
-		, str);
+		crypto_errormsg(ebuf, sizeof(ebuf));
+		error("%s: X509_NAME_add_entry_by_NID fail for nid=%d/%.32s"
+		    " with errormsg '%s' and data='%.512s'"
+		    , __func__, nid, OBJ_nid2ln(nid), ebuf, str);
 	}
 	return ret;
 }
@@ -646,10 +644,10 @@ x509_to_key(X509 *x509) {
 
 	env_pkey = X509_get_pubkey(x509);
 	if (env_pkey == NULL) {
-		char ebuf[256];
-		openssl_errormsg(ebuf, sizeof(ebuf));
-		error("x509_to_key: X509_get_pubkey fail %.*s",
-			(int)sizeof(ebuf), ebuf);
+		char ebuf[1024];
+		crypto_errormsg(ebuf, sizeof(ebuf));
+		error("%s: X509_get_pubkey fail: '%s'"
+		    , __func__, ebuf);
 		return NULL;
 	}
 	/*else*/
@@ -740,9 +738,9 @@ X509_from_blob(const u_char *blob, size_t blen, X509 **xp) {
 	x = d2i_X509_bio(mbio, NULL);
 	if (x == NULL) {
 		char ebuf[1024];
-		openssl_errormsg(ebuf, sizeof(ebuf));
-		debug3("%s: can not read X.509 from memory BIO %.*s"
-		    , __func__, (int)sizeof(ebuf), ebuf);
+		crypto_errormsg(ebuf, sizeof(ebuf));
+		debug3("%s: can not read X.509 from memory BIO: '%s'"
+		    , __func__, ebuf);
 		r = SSH_ERR_INVALID_FORMAT;
 		goto done;
 	}
@@ -1343,10 +1341,8 @@ x509key_load_certs_bio(struct sshkey *key, BIO *bio) {
 	} while (1);
 	debug3("%s loaded %d certificates", __func__, sk_X509_num(chain));
 
-{	/* clear OpenSSL "error buffer" */
-	char ebuf[64];
-	(void) openssl_errormsg(ebuf, sizeof(ebuf));
-}
+	/* clear OpenSSL "error buffer" */
+	ERR_clear_error();
 
 	key->x509_data->chain = chain;
 
@@ -1371,10 +1367,10 @@ x509key_parse_cert(struct sshkey *key, EVP_PKEY *pk, BIO *bio) {
 	debug3("read X.509 certificate begin");
 	x = PEM_read_bio_X509(bio, NULL, NULL, NULL);
 	if (x == NULL) {
-		char ebuf[512];
-		openssl_errormsg(ebuf, sizeof(ebuf));
-		debug3("%s: PEM_read_X509 fail %.*s", __func__,
-			(int)sizeof(ebuf), ebuf);
+		char ebuf[1024];
+		crypto_errormsg(ebuf, sizeof(ebuf));
+		debug3("%s: PEM_read_X509 fail: '%s'"
+		    , __func__, ebuf);
 		return;
 	}
 
@@ -1488,10 +1484,10 @@ x509key_write_bio_cert(BIO *out, X509 *x509) {
 
 	ret = PEM_write_bio_X509(out, x509);
 	if (!ret) {
-		char ebuf[256];
-		openssl_errormsg(ebuf, sizeof(ebuf));
-		error("%s: PEM_write_bio_X509 fail %.*s",
-			__func__, (int)sizeof(ebuf), ebuf);
+		char ebuf[1024];
+		crypto_errormsg(ebuf, sizeof(ebuf));
+		error("%s: PEM_write_bio_X509 fail: '%s'",
+		    __func__, ebuf);
 	}
 
 	return ret;

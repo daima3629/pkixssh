@@ -202,13 +202,11 @@ ssh_set_validator(const VAOptions *_va) {
 
 static void
 openssl_error(const char *ssh_method, const char *openssl_method) {
-	char buf[512];
+	char buf[1024];
 
-	openssl_errormsg(buf, sizeof(buf));
-	error("%.128s: %.128s fail with errormsg='%.*s'"
-		, ssh_method
-		, openssl_method
-		, (int) sizeof(buf), buf);
+	crypto_errormsg(buf, sizeof(buf));
+	error("%s: %s fail with errormsg: '%s'"
+	    , ssh_method, openssl_method, buf);
 }
 
 
@@ -740,12 +738,13 @@ ssh_ocsp_check_validity(
 		}
 
 		if (!OCSP_check_validity(thisupd, nextupd, nsec, maxage)) {
-			char ebuf[512];
-			ret = -1;
+			char ebuf[1024];
+			crypto_errormsg(ebuf, sizeof(ebuf));
 			logit("ssh_ocsp_check_validity: "
-				" WARNING-invalid status time."
-				" OCSP_check_validity fail with errormsg='%.512s'"
-				, openssl_errormsg(ebuf, sizeof(ebuf)));
+			    " WARNING-invalid status time."
+			    " OCSP_check_validity fail with errormsg: '%s'"
+			    , ebuf);
+			ret = -1;
 			break;
 		}
 		debug("ssh_ocsp_check_validity: status=%.32s", OCSP_cert_status_str(status));

@@ -87,10 +87,9 @@ ssh_DSA_sign(DSA *dsa, const u_char *data, u_int datalen)
 	if (ret <= 0) {
 #ifdef TRACE_EVP_ERROR
 		char ebuf[1024];
-		openssl_errormsg(ebuf, sizeof(ebuf));
-		error("%s: EVP_SignInit_ex fail with errormsg='%.*s'"
-		, __func__
-		, (int)sizeof(ebuf), ebuf);
+		crypto_errormsg(ebuf, sizeof(ebuf));
+		error("%s: EVP_SignInit_ex fail with errormsg: '%s'"
+		    , __func__, ebuf);
 #endif
 		goto clean;
 	}
@@ -99,10 +98,9 @@ ssh_DSA_sign(DSA *dsa, const u_char *data, u_int datalen)
 	if (ret <= 0) {
 #ifdef TRACE_EVP_ERROR
 		char ebuf[1024];
-		openssl_errormsg(ebuf, sizeof(ebuf));
-		error("%s: EVP_SignUpdate fail with errormsg='%.*s'"
-		, __func__
-		, (int)sizeof(ebuf), ebuf);
+		crypto_errormsg(ebuf, sizeof(ebuf));
+		error("%s: EVP_SignUpdate fail with errormsg: '%s'"
+		    , __func__, ebuf);
 #endif
 		goto clean;
 	}
@@ -111,10 +109,8 @@ ssh_DSA_sign(DSA *dsa, const u_char *data, u_int datalen)
 	if (ret <= 0) {
 #ifdef TRACE_EVP_ERROR
 		char ebuf[1024];
-		openssl_errormsg(ebuf, sizeof(ebuf));
-		error("%s: sign failed: %.*s"
-		, __func__
-		, (int)sizeof(ebuf), ebuf);
+		crypto_errormsg(ebuf, sizeof(ebuf));
+		error("%s: sign failed: %s", __func__, ebuf);
 #endif
 		goto clean;
 	}
@@ -248,10 +244,9 @@ ssh_DSA_verify(DSA *dsa, DSA_SIG *sig, const u_char *data, u_int datalen)
 	if (ret <= 0) {
 #ifdef TRACE_EVP_ERROR
 		char ebuf[1024];
-		openssl_errormsg(ebuf, sizeof(ebuf));
-		error("%s: EVP_VerifyInit fail with errormsg='%.*s'"
-		, __func__
-		, (int)sizeof(ebuf), ebuf);
+		crypto_errormsg(ebuf, sizeof(ebuf));
+		error("%s: EVP_VerifyInit fail with errormsg: '%s'"
+		    , __func__, ebuf);
 #endif
 		goto clean;
 	}
@@ -260,10 +255,9 @@ ssh_DSA_verify(DSA *dsa, DSA_SIG *sig, const u_char *data, u_int datalen)
 	if (ret <= 0) {
 #ifdef TRACE_EVP_ERROR
 		char ebuf[1024];
-		openssl_errormsg(ebuf, sizeof(ebuf));
-		error("%s: EVP_VerifyUpdate fail with errormsg='%.*s'"
-		, __func__
-		, (int)sizeof(ebuf), ebuf);
+		crypto_errormsg(ebuf, sizeof(ebuf));
+		error("%s: EVP_VerifyUpdate fail with errormsg: '%s'"
+		    , __func__, ebuf);
 #endif
 		goto clean;
 	}
@@ -272,10 +266,9 @@ ssh_DSA_verify(DSA *dsa, DSA_SIG *sig, const u_char *data, u_int datalen)
 	if (ret <= 0) {
 #ifdef TRACE_EVP_ERROR
 		char ebuf[1024];
-		openssl_errormsg(ebuf, sizeof(ebuf));
-		error("%s: EVP_VerifyFinal fail with errormsg='%.*s'"
-		, __func__
-		, (int)sizeof(ebuf), ebuf);
+		crypto_errormsg(ebuf, sizeof(ebuf));
+		error("%s: EVP_VerifyFinal fail with errormsg: '%s'"
+		    , __func__, ebuf);
 #endif
 		goto clean;
 	}

@@ -461,11 +461,10 @@ eng_key_load_private_type(int type, const char *filename,
 	pk = ENGINE_load_private_key(e, engkeyid, ssh_ui_method, NULL);
 	if (pk == NULL) {
 		char ebuf[1024];
+		crypto_errormsg(ebuf, sizeof(ebuf));
+		error("%s: ENGINE_load_private_key(%s) fail with errormsg='%s'"
+		    , __func__, ENGINE_get_id(e) , ebuf);
 		ret = SSH_ERR_KEY_NOT_FOUND;
-		openssl_errormsg(ebuf, sizeof(ebuf));
-		error("%s: ENGINE_load_private_key(%s) fail with errormsg='%.*s'"
-		, __func__, ENGINE_get_id(e)
-		, (int)sizeof(ebuf), ebuf);
 		goto done;
 	}
 
@@ -524,16 +523,15 @@ eng_key_try_load_public(struct sshkey *k, const char *filename, char **commentp)
 	pk = ENGINE_load_public_key(e, engkeyid, ssh_ui_method, NULL);
 	if (pk == NULL) {
 		char ebuf[1024];
-		/* TODO library mode in case of failure */
-		ret = SSH_ERR_KEY_NOT_FOUND;
 		/* fatal here to avoid PIN lock, for instance
 		 * when ssh-askpass program is missing.
 		 * NOTE programs still try to load public key many times!
 		 */
-		openssl_errormsg(ebuf, sizeof(ebuf));
-		fatal("%s: ENGINE_load_public_key(%s) fail with errormsg='%.*s'"
-		, __func__, ENGINE_get_id(e)
-		, (int)sizeof(ebuf), ebuf);
+		crypto_errormsg(ebuf, sizeof(ebuf));
+		fatal("%s: ENGINE_load_public_key(%s) fail with errormsg='%s'"
+		    , __func__, ENGINE_get_id(e), ebuf);
+		/* TODO library mode in case of failure */
+		ret = SSH_ERR_KEY_NOT_FOUND;
 		goto done;
 	}
 
@@ -581,11 +579,10 @@ try_load_engine(const char *engine) {
 
 	e = ENGINE_by_id(engine);
 	if (e == NULL) {
-		char ebuf[512];
-		openssl_errormsg(ebuf, sizeof(ebuf));
-		fatal("%s(%s): setup fail with last error '%.*s'"
-		    , __func__, engine
-		    , (int)sizeof(ebuf), ebuf);
+		char ebuf[1024];
+		crypto_errormsg(ebuf, sizeof(ebuf));
+		fatal("%s(%s): setup fail with last error '%s'"
+		    , __func__, engine, ebuf);
 		return(NULL); /* ;-) */
 	}
 
@@ -604,11 +601,10 @@ try_load_engine(const char *engine) {
 }
 
 	if (!self_registered && !ENGINE_add(e)) {
-		char ebuf[512];
-		openssl_errormsg(ebuf, sizeof(ebuf));
-		fatal("%s(%s): registration fail with last error '%.*s'"
-		    , __func__, engine
-		    , (int)sizeof(ebuf), ebuf);
+		char ebuf[1024];
+		crypto_errormsg(ebuf, sizeof(ebuf));
+		fatal("%s(%s): registration fail with last error '%s'"
+		    , __func__, engine, ebuf);
 		return(NULL); /* ;-) */
 	}
 
@@ -626,21 +622,19 @@ ssh_engine_setup(const char *engine) {
 	e = try_load_engine(engine); /* fatal on error */
 
 	if (!ENGINE_init(e)) {
-		char ebuf[512];
-		openssl_errormsg(ebuf, sizeof(ebuf));
-		fatal("%s(%s): ENGINE_init fail with last error '%.*s'"
-		    , __func__, engine
-		    , (int)sizeof(ebuf), ebuf);
+		char ebuf[1024];
+		crypto_errormsg(ebuf, sizeof(ebuf));
+		fatal("%s(%s): ENGINE_init fail with last error '%s'"
+		    , __func__, engine, ebuf);
 		return(NULL); /* ;-) */
 	}
 
 	ctrl_ret = ENGINE_ctrl_cmd(e, "SET_USER_INTERFACE", 0, ssh_ui_method, 0, 1);
 	if (!ctrl_ret) {
-		char ebuf[512];
-		openssl_errormsg(ebuf, sizeof(ebuf));
-		debug3("%s(%s): unsupported engine command SET_USER_INTERFACE: %.*s"
-		    , __func__, engine
-		    , (int)sizeof(ebuf), ebuf);
+		char ebuf[1024];
+		crypto_errormsg(ebuf, sizeof(ebuf));
+		debug3("%s(%s): unsupported engine command SET_USER_INTERFACE: %s"
+		    , __func__, engine, ebuf);
 	}
 
 	if (!ENGINE_free(e)) {
@@ -718,11 +712,10 @@ process_engconfig_line(char *line, const char *filename, int linenum) {
 
 		e = ssh_engine_setup(arg);
 		if (e == NULL) {
-			char ebuf[512];
-			openssl_errormsg(ebuf, sizeof(ebuf));
-			fatal("%.200s line %d: cannot load engine '%s':%.*s"
-			    , filename, linenum, arg
-			    , (int)sizeof(ebuf), ebuf);
+			char ebuf[1024];
+			crypto_errormsg(ebuf, sizeof(ebuf));
+			fatal("%.200s line %d: cannot load engine %s: '%s'"
+			    , filename, linenum, arg, ebuf);
 		}
 		if (eng_name != NULL)
 			free(eng_name);
@@ -745,12 +738,11 @@ process_engconfig_line(char *line, const char *filename, int linenum) {
 
 		ctrl_ret = ENGINE_ctrl_cmd_string(e, keyword, arg, 0);
 		if (!ctrl_ret) {
-			char ebuf[512];
-			openssl_errormsg(ebuf, sizeof(ebuf));
+			char ebuf[1024];
+			crypto_errormsg(ebuf, sizeof(ebuf));
 			fatal("%.200s line %d: engine command fail"
-			    " with errormsg='%.*s'"
-			    , filename, linenum
-			    , (int)sizeof(ebuf), ebuf);
+			    " with errormsg='%s'"
+			    , filename, linenum, ebuf);
 			ret = 0;
 		}
 

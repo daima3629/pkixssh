@@ -59,7 +59,6 @@ void     log_redirect_stderr_to(const char *);
 LogLevel get_log_level(void);
 void     log_crypto_errors(LogLevel level, const char *fn);
 char*    crypto_errormsg(char *buf, size_t len);
-char*    openssl_errormsg(char *buf, size_t len);
 
 SyslogFacility	log_facility_number(char *);
 const char * 	log_facility_name(SyslogFacility);

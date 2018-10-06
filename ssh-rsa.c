@@ -254,10 +254,9 @@ ssh_rsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 	if (ok <= 0) {
 #ifdef TRACE_EVP_ERROR
 		char ebuf[1024];
-		openssl_errormsg(ebuf, sizeof(ebuf));
-		error("%s: EVP_SignInit_ex fail with errormsg='%.*s'"
-		, __func__
-		, (int)sizeof(ebuf), ebuf);
+		crypto_errormsg(ebuf, sizeof(ebuf));
+		error("%s: EVP_SignInit_ex fail with errormsg='%s'"
+		    , __func__, ebuf);
 #endif
 		goto evp_md_end;
 	}
@@ -266,10 +265,9 @@ ssh_rsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 	if (ok <= 0) {
 #ifdef TRACE_EVP_ERROR
 		char ebuf[1024];
-		openssl_errormsg(ebuf, sizeof(ebuf));
-		error("%s: EVP_SignUpdate fail with errormsg='%.*s'"
-		, __func__
-		, (int)sizeof(ebuf), ebuf);
+		crypto_errormsg(ebuf, sizeof(ebuf));
+		error("%s: EVP_SignUpdate fail with errormsg='%s'"
+		    , __func__, ebuf);
 #endif
 		goto evp_md_end;
 	}
@@ -278,10 +276,9 @@ ssh_rsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 	if (ok <= 0) {
 #ifdef TRACE_EVP_ERROR
 		char ebuf[1024];
-		openssl_errormsg(ebuf, sizeof(ebuf));
-		error("%s: SignFinal fail with errormsg='%.*s'"
-		, __func__
-		, (int)sizeof(ebuf), ebuf);
+		crypto_errormsg(ebuf, sizeof(ebuf));
+		error("%s: SignFinal fail with errormsg='%s'"
+		    , __func__, ebuf);
 #endif
 		goto evp_md_end;
 	}
@@ -434,10 +431,9 @@ ssh_rsa_verify(const struct sshkey *key,
 	if (ok <= 0) {
 #ifdef TRACE_EVP_ERROR
 		char ebuf[1024];
-		openssl_errormsg(ebuf, sizeof(ebuf));
-		error("%s: EVP_VerifyInit fail with errormsg='%.*s'"
-		, __func__
-		, (int)sizeof(ebuf), ebuf);
+		crypto_errormsg(ebuf, sizeof(ebuf));
+		error("%s: EVP_VerifyInit fail with errormsg='%s'"
+		    , __func__, ebuf);
 #endif
 		goto evp_md_end;
 	}
@@ -446,10 +442,9 @@ ssh_rsa_verify(const struct sshkey *key,
 	if (ok <= 0) {
 #ifdef TRACE_EVP_ERROR
 		char ebuf[1024];
-		openssl_errormsg(ebuf, sizeof(ebuf));
-		error("%s: EVP_VerifyUpdate fail with errormsg='%.*s'"
-		, __func__
-		, (int)sizeof(ebuf), ebuf);
+		crypto_errormsg(ebuf, sizeof(ebuf));
+		error("%s: EVP_VerifyUpdate fail with errormsg='%s'"
+		    , __func__, ebuf);
 #endif
 		goto evp_md_end;
 	}
@@ -458,10 +453,9 @@ ssh_rsa_verify(const struct sshkey *key,
 	if (ok <= 0) {
 #ifdef TRACE_EVP_ERROR
 		char ebuf[1024];
-		openssl_errormsg(ebuf, sizeof(ebuf));
-		error("%s: EVP_VerifyFinal fail with errormsg='%.*s'"
-		, __func__
-		, (int)sizeof(ebuf), ebuf);
+		crypto_errormsg(ebuf, sizeof(ebuf));
+		error("%s: EVP_VerifyFinal fail with errormsg='%s'"
+		    , __func__, ebuf);
 #endif
 		goto evp_md_end;
 	}
