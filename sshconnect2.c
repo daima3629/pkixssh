@@ -687,7 +687,7 @@ input_userauth_pk_ok(int type, u_int32_t seq, struct ssh *ssh)
 	}
 {	const char *ident = format_identity(id);
 	debug("Server accepts key: %s", ident);
-	free(ident);
+	free((void*)ident);
 }
 	sent = sign_and_send_pubkey(ssh, authctxt, id);
 	r = 0;
@@ -1532,7 +1532,7 @@ pubkey_prepare(Authctxt *authctxt)
 	TAILQ_FOREACH(id, preferred, next) {
 		const char *ident = format_identity(id);
 		debug("Will attempt key: %s", ident);
-		free(ident);
+		free((void*)ident);
 	}
 	debug2("%s: done", __func__);
 }
@@ -1743,7 +1743,7 @@ userauth_pubkey(Authctxt *authctxt)
 			if (try_identity(ssh, id)) {
 				const char *ident = format_identity(id);
 				verbose("Offering public key: %s", ident);
-				free(ident);
+				free((void*)ident);
 				sent = send_pubkey_test(ssh, authctxt, id);
 			}
 		} else {
