@@ -2216,29 +2216,6 @@ AC_CHECK_FUNC([getpagesize],
 		[LIBS="$LIBS -lucb"; AC_DEFINE([HAVE_GETPAGESIZE])])]
 )
 
-# Check for broken snprintf
-if test "x$ac_cv_func_snprintf" = "xyes" ; then
-	AC_MSG_CHECKING([whether snprintf correctly terminates long strings])
-	AC_RUN_IFELSE(
-		[AC_LANG_PROGRAM([[
-	#include <stdio.h>
-	#include <stdlib.h>
-	]],
-		[[
-	char b[5];
-	snprintf(b,5,"123456789");
-	exit(b[4]!='\0');
-		]])],
-		[AC_MSG_RESULT([yes])],
-		[
-			AC_MSG_RESULT([no])
-			ssh_snprintf_broken=yes
-			AC_MSG_WARN([****** Your snprintf() function is broken, complain to your vendor])
-		],
-		[ AC_MSG_WARN([cross compiling: Assuming working snprintf()]) ]
-	)
-fi
-
 # Check for missing getpeereid (or equiv) support
 NO_PEERCHECK=""
 if test "x$ac_cv_func_getpeereid" != "xyes" -a "x$ac_cv_func_getpeerucred" != "xyes"; then
@@ -3985,6 +3962,34 @@ if test "x$ac_cv_have_int64_t" = "xno" && \
 	AC_MSG_ERROR([*** SSH_PACKAGE requires int64_t support.
 	Contact your vendor or install an alternative compiler (I.E., GCC) before continuing.
 	])
+fi
+
+
+dnl checks for working *snprintf ...
+if test "x$ac_cv_func_snprintf" = "xyes" ; then
+AC_CACHE_CHECK(
+	[whether snprintf correctly terminates long strings],
+	[ssh_cv_func_snprintf_long_string],
+	[AC_RUN_IFELSE([AC_LANG_PROGRAM([[
+#include <stdio.h>
+	]], [[
+char b[5];
+snprintf(b,5,"123456789");
+if (b[4] != '\0')
+	return 1;
+	]])],
+	[ssh_cv_func_snprintf_long_string=yes],
+	[ssh_cv_func_snprintf_long_string=no],
+	[ssh_cv_func_snprintf_long_string=cross]
+)])
+if test $ssh_cv_func_snprintf_long_string = cross ; then
+	AC_MSG_WARN([cross compiling: assuming snprintf correctly terminates long strings])
+	ssh_cv_func_snprintf_long_string=yes
+fi
+if test $ssh_cv_func_snprintf_long_string != yes ; then
+	ssh_snprintf_broken=yes
+	AC_MSG_WARN([*** Broken function snprintf() - does not correctly terminates long strings])
+fi
 fi
 
 dnl SSH_PACKAGE depend on vsnprintf returning the right thing on overflow:
