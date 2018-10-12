@@ -2232,8 +2232,7 @@ if test "x$ac_cv_func_snprintf" = "xyes" ; then
 		[AC_MSG_RESULT([yes])],
 		[
 			AC_MSG_RESULT([no])
-			AC_DEFINE([BROKEN_SNPRINTF], [1],
-				[Define if your snprintf is busted])
+			ssh_snprintf_broken=yes
 			AC_MSG_WARN([****** Your snprintf() function is broken, complain to your vendor])
 		],
 		[ AC_MSG_WARN([cross compiling: Assuming working snprintf()]) ]
@@ -2271,29 +2270,12 @@ return 0;
 		[AC_MSG_RESULT([yes])],
 		[
 			AC_MSG_RESULT([no])
-			AC_DEFINE([BROKEN_SNPRINTF], [1],
-				[Define if your snprintf is busted])
+			ssh_snprintf_broken=yes
 			AC_MSG_WARN([****** Your vsnprintf() function is broken, complain to your vendor])
 		],
 		[ AC_MSG_WARN([cross compiling: Assuming working vsnprintf()]) ]
 	)
 fi
-
-# On systems where [v]snprintf is broken, but is declared in stdio,
-# check that the fmt argument is const char * or just char *.
-# This is only useful for when BROKEN_SNPRINTF
-AC_MSG_CHECKING([whether snprintf can declare const char *fmt])
-AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
-#include <stdio.h>
-int snprintf(char *a, size_t b, const char *c, ...) { return 0; }
-		]], [[
-	snprintf(0, 0, 0);
-		]])],
-   [AC_MSG_RESULT([yes])
-    AC_DEFINE([SNPRINTF_CONST], [const],
-              [Define as const if snprintf() can declare const char *fmt])],
-   [AC_MSG_RESULT([no])
-    AC_DEFINE([SNPRINTF_CONST], [/* not const */])])
 
 # Check for missing getpeereid (or equiv) support
 NO_PEERCHECK=""
@@ -4069,9 +4051,33 @@ main()
 #else
 main() { exit(0); }
 #endif
-		]])], [ true ], [ AC_DEFINE([BROKEN_SNPRINTF]) ],
+		]])], [ true ], [ ssh_snprintf_broken=yes ],
 		AC_MSG_WARN([cross compiling: Assuming working snprintf()])
 	)
+
+
+dnl On systems where [v]snprintf is broken, but is declared in stdio,
+dnl check that the fmt argument is const char * or just char *.
+if test "x$ssh_snprintf_broken" = xyes ; then
+	AC_DEFINE([BROKEN_SNPRINTF], [1],
+		[Define to 1 if snprintf is broken or outdated (lack %zu, %ld and etc.)])
+	AC_MSG_CHECKING([whether snprintf declare const char *fmt])
+	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+#include <stdio.h>
+int snprintf(char *a, size_t b, const char *c, ...) { return 0; }
+		]], [[
+snprintf(0, 0, 0);
+		]])],
+	[ssh_snprintf_const_fmt=yes],
+	[ssh_snprintf_const_fmt=no]
+	)
+	AC_MSG_RESULT([$ssh_snprintf_const_fmt])
+fi
+if test "x$ssh_snprintf_const_fmt" = xyes ; then
+	AC_DEFINE([SNPRINTF_CONST], [const],
+		[Define as const if broken snprintf() declare const char *fmt])
+fi
+
 
 dnl Checks for structure members
 OSSH_CHECK_HEADER_FOR_FIELD([ut_host], [utmp.h], [HAVE_HOST_IN_UTMP])
