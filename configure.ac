@@ -4038,11 +4038,11 @@ AC_CHECK_TYPES([struct timespec])
 if test "x$ac_cv_have_int64_t" = "xno" && \
 	test "x$ac_cv_sizeof_long_int" != "x8" && \
 	test "x$ac_cv_sizeof_long_long_int" = "x0" ; then
-	echo "PKIX-SSH requires int64_t support.  Contact your vendor or install"
-	echo "an alternative compiler (I.E., GCC) before continuing."
-	echo ""
-	exit 1;
-else
+	AC_MSG_ERROR([*** SSH_PACKAGE requires int64_t support.
+	Contact your vendor or install an alternative compiler (I.E., GCC) before continuing.
+	])
+fi
+
 dnl test snprintf (broken on SCO w/gcc)
 	AC_RUN_IFELSE(
 		[AC_LANG_SOURCE([[
@@ -4072,7 +4072,6 @@ main() { exit(0); }
 		]])], [ true ], [ AC_DEFINE([BROKEN_SNPRINTF]) ],
 		AC_MSG_WARN([cross compiling: Assuming working snprintf()])
 	)
-fi
 
 dnl Checks for structure members
 OSSH_CHECK_HEADER_FOR_FIELD([ut_host], [utmp.h], [HAVE_HOST_IN_UTMP])
