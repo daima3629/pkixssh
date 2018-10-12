@@ -4025,36 +4025,41 @@ if test "x$ac_cv_have_int64_t" = "xno" && \
 	])
 fi
 
-dnl test snprintf (broken on SCO w/gcc)
-	AC_RUN_IFELSE(
-		[AC_LANG_SOURCE([[
+dnl test snprintf format %ldd (broken on SCO w/gcc)
+if test "x$ac_cv_func_snprintf" = "xyes" && test "x$ssh_snprintf_broken" != xyes ; then
+AC_CACHE_CHECK(
+	[whether snprintf understands %lld format],
+	[ssh_cv_func_snprintf_fmt_lld],
+	[AC_RUN_IFELSE([AC_LANG_PROGRAM([[
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
-#ifdef HAVE_SNPRINTF
-main()
-{
-	char buf[50];
-	char expected_out[50];
-	int mazsize = 50 ;
+	]], [[
+char buf[50];
+char expected_out[50];
+int mazsize = 50 ;
 #if (SIZEOF_LONG_INT == 8)
-	long int num = 0x7fffffffffffffff;
+long int num = 0x7fffffffffffffff;
 #else
-	long long num = 0x7fffffffffffffffll;
+long long num = 0x7fffffffffffffffll;
 #endif
-	strcpy(expected_out, "9223372036854775807");
-	snprintf(buf, mazsize, "%lld", num);
-	if(strcmp(buf, expected_out) != 0)
-		exit(1);
-	exit(0);
-}
-#else
-main() { exit(0); }
-#endif
-		]])], [ true ], [ ssh_snprintf_broken=yes ],
-		AC_MSG_WARN([cross compiling: Assuming working snprintf()])
-	)
-
+strcpy(expected_out, "9223372036854775807");
+snprintf(buf, mazsize, "%lld", num);
+if (strcmp(buf, expected_out) != 0)
+	return 1;
+	]])],
+	[ssh_cv_func_snprintf_fmt_lld=yes],
+	[ssh_cv_func_snprintf_fmt_lld=no],
+	[ssh_cv_func_snprintf_fmt_lld=cross]
+)])
+if test $ssh_cv_func_snprintf_fmt_lld = cross ; then
+	AC_MSG_WARN([cross compiling: assuming snprintf() understands %lld format])
+	ssh_cv_func_snprintf_fmt_lld=yes
+fi
+if test $ssh_cv_func_snprintf_fmt_lld != yes ; then
+	ssh_snprintf_broken=yes
+	AC_MSG_WARN([*** Outdated function snprintf() - does not understand %lld format])
+fi
+fi
 
 dnl On systems where [v]snprintf is broken, but is declared in stdio,
 dnl check that the fmt argument is const char * or just char *.
