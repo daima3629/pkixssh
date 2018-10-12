@@ -2239,44 +2239,6 @@ if test "x$ac_cv_func_snprintf" = "xyes" ; then
 	)
 fi
 
-# We depend on vsnprintf returning the right thing on overflow: the
-# number of characters it tried to create (as per SUSv3)
-if test "x$ac_cv_func_vsnprintf" = "xyes" ; then
-	AC_MSG_CHECKING([whether vsnprintf returns correct values on overflow])
-	AC_RUN_IFELSE(
-		[AC_LANG_PROGRAM([[
-#include <sys/types.h>
-#include <stdio.h>
-#include <stdarg.h>
-
-int x_snprintf(char *str, size_t count, const char *fmt, ...)
-{
-	size_t ret;
-	va_list ap;
-
-	va_start(ap, fmt);
-	ret = vsnprintf(str, count, fmt, ap);
-	va_end(ap);
-	return ret;
-}
-		]], [[
-char x[1];
-if (x_snprintf(x, 1, "%s %d", "hello", 12345) != 11)
-	return 1;
-if (x_snprintf(NULL, 0, "%s %d", "hello", 12345) != 11)
-	return 1;
-return 0;
-		]])],
-		[AC_MSG_RESULT([yes])],
-		[
-			AC_MSG_RESULT([no])
-			ssh_snprintf_broken=yes
-			AC_MSG_WARN([****** Your vsnprintf() function is broken, complain to your vendor])
-		],
-		[ AC_MSG_WARN([cross compiling: Assuming working vsnprintf()]) ]
-	)
-fi
-
 # Check for missing getpeereid (or equiv) support
 NO_PEERCHECK=""
 if test "x$ac_cv_func_getpeereid" != "xyes" -a "x$ac_cv_func_getpeerucred" != "xyes"; then
@@ -4023,6 +3985,49 @@ if test "x$ac_cv_have_int64_t" = "xno" && \
 	AC_MSG_ERROR([*** SSH_PACKAGE requires int64_t support.
 	Contact your vendor or install an alternative compiler (I.E., GCC) before continuing.
 	])
+fi
+
+dnl SSH_PACKAGE depend on vsnprintf returning the right thing on overflow:
+dnl the number of characters it tried to create (as per SUSv3)
+if test "x$ac_cv_func_vsnprintf" = "xyes" && test "x$ssh_snprintf_broken" != xyes ; then
+AC_CACHE_CHECK(
+	[whether vsnprintf returns correct values on overflow],
+	[ssh_cv_func_vsnprintf_overflow],
+	[AC_RUN_IFELSE([AC_LANG_PROGRAM([[
+#include <sys/types.h>
+#include <stdio.h>
+#include <stdarg.h>
+
+int
+x_snprintf(char *str, size_t count, const char *fmt, ...) {
+	size_t ret;
+	va_list ap;
+
+	va_start(ap, fmt);
+	ret = vsnprintf(str, count, fmt, ap);
+	va_end(ap);
+
+	return ret;
+}
+	]], [[
+char x[1];
+if (x_snprintf(x, 1, "%s %d", "hello", 12345) != 11)
+	return 1;
+if (x_snprintf(NULL, 0, "%s %d", "hello", 12345) != 11)
+	return 1;
+	]])],
+	[ssh_cv_func_vsnprintf_overflow=yes],
+	[ssh_cv_func_vsnprintf_overflow=no],
+	[ssh_cv_func_vsnprintf_overflow=cross]
+)])
+if test $ssh_cv_func_vsnprintf_overflow = cross ; then
+	AC_MSG_WARN([cross compiling: assuming vsnprintf() returns correct values on overflow])
+	ssh_cv_func_vsnprintf_overflow=yes
+fi
+if test $ssh_cv_func_vsnprintf_overflow != yes ; then
+	ssh_snprintf_broken=yes
+	AC_MSG_WARN([*** Broken function vsnprintf() - does not returns correct values on overflow])
+fi
 fi
 
 dnl test snprintf format %ldd (broken on SCO w/gcc)
