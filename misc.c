@@ -1,4 +1,4 @@
-/* $OpenBSD: misc.c,v 1.131 2018/07/27 05:13:02 dtucker Exp $ */
+/* $OpenBSD: misc.c,v 1.133 2018/10/05 14:26:09 naddy Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2005,2006 Damien Miller.  All rights reserved.
@@ -52,6 +52,7 @@
 #include <netinet/in_systm.h>
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
+#include <arpa/inet.h>
 
 #include <ctype.h>
 #include <errno.h>
@@ -359,13 +360,16 @@ pwcopy(struct passwd *pw)
 int
 a2port(const char *s)
 {
+	struct servent *se;
 	long long port;
 	const char *errstr;
 
 	port = strtonum(s, 0, 65535, &errstr);
-	if (errstr != NULL)
-		return -1;
-	return (int)port;
+	if (errstr == NULL)
+		return (int)port;
+	if ((se = getservbyname(s, "tcp")) != NULL)
+		return ntohs(se->s_port);
+	return -1;
 }
 
 int
