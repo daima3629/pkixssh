@@ -313,6 +313,7 @@ set_fwdpermit_from_authopts(struct ssh *ssh, const struct sshauthopt *opts)
 	int port;
 	size_t i;
 
+	UNUSED(opts);
 	if ((options.allow_tcp_forwarding & FORWARD_LOCAL) != 0) {
 		channel_clear_permission(ssh, FORWARD_USER, FORWARD_LOCAL);
 		for (i = 0; i < auth_opts->npermitopen; i++) {
@@ -725,7 +726,9 @@ do_exec(struct ssh *ssh, Session *s, const char *command)
 		command = auth_opts->force_command;
 		forced = "(key-option)";
 	}
+	s->forced = 0;
 	if (forced != NULL) {
+		s->forced = 1;
 		if (IS_INTERNAL_SFTP(command)) {
 			s->is_subsystem = s->is_subsystem ?
 			    SUBSYSTEM_INT_SFTP : SUBSYSTEM_INT_SFTP_ERROR;
@@ -1266,6 +1269,7 @@ do_rc_files(struct ssh *ssh, Session *s, const char *shell)
 	int do_xauth;
 	struct stat st;
 
+	UNUSED(ssh);
 	do_xauth =
 	    s->display != NULL && s->auth_proto != NULL && s->auth_data != NULL;
 
@@ -1370,6 +1374,7 @@ safely_chroot(const char *path, uid_t uid)
 	char component[PATH_MAX];
 	struct stat st;
 
+	UNUSED(uid);
 	if (*path != '/')
 		fatal("chroot path does not begin at root");
 	if (strlen(path) >= sizeof(component))
@@ -1843,7 +1848,7 @@ session_dump(void)
 		    s->used,
 		    s->next_unused,
 		    s->self,
-		    s,
+		    (void*)s,
 		    s->chanid,
 		    (long)s->pid);
 	}
@@ -1941,6 +1946,7 @@ session_by_pid(pid_t pid)
 static int
 session_window_change_req(struct ssh *ssh, Session *s)
 {
+	UNUSED(ssh);
 	s->col = packet_get_int();
 	s->row = packet_get_int();
 	s->xpixel = packet_get_int();
@@ -2095,7 +2101,7 @@ session_exec_req(struct ssh *ssh, Session *s)
 static int
 session_break_req(struct ssh *ssh, Session *s)
 {
-
+	UNUSED(ssh);
 	packet_get_int();	/* ignored */
 	packet_check_eom();
 
@@ -2110,6 +2116,7 @@ session_env_req(struct ssh *ssh, Session *s)
 	char *name, *val;
 	u_int name_len, val_len, i;
 
+	UNUSED(ssh);
 	name = packet_get_cstring(&name_len);
 	val = packet_get_cstring(&val_len);
 	packet_check_eom();
@@ -2137,6 +2144,78 @@ session_env_req(struct ssh *ssh, Session *s)
 	free(name);
 	free(val);
 	return (0);
+}
+
+/*
+ * Conversion of signals from ssh channel request names.
+ * Subset of signals from RFC 4254 section 6.10C, with SIGINFO as
+ * local extension.
+ */
+static int
+name2sig(char *name)
+{
+#define SSH_SIG(x) if (strcmp(name, #x) == 0) return SIG ## x
+	SSH_SIG(HUP);
+	SSH_SIG(INT);
+	SSH_SIG(KILL);
+	SSH_SIG(QUIT);
+	SSH_SIG(TERM);
+	SSH_SIG(USR1);
+	SSH_SIG(USR2);
+#undef	SSH_SIG
+#ifdef SIGINFO
+	if (strcmp(name, "INFO@openssh.com") == 0)
+		return SIGINFO;
+#endif
+	return -1;
+}
+
+static int
+session_signal_req(struct ssh *ssh, Session *s)
+{
+	char *signame = NULL;
+	int r, sig, success = 0;
+
+	if ((r = sshpkt_get_cstring(ssh, &signame, NULL)) != 0 ||
+	    (r = sshpkt_get_end(ssh)) != 0) {
+		error("%s: parse packet: %s", __func__, ssh_err(r));
+		goto out;
+	}
+	if ((sig = name2sig(signame)) == -1) {
+		error("%s: unsupported signal \"%s\"", __func__, signame);
+		goto out;
+	}
+	if (s->pid <= 0) {
+		error("%s: no pid for session %d", __func__, s->self);
+		goto out;
+	}
+	if (s->forced || s->is_subsystem) {
+		error("%s: refusing to send signal %s to %s session", __func__,
+		    signame, s->forced ? "forced-command" : "subsystem");
+		goto out;
+	}
+	if (!use_privsep || mm_is_monitor()) {
+		error("%s: session signalling requires privilege separation",
+		    __func__);
+		goto out;
+	}
+
+	debug("%s: signal %s, killpg(%ld, %d)", __func__, signame,
+	    (long)s->pid, sig);
+	temporarily_use_uid(s->pw);
+	r = killpg(s->pid, sig);
+	restore_uid();
+	if (r != 0) {
+		error("%s: killpg(%ld, %d): %s", __func__, (long)s->pid,
+		    sig, strerror(errno));
+		goto out;
+	}
+
+	/* success */
+	success = 1;
+ out:
+	free(signame);
+	return success;
 }
 
 static int
@@ -2195,6 +2274,8 @@ session_input_channel_req(struct ssh *ssh, Channel *c, const char *rtype)
 		success = session_window_change_req(ssh, s);
 	} else if (strcmp(rtype, "break") == 0) {
 		success = session_break_req(ssh, s);
+	} else if (strcmp(rtype, "signal") == 0) {
+		success = session_signal_req(ssh, s);
 	}
 
 	return success;
@@ -2302,6 +2383,7 @@ session_close_single_x11(struct ssh *ssh, int id, void *arg)
 	Session *s;
 	u_int i;
 
+	UNUSED(arg);
 	debug3("%s: channel %d", __func__, id);
 	channel_cancel_cleanup(ssh, id);
 	if ((s = session_by_x11_channel(id)) == NULL)
@@ -2435,6 +2517,7 @@ session_close_by_channel(struct ssh *ssh, int id, void *arg)
 	Session *s = session_by_channel(id);
 	u_int i;
 
+	UNUSED(arg);
 	if (s == NULL) {
 		debug("%s: no session for id %d", __func__, id);
 		return;
