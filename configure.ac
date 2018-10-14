@@ -4071,6 +4071,34 @@ if test $ssh_cv_func_snprintf_fmt_lld != yes ; then
 fi
 fi
 
+if test "x$ac_cv_func_snprintf" = "xyes" && test "x$ssh_snprintf_broken" != xyes ; then
+AC_CACHE_CHECK(
+	[whether snprintf understands %zu format],
+	[ssh_cv_func_snprintf_fmt_zu],
+	[AC_RUN_IFELSE([AC_LANG_PROGRAM([[
+#include <sys/types.h>
+#include <stdio.h>
+	]], [[
+size_t a = 1, b = 2;
+char z[128];
+snprintf(z, sizeof z, "%zu%zu", a, b);
+if (strcmp(z, "12") != 0)
+	return 1;
+	]])],
+	[ssh_cv_func_snprintf_fmt_zu=yes],
+	[ssh_cv_func_snprintf_fmt_zu=no],
+	[ssh_cv_func_snprintf_fmt_zu=cross]
+)])
+if test $ssh_cv_func_snprintf_fmt_zu = cross ; then
+	AC_MSG_WARN([cross compiling: assuming snprintf() understands %zu format])
+	ssh_cv_func_snprintf_fmt_zu=yes
+fi
+if test $ssh_cv_func_snprintf_fmt_zu != yes ; then
+	ssh_snprintf_broken=yes
+	AC_MSG_WARN([*** Outdated function snprintf() - does not understand %zu format])
+fi
+fi
+
 dnl On systems where [v]snprintf is broken, but is declared in stdio,
 dnl check that the fmt argument is const char * or just char *.
 if test "x$ssh_snprintf_broken" = xyes ; then
