@@ -278,4 +278,81 @@ utf8base64() {
 
 
 # ===
+cre_link () {
+  rm -f "$2" &&
+  ln -s "$1" "$2" || return $?
+  #link might never fail ;-(
+  test -h "$2"
+}
+
+
+# ===
+cre_hash_link () {
+# Issue with OpenSSL option -noout:
+# Exit code from .../openssl ... -noout ... is sometime nonzero!
+# May be only by .../openssl x509 ... -noout ... exit code is zero.
+# sample:
+# a) exit code is one - INCORRECT
+#   .../openssl crl -in a_crl_file  -hash -noout
+# b) exit code is zero - correct
+#   .../openssl crl -in a_crl_file  -hash -out /dev/null
+#
+# May be work around is to use -out /dev/null? :-/
+  if test "x$1" = "x-log" ; then
+    logit=:
+    shift
+  else
+    logit=false
+  fi
+
+  HASH=`$OPENSSL x509 -hash -in "$1" -noout` || return $?
+  case `uname -s 2>/dev/null` in
+  CYGWIN*)
+    # On cygwin OpenSSL 1.1* output erroneously ends with <CR><LF>
+    HASH=`echo $HASH | tr -d '\r'`
+    ;;
+  esac
+  hash_link=`getNextFreeName $HASH.` || return $?
+
+  if test -n "$2" ; then
+    hash_link="$2/$hash_link"
+  fi
+
+  if $logit ; then
+    echo "creating link ${attn}$hash_link${norm} to ${attn}$1${norm}"
+  fi
+  cre_link "$1" "$hash_link"
+}
+
+
+# ===
+cre_crl_hash_link () {
+  if test "x$1" = "x-log" ; then
+    logit=:
+    shift
+  else
+    logit=false
+  fi
+
+  HASH=`$OPENSSL crl -hash -in "$1" -out /dev/null` || return $?
+  case `uname -s 2>/dev/null` in
+  CYGWIN*)
+    # On cygwin OpenSSL 1.1* output erroneously ends with <CR><LF>
+    HASH=`echo $HASH | tr -d '\r'`
+    ;;
+  esac
+  hash_link=`getNextFreeName $HASH.r` || return $?
+
+  if test -n "$2" ; then
+    hash_link="$2/$hash_link"
+  fi
+
+  if $logit ; then
+    echo "creating link ${attn}$hash_link${norm} to ${attn}$1${norm} ..."
+  fi
+  cre_link "$1" "$hash_link"
+}
+
+
+# ===
 FUNCTIONS_INCLUDED="yes"

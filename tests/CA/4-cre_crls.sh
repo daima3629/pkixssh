@@ -53,13 +53,7 @@ cre_crlfile() {
     2>> "$CA_LOG" \
   ; show_status $? || exit $?
 
-  HASH=`$OPENSSL crl -out /dev/null -in "$FILE" -hash 2>> "$CA_LOG"` || exit $?
-
-  NAME=`getNextFreeName "${HASH}.r"` || exit $?
-
-  ln -s "${FILE}" "${NAME}"
-  #link might never fail :-(
-  test -h "${NAME}"
+  cre_crl_hash_link "$FILE"
 )
 }
 

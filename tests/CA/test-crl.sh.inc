@@ -127,17 +127,11 @@ test_crlbytype () {
 
   printf "  creating ${attn}${crltype}${norm} crlfile in hash dir"
   #printf "${warn}"
-    rm -f "${CRL_TEST_DIR}"/* 2> /dev/null
-    FILE="$SSH_CAROOT/crl/$CAKEY_PREFIX-$crltype.crl.pem"
-    HASH=`${OPENSSL} crl -out /dev/null -in "${FILE}" -hash`; retval=$?
-    if test ${retval} -eq 0; then
-      hashfile="${CRL_TEST_DIR}/${HASH}.r0"
-      ln -s "${FILE}" "${hashfile}"
-      #link might never fail :-(
-      test -h "${hashfile}"; retval=$?
-    fi
+  rm -f "$CRL_TEST_DIR"/* 2> /dev/null
+  cre_crl_hash_link "$SSH_CAROOT/crl/$CAKEY_PREFIX-$crltype.crl.pem" "$CRL_TEST_DIR"
+  retval=$?
   #printf "${norm}"
-  show_status ${retval} || return $?
+  show_status $retval || return $?
 
   (
     for type in ${SSH_SIGN_TYPES}; do
@@ -158,12 +152,12 @@ test_crlbytype () {
     exit 0
   ); retval=$?
 
-  if test ${retval} -eq 0; then
-    rm -f "${hashfile}"; retval=$?
+  if test $retval -eq 0; then
+    rm "$hash_link"; retval=$?
   else
-    rm -f "${hashfile}"
+    rm -f "$hash_link"
   fi
-  return ${retval}
+  return $retval
 }
 
 

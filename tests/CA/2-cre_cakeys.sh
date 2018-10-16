@@ -391,31 +391,6 @@ install () {
 }
 
 
-# ===
-cre_hash_link () {
-(
-#option -noout problem:
-#exit code from .../openssl ... -noout ... is sometime nonzero !!!
-#might only by .../openssl x509 ... -noout ... exit code is zero
-#sample:
-#a) exit code is one - INCORRECT
-#  .../openssl crl -in a_crl_file  -hash -noout
-#b) exit code is zero - correct
-#  .../openssl crl -in a_crl_file  -hash -out /dev/null
-#
-#work around might is to use -out /dev/null :-/
-  HASH=`$OPENSSL x509 -in "$1" -noout -hash` || exit $?
-  NAME=`getNextFreeName ${HASH}.`            || exit $?
-
-  echo "creating link ${attn}${NAME}${norm} to ${attn}$1${norm}"
-  rm -f "${NAME}" &&
-  ln -s "$1" "${NAME}" || exit $?
-  #link might never fail ;-(
-  test -h "${NAME}"
-)
-}
-
-
 cre_hashs () {
 #(!) openssl script "c_rehash" is missing in some installations :-(
 #  c_rehash "$SSH_CAROOT/crt"
@@ -430,11 +405,11 @@ cre_hashs () {
   done
 
   for level in 0; do
-    cre_hash_link "${CAKEY_PREFIX}-root${level}.crt.pem" || exit $?
+    cre_hash_link -log "$CAKEY_PREFIX-root$level.crt.pem" || exit $?
   done
 
   for type in ${SSH_SIGN_TYPES}; do
-    cre_hash_link "${CAKEY_PREFIX}-${type}.crt.pem" || exit $?
+    cre_hash_link -log "$CAKEY_PREFIX-$type.crt.pem" || exit $?
   done
 
   exit 0

@@ -28,17 +28,6 @@
 
 
 # ===
-cre_hash_link () {
-  HASH=`$OPENSSL x509 -in "$1" -noout -hash` || return $?
-
-  rm -f "$HASH.0" &&
-  ln -s "$1" "$HASH.0" &&
-  #link might never fail ;-(
-  test -h "$HASH.0"
-}
-
-
-# ===
 #env. vars:
 #  SSH_CLIENTKEY
 #  catype
