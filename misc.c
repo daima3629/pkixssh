@@ -2016,6 +2016,25 @@ bad:
 	return 0;
 }
 
+/*
+ * Verify that a environment variable name (not including initial '$') is
+ * valid; consisting of one or more alphanumeric or underscore characters only.
+ * Returns 1 on valid, 0 otherwise.
+ */
+int
+valid_env_name(const char *name)
+{
+	const char *cp;
+
+	if (name[0] == '\0')
+		return 0;
+	for (cp = name; *cp != '\0'; cp++) {
+		if (!isalnum((u_char)*cp) && *cp != '_')
+			return 0;
+	}
+	return 1;
+}
+
 const char *
 atoi_err(const char *nptr, int *val)
 {
