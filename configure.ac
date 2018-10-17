@@ -2089,29 +2089,32 @@ AC_CHECK_TYPES([fd_mask], [], [], [[
 
 AC_CHECK_FUNCS([setresuid], [
 	dnl Some platorms have setresuid that isn't implemented, test for this
-	AC_MSG_CHECKING([if setresuid seems to work])
-	AC_RUN_IFELSE(
-		[AC_LANG_PROGRAM([[
+AC_CACHE_CHECK(
+	[if setresuid seems to work],
+	[ssh_cv_func_setresuid_work],
+	[AC_RUN_IFELSE([AC_LANG_PROGRAM([[
 #ifdef HAVE_UNISTD_H
 # define _GNU_SOURCE
 # include <unistd.h>
 #endif
-#include <stdlib.h>
 #include <errno.h>
-		]], [[
-	errno=0;
-	setresuid(0,0,0);
-	if (errno==ENOSYS)
-		exit(1);
-	else
-		exit(0);
-		]])],
-		[AC_MSG_RESULT([yes])],
-		[AC_DEFINE([BROKEN_SETRESUID], [1],
-			[Define if your setresuid() is broken])
-		 AC_MSG_RESULT([not implemented])],
-		[AC_MSG_WARN([cross compiling: not checking setresuid])]
-	)
+	]], [[
+errno=0;
+setresuid(0,0,0);
+if (errno==ENOSYS) return 1;
+	]])],
+	[ssh_cv_func_setresuid_work=yes],
+	[ssh_cv_func_setresuid_work=no],
+	[ssh_cv_func_setresuid_workcross]
+)])
+AS_IF([test $ssh_cv_func_setresuid_work = cross], [
+	AC_MSG_WARN([cross compiling: assuming working setresuid])
+	ssh_cv_func_setresuid_work=yes
+])
+AS_IF([test $ssh_cv_func_setresuid_work != yes], [
+	AC_DEFINE([BROKEN_SETRESUID], [1],
+		[Define if your setresuid() is broken])
+])
 ])
 
 AC_CHECK_FUNCS([setresgid], [
