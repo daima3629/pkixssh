@@ -56,9 +56,10 @@
 #include "evp-compat.h"
 
 #if (OPENSSL_VERSION_NUMBER >= 0x10100000L && !defined(LIBRESSL_VERSION_NUMBER))
-/* TODO: OpenSSL 1.1 resets EVP_CIPHER_CTX on each call of
- * EVP_CipherInit - it is init function ;)!
- * Lets use single init before to be fixed in OpenSSH.
+/* NOTE: OpenSSL 1.1.* resets EVP_CIPHER_CTX on each call of
+ * EVP_CipherInit()! It is init function. ;)
+ * Remark: Pre 1.1.0 behaviour is restored in 1.1.0g (issue #4613).
+ * We will use single init for OpenSSL 1.1+. This includes 1.1.1+.
  */
 #  define SINGLE_EVP_CIPHERINIT_CALL
 #endif
