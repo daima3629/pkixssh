@@ -39,8 +39,8 @@ process_engconfig_line(char *line, const char *filename, int linenum);
 
 extern void ssh_load_engines(void);
 
-extern int eng_key_load_private_type(int type, const char *filename, const char *passphrase, struct sshkey **keyp, char **commentp);
-extern int eng_key_try_load_public(struct sshkey *k, const char *filename, char **commentp);
+extern int engine_load_private_type(int type, const char *filename, const char *passphrase, struct sshkey **keyp, char **commentp);
+extern int engine_try_load_public(struct sshkey *k, const char *filename, char **commentp);
 #endif /*ndef USE_OPENSSL_ENGINE*/
 
 #ifdef USE_OPENSSL_STORE2

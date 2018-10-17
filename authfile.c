@@ -191,7 +191,7 @@ sshkey_load_private_type(int type, const char *filename, const char *passphrase,
 #endif
 #ifdef USE_OPENSSL_ENGINE
 	if (strncmp(filename, "engine:", 7) == 0) {
-		r = eng_key_load_private_type(type, filename + 7,
+		r = engine_load_private_type(type, filename + 7,
 			passphrase, keyp, commentp);
 		if (perm_ok != NULL)
 			*perm_ok = (r == SSH_ERR_SUCCESS) ? 1 : 0;
@@ -379,7 +379,7 @@ sshkey_load_public(const char *filename, struct sshkey **keyp, char **commentp)
 #endif
 #ifdef USE_OPENSSL_ENGINE
 	if (strncmp(filename, "engine:", 7) == 0) {
-		return eng_key_try_load_public(pub, filename + 7, commentp);
+		return engine_try_load_public(pub, filename + 7, commentp);
 	}
 #endif
 	if ((r = sshkey_try_load_public(pub, filename, commentp)) == 0) {

@@ -360,7 +360,7 @@ load_identity(char *filename)
 #endif
 #ifdef USE_OPENSSL_ENGINE
 	if (strncmp(filename, "engine:", 7) == 0) {
-		r = eng_key_load_private_type(KEY_UNSPEC,
+		r = engine_load_private_type(KEY_UNSPEC,
 			filename + 7, NULL, &prv, NULL);
 		if (r != SSH_ERR_SUCCESS)
 			fatal("Load key \"%s\": %s", filename, ssh_err(r));
