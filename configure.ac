@@ -2116,29 +2116,32 @@ AC_CHECK_FUNCS([setresuid], [
 
 AC_CHECK_FUNCS([setresgid], [
 	dnl Some platorms have setresgid that isn't implemented, test for this
-	AC_MSG_CHECKING([if setresgid seems to work])
-	AC_RUN_IFELSE(
-		[AC_LANG_PROGRAM([[
+AC_CACHE_CHECK(
+	[if setresgid seems to work],
+	[ssh_cv_func_setresgid_work],
+	[AC_RUN_IFELSE([AC_LANG_PROGRAM([[
 #ifdef HAVE_UNISTD_H
 # define _GNU_SOURCE
 # include <unistd.h>
 #endif
-#include <stdlib.h>
 #include <errno.h>
-		]], [[
-	errno=0;
-	setresgid(0,0,0);
-	if (errno==ENOSYS)
-		exit(1);
-	else
-		exit(0);
-		]])],
-		[AC_MSG_RESULT([yes])],
-		[AC_DEFINE([BROKEN_SETRESGID], [1],
-			[Define if your setresgid() is broken])
-		 AC_MSG_RESULT([not implemented])],
-		[AC_MSG_WARN([cross compiling: not checking setresuid])]
-	)
+	]], [[
+errno=0;
+setresgid(0,0,0);
+if (errno==ENOSYS) return 1;
+	]])],
+	[ssh_cv_func_setresgid_work=yes],
+	[ssh_cv_func_setresgid_work=no],
+	[ssh_cv_func_setresgid_work=cross]
+)])
+AS_IF([test $ssh_cv_func_setresgid_work = cross], [
+	AC_MSG_WARN([cross compiling: assuming working setresgid])
+	ssh_cv_func_setresgid_work=yes
+])
+AS_IF([test $ssh_cv_func_setresgid_work != yes], [
+	AC_DEFINE([BROKEN_SETRESGID], [1],
+		[Define if your setresgid() is broken])
+])
 ])
 
 AC_CHECK_FUNCS([realpath], [
