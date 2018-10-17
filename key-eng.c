@@ -509,8 +509,13 @@ engine_try_load_public(struct sshkey *k, const char *filename, char **commentp) 
 	debug3("%s filename=%s", __func__, filename);
 
 	keyid = ignore_suffixes(filename);
-	if (keyid == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
+/* NOTE: For external keys simulate "missing" file.
+ * This suppress extra messages due to faulty load control in ssh.c
+ */
+	if (keyid == NULL) {
+		errno = ENOENT;
+		return SSH_ERR_SYSTEM_ERROR;
+	}
 
 	debug3("%s keyid=%s", __func__, keyid);
 
@@ -915,8 +920,13 @@ store_try_load_public(struct sshkey *k, const char *filename, char **commentp) {
 	debug3("%s filename=%s", __func__, filename);
 
 	url = ignore_suffixes(filename);
-	if (url == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
+/* NOTE: For external keys simulate "missing" file.
+ * This suppress extra messages due to faulty load control in ssh.c
+ */
+	if (url == NULL) {
+		errno = ENOENT;
+		return SSH_ERR_SYSTEM_ERROR;
+	}
 
 	debug3("%s url=%s", __func__, url);
 
