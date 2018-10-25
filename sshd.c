@@ -1,4 +1,4 @@
-/* $OpenBSD: sshd.c,v 1.516 2018/09/21 12:23:17 djm Exp $ */
+/* $OpenBSD: sshd.c,v 1.517 2018/10/23 05:56:35 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -81,8 +81,8 @@
 #include <openssl/bn.h>
 #include <openssl/rand.h>
 #include "evp-compat.h"
-#include "openbsd-compat/openssl-compat.h"
 #endif
+#include "openbsd-compat/openssl-compat.h"
 
 #ifdef HAVE_FIPSCHECK_H
 #  include <fipscheck.h>
@@ -1050,14 +1050,7 @@ drop_connection(int startups)
 static void
 usage(void)
 {
-	fprintf(stderr, "%s, %s\n",
-	    SSH_RELEASE,
-#ifdef WITH_OPENSSL
-	    SSLeay_version(SSLEAY_VERSION)
-#else
-	    "without OpenSSL"
-#endif
-	);
+	fprintf(stderr, "%s, %s\n", SSH_RELEASE, ssh_OpenSSL_version_text());
 	fprintf(stderr,
 "usage: sshd [-46DdeiqTt] [-C connection_spec] [-c host_cert_file]\n"
 "            [-E log_file] [-f config_file] [-g login_grace_time]\n"
@@ -1872,13 +1865,7 @@ main(int ac, char **av)
 		exit(1);
 	}
 
-	debug("sshd version %s, %s", SSH_RELEASE,
-#ifdef WITH_OPENSSL
-	    SSLeay_version(SSLEAY_VERSION)
-#else
-	    "without OpenSSL"
-#endif
-	);
+	debug("sshd version %s, %s", SSH_RELEASE, ssh_OpenSSL_version_text());
 
 	/* Store privilege separation user for later use if required. */
 	privsep_chroot = use_privsep && (getuid() == 0 || geteuid() == 0);

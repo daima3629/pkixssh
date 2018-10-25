@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh.c,v 1.494 2018/10/03 06:38:35 djm Exp $ */
+/* $OpenBSD: ssh.c,v 1.495 2018/10/23 05:56:35 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -879,12 +879,7 @@ main(int ac, char **av)
 			break;
 		case 'V':
 			fprintf(stderr, "%s, %s\n",
-			    SSH_RELEASE,
-#ifdef WITH_OPENSSL
-			    SSLeay_version(SSLEAY_VERSION)
-#else
-			    "without OpenSSL"
-#endif
+			    SSH_RELEASE, ssh_OpenSSL_version_text()
 			);
 			if (opt == 'V')
 				exit(0);
@@ -1158,13 +1153,7 @@ main(int ac, char **av)
 	    !use_syslog);
 
 	if (debug_flag)
-		logit("%s, %s", SSH_RELEASE,
-#ifdef WITH_OPENSSL
-		    SSLeay_version(SSLEAY_VERSION)
-#else
-		    "without OpenSSL"
-#endif
-		);
+		logit("%s, %s", SSH_RELEASE, ssh_OpenSSL_version_text());
 
 #ifdef USE_OPENSSL_ENGINE
 	/* process per-user engine configuration file */

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2005 Darren Tucker <dtucker@zip.com.au>
- * Copyright (c) 2011-2016 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2018 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -120,5 +120,24 @@ extern int  ssh_FIPS_mode(int onoff);
 extern void ssh_OpenSSL_startup(void);
 extern void ssh_OpenSSL_shuthdown(void);
 
+#ifndef HAVE_OPENSSL_INIT_CRYPTO	/* OpenSSL < 1.1 */
+static inline unsigned long
+OpenSSL_version_num() { return SSLeay(); }
+#endif
+
 #endif /* WITH_OPENSSL */
+
+static inline const char*
+ssh_OpenSSL_version_text() {
+#ifndef WITH_OPENSSL
+    return "without OpenSSL";
+#else
+# ifndef HAVE_OPENSSL_INIT_CRYPTO	/* OpenSSL < 1.1 */
+    return SSLeay_version(SSLEAY_VERSION);
+# else
+    return OpenSSL_version(OPENSSL_VERSION);
+# endif
+#endif
+}
+
 #endif /* _OPENSSL_COMPAT_H */

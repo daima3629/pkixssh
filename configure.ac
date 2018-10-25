@@ -2622,6 +2622,9 @@ if test "x$openssl" = "xyes" ; then
 		]
 	)
 
+	# check for OpenSSL 1.1 API
+	AC_CHECK_FUNCS([OPENSSL_init_crypto])
+
 	# Determine OpenSSL header version
 	AC_MSG_CHECKING([OpenSSL header version])
 	AC_RUN_IFELSE(
@@ -2671,16 +2674,21 @@ if test "x$openssl" = "xyes" ; then
 		]], [[
 		FILE *fd;
 		int rc;
+		unsigned long ver_num;
+		const char *ver_s;
+	#ifdef HAVE_OPENSSL_INIT_CRYPTO
+		ver_num = OpenSSL_version_num();
+		ver_s = OpenSSL_version(OPENSSL_VERSION);
+	#else
+		ver_num = SSLeay();
+		ver_s = SSLeay_version(SSLEAY_VERSION);
+	#endif
 
 		fd = fopen(DATA,"w");
-		if(fd == NULL)
-			exit(1);
-
-		if ((rc = fprintf(fd, "%08lx (%s)\n", (unsigned long)SSLeay(),
-		    SSLeay_version(SSLEAY_VERSION))) < 0)
-			exit(1);
-
-		exit(0);
+		if(fd == NULL) return 1;
+		rc = fprintf(fd, "%08lx (%s)\n", ver_num, ver_s);
+		fclose(fd);
+		if (rc < 0) return 1;
 		]])],
 		[
 			ssl_library_ver=`cat conftest.ssllibver`
@@ -2703,7 +2711,13 @@ if test "x$openssl" = "xyes" ; then
 	#include <openssl/opensslv.h>
 	#include <openssl/crypto.h>
 		]], [[
-		exit(SSLeay() == OPENSSL_VERSION_NUMBER ? 0 : 1);
+		unsigned long ver_num;
+	#ifdef HAVE_OPENSSL_INIT_CRYPTO
+		ver_num = OpenSSL_version_num();
+	#else
+		ver_num = SSLeay();
+	#endif
+		if (ver_num != OPENSSL_VERSION_NUMBER) return 1;
 		]])],
 		[
 			AC_MSG_RESULT([yes])
@@ -5269,7 +5283,6 @@ AC_CHECK_FUNCS([ \
   EVP_CIPHER_meth_new \
   EVP_MD_CTX_new \
   EVP_PKEY_get0_EC_KEY \
-  OPENSSL_init_crypto \
   RSA_meth_new \
   RSA_PKCS1_OpenSSL \
   X509_CRL_get0_lastUpdate \
