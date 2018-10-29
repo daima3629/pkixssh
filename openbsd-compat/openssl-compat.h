@@ -22,6 +22,7 @@
 #ifdef WITH_OPENSSL
 
 #include <openssl/opensslv.h>
+#include <openssl/crypto.h>
 #include <openssl/evp.h>
 #ifndef OPENSSL_NO_RSA
 # include <openssl/rsa.h>
@@ -128,7 +129,7 @@ OpenSSL_version_num() { return SSLeay(); }
 #endif /* WITH_OPENSSL */
 
 static inline const char*
-ssh_OpenSSL_version_text() {
+ssh_OpenSSL_version_text(void) {
 #ifndef WITH_OPENSSL
     return "without OpenSSL";
 #else
