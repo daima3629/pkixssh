@@ -100,11 +100,13 @@ EVP_CIPHER_CTX_iv_noconst(EVP_CIPHER_CTX *ctx)
 }
 
 
+#ifndef HAVE_EVP_CIPHER_CTX_ENCRYPTING
 static inline int
 EVP_CIPHER_CTX_encrypting(const EVP_CIPHER_CTX *ctx)
 {
 	return(ctx->encrypt);
 }
+#endif /*ndef HAVE_EVP_CIPHER_CTX_ENCRYPTING*/
 
 
 static inline void*
