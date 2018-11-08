@@ -2766,6 +2766,7 @@ if test "x$openssl" = "xyes" ; then
 		HMAC_CTX_init \
 		RSA_generate_key_ex \
 		RSA_get_default_method \
+		EVP_CIPHER_CTX_ctrl \
 	])
 
 	if test "x$with_ssl_engine" != "xno" ; then
@@ -2851,10 +2852,6 @@ if test "x$openssl" = "xyes" ; then
 			   aes256-gcm@openssh.com"
 		]
 	)
-
-	AC_SEARCH_LIBS([EVP_CIPHER_CTX_ctrl], [crypto],
-		[AC_DEFINE([HAVE_EVP_CIPHER_CTX_CTRL], [1],
-		    [Define if libcrypto has EVP_CIPHER_CTX_ctrl])])
 
 	# Some systems want crypt() from libcrypt, *not* the version in OpenSSL,
 	# because the system crypt() is more featureful.
