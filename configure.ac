@@ -2760,13 +2760,7 @@ if test "x$openssl" = "xyes" ; then
 		BN_is_negative \
 		BN_is_prime_ex \
 		DSA_generate_parameters_ex \
-		EVP_DigestInit_ex \
-		EVP_DigestFinal_ex \
-		EVP_MD_CTX_copy_ex \
-		HMAC_CTX_init \
 		RSA_generate_key_ex \
-		RSA_get_default_method \
-		EVP_CIPHER_CTX_ctrl \
 	])
 
 	if test "x$with_ssl_engine" != "xno" ; then

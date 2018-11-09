@@ -80,15 +80,6 @@ void ssh_aes_ctr_iv(EVP_CIPHER_CTX *, int, u_char *, size_t);
 # define EVP_CTRL_GCM_GET_TAG -1
 #endif
 
-/* Replace missing EVP_CIPHER_CTX_ctrl() with something that returns failure */
-#ifndef HAVE_EVP_CIPHER_CTX_CTRL
-# ifdef OPENSSL_HAVE_EVPGCM
-#  error AES-GCM enabled without EVP_CIPHER_CTX_ctrl /* shouldn't happen */
-# else
-# define EVP_CIPHER_CTX_ctrl(a,b,c,d) (0)
-# endif
-#endif
-
 #if defined(HAVE_EVP_RIPEMD160)
 # if defined(OPENSSL_NO_RIPEMD) || defined(OPENSSL_NO_RMD160)
 #  undef HAVE_EVP_RIPEMD160
