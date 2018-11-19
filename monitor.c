@@ -1,4 +1,4 @@
-/* $OpenBSD: monitor.c,v 1.186 2018/07/20 03:46:34 djm Exp $ */
+/* $OpenBSD: monitor.c,v 1.188 2018/11/16 02:43:56 djm Exp $ */
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * Copyright 2002 Markus Friedl <markus@openbsd.org>
@@ -1179,11 +1179,8 @@ mm_answer_keyallowed(int sock, struct sshbuf *m)
 				break;
 			if (auth2_key_already_used(authctxt, key))
 				break;
-			/* ignore as algorithm is already allowed
-			   in user authentication request.
-			if (match_pattern_list(sshkey_ssh_name(key),
-			    options.pubkey_key_types, 0) != 1)
-				break;*/
+			/* NOTE: algorithm is already allowed
+			   in user authentication request. */
 			/* TODO: cast to int, but auth_attempt is unused */
 			allowed = user_xkey_allowed(ssh, authctxt->pw, &ctx,
 			    pubkey_auth_attempt, &opts);
@@ -1194,11 +1191,8 @@ mm_answer_keyallowed(int sock, struct sshbuf *m)
 				break;
 			if (auth2_key_already_used(authctxt, key))
 				break;
-			/* ignore as algorithm is already allowed
-			   in user authentication request.
-			if (match_pattern_list(sshkey_ssh_name(key),
-			    options.hostbased_key_types, 0) != 1)
-				break;*/
+			/* NOTE: algorithm is already allowed
+			   in user authentication request. */
 			allowed = hostbased_xkey_allowed(authctxt->pw, &ctx,
 			    cuser, chost);
 			auth2_record_info(authctxt,
