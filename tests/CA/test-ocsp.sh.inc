@@ -98,7 +98,7 @@ OCSPtestBREAK() {
   testBREAK
 }
 
-trap OCSPtestBREAK INT QUIT ABRT KILL TERM || exit 1
+trap OCSPtestBREAK HUP INT QUIT ABRT TERM || exit 1
 
 
 # ===

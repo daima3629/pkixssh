@@ -43,7 +43,7 @@ HOSTKEYtestBREAK() {
   testBREAK
 }
 
-trap HOSTKEYtestBREAK INT QUIT ABRT KILL TERM || exit 1
+trap HOSTKEYtestBREAK HUP INT QUIT ABRT TERM || exit 1
 
 
 # ===

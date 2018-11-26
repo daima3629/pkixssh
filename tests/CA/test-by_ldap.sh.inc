@@ -289,7 +289,7 @@ LDAPtestBREAK() {
   testBREAK
 }
 
-trap LDAPtestBREAK INT QUIT ABRT KILL TERM || exit 1
+trap LDAPtestBREAK HUP INT QUIT ABRT TERM || exit 1
 
 
 # ===

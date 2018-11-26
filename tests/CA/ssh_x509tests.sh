@@ -232,7 +232,7 @@ testBREAK() {
   killSSHdaemon
 }
 
-trap testBREAK INT QUIT ABRT KILL TERM || exit 1
+trap testBREAK HUP INT QUIT ABRT TERM || exit 1
 trap testEND EXIT || exit 1
 
 

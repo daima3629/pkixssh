@@ -206,7 +206,7 @@ SELFtestBREAK() {
   testBREAK
 }
 
-trap SELFtestBREAK INT QUIT ABRT KILL TERM || exit 1
+trap SELFtestBREAK HUP INT QUIT ABRT TERM || exit 1
 
 
 # ===
