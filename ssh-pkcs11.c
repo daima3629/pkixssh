@@ -1151,7 +1151,16 @@ pkcs11_add_provider(char *provider_id, char *pin, struct sshkey ***keyp)
 		goto fail;
 	}
 	/* open shared pkcs11-libarary */
-	if ((handle = dlopen(provider_id, RTLD_NOW)) == NULL) {
+	if ((handle = dlopen(provider_id,
+		#ifdef RTLD_LOCAL
+			RTLD_LOCAL |
+		#endif
+		#ifdef RTLD_LAZY
+			RTLD_LAZY
+		#else
+			RTLD_NOW
+		#endif
+		)) == NULL) {
 		error("dlopen %s failed: %s", provider_id, dlerror());
 		goto fail;
 	}

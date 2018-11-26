@@ -2748,8 +2748,11 @@ if test "x$openssl" = "xyes" ; then
 		AC_SEARCH_LIBS([dlopen], [dl], [], [PKCS11_MSG=no])
 	fi
 	if test $PKCS11_MSG = yes; then
-		AC_CHECK_DECL([RTLD_NOW], [], [PKCS11_MSG=no],
-			[#include <dlfcn.h>])
+		# LAZY mode is preferred
+		AC_CHECK_DECL([RTLD_LAZY], [], [
+			AC_CHECK_DECL([RTLD_NOW], [], [PKCS11_MSG=no],
+				[#include <dlfcn.h>])
+		], [#include <dlfcn.h>])
 	fi
 	if test $PKCS11_MSG = yes; then
 		AC_DEFINE([ENABLE_PKCS11], [1], [Enable for PKCS#11 support])
