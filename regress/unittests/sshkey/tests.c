@@ -7,8 +7,6 @@
 
 #include "includes.h"
 
-#include <openssl/evp.h>
-
 #include "../test_helper/test_helper.h"
 
 void sshkey_tests(void);

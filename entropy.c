@@ -24,6 +24,8 @@
 
 #include "includes.h"
 
+#define RANDOM_SEED_SIZE 48
+
 #ifdef WITH_OPENSSL
 
 #include <sys/types.h>
@@ -63,8 +65,6 @@
  * PRNGd.
  */
 #ifndef OPENSSL_PRNG_ONLY
-
-#define RANDOM_SEED_SIZE 48
 
 /*
  * Collect 'len' bytes of entropy into 'buf' from PRNGD/EGD daemon
@@ -216,9 +216,7 @@ rexec_recv_rng_seed(struct sshbuf *m)
 void
 seed_rng(void)
 {
-#ifndef OPENSSL_PRNG_ONLY
 	unsigned char buf[RANDOM_SEED_SIZE];
-#endif
 	unsigned long ver_num = OpenSSL_version_num();
 
 	if (!ssh_compatible_openssl(OPENSSL_VERSION_NUMBER, ver_num))
@@ -226,27 +224,34 @@ seed_rng(void)
 		    "have %lx", (u_long)OPENSSL_VERSION_NUMBER, ver_num);
 
 #ifndef OPENSSL_PRNG_ONLY
-	if (RAND_status() == 1) {
+	if (RAND_status() == 1)
 		debug3("RNG is ready, skipping seeding");
-		return;
+	else {
+		if (seed_from_prngd(buf, sizeof(buf)) == -1)
+			fatal("Could not obtain seed from PRNGd");
+		RAND_add(buf, sizeof(buf), sizeof(buf));
 	}
-
-	if (seed_from_prngd(buf, sizeof(buf)) == -1)
-		fatal("Could not obtain seed from PRNGd");
-	RAND_add(buf, sizeof(buf), sizeof(buf));
-	memset(buf, '\0', sizeof(buf));
-
 #endif /* OPENSSL_PRNG_ONLY */
+
 	if (RAND_status() != 1)
 		fatal("PRNG is not seeded");
+
+	/* Ensure arc4random() is primed */
+	arc4random_buf(buf, sizeof(buf));
+	explicit_bzero(buf, sizeof(buf));
 }
 
 #else /* WITH_OPENSSL */
 
-/* Handled in arc4random() */
+/* Actual initialisation is handled in arc4random() */
 void
 seed_rng(void)
 {
+	unsigned char buf[RANDOM_SEED_SIZE];
+
+	/* Ensure arc4random() is primed */
+	arc4random_buf(buf, sizeof(buf));
+	explicit_bzero(buf, sizeof(buf));
 }
 
 #endif /* WITH_OPENSSL */

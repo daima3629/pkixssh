@@ -2564,9 +2564,10 @@ main(int argc, char **argv)
 #endif /*def OPENSSL_FIPS*/
 	ssh_engines_startup();
 	fill_default_xkalg();
-	log_init(__progname, SYSLOG_LEVEL_INFO, SYSLOG_FACILITY_USER, 1);
 
 	seed_rng();
+
+	log_init(__progname, SYSLOG_LEVEL_INFO, SYSLOG_FACILITY_USER, 1);
 
 	msetlocale();
 

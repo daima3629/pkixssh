@@ -635,6 +635,15 @@ main(int ac, char **av)
 	}
 #endif /*def OPENSSL_FIPS*/
 	ssh_engines_startup();
+#ifdef WITH_OPENSSL
+	ERR_load_crypto_strings();
+#ifdef LDAP_ENABLED
+	ERR_load_X509byLDAP_strings();
+#endif
+#ifdef ENABLE_PKCS11
+	ERR_load_PKCS11_strings();
+#endif
+#endif
 	pssh_x509store_verify_cert = ssh_x509store_verify_cert;
 	pssh_x509store_build_certchain = ssh_x509store_build_certchain;
 
@@ -648,6 +657,8 @@ main(int ac, char **av)
 	compat_init_setproctitle(ac, av);
 	av = saved_av;
 #endif
+
+	seed_rng();
 
 	/*
 	 * Discard other fds that are hanging around. These can cause problem
@@ -1101,16 +1112,6 @@ main(int ac, char **av)
 
 	host_arg = xstrdup(host);
 
-#ifdef WITH_OPENSSL
-	ERR_load_crypto_strings();
-#ifdef LDAP_ENABLED
-	ERR_load_X509byLDAP_strings();
-#endif
-#ifdef ENABLE_PKCS11
-	ERR_load_PKCS11_strings();
-#endif
-#endif
-
 	/* Initialize the command to execute on remote host. */
 	if ((command = sshbuf_new()) == NULL)
 		fatal("sshbuf_new failed");
@@ -1349,8 +1350,6 @@ main(int ac, char **av)
 			    "stdin is not a terminal.");
 		tty_flag = 0;
 	}
-
-	seed_rng();
 
 	if (options.user == NULL)
 		options.user = xstrdup(pw->pw_name);
