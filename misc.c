@@ -1817,6 +1817,35 @@ exited_cleanly(pid_t pid, const char *tag, const char *cmd, int quiet)
 }
 
 /*
+ * Conversion of signals from RFC 4254 section 6.10C, with SIGINFO as
+ * local extension.
+ */
+int
+ssh_signame2code(char *name)
+{
+#define SSH_SIG(x) if (strcmp(name, #x) == 0) return SIG ## x
+	SSH_SIG(ABRT);
+	SSH_SIG(ALRM);
+	SSH_SIG(FPE);
+	SSH_SIG(HUP);
+	SSH_SIG(ILL);
+	SSH_SIG(INT);
+	SSH_SIG(KILL);
+	SSH_SIG(PIPE);
+	SSH_SIG(QUIT);
+	SSH_SIG(SEGV);
+	SSH_SIG(TERM);
+	SSH_SIG(USR1);
+	SSH_SIG(USR2);
+#undef	SSH_SIG
+#ifdef SIGINFO
+	if (strcmp(name, "INFO@openssh.com") == 0)
+		return SIGINFO;
+#endif
+	return -1;
+}
+
+/*
  * Check a given path for security. This is defined as all components
  * of the path to the file must be owned by either the owner of
  * of the file or root and no directories must be group or world writable.

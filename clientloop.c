@@ -1756,6 +1756,33 @@ client_input_channel_req(int type, u_int32_t seq, struct ssh *ssh)
 			    __func__, id);
 		}
 		packet_check_eom();
+	} else if (strcmp(rtype, "exit-signal") == 0) {
+		char *signame;
+
+		signame = packet_get_cstring(NULL);
+		(void)packet_get_char();	/*core dumped*/
+		(void)packet_get_cstring(NULL);	/*error message*/
+		(void)packet_get_cstring(NULL);	/*language*/
+		packet_check_eom();
+
+		exitval = ssh_signame2code(signame);
+		debug3("%s: remote killed by signal '%s'", __func__, signame);
+		free(signame);
+
+		if (exitval >= 0) exitval += 128; /*shell style*/
+
+		if (c->ctl_chan != -1) {
+			mux_exit_message(ssh, c, exitval);
+			success = 1;
+		} else if (id == session_ident) {
+			/* Record exit value of local session */
+			success = 1;
+			exit_status = exitval;
+		} else {
+			/* Probably for a mux channel that has already closed */
+			debug("%s: no sink for exit-signal on channel %d",
+			    __func__, id);
+		}
 	}
 	if (reply && c != NULL && !(c->flags & CHAN_CLOSE_SENT)) {
 		if (!c->have_remote_id)

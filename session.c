@@ -2147,14 +2147,14 @@ session_env_req(struct ssh *ssh, Session *s)
 }
 
 /*
- * Conversion of signals from ssh channel request names.
+ * Allowed signals for  ssh channel "signal" request.
  * Subset of signals from RFC 4254 section 6.10C, with SIGINFO as
  * local extension.
  */
 static int
-name2sig(char *name)
+allowed_signal(int code)
 {
-#define SSH_SIG(x) if (strcmp(name, #x) == 0) return SIG ## x
+#define SSH_SIG(x) if (code == SIG ## x) return 1;
 	SSH_SIG(HUP);
 	SSH_SIG(INT);
 	SSH_SIG(KILL);
@@ -2162,12 +2162,11 @@ name2sig(char *name)
 	SSH_SIG(TERM);
 	SSH_SIG(USR1);
 	SSH_SIG(USR2);
-#undef	SSH_SIG
 #ifdef SIGINFO
-	if (strcmp(name, "INFO@openssh.com") == 0)
-		return SIGINFO;
+	SSH_SIG(SIGINFO);
 #endif
-	return -1;
+#undef	SSH_SIG
+	return 0;
 }
 
 static int
@@ -2181,7 +2180,12 @@ session_signal_req(struct ssh *ssh, Session *s)
 		error("%s: parse packet: %s", __func__, ssh_err(r));
 		goto out;
 	}
-	if ((sig = name2sig(signame)) == -1) {
+	sig = ssh_signame2code(signame);
+	if (sig == -1) {
+		error("%s: unknown signal \"%s\"", __func__, signame);
+		goto out;
+	}
+	if (!allowed_signal(sig)) {
 		error("%s: unsupported signal \"%s\"", __func__, signame);
 		goto out;
 	}

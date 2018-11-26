@@ -156,6 +156,7 @@ void	 child_set_env(char ***envp, u_int *envsizep, const char *name,
 int	 argv_split(const char *, int *, char ***);
 char	*argv_assemble(int, char **argv);
 int	 exited_cleanly(pid_t, const char *, const char *, int);
+int	 ssh_signame2code(char *name);
 
 struct stat;
 int	 safe_path(const char *, struct stat *, const char *, uid_t,
