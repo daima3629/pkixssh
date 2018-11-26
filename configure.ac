@@ -2758,13 +2758,6 @@ if test "x$openssl" = "xyes" ; then
 		AC_DEFINE([ENABLE_PKCS11], [1], [Enable for PKCS#11 support])
 	fi
 
-	AC_CHECK_FUNCS([ \
-		BN_is_negative \
-		BN_is_prime_ex \
-		DSA_generate_parameters_ex \
-		RSA_generate_key_ex \
-	])
-
 	if test "x$with_ssl_engine" != "xno" ; then
 		AC_CHECK_HEADERS([openssl/engine.h])
 		AC_MSG_CHECKING([for OpenSSL ENGINE support])
@@ -5240,8 +5233,12 @@ AC_CHECK_FUNCS([ \
 ])
 
 # check for openssl 0.9.8+ functions ...
+dnl BN_is_negative is macro in 0.9.8*-1.0.2*
 AC_CHECK_FUNCS([ \
+  BN_is_prime_ex \
+  DSA_generate_parameters_ex \
   EVP_CIPHER_CTX_new \
+  RSA_generate_key_ex \
 ])
 
 # check for openssl 1.0+ functions ...
@@ -5269,6 +5266,7 @@ AC_CHECK_FUNCS([ \
 # check for openssl 1.1+ functions ...
 AC_CHECK_FUNCS([ \
   ASN1_STRING_get0_data \
+  BN_is_negative \
   DH_get0_key \
   DSA_meth_new \
   DSA_SIG_get0 \
