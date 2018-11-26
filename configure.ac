@@ -2758,7 +2758,6 @@ if test "x$openssl" = "xyes" ; then
 		AC_DEFINE([ENABLE_PKCS11], [1], [Enable for PKCS#11 support])
 	fi
 
-	AC_CHECK_HEADERS([openssl/ec.h])
 	AC_CHECK_FUNCS([ \
 		BN_is_negative \
 		BN_is_prime_ex \
@@ -5230,6 +5229,10 @@ if test "x$ssh_x509dn_email" = "xno"; then
 		[SSH_OPENSSL_DN_WITHOUT_EMAIL], [1],
 		[Define if your openssl library don't support Email in X.509 'Distinguished Name'])
 fi
+
+dnl Check for <openssl/ec.h> header is required only for 0.9.7* builds
+dnl to avoid redeclaration of EC_GROUP and EC_POINT in "sshkey.h".
+AC_CHECK_HEADERS([openssl/ec.h])
 
 # check for openssl 0.9.7+ functions ...
 AC_CHECK_FUNCS([ \
