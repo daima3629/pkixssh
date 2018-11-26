@@ -86,6 +86,8 @@ SFTP=sftp
 SFTPSERVER=/usr/libexec/openssh/sftp-server
 SCP=scp
 
+SSHD_PRIVSEP=${SSHD_PRIVSEP-yes no sandbox}
+
 # Set by make_tmpdir() on demand (below).
 SSH_REGRESS_TMP=
 
