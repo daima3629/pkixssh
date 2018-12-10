@@ -5135,7 +5135,11 @@ if test "x$ssh_ocsp" = "xyes"; then
 			AC_LANG_PROGRAM([[
 #include <openssl/ssl.h>
 ]], [[
+#ifdef HAVE_OPENSSL_INIT_CRYPTO
+  OPENSSL_init_ssl(0, NULL);
+#else
   SSL_library_init();
+#endif
 ]])],
 			[link_SSL=:]
 		)
