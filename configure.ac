@@ -2594,7 +2594,11 @@ if test "x$openssl" = "xyes" ; then
 			[AC_LANG_PROGRAM([[
 #include <openssl/evp.h>
 ]], [[
-  OpenSSL_add_all_algorithms();
+/* "OpenSSL_add_all_algorithms" is macro existing in 1.1.0
+ * only for backward compatibility, i.e. some builds could
+ * deprecate it.
+  OpenSSL_add_all_algorithms(); */
+  EVP_add_cipher(NULL);
 ]])],
 			[ac_CRYPTO_LINK=:])
 		$ac_CRYPTO_LINK && break
