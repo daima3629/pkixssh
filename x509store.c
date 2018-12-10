@@ -135,6 +135,16 @@ X509_OBJECT_free(X509_OBJECT *xobj) {
 }
 #endif /*ndef HAVE_X509_OBJECT_NEW*/
 
+#ifndef HAVE_X509_STORE_CTX_GET_BY_SUBJECT	/* OpenSSL < 1.1 */
+static inline int
+X509_STORE_CTX_get_by_subject(
+    X509_STORE_CTX *vs, /*X509_LOOKUP_TYPE*/int type,
+    X509_NAME *name, X509_OBJECT *ret
+) {
+	return X509_STORE_get_by_subject(vs, type, name, ret);
+}
+#endif /*ndef HAVE_X509_STORE_CTX_GET_BY_SUBJECT*/
+
 #ifndef HAVE_X509_OBJECT_GET0_X509	/* OpenSSL < 1.1 */
 /* backport specific OpenSSL X509_OBJECT functions */
 static inline X509*
@@ -214,7 +224,7 @@ ssh_x509store_lookup(X509_STORE *store, int type, X509_NAME *name, X509_OBJECT *
 		    , __func__);
 		goto done;
 	}
-	ret = X509_STORE_get_by_subject(csc, type, name, xobj);
+	ret = X509_STORE_CTX_get_by_subject(csc, type, name, xobj);
 	X509_STORE_CTX_cleanup(csc);
 
 done:

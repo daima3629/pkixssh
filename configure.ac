@@ -5284,6 +5284,7 @@ AC_CHECK_FUNCS([ \
   X509_get0_tbs_sigalg \
   X509_get_key_usage \
   X509_OBJECT_new \
+  X509_STORE_CTX_get_by_subject \
   X509_STORE_get0_objects \
   X509_STORE_lock \
 ])
