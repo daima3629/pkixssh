@@ -3629,7 +3629,7 @@ sshkey_ec_validate_public(const EC_GROUP *group, const EC_POINT *public)
 
 	/* log2(x) > log2(order)/2, log2(y) > log2(order)/2 */
 	if (EC_GROUP_get_order(group, order, bnctx) != 1 ||
-	    EC_POINT_get_affine_coordinates_GFp(group, public,
+	    EC_POINT_get_affine_coordinates(group, public,
 	    x, y, bnctx) != 1) {
 		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto out;
@@ -3728,9 +3728,9 @@ sshkey_dump_ec_point(const EC_GROUP *group, const EC_POINT *point)
 		fprintf(stderr, "%s: group is not a prime field\n", __func__);
 		return;
 	}
-	if (EC_POINT_get_affine_coordinates_GFp(group, point, x, y,
+	if (EC_POINT_get_affine_coordinates(group, point, x, y,
 	    bnctx) != 1) {
-		fprintf(stderr, "%s: EC_POINT_get_affine_coordinates_GFp\n",
+		fprintf(stderr, "%s: EC_POINT_get_affine_coordinates\n",
 		    __func__);
 		return;
 	}

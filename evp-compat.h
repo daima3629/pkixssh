@@ -749,6 +749,30 @@ static inline RSA*    EVP_PKEY_get0_RSA   (EVP_PKEY *pkey) { return(pkey->pkey.r
 #endif /*ndef HAVE_EVP_PKEY_GET0_EC_KEY*/
 
 
+#ifndef HAVE_EC_POINT_GET_AFFINE_COORDINATES		/* OpenSSL < 1.1.1 */
+#ifdef OPENSSL_HAS_ECC
+/* Functions are available even in 0.9.7* but EC is not activated
+ * as NIST curves are not supported yet.
+ */
+static int
+EC_POINT_get_affine_coordinates(
+    const EC_GROUP *group, const EC_POINT *p,
+    BIGNUM *x, BIGNUM *y, BN_CTX *ctx
+) {
+	return EC_POINT_get_affine_coordinates_GFp(group, p, x, y, ctx);
+}
+
+static int
+EC_POINT_set_affine_coordinates(
+    const EC_GROUP *group, EC_POINT *p,
+    const BIGNUM *x, const BIGNUM *y, BN_CTX *ctx
+) {
+	return EC_POINT_set_affine_coordinates_GFp(group, p, x, y, ctx);
+}
+#endif /*def OPENSSL_HAS_ECC*/
+#endif /*ndef HAVE_EC_POINT_GET_AFFINE_COORDINATES*/
+
+
 #ifndef HAVE_EVP_DSS1
 /* removed in OpenSSL 1.1 */
 static inline const EVP_MD* EVP_dss1(void) { return EVP_sha1(); }

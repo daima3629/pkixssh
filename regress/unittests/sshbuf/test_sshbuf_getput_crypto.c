@@ -22,6 +22,7 @@
 # include <openssl/ec.h>
 #endif
 
+#include "evp-compat.h"
 #include "../test_helper/test_helper.h"
 #include "ssherr.h"
 #include "sshbuf.h"
@@ -360,7 +361,7 @@ sshbuf_getput_crypto_tests(void)
 	ASSERT_PTR_NE(ecp, NULL);
 	MKBN(ec256_x, bn_x);
 	MKBN(ec256_y, bn_y);
-	ASSERT_INT_EQ(EC_POINT_set_affine_coordinates_GFp(
+	ASSERT_INT_EQ(EC_POINT_set_affine_coordinates(
 	    EC_KEY_get0_group(eck), ecp, bn_x, bn_y, NULL), 1);
 	ASSERT_INT_EQ(EC_KEY_set_public_key(eck, ecp), 1);
 	BN_free(bn_x);
@@ -389,7 +390,7 @@ sshbuf_getput_crypto_tests(void)
 	bn_y = BN_new();
 	ASSERT_PTR_NE(bn_x, NULL);
 	ASSERT_PTR_NE(bn_y, NULL);
-	ASSERT_INT_EQ(EC_POINT_get_affine_coordinates_GFp(
+	ASSERT_INT_EQ(EC_POINT_get_affine_coordinates(
 	    EC_KEY_get0_group(eck), EC_KEY_get0_public_key(eck),
 	    bn_x, bn_y, NULL), 1);
 	MKBN(ec256_x, bn);
