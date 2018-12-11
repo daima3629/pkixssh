@@ -2629,29 +2629,38 @@ if test "x$openssl" = "xyes" ; then
 	# check for OpenSSL 1.1 API
 	AC_CHECK_FUNCS([OPENSSL_init_crypto])
 
+	# check for new OpenSSL version scheme (3.0 API)
+	AC_CHECK_FUNCS([OPENSSL_version_major])
+
 	# Determine OpenSSL header version
 	AC_MSG_CHECKING([OpenSSL header version])
 	AC_RUN_IFELSE(
 		[AC_LANG_PROGRAM([[
-	#include <stdlib.h>
 	#include <stdio.h>
 	#include <string.h>
-	#include <openssl/opensslv.h>
+	#include <openssl/crypto.h>
 	#define DATA "conftest.sslincver"
 		]], [[
 		FILE *fd;
 		int rc;
+		const char *ver_s = OPENSSL_VERSION_TEXT;
 
 		fd = fopen(DATA,"w");
-		if(fd == NULL)
-			exit(1);
-
-		if ((rc = fprintf(fd, "%08lx (%s)\n",
-		    (unsigned long)OPENSSL_VERSION_NUMBER,
-		     OPENSSL_VERSION_TEXT)) < 0)
-			exit(1);
-
-		exit(0);
+		if(fd == NULL) return 1;
+	#ifdef HAVE_OPENSSL_VERSION_MAJOR
+		rc = fprintf(fd, "%u.%u.%u (%s)\n",
+			(unsigned)OPENSSL_VERSION_MAJOR,
+			(unsigned)OPENSSL_VERSION_MINOR,
+			(unsigned)OPENSSL_VERSION_PATCH,
+			ver_s);
+	#else
+	{
+		unsigned long ver_num = OPENSSL_VERSION_NUMBER;
+		rc = fprintf(fd, "%08lx (%s)\n", ver_num, ver_s);
+	}
+	#endif
+		fclose(fd);
+		if (rc < 0) return 1;
 		]])],
 		[
 			ssl_header_ver=`cat conftest.sslincver`
@@ -2672,25 +2681,37 @@ if test "x$openssl" = "xyes" ; then
 		[AC_LANG_PROGRAM([[
 	#include <stdio.h>
 	#include <string.h>
-	#include <openssl/opensslv.h>
 	#include <openssl/crypto.h>
 	#define DATA "conftest.ssllibver"
 		]], [[
 		FILE *fd;
 		int rc;
-		unsigned long ver_num;
 		const char *ver_s;
 	#ifdef HAVE_OPENSSL_INIT_CRYPTO
-		ver_num = OpenSSL_version_num();
 		ver_s = OpenSSL_version(OPENSSL_VERSION);
 	#else
-		ver_num = SSLeay();
 		ver_s = SSLeay_version(SSLEAY_VERSION);
 	#endif
 
 		fd = fopen(DATA,"w");
 		if(fd == NULL) return 1;
+	#ifdef HAVE_OPENSSL_VERSION_MAJOR
+		rc = fprintf(fd, "%u.%u.%u (%s)\n",
+			OPENSSL_version_major(),
+			OPENSSL_version_minor(),
+			OPENSSL_version_patch(),
+			ver_s);
+	#else
+	{
+		unsigned long ver_num;
+	#ifdef HAVE_OPENSSL_INIT_CRYPTO
+		ver_num = OpenSSL_version_num();
+	#else
+		ver_num = SSLeay();
+	#endif
 		rc = fprintf(fd, "%08lx (%s)\n", ver_num, ver_s);
+	}
+	#endif
 		fclose(fd);
 		if (rc < 0) return 1;
 		]])],
@@ -2712,9 +2733,14 @@ if test "x$openssl" = "xyes" ; then
 	AC_RUN_IFELSE(
 		[AC_LANG_PROGRAM([[
 	#include <string.h>
-	#include <openssl/opensslv.h>
 	#include <openssl/crypto.h>
 		]], [[
+	#ifdef HAVE_OPENSSL_VERSION_MAJOR
+		if (OPENSSL_version_major() != OPENSSL_VERSION_MAJOR) return 1;
+		if (OPENSSL_version_minor() != OPENSSL_VERSION_MINOR) return 1;
+		if (OPENSSL_version_patch() != OPENSSL_VERSION_PATCH) return 1;
+	#else
+	{
 		unsigned long ver_num;
 	#ifdef HAVE_OPENSSL_INIT_CRYPTO
 		ver_num = OpenSSL_version_num();
@@ -2722,6 +2748,8 @@ if test "x$openssl" = "xyes" ; then
 		ver_num = SSLeay();
 	#endif
 		if (ver_num != OPENSSL_VERSION_NUMBER) return 1;
+	}
+	#endif
 		]])],
 		[
 			AC_MSG_RESULT([yes])
