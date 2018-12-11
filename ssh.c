@@ -636,7 +636,7 @@ main(int ac, char **av)
 #endif /*def OPENSSL_FIPS*/
 	ssh_engines_startup();
 #ifdef WITH_OPENSSL
-	ERR_load_crypto_strings();
+	ssh_OpenSSL_load_error_strings();
 #ifdef LDAP_ENABLED
 	ERR_load_X509byLDAP_strings();
 #endif

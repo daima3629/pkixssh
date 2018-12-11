@@ -139,7 +139,7 @@ ssh_FIPS_mode(int onoff)
 	if (!FIPS_mode_set(onoff)) {
 		char ebuf[1024];
 
-		ERR_load_crypto_strings();
+		ssh_OpenSSL_load_error_strings();
 		crypto_errormsg(ebuf, sizeof(ebuf));
 		fatal("FIPS_mode_set(%s) failed: %s",
 		      (onoff ? "on" : "off"),

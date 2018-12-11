@@ -111,6 +111,15 @@ extern int  ssh_FIPS_mode(int onoff);
 extern void ssh_OpenSSL_startup(void);
 extern void ssh_OpenSSL_shuthdown(void);
 
+static inline void
+ssh_OpenSSL_load_error_strings(void) {
+#ifdef HAVE_OPENSSL_INIT_CRYPTO
+	OPENSSL_init_crypto(OPENSSL_INIT_LOAD_CRYPTO_STRINGS, NULL);
+#else
+	ERR_load_crypto_strings();
+#endif
+}
+
 #ifndef HAVE_OPENSSL_INIT_CRYPTO	/* OpenSSL < 1.1 */
 static inline unsigned long
 OpenSSL_version_num() { return SSLeay(); }
