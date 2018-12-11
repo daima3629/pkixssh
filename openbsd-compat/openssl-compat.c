@@ -88,6 +88,14 @@ DSA_generate_parameters_ex(DSA *dsa, int bits, const unsigned char *seed,
 }
 #endif
 
+#ifndef HAVE_OPENSSL_VERSION_MAJOR
+/* Obsolete by new OpenSSL version scheme.
+ * Test for compatibility version is not applicable as new base version
+ * is assigned to all library symbols. With other words for any new major
+ * release, the version number for all symbols is automatically bumped
+ * to the new release's version number. Also minor releases keep binary
+ * compatibility.
+ */
 /*
  * OpenSSL version numbers: MNNFFPPS: major minor fix patch status
  * We match major, minor, fix and status (not patch) for <1.0.0.
@@ -122,6 +130,7 @@ ssh_compatible_openssl(long headerver, long libver)
 		return 1;
 	return 0;
 }
+#endif /*ndef HAVE_OPENSSL_VERSION_MAJOR*/
 
 
 int

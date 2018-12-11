@@ -120,11 +120,6 @@ ssh_OpenSSL_load_error_strings(void) {
 #endif
 }
 
-#ifndef HAVE_OPENSSL_INIT_CRYPTO	/* OpenSSL < 1.1 */
-static inline unsigned long
-OpenSSL_version_num() { return SSLeay(); }
-#endif
-
 #endif /* WITH_OPENSSL */
 
 static inline const char*

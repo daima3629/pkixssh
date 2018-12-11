@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2014 Darren Tucker
+ * Copyright (c) 2018 Roumen Petrov
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -14,9 +15,18 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include <includes.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef HAVE_OPENSSL_VERSION_MAJOR
+int
+main(void) {
+	fprintf(stderr, "'opensslvertest' is not applicable with modern OpenSSL version scheme\n");
+	exit(0);
+}
+#else
 int ssh_compatible_openssl(long, long);
 
 struct version_test {
@@ -67,3 +77,4 @@ main(void)
 	}
 	exit(0);
 }
+#endif /*def HAVE_OPENSSL_VERSION_MAJOR*/

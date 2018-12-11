@@ -217,11 +217,20 @@ void
 seed_rng(void)
 {
 	unsigned char buf[RANDOM_SEED_SIZE];
+#ifdef HAVE_OPENSSL_VERSION_MAJOR
+	/* Obsolete by new OpenSSL version scheme */
+#else
+{
+#ifndef HAVE_OPENSSL_INIT_CRYPTO	/* OpenSSL < 1.1 */
+# define OpenSSL_version_num SSLeay
+#endif
 	unsigned long ver_num = OpenSSL_version_num();
 
 	if (!ssh_compatible_openssl(OPENSSL_VERSION_NUMBER, ver_num))
 		fatal("OpenSSL version mismatch. Built against %lx, you "
 		    "have %lx", (u_long)OPENSSL_VERSION_NUMBER, ver_num);
+}
+#endif
 
 #ifndef OPENSSL_PRNG_ONLY
 	if (RAND_status() == 1)
