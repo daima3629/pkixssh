@@ -44,11 +44,10 @@
 
 #if defined(sk_OPENSSL_STRING_new_null) || defined(HAVE_SK_OPENSSL_STRING_NEW_NULL)
 /*
- * STACK_OF(OPENSSL_STRING) is defined for openssl version >= 1.0
- * (OPENSSL_VERSION_NUMBER >= 0x10000000L).
- * NOTE: We will test for definition of sk_OPENSSL_STRING_new_null
- * instead openssl version number! As in OpenSSL 1.1 stack functions
- * are inlined we must use configure check.
+ * STACK_OF(OPENSSL_STRING) is defined in OpenSSL 1.0.
+ * NOTE: We test for definition of sk_OPENSSL_STRING_new_null
+ * instead OpenSSL version number! As in OpenSSL 1.1 stack functions
+ * are inlined we use configure check as well.
  */
 #define ssh_sk_OPENSSL_STRING		STACK_OF(OPENSSL_STRING)
 

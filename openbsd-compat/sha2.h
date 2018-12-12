@@ -42,8 +42,7 @@
 #include "includes.h"
 
 #ifdef WITH_OPENSSL
-# include <openssl/opensslv.h>
-# if !defined(HAVE_EVP_SHA256) && (OPENSSL_VERSION_NUMBER >= 0x00907000L)
+# ifndef HAVE_EVP_SHA256
 #  define _NEED_SHA2 1
 # endif
 #else
