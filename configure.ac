@@ -2761,12 +2761,10 @@ if test "x$openssl" = "xyes" ; then
 	library. Check config.log for details.
 	If you are sure your installation is consistent, you can disable the check
 	by running "./configure --without-openssl-header-check".
-	Also see contrib/findssl.sh for help identifying header/library mismatches.
 	])
 			else
 				AC_MSG_WARN([Your OpenSSL headers do not match your
-	library. Check config.log for details.
-	Also see contrib/findssl.sh for help identifying header/library mismatches.])
+	library. Check config.log for details.])
 			fi
 		],
 		[
