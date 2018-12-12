@@ -111,6 +111,9 @@ extern int  ssh_FIPS_mode(int onoff);
 extern void ssh_OpenSSL_startup(void);
 extern void ssh_OpenSSL_shuthdown(void);
 
+#ifndef HAVE_OPENSSL_INIT_CRYPTO
+# include <openssl/err.h>
+#endif
 static inline void
 ssh_OpenSSL_load_error_strings(void) {
 #ifdef HAVE_OPENSSL_INIT_CRYPTO
