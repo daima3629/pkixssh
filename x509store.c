@@ -37,6 +37,36 @@
 #  include "x509_by_ldap.h"
 #endif
 
+#if 0 /* enable if check below is not suitable for you build environment */
+/* work-around if attribute X509_VERIFY_PARAM.check_time is not accessible */
+# define USE_X509_STORE_CTX_INDEX	1
+#endif
+#ifndef USE_X509_STORE_CTX_INDEX
+#  if defined(HAVE_X509_STORE_CTX_GET0_PARAM) && !defined(HAVE_X509_VERIFY_PARAM_GET_TIME)
+/* Note structure X509_VERIFY_PARAM is defined in OpenSSL 0.9.8+ together
+ * with function X509_STORE_CTX_get0_param()
+ */
+#    if defined(HAVE_OPENSSL_INIT_CRYPTO) && !defined(LIBRESSL_VERSION_NUMBER)
+/* Temporary work-around for opaque structure X509_VERIFY_PARAM.
+ * In OpenSSL 1.1.0* branch X509_VERIFY_PARAM_get_time() is available since 1.1.0d.
+ * As result for versions from 1.1.0 to 1.1.0c we has to provide work-around.
+ */
+#      define USE_X509_STORE_CTX_INDEX	1
+#    else
+/* Use wrapper function X509_VERIFY_PARAM_get_time() */
+#    endif
+#  endif
+#endif
+#ifdef USE_X509_STORE_CTX_INDEX
+/* do not define local get function if structure X509_VERIFY_PARAM is opaque */
+#  define HAVE_X509_VERIFY_PARAM_GET_TIME
+#endif
+#ifndef HAVE_X509_STORE_CTX_GET0_PARAM
+/* do not define local get function as X509_VERIFY_PARAM is not available */
+#  define HAVE_X509_VERIFY_PARAM_GET_TIME
+#endif
+
+
 #ifndef HAVE_X509_STORE_SET_VERIFY_CB		/* OpenSSL < 1.0.0 */
 static inline void
 X509_STORE_set_verify_cb(X509_STORE *ctx, int (*verify_cb) (int, X509_STORE_CTX *)) {
@@ -56,19 +86,6 @@ ssh_x509flags = {
 
 
 static X509_STORE	*x509store = NULL;
-
-
-#if 0
-# define USE_X509_STORE_CTX_INDEX	1
-#endif
-#if (OPENSSL_VERSION_NUMBER >= 0x10100000L && !defined(LIBRESSL_VERSION_NUMBER))
-/* Temporary work-arround for opaque structure X509_VERIFY_PARAM
- * in OpenSSL master branch (version 1.1)
- */
-#  ifndef USE_X509_STORE_CTX_INDEX
-#    define USE_X509_STORE_CTX_INDEX	1
-#  endif
-#endif
 
 
 #ifdef USE_X509_STORE_CTX_INDEX
@@ -163,6 +180,13 @@ X509_OBJECT_get0_X509_CRL(const X509_OBJECT *xobj) {
 	return xobj->data.crl;
 }
 #endif /*ndef HAVE_X509_OBJECT_GET0_X509*/
+
+#ifndef HAVE_X509_VERIFY_PARAM_GET_TIME	/* OpenSSL < 1.1.0d, actually < 1.1.0 */
+static inline time_t
+X509_VERIFY_PARAM_get_time(const X509_VERIFY_PARAM *param) {
+    return param->check_time;
+}
+#endif /*ndef HAVE_X509_VERIFY_PARAM_GET_TIME*/
 
 
 #if 1
@@ -1070,7 +1094,6 @@ ssh_X509_get_key_usage(X509 *x) {
 static inline unsigned long
 ssh_X509_STORE_CTX_get_verify_flags(X509_STORE_CTX *ctx) {
 #ifdef HAVE_X509_STORE_CTX_GET0_PARAM
-	/* struct X509_VERIFY_PARAM is defined in OpenSSL 0.9.8+ */
 	X509_VERIFY_PARAM *param = X509_STORE_CTX_get0_param(ctx);
 	return X509_VERIFY_PARAM_get_flags(param);
 #else
@@ -1083,9 +1106,8 @@ static inline time_t
 X509_STORE_CTX_get_verify_check_time(X509_STORE_CTX *ctx) {
 #ifndef USE_X509_STORE_CTX_INDEX
 #ifdef HAVE_X509_STORE_CTX_GET0_PARAM
-	/* struct X509_VERIFY_PARAM is defined in OpenSSL 0.9.8+ */
 	X509_VERIFY_PARAM *param = X509_STORE_CTX_get0_param(ctx);
-	return param->check_time;
+	return X509_VERIFY_PARAM_get_time(param);
 #else
 	return ctx->check_time;
 #endif

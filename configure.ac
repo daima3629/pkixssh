@@ -5246,10 +5246,12 @@ int main(void) {
 	]
 )
 	# Check for the existence of "X509_VERIFY_PARAM *param" (OpenSSL 0.9.8+)
-	# OpenSSL v1.1 change X509_STORE_CTX to opaque structure
 	# Instead to check for member param we check for get functions
 	dnl AC_CHECK_MEMBERS([X509_STORE_CTX.param],,,[#include <openssl/x509_vfy.h>])
 	AC_CHECK_FUNCS([X509_STORE_CTX_get0_param])
+	dnl OpenSSL 1.1 changes X509_STORE_CTX and X509_VERIFY_PARAM to opaque structure.
+	dnl Until OpenSSL 1.1.0d+ there is no function to get "check" time.
+	AC_CHECK_FUNCS([X509_VERIFY_PARAM_get_time])
 fi
 if test "x$ssh_x509dn_email" = "xno"; then
 	AC_DEFINE(
