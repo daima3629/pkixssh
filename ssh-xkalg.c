@@ -402,9 +402,8 @@ logit("TRACE_XKALG fill_default_xkalg:");
 }
 
 
-#if OPENSSL_VERSION_NUMBER < 0x10000000L
-
-/* work-arounds for limited EVP digests in OpenSSL 0.9.8+ ...
+#if defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x10000000L)
+/* work-arounds for limited EVP digests in OpenSSL 0.9.8* ...
  * (missing ecdsa support)
  */
 
@@ -468,7 +467,7 @@ static inline const EVP_MD* ssh_ecdsa_EVP_sha384(void) { return EVP_sha384(); }
 static inline const EVP_MD* ssh_ecdsa_EVP_sha512(void) { return EVP_sha512(); }
 #endif
 
-#endif /*OPENSSL_VERSION_NUMBER < 0x10000000L*/
+#endif /*defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x10000000L)*/
 
 
 #ifdef OPENSSL_HAS_ECC

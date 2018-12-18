@@ -35,7 +35,7 @@
 #include <openssl/dsa.h>
 # if defined(OPENSSL_HAS_ECC) || defined(HAVE_OPENSSL_EC_H)
 #  include <openssl/ec.h>
-#  if OPENSSL_VERSION_NUMBER < 0x00908000L
+#  if defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x00908000L)
     /* before OpenSSL 0.9.8 */
 #   define EC_KEY	void
 #  endif

@@ -155,7 +155,7 @@ ssh_FIPS_mode(int onoff)
 		      ebuf);
 	}
 
-#if OPENSSL_VERSION_NUMBER < 0x10000000L
+#if defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x10000000L)
 	if(!onoff)
 		RAND_set_rand_method(NULL);
 #endif

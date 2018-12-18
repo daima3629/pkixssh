@@ -33,11 +33,11 @@
 
 int ssh_compatible_openssl(long, long);
 
-#if OPENSSL_VERSION_NUMBER <= 0x00906fffL
+#if defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x00907000L)
 # error "OpenSSL 0.9.7 or greater is required"
 #endif
 
-#if OPENSSL_VERSION_NUMBER <= 0x00907fffL
+#if defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x00908000L)
 /* Workaround for bug in some openssl versions before 0.9.8f
  * We will not use configure check as 0.9.7x define correct
  * macro or some verdors patch their versions.
@@ -51,7 +51,7 @@ ssh_EVP_CIPHER_CTX_key_length(const EVP_CIPHER_CTX *ctx) {
 }
 #endif
 
-#if OPENSSL_VERSION_NUMBER < 0x10000001L
+#if defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x10000000L)
 # define LIBCRYPTO_EVP_INL_TYPE unsigned int
 #else
 # define LIBCRYPTO_EVP_INL_TYPE size_t

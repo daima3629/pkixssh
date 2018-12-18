@@ -55,7 +55,7 @@
 #include "openbsd-compat/openssl-compat.h"
 #include "evp-compat.h"
 
-#if (OPENSSL_VERSION_NUMBER >= 0x10100000L && !defined(LIBRESSL_VERSION_NUMBER))
+#if defined(HAVE_OPENSSL_INIT_CRYPTO) && !defined(LIBRESSL_VERSION_NUMBER)
 /* NOTE: OpenSSL 1.1.* resets EVP_CIPHER_CTX on each call of
  * EVP_CipherInit()! It is init function. ;)
  * Remark: Pre 1.1.0 behaviour is restored in 1.1.0g (issue #4613).

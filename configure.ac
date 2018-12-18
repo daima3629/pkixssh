@@ -2917,6 +2917,7 @@ if test "x$openssl" = "xyes" ; then
 	#include <openssl/evp.h>
 	#include <openssl/objects.h>
 	#include <openssl/opensslv.h>
+	  #ifndef HAVE_OPENSSL_INIT_CRYPTO /* < 1.1.0 */
 	#if OPENSSL_VERSION_NUMBER < 0x0090807f /* 0.9.8g */
 	# error "OpenSSL < 0.9.8g has unreliable ECC code"
 	#endif
@@ -2925,6 +2926,7 @@ if test "x$openssl" = "xyes" ; then
 	#  error "OpenSSL <= 0.9.8* has unreliable ECC code in FIPS build"
 	# endif
 	#endif
+	  #endif
 		]], [[
 		EC_KEY *e = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1);
 		const EVP_MD *m = EVP_sha256(); /* We need this too */
@@ -2943,6 +2945,7 @@ if test "x$openssl" = "xyes" ; then
 	#include <openssl/evp.h>
 	#include <openssl/objects.h>
 	#include <openssl/opensslv.h>
+	  #ifndef HAVE_OPENSSL_INIT_CRYPTO /* < 1.1.0 */
 	#if OPENSSL_VERSION_NUMBER < 0x0090807f /* 0.9.8g */
 	# error "OpenSSL < 0.9.8g has unreliable ECC code"
 	#endif
@@ -2951,6 +2954,7 @@ if test "x$openssl" = "xyes" ; then
 	#  error "OpenSSL <= 0.9.8* has unreliable ECC code in FIPS build"
 	# endif
 	#endif
+	  #endif
 		]], [[
 		EC_KEY *e = EC_KEY_new_by_curve_name(NID_secp384r1);
 		const EVP_MD *m = EVP_sha384(); /* We need this too */
@@ -2969,6 +2973,7 @@ if test "x$openssl" = "xyes" ; then
 	#include <openssl/evp.h>
 	#include <openssl/objects.h>
 	#include <openssl/opensslv.h>
+	  #ifndef HAVE_OPENSSL_INIT_CRYPTO /* < 1.1.0 */
 	#if OPENSSL_VERSION_NUMBER < 0x0090807f /* 0.9.8g */
 	# error "OpenSSL < 0.9.8g has unreliable ECC code"
 	#endif
@@ -2977,6 +2982,7 @@ if test "x$openssl" = "xyes" ; then
 	#  error "OpenSSL <= 0.9.8* has unreliable ECC code in FIPS build"
 	# endif
 	#endif
+	  #endif
 		]], [[
 		EC_KEY *e = EC_KEY_new_by_curve_name(NID_secp521r1);
 		const EVP_MD *m = EVP_sha512(); /* We need this too */
