@@ -1225,7 +1225,7 @@ do_setup_env(struct ssh *ssh, Session *s, const char *shell)
 {
 #define COPY_ANDROID_ENV(name) { \
 	if ((cp = getenv(name)) != NULL) \
-		child_set_env(&env, &envsize, name, s); }
+		child_set_env(&env, &envsize, name, cp); }
 
 	/* from /init.rc */
 	COPY_ANDROID_ENV("ANDROID_BOOTLOGO");
