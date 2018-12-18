@@ -28,6 +28,7 @@
 
 #include "includes.h"
 #include <unistd.h>
+#include <stdlib.h>
 
 extern char *ssh_progpath;
 
