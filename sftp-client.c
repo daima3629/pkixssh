@@ -61,6 +61,28 @@
 extern volatile sig_atomic_t interrupted;
 extern int showprogress;
 
+#ifdef __ANDROID__
+/* Inconsistency in android headers: writev return integer in "platform"
+ * headers and ssize_t in "unified" header.
+ * Quote from <sys/types.h>:"
+ *   Traditionally, bionic's ssize_t was "long int". This caused GCC to emit warnings when you
+ *   pass a ssize_t to a printf-style function. The correct type is __kernel_ssize_t, which is
+ *   "int", which isn't an ABI change for C code (because they're the same size) but is an ABI
+ *   change for C++ because "int" and "long int" mangle to "i" and "l" respectively. So until
+ *   we can fix the ABI, this change should not be propagated to the NDK. http://b/8253769.
+ *   typedef __kernel_ssize_t ssize_t;
+ *   "
+ * On top on this <openbsd-compat.h> declares writev and int ;).
+ * NOTE: readv is not used.
+ */
+static inline ssize_t
+__android__writev(int fd, const struct iovec *iov, int iovcnt) {
+/*FIXME*/
+	return (ssize_t)writev(fd, iov, iovcnt);
+}
+#define writev __android__writev
+#endif
+
 /* Minimum amount of data to read at a time */
 #define MIN_READ_SIZE	512
 
