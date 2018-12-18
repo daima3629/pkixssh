@@ -754,7 +754,7 @@ static inline RSA*    EVP_PKEY_get0_RSA   (EVP_PKEY *pkey) { return(pkey->pkey.r
 /* Functions are available even in 0.9.7* but EC is not activated
  * as NIST curves are not supported yet.
  */
-static int
+static inline int
 EC_POINT_get_affine_coordinates(
     const EC_GROUP *group, const EC_POINT *p,
     BIGNUM *x, BIGNUM *y, BN_CTX *ctx
@@ -762,7 +762,7 @@ EC_POINT_get_affine_coordinates(
 	return EC_POINT_get_affine_coordinates_GFp(group, p, x, y, ctx);
 }
 
-static int
+static inline int
 EC_POINT_set_affine_coordinates(
     const EC_GROUP *group, EC_POINT *p,
     const BIGNUM *x, const BIGNUM *y, BN_CTX *ctx
