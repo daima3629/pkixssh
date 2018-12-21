@@ -42,9 +42,8 @@
 #ifdef HAVE_SYS_STAT_H
 # include <sys/stat.h>
 #endif
-#ifdef HAVE_SYS_IOCTL_H
-# include <sys/ioctl.h>
-#endif
+
+#include <sys/ioctl.h>
 
 #ifdef HAVE_FCNTL_H
 # include <fcntl.h>
