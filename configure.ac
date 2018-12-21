@@ -2105,7 +2105,7 @@ if (errno==ENOSYS) return 1;
 	]])],
 	[ssh_cv_func_setresuid_work=yes],
 	[ssh_cv_func_setresuid_work=no],
-	[ssh_cv_func_setresuid_workcross]
+	[ssh_cv_func_setresuid_work=cross]
 )])
 AS_IF([test $ssh_cv_func_setresuid_work = cross], [
 	AC_MSG_WARN([cross compiling: assuming working setresuid])
