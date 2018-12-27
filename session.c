@@ -1097,8 +1097,14 @@ do_setup_env(struct ssh *ssh, Session *s, const char *shell)
 # endif /* HAVE_CYGWIN */
 #endif /* HAVE_LOGIN_CAP */
 
+#ifdef __ANDROID__
+/* _PATH_MAILDIR is defined in platform headers but not in unified */
+# undef _PATH_MAILDIR
+#endif
+#ifdef _PATH_MAILDIR
 	snprintf(buf, sizeof buf, "%.200s/%.50s", _PATH_MAILDIR, pw->pw_name);
 	child_set_env(&env, &envsize, "MAIL", buf);
+#endif
 
 	/* Normal systems set SHELL by default. */
 	child_set_env(&env, &envsize, "SHELL", shell);
