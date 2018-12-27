@@ -46,6 +46,12 @@ case "$host" in
   dnl Function "mbtowc" is defined in API 21 but always declared
   dnl => use local port for consistency
   ac_cv_func_mbtowc=use_port
+
+  dnl Function "getline" is defined in API 18 but in platform headers
+  dnl is not declared until API 21.
+  dnl Note in unified headers function is declared accordingly.
+  dnl => use local port for consistency
+  ac_cv_func_getline=use_port
   ;;
 esac
 ])
