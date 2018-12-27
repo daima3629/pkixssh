@@ -4157,6 +4157,10 @@ struct passwd.pw_change, struct passwd.pw_expire],
 [], [], [[
 #include <sys/types.h>
 #include <pwd.h>
+/* Avoid inappropriate definition from Android unified headers
+ * to impact detection of structure members.
+ */
+#undef pw_gecos
 ]])
 
 AC_CHECK_MEMBER([struct __res_state.retrans], [], [AC_DEFINE([__res_state], [state],

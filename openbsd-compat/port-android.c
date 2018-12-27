@@ -156,6 +156,14 @@ __wrap_fopen(const char *path, const char *mode) {
 #include <openssl/des.h>
 #undef getpwnam
 #undef getpwuid
+/* Remove inappropriate definition from android unified headers! */
+#undef pw_gecos
+
+/* Note _PATH_PASSWD is defined in platform headers but not in unified.
+ * Force use of local declaration for consistency.
+ */
+#undef _PATH_PASSWD
+#define _PATH_PASSWD	 "/etc/passwd"
 
 
 static struct passwd *fake_passwd = NULL;
@@ -215,7 +223,7 @@ parse_fake_passwd() {
 	s = strchr(s, ':'); if (s == NULL) goto parse_err;
 	*s = '\0';
 
-	pw_gecos= ++s;
+	pw_gecos = ++s;
 	s = strchr(s, ':'); if (s == NULL) goto parse_err;
 	*s = '\0';
 
