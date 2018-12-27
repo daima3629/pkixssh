@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2008,2014 Darren Tucker <dtucker@zip.com.au>
+ * Copyright (c) 2015-2018 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -25,7 +26,7 @@
 #ifdef HAVE_SYS_MOUNT_H
 # include <sys/mount.h>
 #endif
-
+#include <string.h>	/*for memset*/
 #include <errno.h>
 
 #ifndef MNAMELEN
