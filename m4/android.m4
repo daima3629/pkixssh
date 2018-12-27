@@ -1,0 +1,47 @@
+# Android configuration settings
+#
+# Copyright (c) 2018 Roumen Petrov
+# Revisions:
+#   27 Dec 2018 : refactored from configure.ac
+#
+# serail 20181217
+
+AC_DEFUN([SSH_ANDROID_PRECONF], [
+case "$host" in
+*-*-linux-android*)
+  dnl PKIX-SSH up to version 11.6 support as minimum API level 9 and
+  dnl build only with platform headers.
+  dnl Version after 11.6 support as minimum API level 16 and build
+  dnl either with platform or unified headers.
+
+  dnl API before 21 define "getpagesize" is inline function, i.e.
+  dnl not-detectable by function checks.
+  ac_cv_func_getpagesize=yes
+
+  dnl Function "openpty" is defined in API 23, but declared only in
+  dnl unified headers => for consistency across versions always use
+  dnl local port, based on /dev/ptmx
+  ac_cv_search_openpty=no
+  ac_cv_func_openpty=use_port
+  ac_cv_file__dev_ptmx=yes
+
+  dnl API 21 adds <sys/statvfs.h> to platform headers but it is always
+  dnl available as unified header is.
+  dnl Before API 21 functions "statvfs" and "fstatvfs" are defined in
+  dnl Bionic "C" library only on some platforms!
+  dnl => use local port for consistency across versions
+  ac_cv_header_sys_statvfs_h=ignore
+  ac_cv_func_statvfs=use_port
+  ac_cv_func_fstatvfs=use_port
+
+  dnl A macro defines "bzero" as build-in (not detectable case)
+  ac_cv_func_bzero=yes
+
+  dnl Platform headers always declare syscall wrapper function "getsid".
+  dnl In unified it is declared for API 17. Also before API 17 it is
+  dnl defined in "C" library only on some platforms!
+  dnl => always use local inline replacement (see misc.c)
+  ac_cv_func_getsid=yes
+  ;;
+esac
+])

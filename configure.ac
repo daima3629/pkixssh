@@ -367,33 +367,8 @@ AC_ARG_WITH([Werror],
 )
 
 AC_SUBST([XLDFLAGS])
-case "$host" in
-*-*-linux-android*)
-	dnl inline function, i.e. not-detectable
-	ac_cv_func_getpagesize=yes
-
-	ac_cv_file__dev_ptmx=yes
-
-	dnl openpty is detected by configure for API 23+, but not
-	dnl declared => use bsd port, based on /dev/ptmx for
-	dnl consistency across versions
-	ac_cv_func_openpty=no
-	ac_cv_search_openpty=no
-
-	dnl API 21+ defines statvfs, fstatvfs and adds sys/statvfs.h
-	dnl => use bsd port for consistency
-	ac_cv_header_sys_statvfs_h=ignore
-	ac_cv_func_fstatvfs=use_bsd_port
-	ac_cv_func_statvfs=use_bsd_port
-
-	dnl a macro defines bzero as build-in (not detectable case)
-	ac_cv_func_bzero=yes
-
-	dnl getsid syscall wrapper is not included in some versions
-	dnl of bionic C-library => use own inline replacement
-	ac_cv_func_getsid=yes
-	;;
-esac
+m4_include([m4/android.m4])
+SSH_ANDROID_PRECONF
 
 AC_CHECK_HEADERS([ \
 	blf.h \
