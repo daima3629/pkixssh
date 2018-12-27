@@ -261,9 +261,8 @@ fi
 AC_MSG_CHECKING([if compiler allows __attribute__ on return types])
 AC_COMPILE_IFELSE(
     [AC_LANG_PROGRAM([[
-#include <stdlib.h>
 __attribute__((__unused__)) static void foo(void){return;}]],
-    [[ exit(0); ]])],
+    [[]])],
     [ AC_MSG_RESULT([yes]) ],
     [ AC_MSG_RESULT([no])
       AC_DEFINE(NO_ATTRIBUTE_ON_RETURN_TYPE, 1,
@@ -273,13 +272,24 @@ __attribute__((__unused__)) static void foo(void){return;}]],
 AC_MSG_CHECKING([if compiler allows __attribute__ prototype args])
 AC_COMPILE_IFELSE(
     [AC_LANG_PROGRAM([[
-#include <stdlib.h>
 typedef void foo(const char *, ...) __attribute__((format(printf, 1, 2)));]],
-    [[ exit(0); ]])],
+    [[]])],
     [ AC_MSG_RESULT([yes]) ],
     [ AC_MSG_RESULT([no])
       AC_DEFINE(NO_ATTRIBUTE_ON_PROTOTYPE_ARGS, 1,
 	 [compiler does not accept __attribute__ on prototype args]) ]
+)
+
+AC_MSG_CHECKING([if compiler allows __attribute__ to warn if last parameter is not NULL])
+AC_COMPILE_IFELSE(
+    [AC_LANG_PROGRAM([[
+extern void foo(const char *, ...) __attribute__((__sentinel__));]],
+    [[]])],
+    [ AC_MSG_RESULT([yes])
+      AC_DEFINE([HAVE_ATTRIBUTE__SENTINEL__], [1],
+        [Define to 1 if compiler accept __attribute__ that warn if last parameter is not NULL])
+    ],
+    [ AC_MSG_RESULT([no]) ]
 )
 
 if test "x$no_attrib_nonnull" != "x1" ; then
@@ -984,7 +994,7 @@ mips-sony-bsd|mips-sony-newsos4)
 	;;
 *-*-openbsd*)
 	use_pie=auto
-	AC_DEFINE([HAVE_ATTRIBUTE__SENTINEL__], [1], [OpenBSD's gcc has sentinel])
+	dnl AC_DEFINE([HAVE_ATTRIBUTE__SENTINEL__], [1], [OpenBSD's gcc has sentinel])
 	AC_DEFINE([HAVE_ATTRIBUTE__BOUNDED__], [1], [OpenBSD's gcc has bounded])
 	AC_DEFINE([SSH_TUN_OPENBSD], [1], [Open tunnel devices the OpenBSD way])
 	AC_DEFINE([SYSLOG_R_SAFE_IN_SIGHAND], [1],
