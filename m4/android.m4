@@ -42,6 +42,10 @@ case "$host" in
   dnl defined in "C" library only on some platforms!
   dnl => always use local inline replacement (see misc.c)
   ac_cv_func_getsid=yes
+
+  dnl Function "mbtowc" is defined in API 21 but always declared
+  dnl => use local port for consistency
+  ac_cv_func_mbtowc=use_port
   ;;
 esac
 ])
