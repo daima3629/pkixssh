@@ -10,7 +10,7 @@
 #ifndef _MD5CRYPT_H
 #define _MD5CRYPT_H
 
-#include "config.h"
+#include "includes.h"
 
 #if defined(HAVE_MD5_PASSWORDS) && !defined(HAVE_MD5_CRYPT)
 

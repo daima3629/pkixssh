@@ -15,7 +15,7 @@
 #ifndef _MISC_H
 #define _MISC_H
 
-#include "config.h"
+#include "includes.h"
 #ifdef HAVE_SYS_TIME_H
 # include <sys/time.h>
 #endif

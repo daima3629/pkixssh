@@ -25,10 +25,10 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "includes.h"
+
 #ifndef _OPENBSD_COMPAT_H
 #define _OPENBSD_COMPAT_H
-
-#include "includes.h"
 
 #include <sys/types.h>
 #include <pwd.h>
