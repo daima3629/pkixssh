@@ -61,6 +61,11 @@ case "$host" in
 
   dnl see port-android.c for details
   ac_cv_func_endgrent=yes
+
+  dnl Function "getifaddrs" is defined in API 24 and declared
+  dnl in unified headers accordingly.
+  dnl => do not use "bind interface" for consistency
+  ac_cv_func_getifaddrs=ignore
   ;;
 esac
 ])

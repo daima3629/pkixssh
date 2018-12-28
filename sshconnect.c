@@ -316,7 +316,7 @@ ssh_kill_proxy_command(void)
 		kill(proxy_command_pid, SIGHUP);
 }
 
-#ifdef HAVE_IFADDRS_H
+#ifdef HAVE_GETIFADDRS
 /*
  * Search a interface address list (returned from getifaddrs(3)) for an
  * address that matches the desired address family on the specified interface.
@@ -377,7 +377,7 @@ check_ifaddrs(const char *ifname, int af, const struct ifaddrs *ifaddrs,
 	}
 	return -1;
 }
-#endif
+#endif /*def HAVE_GETIFADDRS*/
 
 /*
  * Creates a socket for use as the ssh connection.
@@ -389,7 +389,7 @@ ssh_create_socket(struct addrinfo *ai)
 	struct sockaddr_storage bindaddr;
 	socklen_t bindaddrlen = 0;
 	struct addrinfo hints, *res = NULL;
-#ifdef HAVE_IFADDRS_H
+#ifdef HAVE_GETIFADDRS
 	struct ifaddrs *ifaddrs = NULL;
 #endif
 	char ntop[NI_MAXHOST];
@@ -424,7 +424,7 @@ ssh_create_socket(struct addrinfo *ai)
 		memcpy(&bindaddr, res->ai_addr, res->ai_addrlen);
 		bindaddrlen = res->ai_addrlen;
 	} else if (options.bind_interface != NULL) {
-#ifdef HAVE_IFADDRS_H
+#ifdef HAVE_GETIFADDRS
 		if ((r = getifaddrs(&ifaddrs)) != 0) {
 			error("getifaddrs: %s: %s", options.bind_interface,
 			      strerror(errno));
@@ -460,7 +460,7 @@ fail:
  out:
 	if (res != NULL)
 		freeaddrinfo(res);
-#ifdef HAVE_IFADDRS_H
+#ifdef HAVE_GETIFADDRS
 	if (ifaddrs != NULL)
 		freeifaddrs(ifaddrs);
 #endif

@@ -1871,6 +1871,7 @@ AC_CHECK_FUNCS([ \
 	getaddrinfo \
 	getcwd \
 	getgrouplist \
+	getifaddrs \
 	getline \
 	getnameinfo \
 	getopt \
