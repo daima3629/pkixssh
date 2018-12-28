@@ -52,6 +52,12 @@ case "$host" in
   dnl Note in unified headers function is declared accordingly.
   dnl => use local port for consistency
   ac_cv_func_getline=use_port
+
+  dnl If build is with unified headers configuration check will
+  dnl define _FILE_OFFSET_BITS and as result on 32-bit platforms
+  dnl is activated __USE_FILE_OFFSET64
+  dnl => temporary suppress for now
+  ac_cv_sys_file_offset_bits=no
   ;;
 esac
 ])

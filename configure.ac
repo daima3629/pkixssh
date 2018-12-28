@@ -75,6 +75,9 @@ else
 	AC_SUBST([STARTUP_SCRIPT_SHELL], [/bin/sh])
 fi
 
+m4_include([m4/android.m4])
+SSH_ANDROID_PRECONF
+
 # System features
 AC_SYS_LARGEFILE
 
@@ -376,10 +379,6 @@ AC_ARG_WITH([Werror],
 	]
 )
 
-AC_SUBST([XLDFLAGS])
-m4_include([m4/android.m4])
-SSH_ANDROID_PRECONF
-
 AC_CHECK_HEADERS([ \
 	blf.h \
 	bstring.h \
@@ -534,6 +533,7 @@ SPP_MSG="no"
 SOLARIS_PRIVS="no"
 
 # Check for some target-specific stuff
+AC_SUBST([XLDFLAGS])
 ssh_disable_utmpx=no
 case "$host" in
 *-*-aix*)
