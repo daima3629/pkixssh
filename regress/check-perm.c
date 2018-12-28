@@ -90,7 +90,7 @@ platform_sys_dir_uid(uid_t uid)
 }
 
 /* from auth.c */
-int
+static int
 auth_secure_path(const char *name, struct stat *stp, const char *pw_dir,
     uid_t uid, char *err, size_t errlen)
 {

@@ -4,6 +4,7 @@
  */
 
 #include "../test_helper/test_helper.h"
+#include "ssh_api.h"
 
 void kex_tests(void);
 

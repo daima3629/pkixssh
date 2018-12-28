@@ -5,9 +5,8 @@
  * Placed in the public domain
  */
 
-#include "includes.h"
-
 #include "../test_helper/test_helper.h"
+#include "ssh_api.h"
 
 void sshkey_tests(void);
 void sshkey_file_tests(void);
