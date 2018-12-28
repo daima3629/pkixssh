@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2012-2018 Roumen Petrov.  All rights reserved.
  * Copyright (c) 2000 Andre Lucas.  All rights reserved.
  * Portions copyright (c) 1998 Todd C. Miller
  * Portions copyright (c) 1996 Jason Downs
@@ -167,6 +168,10 @@
 #include <time.h>
 #include <unistd.h>
 
+#ifdef HAVE_UTIL_H
+# include <util.h>
+#endif
+
 #include "xmalloc.h"
 #include "hostfile.h"
 #include "ssh.h"
@@ -178,10 +183,6 @@
 #include "auth.h"
 #include "sshbuf.h"
 #include "ssherr.h"
-
-#ifdef HAVE_UTIL_H
-# include <util.h>
-#endif
 
 /**
  ** prototypes for helper functions in this file
@@ -215,14 +216,14 @@ extern struct sshbuf *loginmsg;
 /* pick the shortest string */
 #define MIN_SIZEOF(s1,s2) (sizeof(s1) < sizeof(s2) ? sizeof(s1) : sizeof(s2))
 
-#if defined(__ANDROID__)
+#ifdef __ANDROID__
 /* Android define only user process */
-#ifndef DEAD_PROCESS
+# ifndef DEAD_PROCESS
 #  define DEAD_PROCESS	USER_PROCESS
-#endif
-#ifndef LOGIN_PROCESS
+# endif
+# ifndef LOGIN_PROCESS
 #  define LOGIN_PROCESS	USER_PROCESS
-#endif
+# endif
 #endif
 
 /**
@@ -824,6 +825,12 @@ construct_utmpx(struct logininfo *li, struct utmpx *utx)
 # if !defined(DISABLE_PUTUTLINE) && defined(HAVE_SETUTENT) && \
 	defined(HAVE_PUTUTLINE)
 #  define UTMP_USE_LIBRARY
+#  if !HAVE_DECL_PUTUTLINE
+struct utmp *pututline(const struct utmp *ut);
+#  endif
+#  if defined(HAVE_ENDUTENT) && !HAVE_DECL_ENDUTENT
+void endutent(void);
+#  endif
 # endif
 
 
@@ -832,6 +839,7 @@ construct_utmpx(struct logininfo *li, struct utmpx *utx)
 static int
 utmp_write_library(struct logininfo *li, struct utmp *ut)
 {
+	UNUSED(li);
 	setutent();
 	pututline(ut);
 #  ifdef HAVE_ENDUTENT

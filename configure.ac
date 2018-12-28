@@ -2219,9 +2219,6 @@ fi
 
 dnl    Checks for time functions
 AC_CHECK_FUNCS([gettimeofday time])
-dnl    Checks for utmp functions
-AC_CHECK_FUNCS([endutent getutent getutid getutline pututline setutent])
-AC_CHECK_FUNCS([utmpname])
 dnl    Checks for utmpx functions
 AC_CHECK_FUNCS([endutxent getutxent getutxid getutxline getutxuser pututxline])
 AC_CHECK_FUNCS([setutxdb setutxent utmpxname])
@@ -5582,16 +5579,26 @@ AC_ARG_ENABLE([libutil],
 		fi
 	]
 )
+
+dnl checks for utmp functions
 AC_ARG_ENABLE([pututline],
-	[  --disable-pututline     disable use of pututline() etc. ([uw]tmp) [no]],
-	[
-		if test "x$enableval" = "xno" ; then
-			AC_DEFINE([DISABLE_PUTUTLINE], [1],
-				[Define if you don't want to use pututline()
-				etc. to write [uw]tmp])
-		fi
-	]
+	[AS_HELP_STRING([--disable-pututline],
+		[disable use of pututline() etc. ([uw]tmp) [no]])],
+	[ssh_enable_pututline=$enableval],
+	[ssh_enable_pututline=yes]
 )
+AS_IF([test $ssh_enable_pututline = no], [
+	AC_DEFINE([DISABLE_PUTUTLINE], [1],
+		[Define if you don't want to use pututline() etc. to write [uw]tmp])
+], [
+	AC_CHECK_FUNCS([endutent pututline setutent])
+	AC_CHECK_DECLS([endutent, pututline], [], [], [
+#ifdef HAVE_UTMP_H
+# include <utmp.h>
+#endif
+	])
+])
+
 AC_ARG_ENABLE([pututxline],
 	[  --disable-pututxline    disable use of pututxline() etc. ([uw]tmpx) [no]],
 	[
