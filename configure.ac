@@ -1962,6 +1962,16 @@ AC_CHECK_FUNCS([ \
 ])
 
 AC_CHECK_DECLS([bzero])
+AS_IF([test $ac_cv_func_endgrent != no], [
+  AC_CHECK_DECLS([endgrent], [], [], [
+#include <sys/types.h>
+#include <grp.h>
+  ])
+])
+AC_CHECK_DECLS([endpwent], [], [], [
+#include <sys/types.h>
+#include <pwd.h>
+])
 
 dnl Wide character support.
 AC_CHECK_FUNCS([mblen mbtowc nl_langinfo wcwidth])

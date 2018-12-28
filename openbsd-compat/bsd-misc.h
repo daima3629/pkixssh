@@ -102,12 +102,16 @@ int	isblank(int);
 pid_t getpgid(pid_t);
 #endif
 
-#ifndef HAVE_ENDGRENT
-#ifdef __ANDROID__
-/* endgrent is declared but not defined, see port-android.c */
-#else
-# define endgrent() do { } while(0)
+#if !HAVE_DECL_ENDGRENT
+void endgrent(void);
 #endif
+
+#ifndef HAVE_ENDGRENT
+static inline void endgrent(void) {}
+#endif
+
+#if !HAVE_DECL_ENDPWENT
+void endpwent(void);
 #endif
 
 #ifdef KRB5

@@ -58,6 +58,9 @@ case "$host" in
   dnl is activated __USE_FILE_OFFSET64
   dnl => temporary suppress for now
   ac_cv_sys_file_offset_bits=no
+
+  dnl see port-android.c for details
+  ac_cv_func_endgrent=yes
   ;;
 esac
 ])

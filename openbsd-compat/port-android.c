@@ -90,17 +90,17 @@ android_ttyname_r(int fd, char *buf, size_t buflen) {
 }
 
 
-/* bionic missing
- *
- * Function endgrent is declared in grp.h but not defined.
+/* Function endgrent is declared in platform header <grp.h>,
+ * but not defined until API 26.
+ * Unified header <pwd.h> does not declare it before API 26.
  */
 void
 endgrent(void) {
 }
 
-/* bionic missing
- *
- * Function endpwent is declared in pwd.h but not defined.
+/* Function endpwent is declared in platform header <pwd.h>,
+ * but not defined until API 26.
+ * Unified header <pwd.h> does not declare it before API 26.
  */
 void
 endpwent(void) {
