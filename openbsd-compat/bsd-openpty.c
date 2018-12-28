@@ -5,6 +5,7 @@
 
 /*
  * Copyright (c) 2004 Damien Miller <djm@mindrot.org>
+ * Copyright (c) 2016-2018 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -68,16 +69,28 @@
 #define O_NOCTTY 0
 #endif
 
+/* NOTE:
+ * Android API 23 defines function "openpty" but it is declared
+ * only in unified headers.
+ * As we prefer to use definition below we has to declare it with
+ * same arguments - see configure.ac.
+ */
+
 int
-openpty(int *amaster, int *aslave, char *name, struct termios *termp,
-   struct winsize *winp)
-{
+openpty(int *amaster, int *aslave, char *name,
+   OPENPTY_CONST_ARG struct termios *termp,
+   OPENPTY_CONST_ARG struct winsize *winp
+) {
 #if defined(HAVE__GETPTY)
 	/*
 	 * _getpty(3) exists in SGI Irix 4.x, 5.x & 6.x -- it generates more
 	 * pty's automagically when needed
 	 */
 	char *slave;
+
+	UNUSED(name);
+	UNUSED(termp);
+	UNUSED(winp);
 
 	if ((slave = _getpty(amaster, O_RDWR, 0622, 0)) == NULL)
 		return (-1);
@@ -97,6 +110,10 @@ openpty(int *amaster, int *aslave, char *name, struct termios *termp,
 	int ptm;
 	char *pts;
 	mysig_t old_signal;
+
+	UNUSED(name);
+	UNUSED(termp);
+	UNUSED(winp);
 
 	if ((ptm = open("/dev/ptmx", O_RDWR | O_NOCTTY)) == -1)
 		return (-1);
@@ -123,20 +140,26 @@ openpty(int *amaster, int *aslave, char *name, struct termios *termp,
 	/*
 	 * Try to push the appropriate streams modules, as described
 	 * in Solaris pts(7).
+	 * Note on Android I_PUSH is not defined and
+	 * streams modules are not supported.
 	 */
-# ifndef __ANDROID__
+# ifdef I_PUSH
 	ioctl(*aslave, I_PUSH, "ptem");
 	ioctl(*aslave, I_PUSH, "ldterm");
 # ifndef __hpux
 	ioctl(*aslave, I_PUSH, "ttcompat");
 # endif /* __hpux */
-# endif /*ndef __ANDROID__*/
+# endif /*ndef I_PUSH*/
 
 	return (0);
 
 #elif defined(HAVE_DEV_PTS_AND_PTC)
 	/* AIX-style pty code. */
 	const char *ttname;
+
+	UNUSED(name);
+	UNUSED(termp);
+	UNUSED(winp);
 
 	if ((*amaster = open("/dev/ptc", O_RDWR | O_NOCTTY)) == -1)
 		return (-1);

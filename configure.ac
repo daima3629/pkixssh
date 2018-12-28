@@ -1422,6 +1422,38 @@ AC_SEARCH_LIBS([openpty], [util bsd])
 AC_SEARCH_LIBS([updwtmp], [util bsd])
 AC_CHECK_FUNCS([fmt_scaled scan_scaled login logout openpty updwtmp logwtmp])
 
+dnl check for constant openpty arguments
+ssh_openpty_args=const
+AS_IF([test $ac_cv_func_openpty != no], [
+  AC_MSG_CHECKING([whether openpty declare const arguments])
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+#include <termios.h>
+#include <sys/ioctl.h>
+#ifdef HAVE_PTY_H
+# include <pty.h>
+#endif
+#ifdef HAVE_STDDEF_H
+# include <stddef.h>
+#endif
+int openpty(
+  int *amaster, int *aslave, char *name,
+  const struct termios *termp, const struct winsize *winp
+) {
+(void)amaster; (void)aslave; (void)name;
+(void)termp; (void)winp;
+return 0; }
+    ]], [[
+int rc, ptyfd = 1, ttyfd = 2;
+rc = openpty(&ptyfd, &ttyfd, NULL, NULL, NULL);
+    ]])],
+    [ AC_MSG_RESULT([yes]) ],
+    [ AC_MSG_RESULT([no])
+      ssh_openpty_args= ]
+  )
+])
+AC_DEFINE_UNQUOTED([OPENPTY_CONST_ARG], [$ssh_openpty_args],
+  [Define as const if openpty declare const arguments])
+
 # On some platforms, inet_ntop and gethostbyname may be found in libresolv
 # or libnsl.
 AC_SEARCH_LIBS([inet_ntop], [resolv nsl])

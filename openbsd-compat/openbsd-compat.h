@@ -230,7 +230,7 @@ int asprintf(char **, const char *, ...);
 
 #ifndef HAVE_OPENPTY
 # include <sys/ioctl.h>	/* for struct winsize */
-int openpty(int *, int *, char *, struct termios *, struct winsize *);
+int openpty(int *, int *, char *, OPENPTY_CONST_ARG struct termios *, OPENPTY_CONST_ARG struct winsize *);
 #endif /* HAVE_OPENPTY */
 
 #ifndef HAVE_SNPRINTF
