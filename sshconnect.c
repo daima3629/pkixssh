@@ -669,13 +669,13 @@ send_client_banner(int connection_out, int minor1)
  * Waits for the server identification string, and sends our own
  * identification string.
  */
-void
-ssh_exchange_identification(int timeout_ms)
+static void
+ssh_exchange_identification(struct ssh *ssh, int timeout_ms)
 {
 	char buf[256], remote_version[256];	/* must be same size! */
 	int remote_major, remote_minor, mismatch;
-	int connection_in = packet_get_connection_in();
-	int connection_out = packet_get_connection_out();
+	int connection_in = ssh_packet_get_connection_in(ssh);
+	int connection_out = ssh_packet_get_connection_out(ssh);
 	u_int i, n;
 	size_t len;
 	int rc;
@@ -1466,7 +1466,7 @@ out:
  * This function does not require super-user privileges.
  */
 void
-ssh_login(Sensitive *sensitive, const char *orighost,
+ssh_login(struct ssh *ssh, Sensitive *sensitive, const char *orighost,
     struct sockaddr *hostaddr, u_short port, struct passwd *pw, int timeout_ms)
 {
 	char *host;
@@ -1480,16 +1480,16 @@ ssh_login(Sensitive *sensitive, const char *orighost,
 	lowercase(host);
 
 	/* Exchange protocol version identification strings with the server. */
-	ssh_exchange_identification(timeout_ms);
+	ssh_exchange_identification(ssh, timeout_ms);
 
 	/* Put the connection into non-blocking mode. */
-	packet_set_nonblocking();
+	ssh_packet_set_nonblocking(ssh);
 
 	/* key exchange */
 	/* authenticate user */
 	debug("Authenticating to %s:%d as '%s'", host, port, server_user);
-	ssh_kex2(host, hostaddr, port);
-	ssh_userauth2(local_user, server_user, host, sensitive);
+	ssh_kex2(ssh, host, hostaddr, port);
+	ssh_userauth2(ssh, local_user, server_user, host, sensitive);
 	/* do not free "host" as in ssh_kex2() (from sshconnect2.c)
 	 * it is assigned to global variable "xxx_host"!
 	free(host);

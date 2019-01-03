@@ -161,7 +161,7 @@ order_hostkeyalgs(char *host, struct sockaddr *hostaddr, u_short port)
 }
 
 void
-ssh_kex2(char *host, struct sockaddr *hostaddr, u_short port)
+ssh_kex2(struct ssh *ssh, char *host, struct sockaddr *hostaddr, u_short port)
 {
 	char *myproposal[PROPOSAL_MAX] = { KEX_CLIENT };
 	char *s, *all_key;
@@ -205,9 +205,9 @@ ssh_kex2(char *host, struct sockaddr *hostaddr, u_short port)
 		    options.rekey_interval);
 
 	/* start key exchange */
-	if ((r = kex_setup(active_state, myproposal)) != 0)
+	if ((r = kex_setup(ssh, myproposal)) != 0)
 		fatal("kex_setup: %s", ssh_err(r));
-	kex = active_state->kex;
+	kex = ssh->kex;
 #ifdef WITH_OPENSSL
 	kex->kex[KEX_DH_GRP1_SHA1] = kexdh_client;
 	kex->kex[KEX_DH_GRP14_SHA1] = kexdh_client;
@@ -225,7 +225,7 @@ ssh_kex2(char *host, struct sockaddr *hostaddr, u_short port)
 	kex->server_version_string=server_version_string;
 	kex->verify_host_key=&verify_host_key_callback;
 
-	ssh_dispatch_run_fatal(active_state, DISPATCH_BLOCK, &kex->done);
+	ssh_dispatch_run_fatal(ssh, DISPATCH_BLOCK, &kex->done);
 
 	/* remove ext-info from the KEX proposals for rekeying */
 	myproposal[PROPOSAL_KEX_ALGS] =
@@ -237,14 +237,12 @@ ssh_kex2(char *host, struct sockaddr *hostaddr, u_short port)
 	session_id2_len = kex->session_id_len;
 
 #ifdef DEBUG_KEXDH
-{	struct ssh *ssh = active_state; /* XXX */
 	/* send 1st encrypted/maced/compressed message */
 	if ((r = sshpkt_start(ssh, SSH2_MSG_IGNORE)) != 0 ||
 	    (r = sshpkt_put_cstring(ssh, "markus")) != 0 ||
 	    (r = sshpkt_send(ssh)) != 0 ||
 	    (r = ssh_packet_write_wait(ssh)) != 0)
 		fatal("%s: %s", __func__, ssh_err(r));
-}
 #endif
 	free(s);
 }
@@ -375,10 +373,9 @@ Authmethod authmethods[] = {
 };
 
 void
-ssh_userauth2(const char *local_user, const char *server_user, char *host,
-    Sensitive *sensitive)
+ssh_userauth2(struct ssh *ssh, const char *local_user,
+    const char *server_user, char *host, Sensitive *sensitive)
 {
-	struct ssh *ssh = active_state;
 	Authctxt authctxt;
 	int r;
 
@@ -402,8 +399,10 @@ ssh_userauth2(const char *local_user, const char *server_user, char *host,
 	authctxt.info_req_seen = 0;
 	authctxt.agent_fd = -1;
 	pubkey_prepare(&authctxt);
-	if (authctxt.method == NULL)
-		fatal("ssh_userauth2: internal error: cannot send userauth none request");
+	if (authctxt.method == NULL) {
+		fatal("%s: internal error: cannot send userauth none request",
+		    __func__);
+	}
 
 	if ((r = sshpkt_start(ssh, SSH2_MSG_SERVICE_REQUEST)) != 0 ||
 	    (r = sshpkt_put_cstring(ssh, "ssh-userauth")) != 0 ||

@@ -1586,7 +1586,7 @@ main(int ac, char **av)
 	signal(SIGCHLD, main_sigchld_handler);
 
 	/* Log into the remote system.  Never returns if the login fails. */
-	ssh_login(&sensitive_data, host, (struct sockaddr *)&hostaddr,
+	ssh_login(ssh, &sensitive_data, host, (struct sockaddr *)&hostaddr,
 	    options.port, pw, timeout_ms);
 
 	if (packet_connection_is_on_socket()) {
@@ -1702,6 +1702,7 @@ ssh_confirm_remote_forward(struct ssh *ssh, int type, u_int32_t seq, void *ctxt)
 {
 	struct Forward *rfwd = (struct Forward *)ctxt;
 
+	UNUSED(seq);
 	/* XXX verbose() on failure? */
 	debug("remote forward %s for: listen %s%s%d, connect %s:%d",
 	    type == SSH2_MSG_REQUEST_SUCCESS ? "success" : "failure",
@@ -1750,6 +1751,9 @@ ssh_confirm_remote_forward(struct ssh *ssh, int type, u_int32_t seq, void *ctxt)
 static void
 client_cleanup_stdio_fwd(struct ssh *ssh, int id, void *arg)
 {
+	UNUSED(ssh);
+	UNUSED(id);
+	UNUSED(arg);
 	debug("stdio forwarding: done");
 	cleanup_exit(0);
 }
@@ -1757,6 +1761,9 @@ client_cleanup_stdio_fwd(struct ssh *ssh, int id, void *arg)
 static void
 ssh_stdio_confirm(struct ssh *ssh, int id, int success, void *arg)
 {
+	UNUSED(ssh);
+	UNUSED(id);
+	UNUSED(arg);
 	if (!success)
 		fatal("stdio forwarding failed");
 }
@@ -1877,6 +1884,7 @@ ssh_session2_setup(struct ssh *ssh, int id, int success, void *arg)
 	int interactive = tty_flag;
 	char *proto = NULL, *data = NULL;
 
+	UNUSED(arg);
 	if (!success)
 		return; /* No need for error message, channels code sens one */
 
@@ -2242,6 +2250,7 @@ main_sigchld_handler(int sig)
 	pid_t pid;
 	int status;
 
+	UNUSED(sig);
 	while ((pid = waitpid(-1, &status, WNOHANG)) > 0 ||
 	    (pid < 0 && errno == EINTR))
 		;

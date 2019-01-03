@@ -37,8 +37,8 @@ int	 ssh_connect(struct ssh *, const char *, struct addrinfo *,
 	    struct sockaddr_storage *, u_short, int, int, int *, int);
 void	 ssh_kill_proxy_command(void);
 
-void	 ssh_login(Sensitive *, const char *, struct sockaddr *, u_short,
-    struct passwd *, int);
+void	 ssh_login(struct ssh *, Sensitive *, const char *,
+    struct sockaddr *, u_short, struct passwd *, int);
 
 void	 ssh_exchange_identification(int);
 
@@ -47,11 +47,10 @@ int	 verify_host_key(char *, struct sockaddr *, struct sshkey *);
 void	 get_hostfile_hostname_ipaddr(char *, struct sockaddr *, u_short,
     char **, char **);
 
-void	 ssh_kex(char *, struct sockaddr *);
-void	 ssh_kex2(char *, struct sockaddr *, u_short);
+void	 ssh_kex2(struct ssh *ssh, char *, struct sockaddr *, u_short);
 
-void	 ssh_userauth1(const char *, const char *, char *, Sensitive *);
-void	 ssh_userauth2(const char *, const char *, char *, Sensitive *);
+void	 ssh_userauth2(struct ssh *ssh, const char *, const char *,
+    char *, Sensitive *);
 
 void	 ssh_put_password(char *);
 int	 ssh_local_cmd(const char *);
