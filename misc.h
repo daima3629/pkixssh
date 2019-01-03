@@ -20,6 +20,7 @@
 # include <sys/time.h>
 #endif
 #include <sys/types.h>
+#include <sys/socket.h>
 
 /* Data structure for representing a forwarding request. */
 struct Forward {
@@ -54,6 +55,8 @@ void	 set_nodelay(int);
 int	 set_reuseaddr(int);
 char	*get_rdomain(int);
 int	 set_rdomain(int, const char *);
+int	 waitrfd(int, int *);
+int	 timeout_connect(int, const struct sockaddr *, socklen_t, int *);
 int	 a2port(const char *);
 int	 a2tun(const char *, int *);
 char	*put_host_port(const char *, u_short);

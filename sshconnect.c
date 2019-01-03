@@ -58,9 +58,6 @@
 #include <paths.h>
 #endif
 #include <pwd.h>
-#ifdef HAVE_POLL_H
-#include <poll.h>
-#endif
 #include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -465,73 +462,6 @@ fail:
 		freeifaddrs(ifaddrs);
 #endif
 	return sock;
-}
-
-/*
- * Wait up to *timeoutp milliseconds for fd to be readable. Updates
- * *timeoutp with time remaining.
- * Returns 0 if fd ready or -1 on timeout or error (see errno).
- */
-static int
-waitrfd(int fd, int *timeoutp)
-{
-	struct pollfd pfd;
-	struct timeval t_start;
-	int oerrno, r;
-
-	monotime_tv(&t_start);
-	pfd.fd = fd;
-	pfd.events = POLLIN;
-	for (; *timeoutp >= 0;) {
-		r = poll(&pfd, 1, *timeoutp);
-		oerrno = errno;
-		ms_subtract_diff(&t_start, timeoutp);
-		errno = oerrno;
-		if (r > 0)
-			return 0;
-		else if (r == -1 && errno != EAGAIN)
-			return -1;
-		else if (r == 0)
-			break;
-	}
-	/* timeout */
-	errno = ETIMEDOUT;
-	return -1;
-}
-
-static int
-timeout_connect(int sockfd, const struct sockaddr *serv_addr,
-    socklen_t addrlen, int *timeoutp)
-{
-	int optval = 0;
-	socklen_t optlen = sizeof(optval);
-
-	/* No timeout: just do a blocking connect() */
-	if (*timeoutp <= 0)
-		return connect(sockfd, serv_addr, addrlen);
-
-	set_nonblock(sockfd);
-	if (connect(sockfd, serv_addr, addrlen) == 0) {
-		/* Succeeded already? */
-		unset_nonblock(sockfd);
-		return 0;
-	} else if (errno != EINPROGRESS)
-		return -1;
-
-	if (waitrfd(sockfd, timeoutp) == -1)
-		return -1;
-
-	/* Completed or failed */
-	if (getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &optval, &optlen) == -1) {
-		debug("getsockopt: %s", strerror(errno));
-		return -1;
-	}
-	if (optval != 0) {
-		errno = optval;
-		return -1;
-	}
-	unset_nonblock(sockfd);
-	return 0;
 }
 
 /*
