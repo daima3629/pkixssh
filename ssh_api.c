@@ -120,7 +120,7 @@ ssh_init(struct ssh **sshp, int is_server, struct kex_params *kex_params)
 
 	/* Initialize key exchange */
 	proposal = kex_params ? kex_params->proposal : myproposal;
-	if ((r = kex_new(ssh, proposal, &ssh->kex)) != 0) {
+	if ((r = kex_ready(ssh, proposal)) != 0) {
 		ssh_free(ssh);
 		return r;
 	}

@@ -15,6 +15,7 @@
  *
  * SSH2 packet format added by Markus Friedl.
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
+ * Copyright (c) 2018 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -218,6 +219,7 @@ ssh_alloc_session_state(void)
 	struct session_state *state = NULL;
 
 	if ((ssh = calloc(1, sizeof(*ssh))) == NULL ||
+	    (ssh->kex = kex_new()) == NULL ||
 	    (state = calloc(1, sizeof(*state))) == NULL ||
 	    (state->input = sshbuf_new()) == NULL ||
 	    (state->output = sshbuf_new()) == NULL ||
@@ -241,14 +243,17 @@ ssh_alloc_session_state(void)
 	ssh->state = state;
 	return ssh;
  fail:
-	if (state) {
+	if (state != NULL) {
 		sshbuf_free(state->input);
 		sshbuf_free(state->output);
 		sshbuf_free(state->incoming_packet);
 		sshbuf_free(state->outgoing_packet);
 		free(state);
 	}
-	free(ssh);
+	if (ssh != NULL) {
+		kex_free(ssh->kex);
+		free(ssh);
+	}
 	return NULL;
 }
 
@@ -263,8 +268,7 @@ ssh_packet_set_input_hook(struct ssh *ssh, ssh_packet_hook_fn *hook, void *ctx)
 int
 ssh_packet_is_rekeying(struct ssh *ssh)
 {
-	return ssh->state->rekeying ||
-	    (ssh->kex != NULL && ssh->kex->done == 0);
+	return ssh->state->rekeying || ssh->kex->done == 0;
 }
 
 /* NOTE: "none" is not allowed in FIPS mode */
@@ -814,7 +818,7 @@ uncompress_buffer(struct ssh *ssh, struct sshbuf *in, struct sshbuf *out)
 void
 ssh_clear_newkeys(struct ssh *ssh, int mode)
 {
-	if (ssh->kex && ssh->kex->newkeys[mode]) {
+	if (ssh->kex->newkeys[mode]) {
 		kex_free_newkeys(ssh->kex->newkeys[mode]);
 		ssh->kex->newkeys[mode] = NULL;
 	}
@@ -927,7 +931,7 @@ ssh_packet_need_rekeying(struct ssh *ssh, u_int outbound_packet_len)
 		return 0;
 
 	/* Haven't keyed yet or KEX in progress. */
-	if (ssh->kex == NULL || ssh_packet_is_rekeying(ssh))
+	if (ssh_packet_is_rekeying(ssh))
 		return 0;
 
 	/* Peer can't rekey */
@@ -1405,8 +1409,7 @@ ssh_packet_read_poll2_mux(struct ssh *ssh, u_char *typep, u_int32_t *seqnr_p)
 	size_t need;
 	int r;
 
-	if (ssh->kex)
-		return SSH_ERR_INTERNAL_ERROR;
+	UNUSED(seqnr_p);
 	*typep = SSH_MSG_NONE;
 	cp = sshbuf_ptr(state->input);
 	if (state->packlen == 0) {
@@ -1829,7 +1832,7 @@ sshpkt_fatal(struct ssh *ssh, const char *tag, int r)
 	case SSH_ERR_NO_COMPRESS_ALG_MATCH:
 	case SSH_ERR_NO_KEX_ALG_MATCH:
 	case SSH_ERR_NO_HOSTKEY_ALG_MATCH:
-		if (ssh && ssh->kex && ssh->kex->failed_choice) {
+		if (ssh && ssh->kex->failed_choice) {
 			ssh_packet_clear_keys(ssh);
 			logdie("Unable to negotiate with %s: %s. "
 			    "Their offer: %s", remote_id, ssh_err(r),
@@ -2321,9 +2324,7 @@ kex_from_blob(struct sshbuf *m, struct kex **kexp)
 	struct kex *kex;
 	int r;
 
-	if ((kex = calloc(1, sizeof(struct kex))) == NULL ||
-	    (kex->my = sshbuf_new()) == NULL ||
-	    (kex->peer = sshbuf_new()) == NULL) {
+	if ((kex = kex_new()) == NULL) {
 		r = SSH_ERR_ALLOC_FAIL;
 		goto out;
 	}
@@ -2585,8 +2586,6 @@ ssh_packet_send_mux(struct ssh *ssh)
 	size_t len;
 	int r;
 
-	if (ssh->kex)
-		return SSH_ERR_INTERNAL_ERROR;
 	len = sshbuf_len(state->outgoing_packet);
 	if (len < 6)
 		return SSH_ERR_INTERNAL_ERROR;

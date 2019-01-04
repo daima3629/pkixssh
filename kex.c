@@ -491,6 +491,8 @@ kex_input_ext_info(int type, u_int32_t seq, struct ssh *ssh)
 	char *pkalgs = NULL, *sigalgs = NULL;
 	int r;
 
+	UNUSED(type);
+	UNUSED(seq);
 	debug("SSH2_MSG_EXT_INFO received");
 	ssh_dispatch_set(ssh, SSH2_MSG_EXT_INFO, &kex_protocol_error);
 	if ((r = sshpkt_get_u32(ssh, &ninfo)) != 0)
@@ -552,6 +554,8 @@ kex_input_newkeys(int type, u_int32_t seq, struct ssh *ssh)
 	struct kex *kex = ssh->kex;
 	int r;
 
+	UNUSED(type);
+	UNUSED(seq);
 	debug("SSH2_MSG_NEWKEYS received");
 	ssh_dispatch_set(ssh, SSH2_MSG_NEWKEYS, &kex_protocol_error);
 	ssh_dispatch_set(ssh, SSH2_MSG_KEXINIT, &kex_input_kexinit);
@@ -612,6 +616,8 @@ kex_input_kexinit(int type, u_int32_t seq, struct ssh *ssh)
 	size_t dlen;
 	int r;
 
+	UNUSED(type);
+	UNUSED(seq);
 	debug("SSH2_MSG_KEXINIT received");
 	if (kex == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;
@@ -655,32 +661,19 @@ kex_input_kexinit(int type, u_int32_t seq, struct ssh *ssh)
 	return SSH_ERR_INTERNAL_ERROR;
 }
 
-int
-kex_new(struct ssh *ssh, char *proposal[PROPOSAL_MAX], struct kex **kexp)
+struct kex *
+kex_new(void)
 {
 	struct kex *kex;
-	int r;
 
-	*kexp = NULL;
 	if ((kex = calloc(1, sizeof(*kex))) == NULL)
-		return SSH_ERR_ALLOC_FAIL;
+		return NULL;
 	if ((kex->peer = sshbuf_new()) == NULL ||
 	    (kex->my = sshbuf_new()) == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto out;
-	}
-	if ((r = kex_prop2buf(kex->my, proposal)) != 0)
-		goto out;
-	kex->done = 0;
-	kex->flags = KEX_INITIAL;
-	kex_reset_dispatch(ssh);
-	ssh_dispatch_set(ssh, SSH2_MSG_KEXINIT, &kex_input_kexinit);
-	r = 0;
-	*kexp = kex;
- out:
-	if (r != 0)
 		kex_free(kex);
-	return r;
+		return NULL;
+	}
+	return kex;
 }
 
 void
@@ -744,11 +737,26 @@ kex_free(struct kex *kex)
 }
 
 int
+kex_ready(struct ssh *ssh, char *proposal[PROPOSAL_MAX])
+{
+	int r;
+
+	if (ssh->kex == NULL) return SSH_ERR_INTERNAL_ERROR;
+
+	if ((r = kex_prop2buf(ssh->kex->my, proposal)) != 0)
+		return r;
+	ssh->kex->flags = KEX_INITIAL;
+	kex_reset_dispatch(ssh);
+	ssh_dispatch_set(ssh, SSH2_MSG_KEXINIT, &kex_input_kexinit);
+	return 0;
+}
+
+int
 kex_setup(struct ssh *ssh, char *proposal[PROPOSAL_MAX])
 {
 	int r;
 
-	if ((r = kex_new(ssh, proposal, &ssh->kex)) != 0)
+	if ((r = kex_ready(ssh, proposal)) != 0)
 		return r;
 	if ((r = kex_send_kexinit(ssh)) != 0) {		/* we start */
 		kex_free(ssh->kex);
@@ -803,6 +811,7 @@ choose_mac(struct ssh *ssh, struct sshmac *mac, char *client, char *server)
 {
 	char *name = match_list(client, server, NULL);
 
+	UNUSED(ssh);
 	if (name == NULL)
 		return SSH_ERR_NO_MAC_ALG_MATCH;
 	if (mac_setup(mac, name) < 0) {

@@ -175,7 +175,8 @@ char	*kex_alg_list(char);
 char	*kex_names_cat(const char *, const char *);
 int	 kex_assemble_names(char **, const char *, const char *);
 
-int	 kex_new(struct ssh *, char *[PROPOSAL_MAX], struct kex **);
+struct kex *kex_new(void);
+int	 kex_ready(struct ssh *, char *[PROPOSAL_MAX]);
 int	 kex_setup(struct ssh *, char *[PROPOSAL_MAX]);
 void	 kex_free_newkeys(struct newkeys *);
 void	 kex_free(struct kex *);
