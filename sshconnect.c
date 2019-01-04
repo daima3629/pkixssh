@@ -88,9 +88,8 @@
 #include "authfile.h"
 #include "ssherr.h"
 #include "authfd.h"
+#include "kex.h"
 
-char *client_version_string = NULL;
-char *server_version_string = NULL;
 struct sshkey *previous_host_key = NULL;
 
 static int matching_host_key_dns = 0;
@@ -582,17 +581,23 @@ ssh_connect(struct ssh *ssh, const char *host, struct addrinfo *addrs,
 	return ssh_proxy_connect(ssh, host, port, options.proxy_command);
 }
 
-static void
-send_client_banner(int connection_out, int minor1)
+static int
+prepare_client_banner(struct ssh *ssh)
 {
-	/* Send our own protocol version identification. */
-	xasprintf(&client_version_string, "SSH-%d.%d-%.100s PKIX[%s]\r\n",
-	    PROTOCOL_MAJOR_2, PROTOCOL_MINOR_2, SSH_VERSION, PACKAGE_VERSION);
-	if (atomicio(vwrite, connection_out, client_version_string,
-	    strlen(client_version_string)) != strlen(client_version_string))
-		fatal("write: %.100s", strerror(errno));
-	chop(client_version_string);
-	debug("Local version string %.100s", client_version_string);
+	int r;
+
+	/* NOTE: Version string is prepared and sent with <CR><LF> at end.
+	 * After identification exchange trailing <CR><LF> is removed for
+	 * further use in key exchange messages.
+	 */
+	r = xasprintf(&ssh->kex->client_version_string,
+	    "SSH-%d.%d-%s PKIX["PACKAGE_VERSION"]\r\n",
+	    PROTOCOL_MAJOR_2, PROTOCOL_MINOR_2, SSH_VERSION);
+	if (r < 0) {
+		error("cannot prepare client banner");
+		return SSH_ERR_ALLOC_FAIL;
+	}
+	return 0;
 }
 
 /*
@@ -602,6 +607,7 @@ send_client_banner(int connection_out, int minor1)
 static void
 ssh_exchange_identification(struct ssh *ssh, int timeout_ms)
 {
+	char *server_version_string;
 	char buf[256], remote_version[256];	/* must be same size! */
 	int remote_major, remote_minor, mismatch;
 	int connection_in = ssh_packet_get_connection_in(ssh);
@@ -610,8 +616,15 @@ ssh_exchange_identification(struct ssh *ssh, int timeout_ms)
 	size_t len;
 	int rc;
 
-	send_client_banner(connection_out, 0);
+{	/* Send our own protocol version identification. */
+	char *client_version_string = ssh->kex->client_version_string;
+	if (atomicio(vwrite, connection_out, client_version_string,
+	    strlen(client_version_string)) != strlen(client_version_string))
+		fatal("write: %.100s", strerror(errno));
 
+	chop(client_version_string);
+	debug("Local version string %.100s", client_version_string);
+}
 	/* Read other side's version identification. */
 	for (n = 0;;) {
 		for (i = 0; i < sizeof(buf) - 1; i++) {
@@ -684,6 +697,7 @@ ssh_exchange_identification(struct ssh *ssh, int timeout_ms)
 		logit("Server version \"%.100s\" uses unsafe RSA signature "
 		    "scheme; disabling use of RSA keys", remote_version);
 	chop(server_version_string);
+	ssh->kex->server_version_string = server_version_string;
 }
 
 /* defaults to 'no' */
@@ -1408,6 +1422,9 @@ ssh_login(struct ssh *ssh, Sensitive *sensitive, const char *orighost,
 	/* Convert the user-supplied hostname into all lowercase. */
 	host = xstrdup(orighost);
 	lowercase(host);
+
+	if (prepare_client_banner(ssh) != 0)
+		cleanup_exit(255);
 
 	/* Exchange protocol version identification strings with the server. */
 	ssh_exchange_identification(ssh, timeout_ms);

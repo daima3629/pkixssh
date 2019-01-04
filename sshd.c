@@ -201,13 +201,6 @@ char **rexec_argv;
 int listen_socks[MAX_LISTEN_SOCKS];
 int num_listen_socks = 0;
 
-/*
- * the client's version string, passed by sshd2 in compat mode. if != NULL,
- * sshd will skip the version-number exchange
- */
-char *client_version_string = NULL;
-char *server_version_string = NULL;
-
 /* Daemon's agent connection */
 int auth_sock = -1;
 int have_agent = 0;
@@ -385,34 +378,45 @@ grace_alarm_handler(int sig)
 	    ssh_remote_ipaddr(active_state), ssh_remote_port(active_state));
 }
 
+static int
+prepare_server_banner(struct ssh *ssh)
+{
+	const char *fips = "";
+	int r;
+
+#ifdef OPENSSL_FIPS
+	if (FIPS_mode()) fips= " FIPS";
+#endif
+
+	/* NOTE: Version string is prepared and sent with <CR><LF> at end.
+	 * After identification exchange trailing <CR><LF> is removed for
+	 * further use in key exchange messages.
+	 */
+	r = xasprintf(&ssh->kex->server_version_string,
+	    "SSH-%d.%d-%s PKIX["PACKAGE_VERSION"%s]%s%s\r\n",
+	    PROTOCOL_MAJOR_2, PROTOCOL_MINOR_2, SSH_VERSION, fips,
+	    *options.version_addendum == '\0' ? "" : " ",
+	    options.version_addendum);
+	if (r < 0) {
+		error("cannot prepare server banner");
+		return SSH_ERR_ALLOC_FAIL;
+	}
+	return 0;
+}
+
 static void
 sshd_exchange_identification(struct ssh *ssh, int sock_in, int sock_out)
 {
+	char *server_version_string;
+	char *client_version_string;
 	u_int i;
 	int remote_major, remote_minor;
 	char *s;
-	char pkix_comment[256];
 	char buf[256];			/* Must not be larger than remote_version. */
 	char remote_version[256];	/* Must be at least as big as buf. */
 
-	{
-		const char *fips = "";
-#ifdef OPENSSL_FIPS
-	/* NOTE in FIPS mode code refuse to load protocol 1 keys (see
-	 * authfile.c). Result is that code below clear bit SSH_PROTO_1
-	 * from protocol option if !have_ssh1_key.
-	 */
-		if (FIPS_mode()) fips= " FIPS";
-#endif
-		sprintf(pkix_comment, " PKIX["PACKAGE_VERSION"%s]", fips);
-	}
-
-	xasprintf(&server_version_string, "SSH-%d.%d-%s%s%s%s\r\n",
-	    PROTOCOL_MAJOR_2, PROTOCOL_MINOR_2, SSH_VERSION, pkix_comment,
-	    *options.version_addendum == '\0' ? "" : " ",
-	    options.version_addendum);
-
 	/* Send our protocol version identification. */
+	server_version_string = ssh->kex->server_version_string;
 	if (atomicio(vwrite, sock_out, server_version_string,
 	    strlen(server_version_string))
 	    != strlen(server_version_string)) {
@@ -420,6 +424,8 @@ sshd_exchange_identification(struct ssh *ssh, int sock_in, int sock_out)
 		    ssh_remote_ipaddr(ssh), ssh_remote_port(ssh));
 		cleanup_exit(255);
 	}
+	chop(server_version_string);
+	debug("Local version string %.200s", server_version_string);
 
 	/* Read other sides version identification. */
 	memset(buf, 0, sizeof(buf));
@@ -483,9 +489,6 @@ sshd_exchange_identification(struct ssh *ssh, int sock_in, int sock_out)
 		    "scheme; disabling use of RSA keys", remote_version);
 	}
 
-	chop(server_version_string);
-	debug("Local version string %.200s", server_version_string);
-
 	if (remote_major != 2 &&
 	    !(remote_major == 1 && remote_minor == 99)) {
 		s = "Protocol major versions differ.\n";
@@ -498,6 +501,8 @@ sshd_exchange_identification(struct ssh *ssh, int sock_in, int sock_out)
 		    server_version_string, client_version_string);
 		cleanup_exit(255);
 	}
+
+	ssh->kex->client_version_string = client_version_string;
 }
 
 /* Destroy the host and server keys.  They will no longer be needed. */
@@ -2278,6 +2283,9 @@ main(int ac, char **av)
 	if (!debug_flag)
 		alarm(options.login_grace_time);
 
+	if (prepare_server_banner(ssh) != 0)
+		cleanup_exit(255);
+
 	sshd_exchange_identification(ssh, sock_in, sock_out);
 	packet_set_nonblocking();
 
@@ -2473,8 +2481,6 @@ do_ssh2_kex(void)
 #endif
 	kex->kex[KEX_C25519_SHA256] = kexc25519_server;
 	kex->server = 1;
-	kex->client_version_string=client_version_string;
-	kex->server_version_string=server_version_string;
 	kex->find_host_public_key=&get_hostkey_public_by_alg;
 	kex->find_host_private_key=&get_hostkey_private_by_alg;
 	kex->host_key_index=&get_hostkey_index;

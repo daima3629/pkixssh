@@ -80,8 +80,6 @@
 #endif
 
 /* import */
-extern char *client_version_string;
-extern char *server_version_string;
 extern Options options;
 
 /*
@@ -221,8 +219,6 @@ ssh_kex2(struct ssh *ssh, char *host, struct sockaddr *hostaddr, u_short port)
 # endif
 #endif
 	kex->kex[KEX_C25519_SHA256] = kexc25519_client;
-	kex->client_version_string=client_version_string;
-	kex->server_version_string=server_version_string;
 	kex->verify_host_key=&verify_host_key_callback;
 
 	ssh_dispatch_run_fatal(ssh, DISPATCH_BLOCK, &kex->done);
