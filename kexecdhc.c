@@ -4,7 +4,7 @@
  * Copyright (c) 2010 Damien Miller.  All rights reserved.
  *
  * X.509 certificates support,
- * Copyright (c) 2014-2017 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2014-2018 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -112,6 +112,8 @@ input_kex_ecdh_reply(int type, u_int32_t seq, struct ssh *ssh)
 	size_t klen = 0, hashlen;
 	int r;
 
+	UNUSED(type);
+	UNUSED(seq);
 	if (kex->verify_host_key == NULL) {
 		r = SSH_ERR_INVALID_ARGUMENT;
 		goto out;
@@ -177,8 +179,8 @@ input_kex_ecdh_reply(int type, u_int32_t seq, struct ssh *ssh)
 	if ((r = kex_ecdh_hash(
 	    kex->hash_alg,
 	    group,
-	    kex->client_version_string,
-	    kex->server_version_string,
+	    kex->client_version,
+	    kex->server_version,
 	    sshbuf_ptr(kex->my), sshbuf_len(kex->my),
 	    sshbuf_ptr(kex->peer), sshbuf_len(kex->peer),
 	    server_host_key_blob, sbloblen,

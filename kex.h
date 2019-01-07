@@ -147,12 +147,12 @@ struct kex {
 	int	ext_info_c;
 	struct sshbuf *my;
 	struct sshbuf *peer;
+	struct sshbuf *client_version;
+	struct sshbuf *server_version;
 	sig_atomic_t done;
 	u_int	flags;
 	int	hash_alg;
 	int	ec_nid;
-	char	*client_version_string;
-	char	*server_version_string;
 	char	*failed_choice;
 	int	(*verify_host_key)(struct sshkey *, struct ssh *);
 	struct sshkey *(*find_host_public_key)(const char* pkalg, struct ssh *);
@@ -205,22 +205,23 @@ int	 kexecdh_server(struct ssh *);
 int	 kexc25519_client(struct ssh *);
 int	 kexc25519_server(struct ssh *);
 
-int	 kex_dh_hash(int, const char *, const char *,
+int	 kex_dh_hash(int, const struct sshbuf *, const struct sshbuf *,
     const u_char *, size_t, const u_char *, size_t, const u_char *, size_t,
     const BIGNUM *, const BIGNUM *, const BIGNUM *, u_char *, size_t *);
 
-int	 kexgex_hash(int, const char *, const char *,
+int	 kexgex_hash(int, const struct sshbuf *, const struct sshbuf *,
     const u_char *, size_t, const u_char *, size_t, const u_char *, size_t,
     int, int, int,
     const BIGNUM *, const BIGNUM *, const BIGNUM *,
     const BIGNUM *, const BIGNUM *,
     u_char *, size_t *);
 
-int kex_ecdh_hash(int, const EC_GROUP *, const char *, const char *,
+int kex_ecdh_hash(int, const EC_GROUP *,
+    const struct sshbuf *, const struct sshbuf *,
     const u_char *, size_t, const u_char *, size_t, const u_char *, size_t,
     const EC_POINT *, const EC_POINT *, const BIGNUM *, u_char *, size_t *);
 
-int	 kex_c25519_hash(int, const char *, const char *,
+int	 kex_c25519_hash(int, const struct sshbuf *, const struct sshbuf *,
     const u_char *, size_t, const u_char *, size_t,
     const u_char *, size_t, const u_char *, const u_char *,
     const u_char *, size_t, u_char *, size_t *);

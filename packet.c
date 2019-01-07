@@ -2172,9 +2172,9 @@ kex_to_blob(struct sshbuf *m, struct kex *kex)
 	    (r = sshbuf_put_u32(m, kex->kex_type)) != 0 ||
 	    (r = sshbuf_put_stringb(m, kex->my)) != 0 ||
 	    (r = sshbuf_put_stringb(m, kex->peer)) != 0 ||
-	    (r = sshbuf_put_u32(m, kex->flags)) != 0 ||
-	    (r = sshbuf_put_cstring(m, kex->client_version_string)) != 0 ||
-	    (r = sshbuf_put_cstring(m, kex->server_version_string)) != 0)
+	    (r = sshbuf_put_stringb(m, kex->client_version)) != 0 ||
+	    (r = sshbuf_put_stringb(m, kex->server_version)) != 0 ||
+	    (r = sshbuf_put_u32(m, kex->flags)) != 0)
 		return r;
 	return 0;
 }
@@ -2334,9 +2334,9 @@ kex_from_blob(struct sshbuf *m, struct kex **kexp)
 	    (r = sshbuf_get_u32(m, &kex->kex_type)) != 0 ||
 	    (r = sshbuf_get_stringb(m, kex->my)) != 0 ||
 	    (r = sshbuf_get_stringb(m, kex->peer)) != 0 ||
-	    (r = sshbuf_get_u32(m, &kex->flags)) != 0 ||
-	    (r = sshbuf_get_cstring(m, &kex->client_version_string, NULL)) != 0 ||
-	    (r = sshbuf_get_cstring(m, &kex->server_version_string, NULL)) != 0)
+	    (r = sshbuf_get_stringb(m, kex->client_version)) != 0 ||
+	    (r = sshbuf_get_stringb(m, kex->server_version)) != 0 ||
+	    (r = sshbuf_get_u32(m, &kex->flags)) != 0)
 		goto out;
 	/* as hostkey_alg is not set we receive empty string - so free it */
 	if (kex->hostkey_alg[0] == '\0') {

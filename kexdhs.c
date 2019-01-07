@@ -164,8 +164,8 @@ input_kex_dh_init(int type, u_int32_t seq, struct ssh *ssh)
 	hashlen = sizeof(hash);
 	if ((r = kex_dh_hash(
 	    kex->hash_alg,
-	    kex->client_version_string,
-	    kex->server_version_string,
+	    kex->client_version,
+	    kex->server_version,
 	    sshbuf_ptr(kex->peer), sshbuf_len(kex->peer),
 	    sshbuf_ptr(kex->my), sshbuf_len(kex->my),
 	    server_host_key_blob, sbloblen,

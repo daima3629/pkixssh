@@ -5,7 +5,7 @@
  * Copyright (c) 2013 Aris Adamantiadis.  All rights reserved.
  *
  * X.509 certificates support,
- * Copyright (c) 2014-2017 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2014-2018 Roumen Petrov.  All rights reserved.
  *
  * modification, are permitted provided that the following conditions
  * are met:
@@ -69,6 +69,8 @@ input_kex_c25519_init(int type, u_int32_t seq, struct ssh *ssh)
 	size_t slen, pklen, sbloblen, hashlen;
 	int r;
 
+	UNUSED(type);
+	UNUSED(seq);
 	/* generate private key */
 	kexc25519_keygen(server_key, server_pubkey);
 #ifdef DEBUG_KEXECDH
@@ -108,8 +110,8 @@ input_kex_c25519_init(int type, u_int32_t seq, struct ssh *ssh)
 	hashlen = sizeof(hash);
 	if ((r = kex_c25519_hash(
 	    kex->hash_alg,
-	    kex->client_version_string,
-	    kex->server_version_string,
+	    kex->client_version,
+	    kex->server_version,
 	    sshbuf_ptr(kex->peer), sshbuf_len(kex->peer),
 	    sshbuf_ptr(kex->my), sshbuf_len(kex->my),
 	    server_host_key_blob, sbloblen,

@@ -230,8 +230,8 @@ input_kex_dh_gex_reply(int type, u_int32_t seq, struct ssh *ssh)
 	hashlen = sizeof(hash);
 	if ((r = kexgex_hash(
 	    kex->hash_alg,
-	    kex->client_version_string,
-	    kex->server_version_string,
+	    kex->client_version,
+	    kex->server_version,
 	    sshbuf_ptr(kex->my), sshbuf_len(kex->my),
 	    sshbuf_ptr(kex->peer), sshbuf_len(kex->peer),
 	    server_host_key_blob, sbloblen,

@@ -590,14 +590,12 @@ prepare_client_banner(struct ssh *ssh)
 	 * After identification exchange trailing <CR><LF> is removed for
 	 * further use in key exchange messages.
 	 */
-	r = xasprintf(&ssh->kex->client_version_string,
+	r = sshbuf_putf(ssh->kex->client_version,
 	    "SSH-%d.%d-%s PKIX["PACKAGE_VERSION"]\r\n",
 	    PROTOCOL_MAJOR_2, PROTOCOL_MINOR_2, SSH_VERSION);
-	if (r < 0) {
-		error("cannot prepare client banner");
-		return SSH_ERR_ALLOC_FAIL;
-	}
-	return 0;
+	if (r != 0)
+		error("cannot prepare client banner: %s", ssh_err(r));
+	return r;
 }
 
 /*
@@ -617,13 +615,16 @@ ssh_exchange_identification(struct ssh *ssh, int timeout_ms)
 	int rc;
 
 {	/* Send our own protocol version identification. */
-	char *client_version_string = ssh->kex->client_version_string;
-	if (atomicio(vwrite, connection_out, client_version_string,
-	    strlen(client_version_string)) != strlen(client_version_string))
+	char *client_version_string;
+	struct sshbuf *ver = ssh->kex->client_version;
+	if (atomicio(vwrite, connection_out, sshbuf_mutable_ptr(ver),
+	    sshbuf_len(ver)) != sshbuf_len(ver))
 		fatal("write: %.100s", strerror(errno));
 
-	chop(client_version_string);
+	sshbuf_consume_end(ver, 2); /* skip trailing "\r\n" */
+	client_version_string = sshbuf_dup_string(ver);
 	debug("Local version string %.100s", client_version_string);
+	free(client_version_string);
 }
 	/* Read other side's version identification. */
 	for (n = 0;;) {
@@ -697,7 +698,9 @@ ssh_exchange_identification(struct ssh *ssh, int timeout_ms)
 		logit("Server version \"%.100s\" uses unsafe RSA signature "
 		    "scheme; disabling use of RSA keys", remote_version);
 	chop(server_version_string);
-	ssh->kex->server_version_string = server_version_string;
+	sshbuf_put(ssh->kex->server_version,
+	    server_version_string, strlen(server_version_string));
+	free(server_version_string);
 }
 
 /* defaults to 'no' */

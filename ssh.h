@@ -93,3 +93,7 @@
 
 /* Listen backlog for sshd, ssh-agent and forwarding sockets */
 #define SSH_LISTEN_BACKLOG		128
+
+/* Limits for banner exchange */
+#define SSH_MAX_BANNER_LEN		8192
+#define SSH_MAX_PRE_BANNER_LINES	1024

@@ -669,7 +669,9 @@ kex_new(void)
 	if ((kex = calloc(1, sizeof(*kex))) == NULL)
 		return NULL;
 	if ((kex->peer = sshbuf_new()) == NULL ||
-	    (kex->my = sshbuf_new()) == NULL) {
+	    (kex->my = sshbuf_new()) == NULL ||
+	    (kex->client_version = sshbuf_new()) == NULL ||
+	    (kex->server_version = sshbuf_new()) == NULL) {
 		kex_free(kex);
 		return NULL;
 	}
@@ -726,9 +728,9 @@ kex_free(struct kex *kex)
 	}
 	sshbuf_free(kex->peer);
 	sshbuf_free(kex->my);
+	sshbuf_free(kex->client_version);
+	sshbuf_free(kex->server_version);
 	free(kex->session_id);
-	free(kex->client_version_string);
-	free(kex->server_version_string);
 	free(kex->failed_choice);
 	free(kex->hostkey_alg);
 	free(kex->pkalgs);

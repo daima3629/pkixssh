@@ -78,6 +78,8 @@ input_kex_dh_gex_request(int type, u_int32_t seq, struct ssh *ssh)
 	u_int min = 0, max = 0, nbits = 0;
 	const BIGNUM *dh_p, *dh_g;
 
+	UNUSED(type);
+	UNUSED(seq);
 	debug("SSH2_MSG_KEX_DH_GEX_REQUEST received");
 	if ((r = sshpkt_get_u32(ssh, &min)) != 0 ||
 	    (r = sshpkt_get_u32(ssh, &nbits)) != 0 ||
@@ -137,6 +139,8 @@ input_kex_dh_gex_init(int type, u_int32_t seq, struct ssh *ssh)
 	size_t klen = 0, hashlen;
 	int kout, r;
 
+	UNUSED(type);
+	UNUSED(seq);
 	r = kex_load_host_keys(kex, ssh, &server_host_public, &server_host_private);
 	if (r != SSH_ERR_SUCCESS)
 		goto out;
@@ -194,8 +198,8 @@ input_kex_dh_gex_init(int type, u_int32_t seq, struct ssh *ssh)
 	hashlen = sizeof(hash);
 	if ((r = kexgex_hash(
 	    kex->hash_alg,
-	    kex->client_version_string,
-	    kex->server_version_string,
+	    kex->client_version,
+	    kex->server_version,
 	    sshbuf_ptr(kex->peer), sshbuf_len(kex->peer),
 	    sshbuf_ptr(kex->my), sshbuf_len(kex->my),
 	    server_host_key_blob, sbloblen,

@@ -40,8 +40,8 @@
 int
 kex_dh_hash(
     int hash_alg,
-    const char *client_version_string,
-    const char *server_version_string,
+    const struct sshbuf *client_version,
+    const struct sshbuf *server_version,
     const u_char *ckexinit, size_t ckexinitlen,
     const u_char *skexinit, size_t skexinitlen,
     const u_char *serverhostkeyblob, size_t sbloblen,
@@ -57,8 +57,8 @@ kex_dh_hash(
 		return SSH_ERR_INVALID_ARGUMENT;
 	if ((b = sshbuf_new()) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
-	if ((r = sshbuf_put_cstring(b, client_version_string)) != 0 ||
-	    (r = sshbuf_put_cstring(b, server_version_string)) != 0 ||
+	if ((r = sshbuf_put_stringb(b, client_version)) != 0 ||
+	    (r = sshbuf_put_stringb(b, server_version)) != 0 ||
 	    /* kexinit messages: fake header: len+SSH2_MSG_KEXINIT */
 	    (r = sshbuf_put_u32(b, ckexinitlen+1)) != 0 ||
 	    (r = sshbuf_put_u8(b, SSH2_MSG_KEXINIT)) != 0 ||

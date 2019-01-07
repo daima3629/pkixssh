@@ -392,16 +392,14 @@ prepare_server_banner(struct ssh *ssh)
 	 * After identification exchange trailing <CR><LF> is removed for
 	 * further use in key exchange messages.
 	 */
-	r = xasprintf(&ssh->kex->server_version_string,
+	r = sshbuf_putf(ssh->kex->server_version,
 	    "SSH-%d.%d-%s PKIX["PACKAGE_VERSION"%s]%s%s\r\n",
 	    PROTOCOL_MAJOR_2, PROTOCOL_MINOR_2, SSH_VERSION, fips,
 	    *options.version_addendum == '\0' ? "" : " ",
 	    options.version_addendum);
-	if (r < 0) {
-		error("cannot prepare server banner");
-		return SSH_ERR_ALLOC_FAIL;
-	}
-	return 0;
+	if (r != 0)
+		error("cannot prepare server banner: %s", ssh_err(r));
+	return r;
 }
 
 static void
@@ -415,17 +413,17 @@ sshd_exchange_identification(struct ssh *ssh, int sock_in, int sock_out)
 	char buf[256];			/* Must not be larger than remote_version. */
 	char remote_version[256];	/* Must be at least as big as buf. */
 
-	/* Send our protocol version identification. */
-	server_version_string = ssh->kex->server_version_string;
-	if (atomicio(vwrite, sock_out, server_version_string,
-	    strlen(server_version_string))
-	    != strlen(server_version_string)) {
+{	/* Send our protocol version identification. */
+	struct sshbuf *ver = ssh->kex->server_version;
+	if (atomicio(vwrite, sock_out,
+	    sshbuf_mutable_ptr(ver), sshbuf_len(ver)) != sshbuf_len(ver)) {
 		logit("Could not write ident string to %s port %d",
 		    ssh_remote_ipaddr(ssh), ssh_remote_port(ssh));
 		cleanup_exit(255);
 	}
-	chop(server_version_string);
-	debug("Local version string %.200s", server_version_string);
+	sshbuf_consume_end(ver, 2); /* skip trailing "\r\n" */
+	server_version_string = sshbuf_dup_string(ver);
+}
 
 	/* Read other sides version identification. */
 	memset(buf, 0, sizeof(buf));
@@ -502,7 +500,10 @@ sshd_exchange_identification(struct ssh *ssh, int sock_in, int sock_out)
 		cleanup_exit(255);
 	}
 
-	ssh->kex->client_version_string = client_version_string;
+	sshbuf_put(ssh->kex->client_version,
+	    client_version_string, strlen(client_version_string));
+	free(client_version_string);
+	free(server_version_string);
 }
 
 /* Destroy the host and server keys.  They will no longer be needed. */
