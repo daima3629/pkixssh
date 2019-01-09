@@ -44,8 +44,6 @@ void	 packet_process_incoming(const char *buf, u_int len);
 void	 packet_write_wait(void);
 void	 packet_write_poll(void);
 void	 packet_read_expect(int expected_type);
-#define packet_set_timeout(timeout, count) \
-	ssh_packet_set_timeout(active_state, (timeout), (count))
 #define packet_connection_is_on_socket() \
 	ssh_packet_connection_is_on_socket(active_state)
 #define packet_get_connection_in() \
@@ -137,10 +135,6 @@ void	packet_disconnect(const char *, ...)
 	ssh_packet_set_rekey_limits(active_state, x, y)
 #define packet_get_bytes(x,y) \
 	ssh_packet_get_bytes(active_state, x, y)
-#define packet_set_mux() \
-	ssh_packet_set_mux(active_state)
-#define packet_get_mux() \
-	ssh_packet_get_mux(active_state)
 #define packet_clear_keys() \
 	ssh_packet_clear_keys(active_state)
 
