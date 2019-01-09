@@ -38,7 +38,6 @@ do { \
 void	 packet_close(void);
 u_int	 packet_get_char(void);
 u_int	 packet_get_int(void);
-void     packet_set_connection(int, int);
 int	 packet_read_seqnr(u_int32_t *);
 int	 packet_read_poll_seqnr(u_int32_t *);
 void	 packet_process_incoming(const char *buf, u_int len);
@@ -49,8 +48,6 @@ void	 packet_read_expect(int expected_type);
 	ssh_packet_set_timeout(active_state, (timeout), (count))
 #define packet_connection_is_on_socket() \
 	ssh_packet_connection_is_on_socket(active_state)
-#define packet_set_nonblocking() \
-	ssh_packet_set_nonblocking(active_state)
 #define packet_get_connection_in() \
 	ssh_packet_get_connection_in(active_state)
 #define packet_get_connection_out() \
@@ -116,10 +113,6 @@ void	packet_disconnect(const char *, ...)
 	sshpkt_add_padding(active_state, (pad))
 #define packet_send_ignore(nbytes) \
 	ssh_packet_send_ignore(active_state, (nbytes))
-#define packet_set_server() \
-	ssh_packet_set_server(active_state)
-#define packet_set_authenticated() \
-	ssh_packet_set_authenticated(active_state)
 #define packet_get_input() \
 	ssh_packet_get_input(active_state)
 #define packet_get_output() \

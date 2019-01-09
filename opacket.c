@@ -210,14 +210,6 @@ ssh_packet_get_cstring(struct ssh *ssh, u_int *length_ptr)
 
 /* Old API, that had to be reimplemented */
 
-void
-packet_set_connection(int fd_in, int fd_out)
-{
-	active_state = ssh_packet_set_connection(active_state, fd_in, fd_out);
-	if (active_state == NULL)
-		fatal("%s: ssh_packet_set_connection failed", __func__);
-}
-
 u_int
 packet_get_char(void)
 {

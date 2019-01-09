@@ -124,7 +124,6 @@ ssh_init(struct ssh **sshp, int is_server, struct kex_params *kex_params)
 		ssh_free(ssh);
 		return r;
 	}
-	ssh->kex->server = is_server;
 	if (is_server) {
 #ifdef WITH_OPENSSL
 		ssh->kex->kex[KEX_DH_GRP1_SHA1] = kexdh_server;
