@@ -3,7 +3,7 @@
  * Copyright (c) 2001 Markus Friedl.  All rights reserved.
  *
  * X.509 certificates support,
- * Copyright (c) 2014-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2014-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -187,8 +187,7 @@ input_kex_dh_init(int type, u_int32_t seq, struct ssh *ssh)
 	}
 
 	/* sign H */
-{	ssh_compat ctx_compat = { ssh->compat, xcompat }; /* TODO-Xkey_sign compat */
-	ssh_sign_ctx ctx = { kex->hostkey_alg, server_host_private, &ctx_compat };
+{	ssh_sign_ctx ctx = { kex->hostkey_alg, server_host_private, &ssh->compat };
 
 	r = kex->xsign(&ctx, server_host_public, &signature, &slen, hash, hashlen);
 	if (r != 0)

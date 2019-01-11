@@ -3,7 +3,7 @@
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  *
  * X.509 certificates support,
- * Copyright (c) 2003-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2003-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -155,7 +155,7 @@ userauth_pubkey(struct ssh *ssh)
 		goto done;
 	}
 	if (sshkey_type_plain(key->type) == KEY_RSA &&
-	    (ssh->compat & SSH_BUG_RSASIGMD5) != 0) {
+	    ssh_compat_fellows(ssh, SSH_BUG_RSASIGMD5)) {
 		logit("Refusing RSA key because client uses unsafe "
 		    "signature scheme");
 		goto done;
@@ -172,8 +172,7 @@ userauth_pubkey(struct ssh *ssh)
 		goto done;
 	}
 
-{	ssh_compat ctx_compat = { datafellows, xcompat };
-	ssh_sign_ctx ctx = { pkalg, key, &ctx_compat };
+{	ssh_sign_ctx ctx = { pkalg, key, &ssh->compat };
 
 	key_s = format_key(key);
 	if (sshkey_is_cert(key))
@@ -189,7 +188,7 @@ userauth_pubkey(struct ssh *ssh)
 			fatal("%s: %s", __func__, ssh_err(r));
 		if ((b = sshbuf_new()) == NULL)
 			fatal("%s: sshbuf_new failed", __func__);
-		if (ssh->compat & SSH_OLD_SESSIONID) {
+		if (ssh_compat_fellows(ssh, SSH_OLD_SESSIONID)) {
 			if ((r = sshbuf_put(b, session_id2,
 			    session_id2_len)) != 0)
 				fatal("%s: sshbuf_put session id: %s",

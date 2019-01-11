@@ -39,7 +39,7 @@
  * Copyright (c) 1999, 2000, 2001 Markus Friedl.  All rights reserved.
  *
  * X.509 certificates support,
- * Copyright (c) 2017 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2017-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -1996,8 +1996,7 @@ client_global_hostkeys_private_confirm(struct ssh *ssh, int type,
 			    __func__, ssh_err(r));
 			goto out;
 		}
-	{	ssh_compat ctx_compat = { ssh->compat, xcompat }; /* TODO-Xkey_verify compat */
-		ssh_sign_ctx verify_ctx = { pkalg, ctx->keys[i], &ctx_compat };
+	{	ssh_sign_ctx verify_ctx = { pkalg, ctx->keys[i], &ssh->compat };
 
 		r = Xkey_verify(&verify_ctx, sig, siglen, sshbuf_ptr(signdata), sshbuf_len(signdata));
 		if (r != 0) {

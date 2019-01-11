@@ -3,7 +3,7 @@
  * Copyright (c) 2012 Markus Friedl.  All rights reserved.
  *
  * X.509 certificates support,
- * Copyright (c) 2014-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2014-2019 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -403,7 +403,8 @@ _ssh_read_banner(struct ssh *ssh, struct sshbuf *banner)
 	debug("Remote protocol version %d.%d, remote software version %.100s",
 	    remote_major, remote_minor, remote_version);
 
-	SSH_XCOMPATIBILITY(ssh, remote_version);
+	ssh_set_compatibility(ssh, remote_version);
+
 	if  (remote_major == 1 && remote_minor == 99) {
 		remote_major = 2;
 		remote_minor = 0;

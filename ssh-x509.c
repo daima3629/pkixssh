@@ -1714,7 +1714,7 @@ ssh_x509_sign(
 	debug3("ssh_x509_sign: key alg/type/name: %s/%s/%s",
 	    ctx->alg, sshkey_type(key), sshkey_ssh_name(key));
 	debug3("ssh_x509_sign: compatibility: { 0x%08x, 0x%08x }",
-	    ctx->compat->datafellows, ctx->compat->xcompat);
+	    ctx->compat->datafellows, ctx->compat->extra);
 
 {	/* compute signature */
 	EVP_PKEY *privkey = EVP_PKEY_new();
@@ -1887,7 +1887,7 @@ ssh_x509_verify(
 	debug3("ssh_x509_verify:  key alg/type/name: %s/%s/%s",
 	    ctx->alg, sshkey_type(key), sshkey_ssh_name(key));
 	debug3("ssh_x509_verify: compatibility: { 0x%08x, 0x%08x }",
-	    ctx->compat->datafellows, ctx->compat->xcompat);
+	    ctx->compat->datafellows, ctx->compat->extra);
 
 	loc = ssh_xkalg_nameind(ctx->alg, &xkalg, -1);
 	if (loc < 0) {

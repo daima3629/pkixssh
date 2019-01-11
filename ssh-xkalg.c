@@ -288,7 +288,7 @@ ssh_xkalg_dgst_compat(ssh_x509_md *dest, const ssh_x509_md *src, ssh_compat *com
 	dest->evp = src->evp;
 
 #ifdef OPENSSL_HAS_ECC
-	if (check_compat_x509(compat, SSHX_RFC6187_ASN1_OPAQUE_ECDSA_SIGNATURE)) {
+	if (check_compat_extra(compat, SSHX_RFC6187_ASN1_OPAQUE_ECDSA_SIGNATURE)) {
 		if (src->SignFinal == SSH_ECDSA_SignFinal) {
 			dest->SignFinal = EVP_SignFinal;
 			dest->VerifyFinal = EVP_VerifyFinal;

@@ -310,14 +310,15 @@ xkey_compatibility(const char *remote_version) {
 
 
 void
-ssh_compatibility(ssh_compat *flags, const char *remote_version) {
+ssh_set_compatibility(struct ssh *ssh, const char *remote_version) {
+	ssh_compat *flags = &ssh->compat;
 	if (remote_version == NULL) {
 		flags->datafellows = 0;
-		flags->xcompat = 0;
+		flags->extra = 0;
 		return;
 	}
 	flags->datafellows = compat_datafellows(remote_version);
-	flags->xcompat = xkey_compatibility(remote_version);
+	flags->extra = xkey_compatibility(remote_version);
 }
 
 
@@ -332,7 +333,7 @@ sshbuf_get_compat(struct sshbuf *b, ssh_compat *v) {
 	if (r != 0) return r;
 
 	v->datafellows = v1;
-	v->xcompat = v2;
+	v->extra = v2;
 	return 0;
 }
 
@@ -343,7 +344,7 @@ sshbuf_put_compat(struct sshbuf *b, const ssh_compat *v) {
 
 	r = sshbuf_put_u32(b, v->datafellows);
 	if (r != 0) return r;
-	r = sshbuf_put_u32(b, v->xcompat);
+	r = sshbuf_put_u32(b, v->extra);
 	if (r != 0) return r;
 
 	return 0;

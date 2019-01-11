@@ -7,7 +7,7 @@
  * OpenBSD project by leaving this copyright notice intact.
  *
  * X.509 certificates support,
- * Copyright (c) 2002-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -493,9 +493,9 @@ congreet(int s)
 	ssh_set_app_data(c->c_ssh, c);	/* back link */
 	if (sscanf(buf, "SSH-%d.%d-%[^\n]\n",
 	    &remote_major, &remote_minor, remote_version) == 3)
-		SSH_XCOMPATIBILITY(c->c_ssh, remote_version)
+		ssh_set_compatibility(c->c_ssh, remote_version);
 	else
-		SSH_XCOMPATIBILITY(c->c_ssh, NULL);
+		ssh_set_compatibility(c->c_ssh, NULL);
 	if (!ssh2_capable(remote_major, remote_minor)) {
 		debug("%s doesn't support ssh2", c->c_name);
 		confree(s);

@@ -22,7 +22,7 @@
  * Copyright (c) 2002 Niels Provos.  All rights reserved.
  *
  * X.509 certificates support:
- * Copyright (c) 2002-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -482,21 +482,21 @@ sshd_exchange_identification(struct ssh *ssh, int sock_in, int sock_out)
 	debug("Client protocol version %d.%d; client software version %.100s",
 	    remote_major, remote_minor, remote_version);
 
-	SSH_XCOMPATIBILITY(ssh, remote_version);
+	ssh_set_compatibility(ssh, remote_version);
 
-	if ((ssh->compat & SSH_BUG_PROBE) != 0) {
+	if (ssh_compat_fellows(ssh, SSH_BUG_PROBE)) {
 		logit("probed from %s port %d with %s.  Don't panic.",
 		    ssh_remote_ipaddr(ssh), ssh_remote_port(ssh),
 		    client_version_string);
 		cleanup_exit(255);
 	}
-	if ((ssh->compat & SSH_BUG_SCANNER) != 0) {
+	if (ssh_compat_fellows(ssh, SSH_BUG_SCANNER)) {
 		logit("scanned from %s port %d with %s.  Don't panic.",
 		    ssh_remote_ipaddr(ssh), ssh_remote_port(ssh),
 		    client_version_string);
 		cleanup_exit(255);
 	}
-	if ((ssh->compat & SSH_BUG_RSASIGMD5) != 0) {
+	if (ssh_compat_fellows(ssh, SSH_BUG_RSASIGMD5)) {
 		logit("Client version \"%.100s\" uses unsafe RSA signature "
 		    "scheme; disabling use of RSA keys", remote_version);
 	}

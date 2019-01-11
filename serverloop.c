@@ -15,7 +15,7 @@
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  *
  * X.509 certificates support,
- * Copyright (c) 2017-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2017-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -724,8 +724,7 @@ server_input_hostkeys_prove(struct ssh *ssh, struct sshbuf **respp)
 		sshbuf_reset(sigbuf);
 		free(sig);
 		sig = NULL;
-	{	ssh_compat ctx_compat = { ssh->compat, xcompat }; /* TODO-Xkey_sign compat */
-		ssh_sign_ctx ctx = { pkalg, key_prv, &ctx_compat };
+	{	ssh_sign_ctx ctx = { pkalg, key_prv, &ssh->compat };
 
 		if ((r = sshbuf_put_cstring(sigbuf,
 		    "hostkeys-prove-00@openssh.com")) != 0 ||

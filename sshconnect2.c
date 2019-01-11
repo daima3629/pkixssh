@@ -4,7 +4,7 @@
  * Copyright (c) 2008 Damien Miller.  All rights reserved.
  *
  * X509 certificate support,
- * Copyright (c) 2006-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2006-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -1252,8 +1252,7 @@ sign_and_send_pubkey(struct ssh *ssh, Authctxt *authctxt, Identity *id)
 		}
 
 		/* generate signature */
-	{	ssh_compat ctx_compat = { datafellows, xcompat };
-		ssh_sign_ctx ctx = { pkalg, NULL, &ctx_compat };
+	{	ssh_sign_ctx ctx = { pkalg, NULL, &ssh->compat };
 
 		r = identity_sign(sign_id, &ctx, &signature, &slen, sshbuf_ptr(b), sshbuf_len(b));
 	}
@@ -1613,7 +1612,7 @@ try_identity(struct ssh *ssh, Identity *id)
 	const char *pkalg0;
 
 	if ((key->type == KEY_RSA_CERT) &&
-	    !(ssh->compat & SSH_BUG_SIGTYPE)) {
+	    !ssh_compat_fellows(ssh, SSH_BUG_SIGTYPE)) {
 		pkalg = "rsa-sha2-256-cert-v01@openssh.com";
 		pkalg0 = "rsa-sha2-256";
 		if (pkalg_match(pkalg, options.pubkey_algorithms) &&

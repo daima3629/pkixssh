@@ -360,7 +360,7 @@ process_sign_request2(SocketEntry *e)
 	}
 
 	if (flags & SSH_AGENT_RFC6187_OPAQUE_ECDSA_SIGNATURE)
-		ctx_compat.xcompat = SSHX_RFC6187_ASN1_OPAQUE_ECDSA_SIGNATURE;
+		ctx_compat.extra = SSHX_RFC6187_ASN1_OPAQUE_ECDSA_SIGNATURE;
 	if ((id = lookup_identity(key)) == NULL) {
 		verbose("%s: %s key not found", __func__, sshkey_type(key));
 		goto send;

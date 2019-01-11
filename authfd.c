@@ -362,7 +362,7 @@ Xssh_agent_sign(int sock, ssh_sign_ctx *ctx,
 
 	if (datalen > SSH_KEY_MAX_SIGN_DATA_SIZE)
 		return SSH_ERR_INVALID_ARGUMENT;
-	if (check_compat_x509(ctx->compat, SSHX_RFC6187_ASN1_OPAQUE_ECDSA_SIGNATURE))
+	if (check_compat_extra(ctx->compat, SSHX_RFC6187_ASN1_OPAQUE_ECDSA_SIGNATURE))
 		flags |= SSH_AGENT_RFC6187_OPAQUE_ECDSA_SIGNATURE;
 	if ((msg = sshbuf_new()) == NULL)
 		return SSH_ERR_ALLOC_FAIL;

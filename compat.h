@@ -4,7 +4,7 @@
  * Copyright (c) 1999, 2000, 2001 Markus Friedl.  All rights reserved.
  *
  * X.509 certificates support:
- * Copyright (c) 2017-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2017-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -72,10 +72,7 @@ char	*compat_pkalg_proposal(char *);
 char	*compat_kex_proposal(char *);
 
 extern int datafellows;
-
-
-/* compatibility for X.509 keys */
-extern int xcompat;
+extern int xcompat; /* extra compatibility */
 
 #define SSHX_RFC6187_MISSING_KEY_IDENTIFIER		0x00000001U
 #define SSHX_RFC6187_ASN1_OPAQUE_ECDSA_SIGNATURE	0x00000002U
@@ -85,26 +82,12 @@ extern int xcompat;
 /* enhanced secure shell compatibility */
 struct ssh_compat_st {
 	u_int datafellows;
-	u_int xcompat;	/* X.509 key compatibility */
+	u_int extra;
 };
 
-void ssh_compatibility(ssh_compat *flags, const char *remote_version);
-
-/* TODO ssh_compat in struct ssh */
-#define SSH_XCOMPATIBILITY(ssh, remote_version) { \
-  ssh_compat compat; \
-  ssh_compatibility(&compat, remote_version); \
-  ssh->compat = compat.datafellows; }
-
-
 static inline int/*bool*/
-check_compat_datafellows(ssh_compat *compat, u_int flag) {
-	return compat != NULL ? (flag & compat->datafellows) != 0 : 0;
-}
-
-static inline int/*bool*/
-check_compat_x509(ssh_compat *compat, u_int flag) {
-	return compat != NULL ? (flag & compat->xcompat) != 0 : 0;
+check_compat_extra(ssh_compat *compat, u_int flag) {
+	return (flag & compat->extra) != 0;
 }
 
 int	sshbuf_get_compat(struct sshbuf *b, ssh_compat *v);

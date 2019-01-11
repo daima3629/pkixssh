@@ -15,7 +15,7 @@
  *
  * SSH2 packet format added by Markus Friedl.
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2018-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -935,7 +935,7 @@ ssh_packet_need_rekeying(struct ssh *ssh, u_int outbound_packet_len)
 		return 0;
 
 	/* Peer can't rekey */
-	if (ssh->compat & SSH_BUG_NOREKEY)
+	if (ssh_compat_fellows(ssh, SSH_BUG_NOREKEY))
 		return 0;
 
 	/*
@@ -1164,7 +1164,7 @@ ssh_packet_send2_wrapped(struct ssh *ssh)
 	if (++state->p_send.seqnr == 0)
 		logit("outgoing seqnr wraps around");
 	if (++state->p_send.packets == 0)
-		if (!(ssh->compat & SSH_BUG_NOREKEY))
+		if (!ssh_compat_fellows(ssh, SSH_BUG_NOREKEY))
 			return SSH_ERR_NEED_REKEY;
 	state->p_send.blocks += len / block_size;
 	state->p_send.bytes += len;
@@ -1595,7 +1595,7 @@ ssh_packet_read_poll2(struct ssh *ssh, u_char *typep, u_int32_t *seqnr_p)
 	if (++state->p_read.seqnr == 0)
 		logit("incoming seqnr wraps around");
 	if (++state->p_read.packets == 0)
-		if (!(ssh->compat & SSH_BUG_NOREKEY))
+		if (!ssh_compat_fellows(ssh, SSH_BUG_NOREKEY))
 			return SSH_ERR_NEED_REKEY;
 	state->p_read.blocks += (state->packlen + 4) / block_size;
 	state->p_read.bytes += state->packlen + 4;
@@ -1773,7 +1773,7 @@ ssh_packet_send_debug(struct ssh *ssh, const char *fmt,...)
 	va_list args;
 	int r;
 
-	if ((ssh->compat & SSH_BUG_DEBUG))
+	if (ssh_compat_fellows(ssh, SSH_BUG_DEBUG))
 		return;
 
 	va_start(args, fmt);

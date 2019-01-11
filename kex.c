@@ -2,7 +2,7 @@
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * X.509 certificates support,
- * Copyright (c) 2014-2017 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2014-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -534,8 +534,7 @@ kex_input_ext_info(int type, u_int32_t seq, struct ssh *ssh)
 		free(sigalgs);
 		preset_pkalgs(kex, pkalgs);
 	} else {
-		ssh_compat ctx_compat = { ssh->compat, xcompat }; /* TODO compat */
-		if (check_compat_x509(&ctx_compat, SSHX_OPENSSH_BROKEN_ALGO_INFO)) {
+		if (ssh_compat_extra(ssh, SSHX_OPENSSH_BROKEN_ALGO_INFO)) {
 			free(sigalgs);
 			/* use list as is properly announced in OpenSSH 7.5 */
 			sigalgs = strdup(

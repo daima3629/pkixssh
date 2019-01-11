@@ -3,7 +3,7 @@
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  *
  * X.509 certificates support,
- * Copyright (c) 2004-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2004-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -131,7 +131,7 @@ userauth_hostbased(struct ssh *ssh)
 		goto done;
 	}
 	if (sshkey_type_plain(key->type) == KEY_RSA &&
-	    (ssh->compat & SSH_BUG_RSASIGMD5) != 0) {
+	    ssh_compat_fellows(ssh, SSH_BUG_RSASIGMD5)) {
 		error("Refusing RSA key because peer uses unsafe "
 		    "signature format");
 		goto done;
@@ -171,8 +171,7 @@ userauth_hostbased(struct ssh *ssh)
 
 	/* test for allowed key and correct signature */
 	authenticated = 0;
-{	ssh_compat ctx_compat = { datafellows, xcompat };
-	ssh_sign_ctx ctx = { pkalg, key, &ctx_compat };
+{	ssh_sign_ctx ctx = { pkalg, key, &ssh->compat };
 
 	if (PRIVSEP(hostbased_xkey_allowed(authctxt->pw, &ctx, cuser, chost)) &&
 	    PRIVSEP(Xkey_verify(&ctx, sig, slen,

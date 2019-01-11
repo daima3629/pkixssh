@@ -13,7 +13,7 @@
  * called by a name other than "ssh" or "Secure Shell".
  *
  * X.509 certificates support,
- * Copyright (c) 2002-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -677,7 +677,8 @@ ssh_exchange_identification(struct ssh *ssh, int timeout_ms)
 	debug("Remote protocol version %d.%d, remote software version %.100s",
 	    remote_major, remote_minor, remote_version);
 
-	SSH_XCOMPATIBILITY(active_state, remote_version);
+	ssh_set_compatibility(ssh, remote_version);
+
 	mismatch = 0;
 
 	switch (remote_major) {

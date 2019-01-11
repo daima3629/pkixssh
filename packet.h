@@ -4,6 +4,7 @@
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
+ * Copyright (c) 2019 Roumen Petrov.  All rights reserved.
  * Interface for the packet protocol functions.
  *
  * As far as I am concerned, the code I have written for this software
@@ -43,6 +44,7 @@ struct sshbuf;
 struct session_state;	/* private session data */
 
 #include "dispatch.h"	/* typedef, DISPATCH_MAX */
+#include "compat.h"
 
 struct key_entry {
 	TAILQ_ENTRY(key_entry) next;
@@ -71,8 +73,8 @@ struct ssh {
 	/* number of packets to ignore in the dispatcher */
 	int dispatch_skip_packets;
 
-	/* datafellows */
-	int compat;
+	/* secure shell compatibility flags */
+	ssh_compat compat;
 
 	/* Lists for private and public keys */
 	TAILQ_HEAD(, key_entry) private_keys;
@@ -87,6 +89,20 @@ struct ssh {
 	/* APP data */
 	void *app_data;
 };
+
+
+void ssh_set_compatibility(struct ssh *ssh, const char *remote_version);
+
+static inline int/*bool*/
+ssh_compat_fellows(struct ssh *ssh, u_int flag) {
+	return (flag & ssh->compat.datafellows) != 0;
+}
+
+static inline int/*bool*/
+ssh_compat_extra(struct ssh *ssh, u_int flag) {
+	return (flag & ssh->compat.extra) != 0;
+}
+
 
 typedef int (ssh_packet_hook_fn)(struct ssh *, struct sshbuf *,
     u_char *, void *);

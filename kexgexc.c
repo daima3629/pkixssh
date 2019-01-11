@@ -5,7 +5,7 @@
  * Copyright (c) 2001 Markus Friedl.  All rights reserved.
  *
  * X.509 certificates support,
- * Copyright (c) 2014-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2014-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -221,7 +221,7 @@ input_kex_dh_gex_reply(int type, u_int32_t seq, struct ssh *ssh)
 #ifdef DEBUG_KEXDH
 	dump_digest("shared secret", kbuf, kout);
 #endif
-	if (ssh->compat & SSH_OLD_DHGEX)
+	if (ssh_compat_fellows(ssh, SSH_OLD_DHGEX))
 		kex->min = kex->max = -1;
 
 	/* calc and verify H */
@@ -243,8 +243,7 @@ input_kex_dh_gex_reply(int type, u_int32_t seq, struct ssh *ssh)
 	    hash, &hashlen)) != 0)
 		goto out;
 
-{	ssh_compat ctx_compat = { ssh->compat, xcompat }; /* TODO-Xkey_verify compat */
-	ssh_sign_ctx ctx = { kex->hostkey_alg, server_host_key, &ctx_compat };
+{	ssh_sign_ctx ctx = { kex->hostkey_alg, server_host_key, &ssh->compat };
 
 	r = Xkey_verify(&ctx, signature, slen, hash, hashlen);
 	if (r != 0) goto out;
