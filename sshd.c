@@ -114,7 +114,6 @@
 #include "myproposal.h"
 #include "authfile.h"
 #include "pathnames.h"
-#include "atomicio.h"
 #include "canohost.h"
 #include "hostfile.h"
 #include "auth.h"
@@ -414,110 +413,6 @@ prepare_server_banner(struct ssh *ssh)
 	if (r != 0)
 		error("cannot prepare server banner: %s", ssh_err(r));
 	return r;
-}
-
-static void
-sshd_exchange_identification(struct ssh *ssh, int sock_in, int sock_out)
-{
-	char *server_version_string;
-	char *client_version_string;
-	u_int i;
-	int remote_major, remote_minor;
-	char *s;
-	char buf[256];			/* Must not be larger than remote_version. */
-	char remote_version[256];	/* Must be at least as big as buf. */
-
-{	/* Send our protocol version identification. */
-	struct sshbuf *ver = ssh->kex->server_version;
-	if (atomicio(vwrite, sock_out,
-	    sshbuf_mutable_ptr(ver), sshbuf_len(ver)) != sshbuf_len(ver)) {
-		logit("Could not write ident string to %s port %d",
-		    ssh_remote_ipaddr(ssh), ssh_remote_port(ssh));
-		cleanup_exit(255);
-	}
-	sshbuf_consume_end(ver, 2); /* skip trailing "\r\n" */
-	server_version_string = sshbuf_dup_string(ver);
-}
-
-	/* Read other sides version identification. */
-	memset(buf, 0, sizeof(buf));
-	for (i = 0; i < sizeof(buf) - 1; i++) {
-		if (atomicio(read, sock_in, &buf[i], 1) != 1) {
-			logit("Did not receive identification string "
-			    "from %s port %d",
-			    ssh_remote_ipaddr(ssh), ssh_remote_port(ssh));
-			cleanup_exit(255);
-		}
-		if (buf[i] == '\r') {
-			buf[i] = 0;
-			/* Kludge for F-Secure Macintosh < 1.0.2 */
-			if (i == 12 &&
-			    strncmp(buf, "SSH-1.5-W1.0", 12) == 0)
-				break;
-			continue;
-		}
-		if (buf[i] == '\n') {
-			buf[i] = 0;
-			break;
-		}
-	}
-	buf[sizeof(buf) - 1] = 0;
-	client_version_string = xstrdup(buf);
-
-	/*
-	 * Check that the versions match.  In future this might accept
-	 * several versions and set appropriate flags to handle them.
-	 */
-	if (sscanf(client_version_string, "SSH-%d.%d-%[^\n]\n",
-	    &remote_major, &remote_minor, remote_version) != 3) {
-		s = "Protocol mismatch.\n";
-		(void) atomicio(vwrite, sock_out, s, strlen(s));
-		logit("Bad protocol version identification '%.100s' "
-		    "from %s port %d", client_version_string,
-		    ssh_remote_ipaddr(ssh), ssh_remote_port(ssh));
-		close(sock_in);
-		close(sock_out);
-		cleanup_exit(255);
-	}
-	debug("Client protocol version %d.%d; client software version %.100s",
-	    remote_major, remote_minor, remote_version);
-
-	ssh_set_compatibility(ssh, remote_version);
-
-	if (ssh_compat_fellows(ssh, SSH_BUG_PROBE)) {
-		logit("probed from %s port %d with %s.  Don't panic.",
-		    ssh_remote_ipaddr(ssh), ssh_remote_port(ssh),
-		    client_version_string);
-		cleanup_exit(255);
-	}
-	if (ssh_compat_fellows(ssh, SSH_BUG_SCANNER)) {
-		logit("scanned from %s port %d with %s.  Don't panic.",
-		    ssh_remote_ipaddr(ssh), ssh_remote_port(ssh),
-		    client_version_string);
-		cleanup_exit(255);
-	}
-	if (ssh_compat_fellows(ssh, SSH_BUG_RSASIGMD5)) {
-		logit("Client version \"%.100s\" uses unsafe RSA signature "
-		    "scheme; disabling use of RSA keys", remote_version);
-	}
-
-	if (remote_major != 2 &&
-	    !(remote_major == 1 && remote_minor == 99)) {
-		s = "Protocol major versions differ.\n";
-		(void) atomicio(vwrite, sock_out, s, strlen(s));
-		close(sock_in);
-		close(sock_out);
-		logit("Protocol major versions differ for %s port %d: "
-		    "%.200s vs. %.200s",
-		    ssh_remote_ipaddr(ssh), ssh_remote_port(ssh),
-		    server_version_string, client_version_string);
-		cleanup_exit(255);
-	}
-
-	sshbuf_put(ssh->kex->client_version,
-	    client_version_string, strlen(client_version_string));
-	free(client_version_string);
-	free(server_version_string);
 }
 
 /* Destroy the host and server keys.  They will no longer be needed. */

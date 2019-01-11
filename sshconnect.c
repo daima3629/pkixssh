@@ -80,7 +80,6 @@
 #include "log.h"
 #include "misc.h"
 #include "readconf.h"
-#include "atomicio.h"
 #include "dns.h"
 #include "monitor_fdpass.h"
 #include "ssh2.h"
@@ -596,112 +595,6 @@ prepare_client_banner(struct ssh *ssh)
 	if (r != 0)
 		error("cannot prepare client banner: %s", ssh_err(r));
 	return r;
-}
-
-/*
- * Waits for the server identification string, and sends our own
- * identification string.
- */
-static void
-ssh_exchange_identification(struct ssh *ssh, int timeout_ms)
-{
-	char *server_version_string;
-	char buf[256], remote_version[256];	/* must be same size! */
-	int remote_major, remote_minor, mismatch;
-	int connection_in = ssh_packet_get_connection_in(ssh);
-	int connection_out = ssh_packet_get_connection_out(ssh);
-	u_int i, n;
-	size_t len;
-	int rc;
-
-{	/* Send our own protocol version identification. */
-	char *client_version_string;
-	struct sshbuf *ver = ssh->kex->client_version;
-	if (atomicio(vwrite, connection_out, sshbuf_mutable_ptr(ver),
-	    sshbuf_len(ver)) != sshbuf_len(ver))
-		fatal("write: %.100s", strerror(errno));
-
-	sshbuf_consume_end(ver, 2); /* skip trailing "\r\n" */
-	client_version_string = sshbuf_dup_string(ver);
-	debug("Local version string %.100s", client_version_string);
-	free(client_version_string);
-}
-	/* Read other side's version identification. */
-	for (n = 0;;) {
-		for (i = 0; i < sizeof(buf) - 1; i++) {
-			if (timeout_ms > 0) {
-				rc = waitrfd(connection_in, &timeout_ms);
-				if (rc == -1 && errno == ETIMEDOUT) {
-					fatal("Connection timed out during "
-					    "banner exchange");
-				} else if (rc == -1) {
-					fatal("%s: %s",
-					    __func__, strerror(errno));
-				}
-			}
-
-			len = atomicio(read, connection_in, &buf[i], 1);
-			if (len != 1 && errno == EPIPE)
-				fatal("ssh_exchange_identification: "
-				    "Connection closed by remote host");
-			else if (len != 1)
-				fatal("ssh_exchange_identification: "
-				    "read: %.100s", strerror(errno));
-			if (buf[i] == '\r') {
-				buf[i] = '\n';
-				buf[i + 1] = 0;
-				continue;		/**XXX wait for \n */
-			}
-			if (buf[i] == '\n') {
-				buf[i + 1] = 0;
-				break;
-			}
-			if (++n > 65536)
-				fatal("ssh_exchange_identification: "
-				    "No banner received");
-		}
-		buf[sizeof(buf) - 1] = 0;
-		if (strncmp(buf, "SSH-", 4) == 0)
-			break;
-		debug("ssh_exchange_identification: %s", buf);
-	}
-	server_version_string = xstrdup(buf);
-
-	/*
-	 * Check that the versions match.  In future this might accept
-	 * several versions and set appropriate flags to handle them.
-	 */
-	if (sscanf(server_version_string, "SSH-%d.%d-%[^\n]\n",
-	    &remote_major, &remote_minor, remote_version) != 3)
-		fatal("Bad remote protocol version identification: '%.100s'", buf);
-	debug("Remote protocol version %d.%d, remote software version %.100s",
-	    remote_major, remote_minor, remote_version);
-
-	ssh_set_compatibility(ssh, remote_version);
-
-	mismatch = 0;
-
-	switch (remote_major) {
-	case 2:
-		break;
-	case 1:
-		if (remote_minor != 99)
-			mismatch = 1;
-		break;
-	default:
-		mismatch = 1;
-		break;
-	}
-	if (mismatch)
-		fatal("Protocol major versions differ: %d vs. %d",
-		    PROTOCOL_MAJOR_2, remote_major);
-	if ((datafellows & SSH_BUG_RSASIGMD5) != 0)
-		logit("Server version \"%.100s\" uses unsafe RSA signature "
-		    "scheme; disabling use of RSA keys", remote_version);
-	chop(server_version_string);
-	sshbuf_put(ssh->kex->server_version,
-	    server_version_string, strlen(server_version_string));
-	free(server_version_string);
 }
 
 /* defaults to 'no' */
