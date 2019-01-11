@@ -1,5 +1,4 @@
-
-/* $OpenBSD: kexgexc.c,v 1.27 2018/02/07 02:06:51 jsing Exp $ */
+/* $OpenBSD: kexgexc.c,v 1.29 2018/12/27 03:25:25 djm Exp $ */
 /*
  * Copyright (c) 2000 Niels Provos.  All rights reserved.
  * Copyright (c) 2001 Markus Friedl.  All rights reserved.

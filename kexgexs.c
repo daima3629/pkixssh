@@ -1,4 +1,4 @@
-/* $OpenBSD: kexgexs.c,v 1.35 2018/10/04 00:04:41 djm Exp $ */
+/* $OpenBSD: kexgexs.c,v 1.36 2018/12/27 03:25:25 djm Exp $ */
 /*
  * Copyright (c) 2000 Niels Provos.  All rights reserved.
  * Copyright (c) 2001 Markus Friedl.  All rights reserved.

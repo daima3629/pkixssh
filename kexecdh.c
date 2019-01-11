@@ -1,4 +1,4 @@
-/* $OpenBSD: kexecdh.c,v 1.6 2015/01/19 20:16:15 markus Exp $ */
+/* $OpenBSD: kexecdh.c,v 1.7 2018/12/27 03:25:25 djm Exp $ */
 /*
  * Copyright (c) 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2010 Damien Miller.  All rights reserved.

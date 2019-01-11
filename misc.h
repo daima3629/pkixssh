@@ -1,4 +1,4 @@
-/* $OpenBSD: misc.h,v 1.77 2018/12/07 04:36:09 dtucker Exp $ */
+/* $OpenBSD: misc.h,v 1.78 2018/12/27 03:25:25 djm Exp $ */
 
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>

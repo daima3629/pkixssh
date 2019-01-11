@@ -1,4 +1,4 @@
-/* 	$OpenBSD: test_kex.c,v 1.2 2015/07/10 06:23:25 markus Exp $ */
+/* 	$OpenBSD: test_kex.c,v 1.3 2018/12/27 03:37:49 djm Exp $ */
 /*
  * Regress test KEX
  *

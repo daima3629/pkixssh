@@ -1,4 +1,4 @@
-/* $OpenBSD: kexdhs.c,v 1.27 2018/04/10 00:10:49 djm Exp $ */
+/* $OpenBSD: kexdhs.c,v 1.29 2018/12/27 03:25:25 djm Exp $ */
 /*
  * Copyright (c) 2001 Markus Friedl.  All rights reserved.
  *
