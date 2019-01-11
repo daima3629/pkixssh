@@ -1431,7 +1431,8 @@ ssh_login(struct ssh *ssh, Sensitive *sensitive, const char *orighost,
 		cleanup_exit(255);
 
 	/* Exchange protocol version identification strings with the server. */
-	ssh_exchange_identification(ssh, timeout_ms);
+	if (kex_exchange_identification(ssh, timeout_ms) != 0)
+		cleanup_exit(255);
 
 	/* Put the connection into non-blocking mode. */
 	ssh_packet_set_nonblocking(ssh);

@@ -4,7 +4,7 @@
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  *
  * X.509 certificates support,
- * Copyright (c) 2014-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2014-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -174,6 +174,8 @@ int	 kex_names_valid(const char *);
 char	*kex_alg_list(char);
 char	*kex_names_cat(const char *, const char *);
 int	 kex_assemble_names(char **, const char *, const char *);
+
+int	 kex_exchange_identification(struct ssh *, int);
 
 struct kex *kex_new(void);
 int	 kex_ready(struct ssh *, char *[PROPOSAL_MAX]);

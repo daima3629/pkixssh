@@ -142,22 +142,22 @@ ${SSH} -F $OBJ/ssh_config -p$P otherhost true \
 verbose "test $tid: cmd forward local (UNIX)"
 ${SSH} -F $OBJ/ssh_config -S $CTL -Oforward -L $OBJ/unix-1.fwd:localhost:$PORT otherhost \
      || fail "request local forward failed"
-echo "" | $NC -U $OBJ/unix-1.fwd | grep "Protocol mismatch" >/dev/null 2>&1 \
+printf '\r\n' | $NC -U $OBJ/unix-1.fwd | grep "Invalid SSH identification string" >/dev/null 2>&1 \
      || fail "connect to local forward path failed"
 ${SSH} -F $OBJ/ssh_config -S $CTL -Ocancel -L $OBJ/unix-1.fwd:localhost:$PORT otherhost \
      || fail "cancel local forward failed"
-N=$(echo "xyzzy" | $NC -U $OBJ/unix-1.fwd 2>&1 | grep "xyzzy" | wc -l)
+N=$(printf 'xyzzy\r\n' | $NC -U $OBJ/unix-1.fwd 2>&1 | wc -l)
 test ${N} -eq 0 || fail "local forward path still listening"
 rm -f $OBJ/unix-1.fwd
 
 verbose "test $tid: cmd forward remote (UNIX)"
 ${SSH} -F $OBJ/ssh_config -S $CTL -Oforward -R $OBJ/unix-1.fwd:localhost:$PORT otherhost \
      || fail "request remote forward failed"
-echo "" | $NC -U $OBJ/unix-1.fwd | grep "Protocol mismatch" >/dev/null 2>&1 \
+printf '\r\n' | $NC -U $OBJ/unix-1.fwd | grep "Invalid SSH identification string" >/dev/null 2>&1 \
      || fail "connect to remote forwarded path failed"
 ${SSH} -F $OBJ/ssh_config -S $CTL -Ocancel -R $OBJ/unix-1.fwd:localhost:$PORT otherhost \
      || fail "cancel remote forward failed"
-N=$(echo "xyzzy" | $NC -U $OBJ/unix-1.fwd 2>&1 | grep "xyzzy" | wc -l)
+N=$(printf 'xyzzy\r\n' | $NC -U $OBJ/unix-1.fwd 2>&1 | wc -l)
 test ${N} -eq 0 || fail "remote forward path still listening"
 rm -f $OBJ/unix-1.fwd
 

@@ -2299,7 +2299,8 @@ main(int ac, char **av)
 	if (prepare_server_banner(ssh) != 0)
 		cleanup_exit(255);
 
-	sshd_exchange_identification(ssh, sock_in, sock_out);
+	if (kex_exchange_identification(ssh, -1) != 0)
+		cleanup_exit(255);
 
 	ssh_packet_set_nonblocking(ssh);
 
