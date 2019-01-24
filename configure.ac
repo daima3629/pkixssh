@@ -1861,7 +1861,9 @@ AC_CHECK_FUNCS([ \
 	errx \
 	explicit_bzero \
 	fchmod \
+	fchmodat \
 	fchown \
+	fchownat \
 	flock \
 	freeaddrinfo \
 	freezero \
@@ -1954,6 +1956,7 @@ AC_CHECK_FUNCS([ \
 	truncate \
 	unsetenv \
 	updwtmpx \
+	utimensat \
 	user_from_uid \
 	usleep \
 	vasprintf \

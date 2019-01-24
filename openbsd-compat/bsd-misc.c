@@ -25,6 +25,7 @@
 # include <sys/time.h>
 #endif
 
+#include <fcntl.h>
 #include <string.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -126,6 +127,108 @@ int utimes(char *filename, struct timeval *tvp)
 	ub.modtime = tvp[1].tv_sec;
 
 	return (utime(filename, &ub));
+}
+#endif
+
+#ifndef HAVE_UTIMENSAT
+/*
+ * A limited implementation of utimensat() that only implements the
+ * functionality used by secsh, currently only AT_FDCWD and
+ * AT_SYMLINK_NOFOLLOW.
+ */
+int
+utimensat(int fd, const char *pathname, const struct timespec times[2],
+    int flags)
+{
+	struct timeval tv[2];
+
+	if (fd != AT_FDCWD) {
+		errno = ENOSYS;
+		return -1;
+	}
+
+	tv[0].tv_sec = times[0].tv_sec;
+	tv[0].tv_usec = times[0].tv_nsec / 1000;
+	tv[1].tv_sec = times[1].tv_sec;
+	tv[1].tv_usec = times[1].tv_nsec / 1000;
+
+# ifdef HAVE_FUTIMES
+{	int ret, oflags = O_WRONLY;
+
+	if (flags & AT_SYMLINK_NOFOLLOW)
+		oflags |= O_NOFOLLOW;
+	if ((fd = open(pathname, oflags)) == -1)
+		return -1;
+	ret = futimes(fd, tv);
+	close(fd);
+	return ret;
+}
+# else
+	UNUSED(flags);
+	return utimes(pathname, tv);
+# endif
+}
+#endif
+
+#ifndef HAVE_FCHOWNAT
+/*
+ * A limited implementation of fchownat() that only implements the
+ * functionality used by secsh, currently only AT_FDCWD and
+ * AT_SYMLINK_NOFOLLOW.
+ */
+int
+fchownat(int fd, const char *pathname, uid_t owner, gid_t group, int flags)
+{
+	if (fd != AT_FDCWD) {
+		errno = ENOSYS;
+		return -1;
+	}
+# ifdef HAVE_FCHOWN
+{	int ret, oflags = O_WRONLY;
+
+	if (flags & AT_SYMLINK_NOFOLLOW)
+		oflags |= O_NOFOLLOW;
+	if ((fd = open(pathname, oflags)) == -1)
+		return -1;
+	ret = fchown(fd, owner, group);
+	close(fd);
+	return ret;
+}
+# else
+	UNUSED(flags);
+	return chown(pathname, owner, group);
+# endif
+}
+#endif
+
+#ifndef HAVE_FCHMODAT
+/*
+ * A limited implementation of fchmodat() that only implements the
+ * functionality used by secsh, currently only AT_FDCWD and
+ * AT_SYMLINK_NOFOLLOW.
+ */
+int
+fchmodat(int fd, const char *pathname, mode_t mode, int flags)
+{
+	if (fd != AT_FDCWD) {
+		errno = ENOSYS;
+		return -1;
+	}
+# ifdef HAVE_FCHMOD
+{	int ret, oflags = O_WRONLY;
+
+	if (flags & AT_SYMLINK_NOFOLLOW)
+		oflags |= O_NOFOLLOW;
+	if ((fd = open(pathname, oflags)) == -1)
+		return -1;
+	ret = fchmod(fd, mode);
+	close(fd);
+	return ret;
+}
+# else
+	UNUSED(flags);
+	return chmod(pathname, mode);
+# endif
 }
 #endif
 
