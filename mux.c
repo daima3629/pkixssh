@@ -1,4 +1,4 @@
-/* $OpenBSD: mux.c,v 1.77 2018/09/26 07:32:44 djm Exp $ */
+/* $OpenBSD: mux.c,v 1.79 2019/01/19 21:35:25 djm Exp $ */
 /*
  * Copyright (c) 2002-2008 Damien Miller <djm@openbsd.org>
  * Copyright (c) 2018 Roumen Petrov.  All rights reserved.
@@ -188,12 +188,12 @@ static const struct {
 };
 
 /* Cleanup callback fired on closure of mux slave _session_ channel */
-/* ARGSUSED */
 static void
-mux_master_session_cleanup_cb(struct ssh *ssh, int cid, void *unused)
+mux_master_session_cleanup_cb(struct ssh *ssh, int cid, void *arg)
 {
 	Channel *cc, *c = channel_by_id(ssh, cid);
 
+	UNUSED(arg);
 	debug3("%s: entering for channel %d", __func__, cid);
 	if (c == NULL)
 		fatal("%s: channel_by_id(%i) == NULL", __func__, cid);
@@ -210,12 +210,12 @@ mux_master_session_cleanup_cb(struct ssh *ssh, int cid, void *unused)
 }
 
 /* Cleanup callback fired on closure of mux slave _control_ channel */
-/* ARGSUSED */
 static void
-mux_master_control_cleanup_cb(struct ssh *ssh, int cid, void *unused)
+mux_master_control_cleanup_cb(struct ssh *ssh, int cid, void *arg)
 {
 	Channel *sc, *c = channel_by_id(ssh, cid);
 
+	UNUSED(arg);
 	debug3("%s: entering for channel %d", __func__, cid);
 	if (c == NULL)
 		fatal("%s: channel_by_id(%i) == NULL", __func__, cid);
@@ -273,6 +273,9 @@ mux_master_process_hello(struct ssh *ssh, u_int rid,
 	struct mux_master_state *state = (struct mux_master_state *)c->mux_ctx;
 	int r;
 
+	UNUSED(ssh);
+	UNUSED(rid);
+	UNUSED(reply);
 	if (state == NULL)
 		fatal("%s: channel %d: c->mux_ctx == NULL", __func__, c->self);
 	if (state->hello_rcvd) {
@@ -505,6 +508,8 @@ mux_master_process_alive_check(struct ssh *ssh, u_int rid,
 {
 	int r;
 
+	UNUSED(ssh);
+	UNUSED(m);
 	debug2("%s: channel %d: alive check", __func__, c->self);
 
 	/* prepare reply */
@@ -520,6 +525,8 @@ static int
 mux_master_process_terminate(struct ssh *ssh, u_int rid,
     Channel *c, struct sshbuf *m, struct sshbuf *reply)
 {
+	UNUSED(ssh);
+	UNUSED(m);
 	debug2("%s: channel %d: terminate request", __func__, c->self);
 
 	if (options.control_master == SSHCTL_MASTER_ASK ||
@@ -614,6 +621,7 @@ mux_confirm_remote_forward(struct ssh *ssh, int type, u_int32_t seq, void *ctxt)
 	struct sshbuf *out;
 	int r;
 
+	UNUSED(seq);
 	if ((c = channel_by_id(ssh, fctx->cid)) == NULL) {
 		/* no channel for reply */
 		error("%s: unknown channel", __func__);
@@ -634,7 +642,16 @@ mux_confirm_remote_forward(struct ssh *ssh, int type, u_int32_t seq, void *ctxt)
 	    rfwd->connect_host, rfwd->connect_port);
 	if (type == SSH2_MSG_REQUEST_SUCCESS) {
 		if (rfwd->listen_port == 0) {
-			rfwd->allocated_port = packet_get_int();
+			u_int32_t port;
+			if ((r = sshpkt_get_u32(ssh, &port)) != 0)
+				fatal("%s: packet error: %s",
+				    __func__, ssh_err(r));
+			if (port > 65535) {
+				fatal("Invalid allocated port %u for "
+				    "mux remote forward to %s:%d", (unsigned)port,
+				    rfwd->connect_host, rfwd->connect_port);
+			}
+			rfwd->allocated_port = (int)port;
 			debug("Allocated port %u for mux remote forward"
 			    " to %s:%d", rfwd->allocated_port,
 			    rfwd->connect_host, rfwd->connect_port);
@@ -1102,6 +1119,7 @@ static int
 mux_master_process_stop_listening(struct ssh *ssh, u_int rid,
     Channel *c, struct sshbuf *m, struct sshbuf *reply)
 {
+	UNUSED(m);
 	debug("%s: channel %d: stop listening", __func__, c->self);
 
 	if (options.control_master == SSHCTL_MASTER_ASK ||
@@ -1134,6 +1152,8 @@ mux_master_process_proxy(struct ssh *ssh, u_int rid,
 {
 	int r;
 
+	UNUSED(ssh);
+	UNUSED(m);
 	debug("%s: channel %d: proxy request", __func__, c->self);
 
 	c->mux_rcb = channel_proxy_downstream;
@@ -1406,7 +1426,8 @@ mux_session_confirm(struct ssh *ssh, int id, int success, void *arg)
 	if (cctx->want_agent_fwd && options.forward_agent) {
 		debug("Requesting authentication agent forwarding.");
 		channel_request_start(ssh, id, "auth-agent-req@openssh.com", 0);
-		packet_send();
+		if ((r = sshpkt_send(ssh)) != 0)
+			fatal("%s: packet error: %s", __func__, ssh_err(r));
 	}
 
 	client_session2_setup(ssh, id, cctx->want_tty, cctx->want_subsys,
