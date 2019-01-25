@@ -98,8 +98,8 @@ INTEROP_TESTS=	putty-transfer putty-ciphers putty-kex conch-ciphers
 #LTESTS= 	cipher-speed
 
 USERNAME=		${LOGNAME}
-CLEANFILES=	*.core actual agent-key.* authorized_keys_${USERNAME} \
-		authorized_keys_${USERNAME}.* \
+CLEANFILES=	*.core actual agent-key.* authkeys_orig \
+		authorized_keys_${USERNAME}* \
 		authorized_principals_${USERNAME} \
 		banner.in banner.out cert_host_key* cert_user_key* \
 		copy.1 copy.2 data ed25519-agent ed25519-agent* \
@@ -113,6 +113,7 @@ CLEANFILES=	*.core actual agent-key.* authorized_keys_${USERNAME} \
 		modpipe netcat no_identity_config \
 		pidfile putty.rsa2 ready regress.log \
 		remote_pid revoked-* rsa rsa-agent rsa-agent.pub rsa.pub \
+		rsa-agent-cert.pub \
 		rsa1 rsa1-agent rsa1-agent.pub rsa1.pub rsa_ssh2_cr.prv \
 		rsa_ssh2_crnl.prv scp-ssh-wrapper.exe \
 		scp-ssh-wrapper.scp setuid-allowed sftp-server.log \
