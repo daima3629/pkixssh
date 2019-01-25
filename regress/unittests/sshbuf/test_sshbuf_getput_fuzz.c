@@ -55,9 +55,6 @@ attempt_parse_blob(u_char *blob, size_t len)
 		free(s);
 	}
 	bn = BN_new();
-	sshbuf_get_bignum1(p1, bn);
-	BN_clear_free(bn);
-	bn = BN_new();
 	sshbuf_get_bignum2(p1, bn);
 	BN_clear_free(bn);
 #if defined(OPENSSL_HAS_ECC) && defined(OPENSSL_HAS_NISTP256)
@@ -92,10 +89,6 @@ sshbuf_getput_fuzz_tests(void)
 		/* string */
 		0x00, 0x00, 0x00, 0x09,
 		'O', ' ', 'G', 'o', 'r', 'g', 'o', 'n', '!',
-		/* bignum1 */
-		0x79,
-		0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
-		0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10,
 		/* bignum2 */
 		0x00, 0x00, 0x00, 0x14,
 		0x00,
