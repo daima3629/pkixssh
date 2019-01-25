@@ -1,4 +1,4 @@
-/* $OpenBSD: sshd.c,v 1.524 2019/01/19 21:38:24 djm Exp $ */
+/* $OpenBSD: sshd.c,v 1.526 2019/01/19 21:43:07 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -913,15 +913,22 @@ notify_hostkeys(struct ssh *ssh)
 		debug3("%s: key %d: %s %s", __func__, i,
 		    pkalg, fp);
 		if (nkeys == 0 && n_algs == 0) {
-			ssh_packet_start(ssh, SSH2_MSG_GLOBAL_REQUEST);
-			ssh_packet_put_cstring(ssh, "hostkeys-00@openssh.com");
-			ssh_packet_put_char(ssh, 0); /* want-reply */
+			/*
+			 * Start building the request when we find the
+			 * first usable key.
+			 */
+			if ((r = sshpkt_start(ssh, SSH2_MSG_GLOBAL_REQUEST)) != 0 ||
+			    (r = sshpkt_put_cstring(ssh, "hostkeys-00@openssh.com")) != 0 ||
+			    (r = sshpkt_put_u8(ssh, 0)) != 0) /* want reply */
+				sshpkt_fatal(ssh, r, "%s: start request", __func__);
 		}
+		/* Append the key to the request */
 		sshbuf_reset(buf);
 		if ((r = Xkey_putb(pkalg, key, buf)) != 0)
 			fatal("%s: couldn't put hostkey %d: %s",
 			    __func__, i, ssh_err(r));
-		ssh_packet_put_string(ssh, sshbuf_ptr(buf), sshbuf_len(buf));
+		if ((r = sshpkt_put_stringb(ssh, buf)) != 0)
+			sshpkt_fatal(ssh, r, "%s: append key", __func__);
 	}
 }
 		free(fp);
@@ -930,7 +937,8 @@ notify_hostkeys(struct ssh *ssh)
 	debug3("%s: sent %u hostkeys", __func__, nkeys);
 	if (nkeys == 0)
 		fatal("%s: no hostkeys", __func__);
-	ssh_packet_send(ssh);
+	if ((r = sshpkt_send(ssh)) != 0)
+		sshpkt_fatal(ssh, r, "%s: send", __func__);
 	sshbuf_free(buf);
 }
 
@@ -2402,10 +2410,11 @@ do_ssh2_kex(struct ssh *ssh)
 
 #ifdef DEBUG_KEXDH
 	/* send 1st encrypted/maced/compressed message */
-	ssh_packet_start(ssh, SSH2_MSG_IGNORE);
-	ssh_packet_put_cstring(ssh, "markus");
-	ssh_packet_send(ssh);
-	ssh_packet_write_wait(ssh);
+	if ((r = sshpkt_start(ssh, SSH2_MSG_IGNORE)) != 0 ||
+	    (r = sshpkt_put_cstring(ssh, "roumen")) != 0 ||
+	    (r = sshpkt_send(ssh)) != 0 ||
+	    (r = ssh_packet_write_wait(ssh)) != 0)
+		fatal("kex 1st message: %s", ssh_err(r));
 #endif
 	debug("KEX done");
 }
