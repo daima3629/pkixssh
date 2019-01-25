@@ -1,4 +1,4 @@
-/* $OpenBSD: auth.c,v 1.135 2019/01/17 04:20:53 djm Exp $ */
+/* $OpenBSD: auth.c,v 1.138 2019/01/19 21:41:18 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  *
@@ -103,9 +103,8 @@ static struct sshbuf *auth_debug;
  * Otherwise true is returned.
  */
 int
-allowed_user(struct passwd * pw)
+allowed_user(struct ssh *ssh, struct passwd * pw)
 {
-	struct ssh *ssh = active_state; /* XXX */
 	struct stat st;
 	const char *hostname = NULL, *ipaddr = NULL, *passwd = NULL;
 	u_int i;
@@ -315,10 +314,10 @@ format_method_key(Authctxt *authctxt)
 }
 
 void
-auth_log(Authctxt *authctxt, int authenticated, int partial,
+auth_log(struct ssh *ssh, int authenticated, int partial,
     const char *method, const char *submethod)
 {
-	struct ssh *ssh = active_state; /* XXX */
+	Authctxt *authctxt = (Authctxt *)ssh->authctxt;
 	int level = SYSLOG_LEVEL_VERBOSE;
 	const char *authmsg;
 	char *extra = NULL;
@@ -380,9 +379,9 @@ auth_log(Authctxt *authctxt, int authenticated, int partial,
 
 
 void
-auth_maxtries_exceeded(Authctxt *authctxt)
+auth_maxtries_exceeded(struct ssh *ssh)
 {
-	struct ssh *ssh = active_state; /* XXX */
+	Authctxt *authctxt = (Authctxt *)ssh->authctxt;
 
 	error("maximum authentication attempts exceeded for "
 	    "%s%.100s from %.200s port %d ssh2",
@@ -390,7 +389,7 @@ auth_maxtries_exceeded(Authctxt *authctxt)
 	    authctxt->user,
 	    ssh_remote_ipaddr(ssh),
 	    ssh_remote_port(ssh));
-	packet_disconnect("Too many authentication failures");
+	ssh_packet_disconnect(ssh, "Too many authentication failures");
 	/* NOTREACHED */
 }
 
@@ -574,8 +573,9 @@ getpwnamallow(struct ssh *ssh, const char *user)
 #endif
 #endif
 	struct passwd *pw;
-	struct connection_info *ci = get_connection_info(1, options.use_dns);
+	struct connection_info *ci;
 
+	ci = get_connection_info(ssh, 1, options.use_dns);
 	ci->user = user;
 	parse_server_match_config(&options, ci);
 	log_change_level(options.log_level);
@@ -615,7 +615,7 @@ getpwnamallow(struct ssh *ssh, const char *user)
 #endif /* SSH_AUDIT_EVENTS */
 		return (NULL);
 	}
-	if (!allowed_user(pw))
+	if (!allowed_user(ssh, pw))
 		return (NULL);
 #ifdef HAVE_LOGIN_CAP
 	if ((lc = login_getclass(pw->pw_class)) == NULL) {

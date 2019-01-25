@@ -1,4 +1,4 @@
-/* $OpenBSD: auth.h,v 1.97 2019/01/19 21:38:24 djm Exp $ */
+/* $OpenBSD: auth.h,v 1.98 2019/01/19 21:41:18 djm Exp $ */
 
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
@@ -172,8 +172,8 @@ void remove_kbdint_device(const char *);
 
 void	do_authentication2(struct ssh *);
 
-void	auth_log(Authctxt *, int, int, const char *, const char *);
-void	auth_maxtries_exceeded(Authctxt *) __attribute__((noreturn));
+void	auth_log(struct ssh *, int, int, const char *, const char *);
+void	auth_maxtries_exceeded(struct ssh *) __attribute__((noreturn));
 void	userauth_finish(struct ssh *, int, const char *, const char *);
 int	auth_root_allowed(struct ssh *, const char *);
 
@@ -190,7 +190,7 @@ void	auth2_challenge_stop(struct ssh *);
 int	bsdauth_query(void *, char **, char **, u_int *, char ***, u_int **);
 int	bsdauth_respond(void *, u_int, char **);
 
-int	allowed_user(struct passwd *);
+int	allowed_user(struct ssh *, struct passwd *);
 struct passwd * getpwnamallow(struct ssh *, const char *user);
 
 char	*expand_authorized_keys(const char *, struct passwd *pw);

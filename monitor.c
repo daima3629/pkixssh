@@ -341,7 +341,7 @@ monitor_child_preauth(struct ssh *ssh, struct monitor *pmonitor)
 #endif
 		}
 		if (ent->flags & (MON_AUTHDECIDE|MON_ALOG)) {
-			auth_log(authctxt, authenticated, partial,
+			auth_log(ssh, authenticated, partial,
 			    auth_method, auth_submethod);
 			if (!partial && !authenticated)
 				authctxt->failures++;
@@ -1241,7 +1241,7 @@ mm_answer_keyallowed(struct ssh *ssh, int sock, struct sshbuf *m)
 		hostbased_chost = chost;
 	} else {
 		/* Log failed attempt */
-		auth_log(authctxt, 0, 0, auth_method, NULL);
+		auth_log(ssh, 0, 0, auth_method, NULL);
 		free(blob);
 		free(cuser);
 		free(chost);
