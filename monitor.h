@@ -1,8 +1,9 @@
-/* $OpenBSD: monitor.h,v 1.21 2018/07/09 21:53:45 markus Exp $ */
+/* $OpenBSD: monitor.h,v 1.22 2019/01/19 21:43:07 djm Exp $ */
 
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * All rights reserved.
+ * Copyright (c) 2018-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -59,6 +60,8 @@ enum monitor_reqtype {
 
 };
 
+struct ssh;
+
 struct monitor {
 	int			 m_recvfd;
 	int			 m_sendfd;
@@ -72,11 +75,11 @@ struct monitor *monitor_init(void);
 void monitor_reinit(struct monitor *);
 
 struct Authctxt;
-void monitor_child_preauth(struct Authctxt *, struct monitor *);
-void monitor_child_postauth(struct monitor *);
+void monitor_child_preauth(struct ssh *, struct monitor *);
+void monitor_child_postauth(struct ssh *, struct monitor *);
 
-struct mon_table;
-int monitor_read(struct monitor*, struct mon_table *, struct mon_table **);
+void monitor_clear_keystate(struct ssh *);
+void monitor_apply_keystate(struct ssh *);
 
 /* Prototypes for request sending and receiving */
 void mm_request_send(int, enum monitor_reqtype, struct sshbuf *);

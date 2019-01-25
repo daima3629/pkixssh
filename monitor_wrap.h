@@ -1,11 +1,9 @@
-/* $OpenBSD: monitor_wrap.h,v 1.38 2018/07/11 18:53:29 markus Exp $ */
+/* $OpenBSD: monitor_wrap.h,v 1.40 2019/01/19 21:43:07 djm Exp $ */
 
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * All rights reserved.
- *
- * X.509 certificates support,
- * Copyright (c) 2017-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2017-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -36,6 +34,7 @@ extern int use_privsep;
 
 enum mm_keytype { MM_NOKEY, MM_HOSTKEY, MM_USERKEY };
 
+struct ssh;
 struct monitor;
 struct Authctxt;
 struct sshkey;
@@ -51,7 +50,7 @@ DH *mm_choose_dh(int, int, int);
 int mm_Xkey_sign(ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
     const u_char *data, size_t datalen);
 void mm_inform_authserv(char *, char *);
-struct passwd *mm_getpwnamallow(const char *);
+struct passwd *mm_getpwnamallow(struct ssh *, const char *);
 char *mm_auth2_read_banner(void);
 int mm_auth_password(struct ssh *, char *);
 int mm_user_xkey_allowed(struct ssh *, struct passwd *, ssh_sign_ctx *, int,
@@ -92,10 +91,8 @@ void mm_session_pty_cleanup2(struct Session *);
 struct newkeys *mm_newkeys_from_blob(u_char *, int);
 int mm_newkeys_to_blob(int, u_char **, u_int *);
 
-void monitor_clear_keystate(struct monitor *);
-void monitor_apply_keystate(struct monitor *);
 void mm_get_keystate(struct monitor *);
-void mm_send_keystate(struct monitor*);
+void mm_send_keystate(struct ssh *, struct monitor*);
 
 /* bsdauth */
 int mm_bsdauth_query(void *, char **, char **, u_int *, char ***, u_int **);

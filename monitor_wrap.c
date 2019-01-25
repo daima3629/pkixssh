@@ -1,11 +1,11 @@
-/* $OpenBSD: monitor_wrap.c,v 1.107 2018/07/20 03:46:34 djm Exp $ */
+/* $OpenBSD: monitor_wrap.c,v 1.110 2019/01/19 21:43:07 djm Exp $ */
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * Copyright 2002 Markus Friedl <markus@openbsd.org>
  * All rights reserved.
  *
  * X509 certificate support,
- * Copyright (c) 2007-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2007-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -253,9 +253,8 @@ mm_Xkey_sign(ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 }
 
 struct passwd *
-mm_getpwnamallow(const char *username)
+mm_getpwnamallow(struct ssh *ssh, const char *username)
 {
-	struct ssh *ssh = active_state;		/* XXX */
 	struct sshbuf *m;
 	struct passwd *pw;
 	size_t len;
@@ -571,9 +570,8 @@ mm_Xkey_verify(ssh_sign_ctx *ctx, const u_char *sig, u_int siglen, const u_char 
 }
 
 void
-mm_send_keystate(struct monitor *monitor)
+mm_send_keystate(struct ssh *ssh, struct monitor *monitor)
 {
-	struct ssh *ssh = active_state;		/* XXX */
 	struct sshbuf *m;
 	int r;
 

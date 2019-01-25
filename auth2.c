@@ -289,7 +289,7 @@ input_userauth_request(int type, u_int32_t seq, struct ssh *ssh)
 
 	if (authctxt->attempt++ == 0) {
 		/* setup auth context */
-		authctxt->pw = PRIVSEP(getpwnamallow(user));
+		authctxt->pw = PRIVSEP(getpwnamallow(ssh, user));
 		authctxt->user = xstrdup(user);
 		if (authctxt->pw && strcmp(service, "ssh-connection")==0) {
 			authctxt->valid = 1;

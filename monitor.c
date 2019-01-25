@@ -1,11 +1,11 @@
-/* $OpenBSD: monitor.c,v 1.188 2018/11/16 02:43:56 djm Exp $ */
+/* $OpenBSD: monitor.c,v 1.191 2019/01/19 21:43:07 djm Exp $ */
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * Copyright 2002 Markus Friedl <markus@openbsd.org>
  * All rights reserved.
  *
  * X509 certificate support,
- * Copyright (c) 2014-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2014-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -114,47 +114,47 @@ static struct sshbuf *child_state;
 
 /* Functions on the monitor that answer unprivileged requests */
 
-int mm_answer_moduli(int, struct sshbuf *);
-int mm_answer_sign(int, struct sshbuf *);
-int mm_answer_pwnamallow(int, struct sshbuf *);
-int mm_answer_auth2_read_banner(int, struct sshbuf *);
-int mm_answer_authserv(int, struct sshbuf *);
-int mm_answer_authpassword(int, struct sshbuf *);
-int mm_answer_bsdauthquery(int, struct sshbuf *);
-int mm_answer_bsdauthrespond(int, struct sshbuf *);
-int mm_answer_keyallowed(int, struct sshbuf *);
-int mm_answer_keyverify(int, struct sshbuf *);
-int mm_answer_pty(int, struct sshbuf *);
-int mm_answer_pty_cleanup(int, struct sshbuf *);
-int mm_answer_term(int, struct sshbuf *);
-int mm_answer_rsa_keyallowed(int, struct sshbuf *);
-int mm_answer_rsa_challenge(int, struct sshbuf *);
-int mm_answer_rsa_response(int, struct sshbuf *);
-int mm_answer_sesskey(int, struct sshbuf *);
-int mm_answer_sessid(int, struct sshbuf *);
+int mm_answer_moduli(struct ssh *, int, struct sshbuf *);
+int mm_answer_sign(struct ssh *, int, struct sshbuf *);
+int mm_answer_pwnamallow(struct ssh *, int, struct sshbuf *);
+int mm_answer_auth2_read_banner(struct ssh *, int, struct sshbuf *);
+int mm_answer_authserv(struct ssh *, int, struct sshbuf *);
+int mm_answer_authpassword(struct ssh *, int, struct sshbuf *);
+int mm_answer_bsdauthquery(struct ssh *, int, struct sshbuf *);
+int mm_answer_bsdauthrespond(struct ssh *, int, struct sshbuf *);
+int mm_answer_skeyquery(struct ssh *, int, struct sshbuf *);
+int mm_answer_skeyrespond(struct ssh *, int, struct sshbuf *);
+int mm_answer_keyallowed(struct ssh *, int, struct sshbuf *);
+int mm_answer_keyverify(struct ssh *, int, struct sshbuf *);
+int mm_answer_pty(struct ssh *, int, struct sshbuf *);
+int mm_answer_pty_cleanup(struct ssh *, int, struct sshbuf *);
+int mm_answer_term(struct ssh *, int, struct sshbuf *);
+int mm_answer_rsa_keyallowed(struct ssh *, int, struct sshbuf *);
+int mm_answer_rsa_challenge(struct ssh *, int, struct sshbuf *);
+int mm_answer_rsa_response(struct ssh *, int, struct sshbuf *);
+int mm_answer_sesskey(struct ssh *, int, struct sshbuf *);
+int mm_answer_sessid(struct ssh *, int, struct sshbuf *);
 
 #ifdef USE_PAM
-int mm_answer_pam_start(int, struct sshbuf *);
-int mm_answer_pam_account(int, struct sshbuf *);
-int mm_answer_pam_init_ctx(int, struct sshbuf *);
-int mm_answer_pam_query(int, struct sshbuf *);
-int mm_answer_pam_respond(int, struct sshbuf *);
-int mm_answer_pam_free_ctx(int, struct sshbuf *);
+int mm_answer_pam_start(struct ssh *, int, struct sshbuf *);
+int mm_answer_pam_account(struct ssh *, int, struct sshbuf *);
+int mm_answer_pam_init_ctx(struct ssh *, int, struct sshbuf *);
+int mm_answer_pam_query(struct ssh *, int, struct sshbuf *);
+int mm_answer_pam_respond(struct ssh *, int, struct sshbuf *);
+int mm_answer_pam_free_ctx(struct ssh *, int, struct sshbuf *);
 #endif
 
 #ifdef GSSAPI
-int mm_answer_gss_setup_ctx(int, struct sshbuf *);
-int mm_answer_gss_accept_ctx(int, struct sshbuf *);
-int mm_answer_gss_userok(int, struct sshbuf *);
-int mm_answer_gss_checkmic(int, struct sshbuf *);
+int mm_answer_gss_setup_ctx(struct ssh *, int, struct sshbuf *);
+int mm_answer_gss_accept_ctx(struct ssh *, int, struct sshbuf *);
+int mm_answer_gss_userok(struct ssh *, int, struct sshbuf *);
+int mm_answer_gss_checkmic(struct ssh *, int, struct sshbuf *);
 #endif
 
 #ifdef SSH_AUDIT_EVENTS
-int mm_answer_audit_event(int, struct sshbuf *);
-int mm_answer_audit_command(int, struct sshbuf *);
+int mm_answer_audit_event(struct ssh *, int, struct sshbuf *);
+int mm_answer_audit_command(struct ssh *, int, struct sshbuf *);
 #endif
-
-static int monitor_read_log(struct monitor *);
 
 static Authctxt *authctxt;
 
@@ -174,7 +174,7 @@ static pid_t monitor_child_pid;
 struct mon_table {
 	enum monitor_reqtype type;
 	int flags;
-	int (*f)(int, struct sshbuf *);
+	int (*f)(struct ssh *, int, struct sshbuf *);
 };
 
 #define MON_ISAUTH	0x0004	/* Required for Authentication */
@@ -185,6 +185,10 @@ struct mon_table {
 #define MON_AUTH	(MON_ISAUTH|MON_AUTHDECIDE)
 
 #define MON_PERMIT	0x1000	/* Request is permitted */
+
+static int monitor_read(struct ssh *, struct monitor *, struct mon_table *,
+    struct mon_table **);
+static int monitor_read_log(struct monitor *);
 
 struct mon_table mon_dispatch_proto20[] = {
 #ifdef WITH_OPENSSL
@@ -267,9 +271,8 @@ monitor_permit_authentications(int permit)
 }
 
 void
-monitor_child_preauth(Authctxt *_authctxt, struct monitor *pmonitor)
+monitor_child_preauth(struct ssh *ssh, struct monitor *pmonitor)
 {
-	struct ssh *ssh = active_state;	/* XXX */
 	struct mon_table *ent;
 	int authenticated = 0, partial = 0;
 
@@ -281,7 +284,7 @@ monitor_child_preauth(Authctxt *_authctxt, struct monitor *pmonitor)
 		close(pmonitor->m_log_sendfd);
 	pmonitor->m_log_sendfd = pmonitor->m_recvfd = -1;
 
-	authctxt = _authctxt;
+	authctxt = (Authctxt *)ssh->authctxt;
 	memset(authctxt, 0, sizeof(*authctxt));
 	ssh->authctxt = authctxt;
 
@@ -299,7 +302,8 @@ monitor_child_preauth(Authctxt *_authctxt, struct monitor *pmonitor)
 		auth_submethod = NULL;
 		auth2_authctxt_reset_info(authctxt);
 
-		authenticated = (monitor_read(pmonitor, mon_dispatch, &ent) == 1);
+		authenticated = (monitor_read(ssh, pmonitor,
+		    mon_dispatch, &ent) == 1);
 
 		/* Special handling for multiple required authentications */
 		if (options.num_auth_methods != 0) {
@@ -331,7 +335,7 @@ monitor_child_preauth(Authctxt *_authctxt, struct monitor *pmonitor)
 				mm_request_receive_expect(pmonitor->m_sendfd,
 				    MONITOR_REQ_PAM_ACCOUNT, m);
 				authenticated = mm_answer_pam_account(
-				    pmonitor->m_sendfd, m);
+				    ssh, pmonitor->m_sendfd, m);
 				sshbuf_free(m);
 			}
 #endif
@@ -384,7 +388,7 @@ monitor_child_handler(int sig)
 }
 
 void
-monitor_child_postauth(struct monitor *pmonitor)
+monitor_child_postauth(struct ssh *ssh, struct monitor *pmonitor)
 {
 	close(pmonitor->m_recvfd);
 	pmonitor->m_recvfd = -1;
@@ -410,7 +414,7 @@ monitor_child_postauth(struct monitor *pmonitor)
 	}
 
 	for (;;)
-		monitor_read(pmonitor, mon_dispatch, NULL);
+		monitor_read(ssh, pmonitor, mon_dispatch, NULL);
 }
 
 static int
@@ -468,8 +472,8 @@ monitor_read_log(struct monitor *pmonitor)
 	return 0;
 }
 
-int
-monitor_read(struct monitor *pmonitor, struct mon_table *ent,
+static int
+monitor_read(struct ssh *ssh, struct monitor *pmonitor, struct mon_table *ent,
     struct mon_table **pent)
 {
 	struct sshbuf *m;
@@ -519,7 +523,7 @@ monitor_read(struct monitor *pmonitor, struct mon_table *ent,
 		if (!(ent->flags & MON_PERMIT))
 			fatal("%s: unpermitted request %d", __func__,
 			    type);
-		ret = (*ent->f)(pmonitor->m_sendfd, m);
+		ret = (*ent->f)(ssh, pmonitor->m_sendfd, m);
 		sshbuf_free(m);
 
 		/* The child may use this request only once, disable it */
@@ -570,12 +574,13 @@ monitor_reset_key_state(void)
 
 #ifdef WITH_OPENSSL
 int
-mm_answer_moduli(int sock, struct sshbuf *m)
+mm_answer_moduli(struct ssh *ssh, int sock, struct sshbuf *m)
 {
 	DH *dh;
 	int r;
 	u_int32_t min, want, max;
 
+	UNUSED(ssh);
 	if ((r = sshbuf_get_u32(m, &min)) != 0 ||
 	    (r = sshbuf_get_u32(m, &want)) != 0 ||
 	    (r = sshbuf_get_u32(m, &max)) != 0)
@@ -614,9 +619,8 @@ mm_answer_moduli(int sock, struct sshbuf *m)
 #endif
 
 int
-mm_answer_sign(int sock, struct sshbuf *m)
+mm_answer_sign(struct ssh *ssh, int sock, struct sshbuf *m)
 {
-	struct ssh *ssh = active_state; 	/* XXX */
 	extern int auth_sock;			/* XXX move to state struct? */
 	struct sshkey *key;
 	struct sshbuf *sigbuf = NULL;
@@ -719,9 +723,8 @@ mm_answer_sign(int sock, struct sshbuf *m)
 /* Retrieves the password entry and also checks if the user is permitted */
 
 int
-mm_answer_pwnamallow(int sock, struct sshbuf *m)
+mm_answer_pwnamallow(struct ssh *ssh, int sock, struct sshbuf *m)
 {
-	struct ssh *ssh = active_state;	/* XXX */
 	char *username;
 	struct passwd *pwent;
 	int r, allowed = 0;
@@ -735,7 +738,7 @@ mm_answer_pwnamallow(int sock, struct sshbuf *m)
 	if ((r = sshbuf_get_cstring(m, &username, NULL)) != 0)
 		fatal("%s: buffer error: %s", __func__, ssh_err(r));
 
-	pwent = getpwnamallow(username);
+	pwent = getpwnamallow(ssh, username);
 
 	authctxt->user = xstrdup(username);
 	setproctitle("%s [priv]", pwent ? username : "unknown");
@@ -827,11 +830,13 @@ mm_answer_pwnamallow(int sock, struct sshbuf *m)
 	return (0);
 }
 
-int mm_answer_auth2_read_banner(int sock, struct sshbuf *m)
+int
+mm_answer_auth2_read_banner(struct ssh *ssh, int sock, struct sshbuf *m)
 {
 	char *banner;
 	int r;
 
+	UNUSED(ssh);
 	sshbuf_reset(m);
 	banner = auth2_read_banner();
 	if ((r = sshbuf_put_cstring(m, banner != NULL ? banner : "")) != 0)
@@ -843,10 +848,12 @@ int mm_answer_auth2_read_banner(int sock, struct sshbuf *m)
 }
 
 int
-mm_answer_authserv(int sock, struct sshbuf *m)
+mm_answer_authserv(struct ssh *ssh, int sock, struct sshbuf *m)
 {
 	int r;
 
+	UNUSED(ssh);
+	UNUSED(sock);
 	monitor_permit_authentications(1);
 
 	if ((r = sshbuf_get_cstring(m, &authctxt->service, NULL)) != 0 ||
@@ -864,9 +871,8 @@ mm_answer_authserv(int sock, struct sshbuf *m)
 }
 
 int
-mm_answer_authpassword(int sock, struct sshbuf *m)
+mm_answer_authpassword(struct ssh *ssh, int sock, struct sshbuf *m)
 {
-	struct ssh *ssh = active_state;	/* XXX */
 	static int call_count;
 	char *passwd;
 	int r, authenticated;
@@ -905,13 +911,14 @@ mm_answer_authpassword(int sock, struct sshbuf *m)
 
 #ifdef BSD_AUTH
 int
-mm_answer_bsdauthquery(int sock, struct sshbuf *m)
+mm_answer_bsdauthquery(struct ssh *ssh, int sock, struct sshbuf *m)
 {
 	char *name, *infotxt;
 	u_int numprompts, *echo_on, success;
 	char **prompts;
 	int r;
 
+	UNUSED(ssh);
 	if (!options.kbd_interactive_authentication)
 		fatal("%s: kbd-int authentication not enabled", __func__);
 	success = bsdauth_query(authctxt, &name, &infotxt, &numprompts,
@@ -939,11 +946,12 @@ mm_answer_bsdauthquery(int sock, struct sshbuf *m)
 }
 
 int
-mm_answer_bsdauthrespond(int sock, struct sshbuf *m)
+mm_answer_bsdauthrespond(struct ssh *ssh, int sock, struct sshbuf *m)
 {
 	char *response;
 	int r, authok;
 
+	UNUSED(ssh);
 	if (!options.kbd_interactive_authentication)
 		fatal("%s: kbd-int authentication not enabled", __func__);
 	if (authctxt->as == NULL)
@@ -973,8 +981,10 @@ mm_answer_bsdauthrespond(int sock, struct sshbuf *m)
 
 #ifdef USE_PAM
 int
-mm_answer_pam_start(int sock, struct sshbuf *m)
+mm_answer_pam_start(struct ssh *ssh, int sock, struct sshbuf *m)
 {
+	UNUSED(ssh);
+	UNUSED(sock);
 	if (!options.use_pam)
 		fatal("UsePAM not set, but ended up in %s anyway", __func__);
 
@@ -988,11 +998,12 @@ mm_answer_pam_start(int sock, struct sshbuf *m)
 }
 
 int
-mm_answer_pam_account(int sock, struct sshbuf *m)
+mm_answer_pam_account(struct ssh *ssh, int sock, struct sshbuf *m)
 {
 	u_int ret;
 	int r;
 
+	UNUSED(ssh);
 	if (!options.use_pam)
 		fatal("%s: PAM not enabled", __func__);
 
@@ -1011,11 +1022,12 @@ static void *sshpam_ctxt, *sshpam_authok;
 extern KbdintDevice sshpam_device;
 
 int
-mm_answer_pam_init_ctx(int sock, struct sshbuf *m)
+mm_answer_pam_init_ctx(struct ssh *ssh, int sock, struct sshbuf *m)
 {
 	u_int ok = 0;
 	int r;
 
+	UNUSED(ssh);
 	debug3("%s", __func__);
 	if (!options.kbd_interactive_authentication)
 		fatal("%s: kbd-int authentication not enabled", __func__);
@@ -1036,12 +1048,13 @@ mm_answer_pam_init_ctx(int sock, struct sshbuf *m)
 }
 
 int
-mm_answer_pam_query(int sock, struct sshbuf *m)
+mm_answer_pam_query(struct ssh *ssh, int sock, struct sshbuf *m)
 {
 	char *name = NULL, *info = NULL, **prompts = NULL;
 	u_int i, num = 0, *echo_on = 0;
 	int r, ret;
 
+	UNUSED(ssh);
 	debug3("%s", __func__);
 	sshpam_authok = NULL;
 	if (sshpam_ctxt == NULL)
@@ -1077,12 +1090,13 @@ mm_answer_pam_query(int sock, struct sshbuf *m)
 }
 
 int
-mm_answer_pam_respond(int sock, struct sshbuf *m)
+mm_answer_pam_respond(struct ssh *ssh, int sock, struct sshbuf *m)
 {
 	char **resp;
 	u_int32_t i, num;
 	int r, ret;
 
+	UNUSED(ssh);
 	debug3("%s", __func__);
 	if (sshpam_ctxt == NULL)
 		fatal("%s: no context", __func__);
@@ -1115,10 +1129,11 @@ mm_answer_pam_respond(int sock, struct sshbuf *m)
 }
 
 int
-mm_answer_pam_free_ctx(int sock, struct sshbuf *m)
+mm_answer_pam_free_ctx(struct ssh *ssh, int sock, struct sshbuf *m)
 {
 	int r = sshpam_authok != NULL && sshpam_authok == sshpam_ctxt;
 
+	UNUSED(ssh);
 	debug3("%s", __func__);
 	if (sshpam_ctxt == NULL)
 		fatal("%s: no context", __func__);
@@ -1135,9 +1150,8 @@ mm_answer_pam_free_ctx(int sock, struct sshbuf *m)
 #endif
 
 int
-mm_answer_keyallowed(int sock, struct sshbuf *m)
+mm_answer_keyallowed(struct ssh *ssh, int sock, struct sshbuf *m)
 {
-	struct ssh *ssh = active_state;	/* XXX */
 	struct sshkey *key = NULL;
 	char *cuser, *chost;
 	char *pkalg;
@@ -1385,9 +1399,8 @@ monitor_valid_hostbasedblob(u_char *data, u_int datalen, char *cuser,
 }
 
 int
-mm_answer_keyverify(int sock, struct sshbuf *m)
+mm_answer_keyverify(struct ssh *ssh, int sock, struct sshbuf *m)
 {
-	struct ssh *ssh = active_state;	/* XXX */
 	u_char *pkalg = NULL;
 	struct sshkey *key;
 	u_char *signature, *data, *blob;
@@ -1430,7 +1443,7 @@ mm_answer_keyverify(int sock, struct sshbuf *m)
 
 	ret = Xkey_verify(&ctx, signature, signaturelen, data, datalen);
 }
-	debug3("%s: %s %p signature %s", __func__, auth_method, key,
+	debug3("%s: %s %p signature %s", __func__, auth_method, (void*)key,
 	    (ret == 0) ? "verified" : "unverified");
 	auth2_record_key(authctxt, ret == 0, key);
 
@@ -1456,9 +1469,8 @@ mm_answer_keyverify(int sock, struct sshbuf *m)
 }
 
 static void
-mm_record_login(Session *s, struct passwd *pw)
+mm_record_login(struct ssh *ssh, Session *s, struct passwd *pw)
 {
-	struct ssh *ssh = active_state;	/* XXX */
 	socklen_t fromlen;
 	struct sockaddr_storage from;
 
@@ -1468,8 +1480,8 @@ mm_record_login(Session *s, struct passwd *pw)
 	 */
 	memset(&from, 0, sizeof(from));
 	fromlen = sizeof(from);
-	if (packet_connection_is_on_socket()) {
-		if (getpeername(packet_get_connection_in(),
+	if (ssh_packet_connection_is_on_socket(ssh)) {
+		if (getpeername(ssh_packet_get_connection_in(ssh),
 		    (struct sockaddr *)&from, &fromlen) < 0) {
 			debug("getpeername: %.100s", strerror(errno));
 			cleanup_exit(255);
@@ -1493,7 +1505,7 @@ mm_session_close(Session *s)
 }
 
 int
-mm_answer_pty(int sock, struct sshbuf *m)
+mm_answer_pty(struct ssh *ssh, int sock, struct sshbuf *m)
 {
 	extern struct monitor *pmonitor;
 	Session *s;
@@ -1521,7 +1533,7 @@ mm_answer_pty(int sock, struct sshbuf *m)
 	if (dup2(s->ttyfd, 0) == -1)
 		fatal("%s: dup2", __func__);
 
-	mm_record_login(s, authctxt->pw);
+	mm_record_login(ssh, s, authctxt->pw);
 
 	/* Now we can close the file descriptor again */
 	close(0);
@@ -1563,12 +1575,14 @@ mm_answer_pty(int sock, struct sshbuf *m)
 }
 
 int
-mm_answer_pty_cleanup(int sock, struct sshbuf *m)
+mm_answer_pty_cleanup(struct ssh *ssh, int sock, struct sshbuf *m)
 {
 	Session *s;
 	char *tty;
 	int r;
 
+	UNUSED(ssh);
+	UNUSED(sock);
 	debug3("%s entering", __func__);
 
 	if ((r = sshbuf_get_cstring(m, &tty, NULL)) != 0)
@@ -1581,12 +1595,13 @@ mm_answer_pty_cleanup(int sock, struct sshbuf *m)
 }
 
 int
-mm_answer_term(int sock, struct sshbuf *req)
+mm_answer_term(struct ssh *ssh, int sock, struct sshbuf *m)
 {
-	struct ssh *ssh = active_state;	/* XXX */
 	extern struct monitor *pmonitor;
 	int res, status;
 
+	UNUSED(sock);
+	UNUSED(m);
 	debug3("%s: tearing down sessions", __func__);
 
 	/* The child is terminating */
@@ -1610,12 +1625,14 @@ mm_answer_term(int sock, struct sshbuf *req)
 #ifdef SSH_AUDIT_EVENTS
 /* Report that an audit event occurred */
 int
-mm_answer_audit_event(int socket, struct sshbuf *m)
+mm_answer_audit_event(struct ssh *ssh, int sock, struct sshbuf *m)
 {
 	u_int32_t n;
 	ssh_audit_event_t event;
 	int r;
 
+	UNUSED(ssh);
+	UNUSED(sock);
 	debug3("%s entering", __func__);
 
 	if ((r = sshbuf_get_u32(m, &n)) != 0)
@@ -1639,11 +1656,13 @@ mm_answer_audit_event(int socket, struct sshbuf *m)
 }
 
 int
-mm_answer_audit_command(int socket, struct sshbuf *m)
+mm_answer_audit_command(struct ssh *ssh, int sock, struct sshbuf *m)
 {
 	char *cmd;
 	int r;
 
+	UNUSED(ssh);
+	UNUSED(sock);
 	debug3("%s entering", __func__);
 	if ((r = sshbuf_get_cstring(m, &cmd, NULL)) != 0)
 		fatal("%s: buffer error: %s", __func__, ssh_err(r));
@@ -1655,10 +1674,8 @@ mm_answer_audit_command(int socket, struct sshbuf *m)
 #endif /* SSH_AUDIT_EVENTS */
 
 void
-monitor_clear_keystate(struct monitor *pmonitor)
+monitor_clear_keystate(struct ssh *ssh)
 {
-	struct ssh *ssh = active_state;	/* XXX */
-
 	ssh_clear_newkeys(ssh, MODE_IN);
 	ssh_clear_newkeys(ssh, MODE_OUT);
 	sshbuf_free(child_state);
@@ -1666,9 +1683,8 @@ monitor_clear_keystate(struct monitor *pmonitor)
 }
 
 void
-monitor_apply_keystate(struct monitor *pmonitor)
+monitor_apply_keystate(struct ssh *ssh)
 {
-	struct ssh *ssh = active_state;	/* XXX */
 	struct kex *kex;
 	int r;
 
@@ -1775,7 +1791,7 @@ monitor_reinit(struct monitor *mon)
 
 #ifdef GSSAPI
 int
-mm_answer_gss_setup_ctx(int sock, struct sshbuf *m)
+mm_answer_gss_setup_ctx(struct ssh *ssh, int sock, struct sshbuf *m)
 {
 	gss_OID_desc goid;
 	OM_uint32 major;
@@ -1783,6 +1799,7 @@ mm_answer_gss_setup_ctx(int sock, struct sshbuf *m)
 	u_char *p;
 	int r;
 
+	UNUSED(ssh);
 	if (!options.gss_authentication)
 		fatal("%s: GSSAPI authentication not enabled", __func__);
 
@@ -1808,7 +1825,7 @@ mm_answer_gss_setup_ctx(int sock, struct sshbuf *m)
 }
 
 int
-mm_answer_gss_accept_ctx(int sock, struct sshbuf *m)
+mm_answer_gss_accept_ctx(struct ssh *ssh, int sock, struct sshbuf *m)
 {
 	gss_buffer_desc in;
 	gss_buffer_desc out = GSS_C_EMPTY_BUFFER;
@@ -1816,6 +1833,7 @@ mm_answer_gss_accept_ctx(int sock, struct sshbuf *m)
 	OM_uint32 flags = 0; /* GSI needs this */
 	int r;
 
+	UNUSED(ssh);
 	if (!options.gss_authentication)
 		fatal("%s: GSSAPI authentication not enabled", __func__);
 
@@ -1842,12 +1860,13 @@ mm_answer_gss_accept_ctx(int sock, struct sshbuf *m)
 }
 
 int
-mm_answer_gss_checkmic(int sock, struct sshbuf *m)
+mm_answer_gss_checkmic(struct ssh *ssh, int sock, struct sshbuf *m)
 {
 	gss_buffer_desc gssbuf, mic;
 	OM_uint32 ret;
 	int r;
 
+	UNUSED(ssh);
 	if (!options.gss_authentication)
 		fatal("%s: GSSAPI authentication not enabled", __func__);
 
@@ -1873,11 +1892,12 @@ mm_answer_gss_checkmic(int sock, struct sshbuf *m)
 }
 
 int
-mm_answer_gss_userok(int sock, struct sshbuf *m)
+mm_answer_gss_userok(struct ssh *ssh, int sock, struct sshbuf *m)
 {
 	int r, authenticated;
 	const char *displayname;
 
+	UNUSED(ssh);
 	if (!options.gss_authentication)
 		fatal("%s: GSSAPI authentication not enabled", __func__);
 

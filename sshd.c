@@ -514,7 +514,7 @@ privsep_preauth_child(void)
 }
 
 static int
-privsep_preauth(struct ssh *ssh, Authctxt *authctxt)
+privsep_preauth(struct ssh *ssh)
 {
 	int status, r;
 	pid_t pid;
@@ -544,7 +544,7 @@ privsep_preauth(struct ssh *ssh, Authctxt *authctxt)
 		}
 		if (box != NULL)
 			ssh_sandbox_parent_preauth(box, pid);
-		monitor_child_preauth(authctxt, pmonitor);
+		monitor_child_preauth(ssh, pmonitor);
 
 		/* Wait for the child's exit status */
 		while (waitpid(pid, &status, 0) < 0) {
@@ -604,8 +604,8 @@ privsep_postauth(struct ssh *ssh, Authctxt *authctxt)
 	else if (pmonitor->m_pid != 0) {
 		verbose("User child is on pid %ld", (long)pmonitor->m_pid);
 		sshbuf_reset(loginmsg);
-		monitor_clear_keystate(pmonitor);
-		monitor_child_postauth(pmonitor);
+		monitor_clear_keystate(ssh);
+		monitor_child_postauth(ssh, pmonitor);
 
 		/* NEVERREACHED */
 		exit(0);
@@ -626,7 +626,7 @@ privsep_postauth(struct ssh *ssh, Authctxt *authctxt)
 
  skip:
 	/* It is safe now to apply the key state */
-	monitor_apply_keystate(pmonitor);
+	monitor_apply_keystate(ssh);
 
 	/*
 	 * Tell the packet layer that authentication was successful, since
@@ -2201,6 +2201,7 @@ main(int ac, char **av)
 
 	/* allocate authentication context */
 	authctxt = xcalloc(1, sizeof(*authctxt));
+	ssh->authctxt = authctxt;
 
 	authctxt->loginmsg = loginmsg;
 
@@ -2217,7 +2218,7 @@ main(int ac, char **av)
 	auth_debug_reset();
 
 	if (use_privsep) {
-		if (privsep_preauth(ssh, authctxt) == 1)
+		if (privsep_preauth(ssh) == 1)
 			goto authenticated;
 	} else if (have_agent) {
 		if ((r = ssh_get_authentication_socket(&auth_sock)) != 0) {
@@ -2229,7 +2230,6 @@ main(int ac, char **av)
 	/* perform the key exchange */
 	/* authenticate user and start session */
 	do_ssh2_kex(ssh);
-	ssh->authctxt = authctxt;
 	do_authentication2(ssh);
 
 	/*
@@ -2237,7 +2237,7 @@ main(int ac, char **av)
 	 * the current keystate and exits
 	 */
 	if (use_privsep) {
-		mm_send_keystate(pmonitor);
+		mm_send_keystate(ssh, pmonitor);
 		ssh_packet_clear_keys(ssh);
 		exit(0);
 	}
