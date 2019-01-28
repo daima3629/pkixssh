@@ -189,6 +189,7 @@ struct mon_table {
 static int monitor_read(struct ssh *, struct monitor *, struct mon_table *,
     struct mon_table **);
 static int monitor_read_log(struct monitor *);
+static void mm_get_keystate(struct monitor *);
 
 struct mon_table mon_dispatch_proto20[] = {
 #ifdef WITH_OPENSSL
@@ -1718,7 +1719,7 @@ monitor_apply_keystate(struct ssh *ssh)
 
 /* This function requries careful sanity checking */
 
-void
+static void
 mm_get_keystate(struct monitor *pmonitor)
 {
 	debug3("%s: Waiting for new keys", __func__);
