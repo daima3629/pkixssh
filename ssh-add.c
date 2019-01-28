@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-add.c,v 1.136 2018/09/19 02:03:02 djm Exp $ */
+/* $OpenBSD: ssh-add.c,v 1.137 2019/01/20 22:03:29 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -14,7 +14,7 @@
  * SSH2 implementation,
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * X.509 certificates support,
- * Copyright (c) 2002-2017 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -62,6 +62,7 @@
 #include "ssh-x509.h"
 #include "ssh-xkalg.h"
 #include "x509store.h"
+#include "compat.h"
 #include "sshbuf.h"
 #include "authfd.h"
 #include "authfile.h"
@@ -442,6 +443,46 @@ update_card(int agent_fd, int add, const char *id, STACK_OF(SSHXSTOREPATH) *xsto
 }
 
 static int
+test_key(int agent_fd, const char *filename)
+{
+	struct sshkey *key = NULL;
+	u_char *sig = NULL;
+	size_t slen = 0;
+	int r, ret = -1;
+	char data[1024];
+
+	if ((r = sshkey_load_public(filename, &key, NULL)) != 0) {
+		error("Couldn't read public key %s: %s", filename, ssh_err(r));
+		return -1;
+	}
+	arc4random_buf(data, sizeof(data));
+
+{	const char *alg = sshkey_ssh_name(key);
+	ssh_compat ctx_compat = { 0, 0 };
+	ssh_sign_ctx ctx = { alg, key, &ctx_compat };
+
+	r = Xssh_agent_sign(agent_fd, &ctx, &sig, &slen, data, sizeof(data));
+	if (r != 0) {
+		error("Agent signature failed for %s: %s",
+		    filename, ssh_err(r));
+		goto done;
+	}
+	r = Xkey_verify(&ctx, sig, slen, data, sizeof(data));
+	if (r != 0) {
+		error("Signature verification failed for %s: %s",
+		    filename, ssh_err(r));
+		goto done;
+	}
+}
+	/* success */
+	ret = 0;
+ done:
+	free(sig);
+	sshkey_free(key);
+	return ret;
+}
+
+static int
 list_identities(int agent_fd, int do_fp)
 {
 	char *fp;
@@ -559,6 +600,7 @@ usage(void)
 	fprintf(stderr, "  -S xstore   File with extra X.509 certificates in PEM format\n");
 	fprintf(stderr, "              concatenated together.\n");
 	fprintf(stderr, "  -e pkcs11   Remove keys provided by PKCS#11 provider.\n");
+	fprintf(stderr, "  -T pubkey   Test if ssh-agent can access matching private key.\n");
 	fprintf(stderr, "  -q          Be quiet after a successful operation.\n");
 }
 
@@ -571,7 +613,7 @@ main(int argc, char **argv)
 	char *pkcs11provider = NULL;
 	STACK_OF(SSHXSTOREPATH) *xstore;
 	int r, i, ch, deleting = 0, ret = 0, key_only = 0;
-	int xflag = 0, lflag = 0, Dflag = 0, qflag = 0;
+	int xflag = 0, lflag = 0, Dflag = 0, qflag = 0, Tflag = 0;
 
 	ssh_malloc_init();	/* must be called before any mallocs */
 	/* Ensure that fds 0, 1 and 2 are open or directed to /dev/null */
@@ -603,7 +645,7 @@ main(int argc, char **argv)
 		exit(2);
 	}
 
-	while ((ch = getopt(argc, argv, "klLcdDxXE:e:M:m:qs:S:t:")) != -1) {
+	while ((ch = getopt(argc, argv, "klLcdDTxXE:e:M:m:qs:S:t:")) != -1) {
 		switch (ch) {
 		case 'E':
 			fingerprint_hash = ssh_digest_alg_by_name(optarg);
@@ -667,6 +709,9 @@ main(int argc, char **argv)
 				goto done;
 			}
 			break;
+		case 'T':
+			Tflag = 1;
+			break;
 		case 'q':
 			qflag = 1;
 			break;
@@ -695,6 +740,14 @@ main(int argc, char **argv)
 
 	argc -= optind;
 	argv += optind;
+	if (Tflag) {
+		if (argc <= 0)
+			fatal("no keys to test");
+		for (r = i = 0; i < argc; i++)
+			r |= test_key(agent_fd, argv[i]);
+		ret = r == 0 ? 0 : 1;
+		goto done;
+	}
 	if (pkcs11provider != NULL) {
 		if (update_card(agent_fd, !deleting, pkcs11provider,
 		    xstore, qflag) == -1)

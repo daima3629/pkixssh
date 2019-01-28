@@ -1,4 +1,4 @@
-.\"	$OpenBSD: ssh-add.1,v 1.66 2017/08/29 13:05:58 jmc Exp $
+.\"	$OpenBSD: ssh-add.1,v 1.68 2019/01/21 07:09:10 jmc Exp $
 .\"
 .\" Author: Tatu Ylonen <ylo@cs.hut.fi>
 .\" Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -14,7 +14,7 @@
 .\" Copyright (c) 1999,2000 Markus Friedl.  All rights reserved.
 .\" Copyright (c) 1999 Aaron Campbell.  All rights reserved.
 .\" Copyright (c) 1999 Theo de Raadt.  All rights reserved.
-.\" Copyright (c) 2002-2018 Roumen Petrov.  All rights reserved.
+.\" Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
 .\"
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions
@@ -44,7 +44,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: April 15 2018 $
+.Dd $Mdocdate: January 21 2019 $
 .Dt SSH-ADD 1
 .Os
 .Sh NAME
@@ -61,6 +61,9 @@
 .Op Fl S Ar xstore
 .Nm ssh-add
 .Fl e Ar pkcs11
+.Nm ssh-add
+.Fl T
+.Ar pubkey ...
 .Sh DESCRIPTION
 .Nm
 adds private key identities to the authentication agent,
@@ -146,15 +149,19 @@ X.509 certificates are displayed with their
 Lists fingerprints of all identities currently represented by the agent.
 .It Fl q
 Be quiet after a successful operation.
-.It Fl s Ar pkcs11
-Add keys provided by the PKCS#11 shared library
-.Ar pkcs11 .
 .It Fl S Ar xstore
 File with extra X.509 certificates in PEM format concatenated together.
 Certificates are added to X.509 store and together with those from
 system default store are used in public key algorithms in RFC 6187
 format if applicable.
 Note that currently only EC keys support such format.
+.It Fl s Ar pkcs11
+Add keys provided by the PKCS#11 shared library
+.Ar pkcs11 .
+.It Fl T Ar pubkey ...
+Tests whether the private keys that correspond to the specified
+.Ar pubkey
+files are usable by performing sign and verify operations on each.
 .It Fl t Ar life
 Set a maximum lifetime when adding identities to an agent.
 The lifetime may be specified in seconds or in a time format
