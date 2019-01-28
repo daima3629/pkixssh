@@ -810,7 +810,7 @@ mm_answer_pwnamallow(struct ssh *ssh, int sock, struct sshbuf *m)
 	if (auth2_setup_methods_lists(authctxt) != 0) {
 		/*
 		 * The monitor will continue long enough to let the child
-		 * run to it's packet_disconnect(), but it must not allow any
+		 * run to it's ssh_packet_disconnect(), but it must not allow any
 		 * authentication to succeed.
 		 */
 		debug("%s: no valid authentication method lists", __func__);
@@ -1688,9 +1688,9 @@ monitor_apply_keystate(struct ssh *ssh)
 	struct kex *kex;
 	int r;
 
-	debug3("%s: packet_set_state", __func__);
+	debug3("%s: ssh_packet_set_state ...", __func__);
 	if ((r = ssh_packet_set_state(ssh, child_state)) != 0)
-                fatal("%s: packet_set_state: %s", __func__, ssh_err(r));
+                fatal("%s: ssh_packet_set_state: %s", __func__, ssh_err(r));
 	sshbuf_free(child_state);
 	child_state = NULL;
 

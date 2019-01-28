@@ -267,15 +267,12 @@ static void do_ssh2_kex(struct ssh *);
 static inline struct ssh*
 create_session(int fd_in, int fd_out)
 {
-/* Note active_state is NULL here!
- * Remark: with NULL argument set connection allocates new session structure.
- */
-	active_state = ssh_packet_set_connection(active_state, fd_in, fd_out);
-	if (active_state == NULL)
+	the_active_state = ssh_packet_set_connection(NULL, fd_in, fd_out);
+	if (the_active_state == NULL)
 		fatal("%s: ssh_packet_set_connection failed", __func__);
 
-	ssh_packet_set_server(active_state);
-	return active_state;
+	ssh_packet_set_server(the_active_state);
+	return the_active_state;
 }
 
 /*
@@ -386,7 +383,7 @@ grace_alarm_handler(int sig)
 		kill(0, SIGTERM);
 	}
 
-	/* XXX pre-format ipaddr/port so we don't need to access active_state */
+	/* XXX pre-format ipaddr/port so we don't need to access the_active_state */
 	/* Log error and exit. */
 	sigdie("Timeout before authentication for %s port %d",
 	    ssh_remote_ipaddr(the_active_state),
@@ -2128,7 +2125,6 @@ main(int ac, char **av)
 	 * not have a key.
 	 */
 	ssh = create_session(sock_in, sock_out);
-	the_active_state = ssh;
 
 	check_ip_options(ssh);
 
@@ -2318,7 +2314,9 @@ main(int ac, char **av)
 	PRIVSEP(audit_event(ssh, SSH_CONNECTION_CLOSE));
 #endif
 
-	packet_close(); /* NOTE deallocate active_state */
+	the_active_state = NULL;
+	(void)ssh_packet_close(ssh);
+	free(ssh);
 
 	if (use_privsep)
 		mm_terminate();

@@ -698,7 +698,6 @@ main(int ac, char **av)
 	 */
 	if ((ssh = ssh_alloc_session_state()) == NULL)
 		fatal("Couldn't allocate session state");
-	active_state = ssh; /* XXX legacy API compat */
 	channel_init_channels(ssh);
 
 	/* Parse command-line arguments. */
@@ -1621,7 +1620,8 @@ main(int ac, char **av)
 
  skip_connect:
 	exit_status = ssh_session2(ssh, pw);
-	packet_close(); /* NOTE deallocate active_state */
+	(void)ssh_packet_close(ssh);
+	free(ssh);
 
 	if (options.control_path != NULL && muxserver_sock != -1)
 		unlink(options.control_path);
