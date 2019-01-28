@@ -1,4 +1,4 @@
-/* $OpenBSD: sshd.c,v 1.526 2019/01/19 21:43:07 djm Exp $ */
+/* $OpenBSD: sshd.c,v 1.527 2019/01/19 21:43:56 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -884,7 +884,7 @@ notify_hostkeys(struct ssh *ssh)
 	char *fp;
 
 	/* Some clients cannot cope with the hostkeys message, skip those. */
-	if (datafellows & SSH_BUG_HOSTKEYS)
+	if (ssh_compat_fellows(ssh, SSH_BUG_HOSTKEYS))
 		return;
 
 	if ((buf = sshbuf_new()) == NULL)

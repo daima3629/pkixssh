@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh.c,v 1.499 2019/01/19 21:36:06 djm Exp $ */
+/* $OpenBSD: ssh.c,v 1.500 2019/01/19 21:43:56 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -2054,7 +2054,7 @@ ssh_session2(struct ssh *ssh, struct passwd *pw)
 
 	/* If we don't expect to open a new session, then disallow it */
 	if (options.control_master == SSHCTL_MASTER_NO &&
-	    (datafellows & SSH_NEW_OPENSSH)) {
+	    ssh_compat_fellows(ssh, SSH_NEW_OPENSSH)) {
 		debug("Requesting no-more-sessions@openssh.com");
 		if ((r = sshpkt_start(ssh, SSH2_MSG_GLOBAL_REQUEST)) != 0 ||
 		    (r = sshpkt_put_cstring(ssh,

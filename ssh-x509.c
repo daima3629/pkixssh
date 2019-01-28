@@ -2093,7 +2093,7 @@ Xkey_verify(ssh_sign_ctx *ctx,
 
 	if (ssh_xkalg_nameind(ctx->alg, &p, -1) < 0) {
 		if (ctx->key->type == KEY_RSA_CERT &&
-		    (ctx->compat->datafellows & SSH_BUG_SIGTYPE) != 0) {
+		    check_compat_fellows(ctx->compat, SSH_BUG_SIGTYPE)) {
 			ctx->alg = NULL;
 		}
 		return sshkey_verify_base(ctx->key, sig, siglen,

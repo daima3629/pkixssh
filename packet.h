@@ -95,12 +95,12 @@ void ssh_set_compatibility(struct ssh *ssh, const char *remote_version);
 
 static inline int/*bool*/
 ssh_compat_fellows(struct ssh *ssh, u_int flag) {
-	return (flag & ssh->compat.datafellows) != 0;
+	return check_compat_fellows(&ssh->compat, flag);
 }
 
 static inline int/*bool*/
 ssh_compat_extra(struct ssh *ssh, u_int flag) {
-	return (flag & ssh->compat.extra) != 0;
+	return check_compat_extra(&ssh->compat, flag);
 }
 
 

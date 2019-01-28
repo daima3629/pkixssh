@@ -86,6 +86,11 @@ struct ssh_compat_st {
 };
 
 static inline int/*bool*/
+check_compat_fellows(ssh_compat *compat, u_int flag) {
+	return (flag & compat->datafellows) != 0;
+}
+
+static inline int/*bool*/
 check_compat_extra(ssh_compat *compat, u_int flag) {
 	return (flag & compat->extra) != 0;
 }
