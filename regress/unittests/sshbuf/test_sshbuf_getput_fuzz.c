@@ -1,4 +1,4 @@
-/* 	$OpenBSD: test_sshbuf_getput_fuzz.c,v 1.3 2018/10/17 23:28:05 djm Exp $ */
+/* 	$OpenBSD: test_sshbuf_getput_fuzz.c,v 1.4 2019/01/21 12:29:35 djm Exp $ */
 /*
  * Regress test for sshbuf.h buffer API
  *
@@ -54,8 +54,8 @@ attempt_parse_blob(u_char *blob, size_t len)
 		bzero(s, l);
 		free(s);
 	}
-	bn = BN_new();
-	sshbuf_get_bignum2(p1, bn);
+	bn = NULL;
+	sshbuf_get_bignum2(p1, &bn);
 	BN_clear_free(bn);
 #if defined(OPENSSL_HAS_ECC) && defined(OPENSSL_HAS_NISTP256)
 	eck = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1);

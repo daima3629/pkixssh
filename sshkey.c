@@ -1,4 +1,4 @@
-/* $OpenBSD: sshkey.c,v 1.72 2018/10/11 00:52:46 djm Exp $ */
+/* $OpenBSD: sshkey.c,v 1.73 2019/01/21 09:54:11 djm Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Alexander von Gernler.  All rights reserved.
@@ -2327,13 +2327,8 @@ sshkey_from_blob_internal(struct sshbuf *b, struct sshkey **keyp,
 		{
 		BIGNUM *n = NULL, *e = NULL;
 
-		if ((n = BN_new()) == NULL ||
-		    (e = BN_new()) == NULL) {
-			ret = SSH_ERR_ALLOC_FAIL;
-			goto clear_rsa;
-		}
-		if (sshbuf_get_bignum2(b, e) != 0 ||
-		    sshbuf_get_bignum2(b, n) != 0) {
+		if (sshbuf_get_bignum2(b, &e) != 0 ||
+		    sshbuf_get_bignum2(b, &n) != 0) {
 			ret = SSH_ERR_INVALID_FORMAT;
 			goto clear_rsa;
 		}
@@ -2371,17 +2366,10 @@ sshkey_from_blob_internal(struct sshbuf *b, struct sshkey **keyp,
 		BIGNUM *p = NULL, *q = NULL, *g = NULL;
 		BIGNUM *pub_key = NULL;
 
-		if ((p = BN_new()) == NULL ||
-		    (q = BN_new()) == NULL ||
-		    (g = BN_new()) == NULL ||
-		    (pub_key = BN_new()) == NULL) {
-			ret = SSH_ERR_ALLOC_FAIL;
-			goto clear_dsa;
-		}
-		if (sshbuf_get_bignum2(b, p) != 0 ||
-		    sshbuf_get_bignum2(b, q) != 0 ||
-		    sshbuf_get_bignum2(b, g) != 0 ||
-		    sshbuf_get_bignum2(b, pub_key) != 0) {
+		if (sshbuf_get_bignum2(b, &p) != 0 ||
+		    sshbuf_get_bignum2(b, &q) != 0 ||
+		    sshbuf_get_bignum2(b, &g) != 0 ||
+		    sshbuf_get_bignum2(b, &pub_key) != 0) {
 			ret = SSH_ERR_INVALID_FORMAT;
 			goto clear_dsa;
 		}
@@ -3262,19 +3250,11 @@ sshkey_private_deserialize(struct sshbuf *buf, struct sshkey **kp)
 		BIGNUM *p = NULL, *q = NULL, *g = NULL;
 		BIGNUM *pub_key = NULL, *priv_key = NULL;
 
-		if ((p = BN_new()) == NULL ||
-		    (q = BN_new()) == NULL ||
-		    (g = BN_new()) == NULL ||
-		    (pub_key = BN_new()) == NULL ||
-		    (priv_key = BN_new()) == NULL) {
-			r = SSH_ERR_ALLOC_FAIL;
-			goto clear_dsa;
-		}
-		if ((r = sshbuf_get_bignum2(buf, p)) != 0 ||
-		    (r = sshbuf_get_bignum2(buf, q)) != 0 ||
-		    (r = sshbuf_get_bignum2(buf, g)) != 0 ||
-		    (r = sshbuf_get_bignum2(buf, pub_key)) != 0 ||
-		    (r = sshbuf_get_bignum2(buf, priv_key)) != 0)
+		if ((r = sshbuf_get_bignum2(buf, &p)) != 0 ||
+		    (r = sshbuf_get_bignum2(buf, &q)) != 0 ||
+		    (r = sshbuf_get_bignum2(buf, &g)) != 0 ||
+		    (r = sshbuf_get_bignum2(buf, &pub_key)) != 0 ||
+		    (r = sshbuf_get_bignum2(buf, &priv_key)) != 0)
 			goto clear_dsa;
 		if (!DSA_set0_pqg(k->dsa, p, q, g)) {
 			r = SSH_ERR_LIBCRYPTO_ERROR;
@@ -3301,12 +3281,8 @@ sshkey_private_deserialize(struct sshbuf *buf, struct sshkey **kp)
 		{
 		BIGNUM *priv_key = NULL;
 
-		if ((priv_key = BN_new()) == NULL) {
-			r = SSH_ERR_ALLOC_FAIL;
-			goto out;
-		}
 		if ((r = sshkey_froms(buf, &k)) != 0 ||
-		    (r = sshbuf_get_bignum2(buf, priv_key)) != 0)
+		    (r = sshbuf_get_bignum2(buf, &priv_key)) != 0)
 			goto clear_dsacert;
 		if (!DSA_set0_key(k->dsa, NULL, priv_key)) {
 			r = SSH_ERR_LIBCRYPTO_ERROR;
@@ -3337,12 +3313,12 @@ sshkey_private_deserialize(struct sshbuf *buf, struct sshkey **kp)
 			goto out;
 		}
 		k->ecdsa = EC_KEY_new_by_curve_name(k->ecdsa_nid);
-		if (k->ecdsa  == NULL || (exponent = BN_new()) == NULL) {
+		if (k->ecdsa  == NULL) {
 			r = SSH_ERR_LIBCRYPTO_ERROR;
 			goto out;
 		}
 		if ((r = sshbuf_get_eckey(buf, k->ecdsa)) != 0 ||
-		    (r = sshbuf_get_bignum2(buf, exponent)))
+		    (r = sshbuf_get_bignum2(buf, &exponent)))
 			goto out;
 		if (EC_KEY_set_private_key(k->ecdsa, exponent) != 1) {
 			r = SSH_ERR_LIBCRYPTO_ERROR;
@@ -3354,12 +3330,8 @@ sshkey_private_deserialize(struct sshbuf *buf, struct sshkey **kp)
 			goto out;
 		break;
 	case KEY_ECDSA_CERT:
-		if ((exponent = BN_new()) == NULL) {
-			r = SSH_ERR_LIBCRYPTO_ERROR;
-			goto out;
-		}
 		if ((r = sshkey_froms(buf, &k)) != 0 ||
-		    (r = sshbuf_get_bignum2(buf, exponent)) != 0)
+		    (r = sshbuf_get_bignum2(buf, &exponent)) != 0)
 			goto out;
 		if (EC_KEY_set_private_key(k->ecdsa, exponent) != 1) {
 			r = SSH_ERR_LIBCRYPTO_ERROR;
@@ -3380,21 +3352,12 @@ sshkey_private_deserialize(struct sshbuf *buf, struct sshkey **kp)
 			r = SSH_ERR_ALLOC_FAIL;
 			goto out;
 		}
-		if ((n = BN_new()) == NULL ||
-		    (e = BN_new()) == NULL ||
-		    (d = BN_new()) == NULL ||
-		    (iqmp = BN_new()) == NULL ||
-		    (p = BN_new()) == NULL ||
-		    (q = BN_new()) == NULL) {
-			r = SSH_ERR_ALLOC_FAIL;
-			goto clear_rsa;
-		}
-		if ((r = sshbuf_get_bignum2(buf, n)) != 0 ||
-		    (r = sshbuf_get_bignum2(buf, e)) != 0 ||
-		    (r = sshbuf_get_bignum2(buf, d)) != 0 ||
-		    (r = sshbuf_get_bignum2(buf, iqmp)) != 0 ||
-		    (r = sshbuf_get_bignum2(buf, p)) != 0 ||
-		    (r = sshbuf_get_bignum2(buf, q)) != 0)
+		if ((r = sshbuf_get_bignum2(buf, &n)) != 0 ||
+		    (r = sshbuf_get_bignum2(buf, &e)) != 0 ||
+		    (r = sshbuf_get_bignum2(buf, &d)) != 0 ||
+		    (r = sshbuf_get_bignum2(buf, &iqmp)) != 0 ||
+		    (r = sshbuf_get_bignum2(buf, &p)) != 0 ||
+		    (r = sshbuf_get_bignum2(buf, &q)) != 0)
 			goto clear_rsa;
 		if (!RSA_set0_key(k->rsa, n, e, d)) {
 			r = SSH_ERR_LIBCRYPTO_ERROR;
@@ -3429,18 +3392,11 @@ sshkey_private_deserialize(struct sshbuf *buf, struct sshkey **kp)
 		{
 		BIGNUM *d = NULL, *iqmp = NULL, *p = NULL, *q = NULL;
 
-		if ((d = BN_new()) == NULL ||
-		    (iqmp = BN_new()) == NULL ||
-		    (p = BN_new()) == NULL ||
-		    (q = BN_new()) == NULL) {
-			r = SSH_ERR_ALLOC_FAIL;
-			goto clear_rsacert;
-		}
 		if ((r = sshkey_froms(buf, &k)) != 0 ||
-		    (r = sshbuf_get_bignum2(buf, d)) != 0 ||
-		    (r = sshbuf_get_bignum2(buf, iqmp)) != 0 ||
-		    (r = sshbuf_get_bignum2(buf, p)) != 0 ||
-		    (r = sshbuf_get_bignum2(buf, q)) != 0)
+		    (r = sshbuf_get_bignum2(buf, &d)) != 0 ||
+		    (r = sshbuf_get_bignum2(buf, &iqmp)) != 0 ||
+		    (r = sshbuf_get_bignum2(buf, &p)) != 0 ||
+		    (r = sshbuf_get_bignum2(buf, &q)) != 0)
 			goto clear_rsacert;
 		if ((r = sshrsa_check_length(k->rsa)) != 0)
 			goto clear_rsacert;
