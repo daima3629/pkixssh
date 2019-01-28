@@ -48,7 +48,7 @@ int mm_is_monitor(void);
 # include <openssl/dh.h>
 DH *mm_choose_dh(int, int, int);
 #endif
-int mm_Xkey_sign(ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
+int mm_Xkey_sign(struct ssh *ssh, ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
     const u_char *data, size_t datalen);
 void mm_inform_authserv(char *, char *);
 struct passwd *mm_getpwnamallow(struct ssh *, const char *);

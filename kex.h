@@ -3,7 +3,6 @@
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  *
- * X.509 certificates support,
  * Copyright (c) 2014-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -158,7 +157,7 @@ struct kex {
 	struct sshkey *(*find_host_public_key)(const char* pkalg, struct ssh *);
 	struct sshkey *(*find_host_private_key)(const char* pkalg, struct ssh *);
 	int	(*host_key_index)(struct sshkey *, int, struct ssh *);
-	int	(*xsign)(ssh_sign_ctx *ctx, struct sshkey *pub,
+	int	(*xsign)(struct ssh *ssh, ssh_sign_ctx *ctx, struct sshkey *pub,
 	    u_char **sigp, size_t *lenp, const u_char *data, size_t datalen);
 	int	(*kex[KEX_MAX])(struct ssh *);
 	/* kex specific state */

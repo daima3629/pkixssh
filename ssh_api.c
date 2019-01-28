@@ -1,8 +1,7 @@
-/* $OpenBSD: ssh_api.c,v 1.9 2018/12/27 03:25:25 djm Exp $ */
+/* $OpenBSD: ssh_api.c,v 1.10 2019/01/19 21:43:56 djm Exp $ */
 /*
  * Copyright (c) 2012 Markus Friedl.  All rights reserved.
  *
- * X.509 certificates support,
  * Copyright (c) 2014-2019 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
@@ -71,11 +70,12 @@ mm_choose_dh(int min, int nbits, int max)
 
 static int
 _ssh_host_key_sign(
-	ssh_sign_ctx *ctx, struct sshkey *pub,
-	u_char **sigp, size_t *lenp,
-	const u_char *data, size_t datalen
+    struct ssh *ssh, ssh_sign_ctx *ctx,
+    struct sshkey *pub, u_char **sigp, size_t *lenp,
+    const u_char *data, size_t datalen
 ){
-	(void)pub;
+	UNUSED(ssh);
+	UNUSED(pub);
 	return Xkey_sign(ctx, sigp, lenp, data, datalen);
 }
 

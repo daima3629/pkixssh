@@ -21,7 +21,6 @@
  * Copyright (c) 2000, 2001, 2002 Markus Friedl.  All rights reserved.
  * Copyright (c) 2002 Niels Provos.  All rights reserved.
  *
- * X.509 certificates support:
  * Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -2329,30 +2328,38 @@ main(int ac, char **av)
 
 int
 Xsshd_hostkey_sign(
-	ssh_sign_ctx *ctx, struct sshkey *pubkey,
-	u_char **signature, size_t *slenp,
-	const u_char *data, size_t dlen
+    struct ssh *ssh, ssh_sign_ctx *ctx, struct sshkey *pubkey,
+    u_char **signature, size_t *slenp, const u_char *data, size_t dlen
 ) {
 	int r;
 
-	if (ctx->key) {
-		r = PRIVSEP(Xkey_sign(ctx, signature, slenp, data, dlen));
-		if (r != 0)
-			fatal("%s: Xkey_sign failed: %s",
-			    __func__, ssh_err(r));
-	} else if (use_privsep) {
-		ssh_sign_ctx mm_ctx = { ctx->alg, pubkey, ctx->compat };
-		r = mm_Xkey_sign(&mm_ctx, signature, slenp, data, dlen);
-		if (r != 0)
-			fatal("%s: pubkey Xkey_sign failed: %s",
-			    __func__, ssh_err(r));
+	if (use_privsep) {
+		if (ctx->key) {
+			r = mm_Xkey_sign(ssh, ctx, signature, slenp, data, dlen);
+			if (r != 0)
+				fatal("%s: Xkey_sign failed: %s",
+				      __func__, ssh_err(r));
+		} else {
+			ssh_sign_ctx mm_ctx = { ctx->alg, pubkey, ctx->compat };
+			r = mm_Xkey_sign(ssh, &mm_ctx, signature, slenp, data, dlen);
+			if (r != 0)
+				fatal("%s: pubkey Xkey_sign failed: %s",
+				    __func__, ssh_err(r));
+		}
 	} else {
-		ssh_sign_ctx a_ctx = { ctx->alg, pubkey, ctx->compat };
-		r = Xssh_agent_sign(auth_sock, &a_ctx, signature, slenp,
-		    data, dlen);
-		if (r != 0)
-			fatal("%s: Xssh_agent_sign failed: %s",
-			    __func__, ssh_err(r));
+		if (ctx->key) {
+			r = Xkey_sign(ctx, signature, slenp, data, dlen);
+			if (r != 0)
+				fatal("%s: Xkey_sign failed: %s",
+				      __func__, ssh_err(r));
+		} else {
+			ssh_sign_ctx a_ctx = { ctx->alg, pubkey, ctx->compat };
+			r = Xssh_agent_sign(auth_sock, &a_ctx, signature, slenp,
+			    data, dlen);
+			if (r != 0)
+				fatal("%s: Xssh_agent_sign failed: %s",
+				    __func__, ssh_err(r));
+		}
 	}
 	return 0;
 }

@@ -14,7 +14,6 @@
  * SSH2 support by Markus Friedl.
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  *
- * X.509 certificates support,
  * Copyright (c) 2017-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -789,7 +788,7 @@ server_input_hostkeys_prove(struct ssh *ssh, struct sshbuf **respp)
 		    (r = sshbuf_put_string(sigbuf,
 		    ssh->kex->session_id, ssh->kex->session_id_len)) != 0 ||
 		    (r = Xkey_puts(pkalg, key, sigbuf)) != 0 ||
-		    (r = ssh->kex->xsign(&ctx, key_pub, &sig, &slen,
+		    (r = ssh->kex->xsign(ssh, &ctx, key_pub, &sig, &slen,
 		        sshbuf_ptr(sigbuf), sshbuf_len(sigbuf))) != 0 ||
 		    (r = sshbuf_put_string(resp, sig, slen)) != 0) {
 			error("%s: couldn't prepare signature: %s",

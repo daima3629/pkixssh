@@ -3,7 +3,6 @@
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  *
- * X.509 certificates support,
  * Copyright (c) 2014-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -213,7 +212,7 @@ struct sshkey	*get_hostkey_public_by_alg(const char*, struct ssh *);
 struct sshkey	*get_hostkey_private_by_alg(const char*, struct ssh *);
 int	 get_hostkey_index(struct sshkey *, int, struct ssh *);
 
-int	Xsshd_hostkey_sign(ssh_sign_ctx *ctx, struct sshkey *pubkey,
+int	Xsshd_hostkey_sign(struct ssh *ssh, ssh_sign_ctx *ctx, struct sshkey *pubkey,
 	    u_char **signature, size_t *slen, const u_char *data, size_t dlen);
 
 /* Key / cert options linkage to auth layer */

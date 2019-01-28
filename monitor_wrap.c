@@ -4,7 +4,6 @@
  * Copyright 2002 Markus Friedl <markus@openbsd.org>
  * All rights reserved.
  *
- * X509 certificate support,
  * Copyright (c) 2007-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -217,14 +216,14 @@ mm_choose_dh(int min, int nbits, int max)
 #endif
 
 int
-mm_Xkey_sign(ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
+mm_Xkey_sign(struct ssh *ssh, ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
     const u_char *data, size_t datalen
 ) {
 	const char *hostkey_alg = ctx->alg;
 	struct sshkey *key = ctx->key;
 	struct kex *kex = *pmonitor->m_pkex;
 	struct sshbuf *m;
-	u_int ndx = kex->host_key_index(key, 0, active_state);
+	u_int ndx = kex->host_key_index(key, 0, ssh);
 	int r;
 
 	debug3("%s entering", __func__);
