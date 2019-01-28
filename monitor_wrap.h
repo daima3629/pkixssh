@@ -1,4 +1,4 @@
-/* $OpenBSD: monitor_wrap.h,v 1.40 2019/01/19 21:43:07 djm Exp $ */
+/* $OpenBSD: monitor_wrap.h,v 1.41 2019/01/19 21:43:56 djm Exp $ */
 
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
@@ -78,7 +78,7 @@ void mm_sshpam_free_ctx(void *);
 
 #ifdef SSH_AUDIT_EVENTS
 #include "audit.h"
-void mm_audit_event(ssh_audit_event_t);
+void mm_audit_event(struct ssh *, ssh_audit_event_t);
 void mm_audit_run_command(const char *);
 #endif
 

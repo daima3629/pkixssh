@@ -1,4 +1,4 @@
-/* $OpenBSD: monitor.c,v 1.191 2019/01/19 21:43:07 djm Exp $ */
+/* $OpenBSD: monitor.c,v 1.192 2019/01/19 21:43:56 djm Exp $ */
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * Copyright 2002 Markus Friedl <markus@openbsd.org>
@@ -1632,7 +1632,6 @@ mm_answer_audit_event(struct ssh *ssh, int sock, struct sshbuf *m)
 	ssh_audit_event_t event;
 	int r;
 
-	UNUSED(ssh);
 	UNUSED(sock);
 	debug3("%s entering", __func__);
 
@@ -1647,7 +1646,7 @@ mm_answer_audit_event(struct ssh *ssh, int sock, struct sshbuf *m)
 	case SSH_LOGIN_ROOT_DENIED:
 	case SSH_CONNECTION_CLOSE:
 	case SSH_INVALID_USER:
-		audit_event(event);
+		audit_event(ssh, event);
 		break;
 	default:
 		fatal("Audit event type %d not permitted", event);

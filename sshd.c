@@ -244,8 +244,9 @@ struct monitor *pmonitor = NULL;
 int privsep_is_preauth = 1;
 static int privsep_chroot = 1;
 
-/* global authentication context */
+/* global connection state and authentication contexts */
 Authctxt *the_authctxt = NULL;
+static struct ssh *the_active_state = NULL;
 
 /* global key/cert auth options. XXX move to permanent ssh->authctxt? */
 struct sshauthopt *auth_opts = NULL;
@@ -386,9 +387,11 @@ grace_alarm_handler(int sig)
 		kill(0, SIGTERM);
 	}
 
+	/* XXX pre-format ipaddr/port so we don't need to access active_state */
 	/* Log error and exit. */
 	sigdie("Timeout before authentication for %s port %d",
-	    ssh_remote_ipaddr(active_state), ssh_remote_port(active_state));
+	    ssh_remote_ipaddr(the_active_state),
+	    ssh_remote_port(the_active_state));
 }
 
 static int
@@ -2126,6 +2129,7 @@ main(int ac, char **av)
 	 * not have a key.
 	 */
 	ssh = create_session(sock_in, sock_out);
+	the_active_state = ssh;
 
 	check_ip_options(ssh);
 
@@ -2264,7 +2268,7 @@ main(int ac, char **av)
 	}
 
 #ifdef SSH_AUDIT_EVENTS
-	audit_event(SSH_AUTH_SUCCESS);
+	audit_event(ssh, SSH_AUTH_SUCCESS);
 #endif
 
 #ifdef GSSAPI
@@ -2312,7 +2316,7 @@ main(int ac, char **av)
 #endif /* USE_PAM */
 
 #ifdef SSH_AUDIT_EVENTS
-	PRIVSEP(audit_event(SSH_CONNECTION_CLOSE));
+	PRIVSEP(audit_event(ssh, SSH_CONNECTION_CLOSE));
 #endif
 
 	packet_close(); /* NOTE deallocate active_state */
@@ -2423,10 +2427,8 @@ do_ssh2_kex(struct ssh *ssh)
 void
 cleanup_exit(int i)
 {
-	struct ssh *ssh = active_state; /* XXX */
-
-	if (the_authctxt) {
-		do_cleanup(ssh, the_authctxt);
+	if (the_active_state != NULL && the_authctxt != NULL) {
+		do_cleanup(the_active_state, the_authctxt);
 		if (use_privsep && privsep_is_preauth &&
 		    pmonitor != NULL && pmonitor->m_pid > 1) {
 			debug("Killing privsep child %d", pmonitor->m_pid);
@@ -2438,8 +2440,8 @@ cleanup_exit(int i)
 	}
 #ifdef SSH_AUDIT_EVENTS
 	/* done after do_cleanup so it can cancel the PAM auth 'thread' */
-	if (!use_privsep || mm_is_monitor())
-		audit_event(SSH_CONNECTION_ABANDON);
+	if (the_active_state != NULL && (!use_privsep || mm_is_monitor()))
+		audit_event(the_active_state, SSH_CONNECTION_ABANDON);
 #endif
 	_exit(i);
 }

@@ -35,10 +35,12 @@
 #include "hostfile.h"
 #include "auth.h"
 
+const char *audit_username(void);
+
 /*
  * Care must be taken when using this since it WILL NOT be initialized when
  * audit_connection_from() is called and MAY NOT be initialized when
- * audit_event(CONNECTION_ABANDON) is called.  Test for NULL before using.
+ * audit_event(..., CONNECTION_ABANDON) is called.  Test for NULL before using.
  */
 extern Authctxt *the_authctxt;
 
@@ -79,7 +81,7 @@ audit_username(void)
 	return (the_authctxt->user);
 }
 
-const char *
+static const char *
 audit_event_lookup(ssh_audit_event_t ev)
 {
 	int i;
@@ -131,8 +133,9 @@ audit_connection_from(const char *host, int port)
  * events and what they mean).
  */
 void
-audit_event(ssh_audit_event_t event)
+audit_event(struct ssh *ssh, ssh_audit_event_t event)
 {
+	UNUSED(ssh);
 	debug("audit event euid %d user %s event %d (%s)", geteuid(),
 	    audit_username(), event, audit_event_lookup(event));
 }
