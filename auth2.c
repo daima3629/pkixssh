@@ -304,7 +304,7 @@ input_userauth_request(int type, u_int32_t seq, struct ssh *ssh)
 		}
 #ifdef USE_PAM
 		if (options.use_pam)
-			PRIVSEP(start_pam(authctxt));
+			PRIVSEP(start_pam(ssh));
 #endif
 		ssh_packet_set_log_preamble(ssh, "%suser %s",
 		    authctxt->valid ? "authenticating " : "invalid ", user);
@@ -406,7 +406,10 @@ userauth_finish(struct ssh *ssh, int authenticated, const char *method,
 					fatal("%s: buffer error: %s",
 					    __func__, ssh_err(r));
 				userauth_send_banner(ssh, sshbuf_ptr(loginmsg));
-				packet_write_wait();
+				if ((r = ssh_packet_write_wait(ssh)) != 0) {
+					sshpkt_fatal(ssh, r,
+					    "%s: send PAM banner", __func__);
+				}
 			}
 			fatal("Access denied for user %s by PAM account "
 			    "configuration", authctxt->user);

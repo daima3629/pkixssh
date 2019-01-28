@@ -662,10 +662,11 @@ mm_session_pty_cleanup2(Session *s)
 
 #ifdef USE_PAM
 void
-mm_start_pam(Authctxt *authctxt)
+mm_start_pam(struct ssh *ssh)
 {
 	struct sshbuf *m;
 
+	UNUSED(ssh);
 	debug3("%s entering", __func__);
 	if (!options.use_pam)
 		fatal("UsePAM=no, but ended up in %s anyway", __func__);
