@@ -4,7 +4,7 @@
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  *
  * X.509 certificates support,
- * Copyright (c) 2014-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2014-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -135,10 +135,10 @@ auth_rhosts2(struct passwd *, const char *, const char *, const char *);
 
 int      auth_password(struct ssh *, const char *);
 
-int	 hostbased_xkey_allowed(struct passwd *, ssh_sign_ctx *,
+int	 hostbased_xkey_allowed(struct ssh *, struct passwd *, ssh_sign_ctx *,
 	     const char *, char *);
 int	 user_xkey_allowed(struct ssh *, struct passwd *, ssh_sign_ctx *, int,
-    struct sshauthopt **);
+	     struct sshauthopt **);
 
 int	 auth2_key_already_used(Authctxt *, const struct sshkey *);
 

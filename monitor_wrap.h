@@ -3,6 +3,7 @@
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * All rights reserved.
+ *
  * Copyright (c) 2017-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,9 +56,11 @@ char *mm_auth2_read_banner(void);
 int mm_auth_password(struct ssh *, char *);
 int mm_user_xkey_allowed(struct ssh *, struct passwd *, ssh_sign_ctx *, int,
     struct sshauthopt **);
-int mm_hostbased_xkey_allowed(struct passwd *, ssh_sign_ctx *,
-	const char *, const char *);
-int mm_Xkey_verify(ssh_sign_ctx *ctx, const u_char *sig, u_int siglen, const u_char *data, u_int datalen);
+int mm_hostbased_xkey_allowed(struct ssh *, struct passwd *,
+	ssh_sign_ctx *, const char *, const char *);
+int mm_Xkey_verify(ssh_sign_ctx *ctx,
+	const u_char *sig, size_t siglen,
+	const u_char *data, size_t datalen);
 
 #ifdef GSSAPI
 OM_uint32 mm_ssh_gssapi_server_ctx(Gssctxt **, gss_OID);

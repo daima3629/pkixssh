@@ -173,7 +173,8 @@ userauth_hostbased(struct ssh *ssh)
 	authenticated = 0;
 {	ssh_sign_ctx ctx = { pkalg, key, &ssh->compat };
 
-	if (PRIVSEP(hostbased_xkey_allowed(authctxt->pw, &ctx, cuser, chost)) &&
+	if (PRIVSEP(hostbased_xkey_allowed(ssh, authctxt->pw, &ctx,
+	    cuser, chost)) &&
 	    PRIVSEP(Xkey_verify(&ctx, sig, slen,
 		sshbuf_ptr(b), sshbuf_len(b))) == 0)
 		authenticated = 1;
@@ -194,11 +195,10 @@ done:
 
 /* return 1 if given hostkey is allowed */
 int
-hostbased_xkey_allowed(struct passwd *pw, ssh_sign_ctx *ctx,
-    const char *cuser, char *chost)
+hostbased_xkey_allowed(struct ssh *ssh, struct passwd *pw,
+    ssh_sign_ctx *ctx, const char *cuser, char *chost)
 {
 	struct sshkey *key = ctx->key;
-	struct ssh *ssh = active_state; /* XXX */
 	const char *resolvedname, *ipaddr, *lookup, *reason;
 	HostStatus host_status;
 	int len;

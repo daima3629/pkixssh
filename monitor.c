@@ -1208,8 +1208,8 @@ mm_answer_keyallowed(struct ssh *ssh, int sock, struct sshbuf *m)
 				break;
 			/* NOTE: algorithm is already allowed
 			   in user authentication request. */
-			allowed = hostbased_xkey_allowed(authctxt->pw, &ctx,
-			    cuser, chost);
+			allowed = hostbased_xkey_allowed(ssh, authctxt->pw,
+			    &ctx, cuser, chost);
 			auth2_record_info(authctxt,
 			    "client user \"%.100s\", client host \"%.100s\"",
 			    cuser, chost);

@@ -508,18 +508,19 @@ mm_user_xkey_allowed(
     struct ssh *ssh, struct passwd *pw, ssh_sign_ctx *ctx,
     int pubkey_auth_attempt, struct sshauthopt **authoptp
 ) {
-	(void)ssh;
-	(void)pw;
+	UNUSED(ssh);
+	UNUSED(pw);
 	return (mm_xkey_allowed(MM_USERKEY, NULL, NULL, ctx,
 	    pubkey_auth_attempt, authoptp));
 }
 
 int
 mm_hostbased_xkey_allowed(
-    struct passwd *pw, ssh_sign_ctx *ctx,
+    struct ssh *ssh, struct passwd *pw, ssh_sign_ctx *ctx,
     const char *user, const char *host
 ) {
-	(void)pw;
+	UNUSED(ssh);
+	UNUSED(pw);
 	return (mm_xkey_allowed(MM_HOSTKEY, user, host, ctx, 0, NULL));
 }
 
@@ -530,8 +531,11 @@ mm_hostbased_xkey_allowed(
  */
 
 int
-mm_Xkey_verify(ssh_sign_ctx *ctx, const u_char *sig, u_int siglen, const u_char *data, u_int datalen)
-{
+mm_Xkey_verify(
+    ssh_sign_ctx *ctx,
+    const u_char *sig, size_t siglen,
+    const u_char *data, size_t datalen
+) {
 	const char *pkalg = ctx->alg;
 	struct sshbuf *m;
 	u_int32_t encoded_ret = 0;
