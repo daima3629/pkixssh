@@ -1,10 +1,9 @@
-/* $OpenBSD: kexc25519c.c,v 1.11 2019/01/21 09:55:52 djm Exp $ */
+/* $OpenBSD: kexc25519c.c,v 1.12 2019/01/21 10:07:22 djm Exp $ */
 /*
  * Copyright (c) 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2010 Damien Miller.  All rights reserved.
  * Copyright (c) 2013 Aris Adamantiadis.  All rights reserved.
  *
- * X.509 certificates support,
  * Copyright (c) 2014-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -86,10 +85,6 @@ input_kex_c25519_reply(int type, u_int32_t seq, struct ssh *ssh)
 
 	UNUSED(type);
 	UNUSED(seq);
-	if (kex->verify_host_key == NULL) {
-		r = SSH_ERR_INVALID_ARGUMENT;
-		goto out;
-	}
 
 	/* hostkey */
 	r = sshpkt_get_string(ssh, &server_host_key_blob, &sbloblen);
@@ -98,14 +93,8 @@ input_kex_c25519_reply(int type, u_int32_t seq, struct ssh *ssh)
 	r = Xkey_from_blob(kex->hostkey_alg, server_host_key_blob, sbloblen, &server_host_key);
 	if (r != SSH_ERR_SUCCESS) goto out;
 
-	if (!sshkey_match_pkalg(server_host_key, kex->hostkey_alg)) {
-		r = SSH_ERR_KEY_TYPE_MISMATCH;
+	if ((r = kex_verify_host_key(ssh, server_host_key)) != 0)
 		goto out;
-	}
-	if (kex->verify_host_key(server_host_key, ssh) == -1) {
-		r = SSH_ERR_SIGNATURE_INVALID;
-		goto out;
-	}
 
 	/* Q_S, server public key */
 	/* signed H */

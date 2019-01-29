@@ -1,4 +1,4 @@
-/* $OpenBSD: kex.h,v 1.96 2019/01/21 10:03:37 djm Exp $ */
+/* $OpenBSD: kex.h,v 1.98 2019/01/21 10:07:22 djm Exp $ */
 
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
@@ -195,6 +195,7 @@ int	 kex_send_newkeys(struct ssh *);
 int	 kex_start_rekex(struct ssh *);
 
 int	 kex_load_host_keys(struct ssh *ssh, struct sshkey **hostpub, struct sshkey **hostpriv);
+int	 kex_verify_host_key(struct ssh *ssh, struct sshkey *key);
 
 
 int	 kexdh_client(struct ssh *);

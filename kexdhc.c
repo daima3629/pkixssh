@@ -1,8 +1,7 @@
-/* $OpenBSD: kexdhc.c,v 1.28 2019/01/21 10:03:37 djm Exp $ */
+/* $OpenBSD: kexdhc.c,v 1.29 2019/01/21 10:07:22 djm Exp $ */
 /*
  * Copyright (c) 2001 Markus Friedl.  All rights reserved.
  *
- * X.509 certificates support,
  * Copyright (c) 2014-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -100,25 +99,16 @@ input_kex_dh(int type, u_int32_t seq, struct ssh *ssh)
 	UNUSED(type);
 	UNUSED(seq);
 
-	if (kex->verify_host_key == NULL) {
-		r = SSH_ERR_INVALID_ARGUMENT;
-		goto out;
-	}
-	/* key, cert */
+	/* hostkey */
 	r = sshpkt_get_string(ssh, &server_host_key_blob, &sbloblen);
 	if (r != 0) goto out;
 
 	r = Xkey_from_blob(kex->hostkey_alg, server_host_key_blob, sbloblen, &server_host_key);
 	if (r != SSH_ERR_SUCCESS) goto out;
 
-	if (!sshkey_match_pkalg(server_host_key, kex->hostkey_alg)) {
-		r = SSH_ERR_KEY_TYPE_MISMATCH;
+	if ((r = kex_verify_host_key(ssh, server_host_key)) != 0)
 		goto out;
-	}
-	if (kex->verify_host_key(server_host_key, ssh) == -1) {
-		r = SSH_ERR_SIGNATURE_INVALID;
-		goto out;
-	}
+
 	/* DH parameter f, server public DH key, signed H */
 	if ((r = sshpkt_get_bignum2(ssh, &dh_server_pub)) != 0 ||
 	    (r = sshpkt_get_string(ssh, &signature, &slen)) != 0 ||
