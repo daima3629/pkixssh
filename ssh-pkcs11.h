@@ -34,11 +34,13 @@ int	pkcs11_del_provider(char *);
 #define PKCS11_RSA_PRIVATE_ENCRYPT	110
 #define PKCS11_DSA_DO_SIGN		111
 #define PKCS11_ECDSA_DO_SIGN		112
+#define PKCS11_GET_KEY			113
 /* Reason codes. */
 #define PKCS11_SIGNREQ_FAIL		100
 #define PKCS11_C_SIGNINIT_FAIL		101
 #define PKCS11_C_SIGN_FAIL		102
 #define PKCS11_C_LOGIN_FAIL		103
+#define PKCS11_FINDKEY_FAIL		104
 
 void ERR_PKCS11_PUT_error(int function, int reason, char *file, int line);
 #define PKCS11err(f,r) ERR_PKCS11_PUT_error((f),(r),__FILE__,__LINE__)

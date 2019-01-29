@@ -442,6 +442,36 @@ pkcs11_find(struct pkcs11_provider *p, CK_ULONG slotidx, CK_ATTRIBUTE *attr,
 	return (ret);
 }
 
+static int/*bool*/
+pkcs11_get_key(
+    struct pkcs11_key *k11,
+    CK_OBJECT_HANDLE *pobj
+) {
+	CK_OBJECT_CLASS private_key_class = CKO_PRIVATE_KEY;
+	CK_BBOOL        true_val = CK_TRUE;
+	CK_ATTRIBUTE    key_filter[] = {
+		{CKA_CLASS, NULL, sizeof(private_key_class) },
+		{CKA_ID, NULL, 0},
+		{CKA_SIGN, NULL, sizeof(true_val) }
+	};
+
+	/* some compilers complain about non-constant initializer so we
+	   use NULL in CK_ATTRIBUTE above and set the values here */
+	key_filter[0].pValue = &private_key_class;
+	key_filter[2].pValue = &true_val;
+
+	key_filter[1].pValue = k11->keyid;
+	key_filter[1].ulValueLen = k11->keyid_len;
+
+	/* try to find object w/CKA_SIGN first, retry w/o */
+	if (pkcs11_find(k11->provider, k11->slotidx, key_filter, 3, pobj) < 0 &&
+	    pkcs11_find(k11->provider, k11->slotidx, key_filter, 2, pobj) < 0) {
+		PKCS11err(PKCS11_GET_KEY, PKCS11_FINDKEY_FAIL);
+		return 0;
+	}
+	return 1;
+}
+
 /* openssl callback doing the actual signing operation */
 static int
 pkcs11_rsa_private_encrypt(int flen, const u_char *from, u_char *to, RSA *rsa,
@@ -453,21 +483,12 @@ pkcs11_rsa_private_encrypt(int flen, const u_char *from, u_char *to, RSA *rsa,
 	CK_OBJECT_HANDLE	obj;
 	CK_ULONG		tlen = 0;
 	CK_RV			rv;
-	CK_OBJECT_CLASS	private_key_class = CKO_PRIVATE_KEY;
-	CK_BBOOL		true_val = CK_TRUE;
 	CK_MECHANISM		mech = {
 		CKM_RSA_PKCS, NULL_PTR, 0
 	};
-	CK_ATTRIBUTE		key_filter[] = {
-		{CKA_CLASS, NULL, sizeof(private_key_class) },
-		{CKA_ID, NULL, 0},
-		{CKA_SIGN, NULL, sizeof(true_val) }
-	};
 	int			rval = -1;
 
-	(void)padding;
-	key_filter[0].pValue = &private_key_class;
-	key_filter[2].pValue = &true_val;
+	UNUSED(padding);
 
 	k11 = RSA_get_ex_data(rsa, ssh_pkcs11_rsa_ctx_index);
 	if (k11 == NULL) {
@@ -480,14 +501,11 @@ pkcs11_rsa_private_encrypt(int flen, const u_char *from, u_char *to, RSA *rsa,
 	}
 	f = k11->provider->function_list;
 	si = &k11->provider->slotinfo[k11->slotidx];
+
 	if (!pkcs11_login(si, f)) return -1;
-	key_filter[1].pValue = k11->keyid;
-	key_filter[1].ulValueLen = k11->keyid_len;
-	/* try to find object w/CKA_SIGN first, retry w/o */
-	if (pkcs11_find(k11->provider, k11->slotidx, key_filter, 3, &obj) < 0 &&
-	    pkcs11_find(k11->provider, k11->slotidx, key_filter, 2, &obj) < 0) {
-		error("cannot find private key");
-	} else if ((rv = f->C_SignInit(si->session, &mech, obj)) != CKR_OK) {
+	if (!pkcs11_get_key(k11, &obj)) return -1;
+
+	if ((rv = f->C_SignInit(si->session, &mech, obj)) != CKR_OK) {
 		PKCS11err(PKCS11_RSA_PRIVATE_ENCRYPT, PKCS11_C_SIGNINIT_FAIL);
 		crypto_pkcs11_error(rv);
 	} else {
@@ -495,7 +513,7 @@ pkcs11_rsa_private_encrypt(int flen, const u_char *from, u_char *to, RSA *rsa,
 		/* XXX handle CKR_BUFFER_TOO_SMALL */
 		tlen = RSA_size(rsa);
 		rv = f->C_Sign(si->session, (CK_BYTE *)from, flen, to, &tlen);
-		if (rv == CKR_OK) 
+		if (rv == CKR_OK)
 			rval = tlen;
 		else {
 			PKCS11err(PKCS11_RSA_PRIVATE_ENCRYPT, PKCS11_C_SIGN_FAIL);
@@ -612,24 +630,12 @@ pkcs11_dsa_do_sign(const unsigned char *dgst, int dlen, DSA *dsa)
 	CK_OBJECT_HANDLE	obj;
 	CK_ULONG		tlen = 0;
 	CK_RV			rv;
-	CK_OBJECT_CLASS		private_key_class = CKO_PRIVATE_KEY;
-	CK_BBOOL		true_val = CK_TRUE;
 	CK_MECHANISM		mech = {
 		CKM_DSA, NULL_PTR, 0
-	};
-	CK_ATTRIBUTE		key_filter[] = {
-		{CKA_CLASS, NULL, sizeof(private_key_class) },
-		{CKA_ID, NULL, 0},
-		{CKA_SIGN, NULL, sizeof(true_val) }
 	};
 	DSA_SIG			*sig = NULL;
 
 	debug3("pkcs11_dsa_do_sign");
-
-	/* some compilers complain about non-constant initializer so we
-	   use NULL in CK_ATTRIBUTE above and set the values here */
-	key_filter[0].pValue = &private_key_class;
-	key_filter[2].pValue = &true_val;
 
 	k11 = DSA_get_ex_data(dsa, ssh_pkcs11_dsa_ctx_index);
 	if (k11 == NULL) {
@@ -642,14 +648,11 @@ pkcs11_dsa_do_sign(const unsigned char *dgst, int dlen, DSA *dsa)
 	}
 	f = k11->provider->function_list;
 	si = &k11->provider->slotinfo[k11->slotidx];
+
 	if (!pkcs11_login(si, f)) return NULL;
-	key_filter[1].pValue = k11->keyid;
-	key_filter[1].ulValueLen = k11->keyid_len;
-	/* try to find object w/CKA_SIGN first, retry w/o */
-	if (pkcs11_find(k11->provider, k11->slotidx, key_filter, 3, &obj) < 0 &&
-	    pkcs11_find(k11->provider, k11->slotidx, key_filter, 2, &obj) < 0) {
-		error("cannot find private key");
-	} else if ((rv = f->C_SignInit(si->session, &mech, obj)) != CKR_OK) {
+	if (!pkcs11_get_key(k11, &obj)) return NULL;
+
+	if ((rv = f->C_SignInit(si->session, &mech, obj)) != CKR_OK) {
 		PKCS11err(PKCS11_DSA_DO_SIGN, PKCS11_C_SIGNINIT_FAIL);
 		crypto_pkcs11_error(rv);
 	} else {
@@ -767,27 +770,15 @@ pkcs11_ecdsa_do_sign(
 	CK_OBJECT_HANDLE	obj;
 	CK_ULONG		tlen = 0;
 	CK_RV			rv;
-	CK_OBJECT_CLASS		private_key_class = CKO_PRIVATE_KEY;
-	CK_BBOOL		true_val = CK_TRUE;
 	CK_MECHANISM		mech = {
 		CKM_ECDSA, NULL_PTR, 0
-	};
-	CK_ATTRIBUTE		key_filter[] = {
-		{CKA_CLASS, NULL, sizeof(private_key_class) },
-		{CKA_ID, NULL, 0},
-		{CKA_SIGN, NULL, sizeof(true_val) }
 	};
 	ECDSA_SIG		*sig = NULL;
 
 	debug3("pkcs11_ecdsa_do_sign");
 
-	(void)inv;
-	(void)rp;
-
-	/* some compilers complain about non-constant initializer so we
-	   use NULL in CK_ATTRIBUTE above and set the values here */
-	key_filter[0].pValue = &private_key_class;
-	key_filter[2].pValue = &true_val;
+	UNUSED(inv);
+	UNUSED(rp);
 
 #ifdef HAVE_EC_KEY_METHOD_NEW
 	k11 = EC_KEY_get_ex_data(ec, ssh_pkcs11_ec_ctx_index);
@@ -808,14 +799,11 @@ pkcs11_ecdsa_do_sign(
 	}
 	f = k11->provider->function_list;
 	si = &k11->provider->slotinfo[k11->slotidx];
+
 	if (!pkcs11_login(si, f)) return NULL;
-	key_filter[1].pValue = k11->keyid;
-	key_filter[1].ulValueLen = k11->keyid_len;
-	/* try to find object w/CKA_SIGN first, retry w/o */
-	if (pkcs11_find(k11->provider, k11->slotidx, key_filter, 3, &obj) < 0 &&
-	    pkcs11_find(k11->provider, k11->slotidx, key_filter, 2, &obj) < 0) {
-		error("cannot find private key");
-	} else if ((rv = f->C_SignInit(si->session, &mech, obj)) != CKR_OK) {
+	if (!pkcs11_get_key(k11, &obj)) return NULL;
+
+	if ((rv = f->C_SignInit(si->session, &mech, obj)) != CKR_OK) {
 		PKCS11err(PKCS11_ECDSA_DO_SIGN, PKCS11_C_SIGNINIT_FAIL);
 		crypto_pkcs11_error(rv);
 	} else {
