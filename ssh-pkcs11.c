@@ -675,44 +675,54 @@ pkcs11_dsa_do_sign(const unsigned char *dgst, int dlen, DSA *dsa)
 }
 
 
-static DSA_METHOD *ssh_pkcs11_dsa_method = NULL;
+static DSA_METHOD*
+ssh_pkcs11_dsa_method(void) {
+	static DSA_METHOD *meth = NULL;
 
+	if (meth == NULL) {
+		const DSA_METHOD *def = DSA_OpenSSL();
+
+		meth = DSA_meth_new("SSH PKCS#11 DSA method",
+		#ifdef DSA_FLAG_FIPS_METHOD
+			DSA_FLAG_FIPS_METHOD |
+		#endif
+			0);
+		if (meth == NULL) return NULL;
+
+		if (!DSA_meth_set_sign(meth, pkcs11_dsa_do_sign)
+		||  !DSA_meth_set_finish(meth, pkcs11_dsa_finish)
+		)
+			goto err;
+
+		if (!DSA_meth_set_verify(meth, DSA_meth_get_verify(def))
+		||  !DSA_meth_set_mod_exp(meth, DSA_meth_get_mod_exp(def))
+		||  !DSA_meth_set_bn_mod_exp(meth, DSA_meth_get_bn_mod_exp(def))
+		)
+			goto err;
+	}
+
+	return meth;
+
+err:
+	DSA_meth_free(meth);
+	meth = NULL;
+	return NULL;
+}
 
 static int
 pkcs11_dsa_wrap(struct pkcs11_provider *provider, CK_ULONG slotidx,
     CK_ATTRIBUTE *keyid_attrib, DSA *dsa)
 {
-	struct pkcs11_key	*k11;
+	DSA_METHOD *dsa_method = ssh_pkcs11_dsa_method();
+	struct pkcs11_key *k11;
+
+	if (dsa_method == NULL) return -1;
 
 	/* ensure DSA context index */
 	if (ssh_pkcs11_dsa_ctx_index < 0)
 		ssh_pkcs11_dsa_ctx_index = DSA_get_ex_new_index(0, NULL, NULL, NULL, CRYPTO_EX_pkcs11_dsa_free);
-	if (ssh_pkcs11_dsa_ctx_index < 0) {
-		return (-1);
-	}
-
-	if (ssh_pkcs11_dsa_method == NULL) {
-		const DSA_METHOD *def = DSA_OpenSSL();
-
-		ssh_pkcs11_dsa_method = DSA_meth_new("SSH PKCS#11 DSA method",
-		#ifdef DSA_FLAG_FIPS_METHOD
-			DSA_FLAG_FIPS_METHOD |
-		#endif
-			0);
-		if (ssh_pkcs11_dsa_method == NULL)
-			return (-1);
-
-		if (!DSA_meth_set_sign(ssh_pkcs11_dsa_method, pkcs11_dsa_do_sign)
-		||  !DSA_meth_set_finish(ssh_pkcs11_dsa_method, pkcs11_dsa_finish)
-		)
-			goto err;
-
-		if (!DSA_meth_set_verify(ssh_pkcs11_dsa_method, DSA_meth_get_verify(def))
-		||  !DSA_meth_set_mod_exp(ssh_pkcs11_dsa_method, DSA_meth_get_mod_exp(def))
-		||  !DSA_meth_set_bn_mod_exp(ssh_pkcs11_dsa_method, DSA_meth_get_bn_mod_exp(def))
-		)
-			goto err;
-	}
+	if (ssh_pkcs11_dsa_ctx_index < 0)
+		return -1;
 
 	k11 = xcalloc(1, sizeof(*k11));
 	k11->provider = provider;
@@ -724,14 +734,9 @@ pkcs11_dsa_wrap(struct pkcs11_provider *provider, CK_ULONG slotidx,
 		k11->keyid = xmalloc(k11->keyid_len);
 		memcpy(k11->keyid, keyid_attrib->pValue, k11->keyid_len);
 	}
-	DSA_set_method(dsa, ssh_pkcs11_dsa_method);
+	DSA_set_method(dsa, dsa_method);
 	DSA_set_ex_data(dsa, ssh_pkcs11_dsa_ctx_index, k11);
-	return (0);
-
-err:
-	DSA_meth_free(ssh_pkcs11_dsa_method);
-	ssh_pkcs11_dsa_method = NULL;
-	return (-1);
+	return 0;
 }
 
 
