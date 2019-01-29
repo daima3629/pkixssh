@@ -104,6 +104,28 @@ struct pkcs11_key {
 
 static void pkcs11_provider_unref(struct pkcs11_provider *p);
 
+static struct pkcs11_key *
+pkcs11_key_create(
+    struct pkcs11_provider *provider,
+    CK_ULONG slotidx,
+    CK_ATTRIBUTE *keyid_attrib
+) {
+	struct pkcs11_key *k11;
+
+	k11 = xcalloc(1, sizeof(*k11)); /*fatal on error*/
+	k11->provider = provider;
+	provider->refcount++;	/* provider referenced by RSA key */
+	k11->slotidx = slotidx;
+	/* identify key object on smartcard */
+	k11->keyid_len = keyid_attrib->ulValueLen;
+	if (k11->keyid_len > 0) {
+		k11->keyid = xmalloc(k11->keyid_len); /*fatal on error*/
+		memcpy(k11->keyid, keyid_attrib->pValue, k11->keyid_len);
+	}
+
+	return k11;
+}
+    
 static void
 pkcs11_key_free(struct pkcs11_key *k11) {
 	if (k11 == NULL) return;
@@ -584,16 +606,7 @@ pkcs11_rsa_wrap(struct pkcs11_provider *provider, CK_ULONG slotidx,
 	if (ssh_pkcs11_rsa_ctx_index < 0)
 		return -1;
 
-	k11 = xcalloc(1, sizeof(*k11));
-	k11->provider = provider;
-	provider->refcount++;	/* provider referenced by RSA key */
-	k11->slotidx = slotidx;
-	/* identify key object on smartcard */
-	k11->keyid_len = keyid_attrib->ulValueLen;
-	if (k11->keyid_len > 0) {
-		k11->keyid = xmalloc(k11->keyid_len);
-		memcpy(k11->keyid, keyid_attrib->pValue, k11->keyid_len);
-	}
+	k11 = pkcs11_key_create(provider, slotidx, keyid_attrib);
 
 	RSA_set_method(rsa, rsa_method);
 	RSA_set_ex_data(rsa, ssh_pkcs11_rsa_ctx_index, k11);
@@ -724,16 +737,8 @@ pkcs11_dsa_wrap(struct pkcs11_provider *provider, CK_ULONG slotidx,
 	if (ssh_pkcs11_dsa_ctx_index < 0)
 		return -1;
 
-	k11 = xcalloc(1, sizeof(*k11));
-	k11->provider = provider;
-	provider->refcount++;	/* provider referenced by DSA key */
-	k11->slotidx = slotidx;
-	/* identify key object on smartcard */
-	k11->keyid_len = keyid_attrib->ulValueLen;
-	if (k11->keyid_len > 0) {
-		k11->keyid = xmalloc(k11->keyid_len);
-		memcpy(k11->keyid, keyid_attrib->pValue, k11->keyid_len);
-	}
+	k11 = pkcs11_key_create(provider, slotidx, keyid_attrib);
+
 	DSA_set_method(dsa, dsa_method);
 	DSA_set_ex_data(dsa, ssh_pkcs11_dsa_ctx_index, k11);
 	return 0;
@@ -901,16 +906,8 @@ pkcs11_ec_wrap(struct pkcs11_provider *provider, CK_ULONG slotidx,
 	if (ssh_pkcs11_ec_ctx_index < 0)
 		return -1;
 
-	k11 = xcalloc(1, sizeof(*k11));
-	k11->provider = provider;
-	provider->refcount++;	/* provider referenced by EC key */
-	k11->slotidx = slotidx;
-	/* identify key object on smartcard */
-	k11->keyid_len = keyid_attrib->ulValueLen;
-	if (k11->keyid_len > 0) {
-		k11->keyid = xmalloc(k11->keyid_len);
-		memcpy(k11->keyid, keyid_attrib->pValue, k11->keyid_len);
-	}
+	k11 = pkcs11_key_create(provider, slotidx, keyid_attrib);
+
 	EC_KEY_set_method(ec, ec_method);
 	EC_KEY_set_ex_data(ec, ssh_pkcs11_ec_ctx_index, k11);
 	return 0;
