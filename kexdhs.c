@@ -85,7 +85,7 @@ input_kex_dh_init(int type, u_int32_t seq, struct ssh *ssh)
 	UNUSED(type);
 	UNUSED(seq);
 
-	r = kex_load_host_keys(kex, ssh, &server_host_public, &server_host_private);
+	r = kex_load_host_keys(ssh, &server_host_public, &server_host_private);
 	if (r != SSH_ERR_SUCCESS)
 		goto out;
 

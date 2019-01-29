@@ -194,7 +194,7 @@ int	 kex_derive_keys_bn(struct ssh *, u_char *, u_int, const BIGNUM *);
 int	 kex_send_newkeys(struct ssh *);
 int	 kex_start_rekex(struct ssh *);
 
-int	 kex_load_host_keys(struct kex *kex, struct ssh *ssh, struct sshkey **hostpub, struct sshkey **hostpriv);
+int	 kex_load_host_keys(struct ssh *ssh, struct sshkey **hostpub, struct sshkey **hostpriv);
 
 
 int	 kexdh_client(struct ssh *);

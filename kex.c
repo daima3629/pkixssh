@@ -1135,7 +1135,8 @@ kex_derive_keys_bn(struct ssh *ssh, u_char *hash, u_int hashlen,
 #endif
 
 int
-kex_load_host_keys(struct kex *kex, struct ssh *ssh, struct sshkey **hostpub, struct sshkey **hostpriv) {
+kex_load_host_keys(struct ssh *ssh, struct sshkey **hostpub, struct sshkey **hostpriv) {
+	struct kex *kex = ssh->kex;
 	int r;
 
 	if (hostpub == NULL || hostpriv == NULL) {

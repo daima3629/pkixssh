@@ -76,7 +76,7 @@ input_kex_c25519_init(int type, u_int32_t seq, struct ssh *ssh)
 	dump_digest("server private key:", server_key, sizeof(server_key));
 #endif
 
-	r = kex_load_host_keys(kex, ssh, &server_host_public, &server_host_private);
+	r = kex_load_host_keys(ssh, &server_host_public, &server_host_private);
 	if (r != SSH_ERR_SUCCESS)
 		goto out;
 
