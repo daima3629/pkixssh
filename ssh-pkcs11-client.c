@@ -289,34 +289,27 @@ wrap_rsa_key(RSA *rsa)
 static int
 wrap_ec_key(EC_KEY *ec)
 {
-#ifdef HAVE_EC_KEY_METHOD_NEW
 	static EC_KEY_METHOD *helper_ec = NULL;
 
 	if (helper_ec == NULL) {
+#ifdef HAVE_EC_KEY_METHOD_NEW
 		helper_ec = EC_KEY_METHOD_new(EC_KEY_OpenSSL());
-		if (helper_ec == NULL)
-			return (-1);
+		if (helper_ec == NULL) return -1;
 
 		EC_KEY_METHOD_set_sign(helper_ec,
 		    pkcs11_ecdsa_sign,
 		    NULL /* *sign_setup */,
 		    pkcs11_ecdsa_do_sign);
-	}
-	EC_KEY_set_method(ec, helper_ec);
 #else
-	static ECDSA_METHOD *helper_ec = NULL;
-
-	if (helper_ec == NULL) {
 		helper_ec = ECDSA_METHOD_new(ECDSA_OpenSSL());
-		if (helper_ec == NULL)
-			return (-1);
+		if (helper_ec == NULL) return -1;
 
 		ECDSA_METHOD_set_sign(helper_ec,
 		    pkcs11_ecdsa_do_sign);
-	}
-	ECDSA_set_method(ec, helper_ec);
 #endif
-	return (0);
+	}
+	EC_KEY_set_method(ec, helper_ec);
+	return 0;
 }
 #endif /*def OPENSSL_HAS_ECC*/
 

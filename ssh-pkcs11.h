@@ -48,5 +48,42 @@ void ERR_PKCS11_PUT_error(int function, int reason, char *file, int line);
 
 void ERR_load_PKCS11_strings(void);
 
+#ifdef OPENSSL_HAS_ECC
+# ifndef HAVE_EC_KEY_METHOD_NEW	/* OpenSSL < 1.1 */
+/* mimic some ECDSA functions in OpenSSL API v1.1 style */
+#  include <openssl/ecdsa.h>
+
+typedef ECDSA_METHOD EC_KEY_METHOD;
+
+static inline int
+EC_KEY_set_method(EC_KEY *key, const EC_KEY_METHOD *meth) {
+	return ECDSA_set_method(key, /*ECDSA_METHOD*/meth);
+}
+
+/* NOTE: In OpenSSL 1.1 EC_KEY_get_ex_new_index(...) is define to
+ * CRYPTO_get_ex_new_index(CRYPTO_EX_INDEX_EC_KEY, ...)
+ */
+static inline int
+EC_KEY_get_ex_new_index(long argl, void *argp,
+	CRYPTO_EX_new *new_func,
+	CRYPTO_EX_dup *dup_func,
+	CRYPTO_EX_free *free_func
+) {
+	return ECDSA_get_ex_new_index(argl, argp, new_func, dup_func, free_func);
+}
+
+static inline void*
+EC_KEY_get_ex_data(const EC_KEY *key, int idx) {
+	return ECDSA_get_ex_data((EC_KEY *)key, idx);
+}
+
+static inline int
+EC_KEY_set_ex_data(EC_KEY *key, int idx, void *arg) {
+	return ECDSA_set_ex_data(key, idx, arg);
+}
+
+# endif /*def HAVE_EC_KEY_METHOD_NEW*/
+#endif /*def OPENSSL_HAS_ECC*/
+
 #endif /*def ENABLE_PKCS11*/
 #endif /*ndef SSH_PKCS11_H*/

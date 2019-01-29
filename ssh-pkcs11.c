@@ -402,13 +402,8 @@ pkcs11_ec_finish(EC_KEY *ec)
 {
 	struct pkcs11_key	*k11;
 
-#ifdef HAVE_EC_KEY_METHOD_NEW
 	k11 = EC_KEY_get_ex_data(ec, ssh_pkcs11_ec_ctx_index);
 	EC_KEY_set_ex_data(ec, ssh_pkcs11_ec_ctx_index, NULL);
-#else
-	k11 = ECDSA_get_ex_data(ec, ssh_pkcs11_ec_ctx_index);
-	ECDSA_set_ex_data(ec, ssh_pkcs11_ec_ctx_index, NULL);
-#endif
 	pkcs11_key_free(k11);
 }
 #endif /*def OPENSSL_HAS_ECC*/
@@ -780,17 +775,9 @@ pkcs11_ecdsa_do_sign(
 	UNUSED(inv);
 	UNUSED(rp);
 
-#ifdef HAVE_EC_KEY_METHOD_NEW
 	k11 = EC_KEY_get_ex_data(ec, ssh_pkcs11_ec_ctx_index);
-#else
-	k11 = ECDSA_get_ex_data(ec, ssh_pkcs11_ec_ctx_index);
-#endif
 	if (k11 == NULL) {
-	#ifdef HAVE_EC_KEY_METHOD_NEW
 		error("EC_KEY_get_ex_data failed for ec %p", (void*)ec);
-	#else
-		error("ECDSA_get_ex_data failed for ec %p", (void*)ec);
-	#endif
 		return NULL;
 	}
 	if (!k11->provider || !k11->provider->valid) {
@@ -849,11 +836,7 @@ pkcs11_ecdsa_sign(int type,
 #endif /*def HAVE_EC_KEY_METHOD_NEW*/
 
 
-#ifdef HAVE_EC_KEY_METHOD_NEW
 static EC_KEY_METHOD *pkcs11_ec_method = NULL;
-#else
-static ECDSA_METHOD  *pkcs11_ec_method = NULL;
-#endif
 
 
 static int
@@ -864,11 +847,7 @@ pkcs11_ec_wrap(struct pkcs11_provider *provider, CK_ULONG slotidx,
 
 	/* ensure EC context index */
 	if (ssh_pkcs11_ec_ctx_index < 0)
-	#ifdef HAVE_EC_KEY_METHOD_NEW
 		ssh_pkcs11_ec_ctx_index = EC_KEY_get_ex_new_index(0, NULL, NULL, NULL, CRYPTO_EX_pkcs11_ec_free);
-	#else
-		ssh_pkcs11_ec_ctx_index = ECDSA_get_ex_new_index(0, NULL, NULL, NULL, CRYPTO_EX_pkcs11_ec_free);
-	#endif
 	if (ssh_pkcs11_ec_ctx_index < 0) {
 		return (-1);
 	}
@@ -910,13 +889,8 @@ pkcs11_ec_wrap(struct pkcs11_provider *provider, CK_ULONG slotidx,
 		k11->keyid = xmalloc(k11->keyid_len);
 		memcpy(k11->keyid, keyid_attrib->pValue, k11->keyid_len);
 	}
-#ifdef HAVE_EC_KEY_METHOD_NEW
 	EC_KEY_set_method(ec, pkcs11_ec_method);
 	EC_KEY_set_ex_data(ec, ssh_pkcs11_ec_ctx_index, k11);
-#else
-	ECDSA_set_method(ec, pkcs11_ec_method);
-	ECDSA_set_ex_data(ec, ssh_pkcs11_ec_ctx_index, k11);
-#endif
 	return (0);
 }
 #endif /*def OPENSSL_HAS_ECC*/
