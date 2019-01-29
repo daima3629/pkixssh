@@ -284,9 +284,9 @@ pkcs11_reauthenticate(
 }
 
 /*
- * finalize a provider shared libarary, it's no longer usable.
+ * finalize a provider shared library, it's no longer usable.
  * however, there might still be keys referencing this provider,
- * so the actuall freeing of memory is handled by pkcs11_provider_unref().
+ * so the actual freeing of memory is handled by pkcs11_provider_unref().
  * this is called when a provider gets unregistered.
  */
 static void
@@ -323,6 +323,7 @@ pkcs11_provider_unref(struct pkcs11_provider *p)
 	if (--p->refcount <= 0) {
 		if (p->valid)
 			error("pkcs11_provider_unref: %p still valid", (void*)p);
+		free(p->name);
 		free(p->slotlist);
 		free(p->slotinfo);
 		free(p);
@@ -530,46 +531,58 @@ pkcs11_rsa_private_decrypt(int flen, const u_char *from, u_char *to, RSA *rsa,
 	return (-1);
 }
 
-static RSA_METHOD *ssh_pkcs11_rsa_method = NULL;
+static RSA_METHOD*
+ssh_pkcs11_rsa_method(void)  {
+	static RSA_METHOD *meth = NULL;
+
+	if (meth == NULL) {
+		const RSA_METHOD *def = RSA_PKCS1_OpenSSL();
+
+		meth = RSA_meth_new("SSH PKCS#11 RSA method",
+		#ifdef RSA_FLAG_FIPS_METHOD
+			RSA_FLAG_FIPS_METHOD |
+		#endif
+			0);
+		if (meth == NULL) return NULL;
+
+		if (!RSA_meth_set_priv_enc(meth, pkcs11_rsa_private_encrypt)
+		||  !RSA_meth_set_priv_dec(meth, pkcs11_rsa_private_decrypt)
+		||  !RSA_meth_set_finish(meth, pkcs11_rsa_finish)
+		)
+			goto err;
+
+		if (!RSA_meth_set_pub_enc(meth, RSA_meth_get_pub_enc(def))
+		||  !RSA_meth_set_pub_dec(meth, RSA_meth_get_pub_dec(def))
+		||  !RSA_meth_set_mod_exp(meth, RSA_meth_get_mod_exp(def))
+		||  !RSA_meth_set_bn_mod_exp(meth, RSA_meth_get_bn_mod_exp(def))
+		)
+			goto err;
+	}
+
+	return meth;
+
+err:
+	RSA_meth_free(meth);
+	meth = NULL;
+	return NULL;
+}
 
 /* redirect private key operations for rsa key to pkcs11 token */
 static int
 pkcs11_rsa_wrap(struct pkcs11_provider *provider, CK_ULONG slotidx,
     CK_ATTRIBUTE *keyid_attrib, RSA *rsa)
 {
-	struct pkcs11_key	*k11;
+	RSA_METHOD *rsa_method = ssh_pkcs11_rsa_method();
+	struct pkcs11_key *k11;
+
+	if (rsa_method == NULL) return -1;
 
 	/* ensure RSA context index */
 	if (ssh_pkcs11_rsa_ctx_index < 0)
-		ssh_pkcs11_rsa_ctx_index = RSA_get_ex_new_index(0, NULL, NULL, NULL, CRYPTO_EX_pkcs11_rsa_free);
-	if (ssh_pkcs11_rsa_ctx_index < 0) {
-		return (-1);
-	}
-
-	if (ssh_pkcs11_rsa_method == NULL) {
-		const RSA_METHOD *def = RSA_PKCS1_OpenSSL();
-
-		ssh_pkcs11_rsa_method = RSA_meth_new("SSH PKCS#11 RSA method",
-		#ifdef RSA_FLAG_FIPS_METHOD
-			RSA_FLAG_FIPS_METHOD |
-		#endif
-			0);
-		if (ssh_pkcs11_rsa_method == NULL)
-			return (-1);
-
-		if (!RSA_meth_set_priv_enc(ssh_pkcs11_rsa_method, pkcs11_rsa_private_encrypt)
-		||  !RSA_meth_set_priv_dec(ssh_pkcs11_rsa_method, pkcs11_rsa_private_decrypt)
-		||  !RSA_meth_set_finish(ssh_pkcs11_rsa_method, pkcs11_rsa_finish)
-		)
-			goto err;
-
-		if (!RSA_meth_set_pub_enc(ssh_pkcs11_rsa_method, RSA_meth_get_pub_enc(def))
-		||  !RSA_meth_set_pub_dec(ssh_pkcs11_rsa_method, RSA_meth_get_pub_dec(def))
-		||  !RSA_meth_set_mod_exp(ssh_pkcs11_rsa_method, RSA_meth_get_mod_exp(def))
-		||  !RSA_meth_set_bn_mod_exp(ssh_pkcs11_rsa_method, RSA_meth_get_bn_mod_exp(def))
-		)
-			goto err;
-	}
+		ssh_pkcs11_rsa_ctx_index = RSA_get_ex_new_index(0,
+		    NULL, NULL, NULL, CRYPTO_EX_pkcs11_rsa_free);
+	if (ssh_pkcs11_rsa_ctx_index < 0)
+		return -1;
 
 	k11 = xcalloc(1, sizeof(*k11));
 	k11->provider = provider;
@@ -581,14 +594,10 @@ pkcs11_rsa_wrap(struct pkcs11_provider *provider, CK_ULONG slotidx,
 		k11->keyid = xmalloc(k11->keyid_len);
 		memcpy(k11->keyid, keyid_attrib->pValue, k11->keyid_len);
 	}
-	RSA_set_method(rsa, ssh_pkcs11_rsa_method);
-	RSA_set_ex_data(rsa, ssh_pkcs11_rsa_ctx_index, k11);
-	return (0);
 
-err:
-	RSA_meth_free(ssh_pkcs11_rsa_method);
-	ssh_pkcs11_rsa_method = NULL;
-	return (-1);
+	RSA_set_method(rsa, rsa_method);
+	RSA_set_ex_data(rsa, ssh_pkcs11_rsa_ctx_index, k11);
+	return 0;
 }
 
 static DSA_SIG*
