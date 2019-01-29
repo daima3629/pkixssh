@@ -394,43 +394,6 @@ pkcs11_del_provider(char *provider_id)
 	return (-1);
 }
 
-/* openssl callback for freeing an RSA key */
-static int
-pkcs11_rsa_finish(RSA *rsa)
-{
-	struct pkcs11_key	*k11;
-
-	k11 = RSA_get_ex_data(rsa, ssh_pkcs11_rsa_ctx_index);
-	RSA_set_ex_data(rsa, ssh_pkcs11_rsa_ctx_index, NULL);
-	pkcs11_key_free(k11);
-	return (1);
-}
-
-/* openssl callback for freeing an DSA key */
-static int
-pkcs11_dsa_finish(DSA *dsa)
-{
-	struct pkcs11_key	*k11;
-
-	k11 = DSA_get_ex_data(dsa, ssh_pkcs11_dsa_ctx_index);
-	DSA_set_ex_data(dsa, ssh_pkcs11_dsa_ctx_index, NULL);
-	pkcs11_key_free(k11);
-	return (1);
-}
-
-#ifdef OPENSSL_HAS_ECC
-/* openssl callback for freeing an EC key */
-static void
-pkcs11_ec_finish(EC_KEY *ec)
-{
-	struct pkcs11_key	*k11;
-
-	k11 = EC_KEY_get_ex_data(ec, ssh_pkcs11_ec_ctx_index);
-	EC_KEY_set_ex_data(ec, ssh_pkcs11_ec_ctx_index, NULL);
-	pkcs11_key_free(k11);
-}
-#endif /*def OPENSSL_HAS_ECC*/
-
 
 /* find a single 'obj' for given attributes */
 static int
@@ -569,7 +532,6 @@ ssh_pkcs11_rsa_method(void)  {
 
 		if (!RSA_meth_set_priv_enc(meth, pkcs11_rsa_private_encrypt)
 		||  !RSA_meth_set_priv_dec(meth, pkcs11_rsa_private_decrypt)
-		||  !RSA_meth_set_finish(meth, pkcs11_rsa_finish)
 		)
 			goto err;
 
@@ -702,9 +664,7 @@ ssh_pkcs11_dsa_method(void) {
 			0);
 		if (meth == NULL) return NULL;
 
-		if (!DSA_meth_set_sign(meth, pkcs11_dsa_do_sign)
-		||  !DSA_meth_set_finish(meth, pkcs11_dsa_finish)
-		)
+		if (!DSA_meth_set_sign(meth, pkcs11_dsa_do_sign))
 			goto err;
 
 		if (!DSA_meth_set_verify(meth, DSA_meth_get_verify(def))
@@ -864,15 +824,6 @@ ssh_pkcs11_ec_method(void) {
 	#ifdef HAVE_EC_KEY_METHOD_NEW
 		meth = EC_KEY_METHOD_new(EC_KEY_OpenSSL());
 		if (meth == NULL) return NULL;
-
-		EC_KEY_METHOD_set_init(meth,
-		    NULL /* int (*init)(...) */,
-		    pkcs11_ec_finish,
-		    NULL /* int (*copy)(...) */,
-		    NULL /* int (*set_group)(...) */,
-		    NULL /* int (*set_private)(...) */,
-		    NULL /* int (*set_public)(...) */
-		);
 
 		EC_KEY_METHOD_set_sign(meth,
 		    pkcs11_ecdsa_sign,
