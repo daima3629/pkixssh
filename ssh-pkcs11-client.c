@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-pkcs11-client.c,v 1.10 2018/07/09 21:59:10 markus Exp $ */
+/* $OpenBSD: ssh-pkcs11-client.c,v 1.15 2019/01/21 12:53:35 djm Exp $ */
 /*
  * Copyright (c) 2010 Markus Friedl.  All rights reserved.
  * Copyright (c) 2016-2018 Roumen Petrov.  All rights reserved.
@@ -52,8 +52,8 @@
 
 /* borrows code from sftp-server and ssh-agent */
 
-int fd = -1;
-pid_t pid = -1;
+static int fd = -1;
+static pid_t pid = -1;
 
 static int
 helper_msg_sign_request(
@@ -328,6 +328,10 @@ static int
 pkcs11_start_helper(void)
 {
 	int pair[2];
+	char *helper, *verbosity = NULL;
+
+	if (get_log_level() >= SYSLOG_LEVEL_DEBUG1)
+		verbosity = "-vvv";
 
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, pair) == -1) {
 		error("socketpair: %s", strerror(errno));
@@ -344,10 +348,11 @@ pkcs11_start_helper(void)
 		}
 		close(pair[0]);
 		close(pair[1]);
-		execlp(_PATH_SSH_PKCS11_HELPER, _PATH_SSH_PKCS11_HELPER,
-		    (char *)NULL);
-		fprintf(stderr, "exec: %s: %s\n", _PATH_SSH_PKCS11_HELPER,
-		    strerror(errno));
+		helper = _PATH_SSH_PKCS11_HELPER;
+		debug("%s: starting %s %s", __func__, helper,
+		    verbosity == NULL ? "" : verbosity);
+		execlp(helper, helper, verbosity, (char *)NULL);
+		fprintf(stderr, "exec: %s: %s\n", helper, strerror(errno));
 		_exit(1);
 	}
 	close(pair[1]);
