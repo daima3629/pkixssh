@@ -581,6 +581,13 @@ ssh_pkcs11_rsa_method(void)  {
 			goto err;
 	}
 
+	/* ensure RSA context index */
+	if (ssh_pkcs11_rsa_ctx_index < 0)
+		ssh_pkcs11_rsa_ctx_index = RSA_get_ex_new_index(0,
+		    NULL, NULL, NULL, CRYPTO_EX_pkcs11_rsa_free);
+	if (ssh_pkcs11_rsa_ctx_index < 0)
+		return NULL;
+
 	return meth;
 
 err:
@@ -598,13 +605,6 @@ pkcs11_rsa_wrap(struct pkcs11_provider *provider, CK_ULONG slotidx,
 	struct pkcs11_key *k11;
 
 	if (rsa_method == NULL) return -1;
-
-	/* ensure RSA context index */
-	if (ssh_pkcs11_rsa_ctx_index < 0)
-		ssh_pkcs11_rsa_ctx_index = RSA_get_ex_new_index(0,
-		    NULL, NULL, NULL, CRYPTO_EX_pkcs11_rsa_free);
-	if (ssh_pkcs11_rsa_ctx_index < 0)
-		return -1;
 
 	k11 = pkcs11_key_create(provider, slotidx, keyid_attrib);
 
@@ -714,6 +714,13 @@ ssh_pkcs11_dsa_method(void) {
 			goto err;
 	}
 
+	/* ensure DSA context index */
+	if (ssh_pkcs11_dsa_ctx_index < 0)
+		ssh_pkcs11_dsa_ctx_index = DSA_get_ex_new_index(0,
+		    NULL, NULL, NULL, CRYPTO_EX_pkcs11_dsa_free);
+	if (ssh_pkcs11_dsa_ctx_index < 0)
+		return NULL;
+
 	return meth;
 
 err:
@@ -730,12 +737,6 @@ pkcs11_dsa_wrap(struct pkcs11_provider *provider, CK_ULONG slotidx,
 	struct pkcs11_key *k11;
 
 	if (dsa_method == NULL) return -1;
-
-	/* ensure DSA context index */
-	if (ssh_pkcs11_dsa_ctx_index < 0)
-		ssh_pkcs11_dsa_ctx_index = DSA_get_ex_new_index(0, NULL, NULL, NULL, CRYPTO_EX_pkcs11_dsa_free);
-	if (ssh_pkcs11_dsa_ctx_index < 0)
-		return -1;
 
 	k11 = pkcs11_key_create(provider, slotidx, keyid_attrib);
 
@@ -888,6 +889,13 @@ ssh_pkcs11_ec_method(void) {
 	#endif
 	}
 
+	/* ensure EC context index */
+	if (ssh_pkcs11_ec_ctx_index < 0)
+		ssh_pkcs11_ec_ctx_index = EC_KEY_get_ex_new_index(0,
+		    NULL, NULL, NULL, CRYPTO_EX_pkcs11_ec_free);
+	if (ssh_pkcs11_ec_ctx_index < 0)
+		return NULL;
+
 	return meth;
 }
 
@@ -899,12 +907,6 @@ pkcs11_ec_wrap(struct pkcs11_provider *provider, CK_ULONG slotidx,
 	struct pkcs11_key *k11;
 
 	if (ec_method == NULL) return -1;
-
-	/* ensure EC context index */
-	if (ssh_pkcs11_ec_ctx_index < 0)
-		ssh_pkcs11_ec_ctx_index = EC_KEY_get_ex_new_index(0, NULL, NULL, NULL, CRYPTO_EX_pkcs11_ec_free);
-	if (ssh_pkcs11_ec_ctx_index < 0)
-		return -1;
 
 	k11 = pkcs11_key_create(provider, slotidx, keyid_attrib);
 
