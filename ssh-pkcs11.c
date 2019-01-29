@@ -850,27 +850,16 @@ pkcs11_ecdsa_sign(int type,
 #endif /*def HAVE_EC_KEY_METHOD_NEW*/
 
 
-static EC_KEY_METHOD *pkcs11_ec_method = NULL;
+static EC_KEY_METHOD*
+ssh_pkcs11_ec_method(void) {
+	static EC_KEY_METHOD *meth = NULL;
 
-
-static int
-pkcs11_ec_wrap(struct pkcs11_provider *provider, CK_ULONG slotidx,
-    CK_ATTRIBUTE *keyid_attrib, EC_KEY *ec)
-{
-	struct pkcs11_key	*k11;
-
-	/* ensure EC context index */
-	if (ssh_pkcs11_ec_ctx_index < 0)
-		ssh_pkcs11_ec_ctx_index = EC_KEY_get_ex_new_index(0, NULL, NULL, NULL, CRYPTO_EX_pkcs11_ec_free);
-	if (ssh_pkcs11_ec_ctx_index < 0) {
-		return (-1);
-	}
-
-	if (pkcs11_ec_method == NULL) {
+	if (meth == NULL) {
 	#ifdef HAVE_EC_KEY_METHOD_NEW
-		pkcs11_ec_method = EC_KEY_METHOD_new(EC_KEY_OpenSSL());
+		meth = EC_KEY_METHOD_new(EC_KEY_OpenSSL());
+		if (meth == NULL) return NULL;
 
-		EC_KEY_METHOD_set_init(pkcs11_ec_method,
+		EC_KEY_METHOD_set_init(meth,
 		    NULL /* int (*init)(...) */,
 		    pkcs11_ec_finish,
 		    NULL /* int (*copy)(...) */,
@@ -879,19 +868,38 @@ pkcs11_ec_wrap(struct pkcs11_provider *provider, CK_ULONG slotidx,
 		    NULL /* int (*set_public)(...) */
 		);
 
-		EC_KEY_METHOD_set_sign(pkcs11_ec_method,
+		EC_KEY_METHOD_set_sign(meth,
 		    pkcs11_ecdsa_sign,
 		    NULL /* *sign_setup */,
 		    pkcs11_ecdsa_do_sign
 		);
 	#else
-		pkcs11_ec_method = ECDSA_METHOD_new(ECDSA_OpenSSL());
+		meth = ECDSA_METHOD_new(ECDSA_OpenSSL());
+		if (meth == NULL) return NULL;
 
-		ECDSA_METHOD_set_sign(pkcs11_ec_method,
+		ECDSA_METHOD_set_sign(meth,
 		    pkcs11_ecdsa_do_sign
 		);
 	#endif
 	}
+
+	return meth;
+}
+
+static int
+pkcs11_ec_wrap(struct pkcs11_provider *provider, CK_ULONG slotidx,
+    CK_ATTRIBUTE *keyid_attrib, EC_KEY *ec)
+{
+	EC_KEY_METHOD *ec_method = ssh_pkcs11_ec_method();
+	struct pkcs11_key *k11;
+
+	if (ec_method == NULL) return -1;
+
+	/* ensure EC context index */
+	if (ssh_pkcs11_ec_ctx_index < 0)
+		ssh_pkcs11_ec_ctx_index = EC_KEY_get_ex_new_index(0, NULL, NULL, NULL, CRYPTO_EX_pkcs11_ec_free);
+	if (ssh_pkcs11_ec_ctx_index < 0)
+		return -1;
 
 	k11 = xcalloc(1, sizeof(*k11));
 	k11->provider = provider;
@@ -903,9 +911,9 @@ pkcs11_ec_wrap(struct pkcs11_provider *provider, CK_ULONG slotidx,
 		k11->keyid = xmalloc(k11->keyid_len);
 		memcpy(k11->keyid, keyid_attrib->pValue, k11->keyid_len);
 	}
-	EC_KEY_set_method(ec, pkcs11_ec_method);
+	EC_KEY_set_method(ec, ec_method);
 	EC_KEY_set_ex_data(ec, ssh_pkcs11_ec_ctx_index, k11);
-	return (0);
+	return 0;
 }
 #endif /*def OPENSSL_HAS_ECC*/
 
