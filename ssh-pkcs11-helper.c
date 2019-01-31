@@ -112,7 +112,7 @@ static void
 process_add(void)
 {
 	char *name, *pin;
-	struct sshkey **keys;
+	struct sshkey **keys = NULL;
 	int r, i, nkeys;
 	u_char *blob;
 	size_t blen;
@@ -141,11 +141,13 @@ process_add(void)
 			free(blob);
 			add_key(keys[i], name);
 		}
-		free(keys);
 	} else {
 		if ((r = sshbuf_put_u8(msg, SSH_AGENT_FAILURE)) != 0)
 			fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		if ((r = sshbuf_put_u32(msg, -nkeys)) != 0)
+			fatal("%s: buffer error: %s", __func__, ssh_err(r));
 	}
+	free(keys);
 	free(pin);
 	free(name);
 	send_msg(msg);

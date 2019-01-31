@@ -1,7 +1,7 @@
 /* $OpenBSD: ssh-pkcs11-client.c,v 1.15 2019/01/21 12:53:35 djm Exp $ */
 /*
  * Copyright (c) 2010 Markus Friedl.  All rights reserved.
- * Copyright (c) 2016-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2016-2019 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -366,10 +366,10 @@ int
 pkcs11_add_provider(char *name, char *pin, struct sshkey ***keysp)
 {
 	struct sshkey *k;
-	int r;
+	int ret = -1, r, type;
 	u_char *blob;
 	size_t blen;
-	u_int nkeys, i;
+	u_int32_t nkeys, i;
 	struct sshbuf *msg;
 
 	if (fd < 0 && pkcs11_start_helper() < 0)
@@ -384,9 +384,13 @@ pkcs11_add_provider(char *name, char *pin, struct sshkey ***keysp)
 	send_msg(msg);
 	sshbuf_reset(msg);
 
-	if (recv_msg(msg) == SSH2_AGENT_IDENTITIES_ANSWER) {
-		if ((r = sshbuf_get_u32(msg, &nkeys)) != 0)
-			fatal("%s: buffer error: %s", __func__, ssh_err(r));
+	type = recv_msg(msg);
+	switch (type) {
+	case SSH2_AGENT_IDENTITIES_ANSWER: {
+		if ((r = sshbuf_get_u32(msg, &nkeys)) != 0) {
+			error("%s: buffer error: %s", __func__, ssh_err(r));
+			goto done;
+		}
 		*keysp = xcalloc(nkeys, sizeof(struct sshkey *));
 		for (i = 0; i < nkeys; i++) {
 			if ((r = sshbuf_get_string(msg, &blob, &blen)) != 0 ||
@@ -409,11 +413,24 @@ set_key:
 			(*keysp)[i] = k;
 			free(blob);
 		}
-	} else {
-		nkeys = -1;
+		ret = nkeys;
+	}	break;
+	case SSH2_AGENT_FAILURE: {
+		if ((r = sshbuf_get_u32(msg, &nkeys)) != 0) {
+			error("%s: buffer error: %s", __func__, ssh_err(r));
+		} else {
+			ret = -nkeys;
+			error("%s: helper fail to add provider: %d",
+			    __func__, ret);
+		}
+	}	break;
+	default:
+		error("%s: unknown message: %d", __func__, type);
 	}
+
+done:
 	sshbuf_free(msg);
-	return (nkeys);
+	return ret;
 }
 
 int
