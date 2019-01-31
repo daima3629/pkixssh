@@ -348,7 +348,9 @@ pkcs11_start_helper(void)
 		}
 		close(pair[0]);
 		close(pair[1]);
-		helper = _PATH_SSH_PKCS11_HELPER;
+		helper = getenv("SSH_PKCS11_HELPER");
+		if (helper == NULL || strlen(helper) == 0)
+			helper = _PATH_SSH_PKCS11_HELPER;
 		debug("%s: starting %s %s", __func__, helper,
 		    verbosity == NULL ? "" : verbosity);
 		execlp(helper, helper, verbosity, (char *)NULL);
