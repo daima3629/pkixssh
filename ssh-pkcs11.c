@@ -895,38 +895,42 @@ rmspace(u_char *buf, size_t len)
  * if pin == NULL we delay login until key use
  */
 static int
-pkcs11_open_session(struct pkcs11_provider *p, CK_ULONG slotidx, char *pin)
+pkcs11_open_session(struct pkcs11_provider *p, CK_ULONG slotidx, char *pin,
+    CK_USER_TYPE user_type)
 {
 	CK_RV			rv;
 	CK_FUNCTION_LIST	*f;
 	CK_SESSION_HANDLE	session;
-	int			login_required;
+	int			login_required, ret;
 
 	f = p->function_list;
 	login_required = p->slotinfo[slotidx].token.flags & CKF_LOGIN_REQUIRED;
 	if (pin && login_required && !strlen(pin)) {
 		error("pin required");
-		return (-1);
+		return SSH_PKCS11_ERR_PIN_REQUIRED;
 	}
 	if ((rv = f->C_OpenSession(p->slotlist[slotidx], CKF_RW_SESSION|
 	    CKF_SERIAL_SESSION, NULL, NULL, &session))
 	    != CKR_OK) {
 		error("C_OpenSession failed: %lu", rv);
-		return (-1);
+		return SSH_PKCS11_ERR_GENERIC;
 	}
 	if (login_required && pin) {
-		rv = f->C_Login(session, CKU_USER,
+		rv = f->C_Login(session, user_type,
 		    (u_char *)pin, strlen(pin));
 		if (rv != CKR_OK && rv != CKR_USER_ALREADY_LOGGED_IN) {
 			error("C_Login failed: %lu", rv);
+			ret = (rv == CKR_PIN_LOCKED) ?
+			    SSH_PKCS11_ERR_PIN_LOCKED :
+			    SSH_PKCS11_ERR_LOGIN_FAIL;
 			if ((rv = f->C_CloseSession(session)) != CKR_OK)
 				error("C_CloseSession failed: %lu", rv);
-			return (-1);
+			return ret;
 		}
 		p->slotinfo[slotidx].logged_in = 1;
 	}
 	p->slotinfo[slotidx].session = session;
-	return (0);
+	return 0;
 }
 
 /*
@@ -1072,11 +1076,16 @@ pkcs11_fetch_keys_filter(struct pkcs11_provider *p, CK_ULONG slotidx,
 	return (0);
 }
 
-/* register a new provider, fails if provider already exists */
-int
-pkcs11_add_provider(char *provider_id, char *pin, struct sshkey ***keyp)
+/*
+ * register a new provider, fails if provider already exists. if
+ * keyp is provided, fetch keys.
+ */
+static int
+pkcs11_register_provider(char *provider_id, char *pin, struct sshkey ***keyp,
+    struct pkcs11_provider **providerp, CK_ULONG user)
 {
 	int nkeys, need_finalize = 0;
+	int ret = SSH_PKCS11_ERR_GENERIC;
 	struct pkcs11_provider *p = NULL;
 	void *handle = NULL;
 	CK_RV (*getfunctionlist)(CK_FUNCTION_LIST **);
@@ -1085,13 +1094,19 @@ pkcs11_add_provider(char *provider_id, char *pin, struct sshkey ***keyp)
 	CK_TOKEN_INFO *token;
 	CK_ULONG i;
 
-	*keyp = NULL;
+	if (providerp == NULL)
+		goto fail;
+	*providerp = NULL;
+
+	if (keyp != NULL)
+		*keyp = NULL;
+
 	if (pkcs11_provider_lookup(provider_id) != NULL) {
 		debug("%s: provider already registered: %s",
 		    __func__, provider_id);
 		goto fail;
 	}
-	/* open shared pkcs11-libarary */
+	/* open shared pkcs11-library */
 	if ((handle = dlopen(provider_id,
 		#ifdef RTLD_LOCAL
 			RTLD_LOCAL |
@@ -1146,8 +1161,9 @@ pkcs11_add_provider(char *provider_id, char *pin, struct sshkey ***keyp)
 		goto fail;
 	}
 	if (p->nslots == 0) {
-		debug("%s: provider %s returned no slots", __func__,
+		error("%s: provider %s returned no slots", __func__,
 		    provider_id);
+		ret = SSH_PKCS11_ERR_NO_SLOTS;
 		goto fail;
 	}
 	p->slotlist = xcalloc(p->nslots, sizeof(CK_SLOT_ID));
@@ -1183,17 +1199,24 @@ pkcs11_add_provider(char *provider_id, char *pin, struct sshkey ***keyp)
 		    provider_id, (unsigned long)i,
 		    token->label, token->manufacturerID, token->model,
 		    token->serialNumber, token->flags);
-		/* open session, login with pin and retrieve public keys */
-		if (pkcs11_open_session(p, i, pin) == 0)
+		/*
+		 * open session, login with pin and retrieve public
+		 * keys (if keyp is provided)
+		 */
+		if ((ret = pkcs11_open_session(p, i, pin, user)) == 0) {
+			if (keyp == NULL)
+				continue;
 			pkcs11_fetch_keys(p, i, keyp, &nkeys);
+		}
 	}
-	if (nkeys > 0) {
-		TAILQ_INSERT_TAIL(&pkcs11_providers, p, next);
-		p->refcount++;	/* add to provider list */
-		return (nkeys);
-	}
-	debug("%s: provider %s returned no keys", __func__, provider_id);
-	/* don't add the provider, since it does not have any keys */
+
+	/* now owned by caller */
+	*providerp = p;
+
+	TAILQ_INSERT_TAIL(&pkcs11_providers, p, next);
+	p->refcount++;	/* add to provider list */
+
+	return nkeys;
 fail:
 	if (need_finalize && (rv = f->C_Finalize(NULL)) != CKR_OK)
 		error("C_Finalize for provider %s failed: %lu",
@@ -1201,7 +1224,32 @@ fail:
 	pkcs11_provider_free(p);
 	if (handle)
 		dlclose(handle);
-	return (-1);
+	return ret;
+}
+
+/*
+ * register a new provider and get number of keys hold by the token,
+ * fails if provider already exists
+ */
+int
+pkcs11_add_provider(char *provider_id, char *pin, struct sshkey ***keyp)
+{
+	struct pkcs11_provider *p = NULL;
+	int nkeys;
+
+	nkeys = pkcs11_register_provider(provider_id, pin, keyp, &p, CKU_USER);
+
+	/* no keys found or some other error, de-register provider */
+	if (nkeys <= 0 && p != NULL) {
+		TAILQ_REMOVE(&pkcs11_providers, p, next);
+		pkcs11_provider_finalize(p);
+		pkcs11_provider_unref(p);
+	}
+	if (nkeys == 0)
+		debug("%s: provider %s returned no keys", __func__,
+		    provider_id);
+
+	return nkeys;
 }
 
 #else
@@ -1209,7 +1257,7 @@ fail:
 int
 pkcs11_init(int interactive)
 {
-	return (0);
+	return -1;
 }
 
 void

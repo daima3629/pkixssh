@@ -1,9 +1,9 @@
 #ifndef SSH_PKCS11_H
 #define SSH_PKCS11_H
-/* $OpenBSD: ssh-pkcs11.h,v 1.4 2015/01/15 09:40:00 djm Exp $ */
+/* $OpenBSD: ssh-pkcs11.h,v 1.5 2019/01/20 22:51:37 djm Exp $ */
 /*
  * Copyright (c) 2010 Markus Friedl.  All rights reserved.
- * Copyright (c) 2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2018-2019 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -24,6 +24,13 @@ int	pkcs11_init(int);
 void	pkcs11_terminate(void);
 
 #ifdef ENABLE_PKCS11
+/* Errors for pkcs11_add_provider() */
+#define	SSH_PKCS11_ERR_GENERIC			-1
+#define	SSH_PKCS11_ERR_LOGIN_FAIL		-2
+#define	SSH_PKCS11_ERR_NO_SLOTS			-3
+#define	SSH_PKCS11_ERR_PIN_REQUIRED		-4
+#define	SSH_PKCS11_ERR_PIN_LOCKED		-5
+
 int	pkcs11_add_provider(char *, char *, struct sshkey ***);
 int	pkcs11_del_provider(char *);
 
@@ -45,8 +52,8 @@ int	pkcs11_del_provider(char *);
 void ERR_PKCS11_PUT_error(int function, int reason, char *file, int line);
 #define PKCS11err(f,r) ERR_PKCS11_PUT_error((f),(r),__FILE__,__LINE__)
 
-
 void ERR_load_PKCS11_strings(void);
+
 
 #ifdef OPENSSL_HAS_ECC
 # ifndef HAVE_EC_KEY_METHOD_NEW	/* OpenSSL < 1.1 */
