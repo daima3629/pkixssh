@@ -3,7 +3,7 @@
  * Copyright (c) 2010 Markus Friedl.  All rights reserved.
  * Copyright (c) 2011 Kenneth Robinette.  All rights reserved.
  * Copyright (c) 2013 Andrew Cooke.  All rights reserved.
- * Copyright (c) 2016-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2016-2019 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -72,6 +72,16 @@ struct pkcs11_provider {
 	TAILQ_ENTRY(pkcs11_provider) next;
 };
 
+static void
+pkcs11_provider_free(struct pkcs11_provider *p) {
+	if (p == NULL) return;
+
+	free(p->name);
+	free(p->slotlist);
+	free(p->slotinfo);
+	free(p);
+}
+
 TAILQ_HEAD(, pkcs11_provider) pkcs11_providers;
 
 
@@ -125,7 +135,7 @@ pkcs11_key_create(
 
 	return k11;
 }
-    
+
 static void
 pkcs11_key_free(struct pkcs11_key *k11) {
 	if (k11 == NULL) return;
@@ -345,10 +355,7 @@ pkcs11_provider_unref(struct pkcs11_provider *p)
 	if (--p->refcount <= 0) {
 		if (p->valid)
 			error("pkcs11_provider_unref: %p still valid", (void*)p);
-		free(p->name);
-		free(p->slotlist);
-		free(p->slotinfo);
-		free(p);
+		pkcs11_provider_free(p);
 	}
 }
 
@@ -1191,11 +1198,7 @@ fail:
 	if (need_finalize && (rv = f->C_Finalize(NULL)) != CKR_OK)
 		error("C_Finalize for provider %s failed: %lu",
 		    provider_id, rv);
-	if (p) {
-		free(p->slotlist);
-		free(p->slotinfo);
-		free(p);
-	}
+	pkcs11_provider_free(p);
 	if (handle)
 		dlclose(handle);
 	return (-1);
