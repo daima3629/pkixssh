@@ -152,19 +152,27 @@ static int
 pkcs11_rsa_private_encrypt(int flen, const u_char *from, u_char *to, RSA *rsa,
     int padding)
 {
-	struct sshkey key;	/* XXX */
+	struct sshkey *key;
+	struct sshbuf *msg = NULL;
 	u_char *signature = NULL;
 	size_t slen = 0;
-	int r, ret = -1;
-	struct sshbuf *msg;
+	int r;
+	int ret = -1;
 
-	if (padding != RSA_PKCS1_PADDING)
-		return (-1);
-	key.type = KEY_RSA;
-	key.rsa = rsa;
+	if (padding != RSA_PKCS1_PADDING) return -1;
+
+	key = sshkey_new(KEY_UNSPEC);
+	if (key == NULL) {
+		error("%s: sshkey_new failed", __func__);
+		goto done;
+	}
+	key->type = KEY_RSA;
+	RSA_up_ref(rsa);
+	key->rsa = rsa;
+
 	if ((msg = sshbuf_new()) == NULL)
 		fatal("%s: sshbuf_new failed", __func__);
-	if (helper_msg_sign_request(msg, &key, from, flen) != 0)
+	if (helper_msg_sign_request(msg, key, from, flen) != 0)
 		goto done;
 	send_msg(msg);
 	sshbuf_reset(msg);
@@ -183,8 +191,9 @@ done:
 		PKCS11err(PKCS11_RSA_PRIVATE_ENCRYPT, PKCS11_SIGNREQ_FAIL);
 
 	free(signature);
+	sshkey_free(key);
 	sshbuf_free(msg);
-	return (ret);
+	return ret;
 }
 
 #ifdef OPENSSL_HAS_ECC
@@ -194,22 +203,33 @@ pkcs11_ecdsa_do_sign(
 	const BIGNUM *inv, const BIGNUM *rp,
 	EC_KEY *ec
 ) {
-	ECDSA_SIG* ret = NULL;
-	struct sshkey key;	/* XXX */
+	struct sshkey *key;
+	struct sshbuf *msg = NULL;
 	u_char *signature = NULL;
 	size_t slen = 0;
 	int r;
-	struct sshbuf *msg;
+	ECDSA_SIG *ret = NULL;
 
-	(void)inv;
-	(void)rp;
+	UNUSED(inv);
+	UNUSED(rp);
 
-	key.type = KEY_ECDSA;
-	key.ecdsa = ec;
-	key.ecdsa_nid = sshkey_ecdsa_key_to_nid(ec);
+	key = sshkey_new(KEY_UNSPEC);
+	if (key == NULL) {
+		error("%s: sshkey_new failed", __func__);
+		goto done;
+	}
+	key->type = KEY_ECDSA;
+	EC_KEY_up_ref(ec);
+	key->ecdsa = ec;
+	key->ecdsa_nid = sshkey_ecdsa_key_to_nid(ec);
+	if (key->ecdsa_nid < 0) {
+		error("%s: unsupported curve", __func__);
+		goto done;
+	}
+
 	if ((msg = sshbuf_new()) == NULL)
 		fatal("%s: sshbuf_new failed", __func__);
-	if (helper_msg_sign_request(msg, &key, dgst, dlen) != 0)
+	if (helper_msg_sign_request(msg, key, dgst, dlen) != 0)
 		goto done;
 	send_msg(msg);
 	sshbuf_reset(msg);
@@ -229,8 +249,9 @@ done:
 		PKCS11err(PKCS11_ECDSA_DO_SIGN, PKCS11_SIGNREQ_FAIL);
 
 	free(signature);
+	sshkey_free(key);
 	sshbuf_free(msg);
-	return (ret);
+	return ret;
 }
 
 #ifdef HAVE_EC_KEY_METHOD_NEW
