@@ -82,38 +82,47 @@ static const char *proposal_names[PROPOSAL_MAX] = {
 };
 
 struct kexalg {
-	char *name;
+	const char *name;
 	u_int type;
 	int ec_nid;
 	int hash_alg;
 };
 static const struct kexalg kexalgs[] = {
 #ifdef WITH_OPENSSL
-	{ KEX_DH1, KEX_DH_GRP1_SHA1, 0, SSH_DIGEST_SHA1 },
-	{ KEX_DH14_SHA1, KEX_DH_GRP14_SHA1, 0, SSH_DIGEST_SHA1 },
+	{ "diffie-hellman-group1-sha1",
+	    KEX_DH_GRP1_SHA1, 0, SSH_DIGEST_SHA1 },
+	{ "diffie-hellman-group14-sha1",
+	    KEX_DH_GRP14_SHA1, 0, SSH_DIGEST_SHA1 },
 #ifdef HAVE_EVP_SHA256
-	{ KEX_DH14_SHA256, KEX_DH_GRP14_SHA256, 0, SSH_DIGEST_SHA256 },
-	{ KEX_DH16_SHA512, KEX_DH_GRP16_SHA512, 0, SSH_DIGEST_SHA512 },
-	{ KEX_DH18_SHA512, KEX_DH_GRP18_SHA512, 0, SSH_DIGEST_SHA512 },
+	{ "diffie-hellman-group14-sha256",
+	    KEX_DH_GRP14_SHA256, 0, SSH_DIGEST_SHA256 },
+	{ "diffie-hellman-group16-sha512",
+	    KEX_DH_GRP16_SHA512, 0, SSH_DIGEST_SHA512 },
+	{ "diffie-hellman-group18-sha512",
+	    KEX_DH_GRP18_SHA512, 0, SSH_DIGEST_SHA512 },
 #endif /* HAVE_EVP_SHA256 */
-	{ KEX_DHGEX_SHA1, KEX_DH_GEX_SHA1, 0, SSH_DIGEST_SHA1 },
+	{ "diffie-hellman-group-exchange-sha1",
+	    KEX_DH_GEX_SHA1, 0, SSH_DIGEST_SHA1 },
 #ifdef HAVE_EVP_SHA256
-	{ KEX_DHGEX_SHA256, KEX_DH_GEX_SHA256, 0, SSH_DIGEST_SHA256 },
+	{ "diffie-hellman-group-exchange-sha256",
+	    KEX_DH_GEX_SHA256, 0, SSH_DIGEST_SHA256 },
 #endif /* HAVE_EVP_SHA256 */
 #ifdef OPENSSL_HAS_ECC
-	{ KEX_ECDH_SHA2_NISTP256, KEX_ECDH_SHA2,
-	    NID_X9_62_prime256v1, SSH_DIGEST_SHA256 },
-	{ KEX_ECDH_SHA2_NISTP384, KEX_ECDH_SHA2, NID_secp384r1,
-	    SSH_DIGEST_SHA384 },
+	{ "ecdh-sha2-nistp256",
+	    KEX_ECDH_SHA2, NID_X9_62_prime256v1, SSH_DIGEST_SHA256 },
+	{ "ecdh-sha2-nistp384",
+	    KEX_ECDH_SHA2, NID_secp384r1, SSH_DIGEST_SHA384 },
 # ifdef OPENSSL_HAS_NISTP521
-	{ KEX_ECDH_SHA2_NISTP521, KEX_ECDH_SHA2, NID_secp521r1,
-	    SSH_DIGEST_SHA512 },
+	{ "ecdh-sha2-nistp521",
+	    KEX_ECDH_SHA2, NID_secp521r1, SSH_DIGEST_SHA512 },
 # endif /* OPENSSL_HAS_NISTP521 */
 #endif /* OPENSSL_HAS_ECC */
 #endif /* WITH_OPENSSL */
 #if defined(HAVE_EVP_SHA256) || !defined(WITH_OPENSSL)
-	{ KEX_CURVE25519_SHA256, KEX_C25519_SHA256, 0, SSH_DIGEST_SHA256 },
-	{ KEX_CURVE25519_SHA256_OLD, KEX_C25519_SHA256, 0, SSH_DIGEST_SHA256 },
+	{ "curve25519-sha256",
+	    KEX_C25519_SHA256, 0, SSH_DIGEST_SHA256 },
+	{ "curve25519-sha256@libssh.org",
+	    KEX_C25519_SHA256, 0, SSH_DIGEST_SHA256 },
 #endif /* HAVE_EVP_SHA256 || !WITH_OPENSSL */
 	{ NULL, -1, -1, -1},
 };
