@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keygen.c,v 1.323 2018/10/19 03:12:42 djm Exp $ */
+/* $OpenBSD: ssh-keygen.c,v 1.325 2019/01/23 04:16:22 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1994 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -102,37 +102,37 @@
 #define DEFAULT_BITS_DSA	1024
 #define DEFAULT_BITS_ECDSA	256
 
-int quiet = 0;
+static int quiet = 0;
 
 /* Flag indicating that we just want to see the key fingerprint */
-int print_fingerprint = 0;
-int print_bubblebabble = 0;
+static int print_fingerprint = 0;
+static int print_bubblebabble = 0;
 
 /* Hash algorithm to use for fingerprints. */
-int fingerprint_hash = SSH_FP_HASH_DEFAULT;
+static int fingerprint_hash = SSH_FP_HASH_DEFAULT;
 
 /* The identity file name, given on the command line or entered by the user. */
-char identity_file[1024];
-int have_identity = 0;
+static char identity_file[1024];
+static int have_identity = 0;
 
 /* This is set to the passphrase if given on the command line. */
-char *identity_passphrase = NULL;
+static char *identity_passphrase = NULL;
 
 /* This is set to the new passphrase if given on the command line. */
-char *identity_new_passphrase = NULL;
+static char *identity_new_passphrase = NULL;
 
 /* Key type when certifying */
-u_int cert_key_type = SSH2_CERT_TYPE_USER;
+static u_int cert_key_type = SSH2_CERT_TYPE_USER;
 
 /* "key ID" of signed key */
-char *cert_key_id = NULL;
+static char *cert_key_id = NULL;
 
 /* Comma-separated list of principal names for certifying keys */
-char *cert_principals = NULL;
+static char *cert_principals = NULL;
 
 /* Validity period for certificates */
-u_int64_t cert_valid_from = 0;
-u_int64_t cert_valid_to = ~0ULL;
+static u_int64_t cert_valid_from = 0;
+static u_int64_t cert_valid_to = ~0ULL;
 
 /* Certificate options */
 #define CERTOPT_X_FWD	(1)
@@ -142,9 +142,9 @@ u_int64_t cert_valid_to = ~0ULL;
 #define CERTOPT_USER_RC	(1<<4)
 #define CERTOPT_DEFAULT	(CERTOPT_X_FWD|CERTOPT_AGENT_FWD| \
 			 CERTOPT_PORT_FWD|CERTOPT_PTY|CERTOPT_USER_RC)
-u_int32_t certflags_flags = CERTOPT_DEFAULT;
-char *certflags_command = NULL;
-char *certflags_src_addr = NULL;
+static u_int32_t certflags_flags = CERTOPT_DEFAULT;
+static char *certflags_command = NULL;
+static char *certflags_src_addr = NULL;
 
 /* Arbitrary extensions specified by user */
 struct cert_userext {
@@ -152,8 +152,8 @@ struct cert_userext {
 	char *val;
 	int crit;
 };
-struct cert_userext *cert_userext;
-size_t ncert_userext;
+static struct cert_userext *cert_userext;
+static size_t ncert_userext;
 
 /* Conversion to/from various formats */
 enum {
@@ -162,27 +162,27 @@ enum {
 	FMT_PEM
 } convert_format = FMT_RFC4716;
 
-char *key_type_name = NULL;
+static char *key_type_name = NULL;
 
 /* Load key from this PKCS#11 provider */
-char *pkcs11provider = NULL;
+static char *pkcs11provider = NULL;
 
 /* Use new OpenSSH private key format when writing SSH2 keys instead of PEM */
-int use_new_format = 0;
+static int use_new_format = 0;
 
 /* Cipher for new-format private keys */
-char *new_format_cipher = NULL;
+static char *new_format_cipher = NULL;
 
 /*
  * Number of KDF rounds to derive new format keys /
  * number of primality trials when screening moduli.
  */
-int rounds = 0;
+static int rounds = 0;
 
 /* argv0 */
 extern char *__progname;
 
-char hostname[NI_MAXHOST];
+static char hostname[NI_MAXHOST];
 
 #ifdef WITH_OPENSSL
 /* moduli.c */
