@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keyscan.c,v 1.120 2018/06/06 18:29:18 markus Exp $ */
+/* $OpenBSD: ssh-keyscan.c,v 1.126 2019/01/26 22:35:01 djm Exp $ */
 /*
  * Copyright 1995, 1996 by David Mazieres <dm@lcs.mit.edu>.
  *
@@ -85,6 +85,8 @@ char *keynames_filter = NULL;
 int hash_hosts = 0;		/* Hash hostname on output */
 
 int print_dns_rr = 0;		/* Print DNS RR records(CERT or SSHFP) instead of known_hosts */
+
+int found_one = 0;		/* Successfully found a key */
 
 #define MAXMAXFD 256
 
@@ -272,6 +274,8 @@ keyprint_one(const char *host, con *c, struct sshkey *key)
 {
 	char *hostport;
 	const char *known_host, *hashed;
+
+	++found_one;
 
 	if (print_dns_rr) {
 		export_dns_rr(host, key, stdout, 0);
@@ -783,5 +787,5 @@ main(int argc, char **argv)
 	while (ncon > 0)
 		conloop();
 
-	return (0);
+	return found_one > 0 ? 0 : 1;
 }
