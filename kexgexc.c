@@ -1,4 +1,4 @@
-/* $OpenBSD: kexgexc.c,v 1.33 2019/01/21 10:07:22 djm Exp $ */
+/* $OpenBSD: kexgexc.c,v 1.34 2019/01/23 00:30:41 djm Exp $ */
 /*
  * Copyright (c) 2000 Niels Provos.  All rights reserved.
  * Copyright (c) 2001 Markus Friedl.  All rights reserved.
@@ -150,10 +150,11 @@ input_kex_dh_gex_reply(int type, u_int32_t seq, struct ssh *ssh)
 	BIGNUM *dh_server_pub = NULL;
 	const BIGNUM *pub_key, *dh_p, *dh_g;
 	struct sshbuf *shared_secret = NULL;
+	struct sshbuf *server_host_key_blob = NULL;
 	struct sshkey *server_host_key = NULL;
-	u_char *signature = NULL, *server_host_key_blob = NULL;
+	u_char *signature = NULL;
 	u_char hash[SSH_DIGEST_MAX_LENGTH];
-	size_t slen, sbloblen, hashlen;
+	size_t slen, hashlen;
 	int r;
 
 	UNUSED(type);
@@ -162,10 +163,12 @@ input_kex_dh_gex_reply(int type, u_int32_t seq, struct ssh *ssh)
 	debug("got SSH2_MSG_KEX_DH_GEX_REPLY");
 
 	/* hostkey */
-	r = sshpkt_get_string(ssh, &server_host_key_blob, &sbloblen);
+	r = sshpkt_getb_froms(ssh, &server_host_key_blob);
 	if (r != 0) goto out;
 
-	r = Xkey_from_blob(kex->hostkey_alg, server_host_key_blob, sbloblen, &server_host_key);
+	r = Xkey_from_blob(kex->hostkey_alg,
+	    sshbuf_ptr(server_host_key_blob), sshbuf_len(server_host_key_blob),
+	    &server_host_key);
 	if (r != SSH_ERR_SUCCESS) goto out;
 
 	if ((r = kex_verify_host_key(ssh, server_host_key)) != 0)
@@ -195,7 +198,7 @@ input_kex_dh_gex_reply(int type, u_int32_t seq, struct ssh *ssh)
 	    kex->server_version,
 	    kex->my,
 	    kex->peer,
-	    server_host_key_blob, sbloblen,
+	    server_host_key_blob,
 	    kex->min, kex->nbits, kex->max,
 	    dh_p, dh_g,
 	    pub_key,
@@ -219,7 +222,7 @@ input_kex_dh_gex_reply(int type, u_int32_t seq, struct ssh *ssh)
 	BN_clear_free(dh_server_pub);
 	sshbuf_free(shared_secret);
 	sshkey_free(server_host_key);
-	free(server_host_key_blob);
+	sshbuf_free(server_host_key_blob);
 	free(signature);
 	return r;
 }

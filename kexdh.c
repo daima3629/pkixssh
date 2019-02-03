@@ -114,7 +114,7 @@ kex_dh_hash(
     const struct sshbuf *server_version,
     const struct sshbuf *client_kexinit,
     const struct sshbuf *server_kexinit,
-    const u_char *serverhostkeyblob, size_t sbloblen,
+    const struct sshbuf *server_host_key_blob,
     const BIGNUM *client_dh_pub,
     const BIGNUM *server_dh_pub,
     const u_char *shared_secret, size_t secretlen,
@@ -136,7 +136,7 @@ kex_dh_hash(
 	    (r = sshbuf_put_u32(b, sshbuf_len(server_kexinit) + 1)) != 0 ||
 	    (r = sshbuf_put_u8(b, SSH2_MSG_KEXINIT)) != 0 ||
 	    (r = sshbuf_putb(b, server_kexinit)) != 0 ||
-	    (r = sshbuf_put_string(b, serverhostkeyblob, sbloblen)) != 0 ||
+	    (r = sshbuf_put_stringb(b, server_host_key_blob)) != 0 ||
 	    (r = sshbuf_put_bignum2(b, client_dh_pub)) != 0 ||
 	    (r = sshbuf_put_bignum2(b, server_dh_pub)) != 0 ||
 	    (r = sshbuf_put(b, shared_secret, secretlen)) != 0) {

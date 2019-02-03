@@ -54,7 +54,7 @@ kex_ecdh_hash(
     const struct sshbuf *server_version,
     const struct sshbuf *client_kexinit,
     const struct sshbuf *server_kexinit,
-    const u_char *serverhostkeyblob, size_t sbloblen,
+    const struct sshbuf *server_host_key_blob,
     const EC_POINT *client_dh_pub,
     const EC_POINT *server_dh_pub,
     const BIGNUM *shared_secret,
@@ -76,7 +76,7 @@ kex_ecdh_hash(
 	    (r = sshbuf_put_u32(b, sshbuf_len(server_kexinit) + 1)) != 0 ||
 	    (r = sshbuf_put_u8(b, SSH2_MSG_KEXINIT)) != 0 ||
 	    (r = sshbuf_putb(b, server_kexinit)) != 0 ||
-	    (r = sshbuf_put_string(b, serverhostkeyblob, sbloblen)) != 0 ||
+	    (r = sshbuf_put_stringb(b, server_host_key_blob)) != 0 ||
 	    (r = sshbuf_put_ec(b, client_dh_pub, ec_group)) != 0 ||
 	    (r = sshbuf_put_ec(b, server_dh_pub, ec_group)) != 0 ||
 	    (r = sshbuf_put_bignum2(b, shared_secret)) != 0) {

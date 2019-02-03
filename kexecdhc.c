@@ -104,10 +104,11 @@ input_kex_ecdh_reply(int type, u_int32_t seq, struct ssh *ssh)
 	EC_KEY *client_key;
 	BIGNUM *shared_secret = NULL;
 	struct sshkey *server_host_key = NULL;
-	u_char *server_host_key_blob = NULL, *signature = NULL;
+	struct sshbuf *server_host_key_blob = NULL;
+	u_char *signature = NULL;
 	u_char *kbuf = NULL;
 	u_char hash[SSH_DIGEST_MAX_LENGTH];
-	size_t slen, sbloblen;
+	size_t slen;
 	size_t klen = 0, hashlen;
 	int r;
 
@@ -115,10 +116,12 @@ input_kex_ecdh_reply(int type, u_int32_t seq, struct ssh *ssh)
 	UNUSED(seq);
 
 	/* hostkey */
-	r = sshpkt_get_string(ssh, &server_host_key_blob, &sbloblen);
+	r = sshpkt_getb_froms(ssh, &server_host_key_blob);
 	if (r != 0) goto out;
 
-	r = Xkey_from_blob(kex->hostkey_alg, server_host_key_blob, sbloblen, &server_host_key);
+	r = Xkey_from_blob(kex->hostkey_alg,
+	    sshbuf_ptr(server_host_key_blob), sshbuf_len(server_host_key_blob),
+	    &server_host_key);
 	if (r != SSH_ERR_SUCCESS) goto out;
 
 	if ((r = kex_verify_host_key(ssh, server_host_key)) != 0)
@@ -172,7 +175,7 @@ input_kex_ecdh_reply(int type, u_int32_t seq, struct ssh *ssh)
 	    kex->server_version,
 	    kex->my,
 	    kex->peer,
-	    server_host_key_blob, sbloblen,
+	    server_host_key_blob,
 	    EC_KEY_get0_public_key(client_key),
 	    server_public,
 	    shared_secret,
@@ -198,7 +201,7 @@ input_kex_ecdh_reply(int type, u_int32_t seq, struct ssh *ssh)
 	}
 	BN_clear_free(shared_secret);
 	sshkey_free(server_host_key);
-	free(server_host_key_blob);
+	sshbuf_free(server_host_key_blob);
 	free(signature);
 	return r;
 }

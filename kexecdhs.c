@@ -69,10 +69,11 @@ input_kex_ecdh_init(int type, u_int32_t seq, struct ssh *ssh)
 	const EC_POINT *public_key;
 	BIGNUM *shared_secret = NULL;
 	struct sshkey *server_host_private, *server_host_public;
-	u_char *server_host_key_blob = NULL, *signature = NULL;
+	struct sshbuf *server_host_key_blob = NULL;
+	u_char *signature = NULL;
 	u_char *kbuf = NULL;
 	u_char hash[SSH_DIGEST_MAX_LENGTH];
-	size_t slen, sbloblen;
+	size_t slen;
 	size_t klen = 0, hashlen;
 	int r;
 
@@ -132,13 +133,18 @@ input_kex_ecdh_init(int type, u_int32_t seq, struct ssh *ssh)
 #ifdef DEBUG_KEXECDH
 	dump_digest("shared secret", kbuf, klen);
 #endif
-	/* calc H */
-	r = Xkey_to_blob(kex->hostkey_alg, server_host_public, &server_host_key_blob, &sbloblen);
+
+	if ((server_host_key_blob = sshbuf_new()) == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto out;
+	}
+	r = Xkey_putb(kex->hostkey_alg, server_host_public, server_host_key_blob);
 	if (r != SSH_ERR_SUCCESS) goto out;
 #ifdef DEBUG_KEXECDH
-	dump_digest("server public key:", server_host_key_blob, sbloblen);
+	dump_digestb("server public key:", server_host_key_blob);
 #endif
 
+	/* calc H */
 	hashlen = sizeof(hash);
 	if ((r = kex_ecdh_hash(
 	    kex->hash_alg,
@@ -147,7 +153,7 @@ input_kex_ecdh_init(int type, u_int32_t seq, struct ssh *ssh)
 	    kex->server_version,
 	    kex->peer,
 	    kex->my,
-	    server_host_key_blob, sbloblen,
+	    server_host_key_blob,
 	    client_public,
 	    EC_KEY_get0_public_key(server_key),
 	    shared_secret,
@@ -167,7 +173,7 @@ input_kex_ecdh_init(int type, u_int32_t seq, struct ssh *ssh)
 	public_key = EC_KEY_get0_public_key(server_key);
 	/* send server hostkey, ECDH pubkey 'Q_S' and signed H */
 	if ((r = sshpkt_start(ssh, SSH2_MSG_KEX_ECDH_REPLY)) != 0 ||
-	    (r = sshpkt_put_string(ssh, server_host_key_blob, sbloblen)) != 0 ||
+	    (r = sshpkt_put_stringb(ssh, server_host_key_blob)) != 0 ||
 	    (r = sshpkt_put_ec(ssh, public_key, group)) != 0 ||
 	    (r = sshpkt_put_string(ssh, signature, slen)) != 0 ||
 	    (r = sshpkt_send(ssh)) != 0)
@@ -185,7 +191,7 @@ input_kex_ecdh_init(int type, u_int32_t seq, struct ssh *ssh)
 		free(kbuf);
 	}
 	BN_clear_free(shared_secret);
-	free(server_host_key_blob);
+	sshbuf_free(server_host_key_blob);
 	free(signature);
 	return r;
 }
