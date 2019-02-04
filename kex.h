@@ -197,11 +197,11 @@ int	 kexc25519_server(struct ssh *);
 int	 kex_dh_keygen(struct kex *);
 int	 kex_dh_compute_key(struct kex *, BIGNUM *, struct sshbuf *);
 int	 kex_dh_hash(int, const struct sshbuf *, const struct sshbuf *,
-    const u_char *, size_t, const u_char *, size_t, const u_char *, size_t,
+    const struct sshbuf *, const struct sshbuf *, const u_char *, size_t,
     const BIGNUM *, const BIGNUM *, const u_char *, size_t, u_char *, size_t *);
 
 int	 kexgex_hash(int, const struct sshbuf *, const struct sshbuf *,
-    const u_char *, size_t, const u_char *, size_t, const u_char *, size_t,
+    const struct sshbuf *, const struct sshbuf *, const u_char *, size_t,
     int, int, int,
     const BIGNUM *, const BIGNUM *, const BIGNUM *,
     const BIGNUM *, const u_char *, size_t,
@@ -209,11 +209,11 @@ int	 kexgex_hash(int, const struct sshbuf *, const struct sshbuf *,
 
 int kex_ecdh_hash(int, const EC_GROUP *,
     const struct sshbuf *, const struct sshbuf *,
-    const u_char *, size_t, const u_char *, size_t, const u_char *, size_t,
+    const struct sshbuf *, const struct sshbuf *, const u_char *, size_t,
     const EC_POINT *, const EC_POINT *, const BIGNUM *, u_char *, size_t *);
 
 int	 kex_c25519_hash(int, const struct sshbuf *, const struct sshbuf *,
-    const u_char *, size_t, const u_char *, size_t,
+    const struct sshbuf *, const struct sshbuf *,
     const u_char *, size_t, const u_char *, const u_char *,
     const u_char *, size_t, u_char *, size_t *);
 

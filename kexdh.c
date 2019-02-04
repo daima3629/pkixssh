@@ -30,13 +30,14 @@
 #include <signal.h>
 
 #include <openssl/bn.h>
+#include <openssl/dh.h>
+#include "evp-compat.h"
 
 #include "ssh2.h"
 #include "kex.h"
-#include "dh.h"
-#include "ssherr.h"
 #include "sshbuf.h"
 #include "digest.h"
+#include "ssherr.h"
 #include "dh.h"
 
 int
@@ -111,8 +112,8 @@ kex_dh_hash(
     int hash_alg,
     const struct sshbuf *client_version,
     const struct sshbuf *server_version,
-    const u_char *ckexinit, size_t ckexinitlen,
-    const u_char *skexinit, size_t skexinitlen,
+    const struct sshbuf *client_kexinit,
+    const struct sshbuf *server_kexinit,
     const u_char *serverhostkeyblob, size_t sbloblen,
     const BIGNUM *client_dh_pub,
     const BIGNUM *server_dh_pub,
@@ -129,12 +130,12 @@ kex_dh_hash(
 	if ((r = sshbuf_put_stringb(b, client_version)) != 0 ||
 	    (r = sshbuf_put_stringb(b, server_version)) != 0 ||
 	    /* kexinit messages: fake header: len+SSH2_MSG_KEXINIT */
-	    (r = sshbuf_put_u32(b, ckexinitlen+1)) != 0 ||
+	    (r = sshbuf_put_u32(b, sshbuf_len(client_kexinit) + 1)) != 0 ||
 	    (r = sshbuf_put_u8(b, SSH2_MSG_KEXINIT)) != 0 ||
-	    (r = sshbuf_put(b, ckexinit, ckexinitlen)) != 0 ||
-	    (r = sshbuf_put_u32(b, skexinitlen+1)) != 0 ||
+	    (r = sshbuf_putb(b, client_kexinit)) != 0 ||
+	    (r = sshbuf_put_u32(b, sshbuf_len(server_kexinit) + 1)) != 0 ||
 	    (r = sshbuf_put_u8(b, SSH2_MSG_KEXINIT)) != 0 ||
-	    (r = sshbuf_put(b, skexinit, skexinitlen)) != 0 ||
+	    (r = sshbuf_putb(b, server_kexinit)) != 0 ||
 	    (r = sshbuf_put_string(b, serverhostkeyblob, sbloblen)) != 0 ||
 	    (r = sshbuf_put_bignum2(b, client_dh_pub)) != 0 ||
 	    (r = sshbuf_put_bignum2(b, server_dh_pub)) != 0 ||

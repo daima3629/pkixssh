@@ -52,8 +52,8 @@ kex_ecdh_hash(
     const EC_GROUP *ec_group,
     const struct sshbuf *client_version,
     const struct sshbuf *server_version,
-    const u_char *ckexinit, size_t ckexinitlen,
-    const u_char *skexinit, size_t skexinitlen,
+    const struct sshbuf *client_kexinit,
+    const struct sshbuf *server_kexinit,
     const u_char *serverhostkeyblob, size_t sbloblen,
     const EC_POINT *client_dh_pub,
     const EC_POINT *server_dh_pub,
@@ -70,12 +70,12 @@ kex_ecdh_hash(
 	if ((r = sshbuf_put_stringb(b, client_version)) != 0 ||
 	    (r = sshbuf_put_stringb(b, server_version)) != 0 ||
 	    /* kexinit messages: fake header: len+SSH2_MSG_KEXINIT */
-	    (r = sshbuf_put_u32(b, ckexinitlen+1)) != 0 ||
+	    (r = sshbuf_put_u32(b, sshbuf_len(client_kexinit) + 1)) != 0 ||
 	    (r = sshbuf_put_u8(b, SSH2_MSG_KEXINIT)) != 0 ||
-	    (r = sshbuf_put(b, ckexinit, ckexinitlen)) != 0 ||
-	    (r = sshbuf_put_u32(b, skexinitlen+1)) != 0 ||
+	    (r = sshbuf_putb(b, client_kexinit)) != 0 ||
+	    (r = sshbuf_put_u32(b, sshbuf_len(server_kexinit) + 1)) != 0 ||
 	    (r = sshbuf_put_u8(b, SSH2_MSG_KEXINIT)) != 0 ||
-	    (r = sshbuf_put(b, skexinit, skexinitlen)) != 0 ||
+	    (r = sshbuf_putb(b, server_kexinit)) != 0 ||
 	    (r = sshbuf_put_string(b, serverhostkeyblob, sbloblen)) != 0 ||
 	    (r = sshbuf_put_ec(b, client_dh_pub, ec_group)) != 0 ||
 	    (r = sshbuf_put_ec(b, server_dh_pub, ec_group)) != 0 ||
