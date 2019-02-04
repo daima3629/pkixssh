@@ -1,5 +1,4 @@
-
-/* $OpenBSD: servconf.c,v 1.344 2018/11/19 04:12:32 djm Exp $ */
+/* $OpenBSD: servconf.c,v 1.348 2019/01/24 02:34:52 dtucker Exp $ */
 /*
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
@@ -998,7 +997,7 @@ process_permitopen_list(struct ssh *ssh, ServerOpCodes opcode,
 {
 	u_int i;
 	int port;
-	char *host, *arg, *oarg;
+	char *host, *arg, *oarg, ch;
 	int where = opcode == sPermitOpen ? FORWARD_LOCAL : FORWARD_REMOTE;
 	const char *what = lookup_opcode_name(opcode);
 
@@ -1016,8 +1015,9 @@ process_permitopen_list(struct ssh *ssh, ServerOpCodes opcode,
 	/* Otherwise treat it as a list of permitted host:port */
 	for (i = 0; i < num_opens; i++) {
 		oarg = arg = xstrdup(opens[i]);
-		host = hpdelim(&arg);
-		if (host == NULL)
+		ch = '\0';
+		host = hpdelim2(&arg, &ch);
+		if (host == NULL || ch == '/')
 			fatal("%s: missing host in %s", __func__, what);
 		host = cleanhostname(host);
 		if (arg == NULL || ((port = permitopen_port(arg)) < 0))
@@ -1341,7 +1341,7 @@ process_server_config_line(ServerOptions *options, char *line,
     const char *filename, int linenum, int *activep,
     struct connection_info *connectinfo)
 {
-	char *cp, ***chararrayptr, **charptr, *arg, *arg2, *p;
+	char ch, *cp, ***chararrayptr, **charptr, *arg, *arg2, *p;
 	int cmdline = 0, *intptr, value, value2, n, port;
 	SyslogFacility *log_facility_ptr;
 	LogLevel *log_level_ptr;
@@ -1583,8 +1583,10 @@ parse_string:
 			port = 0;
 			p = arg;
 		} else {
-			p = hpdelim(&arg);
-			if (p == NULL)
+			arg2 = NULL;
+			ch = '\0';
+			p = hpdelim2(&arg, &ch);
+			if (p == NULL || ch == '/')
 				fatal("%s line %d: bad address:port usage",
 				    filename, linenum);
 			p = cleanhostname(p);
@@ -2223,8 +2225,9 @@ parse_string:
 				xasprintf(&arg2, "*:%s", arg);
 			} else {
 				arg2 = xstrdup(arg);
-				p = hpdelim(&arg);
-				if (p == NULL) {
+				ch = '\0';
+				p = hpdelim2(&arg, &ch);
+				if (p == NULL || ch == '/') {
 					fatal("%s line %d: missing host in %s",
 					    filename, linenum,
 					    lookup_opcode_name(opcode));
