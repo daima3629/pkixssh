@@ -1,4 +1,4 @@
-.\"	$OpenBSD: ssh-keygen.1,v 1.154 2019/01/22 11:19:42 djm Exp $
+.\"	$OpenBSD: ssh-keygen.1,v 1.156 2019/01/23 04:51:02 djm Exp $
 .\"
 .\" Author: Tatu Ylonen <ylo@cs.hut.fi>
 .\" Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -44,7 +44,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: January 22 2019 $
+.Dd $Mdocdate: January 23 2019 $
 .Dt SSH-KEYGEN 1
 .Os
 .Sh NAME
@@ -684,6 +684,12 @@ in
 .It Fl z Ar serial_number
 Specifies a serial number to be embedded in the certificate to distinguish
 this certificate from others from the same CA.
+If the
+.Ar serial_number
+is prefixed with a
+.Sq +
+character, then the serial number will be incremented for each
+custom certificate signed on a single command-line.
 The default serial number is zero.
 .Pp
 When generating a KRL, the
