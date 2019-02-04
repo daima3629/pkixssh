@@ -232,7 +232,6 @@ char		*sshkey_alg_list(int, int, int, char);
 int	 sshkey_algind(const char **name, u_int filter, int loc);
 
 int	 sshkey_from_blob(const u_char *, size_t, struct sshkey **);
-int	 sshkey_fromb(struct sshbuf *, struct sshkey **);
 int	 sshkey_froms(struct sshbuf *, struct sshkey **);
 int	 sshkey_to_blob(const struct sshkey *, u_char **, size_t *);
 int	 sshkey_to_base64(const struct sshkey *, char **);

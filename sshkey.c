@@ -2552,12 +2552,6 @@ sshkey_from_blob(const u_char *blob, size_t blen, struct sshkey **keyp)
 }
 
 int
-sshkey_fromb(struct sshbuf *b, struct sshkey **keyp)
-{
-	return sshkey_from_blob_internal(b, keyp, 1);
-}
-
-int
 sshkey_froms(struct sshbuf *buf, struct sshkey **keyp)
 {
 	struct sshbuf *b;
