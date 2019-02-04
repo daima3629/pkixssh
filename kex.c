@@ -1188,10 +1188,17 @@ kex_verify_host_key(struct ssh *ssh, struct sshkey *server_host_key)
 
 #if defined(DEBUG_KEX) || defined(DEBUG_KEXDH) || defined(DEBUG_KEXECDH)
 void
-dump_digest(char *msg, u_char *digest, int len)
+dump_digest(const char *msg, const u_char *digest, size_t len)
 {
 	fprintf(stderr, "%s\n", msg);
 	sshbuf_dump_data(digest, len, stderr);
+}
+
+void
+dump_digestb(const char *msg, const struct sshbuf *digest)
+{
+	fprintf(stderr, "%s\n", msg);
+	sshbuf_dump_data(sshbuf_ptr(digest), sshbuf_len(digest), stderr);
 }
 #endif
 

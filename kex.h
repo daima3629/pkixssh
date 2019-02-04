@@ -226,7 +226,8 @@ int	kexc25519_shared_key(const u_char key[CURVE25519_SIZE],
 	__attribute__((__bounded__(__minbytes__, 2, CURVE25519_SIZE)));
 
 #if defined(DEBUG_KEX) || defined(DEBUG_KEXDH) || defined(DEBUG_KEXECDH)
-void	dump_digest(char *, u_char *, int);
+void	dump_digest(const char *, const u_char *, size_t);
+void	dump_digestb(const char *, const struct sshbuf *);
 #endif
 
 #if !defined(WITH_OPENSSL) || !defined(OPENSSL_HAS_ECC)
