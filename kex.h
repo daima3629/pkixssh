@@ -178,7 +178,6 @@ int	 kex_send_kexinit(struct ssh *);
 int	 kex_input_kexinit(int, u_int32_t, struct ssh *);
 int	 kex_input_ext_info(int, u_int32_t, struct ssh *);
 int	 kex_derive_keys(struct ssh *, u_char *, u_int, const struct sshbuf *);
-int	 kex_derive_keys_bn(struct ssh *, u_char *, u_int, const BIGNUM *);
 int	 kex_send_newkeys(struct ssh *);
 int	 kex_start_rekex(struct ssh *);
 
@@ -186,14 +185,8 @@ int	 kex_load_host_keys(struct ssh *ssh, struct sshkey **hostpub, struct sshkey 
 int	 kex_verify_host_key(struct ssh *ssh, struct sshkey *key);
 
 
-int	 kexdh_client(struct ssh *);
-int	 kexdh_server(struct ssh *);
 int	 kexgex_client(struct ssh *);
 int	 kexgex_server(struct ssh *);
-int	 kexecdh_client(struct ssh *);
-int	 kexecdh_server(struct ssh *);
-int	 kexc25519_client(struct ssh *);
-int	 kexc25519_server(struct ssh *);
 int	 kex_gen_client(struct ssh *);
 int	 kex_gen_server(struct ssh *);
 
@@ -214,9 +207,6 @@ int	 kex_c25519_dec(struct kex *, const struct sshbuf *, struct sshbuf **);
 
 int	 kex_dh_keygen(struct kex *);
 int	 kex_dh_compute_key(struct kex *, BIGNUM *, struct sshbuf *);
-int	 kex_dh_hash(int, const struct sshbuf *, const struct sshbuf *,
-    const struct sshbuf *, const struct sshbuf *, const struct sshbuf *,
-    const BIGNUM *, const BIGNUM *, const u_char *, size_t, u_char *, size_t *);
 
 int	 kexgex_hash(int, const struct sshbuf *, const struct sshbuf *,
     const struct sshbuf *, const struct sshbuf *, const struct sshbuf *,
@@ -225,21 +215,7 @@ int	 kexgex_hash(int, const struct sshbuf *, const struct sshbuf *,
     const BIGNUM *, const u_char *, size_t,
     u_char *, size_t *);
 
-int	kex_ecdh_hash(int, const EC_GROUP *,
-    const struct sshbuf *, const struct sshbuf *,
-    const struct sshbuf *, const struct sshbuf *, const struct sshbuf *,
-    const EC_POINT *, const EC_POINT *, const BIGNUM *, u_char *, size_t *);
-
-int	 kex_c25519_hash(int, const struct sshbuf *, const struct sshbuf *,
-    const struct sshbuf *, const struct sshbuf *, const struct sshbuf *,
-    const u_char *, const u_char *,
-    const u_char *, size_t, u_char *, size_t *);
-
 void	kexc25519_keygen(u_char key[CURVE25519_SIZE], u_char pub[CURVE25519_SIZE])
-	__attribute__((__bounded__(__minbytes__, 1, CURVE25519_SIZE)))
-	__attribute__((__bounded__(__minbytes__, 2, CURVE25519_SIZE)));
-int	kexc25519_shared_key(const u_char key[CURVE25519_SIZE],
-    const u_char pub[CURVE25519_SIZE], struct sshbuf *out)
 	__attribute__((__bounded__(__minbytes__, 1, CURVE25519_SIZE)))
 	__attribute__((__bounded__(__minbytes__, 2, CURVE25519_SIZE)));
 int	kexc25519_shared_key_ext(const u_char key[CURVE25519_SIZE],

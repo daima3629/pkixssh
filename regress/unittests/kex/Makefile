@@ -20,8 +20,6 @@ SRCS+=	kexgex.c
 SRCS+=	kexgexc.c
 SRCS+=	kexgexs.c
 SRCS+=	kexc25519.c
-SRCS+=	kexdhc.c kexecdhc.c kexc25519c.c
-SRCS+=	kexdhs.c kexecdhs.c kexc25519s.c
 SRCS+=	smult_curve25519_ref.c
 SRCS+=	kexgen.c
 
