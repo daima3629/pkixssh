@@ -1,6 +1,6 @@
-/* $OpenBSD: kexdh.c,v 1.29 2019/01/21 10:03:37 djm Exp $ */
+/* $OpenBSD: kexdh.c,v 1.32 2019/01/21 10:40:11 djm Exp $ */
 /*
- * Copyright (c) 2001 Markus Friedl.  All rights reserved.
+ * Copyright (c) 2019 Markus Friedl.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -28,6 +28,8 @@
 #ifdef WITH_OPENSSL
 
 #include <signal.h>
+#include <stdio.h>
+#include <string.h>
 
 #include <openssl/bn.h>
 #include <openssl/dh.h>
@@ -156,5 +158,94 @@ kex_dh_hash(
 	dump_digest("hash", hash, *hashlen);
 #endif
 	return 0;
+}
+
+int
+kex_dh_keypair(struct kex *kex)
+{
+	const BIGNUM *pub_key;
+	struct sshbuf *buf = NULL;
+	int r;
+
+	if ((r = kex_dh_keygen(kex)) != 0)
+		return r;
+	DH_get0_key(kex->dh, &pub_key, NULL);
+	if ((buf = sshbuf_new()) == NULL)
+		return SSH_ERR_ALLOC_FAIL;
+	if ((r = sshbuf_put_bignum2(buf, pub_key)) != 0 ||
+	    (r = sshbuf_get_u32(buf, NULL)) != 0)
+		goto out;
+#ifdef DEBUG_KEXDH
+	DHparams_print_fp(stderr, kex->dh);
+	fprintf(stderr, "pub= ");
+	BN_print_fp(stderr, pub_key);
+	fprintf(stderr, "\n");
+#endif
+	kex->client_pub = buf;
+	buf = NULL;
+ out:
+	sshbuf_free(buf);
+	return r;
+}
+
+int
+kex_dh_enc(struct kex *kex, const struct sshbuf *client_blob,
+    struct sshbuf **server_blobp, struct sshbuf **shared_secretp)
+{
+	const BIGNUM *pub_key;
+	struct sshbuf *server_blob = NULL;
+	int r;
+
+	*server_blobp = NULL;
+	*shared_secretp = NULL;
+
+	if ((r = kex_dh_keygen(kex)) != 0)
+		goto out;
+	DH_get0_key(kex->dh, &pub_key, NULL);
+	if ((server_blob = sshbuf_new()) == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto out;
+	}
+	if ((r = sshbuf_put_bignum2(server_blob, pub_key)) != 0 ||
+	    (r = sshbuf_get_u32(server_blob, NULL)) != 0)
+		goto out;
+	if ((r = kex_dh_dec(kex, client_blob, shared_secretp)) != 0)
+		goto out;
+	*server_blobp = server_blob;
+	server_blob = NULL;
+ out:
+	DH_free(kex->dh);
+	kex->dh = NULL;
+	sshbuf_free(server_blob);
+	return r;
+}
+
+int
+kex_dh_dec(struct kex *kex, const struct sshbuf *dh_blob,
+    struct sshbuf **shared_secretp)
+{
+	struct sshbuf *buf = NULL;
+	BIGNUM *dh_pub = NULL;
+	int r;
+
+	*shared_secretp = NULL;
+
+	if ((buf = sshbuf_new()) == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto out;
+	}
+	if ((r = sshbuf_put_stringb(buf, dh_blob)) != 0 ||
+	    (r = sshbuf_get_bignum2(buf, &dh_pub)) != 0)
+		goto out;
+	sshbuf_reset(buf);
+	if ((r = kex_dh_compute_key(kex, dh_pub, buf)) != 0)
+		goto out;
+	*shared_secretp = buf;
+	buf = NULL;
+ out:
+	DH_free(kex->dh);
+	kex->dh = NULL;
+	sshbuf_free(buf);
+	return r;
 }
 #endif /* WITH_OPENSSL */

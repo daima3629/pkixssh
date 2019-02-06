@@ -1,4 +1,4 @@
-/* $OpenBSD: kex.c,v 1.146 2019/01/21 10:07:22 djm Exp $ */
+/* $OpenBSD: kex.c,v 1.150 2019/01/21 12:08:13 djm Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  *
@@ -742,6 +742,7 @@ kex_free(struct kex *kex)
 	sshbuf_free(kex->my);
 	sshbuf_free(kex->client_version);
 	sshbuf_free(kex->server_version);
+	sshbuf_free(kex->client_pub);
 	free(kex->session_id);
 	free(kex->failed_choice);
 	free(kex->hostkey_alg);

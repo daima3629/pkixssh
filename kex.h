@@ -1,4 +1,4 @@
-/* $OpenBSD: kex.h,v 1.98 2019/01/21 10:07:22 djm Exp $ */
+/* $OpenBSD: kex.h,v 1.107 2019/01/23 00:30:41 djm Exp $ */
 
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
@@ -152,8 +152,9 @@ struct kex {
 	u_int	min, max, nbits;	/* GEX */
 	EC_KEY	*ec_client_key;		/* ECDH */
 	const EC_GROUP *ec_group;	/* ECDH */
-	u_char c25519_client_key[CURVE25519_SIZE]; /* 25519 */
+	u_char c25519_client_key[CURVE25519_SIZE]; /* 25519 + KEM */
 	u_char c25519_client_pubkey[CURVE25519_SIZE]; /* 25519 */
+	struct sshbuf *client_pub;
 };
 
 int	 kex_names_valid(const char *);
@@ -193,6 +194,23 @@ int	 kexecdh_client(struct ssh *);
 int	 kexecdh_server(struct ssh *);
 int	 kexc25519_client(struct ssh *);
 int	 kexc25519_server(struct ssh *);
+int	 kex_gen_client(struct ssh *);
+int	 kex_gen_server(struct ssh *);
+
+int	 kex_dh_keypair(struct kex *);
+int	 kex_dh_enc(struct kex *, const struct sshbuf *, struct sshbuf **,
+    struct sshbuf **);
+int	 kex_dh_dec(struct kex *, const struct sshbuf *, struct sshbuf **);
+
+int	 kex_ecdh_keypair(struct kex *);
+int	 kex_ecdh_enc(struct kex *, const struct sshbuf *, struct sshbuf **,
+    struct sshbuf **);
+int	 kex_ecdh_dec(struct kex *, const struct sshbuf *, struct sshbuf **);
+
+int	 kex_c25519_keypair(struct kex *);
+int	 kex_c25519_enc(struct kex *, const struct sshbuf *, struct sshbuf **,
+    struct sshbuf **);
+int	 kex_c25519_dec(struct kex *, const struct sshbuf *, struct sshbuf **);
 
 int	 kex_dh_keygen(struct kex *);
 int	 kex_dh_compute_key(struct kex *, BIGNUM *, struct sshbuf *);
@@ -222,6 +240,10 @@ void	kexc25519_keygen(u_char key[CURVE25519_SIZE], u_char pub[CURVE25519_SIZE])
 	__attribute__((__bounded__(__minbytes__, 2, CURVE25519_SIZE)));
 int	kexc25519_shared_key(const u_char key[CURVE25519_SIZE],
     const u_char pub[CURVE25519_SIZE], struct sshbuf *out)
+	__attribute__((__bounded__(__minbytes__, 1, CURVE25519_SIZE)))
+	__attribute__((__bounded__(__minbytes__, 2, CURVE25519_SIZE)));
+int	kexc25519_shared_key_ext(const u_char key[CURVE25519_SIZE],
+    const u_char pub[CURVE25519_SIZE], struct sshbuf *out, int)
 	__attribute__((__bounded__(__minbytes__, 1, CURVE25519_SIZE)))
 	__attribute__((__bounded__(__minbytes__, 2, CURVE25519_SIZE)));
 

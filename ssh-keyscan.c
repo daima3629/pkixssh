@@ -249,18 +249,18 @@ keygrab_ssh2(con *c)
 		exit(1);
 	}
 #ifdef WITH_OPENSSL
-	c->c_ssh->kex->kex[KEX_DH_GRP1_SHA1] = kexdh_client;
-	c->c_ssh->kex->kex[KEX_DH_GRP14_SHA1] = kexdh_client;
-	c->c_ssh->kex->kex[KEX_DH_GRP14_SHA256] = kexdh_client;
-	c->c_ssh->kex->kex[KEX_DH_GRP16_SHA512] = kexdh_client;
-	c->c_ssh->kex->kex[KEX_DH_GRP18_SHA512] = kexdh_client;
+	c->c_ssh->kex->kex[KEX_DH_GRP1_SHA1] = kex_gen_client;
+	c->c_ssh->kex->kex[KEX_DH_GRP14_SHA1] = kex_gen_client;
+	c->c_ssh->kex->kex[KEX_DH_GRP14_SHA256] = kex_gen_client;
+	c->c_ssh->kex->kex[KEX_DH_GRP16_SHA512] = kex_gen_client;
+	c->c_ssh->kex->kex[KEX_DH_GRP18_SHA512] = kex_gen_client;
 	c->c_ssh->kex->kex[KEX_DH_GEX_SHA1] = kexgex_client;
 	c->c_ssh->kex->kex[KEX_DH_GEX_SHA256] = kexgex_client;
 # ifdef OPENSSL_HAS_ECC
-	c->c_ssh->kex->kex[KEX_ECDH_SHA2] = kexecdh_client;
+	c->c_ssh->kex->kex[KEX_ECDH_SHA2] = kex_gen_client;
 # endif
 #endif
-	c->c_ssh->kex->kex[KEX_C25519_SHA256] = kexc25519_client;
+	c->c_ssh->kex->kex[KEX_C25519_SHA256] = kex_gen_client;
 	ssh_set_verify_host_key_callback(c->c_ssh, key_print_wrapper);
 	/*
 	 * do the key-exchange until an error occurs or until
