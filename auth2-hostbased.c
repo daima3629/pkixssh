@@ -1,4 +1,4 @@
-/* $OpenBSD: auth2-hostbased.c,v 1.38 2018/09/20 03:28:06 djm Exp $ */
+/* $OpenBSD: auth2-hostbased.c,v 1.40 2019/01/19 21:43:56 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  *

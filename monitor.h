@@ -1,4 +1,4 @@
-/* $OpenBSD: monitor.h,v 1.22 2019/01/19 21:43:07 djm Exp $ */
+/* $OpenBSD: monitor.h,v 1.23 2019/01/19 21:43:56 djm Exp $ */
 
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
