@@ -13,8 +13,7 @@
  *
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  *
- * X.509 certificates support,
- * Copyright (c) 2002-2017 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -223,20 +222,9 @@ free_identity(Identity *id)
 
 static int/*bool*/
 key_match(const struct sshkey *key, struct sshkey *found) {
-	int kt, ret;
-	int bt;
-
-	kt = found->type;
-	if (key->type == kt)
-		return(sshkey_equal(key, found));
-
-	bt = X509KEY_BASETYPE(found);
-	if (kt == bt) return(0);
-	found->type = bt;
-
-	ret = sshkey_equal(key, found);
-	found->type = kt;
-	return(ret);
+	return sshkey_is_x509(found)
+		? sshkey_equal_public(key, found)
+		: sshkey_equal(key, found);
 }
 
 /* return matching private key for given public key */
@@ -335,7 +323,6 @@ process_sign_request2(SocketEntry *e)
 	struct sshkey *key = NULL;
 	char *pkalg = NULL;
 	struct identity *id;
-	int kt = KEY_UNSPEC;
 
 	if ((msg = sshbuf_new()) == NULL)
 		fatal("%s: sshbuf_new failed", __func__);
@@ -371,8 +358,6 @@ process_sign_request2(SocketEntry *e)
 		verbose("%s: user refused key", __func__);
 		goto send;
 	}
-	kt = id->key->type;
-	id->key->type = key->type;
 {	const char *alg = agent_recode_alg(pkalg, flags);
 	ssh_sign_ctx ctx = { alg, id->key, &ctx_compat };
 
@@ -385,8 +370,6 @@ process_sign_request2(SocketEntry *e)
 	/* Success */
 	ok = 0;
  send:
-	if (kt != KEY_UNSPEC)
-		id->key->type = kt;
 	free(pkalg);
 	sshkey_free(key);
 	if (ok == 0) {
