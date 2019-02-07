@@ -151,6 +151,7 @@ do_kex_with_key(char *kex, int keytype, int bits)
 	server2->kex->kex[KEX_ECDH_SHA2] = kex_gen_server;
 #endif
 	server2->kex->kex[KEX_C25519_SHA256] = kex_gen_server;
+	server2->kex->kex[KEX_KEM_SNTRUP4591761X25519_SHA512] = kex_gen_server;
 #endif /*def HAVE_EVP_SHA256*/
 	server2->kex->find_host_public_key = server->kex->find_host_public_key;
 	server2->kex->find_host_private_key = server->kex->find_host_private_key;
@@ -198,6 +199,9 @@ kex_tests(void)
 	do_kex("ecdh-sha2-nistp521");
 #endif
 	do_kex("diffie-hellman-group-exchange-sha256");
+#ifdef ENABLE_KEX_SNTRUP4591761X25519
+	do_kex("sntrup4591761x25519-sha512@tinyssh.org");
+#endif /*def ENABLE_KEX_SNTRUP4591761X25519*/
 #endif /*def HAVE_EVP_SHA256*/
 	do_kex("diffie-hellman-group-exchange-sha1");
 	do_kex("diffie-hellman-group14-sha1");

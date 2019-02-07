@@ -29,6 +29,7 @@
 #define KEX_H
 
 #include "mac.h"
+#include "crypto_api.h"
 #include "sshxkey.h"
 
 #ifdef WITH_LEAKMALLOC
@@ -90,6 +91,7 @@ enum kex_exchange {
 	KEX_DH_GEX_SHA256,
 	KEX_ECDH_SHA2,
 	KEX_C25519_SHA256,
+	KEX_KEM_SNTRUP4591761X25519_SHA512,
 	KEX_MAX
 };
 
@@ -154,6 +156,7 @@ struct kex {
 	const EC_GROUP *ec_group;	/* ECDH */
 	u_char c25519_client_key[CURVE25519_SIZE]; /* 25519 + KEM */
 	u_char c25519_client_pubkey[CURVE25519_SIZE]; /* 25519 */
+	u_char sntrup4591761_client_key[crypto_kem_sntrup4591761_SECRETKEYBYTES]; /* KEM */
 	struct sshbuf *client_pub;
 };
 
@@ -204,6 +207,12 @@ int	 kex_c25519_keypair(struct kex *);
 int	 kex_c25519_enc(struct kex *, const struct sshbuf *, struct sshbuf **,
     struct sshbuf **);
 int	 kex_c25519_dec(struct kex *, const struct sshbuf *, struct sshbuf **);
+
+int	 kex_kem_sntrup4591761x25519_keypair(struct kex *);
+int	 kex_kem_sntrup4591761x25519_enc(struct kex *, const struct sshbuf *,
+    struct sshbuf **, struct sshbuf **);
+int	 kex_kem_sntrup4591761x25519_dec(struct kex *, const struct sshbuf *,
+    struct sshbuf **);
 
 int	 kex_dh_keygen(struct kex *);
 int	 kex_dh_compute_key(struct kex *, BIGNUM *, struct sshbuf *);

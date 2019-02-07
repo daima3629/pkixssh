@@ -123,6 +123,10 @@ static const struct kexalg kexalgs[] = {
 	    KEX_C25519_SHA256, 0, SSH_DIGEST_SHA256 },
 	{ "curve25519-sha256@libssh.org",
 	    KEX_C25519_SHA256, 0, SSH_DIGEST_SHA256 },
+#ifdef ENABLE_KEX_SNTRUP4591761X25519
+	{ "sntrup4591761x25519-sha512@tinyssh.org",
+	    KEX_KEM_SNTRUP4591761X25519_SHA512, 0, SSH_DIGEST_SHA512 },
+#endif
 #endif /* HAVE_EVP_SHA256 || !WITH_OPENSSL */
 	{ NULL, -1, -1, -1},
 };

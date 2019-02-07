@@ -2407,6 +2407,7 @@ do_ssh2_kex(struct ssh *ssh)
 # endif
 #endif
 	kex->kex[KEX_C25519_SHA256] = kex_gen_server;
+	kex->kex[KEX_KEM_SNTRUP4591761X25519_SHA512] = kex_gen_server;
 	kex->find_host_public_key=&get_hostkey_public_by_alg;
 	kex->find_host_private_key=&get_hostkey_private_by_alg;
 	kex->host_key_index=&get_hostkey_index;
