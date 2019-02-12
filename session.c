@@ -1070,8 +1070,11 @@ do_setup_env(struct ssh *ssh, Session *s, const char *shell)
 # undef _PATH_MAILDIR
 #endif
 #ifdef _PATH_MAILDIR
-	snprintf(buf, sizeof buf, "%.200s/%.50s", _PATH_MAILDIR, pw->pw_name);
-	child_set_env(&env, &envsize, "MAIL", buf);
+	if (!options.use_pam) {
+		snprintf(buf, sizeof buf, "%.200s/%.50s",
+		    _PATH_MAILDIR, pw->pw_name);
+		child_set_env(&env, &envsize, "MAIL", buf);
+	}
 #endif
 
 	/* Normal systems set SHELL by default. */
