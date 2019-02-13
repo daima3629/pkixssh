@@ -3,7 +3,6 @@
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Damien Miller.  All rights reserved.
  *
- * X509 certificate support,
  * Copyright (c) 2006-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -307,14 +306,14 @@ int	input_userauth_info_req(int, u_int32_t, struct ssh *);
 int	input_userauth_pk_ok(int, u_int32_t, struct ssh *);
 int	input_userauth_passwd_changereq(int, u_int32_t, struct ssh *);
 
-int	userauth_none(struct ssh *);
-int	userauth_pubkey(struct ssh *);
-int	userauth_passwd(struct ssh *);
-int	userauth_kbdint(struct ssh *);
-int	userauth_hostbased(struct ssh *);
+static int userauth_none(struct ssh *);
+static int userauth_pubkey(struct ssh *);
+static int userauth_passwd(struct ssh *);
+static int userauth_kbdint(struct ssh *);
+static int userauth_hostbased(struct ssh *);
 
 #ifdef GSSAPI
-int	userauth_gssapi(struct ssh *);
+static int userauth_gssapi(struct ssh *);
 int	input_gssapi_response(int type, u_int32_t, struct ssh *);
 int	input_gssapi_token(int type, u_int32_t, struct ssh *);
 int	input_gssapi_hash(int type, u_int32_t, struct ssh *);
@@ -695,7 +694,7 @@ input_userauth_pk_ok(int type, u_int32_t seq, struct ssh *ssh)
 }
 
 #ifdef GSSAPI
-int
+static int
 userauth_gssapi(struct ssh *ssh)
 {
 	Authctxt *authctxt = (Authctxt *)ssh->authctxt;
@@ -949,7 +948,7 @@ input_gssapi_error(int type, u_int32_t plen, struct ssh *ssh)
 }
 #endif /* GSSAPI */
 
-int
+static int
 userauth_none(struct ssh *ssh)
 {
 	Authctxt *authctxt = (Authctxt *)ssh->authctxt;
@@ -965,7 +964,7 @@ userauth_none(struct ssh *ssh)
 	return 1;
 }
 
-int
+static int
 userauth_passwd(struct ssh *ssh)
 {
 	Authctxt *authctxt = (Authctxt *)ssh->authctxt;
@@ -1707,7 +1706,7 @@ done:
 	return 1;
 }
 
-int
+static int
 userauth_pubkey(struct ssh *ssh)
 {
 	Authctxt *authctxt = (Authctxt *)ssh->authctxt;
@@ -1754,7 +1753,7 @@ userauth_pubkey(struct ssh *ssh)
 /*
  * Send userauth request message specifying keyboard-interactive method.
  */
-int
+static int
 userauth_kbdint(struct ssh *ssh)
 {
 	Authctxt *authctxt = (Authctxt *)ssh->authctxt;
@@ -1970,7 +1969,7 @@ ssh_keysign(struct ssh *ssh, struct sshkey *key, u_char **sigp, size_t *lenp,
 	return 0;
 }
 
-int
+static int
 userauth_hostbased(struct ssh *ssh)
 {
 	Authctxt *authctxt = (Authctxt *)ssh->authctxt;
