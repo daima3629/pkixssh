@@ -295,16 +295,15 @@ struct cauthmethod {
 	int	*batch_flag;	/* flag in option struct that disables method */
 };
 
-int	input_userauth_service_accept(int, u_int32_t, struct ssh *);
-int	input_userauth_ext_info(int, u_int32_t, struct ssh *);
-int	input_userauth_success(int, u_int32_t, struct ssh *);
-int	input_userauth_success_unexpected(int, u_int32_t, struct ssh *);
-int	input_userauth_failure(int, u_int32_t, struct ssh *);
-int	input_userauth_banner(int, u_int32_t, struct ssh *);
-int	input_userauth_error(int, u_int32_t, struct ssh *);
-int	input_userauth_info_req(int, u_int32_t, struct ssh *);
-int	input_userauth_pk_ok(int, u_int32_t, struct ssh *);
-int	input_userauth_passwd_changereq(int, u_int32_t, struct ssh *);
+static int input_userauth_service_accept(int, u_int32_t, struct ssh *);
+static int input_userauth_ext_info(int, u_int32_t, struct ssh *);
+static int input_userauth_success(int, u_int32_t, struct ssh *);
+static int input_userauth_failure(int, u_int32_t, struct ssh *);
+static int input_userauth_banner(int, u_int32_t, struct ssh *);
+static int input_userauth_error(int, u_int32_t, struct ssh *);
+static int input_userauth_info_req(int, u_int32_t, struct ssh *);
+static int input_userauth_pk_ok(int, u_int32_t, struct ssh *);
+static int input_userauth_passwd_changereq(int, u_int32_t, struct ssh *);
 
 static int userauth_none(struct ssh *);
 static int userauth_pubkey(struct ssh *);
@@ -423,7 +422,7 @@ ssh_userauth2(struct ssh *ssh, const char *local_user,
 	debug("Authentication succeeded (%s).", authctxt.method->name);
 }
 
-int
+static int
 input_userauth_service_accept(int type, u_int32_t seq, struct ssh *ssh)
 {
 	int r;
@@ -456,7 +455,7 @@ input_userauth_service_accept(int type, u_int32_t seq, struct ssh *ssh)
 	return r;
 }
 
-int
+static int
 input_userauth_ext_info(int type, u_int32_t seq, struct ssh *ssh)
 {
 	return kex_input_ext_info(type, seq, ssh);
@@ -500,7 +499,7 @@ userauth(struct ssh *ssh, char *authlist)
 	}
 }
 
-int
+static int
 input_userauth_error(int type, u_int32_t seq, struct ssh *ssh)
 {
 	UNUSED(seq);
@@ -509,7 +508,7 @@ input_userauth_error(int type, u_int32_t seq, struct ssh *ssh)
 	return 0;
 }
 
-int
+static int
 input_userauth_banner(int type, u_int32_t seq, struct ssh *ssh)
 {
 	char *msg = NULL;
@@ -530,7 +529,7 @@ input_userauth_banner(int type, u_int32_t seq, struct ssh *ssh)
 	return r;
 }
 
-int
+static int
 input_userauth_success(int type, u_int32_t seq, struct ssh *ssh)
 {
 	Authctxt *authctxt = ssh->authctxt;
@@ -549,22 +548,7 @@ input_userauth_success(int type, u_int32_t seq, struct ssh *ssh)
 	return 0;
 }
 
-int
-input_userauth_success_unexpected(int type, u_int32_t seq, struct ssh *ssh)
-{
-	Authctxt *authctxt = ssh->authctxt;
-
-	UNUSED(type);
-	UNUSED(seq);
-	if (authctxt == NULL)
-		fatal("%s: no authentication context", __func__);
-
-	fatal("Unexpected authentication success during %s.",
-	    authctxt->method->name);
-	return 0;
-}
-
-int
+static int
 input_userauth_failure(int type, u_int32_t seq, struct ssh *ssh)
 {
 	Authctxt *authctxt = ssh->authctxt;
@@ -620,7 +604,7 @@ format_identity(Identity *id)
 	return ret;
 }
 
-int
+static int
 input_userauth_pk_ok(int type, u_int32_t seq, struct ssh *ssh)
 {
 	Authctxt *authctxt = ssh->authctxt;
@@ -1004,7 +988,7 @@ userauth_passwd(struct ssh *ssh)
 /*
  * parse PASSWD_CHANGEREQ, prompt user and send SSH2_MSG_USERAUTH_REQUEST
  */
-int
+static int
 input_userauth_passwd_changereq(int type, u_int32_t seq, struct ssh *ssh)
 {
 	Authctxt *authctxt = ssh->authctxt;
@@ -1786,7 +1770,7 @@ userauth_kbdint(struct ssh *ssh)
 /*
  * parse INFO_REQUEST, prompt user and send INFO_RESPONSE
  */
-int
+static int
 input_userauth_info_req(int type, u_int32_t seq, struct ssh *ssh)
 {
 	Authctxt *authctxt = ssh->authctxt;
