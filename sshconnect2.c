@@ -313,11 +313,10 @@ static int userauth_hostbased(struct ssh *);
 
 #ifdef GSSAPI
 static int userauth_gssapi(struct ssh *);
-int	input_gssapi_response(int type, u_int32_t, struct ssh *);
-int	input_gssapi_token(int type, u_int32_t, struct ssh *);
-int	input_gssapi_hash(int type, u_int32_t, struct ssh *);
-int	input_gssapi_error(int, u_int32_t, struct ssh *);
-int	input_gssapi_errtok(int, u_int32_t, struct ssh *);
+static int input_gssapi_response(int type, u_int32_t, struct ssh *);
+static int input_gssapi_token(int type, u_int32_t, struct ssh *);
+static int input_gssapi_error(int, u_int32_t, struct ssh *);
+static int input_gssapi_errtok(int, u_int32_t, struct ssh *);
 #endif
 
 void	userauth(struct ssh *, char *);
@@ -803,7 +802,7 @@ process_gssapi_token(struct ssh *ssh, gss_buffer_t recv_tok)
 	return status;
 }
 
-int
+static int
 input_gssapi_response(int type, u_int32_t plen, struct ssh *ssh)
 {
 	Authctxt *authctxt = ssh->authctxt;
@@ -812,6 +811,8 @@ input_gssapi_response(int type, u_int32_t plen, struct ssh *ssh)
 	u_char *oidv = NULL;
 	int r;
 
+	UNUSED(type);
+	UNUSED(plen);
 	if (authctxt == NULL)
 		fatal("input_gssapi_response: no authentication context");
 	gssctxt = authctxt->methoddata;
@@ -847,7 +848,7 @@ input_gssapi_response(int type, u_int32_t plen, struct ssh *ssh)
 	return r;
 }
 
-int
+static int
 input_gssapi_token(int type, u_int32_t plen, struct ssh *ssh)
 {
 	Authctxt *authctxt = ssh->authctxt;
@@ -857,6 +858,8 @@ input_gssapi_token(int type, u_int32_t plen, struct ssh *ssh)
 	OM_uint32 status;
 	int r;
 
+	UNUSED(type);
+	UNUSED(plen);
 	if (authctxt == NULL)
 		fatal("input_gssapi_response: no authentication context");
 
@@ -879,7 +882,7 @@ input_gssapi_token(int type, u_int32_t plen, struct ssh *ssh)
 	return r;
 }
 
-int
+static int
 input_gssapi_errtok(int type, u_int32_t plen, struct ssh *ssh)
 {
 	Authctxt *authctxt = ssh->authctxt;
@@ -891,6 +894,8 @@ input_gssapi_errtok(int type, u_int32_t plen, struct ssh *ssh)
 	size_t len;
 	int r;
 
+	UNUSED(type);
+	UNUSED(plen);
 	if (authctxt == NULL)
 		fatal("input_gssapi_response: no authentication context");
 	gssctxt = authctxt->methoddata;
@@ -913,12 +918,14 @@ input_gssapi_errtok(int type, u_int32_t plen, struct ssh *ssh)
 	return 0;
 }
 
-int
+static int
 input_gssapi_error(int type, u_int32_t plen, struct ssh *ssh)
 {
 	char *msg = NULL;
 	int r;
 
+	UNUSED(type);
+	UNUSED(plen);
 	if ((r = sshpkt_get_u32(ssh, NULL)) != 0 ||	/* maj */
 	    (r = sshpkt_get_u32(ssh, NULL)) != 0 ||	/* min */
 	    (r = sshpkt_get_cstring(ssh, &msg, NULL)) != 0 ||
