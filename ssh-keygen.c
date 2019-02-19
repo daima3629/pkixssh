@@ -11,8 +11,7 @@
  * incompatible with the protocol description in the RFC file, it must be
  * called by a name other than "ssh" or "Secure Shell".
  *
- * X.509 certificates support,
- * Copyright (c) 2005-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2005-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -2458,9 +2457,10 @@ static void
 usage(void)
 {
 	fprintf(stderr,
-	    "usage: ssh-keygen [-q] [-b bits] [-t dsa | ecdsa | ed25519 | rsa]\n"
+	    "usage: ssh-keygen [-q] [-b bits] [-t dsa | ecdsa | ed25519 | rsa] [-o] [-m format]\n"
 	    "                  [-N new_passphrase] [-C comment] [-f output_keyfile]\n"
-	    "       ssh-keygen -p [-P old_passphrase] [-N new_passphrase] [-f keyfile]\n"
+	    "       ssh-keygen -p [-P old_passphrase] [-N new_passphrase] [-o] [-m PEM]\n"
+	    "                   [-f keyfile]\n"
 	    "       ssh-keygen -i [-m key_format] [-f input_keyfile]\n"
 	    "       ssh-keygen -e [-m key_format] [-f input_keyfile]\n"
 	    "       ssh-keygen -y [-f input_keyfile]\n"

@@ -14,7 +14,7 @@
 .\" Copyright (c) 1999,2000 Markus Friedl.  All rights reserved.
 .\" Copyright (c) 1999 Aaron Campbell.  All rights reserved.
 .\" Copyright (c) 1999 Theo de Raadt.  All rights reserved.
-.\" Copyright (c) 2002-2018 Roumen Petrov.  All rights reserved.
+.\" Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
 .\"
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions
@@ -59,11 +59,14 @@
 .Op Fl N Ar new_passphrase
 .Op Fl C Ar comment
 .Op Fl f Ar output_keyfile
+.Op Fl m Ar format
 .Nm ssh-keygen
 .Fl p
 .Op Fl P Ar old_passphrase
 .Op Fl N Ar new_passphrase
 .Op Fl f Ar keyfile
+.Op Fl o
+.Op Fl m Ar PEM
 .Nm ssh-keygen
 .Fl i
 .Op Fl m Ar key_format
@@ -423,11 +426,15 @@ fingerprint.
 Specify the amount of memory to use (in megabytes) when generating
 candidate moduli for DH-GEX.
 .It Fl m Ar key_format
-Specify a key format for the
+Specify a key format for key generation, the
 .Fl i
-(import) or
+(import),
 .Fl e
-(export) conversion options.
+(export) conversion options, and the
+.Fl p
+change passphrase operation.
+The latter may be used to convert between proprietary OpenSSH private key
+and portable PEM private key formats.
 The supported key formats are:
 .Dq RFC4716
 (RFC 4716/SSH2 public or private key),
@@ -550,6 +557,13 @@ creating a new private key.
 The program will prompt for the file
 containing the private key, for the old passphrase, and twice for the
 new passphrase.
+Options
+.Fl "m PEM"
+or
+.Fl o
+could change format of stored key:
+either compatible PEM format
+or proprietary OpenSSH format.
 .It Fl Q
 Test whether keys have been revoked in a KRL.
 .It Fl q
