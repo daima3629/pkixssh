@@ -29,5 +29,8 @@ survey.sh
 /ssh-pkcs11-helper
 /sshd
 
-# fipshmac (FIPS-140-2 checksum files)
+# fipshmac: FIPS-140-2 checksum files
 /.ssh*.hmac
+
+# ctags: index(tag) output files
+tags
