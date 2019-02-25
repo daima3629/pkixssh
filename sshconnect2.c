@@ -1,4 +1,4 @@
-/* $OpenBSD: sshconnect2.c,v 1.301 2019/01/21 10:38:54 djm Exp $ */
+/* $OpenBSD: sshconnect2.c,v 1.303 2019/02/12 23:53:10 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Damien Miller.  All rights reserved.
@@ -271,6 +271,12 @@ struct cauthctxt {
 	struct cauthmethod *method;
 	sig_atomic_t success;
 	char *authlist;
+#ifdef GSSAPI
+	/* gssapi */
+	OM_uint32 gss_minor_status;
+	gss_OID_set gss_supported_mechs;
+	u_int mech_tried;
+#endif
 	/* pubkey */
 	struct idlist keys;
 	int agent_fd;
@@ -313,6 +319,7 @@ static int userauth_hostbased(struct ssh *);
 
 #ifdef GSSAPI
 static int userauth_gssapi(struct ssh *);
+static void userauth_gssapi_cleanup(struct ssh *);
 static int input_gssapi_response(int type, u_int32_t, struct ssh *);
 static int input_gssapi_token(int type, u_int32_t, struct ssh *);
 static int input_gssapi_error(int, u_int32_t, struct ssh *);
@@ -335,7 +342,7 @@ Authmethod authmethods[] = {
 #ifdef GSSAPI
 	{"gssapi-with-mic",
 		userauth_gssapi,
-		NULL,
+		userauth_gssapi_cleanup,
 		&options.gss_authentication,
 		NULL},
 #endif
@@ -394,6 +401,10 @@ ssh_userauth2(struct ssh *ssh, const char *local_user,
 	authctxt.info_req_seen = 0;
 	authctxt.attempt_kbdint = 0;
 	authctxt.attempt_passwd = 0;
+#ifdef GSSAPI
+	authctxt.gss_supported_mechs = NULL;
+	authctxt.mech_tried = 0;
+#endif
 	authctxt.agent_fd = -1;
 	pubkey_prepare(&authctxt);
 	if (authctxt.method == NULL) {
@@ -682,30 +693,30 @@ userauth_gssapi(struct ssh *ssh)
 {
 	Authctxt *authctxt = (Authctxt *)ssh->authctxt;
 	Gssctxt *gssctxt = NULL;
-	static gss_OID_set gss_supported = NULL;
-	static u_int mech = 0;
-	OM_uint32 min;
 	int r, ok = 0;
+	gss_OID mech = NULL;
 
 	/* Try one GSSAPI method at a time, rather than sending them all at
 	 * once. */
 
-	if (gss_supported == NULL)
-		gss_indicate_mechs(&min, &gss_supported);
+	if (authctxt->gss_supported_mechs == NULL)
+		gss_indicate_mechs(&authctxt->gss_minor_status, &authctxt->gss_supported_mechs);
 
-	/* Check to see if the mechanism is usable before we offer it */
-	while (mech < gss_supported->count && !ok) {
+	/* Check to see whether the mechanism is usable before we offer it */
+	while (authctxt->mech_tried < authctxt->gss_supported_mechs->count &&
+	    !ok) {
+		mech = &authctxt->gss_supported_mechs->
+		    elements[authctxt->mech_tried];
 		/* My DER encoding requires length<128 */
-		if (gss_supported->elements[mech].length < 128 &&
-		    ssh_gssapi_check_mechanism(&gssctxt,
-		    &gss_supported->elements[mech], authctxt->host)) {
+		if (mech->length < 128 && ssh_gssapi_check_mechanism(&gssctxt,
+		    mech, authctxt->host)) {
 			ok = 1; /* Mechanism works */
 		} else {
-			mech++;
+			authctxt->mech_tried++;
 		}
 	}
 
-	if (!ok)
+	if (!ok || mech == NULL)
 		return 0;
 
 	authctxt->methoddata=(void *)gssctxt;
@@ -715,14 +726,10 @@ userauth_gssapi(struct ssh *ssh)
 	    (r = sshpkt_put_cstring(ssh, authctxt->service)) != 0 ||
 	    (r = sshpkt_put_cstring(ssh, authctxt->method->name)) != 0 ||
 	    (r = sshpkt_put_u32(ssh, 1)) != 0 ||
-	    (r = sshpkt_put_u32(ssh,
-	    (gss_supported->elements[mech].length) + 2)) != 0 ||
+	    (r = sshpkt_put_u32(ssh, (mech->length) + 2)) != 0 ||
 	    (r = sshpkt_put_u8(ssh, SSH_GSS_OIDTYPE)) != 0 ||
-	    (r = sshpkt_put_u8(ssh,
-	    gss_supported->elements[mech].length)) != 0 ||
-	    (r = sshpkt_put(ssh,
-	    gss_supported->elements[mech].elements,
-	    gss_supported->elements[mech].length)) != 0 ||
+	    (r = sshpkt_put_u8(ssh, mech->length)) != 0 ||
+	    (r = sshpkt_put(ssh, mech->elements, mech->length)) != 0 ||
 	    (r = sshpkt_send(ssh)) != 0)
 		fatal("%s: %s", __func__, ssh_err(r));
 
@@ -731,9 +738,24 @@ userauth_gssapi(struct ssh *ssh)
 	ssh_dispatch_set(ssh, SSH2_MSG_USERAUTH_GSSAPI_ERROR, &input_gssapi_error);
 	ssh_dispatch_set(ssh, SSH2_MSG_USERAUTH_GSSAPI_ERRTOK, &input_gssapi_errtok);
 
-	mech++; /* Move along to next candidate */
+	authctxt->mech_tried++; /* Move along to next candidate */
 
 	return 1;
+}
+
+static void
+userauth_gssapi_cleanup(struct ssh *ssh)
+{
+	Authctxt *authctxt = (Authctxt *)ssh->authctxt;
+
+	gss_release_oid_set(&authctxt->gss_minor_status, &authctxt->gss_supported_mechs);
+	authctxt->gss_supported_mechs = NULL;
+
+{
+	Gssctxt *gssctxt = (Gssctxt *)authctxt->methoddata;
+	authctxt->methoddata = NULL;
+	ssh_gssapi_delete_ctx(&gssctxt);
+}
 }
 
 static OM_uint32
