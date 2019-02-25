@@ -933,6 +933,98 @@ pkcs11_open_session(struct pkcs11_provider *p, CK_ULONG slotidx, char *pin,
 	return 0;
 }
 
+static struct sshkey*
+pkcs11_get_x509key(
+    struct pkcs11_provider *p, CK_ULONG slotidx,
+    CK_OBJECT_HANDLE obj
+) {
+	CK_FUNCTION_LIST *f = p->function_list;
+	CK_SESSION_HANDLE session = p->slotinfo[slotidx].session;
+	CK_RV rv;
+	/* NOTE: for certificate retrieve ID, Subject(*) and Value
+	 * (*) not used yet
+	 */
+	CK_ATTRIBUTE attribs[] = {
+		{ CKA_ID, NULL, 0 },
+		{ CKA_SUBJECT, NULL, 0 },
+		{ CKA_VALUE, NULL, 0 }
+	};
+	struct sshkey *key = NULL;
+	int i;
+
+	rv = f->C_GetAttributeValue(session, obj, attribs, 3);
+	if (rv != CKR_OK) {
+		error("C_GetAttributeValue failed: %lu", rv);
+		return NULL;
+	}
+	/*
+	 * Allow CKA_ID (always first attribute) to be empty, but
+	 * ensure that none of the others are zero length.
+	 */
+	if (attribs[1].ulValueLen == 0 ||
+	    attribs[2].ulValueLen == 0)
+		return NULL;
+
+	/* allocate buffers for attributes */
+	for (i = 0; i < 3; i++) {
+		if (attribs[i].ulValueLen == 0) continue;
+		attribs[i].pValue = xmalloc(attribs[i].ulValueLen);
+	}
+
+	/* retrieve ID, subject and value for certificate */
+	rv = f->C_GetAttributeValue(session, obj, attribs, 3);
+	if (rv != CKR_OK) {
+		error("C_GetAttributeValue failed: %lu", rv);
+		goto done;
+	}
+
+{	const u_char *blob = attribs[2].pValue;
+	size_t blen = attribs[2].ulValueLen;
+	int r;
+
+	if (attribs[2].ulValueLen != (unsigned long) blen) {
+		debug3("%s: invalid attribute length", __func__);
+		goto done;
+	}
+
+	r = X509key_from_blob(blob, blen, &key);
+	if (r != SSH_ERR_SUCCESS) {
+		debug3("%s: X509key_from_blob fail", __func__);
+		goto done;
+	}
+}
+
+{	int rv_wrap = -1;
+
+	switch(X509KEY_BASETYPE(key)) {
+	case KEY_RSA:
+		rv_wrap = pkcs11_rsa_wrap(p, slotidx, attribs, key->rsa);
+		break;
+	case KEY_DSA:
+		rv_wrap = pkcs11_dsa_wrap(p, slotidx, attribs, key->dsa);
+		break;
+#ifdef OPENSSL_HAS_ECC
+	case KEY_ECDSA:
+		rv_wrap = pkcs11_ec_wrap(p, slotidx, attribs, key->ecdsa);
+		break;
+#endif /*def OPENSSL_HAS_ECC*/
+	}
+
+	if (rv_wrap == 0)
+		key->flags |= SSHKEY_FLAG_EXT;
+	else {
+		sshkey_free(key);
+		key = NULL;
+	}
+}
+
+done:
+	for (i = 0; i < 3; i++)
+		free(attribs[i].pValue);
+
+	return key;
+}
+
 /*
  * lookup certificates for token in slot identified by slotidx,
  * add 'wrapped' public keys to the 'keysp' array and increment nkeys.
@@ -949,11 +1041,7 @@ pkcs11_fetch_certs(struct pkcs11_provider *p, CK_ULONG slotidx,
 		{ CKA_CLASS, NULL, sizeof(cert_class) }
 	,	{ CKA_CERTIFICATE_TYPE, NULL, sizeof(type) }
 	};
-	CK_ATTRIBUTE		attribs[] = {
-		{ CKA_ID, NULL, 0 },
-		{ CKA_SUBJECT, NULL, 0 },
-		{ CKA_VALUE, NULL, 0 }
-	};
+
 	/* some compilers complain about non-constant initializer so we
 	   use NULL in CK_ATTRIBUTE above and set the value here */
 	filter[0].pValue = &cert_class;
@@ -961,7 +1049,6 @@ pkcs11_fetch_certs(struct pkcs11_provider *p, CK_ULONG slotidx,
 
 {
 	struct sshkey		*key;
-	int			i;
 	CK_RV			rv;
 	CK_OBJECT_HANDLE	obj;
 	CK_ULONG		nfound;
@@ -970,95 +1057,34 @@ pkcs11_fetch_certs(struct pkcs11_provider *p, CK_ULONG slotidx,
 
 	f = p->function_list;
 	session = p->slotinfo[slotidx].session;
+
 	/* setup a filter the looks for certificates */
-	if ((rv = f->C_FindObjectsInit(session, filter, 2)) != CKR_OK) {
+	rv = f->C_FindObjectsInit(session, filter, 2);
+	if (rv != CKR_OK) {
 		error("C_FindObjectsInit failed: %lu", rv);
 		return (-1);
 	}
 	while (1) {
-		if ((rv = f->C_FindObjects(session, &obj, 1, &nfound)) != CKR_OK
-		    || nfound == 0)
+		rv = f->C_FindObjects(session, &obj, 1, &nfound);
+		if (rv != CKR_OK) {
+			error("C_FindObjects failed: %lu", rv);
 			break;
-		/* found a object, so figure out size of the attributes */
-		for (i = 0; i < 3; i++) {
-			attribs[i].pValue = NULL;
-			attribs[i].ulValueLen = 0;
 		}
-		if ((rv = f->C_GetAttributeValue(session, obj, attribs, 3))
-		    != CKR_OK) {
-			error("C_GetAttributeValue failed: %lu", rv);
-			continue;
-		}
-		/*
-		 * NOTE for certificates retrieve ID, Subject and Value:
-		 * Allow CKA_ID (always first attribute) to be empty, but
-		 * ensure that none of the others are zero length.
-		 */
-		if (attribs[1].ulValueLen == 0 ||
-		    attribs[2].ulValueLen == 0) {
-			continue;
-		}
-		/* allocate buffers for attributes */
-		for (i = 0; i < 3; i++) {
-			if (attribs[i].ulValueLen > 0) {
-				attribs[i].pValue = xmalloc(
-				    attribs[i].ulValueLen);
-			}
-		}
-		/*
-		 * retrieve ID, subject and value for certificates.
-		 */
-		if ((rv = f->C_GetAttributeValue(session, obj, attribs, 3))
-		    != CKR_OK) {
-			error("C_GetAttributeValue failed: %lu", rv);
-		} else {
-			int rv_wrap;
+		if (nfound == 0)
+			break;
 
-		{	const u_char *blob = attribs[2].pValue;
-			size_t blen = attribs[2].ulValueLen;
-			int r;
-
-			if (attribs[2].ulValueLen != (unsigned long) blen) {
-				debug3("%s: invalid attribute length", __func__);
-				continue;
-			}
-
-			r = X509key_from_blob(blob, blen, &key);
-			if (r != SSH_ERR_SUCCESS) {
-				debug3("%s: X509key_from_blob fail", __func__);
-				continue;
-			}
+		key = pkcs11_get_x509key(p, slotidx, obj);
+		if (key != NULL) {
+			/* expand key array and add key */
+			*keysp = xreallocarray(*keysp, *nkeys + 1, sizeof(struct sshkey *));
+			(*keysp)[*nkeys] = key;
+			*nkeys = *nkeys + 1;
+			debug("have %d keys", *nkeys);
 		}
-
-			switch(X509KEY_BASETYPE(key)) {
-			case KEY_RSA:
-				rv_wrap = pkcs11_rsa_wrap(p, slotidx, &attribs[0], key->rsa);
-				break;
-			case KEY_DSA:
-				rv_wrap = pkcs11_dsa_wrap(p, slotidx, &attribs[0], key->dsa);
-				break;
-#ifdef OPENSSL_HAS_ECC
-			case KEY_ECDSA:
-				rv_wrap = pkcs11_ec_wrap(p, slotidx, &attribs[0], key->ecdsa);
-				break;
-#endif /*def OPENSSL_HAS_ECC*/
-			default:
-				rv_wrap = -1;
-			}
-
-			if (rv_wrap == 0) {
-				key->flags |= SSHKEY_FLAG_EXT;
-				/* expand key array and add key */
-				*keysp = xreallocarray(*keysp, *nkeys + 1, sizeof(struct sshkey *));
-				(*keysp)[*nkeys] = key;
-				*nkeys = *nkeys + 1;
-				debug("have %d keys", *nkeys);
-			}
-		}
-		for (i = 0; i < 3; i++)
-			free(attribs[i].pValue);
 	}
-	if ((rv = f->C_FindObjectsFinal(session)) != CKR_OK)
+
+	rv = f->C_FindObjectsFinal(session);
+	if (rv != CKR_OK)
 		error("C_FindObjectsFinal failed: %lu", rv);
 }
 
