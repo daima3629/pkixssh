@@ -321,9 +321,9 @@ static int input_gssapi_errtok(int, u_int32_t, struct ssh *);
 
 void	userauth(struct ssh *, char *);
 
+static void pubkey_cleanup(struct ssh *);
 static int sign_and_send_pubkey(struct ssh *ssh, Identity *);
 static void pubkey_prepare(Authctxt *);
-static void pubkey_cleanup(Authctxt *);
 static void pubkey_reset(Authctxt *);
 static struct sshkey *load_identity_file(Identity *);
 
@@ -411,9 +411,9 @@ ssh_userauth2(struct ssh *ssh, const char *local_user,
 	ssh_dispatch_set(ssh, SSH2_MSG_EXT_INFO, &input_userauth_ext_info);
 	ssh_dispatch_set(ssh, SSH2_MSG_SERVICE_ACCEPT, &input_userauth_service_accept);
 	ssh_dispatch_run_fatal(ssh, DISPATCH_BLOCK, &authctxt.success);	/* loop until success */
+	pubkey_cleanup(ssh);
 	ssh->authctxt = NULL;
 
-	pubkey_cleanup(&authctxt);
 	ssh_dispatch_range(ssh, SSH2_MSG_USERAUTH_MIN, SSH2_MSG_USERAUTH_MAX, NULL);
 
 	if (!authctxt.success)
@@ -1512,8 +1512,9 @@ pubkey_prepare(Authctxt *authctxt)
 }
 
 static void
-pubkey_cleanup(Authctxt *authctxt)
+pubkey_cleanup(struct ssh *ssh)
 {
+	Authctxt *authctxt = (Authctxt *)ssh->authctxt;
 	Identity *id;
 
 	if (authctxt->agent_fd != -1) {
