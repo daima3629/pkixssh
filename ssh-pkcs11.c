@@ -934,44 +934,31 @@ pkcs11_open_session(struct pkcs11_provider *p, CK_ULONG slotidx, char *pin,
 }
 
 /*
- * lookup public keys for token in slot identified by slotidx,
+ * lookup certificates for token in slot identified by slotidx,
  * add 'wrapped' public keys to the 'keysp' array and increment nkeys.
  * keysp points to an (possibly empty) array with *nkeys keys.
  */
-static int pkcs11_fetch_keys_filter(struct pkcs11_provider *, CK_ULONG,
-    CK_ATTRIBUTE [2], CK_ATTRIBUTE [3], struct sshkey ***, int *)
-	__attribute__((__bounded__(__minbytes__,4, 3 * sizeof(CK_ATTRIBUTE))));
-
 static int
-pkcs11_fetch_keys(struct pkcs11_provider *p, CK_ULONG slotidx,
+pkcs11_fetch_certs(struct pkcs11_provider *p, CK_ULONG slotidx,
     struct sshkey ***keysp, int *nkeys)
 {
 	/* Find objects with cert class and X.509 cert type. */
 	CK_OBJECT_CLASS		cert_class = CKO_CERTIFICATE;
 	CK_CERTIFICATE_TYPE	type = CKC_X_509;
-	CK_ATTRIBUTE		cert_filter[] = {
+	CK_ATTRIBUTE		filter[] = {
 		{ CKA_CLASS, NULL, sizeof(cert_class) }
 	,	{ CKA_CERTIFICATE_TYPE, NULL, sizeof(type) }
 	};
-	CK_ATTRIBUTE		cert_attribs[] = {
+	CK_ATTRIBUTE		attribs[] = {
 		{ CKA_ID, NULL, 0 },
 		{ CKA_SUBJECT, NULL, 0 },
 		{ CKA_VALUE, NULL, 0 }
 	};
 	/* some compilers complain about non-constant initializer so we
 	   use NULL in CK_ATTRIBUTE above and set the value here */
-	cert_filter[0].pValue = &cert_class;
-	cert_filter[1].pValue = &type;
-	if (pkcs11_fetch_keys_filter(p, slotidx, cert_filter, cert_attribs, keysp, nkeys) < 0)
-		return (-1);
-	return (0);
-}
+	filter[0].pValue = &cert_class;
+	filter[1].pValue = &type;
 
-
-static int
-pkcs11_fetch_keys_filter(struct pkcs11_provider *p, CK_ULONG slotidx,
-    CK_ATTRIBUTE filter[2], CK_ATTRIBUTE attribs[3],
-    struct sshkey ***keysp, int *nkeys)
 {
 	struct sshkey		*key;
 	int			i;
@@ -1073,6 +1060,8 @@ pkcs11_fetch_keys_filter(struct pkcs11_provider *p, CK_ULONG slotidx,
 	}
 	if ((rv = f->C_FindObjectsFinal(session)) != CKR_OK)
 		error("C_FindObjectsFinal failed: %lu", rv);
+}
+
 	return (0);
 }
 
@@ -1206,7 +1195,7 @@ pkcs11_register_provider(char *provider_id, char *pin, struct sshkey ***keyp,
 		if ((ret = pkcs11_open_session(p, i, pin, user)) == 0) {
 			if (keyp == NULL)
 				continue;
-			pkcs11_fetch_keys(p, i, keyp, &nkeys);
+			pkcs11_fetch_certs(p, i, keyp, &nkeys);
 		}
 	}
 
