@@ -1,7 +1,7 @@
 #ifndef SSH_XKALG_H
 #define SSH_XKALG_H
 /*
- * Copyright (c) 2005-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2005-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -41,7 +41,6 @@ typedef struct ssh_x509_md_st ssh_x509_md;
 void	ssh_xkalg_dgst_compat(ssh_x509_md *dest, const ssh_x509_md *src, ssh_compat *compat);
 
 typedef struct {
-	int           type;
 	const char   *name;
 	ssh_x509_md   dgst;
 	const char   *signame;

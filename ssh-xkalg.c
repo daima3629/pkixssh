@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2005-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -321,7 +321,6 @@ logit("TRACE_XKALG initialize_xkalg:");
 #endif
 	k = sizeof(x509keyalgs) / sizeof(x509keyalgs[0]);
 	for (; k > 0; k--, p++) {
-		p->type = KEY_UNSPEC;
 		p->name = NULL;
 		p->dgst.name = NULL;
 		p->dgst.evp = NULL;
@@ -579,27 +578,22 @@ ssh_add_x509key_alg(const char *data) {
 			fatal("ssh_add_x509pubkey_alg: unsupported curve %s", ec_name);
 		}
 
-		p->type = KEY_X509_ECDSA;
 		p->basetype = KEY_ECDSA;
 		p->chain = 1;
 	} else
 	if (strncmp(name, "x509v3-ssh-rsa", 14) == 0) {
-		p->type = KEY_X509_RSA;
 		p->basetype = KEY_RSA;
 		p->chain = 1;
 	} else
 	if (strncmp(name, "x509v3-sign-rsa", 15) == 0) {
-		p->type = KEY_X509_RSA;
 		p->basetype = KEY_RSA;
 		p->chain = 0;
 	} else
 	if (strncmp(name, "x509v3-ssh-dss", 14) == 0) {
-		p->type = KEY_X509_DSA;
 		p->basetype = KEY_DSA;
 		p->chain = 1;
 	} else
 	if (strncmp(name, "x509v3-sign-dss", 15) == 0) {
-		p->type = KEY_X509_DSA;
 		p->basetype = KEY_DSA;
 		p->chain = 0;
 	} else

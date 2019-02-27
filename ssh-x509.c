@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -50,8 +50,28 @@ STACK_OF(X509)* (*pssh_x509store_build_certchain)(X509 *cert, STACK_OF(X509) *un
 static int xkey_to_buf2(const char *pkalg, const struct sshkey *key, struct sshbuf *b);
 
 
-/* Temporary solution, see key.h */
+/* Start of temporary solution, see sshkey.h */
 #define TO_X509_KEY_TYPE(key)	SET_X509_KEY_TYPE(key, key->type)
+
+static inline int
+IS_X509_KEY_TYPE(int k_type) {
+	return
+	    (k_type == KEY_X509_RSA) ||
+#ifdef OPENSSL_HAS_ECC
+	    (k_type == KEY_X509_ECDSA) ||
+#endif
+	    (k_type == KEY_X509_DSA);
+}
+
+static inline int
+GET_X509_KEY_TYPE(int k_type) {
+	switch (k_type) {
+	case KEY_RSA	: return KEY_X509_RSA;
+	case KEY_ECDSA	: return KEY_X509_ECDSA;
+	case KEY_DSA	: return KEY_X509_DSA;
+	default		: return KEY_UNSPEC;
+	}
+}
 
 static inline void
 SET_X509_KEY_TYPE(struct sshkey *key, int k_type) {
@@ -62,6 +82,7 @@ SET_X509_KEY_TYPE(struct sshkey *key, int k_type) {
 	default		: /* avoid compiler warnings */	  break;
 	}
 }
+/* End of temporary solution. */
 
 
 struct ssh_x509_st {
@@ -176,17 +197,7 @@ ssh_x509_support_plain_type(int k_type) {
 
 int/*bool*/
 sshkey_is_x509(const struct sshkey *k) {
-	if (k == NULL) return 0;
-
-	if ( (k->type == KEY_X509_RSA) ||
-#ifdef OPENSSL_HAS_ECC
-	     (k->type == KEY_X509_ECDSA) ||
-#endif
-	     (k->type == KEY_X509_DSA) ) {
-		return 1;
-	}
-
-	return 0;
+	return (k != NULL) && IS_X509_KEY_TYPE(k->type);
 }
 
 
@@ -549,19 +560,13 @@ x509key_str2X509NAME(const char* _str, X509_NAME *_name) {
 
 
 static struct sshkey*
-x509key_from_subject(int _keytype, const char* _cp) {
+x509key_from_subject(int basetype, const char* _cp) {
 	const char *subject;
 	struct sshkey *key;
 	X509       *x;
 
-	if (_keytype != KEY_X509_RSA &&
-	    _keytype != KEY_X509_ECDSA &&
-	    _keytype != KEY_X509_DSA) {
-		debug3("x509key_from_subject: %d is not x509 key type", _keytype);
-		return NULL;
-	}
 	debug3("x509key_from_subject(%d, [%.1024s]) called",
-		_keytype, (_cp ? _cp : ""));
+		basetype, (_cp ? _cp : ""));
 	subject = x509key_find_subject(_cp);
 	if (subject == NULL)
 		return NULL;
@@ -594,7 +599,7 @@ x509key_from_subject(int _keytype, const char* _cp) {
 		}
 	}
 
-	key->type = _keytype;
+	SET_X509_KEY_TYPE(key, basetype);
 	if (!ssh_x509_set_cert(key, x, NULL)) {
 		error("%s: ssh_x509_set_cert fail", __func__);
 		goto err;
@@ -625,7 +630,7 @@ X509key_from_subject(const char *pkalg, const char *cp, char **ep) {
 	if (ssh_xkalg_nameind(pkalg, &p, -1) < 0)
 		return NULL;
 
-	ret = x509key_from_subject(p->type, cp);
+	ret = x509key_from_subject(p->basetype, cp);
 }
 
 	if (ret != NULL && ep != NULL) {
@@ -1562,15 +1567,16 @@ ssh_x509_equal(const struct sshkey *a, const struct sshkey *b) {
 int
 ssh_x509key_type(const char *name) {
 	const SSHX509KeyAlgs *p;
-	int k;
 
 	if (name == NULL) {
 		fatal("ssh_x509key_type: name is NULL");
 		return KEY_UNSPEC; /*unreachable code*/
 	}
 
-	k = ssh_xkalg_nameind(name, &p, -1);
-	return (k >= 0) ? p->type : KEY_UNSPEC;
+	if (ssh_xkalg_nameind(name, &p, -1) < 0)
+		return KEY_UNSPEC;
+
+	return GET_X509_KEY_TYPE(p->basetype);
 }
 
 
