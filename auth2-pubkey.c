@@ -315,6 +315,7 @@ check_principals_line(struct ssh *ssh, char *cp, const struct sshkey_cert *cert,
 	const char *reason = NULL;
 	struct sshauthopt *opts = NULL;
 
+	UNUSED(ssh);
 	if (authoptsp != NULL)
 		*authoptsp = NULL;
 
@@ -416,69 +417,55 @@ match_principals_file(struct ssh *ssh, struct passwd *pw, char *file,
 }
 
 static int
-key_match(const struct sshkey *key, const struct sshkey *found) {
-	/* key always has X.509 identity - see user_key_allowed2 */
+x509_match(const struct sshkey *key, const struct sshkey *found) {
+	/* key always is a X.509 identity - see check_authkey_line */
 	if (found == NULL)
-		return(0);
+		return 0;
 
-	if (key->type == found->type) {
-		if (!sshkey_equal(key, found))
-			return(0);
+	if (sshkey_is_x509(found)) {
+		if (!sshkey_equal_public(key, found))
+			return 0;
 
-		/*
-		 * Key are equal but in case of certificates
-		 * when x509store is enabled found key may
-		 * contain only distinguished name.
-		 */
-		if (!sshkey_is_x509(found))
-			return(1);
+		debug3("%s: found matching certificate", __func__);
+		/* If self-signed is not enabled only verification
+		   process can allow received certificate. */
+		if (!ssh_x509flags.key_allow_selfissued) return 1;
 
-		debug3("key_match:found matching certificate");
-		if (!ssh_x509flags.key_allow_selfissued) {
-			/*
-			 * Only the verification process can
-			 * allow the received certificate.
-			 */
-			return(1);
-		}
-
-		/*
-		 * The public key or certificate found in
-		 * autorized keys file can allow self-issued.
-		 */
-		{
-			X509 *x = SSH_X509_get_cert(key->x509_data);
-			if (!ssh_X509_is_selfsigned(x))
-				return(1);
-		}
-
-		/* the certificate can be allowed by public key */
+	{	/* The public key or X.509 certificate found in
+		   authorized keys file can allow self-signed. */
+		X509 *x = SSH_X509_get_cert(key->x509_data);
+		if (!ssh_X509_is_selfsigned(x)) return 1;
 	}
 
+		/* If self-signed can be authorized (and allowed)
+		   by public key-material */
+	}
+
+	/* Note a X.509 certificate can be allowed by public key.
+	 * Also manage case for self-signed.
+	 * Code is same as sshkey_equal_public but without
+	 * compare by distinguished name.
+	 */
 	switch(X509KEY_BASETYPE(found)) {
 	case KEY_RSA: {
-		debug3("key_match:RSA");
 		return sshrsa_equal_public(key->rsa, found->rsa);
 		} break;
 	case KEY_DSA: {
-		debug3("key_match:DSA");
 		return sshdsa_equal_public(key->dsa, found->dsa);
 		} break;
 #ifdef OPENSSL_HAS_ECC
 	case KEY_ECDSA: {
 		BN_CTX *bnctx;
 
-		debug3("key_match:EC");
 		if (key->ecdsa == NULL ||
 		    found->ecdsa == NULL ||
 		    EC_KEY_get0_public_key(key->ecdsa) == NULL ||
 		    EC_KEY_get0_public_key(found->ecdsa) == NULL
 		)
-			return(0);
+			return 0;
 
 		bnctx = BN_CTX_new();
-		if (bnctx == NULL)
-			fatal("key_match: BN_CTX_new failed");
+		if (bnctx == NULL) return 0;
 
 		if (EC_GROUP_cmp(
 			EC_KEY_get0_group(key->ecdsa),
@@ -493,15 +480,16 @@ key_match(const struct sshkey *key, const struct sshkey *found) {
 		    ) != 0
 		) {
 			BN_CTX_free(bnctx);
-			return(0);
+			return 0;
 		}
 
 		BN_CTX_free(bnctx);
-		return(1);
+		return 1;
 		} break;
 #endif /* OPENSSL_HAS_ECC */
 	}
-	return(0);
+
+	return 0;
 }
 
 /*
@@ -732,7 +720,7 @@ check_authkey_line(struct ssh *ssh, struct passwd *pw, struct sshkey *key,
 		 * x509 attribute of Key structure "found"
 		 * may contain only "Distinguished Name" !
 		 */
-		if (!key_match(key, found))
+		if (!x509_match(key, found))
 			goto out;
 	} else {
 		/* Plain key: check it against key found in file */
@@ -1144,6 +1132,8 @@ user_xkey_allowed(struct ssh *ssh, struct passwd *pw, ssh_sign_ctx *ctx,
 	u_int success, i;
 	char *file;
 	struct sshauthopt *opts = NULL;
+
+	UNUSED(auth_attempt);
 	if (authoptsp != NULL)
 		*authoptsp = NULL;
 
