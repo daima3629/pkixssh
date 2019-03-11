@@ -23,39 +23,12 @@
  */
 
 #include "x509_by_ldap.h"
+#include "ssh_ldap.h"
 
 /* prefer X509_NAME_cmp method from ssh-x509.c */
 extern int     ssh_X509_NAME_cmp(X509_NAME *a, X509_NAME *b);
 
 #include <string.h>
-#ifndef LDAP_DEPRECATED
-   /* to suppress warnings in some 2.3x versions */
-#  define LDAP_DEPRECATED 0
-#endif
-#include <ldap.h>
-
-#undef TRACE_BY_LDAP_ENABLED
-#ifdef TRACE_BY_LDAP
-#undef TRACE_BY_LDAP
-#define TRACE_BY_LDAP_ENABLED 1
-static void
-TRACE_BY_LDAP(const char *f, const char *fmt, ...) {
-    va_list ap;
-    va_start(ap, fmt);
-    fputs("TRACE_BY_LDAP ", stderr);
-    fputs(f, stderr);
-    fputs(":  ", stderr);
-    vfprintf(stderr, fmt, ap);
-    va_end(ap);
-    fputs("\n", stderr);
-}
-#else
-static inline void
-TRACE_BY_LDAP(const char *f, const char *fmt, ...) {
-    UNUSED(f);
-    UNUSED(fmt);
-}
-#endif
 
 
 /* ================================================================== */
@@ -188,112 +161,6 @@ ERR_load_X509byLDAP_strings(void) {
 }
 
 
-static char*
-ldap_errormsg(char *buf, size_t len, int err) {
-	snprintf(buf, len, "ldaperror=0x%x(%.256s)", err, ldap_err2string(err));
-	return buf;
-}
-
-
-static void
-openssl_add_ldap_error(int err) {
-	char	buf[512];
-	ERR_add_error_data(1, ldap_errormsg(buf, sizeof(buf), err));
-}
-
-
-/* ================================================================== */
-/* wrappers for some deprecated functions */
-
-static void
-ldaplookup_parse_result (
-	LDAP *ld,
-	LDAPMessage *res
-) {
-	static const int freeit = 0;
-	int result;
-#ifdef HAVE_LDAP_PARSE_RESULT
-	int ret;
-	char *matcheddn;
-	char *errmsg;
-
-	ret = ldap_parse_result(ld, res, &result, &matcheddn, &errmsg, NULL, NULL, freeit);
-	if (ret == LDAP_SUCCESS) {
-		if (errmsg) ERR_add_error_data(1, errmsg);
-	}
-	if (matcheddn) ldap_memfree(matcheddn);
-	if (errmsg)    ldap_memfree(errmsg);
-#else
-	result = ldap_result2error(ld, res, freeit);
-	openssl_add_ldap_error(result);
-#endif
-}
-
-
-static int
-ldaplookup_bind_s(LDAP *ld) {
-	int result;
-
-	/* anonymous bind - data must be retrieved by anybody */
-#ifdef HAVE_LDAP_SASL_BIND_S
-{
-	static struct berval	cred = { 0, (char*)"" };
-
-	result = ldap_sasl_bind_s(
-		ld, NULL/*dn*/, LDAP_SASL_SIMPLE, &cred,
-		NULL, NULL, NULL);
-}
-#else
-	result = ldap_simple_bind_s(ld, NULL/*binddn*/, NULL/*bindpw*/);
-#endif
-
-TRACE_BY_LDAP(__func__, "ldap_XXX_bind_s return 0x%x(%s)"
-, result, ldap_err2string(result));
-	return result;
-}
-
-
-static int
-ldaplookup_search_s(
-	LDAP *ld,
-	LDAP_CONST char *base,
-	int scope,
-	LDAP_CONST char *filter,
-	char **attrs,
-	int attrsonly,
-	LDAPMessage **res
-) {
-	int result;
-#ifdef HAVE_LDAP_SEARCH_EXT_S
-	result = ldap_search_ext_s(ld, base,
-		scope, filter, attrs, attrsonly,
-		NULL, NULL, NULL, 0, res);
-#else
-	result = ldap_search_s(ld, base, scope, filter, attrs, attrsonly, res);
-#endif
-
-TRACE_BY_LDAP(__func__, "..."
-"\n  base: '%s'\n  filter: '%s'\n  ldap_search_{XXX}s return 0x%x(%s)"
-, base, filter, result, ldap_err2string(result));
-	return result;
-}
-
-
-static int
-ldaplookup_unbind_s(LDAP *ld) {
-	int result;
-#ifdef HAVE_LDAP_UNBIND_EXT_S
-	result = ldap_unbind_ext_s(ld, NULL, NULL);
-#else
-	result = ldap_unbind_s(ld);
-#endif
-
-TRACE_BY_LDAP(__func__, "ldap_XXX_unbind_s return 0x%x(%s)"
-, result, ldap_err2string(result));
-	return result;
-}
-
-
 /* ================================================================== */
 /* LDAP connection details */
 
@@ -337,7 +204,7 @@ TRACE_BY_LDAP(__func__, "url: '%s')", url);
 	ret = ldap_url_parse(p->url, &p->ldapurl);
 	if (ret != 0) {
 		X509byLDAPerr(X509byLDAP_F_LDAPHOST_NEW, X509byLDAP_R_INVALID_URL);
-		openssl_add_ldap_error(ret);
+		crypto_add_ldap_error(ret);
 		goto error;
 	}
 #ifdef TRACE_BY_LDAP_ENABLED
@@ -354,7 +221,7 @@ TRACE_BY_LDAP(__func__, "ldapurl: '%s://%s:%d'", p->ldapurl->lud_scheme, p->ldap
 	ret = ldap_initialize(&p->ld, p->url);
 	if (ret != LDAP_SUCCESS) {
 		X509byLDAPerr(X509byLDAP_F_LDAPHOST_NEW, X509byLDAP_R_INITIALIZATION_ERROR);
-		openssl_add_ldap_error(ret);
+		crypto_add_ldap_error(ret);
 		goto error;
 	}
 #else /*ndef HAVE_LDAP_INITIALIZE*/
@@ -394,7 +261,7 @@ TRACE_BY_LDAP(__func__, "...");
 		p->ldapurl = NULL;
 	}
 	if (p->ld != NULL) {
-		(void)ldaplookup_unbind_s(p->ld);
+		(void)ssh_ldap_unbind_s(p->ld);
 		p->ld = NULL;
 	}
 	OPENSSL_free(p);
@@ -424,7 +291,7 @@ ldapsearch_iterator(LDAP *ld, LDAPMessage *res) {
 TRACE_BY_LDAP(__func__, "ldap_count_entries: %d", k);
 	if (k < 0) {
 		X509byLDAPerr(X509byLDAP_F_RESULT2STORE, X509byLDAP_R_UNABLE_TO_COUNT_ENTRIES);
-		ldaplookup_parse_result (ld, res);
+		ssh_ldap_parse_result (ld, res);
 		return NULL;
 	}
 }
@@ -650,7 +517,7 @@ TRACE_BY_LDAP(__func__, "ver: %d", n);
 		ret = ldap_set_option(p->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
 		if (ret != LDAP_OPT_SUCCESS) {
 			X509byLDAPerr(X509byLDAP_F_SET_PROTOCOL, X509byLDAP_R_UNABLE_TO_SET_PROTOCOL_VERSION);
-			openssl_add_ldap_error(ret);
+			crypto_add_ldap_error(ret);
 			return 0;
 		}
 	}
@@ -884,7 +751,7 @@ TRACE_BY_LDAP(__func__, "bind to '%s://%s:%d' using protocol v%d"
 }
 #endif /*def TRACE_BY_LDAP_ENABLED*/
 
-		result = ldaplookup_bind_s(lh->ld);
+		result = ssh_ldap_bind_s(lh->ld);
 		if (result != LDAP_SUCCESS) {
 			X509byLDAPerr(X509byLDAP_F_GET_BY_SUBJECT, X509byLDAP_R_UNABLE_TO_BIND);
 			{
@@ -900,7 +767,7 @@ TRACE_BY_LDAP(__func__, "bind to '%s://%s:%d' using protocol v%d"
 			continue;
 		}
 
-		result = ldaplookup_search_s(lh->ld, lh->ldapurl->lud_dn,
+		result = ssh_ldap_search_s(lh->ld, lh->ldapurl->lud_dn,
 				LDAP_SCOPE_SUBTREE, filter, (char**)attrs, 0, &res);
 		if (result != LDAP_SUCCESS) {
 			X509byLDAPerr(X509byLDAP_F_GET_BY_SUBJECT, X509byLDAP_R_SEARCH_FAIL);
