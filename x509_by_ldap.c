@@ -171,7 +171,6 @@ struct ldaphost_s {
 	char        *bindpw;
 	LDAPURLDesc *ldapurl;
 	LDAP        *ld;
-	ldaphost    *next;
 };
 
 
@@ -379,6 +378,38 @@ static int  ldaplookup_add_search(X509_LOOKUP *ctx, const char *url);
 static int  ldaplookup_set_protocol(X509_LOOKUP *ctx, const char *ver);
 
 
+typedef struct lookup_item_s lookup_item;
+struct lookup_item_s {
+	ldaphost *lh;
+	lookup_item *next;
+};
+
+static inline void
+lookup_item_free(lookup_item *p) {
+	if (p == NULL) return;
+
+	ldaphost_free(p->lh);
+	OPENSSL_free(p);
+}
+
+static inline lookup_item*
+lookup_item_new(const char *url) {
+	lookup_item *ret;
+
+	ret = OPENSSL_malloc(sizeof(lookup_item));
+	if (ret == NULL) return NULL;
+
+	ret->lh = ldaphost_new(url);
+	if (ret->lh == NULL) {
+		OPENSSL_free(ret);
+		return NULL;
+	}
+
+	ret->next = NULL;
+	return ret;
+}
+
+
 X509_LOOKUP_METHOD x509_ldap_lookup = {
 	"Load certs and crls from LDAP server",
 	ldaplookup_new,		/* new */
@@ -433,16 +464,16 @@ TRACE_BY_LDAP(__func__, "ctx=%p", ctx);
 
 static void
 ldaplookup_free(X509_LOOKUP *ctx) {
-	ldaphost *p;
+	lookup_item *p;
 TRACE_BY_LDAP(__func__, "ctx=%p", ctx);
 
 	if (ctx == NULL) return;
 
-	p = (ldaphost*) ctx->method_data;
+	p = (lookup_item*) ctx->method_data;
 	while (p != NULL) {
-		ldaphost *q = p;
+		lookup_item *q = p;
 		p = p->next;
-		ldaphost_free(q);
+		lookup_item_free(q);
 	}
 }
 
@@ -465,15 +496,15 @@ TRACE_BY_LDAP(__func__, "ctx=%p", ctx);
 
 static int/*bool*/
 ldaplookup_add_search(X509_LOOKUP *ctx, const char *url) {
-	ldaphost *p, *q;
+	lookup_item *p, *q;
 
 	if (ctx == NULL) return 0;
 	if (url == NULL) return 0;
 
-	q = ldaphost_new(url);
+	q = lookup_item_new(url);
 	if (q == NULL) return 0;
 
-	p = (ldaphost*) ctx->method_data;
+	p = (lookup_item*) ctx->method_data;
 	if (p == NULL) {
 		ctx->method_data = (void*) q;
 		return 1;
@@ -490,7 +521,7 @@ ldaplookup_add_search(X509_LOOKUP *ctx, const char *url) {
 
 static int/*bool*/
 ldaplookup_set_protocol(X509_LOOKUP *ctx, const char *ver) {
-	ldaphost *p;
+	lookup_item *p;
 	char *q = NULL;
 	int n;
 
@@ -498,7 +529,7 @@ TRACE_BY_LDAP(__func__, "ver: '%s'  ...", ver);
 	if (ctx == NULL) return 0;
 	if (ver == NULL) return 0;
 
-	p = (ldaphost*) ctx->method_data;
+	p = (lookup_item*) ctx->method_data;
 TRACE_BY_LDAP(__func__, "p=%p", (void*)p);
 	if (p == NULL) return 0;
 
@@ -514,7 +545,7 @@ TRACE_BY_LDAP(__func__, "ver: %d", n);
 		int ret;
 		const int version = n;
 
-		ret = ldap_set_option(p->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
+		ret = ldap_set_option(p->lh->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
 		if (ret != LDAP_OPT_SUCCESS) {
 			X509byLDAPerr(X509byLDAP_F_SET_PROTOCOL, X509byLDAP_R_UNABLE_TO_SET_PROTOCOL_VERSION);
 			crypto_add_ldap_error(ret);
@@ -703,7 +734,7 @@ ldaplookup_by_subject(
 	X509_OBJECT *ret
 ) {
 	int count = 0;
-	ldaphost *lh;
+	lookup_item *p;
 	const char *attrs[2];
 	char *filter = NULL;
 
@@ -711,8 +742,8 @@ TRACE_BY_LDAP(__func__, "ctx=%p, type: %d", ctx, type);
 	if (ctx == NULL) return 0;
 	if (name == NULL) return 0;
 
-	lh = (ldaphost*) ctx->method_data;
-	if (lh == NULL) return 0;
+	p = (lookup_item*) ctx->method_data;
+	if (p == NULL) return 0;
 
 	switch(type) {
 	case X509_LU_X509: {
@@ -735,7 +766,8 @@ TRACE_BY_LDAP(__func__, "ctx=%p, type: %d", ctx, type);
 	}
 TRACE_BY_LDAP(__func__, "filter: '%s'", filter);
 
-	for (; lh != NULL; lh = lh->next) {
+	for (; p != NULL; p = p->next) {
+		ldaphost *lh = p->lh;
 		LDAPMessage *res = NULL;
 		int result;
 
