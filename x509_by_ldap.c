@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2004-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -102,7 +102,6 @@ struct x509_object_st {
 #ifndef OPENSSL_NO_ERR
 static ERR_STRING_DATA X509byLDAP_str_functs[] = {
 	{ ERR_PACK(0, X509byLDAP_F_LOOKUPCRTL, 0)	, "LOOKUPCRTL" },
-	{ ERR_PACK(0, X509byLDAP_F_LDAPHOST_NEW, 0)	, "LDAPHOST_NEW" },
 	{ ERR_PACK(0, X509byLDAP_F_SET_PROTOCOL, 0)	, "SET_PROTOCOL" },
 	{ ERR_PACK(0, X509byLDAP_F_RESULT2STORE, 0)	, "RESULT2STORE" },
 	{ ERR_PACK(0, X509byLDAP_F_GET_BY_SUBJECT, 0)	, "GET_BY_SUBJECT" },
@@ -112,10 +111,6 @@ static ERR_STRING_DATA X509byLDAP_str_functs[] = {
 
 static ERR_STRING_DATA X509byLDAP_str_reasons[] = {
 	{ ERR_PACK(0, 0, X509byLDAP_R_INVALID_CRTLCMD)			, "invalid control command" },
-	{ ERR_PACK(0, 0, X509byLDAP_R_NOT_LDAP_URL)			, "not ldap url" },
-	{ ERR_PACK(0, 0, X509byLDAP_R_INVALID_URL)			, "invalid ldap url" },
-	{ ERR_PACK(0, 0, X509byLDAP_R_INITIALIZATION_ERROR)		, "ldap initialization error" },
-	{ ERR_PACK(0, 0, X509byLDAP_R_UNABLE_TO_GET_PROTOCOL_VERSION)	, "unable to get ldap protocol version" },
 	{ ERR_PACK(0, 0, X509byLDAP_R_UNABLE_TO_SET_PROTOCOL_VERSION)	, "unable to set ldap protocol version" },
 	{ ERR_PACK(0, 0, X509byLDAP_R_UNABLE_TO_COUNT_ENTRIES)		, "unable to count ldap entries" },
 	{ ERR_PACK(0, 0, X509byLDAP_R_WRONG_LOOKUP_TYPE)		, "wrong lookup type" },
@@ -143,6 +138,7 @@ X509byLDAP_PUT_error(int function, int reason, const char *file, int line) {
 #define X509byLDAPerr(f,r) X509byLDAP_PUT_error((f),(r),__FILE__,__LINE__)
 
 
+extern void ERR_load_X509byLDAP_strings(void);
 void
 ERR_load_X509byLDAP_strings(void) {
 #ifndef OPENSSL_NO_ERR
@@ -158,112 +154,6 @@ ERR_load_X509byLDAP_strings(void) {
 	X509byLDAP_lib_name[0].error = ERR_PACK(ERR_LIB_X509byLDAP, 0, 0);
 	ERR_load_strings(0, X509byLDAP_lib_name);
 #endif
-}
-
-
-/* ================================================================== */
-/* LDAP connection details */
-
-typedef struct ldaphost_s ldaphost;
-struct ldaphost_s {
-	char        *url;
-	char        *binddn;
-	char        *bindpw;
-	LDAPURLDesc *ldapurl;
-	LDAP        *ld;
-};
-
-
-static ldaphost* ldaphost_new(const char *url);
-static void ldaphost_free(ldaphost *p);
-
-
-static ldaphost*
-ldaphost_new(const char *url) {
-	ldaphost *p;
-	int ret;
-
-TRACE_BY_LDAP(__func__, "url: '%s')", url);
-	p = OPENSSL_malloc(sizeof(ldaphost));
-	if (p == NULL) return NULL;
-
-	memset(p, 0, sizeof(ldaphost));
-
-	p->url = OPENSSL_malloc(strlen(url) + 1);
-	if (p->url == NULL) goto error;
-	strcpy(p->url, url);
-
-	/*ldap://hostport/dn[?attrs[?scope[?filter[?exts]]]] */
-	ret = ldap_is_ldap_url(url);
-	if (ret < 0) {
-		X509byLDAPerr(X509byLDAP_F_LDAPHOST_NEW, X509byLDAP_R_NOT_LDAP_URL);
-		goto error;
-	}
-
-	ret = ldap_url_parse(p->url, &p->ldapurl);
-	if (ret != 0) {
-		X509byLDAPerr(X509byLDAP_F_LDAPHOST_NEW, X509byLDAP_R_INVALID_URL);
-		crypto_add_ldap_error(ret);
-		goto error;
-	}
-#ifdef TRACE_BY_LDAP_ENABLED
-{
-char *uri = ldap_url_desc2str(p->ldapurl);
-TRACE_BY_LDAP(__func__, "ldap_url_desc2str: '%s'", uri);
-ldap_memfree(uri);
-}
-#endif /*def TRACE_BY_LDAP_ENABLED*/
-TRACE_BY_LDAP(__func__, "ldapurl: '%s://%s:%d'", p->ldapurl->lud_scheme, p->ldapurl->lud_host, p->ldapurl->lud_port);
-
-	/* allocate connection without to open */
-#ifdef HAVE_LDAP_INITIALIZE
-	ret = ldap_initialize(&p->ld, p->url);
-	if (ret != LDAP_SUCCESS) {
-		X509byLDAPerr(X509byLDAP_F_LDAPHOST_NEW, X509byLDAP_R_INITIALIZATION_ERROR);
-		crypto_add_ldap_error(ret);
-		goto error;
-	}
-#else /*ndef HAVE_LDAP_INITIALIZE*/
-	p->ld = ldap_init(p->ldapurl->lud_host, p->ldapurl->lud_port);
-	if(p->ld == NULL) {
-		X509byLDAPerr(X509byLDAP_F_LDAPHOST_NEW, X509byLDAP_R_INITIALIZATION_ERROR);
-		goto error;
-	}
-#endif /*ndef HAVE_LDAP_INITIALIZE*/
-
-{	int version = -1;
-
-	ret = ldap_get_option(p->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
-	if (ret != LDAP_OPT_SUCCESS) {
-		X509byLDAPerr(X509byLDAP_F_LDAPHOST_NEW, X509byLDAP_R_UNABLE_TO_GET_PROTOCOL_VERSION );
-		goto error;
-	}
-TRACE_BY_LDAP(__func__, "using protocol v%d (default)", version);
-}
-
-	return p;
-error:
-	ldaphost_free(p);
-	return NULL;
-}
-
-
-static void
-ldaphost_free(ldaphost *p) {
-TRACE_BY_LDAP(__func__, "...");
-	if (p == NULL) return;
-	if (p->url    != NULL) OPENSSL_free(p->url);
-	if (p->binddn != NULL) OPENSSL_free(p->binddn);
-	if (p->bindpw != NULL) OPENSSL_free(p->bindpw);
-	if (p->ldapurl != NULL) {
-		ldap_free_urldesc(p->ldapurl);
-		p->ldapurl = NULL;
-	}
-	if (p->ld != NULL) {
-		(void)ssh_ldap_unbind_s(p->ld);
-		p->ld = NULL;
-	}
-	OPENSSL_free(p);
 }
 
 

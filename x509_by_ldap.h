@@ -1,7 +1,7 @@
 #ifndef X509_BY_LDAP_H
 #define X509_BY_LDAP_H
 /*
- * Copyright (c) 2004-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2004-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -57,24 +57,17 @@ X509_LOOKUP_METHOD* X509_LOOKUP_ldap(void);
 
 #ifndef OPENSSL_NO_ERR
 
-void ERR_load_X509byLDAP_strings(void);
-
 /* library */
 /* BEGIN ERROR CODES */
 
 /* Function codes. */
 #define X509byLDAP_F_LOOKUPCRTL			100
-#define X509byLDAP_F_LDAPHOST_NEW		101
 #define X509byLDAP_F_SET_PROTOCOL		102
 #define X509byLDAP_F_RESULT2STORE		103
 #define X509byLDAP_F_GET_BY_SUBJECT		104
 
 /* Reason codes. */
 #define X509byLDAP_R_INVALID_CRTLCMD			100
-#define X509byLDAP_R_NOT_LDAP_URL			101
-#define X509byLDAP_R_INVALID_URL			102
-#define X509byLDAP_R_INITIALIZATION_ERROR		103
-#define X509byLDAP_R_UNABLE_TO_GET_PROTOCOL_VERSION	104
 #define X509byLDAP_R_UNABLE_TO_SET_PROTOCOL_VERSION	105
 #define X509byLDAP_R_UNABLE_TO_COUNT_ENTRIES		106
 #define X509byLDAP_R_WRONG_LOOKUP_TYPE			107

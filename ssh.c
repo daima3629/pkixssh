@@ -19,8 +19,7 @@
  * Modified to work with SSL by Niels Provos <provos@citi.umich.edu>
  * in Canada (German citizen).
  *
- * X.509 certificates support:
- * Copyright (c) 2002-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -87,8 +86,8 @@
 
 #include "openbsd-compat/sys-queue.h"
 #ifdef LDAP_ENABLED
-/* OpenSSL extension defined in x509_by_ldap.c */
-extern void ERR_load_X509byLDAP_strings(void);
+/* OpenSSL extension defined in ssh_ldap.c */
+extern void ERR_load_SSHLDAP_strings(void);
 #endif
 
 #include "xmalloc.h"
@@ -640,7 +639,7 @@ main(int ac, char **av)
 #ifdef WITH_OPENSSL
 	ssh_OpenSSL_load_error_strings();
 #ifdef LDAP_ENABLED
-	ERR_load_X509byLDAP_strings();
+	ERR_load_SSHLDAP_strings();
 #endif
 #ifdef ENABLE_PKCS11
 	ERR_load_PKCS11_strings();

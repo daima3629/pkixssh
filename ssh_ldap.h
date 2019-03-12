@@ -47,6 +47,20 @@ void	ssh_ldap_parse_result (LDAP *ld, LDAPMessage *res);
 void	crypto_add_ldap_error(int err);
 
 
+/* LDAP connection details */
+typedef struct ldaphost_s ldaphost;
+struct ldaphost_s {
+	char        *url;
+	char        *binddn;
+	char        *bindpw;
+	LDAPURLDesc *ldapurl;
+	LDAP        *ld;
+};
+
+ldaphost* ldaphost_new(const char *url);
+void ldaphost_free(ldaphost *p);
+
+
 #undef TRACE_BY_LDAP_ENABLED
 #ifdef TRACE_BY_LDAP
 # undef TRACE_BY_LDAP

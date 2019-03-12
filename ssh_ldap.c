@@ -135,6 +135,171 @@ ssh_ldap_parse_result (
 
 
 /* ================================================================== */
+/* Crypto library error management */
+extern void ERR_load_SSHLDAP_strings(void);
+extern void ERR_load_X509byLDAP_strings(void);
+
+#ifndef OPENSSL_NO_ERR
+
+/* Function codes. */
+#define SSHLDAP_F_LDAPHOST_NEW				101
+
+/* Reason codes. */
+#define SSHLDAP_R_NOT_LDAP_URL				101
+#define SSHLDAP_R_INVALID_URL				102
+#define SSHLDAP_R_INITIALIZATION_ERROR			103
+#define SSHLDAP_R_UNABLE_TO_GET_PROTOCOL_VERSION	104
+
+
+static ERR_STRING_DATA SSHLDAP_str_functs[] = {
+	{ ERR_PACK(0, SSHLDAP_F_LDAPHOST_NEW, 0)	, "LDAPHOST_NEW" },
+	{ 0, NULL }
+};
+
+static ERR_STRING_DATA SSHLDAP_str_reasons[] = {
+	{ ERR_PACK(0, 0, SSHLDAP_R_NOT_LDAP_URL)			, "not ldap url" },
+	{ ERR_PACK(0, 0, SSHLDAP_R_INVALID_URL)				, "invalid ldap url" },
+	{ ERR_PACK(0, 0, SSHLDAP_R_INITIALIZATION_ERROR)		, "ldap initialization error" },
+	{ ERR_PACK(0, 0, SSHLDAP_R_UNABLE_TO_GET_PROTOCOL_VERSION)	, "unable to get ldap protocol version" },
+	{ 0, NULL }
+};
+
+static ERR_STRING_DATA SSHLDAP_lib_name[] = {
+	{ 0, "SSHLDAP" },
+	{ 0, NULL }
+};
+
+
+static int ERR_LIB_SSHLDAP = 0;
+static inline void
+SSHLDAP_PUT_error(int function, int reason, const char *file, int line) {
+	if (ERR_LIB_SSHLDAP == 0)
+		ERR_LIB_SSHLDAP = ERR_get_next_error_library();
+
+	ERR_PUT_error(ERR_LIB_SSHLDAP, function, reason, file, line);
+}
+
+#define SSHLDAPerr(f,r) SSHLDAP_PUT_error((f),(r),__FILE__,__LINE__)
+
+#else
+
+#define SSHLDAPerr(f,r)
+
+#endif /*ndef OPENSSL_NO_ERR*/
+
+
+void
+ERR_load_SSHLDAP_strings(void) {
+#ifndef OPENSSL_NO_ERR
+{	static int loaded = 0;
+	if (loaded) return;
+	loaded = 1;
+}
+	ERR_LIB_SSHLDAP = ERR_get_next_error_library();
+
+	ERR_load_strings(ERR_LIB_SSHLDAP, SSHLDAP_str_functs);
+	ERR_load_strings(ERR_LIB_SSHLDAP, SSHLDAP_str_reasons);
+
+	SSHLDAP_lib_name[0].error = ERR_PACK(ERR_LIB_SSHLDAP, 0, 0);
+	ERR_load_strings(0, SSHLDAP_lib_name);
+#endif
+	ERR_load_X509byLDAP_strings();
+}
+
+
+/* ================================================================== */
+/* LDAP connection details */
+
+ldaphost*
+ldaphost_new(const char *url) {
+	ldaphost *p;
+	int ret;
+
+TRACE_BY_LDAP(__func__, "url: '%s')", url);
+	p = OPENSSL_malloc(sizeof(ldaphost));
+	if (p == NULL) return NULL;
+
+	memset(p, 0, sizeof(ldaphost));
+
+	p->url = OPENSSL_malloc(strlen(url) + 1);
+	if (p->url == NULL) goto error;
+	strcpy(p->url, url);
+
+	/*ldap://hostport/dn[?attrs[?scope[?filter[?exts]]]] */
+	ret = ldap_is_ldap_url(url);
+	if (ret < 0) {
+		SSHLDAPerr(SSHLDAP_F_LDAPHOST_NEW, SSHLDAP_R_NOT_LDAP_URL);
+		goto error;
+	}
+
+	ret = ldap_url_parse(p->url, &p->ldapurl);
+	if (ret != 0) {
+		SSHLDAPerr(SSHLDAP_F_LDAPHOST_NEW, SSHLDAP_R_INVALID_URL);
+		crypto_add_ldap_error(ret);
+		goto error;
+	}
+#ifdef TRACE_BY_LDAP_ENABLED
+{
+char *uri = ldap_url_desc2str(p->ldapurl);
+TRACE_BY_LDAP(__func__, "ldap_url_desc2str: '%s'", uri);
+ldap_memfree(uri);
+}
+#endif /*def TRACE_BY_LDAP_ENABLED*/
+TRACE_BY_LDAP(__func__, "ldapurl: '%s://%s:%d'", p->ldapurl->lud_scheme, p->ldapurl->lud_host, p->ldapurl->lud_port);
+
+	/* allocate connection without to open */
+#ifdef HAVE_LDAP_INITIALIZE
+	ret = ldap_initialize(&p->ld, p->url);
+	if (ret != LDAP_SUCCESS) {
+		SSHLDAPerr(SSHLDAP_F_LDAPHOST_NEW, SSHLDAP_R_INITIALIZATION_ERROR);
+		crypto_add_ldap_error(ret);
+		goto error;
+	}
+#else /*ndef HAVE_LDAP_INITIALIZE*/
+	p->ld = ldap_init(p->ldapurl->lud_host, p->ldapurl->lud_port);
+	if(p->ld == NULL) {
+		SSHLDAPerr(SSHLDAP_F_LDAPHOST_NEW, SSHLDAP_R_INITIALIZATION_ERROR);
+		goto error;
+	}
+#endif /*ndef HAVE_LDAP_INITIALIZE*/
+
+{	int version = -1;
+
+	ret = ldap_get_option(p->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
+	if (ret != LDAP_OPT_SUCCESS) {
+		SSHLDAPerr(SSHLDAP_F_LDAPHOST_NEW, SSHLDAP_R_UNABLE_TO_GET_PROTOCOL_VERSION );
+		goto error;
+	}
+TRACE_BY_LDAP(__func__, "using protocol v%d (default)", version);
+}
+
+	return p;
+error:
+	ldaphost_free(p);
+	return NULL;
+}
+
+
+void
+ldaphost_free(ldaphost *p) {
+TRACE_BY_LDAP(__func__, "...");
+	if (p == NULL) return;
+	if (p->url    != NULL) OPENSSL_free(p->url);
+	if (p->binddn != NULL) OPENSSL_free(p->binddn);
+	if (p->bindpw != NULL) OPENSSL_free(p->bindpw);
+	if (p->ldapurl != NULL) {
+		ldap_free_urldesc(p->ldapurl);
+		p->ldapurl = NULL;
+	}
+	if (p->ld != NULL) {
+		(void)ssh_ldap_unbind_s(p->ld);
+		p->ld = NULL;
+	}
+	OPENSSL_free(p);
+}
+
+
+/* ================================================================== */
 static char*
 ldap_errormsg(char *buf, size_t len, int err) {
 	snprintf(buf, len, "ldaperror=0x%x(%.256s)", err, ldap_err2string(err));
