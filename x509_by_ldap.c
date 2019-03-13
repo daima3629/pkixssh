@@ -103,7 +103,6 @@ struct x509_object_st {
 static ERR_STRING_DATA X509byLDAP_str_functs[] = {
 	{ ERR_PACK(0, X509byLDAP_F_LOOKUPCRTL, 0)	, "LOOKUPCRTL" },
 	{ ERR_PACK(0, X509byLDAP_F_SET_PROTOCOL, 0)	, "SET_PROTOCOL" },
-	{ ERR_PACK(0, X509byLDAP_F_RESULT2STORE, 0)	, "RESULT2STORE" },
 	{ ERR_PACK(0, X509byLDAP_F_GET_BY_SUBJECT, 0)	, "GET_BY_SUBJECT" },
 	{ 0, NULL }
 };
@@ -112,7 +111,6 @@ static ERR_STRING_DATA X509byLDAP_str_functs[] = {
 static ERR_STRING_DATA X509byLDAP_str_reasons[] = {
 	{ ERR_PACK(0, 0, X509byLDAP_R_INVALID_CRTLCMD)			, "invalid control command" },
 	{ ERR_PACK(0, 0, X509byLDAP_R_UNABLE_TO_SET_PROTOCOL_VERSION)	, "unable to set ldap protocol version" },
-	{ ERR_PACK(0, 0, X509byLDAP_R_UNABLE_TO_COUNT_ENTRIES)		, "unable to count ldap entries" },
 	{ ERR_PACK(0, 0, X509byLDAP_R_WRONG_LOOKUP_TYPE)		, "wrong lookup type" },
 	{ ERR_PACK(0, 0, X509byLDAP_R_UNABLE_TO_GET_FILTER)		, "unable to get ldap filter" },
 	{ ERR_PACK(0, 0, X509byLDAP_R_UNABLE_TO_BIND)			, "unable to bind to ldap server" },
@@ -154,100 +152,6 @@ ERR_load_X509byLDAP_strings(void) {
 	X509byLDAP_lib_name[0].error = ERR_PACK(ERR_LIB_X509byLDAP, 0, 0);
 	ERR_load_strings(0, X509byLDAP_lib_name);
 #endif
-}
-
-
-/* ================================================================== */
-/* LDAP result iterator */
-
-typedef struct ldapsearch_result_st ldapsearch_result;
-struct ldapsearch_result_st {
-	LDAP *ld;
-	LDAPMessage *entry;	/* pointer to current message */
-	/* loop on attribute */
-	char *attr;		/* pointer to current attribute */
-	BerElement *attr_ber;
-	/* loop on attribute values */
-	struct berval **p;	/* pointer to current value */
-	struct berval **vals;
-	int eom;
-};
-
-
-static ldapsearch_result*
-ldapsearch_iterator(LDAP *ld, LDAPMessage *res) {
-{	int k = ldap_count_entries(ld, res);
-TRACE_BY_LDAP(__func__, "ldap_count_entries: %d", k);
-	if (k < 0) {
-		X509byLDAPerr(X509byLDAP_F_RESULT2STORE, X509byLDAP_R_UNABLE_TO_COUNT_ENTRIES);
-		ssh_ldap_parse_result (ld, res);
-		return NULL;
-	}
-}
-{
-	ldapsearch_result *ret = OPENSSL_malloc(sizeof(ldapsearch_result));
-	if (ret == NULL) return NULL;
-
-	memset(ret, 0, sizeof(ldapsearch_result));
-
-	ret->ld = ld;
-	ret->entry = ldap_first_entry(ld, res);
-	return ret;
-}
-}
-
-
-static int
-ldapsearch_advance(ldapsearch_result* r) {
-	while(r->entry != NULL) {
-#ifdef TRACE_BY_LDAP_ENABLED
-{
-char *dn = ldap_get_dn(r->ld, r->entry);
-TRACE_BY_LDAP(__func__, "ldap_get_dn: '%s'", dn);
-ldap_memfree(dn);
-}
-#endif /*def TRACE_BY_LDAP_ENABLED*/
-		if (r->attr == NULL)
-			r->attr = ldap_first_attribute(r->ld, r->entry, &r->attr_ber);
-
-		while(r->attr != NULL) {
-TRACE_BY_LDAP(__func__, "attr: '%s'", r->attr);
-
-			if (r->p == NULL) {
-				r->vals = ldap_get_values_len(r->ld, r->entry, r->attr);
-				/* silently ignore error if return value is NULL */
-				if (r->vals == NULL) goto next_attr;
-
-				r->p = r->vals;
-TRACE_BY_LDAP(__func__, "r->p[0]=%p'", *r->p);
-				/* just in case */
-				if (*r->p == NULL) goto end_vals;
-
-				/* advance to first value / index zero */
-				return 1;
-			}
-
-			/* advance to next value */
-			r->p++;
-TRACE_BY_LDAP(__func__, "r->p[x]=%p'", *r->p);
-			if (*r->p != NULL)
-				return 1;
-
-end_vals:
-			ldap_value_free_len(r->vals);
-			r->p = NULL;
-
-next_attr:
-			ldap_memfree(r->attr);
-			r->attr = ldap_next_attribute(r->ld, r->entry, r->attr_ber);
-		}
-
-		ber_free(r->attr_ber, 0);
-
-		r->entry = ldap_next_entry(r->ld, r->entry);
-	}
-TRACE_BY_LDAP(__func__, "end");
-	return 0;
 }
 
 

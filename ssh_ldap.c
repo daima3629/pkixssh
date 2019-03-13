@@ -143,16 +143,19 @@ extern void ERR_load_X509byLDAP_strings(void);
 
 /* Function codes. */
 #define SSHLDAP_F_LDAPHOST_NEW				101
+#define SSHLDAP_F_LDAPSEARCH_ITERATOR			102
 
 /* Reason codes. */
 #define SSHLDAP_R_NOT_LDAP_URL				101
 #define SSHLDAP_R_INVALID_URL				102
 #define SSHLDAP_R_INITIALIZATION_ERROR			103
 #define SSHLDAP_R_UNABLE_TO_GET_PROTOCOL_VERSION	104
+#define SSHLDAP_R_UNABLE_TO_COUNT_ENTRIES		105
 
 
 static ERR_STRING_DATA SSHLDAP_str_functs[] = {
 	{ ERR_PACK(0, SSHLDAP_F_LDAPHOST_NEW, 0)	, "LDAPHOST_NEW" },
+	{ ERR_PACK(0, SSHLDAP_F_LDAPSEARCH_ITERATOR, 0)	, "LDAPSEARCH_ITERATOR" },
 	{ 0, NULL }
 };
 
@@ -161,6 +164,7 @@ static ERR_STRING_DATA SSHLDAP_str_reasons[] = {
 	{ ERR_PACK(0, 0, SSHLDAP_R_INVALID_URL)				, "invalid ldap url" },
 	{ ERR_PACK(0, 0, SSHLDAP_R_INITIALIZATION_ERROR)		, "ldap initialization error" },
 	{ ERR_PACK(0, 0, SSHLDAP_R_UNABLE_TO_GET_PROTOCOL_VERSION)	, "unable to get ldap protocol version" },
+	{ ERR_PACK(0, 0, SSHLDAP_R_UNABLE_TO_COUNT_ENTRIES)		, "unable to count ldap entries" },
 	{ 0, NULL }
 };
 
@@ -300,6 +304,87 @@ TRACE_BY_LDAP(__func__, "...");
 
 
 /* ================================================================== */
+/* LDAP result iterator */
+
+ldapsearch_result*
+ldapsearch_iterator(LDAP *ld, LDAPMessage *res) {
+{	int k = ldap_count_entries(ld, res);
+TRACE_BY_LDAP(__func__, "ldap_count_entries: %d", k);
+	if (k < 0) {
+		SSHLDAPerr(SSHLDAP_F_LDAPSEARCH_ITERATOR, SSHLDAP_R_UNABLE_TO_COUNT_ENTRIES);
+		ssh_ldap_parse_result (ld, res);
+		return NULL;
+	}
+}
+{
+	ldapsearch_result *ret = OPENSSL_malloc(sizeof(ldapsearch_result));
+	if (ret == NULL) return NULL;
+
+	memset(ret, 0, sizeof(ldapsearch_result));
+
+	ret->ld = ld;
+	ret->entry = ldap_first_entry(ld, res);
+	return ret;
+}
+}
+
+
+int/*bool*/
+ldapsearch_advance(ldapsearch_result* r) {
+	while(r->entry != NULL) {
+#ifdef TRACE_BY_LDAP_ENABLED
+{
+char *dn = ldap_get_dn(r->ld, r->entry);
+TRACE_BY_LDAP(__func__, "ldap_get_dn: '%s'", dn);
+ldap_memfree(dn);
+}
+#endif /*def TRACE_BY_LDAP_ENABLED*/
+		if (r->attr == NULL)
+			r->attr = ldap_first_attribute(r->ld, r->entry, &r->attr_ber);
+
+		while(r->attr != NULL) {
+TRACE_BY_LDAP(__func__, "attr: '%s'", r->attr);
+
+			if (r->p == NULL) {
+				r->vals = ldap_get_values_len(r->ld, r->entry, r->attr);
+				/* silently ignore error if return value is NULL */
+				if (r->vals == NULL) goto next_attr;
+
+				r->p = r->vals;
+TRACE_BY_LDAP(__func__, "r->p[0]=%p'", *r->p);
+				/* just in case */
+				if (*r->p == NULL) goto end_vals;
+
+				/* advance to first value / index zero */
+				return 1;
+			}
+
+			/* advance to next value */
+			r->p++;
+TRACE_BY_LDAP(__func__, "r->p[x]=%p'", *r->p);
+			if (*r->p != NULL)
+				return 1;
+
+end_vals:
+			ldap_value_free_len(r->vals);
+			r->p = NULL;
+
+next_attr:
+			ldap_memfree(r->attr);
+			r->attr = ldap_next_attribute(r->ld, r->entry, r->attr_ber);
+		}
+
+		ber_free(r->attr_ber, 0);
+
+		r->entry = ldap_next_entry(r->ld, r->entry);
+	}
+TRACE_BY_LDAP(__func__, "end");
+	return 0;
+}
+
+
+/* ================================================================== */
+
 static char*
 ldap_errormsg(char *buf, size_t len, int err) {
 	snprintf(buf, len, "ldaperror=0x%x(%.256s)", err, ldap_err2string(err));

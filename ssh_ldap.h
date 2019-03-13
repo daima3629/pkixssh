@@ -61,6 +61,27 @@ ldaphost* ldaphost_new(const char *url);
 void ldaphost_free(ldaphost *p);
 
 
+/* LDAP result iterator */
+typedef struct ldapsearch_result_st ldapsearch_result;
+struct ldapsearch_result_st {
+	LDAP *ld;
+	LDAPMessage *entry;	/* pointer to current message */
+	/* loop on attribute */
+	char *attr;		/* pointer to current attribute */
+	BerElement *attr_ber;
+	/* loop on attribute values */
+	struct berval **p;	/* pointer to current value */
+	struct berval **vals;
+	int eom;
+};
+
+ldapsearch_result*
+ldapsearch_iterator(LDAP *ld, LDAPMessage *res);
+
+int/*bool*/
+ldapsearch_advance(ldapsearch_result* r);
+
+
 #undef TRACE_BY_LDAP_ENABLED
 #ifdef TRACE_BY_LDAP
 # undef TRACE_BY_LDAP
