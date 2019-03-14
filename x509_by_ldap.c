@@ -449,16 +449,13 @@ done:
 }
 
 
-static int/*bool*/
-ldaplookup_check_attr(
-	int type,
-	const char *attr
-) {
+static inline int/*bool*/
+ldaplookup_attr_match(int type, const char *attr) {
 	if (type == X509_LU_X509)
-		return strncmp(attr, ATTR_CACERT, sizeof(ATTR_CACERT)) != 0;
+		return strncmp(attr, ATTR_CACERT, strlen(ATTR_CACERT)) == 0;
 
 	if (type == X509_LU_CRL)
-		return strncmp(attr, ATTR_CACRL, sizeof(ATTR_CACRL)) != 0;
+		return strncmp(attr, ATTR_CACRL, strlen(ATTR_CACRL)) == 0;
 
 	return 0;
 }
@@ -606,7 +603,7 @@ TRACE_BY_LDAP(__func__, "bind to '%s://%s:%d' using protocol v%d"
 
 		while (ldapsearch_advance(it)) {
 			struct berval *q;
-			if (!ldaplookup_check_attr(type, it->attr))
+			if (!ldaplookup_attr_match(type, it->attr))
 				continue;
 
 			q = *it->p;
