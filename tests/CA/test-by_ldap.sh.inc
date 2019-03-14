@@ -127,6 +127,7 @@ creTestLDAPDCAldifFile() {
 (
   for level in 0; do
     cat <<EOF
+# "CN=SSH TestCA level $level,OU=$SSH_DN_OU level $level,OU=$SSH_DN_OU,O=$SSH_DN_O,$SSH_LDAP_DC"
 dn:`utf8base64 "CN=SSH TestCA level $level,OU=$SSH_DN_OU level $level,OU=$SSH_DN_OU,O=$SSH_DN_O,$SSH_LDAP_DC"`
 changetype: add
 objectClass: inetOrgPerson
@@ -145,6 +146,7 @@ EOF
 
   for type in $SSH_SIGN_TYPES; do
     cat <<EOF
+# "CN=SSH TestCA $type key,OU=$SSH_DN_OU $type keys,OU=$SSH_DN_OU,O=$SSH_DN_O,$SSH_LDAP_DC"
 dn:`utf8base64 "CN=SSH TestCA $type key,OU=$SSH_DN_OU $type keys,OU=$SSH_DN_OU,O=$SSH_DN_O,$SSH_LDAP_DC"`
 changetype: add
 objectClass: inetOrgPerson
