@@ -24,6 +24,7 @@
 
 #include "ssh_ldap.h"
 
+#include <openssl/x509.h>
 #include <openssl/err.h>
 
 
@@ -300,6 +301,107 @@ TRACE_BY_LDAP(__func__, "...");
 		p->ld = NULL;
 	}
 	OPENSSL_free(p);
+}
+
+
+/* ================================================================== */
+/* LDAP search filter */
+
+static char*
+ldapsearch_ASN1_STRING(ASN1_STRING *nv) {
+	char *p = NULL;
+	int k;
+	BIO *mbio;
+
+	mbio = BIO_new(BIO_s_mem());
+	if (mbio == NULL) return NULL;
+
+	k = ASN1_STRING_print_ex(mbio, nv, XN_FLAG_RFC2253);
+	p = OPENSSL_malloc(k + 1);
+	if (p == NULL) goto done;
+
+	k = BIO_read(mbio, p, k);
+	p[k] = '\0';
+
+done:
+	BIO_free_all(mbio);
+	return p;
+}
+
+
+char*
+ldapsearch_X509_NAME(const char *attribute, X509_NAME *name) {
+	char *p = NULL;
+	int k;
+	BIO *mbio;
+
+	mbio = BIO_new(BIO_s_mem());
+	if (mbio == NULL) return NULL;
+
+	BIO_puts(mbio, "(&");
+
+	k = X509_NAME_entry_count(name);
+	for (--k; k >= 0; k--) {
+		X509_NAME_ENTRY *ne;
+		ASN1_STRING     *nv;
+		int nid;
+
+		ne = X509_NAME_get_entry(name, k);
+		nid = OBJ_obj2nid(X509_NAME_ENTRY_get_object(ne));
+
+		if (
+			(nid != NID_organizationName) &&
+			(nid != NID_organizationalUnitName) &&
+			(nid != NID_commonName)
+		) continue;
+
+		BIO_puts(mbio, "(");
+		BIO_puts(mbio, OBJ_nid2sn(nid));
+		BIO_puts(mbio, "=");
+		nv = X509_NAME_ENTRY_get_data(ne);
+		{
+			char *q, *s;
+
+			q = ldapsearch_ASN1_STRING(nv);
+TRACE_BY_LDAP(__func__, "ldapsearch_ASN1_STRING(nv) return '%s'", (q ? q : "<?>"));
+			if (q == NULL) goto done;
+			/* escape some charecters according to RFC2254 */
+			for (s=q; *s; s++) {
+				if ((*s == '*') ||
+				    (*s == '(') ||
+				    (*s == ')')
+				    /* character '\' should be already escaped ! */
+				) {
+					/* RFC2254 recommendation */
+					BIO_printf(mbio, "\\%02X", (int)*s);
+					continue;
+				}
+				BIO_write(mbio, s, 1);
+			}
+
+			OPENSSL_free(q);
+		}
+		BIO_puts(mbio, ")");
+	}
+
+	BIO_puts(mbio, "(");
+	BIO_puts(mbio, attribute);
+	BIO_puts(mbio, "=*)");
+
+	BIO_puts(mbio, ")");
+	(void)BIO_flush(mbio);
+
+	k = BIO_pending(mbio);
+	p = OPENSSL_malloc(k + 1);
+	if (p == NULL) goto done;
+
+	k = BIO_read(mbio, p, k);
+	p[k] = '\0';
+TRACE_BY_LDAP(__func__, "result: '%.1024s'%s", p, (k > 1024 ? "...": ""));
+
+done:
+	BIO_free_all(mbio);
+	return p;
 }
 
 

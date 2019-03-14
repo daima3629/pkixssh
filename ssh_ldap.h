@@ -61,6 +61,10 @@ ldaphost* ldaphost_new(const char *url);
 void ldaphost_free(ldaphost *p);
 
 
+char*
+ldapsearch_X509_NAME(const char *attribute, X509_NAME *name);
+
+
 /* LDAP result iterator */
 typedef struct ldapsearch_result_st ldapsearch_result;
 struct ldapsearch_result_st {
