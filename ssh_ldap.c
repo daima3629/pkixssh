@@ -330,7 +330,7 @@ done:
 
 
 char*
-ldapsearch_X509_NAME(const char *attribute, X509_NAME *name) {
+X509_NAME_ldapfilter(X509_NAME *name, const char *attribute) {
 	char *p = NULL;
 	int k;
 	BIO *mbio;
@@ -384,9 +384,11 @@ TRACE_BY_LDAP(__func__, "ldapsearch_ASN1_STRING(nv) return '%s'", (q ? q : "<?>"
 		BIO_puts(mbio, ")");
 	}
 
-	BIO_puts(mbio, "(");
-	BIO_puts(mbio, attribute);
-	BIO_puts(mbio, "=*)");
+	if (attribute != NULL) {
+		BIO_puts(mbio, "(");
+		BIO_puts(mbio, attribute);
+		BIO_puts(mbio, "=*)");
+	}
 
 	BIO_puts(mbio, ")");
 	(void)BIO_flush(mbio);

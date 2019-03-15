@@ -62,7 +62,7 @@ void ldaphost_free(ldaphost *p);
 
 
 char*
-ldapsearch_X509_NAME(const char *attribute, X509_NAME *name);
+X509_NAME_ldapfilter(X509_NAME *name, const char *attribute);
 
 
 /* LDAP result iterator */

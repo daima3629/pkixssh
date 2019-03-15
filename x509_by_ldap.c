@@ -452,7 +452,7 @@ TRACE_BY_LDAP(__func__, "ctx=%p, type: %d", ctx, type);
 	}
 	attrs[1] = NULL;
 
-	filter = ldapsearch_X509_NAME(attrs[0], name);
+	filter = X509_NAME_ldapfilter(name, attrs[0]);
 	if (filter == NULL) {
 		X509byLDAPerr(X509byLDAP_F_GET_BY_SUBJECT, X509byLDAP_R_UNABLE_TO_GET_FILTER);
 		goto done;
