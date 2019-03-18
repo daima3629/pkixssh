@@ -158,9 +158,6 @@ ERR_load_X509byLDAP_strings(void) {
 /* ================================================================== */
 /* LOOKUP by LDAP */
 
-static const char ATTR_CACERT[] = "cACertificate";
-static const char ATTR_CACRL[] = "certificateRevocationList";
-
 static int  ldaplookup_ctrl(X509_LOOKUP *ctx, int cmd, const char *argp, long argl, char **ret);
 static int  ldaplookup_new(X509_LOOKUP *ctx);
 static void ldaplookup_free(X509_LOOKUP *ctx);
@@ -351,18 +348,6 @@ TRACE_BY_LDAP(__func__, "ver: %d", n);
 }
 
 
-static inline int/*bool*/
-ldaplookup_attr_match(int type, const char *attr) {
-	if (type == X509_LU_X509)
-		return strncmp(attr, ATTR_CACERT, strlen(ATTR_CACERT)) == 0;
-
-	if (type == X509_LU_CRL)
-		return strncmp(attr, ATTR_CACRL, strlen(ATTR_CACRL)) == 0;
-
-	return 0;
-}
-
-
 /*
  * We will put into store X509 object from passed data in buffer only
  * when object name match passed. To compare both names we use our
@@ -429,6 +414,8 @@ ldaplookup_by_subject(
 	int count = 0;
 	lookup_item *p;
 	const char *attrs[2];
+	static const char *ATTR_CACERT = "cACertificate";
+	static const char *ATTR_CACRL = "certificateRevocationList";
 	char *filter = NULL;
 
 TRACE_BY_LDAP(__func__, "ctx=%p, type: %d", ctx, type);
@@ -504,14 +491,23 @@ TRACE_BY_LDAP(__func__, "bind to '%s://%s:%d' using protocol v%d"
 		ldapsearch_result *it = ldapsearch_iterator(lh->ld, res);
 
 		while (ldapsearch_advance(it)) {
-			struct berval *q;
-			if (!ldaplookup_attr_match(type, it->attr))
-				continue;
+		{	const char *q;
 
-			q = *it->p;
+			switch (type) {
+			case X509_LU_X509: q = ATTR_CACERT; break;
+			case X509_LU_CRL : q = ATTR_CACRL ; break;
+			default: /* warnings */
+				continue;
+			}
+			if (strncmp(it->attr, q, strlen(q)) != 0)
+				continue;
+		}
+
+		{	struct berval *q = *it->p;
 			count += ldaplookup_data2store(type, name,
 			    q->bv_val, q->bv_len, store)
 			    ? 1 : 0;
+		}
 		}
 
 		OPENSSL_free(it);
