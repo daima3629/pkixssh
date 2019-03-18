@@ -24,11 +24,21 @@
 
 #include "x509_by_ldap.h"
 #include "ssh_ldap.h"
+#ifdef USE_LDAP_STORE
+#  include <openssl/store.h>
+#endif
 
 /* prefer X509_NAME_cmp method from ssh-x509.c */
 extern int     ssh_X509_NAME_cmp(X509_NAME *a, X509_NAME *b);
 
 #include <string.h>
+
+#ifdef USE_LDAP_STORE
+/* NOTE: Cannot set LDAP protocol version using STORE-API!
+ * Let use global variable.
+ */
+extern int ldap_version;
+#endif
 
 
 /* ================================================================== */
@@ -156,6 +166,54 @@ ERR_load_X509byLDAP_strings(void) {
 
 
 /* ================================================================== */
+#ifdef USE_LDAP_STORE
+typedef struct ldapstore_s ldapstore;
+struct ldapstore_s {
+	char *url;
+	OSSL_STORE_CTX *ctx;
+};
+
+
+static ldapstore* ldapstore_new(const char *url);
+static void ldapstore_free(ldapstore *p);
+
+
+static ldapstore*
+ldapstore_new(const char *url) {
+	ldapstore *p;
+
+	p = OPENSSL_malloc(sizeof(ldapstore));
+	if (p == NULL) return NULL;
+
+	p->url = OPENSSL_malloc(strlen(url) + 1);
+	if (p->url == NULL) goto error;
+	strcpy(p->url, url);
+
+	p->ctx = NULL;
+
+	return p;
+
+error:
+	ldapstore_free(p);
+	return NULL;
+}
+
+
+static void
+ldapstore_free(ldapstore *p) {
+	if (p == NULL) return;
+
+	OPENSSL_free(p->url);
+	if (p->ctx != NULL) {
+		OSSL_STORE_close(p->ctx);
+		p->ctx = NULL;
+	}
+	OPENSSL_free(p);
+}
+#endif /*def USE_LDAP_STORE*/
+
+
+/* ================================================================== */
 /* LOOKUP by LDAP */
 
 static int  ldaplookup_ctrl(X509_LOOKUP *ctx, int cmd, const char *argp, long argl, char **ret);
@@ -171,7 +229,11 @@ static int  ldaplookup_set_protocol(X509_LOOKUP *ctx, const char *ver);
 
 typedef struct lookup_item_s lookup_item;
 struct lookup_item_s {
+#ifndef USE_LDAP_STORE
 	ldaphost *lh;
+#else
+	ldapstore *ls;
+#endif
 	lookup_item *next;
 };
 
@@ -179,7 +241,11 @@ static inline void
 lookup_item_free(lookup_item *p) {
 	if (p == NULL) return;
 
+#ifndef USE_LDAP_STORE
 	ldaphost_free(p->lh);
+#else
+	ldapstore_free(p->ls);
+#endif
 	OPENSSL_free(p);
 }
 
@@ -190,8 +256,13 @@ lookup_item_new(const char *url) {
 	ret = OPENSSL_malloc(sizeof(lookup_item));
 	if (ret == NULL) return NULL;
 
+#ifndef USE_LDAP_STORE
 	ret->lh = ldaphost_new(url);
 	if (ret->lh == NULL) {
+#else
+	ret->ls = ldapstore_new(url);
+	if (ret->ls == NULL) {
+#endif
 		OPENSSL_free(ret);
 		return NULL;
 	}
@@ -217,6 +288,14 @@ X509_LOOKUP_METHOD x509_ldap_lookup = {
 
 X509_LOOKUP_METHOD*
 X509_LOOKUP_ldap(void) {
+#ifdef USE_LDAP_STORE
+{	static int load_ldap = 1;
+	if (load_ldap) {
+		load_ldap = 0;
+		ENGINE_load_ldap();
+	}
+}
+#endif
 	return &x509_ldap_lookup;
 }
 
@@ -325,13 +404,17 @@ TRACE_BY_LDAP(__func__, "p=%p", (void*)p);
 	if (p == NULL) return 0;
 
 	n = (int) strtol(ver, &q, 10);
+TRACE_BY_LDAP(__func__, "ver: %d", n);
 	if (*q != '\0') return 0;
 	if ((n < LDAP_VERSION_MIN) || (n > LDAP_VERSION_MAX)) return 0;
 
+#ifndef USE_LDAP_STORE
 	for(; p->next != NULL; p = p->next) {
 		/*find list end*/
+		/* NOTE: after addition of LDAP look-up is called "version"
+		 * control (see x509store.c), so it is for last item.
+		 */
 	}
-TRACE_BY_LDAP(__func__, "ver: %d", n);
 	{
 		int ret;
 		const int version = n;
@@ -343,6 +426,10 @@ TRACE_BY_LDAP(__func__, "ver: %d", n);
 			return 0;
 		}
 	}
+#else
+	/*NOTE: All LDAP-connections will use one and the same protocol version.*/
+	ldap_version = n;
+#endif
 
 	return 1;
 }
@@ -353,6 +440,7 @@ TRACE_BY_LDAP(__func__, "ver: %d", n);
  * when object name match passed. To compare both names we use our
  * method "ssh_X509_NAME_cmp"(it is more general).
  */
+#ifndef USE_LDAP_STORE
 static int/*bool*/
 ldaplookup_data2store(
 	int         type,
@@ -402,6 +490,44 @@ exit:
 TRACE_BY_LDAP(__func__, "ok: %d", ok);
 	return ok;
 }
+#else /*def USE_LDAP_STORE*/
+static int/*bool*/
+ldaplookup_data2store(
+	int type, X509_NAME *name,
+	OSSL_STORE_INFO *info,
+	X509_STORE *store
+) {
+	int ok = 0;
+
+	if (name == NULL) return 0;
+	if (info == NULL) return 0;
+	if (store == NULL) return 0;
+
+	switch (type) {
+	case X509_LU_X509: {
+		X509 *x509 = OSSL_STORE_INFO_get0_CERT(info);
+		if(x509 == NULL) goto exit;
+
+		/*This is correct since lookup method is by subject*/
+		if (ssh_X509_NAME_cmp(name, X509_get_subject_name(x509)) != 0) goto exit;
+
+		ok = X509_STORE_add_cert(store, x509);
+		} break;
+	case X509_LU_CRL: {
+		X509_CRL *crl = OSSL_STORE_INFO_get0_CRL(info);
+		if(crl == NULL) goto exit;
+
+		if (ssh_X509_NAME_cmp(name, X509_CRL_get_issuer(crl)) != 0) goto exit;
+
+		ok = X509_STORE_add_crl(store, crl);
+		} break;
+	default:
+		return 0;
+	}
+exit:
+	return ok;
+}
+#endif /*def USE_LDAP_STORE*/
 
 
 static int
@@ -413,10 +539,12 @@ ldaplookup_by_subject(
 ) {
 	int count = 0;
 	lookup_item *p;
+#ifndef USE_LDAP_STORE
 	const char *attrs[2];
 	static const char *ATTR_CACERT = "cACertificate";
 	static const char *ATTR_CACRL = "certificateRevocationList";
 	char *filter = NULL;
+#endif /*ndef USE_LDAP_STORE*/
 
 TRACE_BY_LDAP(__func__, "ctx=%p, type: %d", ctx, type);
 	if (ctx == NULL) return 0;
@@ -425,6 +553,7 @@ TRACE_BY_LDAP(__func__, "ctx=%p, type: %d", ctx, type);
 	p = (lookup_item*) ctx->method_data;
 	if (p == NULL) return 0;
 
+#ifndef USE_LDAP_STORE
 	switch(type) {
 	case X509_LU_X509: {
 		attrs[0] = ATTR_CACERT;
@@ -445,8 +574,10 @@ TRACE_BY_LDAP(__func__, "ctx=%p, type: %d", ctx, type);
 		goto done;
 	}
 TRACE_BY_LDAP(__func__, "filter: '%s'", filter);
+#endif /*ndef USE_LDAP_STORE*/
 
 	for (; p != NULL; p = p->next) {
+#ifndef USE_LDAP_STORE
 		ldaphost *lh = p->lh;
 		LDAPMessage *res = NULL;
 		int result;
@@ -486,7 +617,6 @@ TRACE_BY_LDAP(__func__, "bind to '%s://%s:%d' using protocol v%d"
 			ldap_msgfree(res);
 			continue;
 		}
-
 	{	X509_STORE *store = ctx->store_ctx;
 		ldapsearch_result *it = ldapsearch_iterator(lh->ld, res);
 
@@ -518,6 +648,52 @@ TRACE_BY_LDAP(__func__, "bind to '%s://%s:%d' using protocol v%d"
 		/* NOTE: do not call ldap_unbind... here!
 		 * Function ldaphost_free() unbind LDAP structure.
 		 */
+#else /*def USE_LDAP_STORE*/
+		ldapstore *ls = p->ls;
+		X509_STORE *store = ctx->store_ctx;
+		OSSL_STORE_SEARCH *search;
+
+		/* THIS IS EXPERIMENTAL!
+		 * So let skip check for functions return values.
+		 */
+TRACE_BY_LDAP(__func__, "ls->ctx=%p", (void*)ls->ctx);
+		if (ls->ctx == NULL)
+			ls->ctx = OSSL_STORE_open(ls->url, NULL, NULL, NULL, NULL);
+		if (ls->ctx == NULL) continue;
+
+	{	int expected;
+		switch(type) {
+		case X509_LU_X509: expected = OSSL_STORE_INFO_CERT; break;
+		case X509_LU_CRL: expected = OSSL_STORE_INFO_CRL; break;
+		default: expected = -1; /*suppress warning*/
+		}
+		(void)OSSL_STORE_expect(ls->ctx, expected);
+	}
+
+		search = OSSL_STORE_SEARCH_by_name(name);
+		OSSL_STORE_find(ls->ctx, search);
+
+		while (!OSSL_STORE_eof(ls->ctx)) {
+			OSSL_STORE_INFO *store_info;
+
+			store_info = OSSL_STORE_load(ls->ctx);
+			if (store_info == NULL) break;
+{
+const char *uri = OSSL_STORE_INFO_get0_NAME(store_info);
+TRACE_BY_LDAP(__func__, "store  uri='%s'", uri);
+}
+
+			count += ldaplookup_data2store(type, name,
+			    store_info, store)
+			    ? 1 : 0;
+
+			OSSL_STORE_INFO_free(store_info);
+		}
+
+		OSSL_STORE_SEARCH_free(search);
+		OSSL_STORE_close(ls->ctx);
+		ls->ctx = NULL;
+#endif /*def USE_LDAP_STORE*/
 	}
 
 TRACE_BY_LDAP(__func__, "count: %d", count);
@@ -543,6 +719,8 @@ TRACE_BY_LDAP(__func__, "tmp=%p", (void*)tmp);
 	}
 
 done:
-	if (filter != NULL) OPENSSL_free(filter);
+#ifndef USE_LDAP_STORE
+	OPENSSL_free(filter);
+#endif
 	return count > 0;
 }

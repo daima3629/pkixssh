@@ -67,7 +67,7 @@ EXEEXT=@EXEEXT@
 MANFMT=@MANFMT@
 MKDIR_P=@MKDIR_P@
 
-@LDAP_ON@LDAP_OBJS=x509_by_ldap.o ssh_ldap.o
+@LDAP_ON@LDAP_OBJS=x509_by_ldap.o e_ldap.o ssh_ldap.o
 @LDAP_OFF@LDAP_OBJS=
 
 @OCSP_ON@OCSP_OBJS=ssh-ocsp.o

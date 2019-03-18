@@ -86,6 +86,26 @@ int/*bool*/
 ldapsearch_advance(ldapsearch_result* r);
 
 
+#undef USE_LDAP_STORE
+#if defined(HAVE_OSSL_STORE_OPEN) && \
+    defined(USE_OPENSSL_ENGINE)
+
+#  if 1 /*experimental*/
+#    define USE_LDAP_STORE	1
+#  endif
+
+#endif
+
+#undef USE_LDAP_ENGINE
+#ifdef USE_LDAP_STORE
+#  define USE_LDAP_ENGINE	1
+#endif
+
+#ifdef USE_LDAP_ENGINE
+void ENGINE_load_ldap(void);
+#endif
+
+
 #undef TRACE_BY_LDAP_ENABLED
 #ifdef TRACE_BY_LDAP
 # undef TRACE_BY_LDAP
