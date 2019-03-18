@@ -1,4 +1,4 @@
-/* $OpenBSD: umac.c,v 1.19 2020/02/26 13:40:09 jsg Exp $ */
+/* $OpenBSD: umac.c,v 1.20 2020/03/13 03:17:07 djm Exp $ */
 /* -----------------------------------------------------------------------
  *
  * umac.c -- C Implementation UMAC Message Authentication
