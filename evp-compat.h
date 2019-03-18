@@ -735,17 +735,17 @@ DH_set0_pqg(DH *dh, BIGNUM *p, BIGNUM *q, BIGNUM *g) {
 
 #ifndef HAVE_EVP_PKEY_ID
 /* OpenSSL >= 1.0 */
-static inline int EVP_PKEY_id(const EVP_PKEY *pkey) { return(pkey->type); }
+static inline int EVP_PKEY_id(const EVP_PKEY *pkey) { return pkey->type; }
 #endif /*ndef HAVE_EVP_PKEY_ID */
 
 
 #ifndef HAVE_EVP_PKEY_GET0_EC_KEY
 /* OpenSSL >= 1.1 by commit "Add EVP_PKEY_get0_* functions." */
 #ifdef OPENSSL_HAS_ECC
-static inline EC_KEY* EVP_PKEY_get0_EC_KEY(EVP_PKEY *pkey) { return(pkey->pkey.ec ); }
+static inline EC_KEY* EVP_PKEY_get0_EC_KEY(const EVP_PKEY *pkey) { return pkey->pkey.ec ; }
 #endif
-static inline DSA*    EVP_PKEY_get0_DSA   (EVP_PKEY *pkey) { return(pkey->pkey.dsa); }
-static inline RSA*    EVP_PKEY_get0_RSA   (EVP_PKEY *pkey) { return(pkey->pkey.rsa); }
+static inline DSA*    EVP_PKEY_get0_DSA   (const EVP_PKEY *pkey) { return pkey->pkey.dsa; }
+static inline RSA*    EVP_PKEY_get0_RSA   (const EVP_PKEY *pkey) { return pkey->pkey.rsa; }
 #endif /*ndef HAVE_EVP_PKEY_GET0_EC_KEY*/
 
 
