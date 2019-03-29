@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2004-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -51,13 +51,14 @@
  */
 #define ssh_sk_OPENSSL_STRING		STACK_OF(OPENSSL_STRING)
 
-static void OPENSSL_STRING_free(OPENSSL_STRING p) {
+static inline void
+OPENSSL_STRING_free(OPENSSL_STRING p) {
 /* free warnings for OpenSSL 1+:
 .../ssh-ocsp.c: In function 'ssh_ocsp_validate2':
 .../ssh-ocsp.c:845: warning: pointer type mismatch in conditional expression
 .../ssh-ocsp.c:845: warning: ISO C forbids conversion of object pointer to function pointer type
 */
-  free(p);
+	free(p);
 }
 
 #else /* !def sk_OPENSSL_STRING_new_null */
@@ -71,8 +72,9 @@ static void OPENSSL_STRING_free(OPENSSL_STRING p) {
 # define sk_OPENSSL_STRING_value	sk_STRING_value
 # define sk_OPENSSL_STRING_pop_free	sk_STRING_pop_free
 
-static void OPENSSL_STRING_free(STRING p) {
-  free(p);
+static inline void
+OPENSSL_STRING_free(STRING p) {
+	free(p);
 }
 
 #else /* !def sk_STRING_new_null */
@@ -558,7 +560,7 @@ ssh_ocsp_get_response(const ssh_ocsp_conn *conn, OCSP_REQUEST *req) {
 exit:
 	BIO_free_all(bio_conn);
 #ifdef SSH_WITH_SSLOCSP
-	if (ctx      != NULL) SSL_CTX_free(ctx);
+	SSL_CTX_free(ctx);
 #endif
 
 	return(resp);
@@ -664,7 +666,7 @@ for (k = 0; k < sk_X509_num(vacrts); k++) {
 
 error:
 	debug3("ssh_ocsp_get_basicresp: FAIL");
-	if (br != NULL) OCSP_BASICRESP_free(br);
+	OCSP_BASICRESP_free(br);
 	return(NULL);
 }
 
@@ -807,12 +809,13 @@ ssh_ocsp_validate2(
 		debug("ssh_ocsp_validate2: VA certs num=%d", sk_X509_num(vacrts));
 	}
 
-	if (!ssh_ocspreq_addcert(cert, x509store, req, ids, subjs)) {
+	/*NOTE: functiona fail on NULL argument*/
+	if (!ssh_ocspreq_addcert(cert, x509store, req, ids, subjs))
 		goto exit;
-	}
 
-	if (req && add_nonce) {
-		OCSP_request_add1_nonce(req, NULL, -1);
+	if (add_nonce) {
+		if (!OCSP_request_add1_nonce(req, NULL, -1))
+			goto exit;
 	}
 
 	resp = ssh_ocsp_get_response(ocsp, req);
@@ -835,14 +838,14 @@ ssh_ocsp_validate2(
 	ret = ssh_ocsp_check_validity(req, br, ids, subjs);
 
 exit:
-	if (br     != NULL)	OCSP_BASICRESP_free(br);
-	if (resp   != NULL)	OCSP_RESPONSE_free(resp);
-	if (subjs  != NULL)	sk_OPENSSL_STRING_pop_free(subjs, OPENSSL_STRING_free);
-	if (ids    != NULL)	sk_OCSP_CERTID_free(ids);
-	if (req    != NULL)	OCSP_REQUEST_free(req);
-	if (vacrts != NULL)	sk_X509_pop_free(vacrts, X509_free);
+	OCSP_BASICRESP_free(br);
+	OCSP_RESPONSE_free(resp);
+	sk_OPENSSL_STRING_pop_free(subjs, OPENSSL_STRING_free);
+	sk_OCSP_CERTID_free(ids);
+	OCSP_REQUEST_free(req);
+	sk_X509_pop_free(vacrts, X509_free);
 
-	return(ret);
+	return ret;
 }
 
 
@@ -887,10 +890,7 @@ static void
 ssh_aia_free(X509_EXTENSION *ext, AUTHORITY_INFO_ACCESS* aia) {
 	X509V3_EXT_METHOD *method = NULL;
 
-	if (ext == NULL) {
-		error("ssh_aia_free: ext is NULL");
-		return;
-	}
+	if (ext == NULL) return;
 
 	method = (X509V3_EXT_METHOD*) X509V3_EXT_get(ext);
 	if (method == NULL) return;
