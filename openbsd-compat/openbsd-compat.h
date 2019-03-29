@@ -269,10 +269,6 @@ long long strtonum(const char *, long long, long long, const char **);
 # undef HAVE_LANGINFO_H
 #endif
 
-#ifndef HAVE_NL_LANGINFO
-# define nl_langinfo(x)	""
-#endif
-
 #ifndef HAVE_MBTOWC
 int mbtowc(wchar_t *, const char*, size_t);
 #endif

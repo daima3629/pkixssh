@@ -71,6 +71,12 @@ case "$host" in
   dnl unified headers.
   dnl => use utimes as work-around for consistency
   ac_cv_func_futimes=ignore
+
+  dnl Function "nl_langinfo" is declared in API 26 only in unified
+  dnl headers. It is defined in "C" library only on some platforms
+  dnl depending from NDK version!
+  dnl => do not use "nl_langinfo" for consistency
+  ac_cv_func_nl_langinfo=ignore
   ;;
 esac
 ])

@@ -39,6 +39,10 @@
 # include <wchar.h>
 #endif
 
+#ifndef HAVE_NL_LANGINFO
+# define nl_langinfo(x)	""
+#endif
+
 #include "utf8.h"
 
 static int	 dangerous_locale(void);
