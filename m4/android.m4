@@ -66,6 +66,11 @@ case "$host" in
   dnl in unified headers accordingly.
   dnl => do not use "bind interface" for consistency
   ac_cv_func_getifaddrs=ignore
+
+  dnl Function "futimes" is defined in API 26, but declared only in
+  dnl unified headers.
+  dnl => use utimes as work-around for consistency
+  ac_cv_func_futimes=ignore
   ;;
 esac
 ])
