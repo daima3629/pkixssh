@@ -1,6 +1,7 @@
 /* $OpenBSD: utf8.c,v 1.8 2018/08/21 13:56:27 schwarze Exp $ */
 /*
  * Copyright (c) 2016 Ingo Schwarze <schwarze@openbsd.org>
+ * Copyright (c) 2019 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -65,6 +66,10 @@ static int	 vasnmprintf(char **, size_t, int *, const char *, va_list);
 
 static int
 dangerous_locale(void) {
+#ifdef __ANDROID__
+	/* nl_langinfo is not supported properly */
+	return 0;
+#else
 	char	*loc;
 
 	loc = nl_langinfo(CODESET);
@@ -74,6 +79,7 @@ dangerous_locale(void) {
 	    strcmp(loc, "US-ASCII") != 0 &&		/* OpenBSD */
 	    strcmp(loc, "ISO8859-1") != 0 &&		/* AIX */
 	    strcmp(loc, "") != 0;			/* Solaris 6 */
+#endif
 }
 
 static int
@@ -345,3 +351,46 @@ msetlocale(void)
 	/* We can handle this locale */
 	setlocale(LC_CTYPE, "");
 }
+
+#include "evp-compat.h"
+/* mbtowc implementation based on OpenSSL function UTF8_getc */
+
+#ifndef HAVE_MBTOWC
+int
+mbtowc(wchar_t *pwc, const char *s, size_t n) {
+	int r, len;
+	unsigned long val;
+
+	if (s == NULL) return 0;
+	if (*s == '\0') return 0;
+
+#ifdef __ANDROID__
+/* NOTE: function is called will MB_CUR_MAX, but before API 21
+ * locale is not supported. For consistency we ignore argument
+ * and we will use 6 as this is maximum for UTF8_getc().
+ */
+	UNUSED(n);
+	len = 6;
+#else
+	len = (int)n;
+	if (n != (size_t)len) {
+		errno = EINVAL;
+		return -1;
+	}
+#endif
+
+	r = UTF8_getc(s, len, &val);
+	if (r < 0) return -1;
+	if ((r > 0) && (pwc != NULL))
+		*pwc = val;
+
+	return r;
+}
+#endif /*ndef HAVE_MBTOWC*/
+
+#ifndef HAVE_MBLEN
+int
+mblen(const char *s, size_t n) {
+	return mbtowc(NULL, s, n);
+}
+#endif

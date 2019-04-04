@@ -2,7 +2,7 @@
  * Copyright (c) 1999-2003 Damien Miller.  All rights reserved.
  * Copyright (c) 2003 Ben Lindstrom. All rights reserved.
  * Copyright (c) 2002 Tim Rice.  All rights reserved.
- * Copyright (c) 2013-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2013-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -253,19 +253,14 @@ unsigned long long strtoull(const char *, char **, int);
 long long strtonum(const char *, long long, long long, const char **);
 #endif
 
-#if 0
-/* on Android function mblen is declared but not defined ! */
-/* multibyte character support */
 #ifndef HAVE_MBLEN
-# define mblen(x, y)	(1)
-#endif
+int mblen(const char *s, size_t n);
 #endif
 
 #ifndef HAVE_WCWIDTH
 # define wcwidth(x)	(((x) >= 0x20 && (x) <= 0x7e) ? 1 : -1)
-/* force our no-op nl_langinfo and mbtowc */
+/* force our no-op nl_langinfo */
 # undef HAVE_NL_LANGINFO
-# undef HAVE_MBTOWC
 # undef HAVE_LANGINFO_H
 #endif
 

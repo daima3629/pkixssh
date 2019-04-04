@@ -77,6 +77,13 @@ case "$host" in
   dnl depending from NDK version!
   dnl => do not use "nl_langinfo" for consistency
   ac_cv_func_nl_langinfo=ignore
+
+  dnl Function "mblen" is defined in API 26 only on some platforms
+  dnl depending from NDK version!
+  dnl It is declared in unified headers, but declaration exist in
+  dnl headers for previous API
+  dnl => do not use "mblen" for consistency
+  ac_cv_func_mblen=ignore
   ;;
 esac
 ])
