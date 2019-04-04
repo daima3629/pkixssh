@@ -11,7 +11,7 @@
  *
  * SSH2 support by Markus Friedl.
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2012-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2012-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -1940,8 +1940,10 @@ session_window_change_req(struct ssh *ssh, Session *s)
 	    (r = sshpkt_get_u32(ssh, &row)) != 0 ||
 	    (r = sshpkt_get_u32(ssh, &x)) != 0 ||
 	    (r = sshpkt_get_u32(ssh, &y)) != 0 ||
-	    (r = sshpkt_get_end(ssh)) != 0)
+	    (r = sshpkt_get_end(ssh)) != 0) {
 		sshpkt_fatal(ssh, r, "%s: parse packet", __func__);
+		return 0; /*unreachable code*/
+	}
 
 	s->col = col;
 	s->row = row;
@@ -1972,8 +1974,10 @@ session_pty_req(struct ssh *ssh, Session *s)
 	    (r = sshpkt_get_u32(ssh, &col)) != 0 ||
 	    (r = sshpkt_get_u32(ssh, &row)) != 0 ||
 	    (r = sshpkt_get_u32(ssh, &x)) != 0 ||
-	    (r = sshpkt_get_u32(ssh, &y)) != 0)
+	    (r = sshpkt_get_u32(ssh, &y)) != 0) {
 		sshpkt_fatal(ssh, r, "%s: parse packet", __func__);
+		return 0; /*unreachable code*/
+	}
 
 	s->col = col;
 	s->row = row;
@@ -2000,8 +2004,10 @@ session_pty_req(struct ssh *ssh, Session *s)
 
 	ssh_tty_parse_modes(ssh, s->ttyfd);
 
-	if ((r = sshpkt_get_end(ssh)) != 0)
+	if ((r = sshpkt_get_end(ssh)) != 0) {
 		sshpkt_fatal(ssh, r, "%s: parse packet", __func__);
+		return 0; /*unreachable code*/
+	}
 
 	if (!use_privsep)
 		pty_setowner(s->pw, s->tty);
@@ -2072,8 +2078,10 @@ session_x11_req(struct ssh *ssh, Session *s)
 	    (r = sshpkt_get_cstring(ssh, &s->auth_proto, NULL)) != 0 ||
 	    (r = sshpkt_get_cstring(ssh, &s->auth_data, NULL)) != 0 ||
 	    (r = sshpkt_get_u32(ssh, &screen)) != 0 ||
-	    (r = sshpkt_get_end(ssh)) != 0)
+	    (r = sshpkt_get_end(ssh)) != 0) {
 		sshpkt_fatal(ssh, r, "%s: parse packet", __func__);
+		return 0; /*unreachable code*/
+	}
 
 	s->single_connection = single_connection;
 	s->screen = screen;
