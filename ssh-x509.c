@@ -53,6 +53,7 @@ static int xkey_to_buf2(const char *pkalg, const struct sshkey *key, struct sshb
 /* Start of temporary solution, see sshkey.h */
 #define TO_X509_KEY_TYPE(key)	SET_X509_KEY_TYPE(key, key->type)
 
+#ifdef USE_X509_KEYTYPE
 static inline int
 IS_X509_KEY_TYPE(int k_type) {
 	return
@@ -62,25 +63,34 @@ IS_X509_KEY_TYPE(int k_type) {
 #endif
 	    (k_type == KEY_X509_DSA);
 }
+#endif
 
 static inline int
 GET_X509_KEY_TYPE(int k_type) {
+#ifdef USE_X509_KEYTYPE
 	switch (k_type) {
 	case KEY_RSA	: return KEY_X509_RSA;
 	case KEY_ECDSA	: return KEY_X509_ECDSA;
 	case KEY_DSA	: return KEY_X509_DSA;
 	default		: return KEY_UNSPEC;
 	}
+#else
+	return k_type;
+#endif
 }
 
 static inline void
 SET_X509_KEY_TYPE(struct sshkey *key, int k_type) {
+#ifdef USE_X509_KEYTYPE
 	switch (k_type) {
 	case KEY_RSA	: key->type = KEY_X509_RSA	; break;
 	case KEY_ECDSA	: key->type = KEY_X509_ECDSA	; break;
 	case KEY_DSA	: key->type = KEY_X509_DSA	; break;
 	default		: /* avoid compiler warnings */	  break;
 	}
+#else
+	key->type = k_type;
+#endif
 }
 /* End of temporary solution. */
 
@@ -197,7 +207,11 @@ ssh_x509_support_plain_type(int k_type) {
 
 int/*bool*/
 sshkey_is_x509(const struct sshkey *k) {
+#ifdef USE_X509_KEYTYPE
 	return (k != NULL) && IS_X509_KEY_TYPE(k->type);
+#else
+	return (k != NULL) && (k->x509_data != NULL);
+#endif
 }
 
 

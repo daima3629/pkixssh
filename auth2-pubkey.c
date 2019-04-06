@@ -417,6 +417,14 @@ match_principals_file(struct ssh *ssh, struct passwd *pw, char *file,
 }
 
 static int
+key_match(const struct sshkey *key, const struct sshkey *found) {
+	/* key without X.509 identity - see check_authkey_line */
+	if (sshkey_is_x509(found)) return 0;
+
+	return sshkey_equal(key, found);
+}
+
+static int
 x509_match(const struct sshkey *key, const struct sshkey *found) {
 	/* key always is a X.509 identity - see check_authkey_line */
 	if (found == NULL)
@@ -724,7 +732,7 @@ check_authkey_line(struct ssh *ssh, struct passwd *pw, struct sshkey *key,
 			goto out;
 	} else {
 		/* Plain key: check it against key found in file */
-		if (!sshkey_equal(found, key) || keyopts->cert_authority)
+		if (!key_match(key, found) || keyopts->cert_authority)
 			goto out;
 	}
 

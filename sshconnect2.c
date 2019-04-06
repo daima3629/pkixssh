@@ -603,7 +603,8 @@ format_identity(Identity *id)
 	     fp = sshkey_fingerprint(id->key, options.fingerprint_hash,
 		    SSH_FP_DEFAULT);
 	}
-	xasprintf(&ret, "%s %s%s%s%s%s%s",
+	xasprintf(&ret, "'%s' %s %s%s%s%s%s%s",
+	    id->pkalg ? id->pkalg : "*",
 	    id->filename,
 	    id->key ? sshkey_type(id->key) : "", id->key ? " " : "",
 	    fp ? fp : "",

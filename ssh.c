@@ -523,7 +523,7 @@ resolve_canonicalize(char **hostp, int port)
 }
 
 /*
- * Check the result of hostkey loading, ignoring some errors and
+ * Check the result of indentity loading, ignoring some errors and
  * fatal()ing for others.
  */
 static void

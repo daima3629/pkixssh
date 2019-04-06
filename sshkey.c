@@ -245,6 +245,7 @@ sshkey_types_from_name(const char *name, int *type, int *subtype) {
 		return; /* unreachible code */
 	}
 
+#ifdef USE_X509_KEYTYPE
 	if (strncmp(name, "x509v3-ecdsa-", 13) == 0) {
 		int plain_type;
 		sshkey_types_from_name(name+7, &plain_type, subtype);
@@ -254,6 +255,7 @@ sshkey_types_from_name(const char *name, int *type, int *subtype) {
 		*type = plain_type + 1;
 		return;
 	}
+#endif
 
 	*type = sshkey_type_from_name((char*)name);
 
@@ -921,12 +923,14 @@ to_blob_buf(const struct sshkey *key, struct sshbuf *b, int force_plain,
 	if (key == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;
 
+#ifdef USE_X509_KEYTYPE
 	/* TODO X.509 legacy code, now failback case - pending removal */
 	/* NOTE: plain is used for fingerprints!
 	 * Lets match fingerprint of X.509 with public-key.
 	 */
 	if (!force_plain && sshkey_is_x509(key))
 		return X509key_to_buf(key, b);
+#endif
 
 	if (sshkey_is_cert(key)) {
 		if (key->cert == NULL)
