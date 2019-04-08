@@ -2047,15 +2047,6 @@ Xkey_sign(ssh_sign_ctx *ctx,
 }
 
 
-static inline void
-log_ssh_err(const char *func, int r) {
-	if (r == SSH_ERR_INTERNAL_ERROR || r == SSH_ERR_ALLOC_FAIL)
-		fatal("%s: %s", func, ssh_err(r));
-	else
-		error("%s: %s", func, ssh_err(r));
-}
-
-
 int
 Xkey_check_sigalg(ssh_sign_ctx *ctx, const u_char *sig, size_t siglen) {
 	int r;
