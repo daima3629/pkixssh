@@ -84,6 +84,18 @@ case "$host" in
   dnl headers for previous API
   dnl => do not use "mblen" for consistency
   ac_cv_func_mblen=ignore
+
+  dnl Function "getrandom" is declared in API 28(unified headers).
+  dnl Before API 28 it is defined in "C" static-library on some
+  dnl platforms depending from NDK version!
+  dnl => do not use "nl_langinfo" for consistency
+  ac_cv_func_getrandom=ignore
+
+  dnl Function "glob" is declared in API 28(unified headers).
+  dnl Before API 28 it is defined in "C" static-library on some
+  dnl platforms depending from NDK version!
+  dnl => do not use "nl_langinfo" for consistency
+  ac_cv_func_glob=ignore
   ;;
 esac
 ])
