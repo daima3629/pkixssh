@@ -44,7 +44,7 @@ expect_client_ok()
 
 expect_client_fail()
 {
-	local failmsg="$1"
+	failmsg="$1"
 	shift
 	start_client "$@" &&
 	    fail $failmsg
