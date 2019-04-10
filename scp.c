@@ -155,7 +155,7 @@ int throughlocal = 0;
 int sshport = -1;
 
 /* This is the program to execute for the secured connection. ("ssh" or -S) */
-char *ssh_program = _PATH_SSH_PROGRAM;
+static const char *ssh_program = _PATH_SSH_PROGRAM;
 
 /* This is used to store the pid of ssh_program */
 pid_t do_cmd_pid = -1;
@@ -410,7 +410,11 @@ main(int argc, char **argv)
 	argv = newargv;
 
 	__progname = ssh_get_progname(argv[0]);
-
+#ifdef __ANDROID__
+{	static char pathbuf[PATH_MAX];
+	ssh_program = relocate_path(ssh_program, pathbuf, sizeof(pathbuf));
+}
+#endif
 	memset(&args, '\0', sizeof(args));
 	memset(&remote_remote_args, '\0', sizeof(remote_remote_args));
 	args.list = remote_remote_args.list = NULL;

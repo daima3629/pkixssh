@@ -1,6 +1,6 @@
 #ifdef __ANDROID__
 /*
- * Copyright (c) 2016, Roumen Petrov
+ * Copyright (c) 2016-2019, Roumen Petrov
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,18 +28,20 @@
 
 #ifndef PORT_ANDROID_H
 
-#define ttyname android_ttyname
 char *android_ttyname(int fd);
-#define ttyname_r android_ttyname_r
+#define ttyname android_ttyname
 int android_ttyname_r(int fd, char *buf, size_t buflen);
+#define ttyname_r android_ttyname_r
 
 
 #include <pwd.h>
 
-#define getpwnam android_getpwnam
 struct passwd* android_getpwnam(const char*);
-#define getpwuid android_getpwuid
+#define getpwnam android_getpwnam
 struct passwd* android_getpwuid(uid_t);
+#define getpwuid android_getpwuid
+
+const char* relocate_path(const char *pathname, char *pathbuf, size_t pathlen);
 
 #endif /*ndef PORT_ANDROID_H*/
 #endif /*def __ANDROID__*/

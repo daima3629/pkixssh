@@ -2297,7 +2297,7 @@ interactive_loop(struct sftp_conn *conn, char *file1, char *file2)
 }
 
 static void
-connect_to_server(char *path, char **args, int *in, int *out)
+connect_to_server(const char *path, char **args, int *in, int *out)
 {
 	int c_in, c_out;
 
@@ -2382,7 +2382,7 @@ main(int argc, char **argv)
 	char *host = NULL, *user, *cp, *file2 = NULL;
 	int debug_level = 0, sshver = 2;
 	char *file1 = NULL, *sftp_server = NULL;
-	char *ssh_program = _PATH_SSH_PROGRAM, *sftp_direct = NULL;
+	const char *ssh_program = _PATH_SSH_PROGRAM, *sftp_direct = NULL;
 	const char *errstr;
 	LogLevel ll = SYSLOG_LEVEL_INFO;
 	arglist args;
@@ -2399,6 +2399,11 @@ main(int argc, char **argv)
 	msetlocale();
 
 	__progname = ssh_get_progname(argv[0]);
+#ifdef __ANDROID__
+{	static char pathbuf[PATH_MAX];
+	ssh_program = relocate_path(ssh_program, pathbuf, sizeof(pathbuf));
+}
+#endif
 	memset(&args, '\0', sizeof(args));
 	args.list = NULL;
 	addargs(&args, "%s", ssh_program);
