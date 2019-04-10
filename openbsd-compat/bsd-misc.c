@@ -1,6 +1,7 @@
 
 /*
  * Copyright (c) 1999-2004 Damien Miller <djm@mindrot.org>
+ * Copyright (c) 2016-2019 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -37,7 +38,9 @@
 char *__progname;
 #endif
 
-char *ssh_progpath = NULL;
+#ifdef __ANDROID__
+extern char *android_progpath;
+#endif
 
 /*
  * NB. duplicate __progname in case it is an alias for argv[0]
@@ -64,14 +67,16 @@ char *ssh_get_progname(char *argv0)
 		exit(1);
 	}
 
+#ifdef __ANDROID__
 {
-	ssh_progpath = strdup(argv0);
-	p = strrchr(ssh_progpath, '/');
+	android_progpath = strdup(argv0);
+	p = strrchr(android_progpath, '/');
 	if (p != NULL) *p = '\0';
-	p = ssh_progpath;
-	ssh_progpath = realpath(p, NULL);
+	p = android_progpath;
+	android_progpath = realpath(p, NULL);
 	free(p);
 }
+#endif /*def __ANDROID__*/
 
 	return q;
 }

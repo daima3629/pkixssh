@@ -1,6 +1,6 @@
 #ifdef __ANDROID__
 /*
- * Copyright (c) 2016-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2016-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -31,7 +31,12 @@
 #include <stdio.h>
 #include <string.h>
 
-extern char *ssh_progpath;
+/* path to current program.
+ * Note it is expected binaries to be installed in $(prefix)/xbin.
+ * In $(prefix)/bin is installed wrapper script that set custom configuration
+ * like library patch and etc. and then execute real binary.
+ */
+char *android_progpath = NULL;
 
 
 /* bionic stub replacement
@@ -114,7 +119,7 @@ relocate_path(const char *pathname, char *pathbuf, size_t pathlen) {
 	if (pathlen <= len) return pathname;
 
 	if (strncmp(pathname, _PATH_PREFIX, len) == 0) {
-		len = snprintf(pathbuf, pathlen, "%s/..%s", ssh_progpath, pathname + len);
+		len = snprintf(pathbuf, pathlen, "%s/..%s", android_progpath, pathname + len);
 		if (len <= pathlen)
 			return pathbuf;
 	}
