@@ -79,6 +79,7 @@ char *ssh_get_progname(char *argv0)
 #ifndef HAVE_SETLOGIN
 int setlogin(const char *name)
 {
+	UNUSED(name);
 	return (0);
 }
 #endif /* !HAVE_SETLOGIN */
@@ -87,6 +88,10 @@ int setlogin(const char *name)
 int innetgr(const char *netgroup, const char *host,
 	    const char *user, const char *domain)
 {
+	UNUSED(netgroup);
+	UNUSED(host);
+	UNUSED(user);
+	UNUSED(domain);
 	return (0);
 }
 #endif /* HAVE_INNETGR */
@@ -376,6 +381,8 @@ getpgid(pid_t pid)
 int
 pledge(const char *promises, const char *paths[])
 {
+	UNUSED(promises);
+	UNUSED(paths);
 	return 0;
 }
 #endif

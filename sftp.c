@@ -217,10 +217,10 @@ static const struct CMD cmds[] = {
 	{ NULL,		-1,		-1	}
 };
 
-/* ARGSUSED */
 static void
 killchild(int signo)
 {
+	UNUSED(signo);
 	if (sshpid > 1) {
 		kill(sshpid, SIGTERM);
 		waitpid(sshpid, NULL, 0);
@@ -229,7 +229,6 @@ killchild(int signo)
 	_exit(1);
 }
 
-/* ARGSUSED */
 static void
 suspchild(int signo)
 {
@@ -241,19 +240,18 @@ suspchild(int signo)
 	kill(getpid(), SIGSTOP);
 }
 
-/* ARGSUSED */
 static void
 cmd_interrupt(int signo)
 {
 	const char msg[] = "\rInterrupt  \n";
 	int olderrno = errno;
 
+	UNUSED(signo);
 	(void)write(STDERR_FILENO, msg, sizeof(msg) - 1);
 	interrupted = 1;
 	errno = olderrno;
 }
 
-/*ARGSUSED*/
 static void
 sigchld_handler(int sig)
 {
@@ -261,6 +259,7 @@ sigchld_handler(int sig)
 	pid_t pid;
 	const char msg[] = "\rConnection closed.  \n";
 
+	UNUSED(sig);
 	/* Report if ssh transport process dies. */
 	while ((pid = waitpid(sshpid, NULL, WNOHANG)) == -1 && errno == EINTR)
 		continue;
