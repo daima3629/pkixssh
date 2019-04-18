@@ -1389,7 +1389,7 @@ vendor has fixed these problems without changing the version number.  If you
 are sure this is the case, you can disable the check by running
 "./configure --without-zlib-version-check".
 If you are in doubt, upgrade zlib to version 1.2.3 or greater.
-See http://www.gzip.org/zlib/ for details.])
+See https://zlib.net/ for details.])
 	  else
 		AC_MSG_WARN([zlib version may have security problems])
 	  fi

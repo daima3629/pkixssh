@@ -11,10 +11,10 @@ You will need working installations of Zlib and libcrypto (OpenSSL
 or compatible)
 
 Zlib 1.1.4 or 1.2.1.2 or greater (earlier 1.2.x versions have problems):
-http://www.gzip.org/zlib/
+https://zlib.net/
 
 libcrypto (OpenSSL or compatible)
-OpenSSL http://www.openssl.org/ ; or
+OpenSSL https://www.openssl.org/ ; or
 LibreSSL http://www.libressl.org/
 
 libcrypto should be compiled as a position-independent library
@@ -52,7 +52,7 @@ Information about the various PAM implementations are available:
 
 Solaris PAM:	http://www.sun.com/software/solaris/pam/
 Linux PAM:	http://www.kernel.org/pub/linux/libs/pam/
-OpenPAM:	http://www.openpam.org/
+OpenPAM:	https://www.openpam.org/
 
 ASKPASS:
 
@@ -97,7 +97,7 @@ LDNS:
 
 LDNS is a DNS BSD-licensed resolver library which supports DNSSEC.
 
-http://nlnetlabs.nl/projects/ldns/
+https://nlnetlabs.nl/projects/ldns/
 
 Autoconf:
 
@@ -274,4 +274,4 @@ summary data may be published.
 
 If you experience problems compiling, installing or running PKIX-SSH,
 please refer to the "Support" section of the webpage at
-http://roumenpetrov.info/secsh/#support
+https://roumenpetrov.info/secsh/#support

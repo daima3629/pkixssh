@@ -1,6 +1,6 @@
                                                           Roumen Petrov
                                                         Sofia, Bulgaria
-                                                        Thu May 22 2018
+                                                        Thu Apr 19 2019
 
 How to use X.509 certificates with SSH?
 
@@ -202,7 +202,7 @@ Command ssh-add use public key file!
 
 Note: When we use own CA we must import CA certificate[s] to
 "X509 store". More info on:
-  http://roumenpetrov.info/domino_CA/#dca2bundle
+  https://roumenpetrov.info/domino_CA/#dca2bundle
 
 2.2.3.) X509KeyAlgorithm
   The meaning of options is same as in server.
@@ -357,7 +357,7 @@ Testing client and server with X.509 certificates finished.
 
 3.1.2.6.1.) OpenSSL NSS engine (cryptographic module)
   Next sample show how to use client with "OpenSSL NSS engine"
-  ( http://roumenpetrov.info/e_nss/ ).
+  ( https://roumenpetrov.info/e_nss/ ).
 
   First lets list certificates:
 $ openssl engine e_nss -t -post LIST_CERTS:1
@@ -528,7 +528,7 @@ Usually this happen on system without /dev/{u}random.
 In file [BUILDDIR]/tests/CA/ca-2.log we can see a message:
 "... PRNG not seeded ...".
 Read again WARNING.RNG from SSH sourcedir and/or
-http://www.openssl.org/support/faq.html
+https://www.openssl.org/support/faq.html
 
 4.1.1.) reconfigure your system and/or openssl
 4.1.2.) or do next
