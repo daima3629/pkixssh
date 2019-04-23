@@ -62,6 +62,18 @@ creTestLDAPDcfgFile() {
 (
   cat <<EOF
 include		$CWD/ldap/slapd.conf.tmpl
+EOF
+
+if test -n "$LDAP_MODULEDIR" ; then
+  cat <<EOF
+
+# load dynamic backend modules:
+modulepath    $LDAP_MODULEDIR
+moduleload    back_$SSH_LDAP_DB.la
+EOF
+fi
+
+  cat <<EOF
 
 # dbms backend settings must be in same file !
 # this is required for openldap version 2.3.32(but not for <= 2.3.20,2.2.x,2.1.x)
