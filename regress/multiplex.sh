@@ -14,7 +14,7 @@ if config_defined DISABLE_FD_PASSING ; then
 	exit 0
 fi
 
-P=3301  # test port
+P=${TEST_MULTIPLEX_PORT-3301}
 
 wait_for_mux_master_ready()
 {

@@ -20,11 +20,7 @@ CYGWIN*)
 	;;
 esac
 
-if [ ! -z "$TEST_SSH_PORT" ]; then
-	PORT="$TEST_SSH_PORT"
-else
-	PORT=4242
-fi
+PORT=${TEST_SSH_PORT-4242}
 
 if [ -x /usr/ucb/whoami ]; then
 	USER=`/usr/ucb/whoami`

@@ -54,7 +54,6 @@ LTESTS= 	connect \
 		reconfigure \
 		dynamic-forward \
 		forwarding \
-		multiplex \
 		reexec \
 		brokenkeys \
 		sshcfgparse \
@@ -85,8 +84,9 @@ LTESTS= 	connect \
 		allow-deny-users \
 		authinfo
 
-
+#		multiplex \
 #		dhgex \
+
 
 FIPS_TESTS=\
 	fips-connect-privsep \
