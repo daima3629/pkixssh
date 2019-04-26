@@ -1929,7 +1929,7 @@ static void
 update_known_hosts(struct hostkeys_update_ctx *ctx)
 {
 	int r, was_raw = 0;
-	int loglevel = options.update_hostkeys == SSH_UPDATE_HOSTKEYS_ASK ?
+	LogLevel loglevel = options.update_hostkeys == SSH_UPDATE_HOSTKEYS_ASK ?
 	    SYSLOG_LEVEL_INFO : SYSLOG_LEVEL_VERBOSE;
 	char *fp, *response;
 	size_t i;

@@ -504,7 +504,7 @@ static int
 host_delete(struct hostkey_foreach_line *l, void *_ctx)
 {
 	struct host_delete_ctx *ctx = (struct host_delete_ctx *)_ctx;
-	int loglevel = ctx->quiet ? SYSLOG_LEVEL_DEBUG1 : SYSLOG_LEVEL_VERBOSE;
+	LogLevel loglevel = ctx->quiet ? SYSLOG_LEVEL_DEBUG1 : SYSLOG_LEVEL_VERBOSE;
 	size_t i;
 
 	if (l->status == HKF_STATUS_MATCHED) {
@@ -554,7 +554,7 @@ hostfile_replace_entries(const char *filename, const char *host, const char *ip,
     struct sshkey **keys, size_t nkeys, int store_hash, int quiet, int hash_alg)
 {
 	int r, fd, oerrno = 0;
-	int loglevel = quiet ? SYSLOG_LEVEL_DEBUG1 : SYSLOG_LEVEL_VERBOSE;
+	LogLevel loglevel = quiet ? SYSLOG_LEVEL_DEBUG1 : SYSLOG_LEVEL_VERBOSE;
 	struct host_delete_ctx ctx;
 	char *fp, *temp = NULL, *back = NULL;
 	mode_t omask;

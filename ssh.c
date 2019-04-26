@@ -260,7 +260,8 @@ resolve_host(const char *name, int port, int logerr, char *cname, size_t clen)
 {
 	char strport[NI_MAXSERV];
 	struct addrinfo hints, *res;
-	int gaierr, loglevel = SYSLOG_LEVEL_DEBUG1;
+	int gaierr;
+	LogLevel loglevel = SYSLOG_LEVEL_DEBUG1;
 
 	if (port <= 0)
 		port = default_ssh_port();
