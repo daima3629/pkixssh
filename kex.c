@@ -1220,7 +1220,8 @@ kex_exchange_identification(struct ssh *ssh, int timeout_ms)
 	int is_server = ssh->kex->server;
 	int remote_major, remote_minor, mismatch;
 	size_t len;
-	int n, r, expect_nl;
+	int n, found_cr;
+	int r, expect_nl;
 	u_char c;
 	struct sshbuf *our_version;
 	struct sshbuf *peer_version;
@@ -1267,6 +1268,7 @@ kex_exchange_identification(struct ssh *ssh, int timeout_ms)
 		}
 		sshbuf_reset(peer_version);
 		expect_nl = 0;
+		found_cr = 0;
 		while (1) {
 			if (timeout_ms > 0) {
 				r = waitrfd(ssh_packet_get_connection_in(ssh),
@@ -1300,11 +1302,16 @@ kex_exchange_identification(struct ssh *ssh, int timeout_ms)
 				goto out;
 			}
 			if (c == '\r') {
+				found_cr = 1;
 				expect_nl = 1;
 				continue;
 			}
-			if (c == '\n' && expect_nl)
+			if (c == '\n') {
+				if (!found_cr)
+					error("protocol identification string"
+					    " lack carriage return");
 				break;
+			}
 			if (c == '\0' || expect_nl) {
 				error("%s: banner line contains invalid "
 				    "characters", __func__);
