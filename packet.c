@@ -63,7 +63,6 @@
 #include <time.h>
 
 #include "xmalloc.h"
-#include "crc32.h"
 #include "compat.h"
 #include "ssh2.h"
 #include "cipher.h"
