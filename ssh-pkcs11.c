@@ -64,6 +64,9 @@
 #include "xmalloc.h"
 #include "sshbuf.h"
 
+extern int X509_from_blob(const u_char *blob, size_t blen, X509 **xp);
+extern struct sshkey* x509_to_key(X509 *x509);
+
 #ifndef HAVE_RSA_GET0_KEY
 /* opaque RSA key structure */
 static inline int
@@ -593,7 +596,7 @@ err:
 	return NULL;
 }
 
-static inline int
+static inline int/*boolean*/
 set_ssh_pkcs11_rsa_method(RSA *key) {
 	RSA_METHOD *meth = ssh_pkcs11_rsa_method();
 	if (meth == NULL) return 0;;
@@ -611,8 +614,6 @@ pkcs11_wrap_rsa(struct pkcs11_provider *provider, CK_ULONG slotidx,
 	if (rsa == NULL) return -1;
 
 	ret = -1;
-	/*TODO: remove when pkcs11 method is set on certificate based keys */
-	if (!set_ssh_pkcs11_rsa_method(rsa)) goto done;
 
 {	struct pkcs11_key *k11;
 		/* fatal on error */
@@ -621,7 +622,7 @@ pkcs11_wrap_rsa(struct pkcs11_provider *provider, CK_ULONG slotidx,
 }
 	key->flags |= SSHKEY_FLAG_EXT;
 	ret = 0;
-done:
+
 	RSA_free(rsa);
 	return ret;
 }
@@ -773,7 +774,7 @@ err:
 	return NULL;
 }
 
-static inline int
+static inline int/*boolean*/
 set_ssh_pkcs11_ec_method(EC_KEY *key) {
 	EC_KEY_METHOD *meth = ssh_pkcs11_ec_method();
 	if (meth == NULL) return 0;
@@ -790,8 +791,6 @@ pkcs11_wrap_ecdsa(struct pkcs11_provider *provider, CK_ULONG slotidx,
 	if (ec == NULL) return -1;
 
 	ret = -1;
-	/*TODO: remove when pkcs11 method is set on certificate based keys */
-	if (!set_ssh_pkcs11_ec_method(ec)) goto done;
 
 {	struct pkcs11_key *k11;
 		/* fatal on error */
@@ -800,7 +799,7 @@ pkcs11_wrap_ecdsa(struct pkcs11_provider *provider, CK_ULONG slotidx,
 }
 	key->flags |= SSHKEY_FLAG_EXT;
 	ret = 0;
-done:
+
 	EC_KEY_free(ec);
 	return ret;
 }
@@ -879,6 +878,59 @@ pkcs11_wrap(struct pkcs11_provider *provider, CK_ULONG slotidx,
 	return -1;
 }
 
+static inline int/*boolean*/
+set_ssh_pkcs11_pkey_rsa_method(EVP_PKEY *pk) {
+	int ret;
+	RSA *rsa;
+
+	rsa = EVP_PKEY_get1_RSA(pk);
+	if (rsa == NULL) return 0;
+
+	ret = set_ssh_pkcs11_rsa_method(rsa);
+#ifdef HAVE_EVP_PKEY_GET_BASE_ID /* OpenSSL 3+ */
+	/* Implicitly throw out "key manager" in OpenSSL 3+,
+	 * i.e. make non-provider key.
+	 */
+	if (ret) ret = EVP_PKEY_set1_RSA(pk, rsa);
+#endif
+	RSA_free(rsa);
+	return ret;
+}
+
+#ifdef OPENSSL_HAS_ECC
+static inline int/*boolean*/
+set_ssh_pkcs11_pkey_ec_method(EVP_PKEY *pk) {
+	int ret;
+	EC_KEY *ec;
+
+	ec = EVP_PKEY_get1_EC_KEY(pk);
+	if (ec == NULL) return 0;
+
+	ret = set_ssh_pkcs11_ec_method(ec);
+#ifdef HAVE_EVP_PKEY_GET_BASE_ID /* OpenSSL 3+ */
+	/* Implicitly throw out "key manager" in OpenSSL 3+,
+	 * i.e. make non-provider key.
+	 */
+	if (ret) ret = EVP_PKEY_set1_EC_KEY(pk, ec);
+#endif
+	EC_KEY_free(ec);
+	return ret;
+}
+#endif /*def OPENSSL_HAS_ECC*/
+
+static inline int/*boolean*/
+set_ssh_pkcs11_pkey_method(EVP_PKEY *pk) {
+	switch(EVP_PKEY_base_id(pk)) {
+	case EVP_PKEY_RSA:
+		return set_ssh_pkcs11_pkey_rsa_method(pk);
+#ifdef OPENSSL_HAS_ECC
+	case EVP_PKEY_EC:
+		return set_ssh_pkcs11_pkey_ec_method(pk);
+#endif
+	}
+	return 0;
+}
+
 static struct sshkey*
 pkcs11_get_x509key(
     struct pkcs11_provider *p, CK_ULONG slotidx,
@@ -895,6 +947,7 @@ pkcs11_get_x509key(
 		{ CKA_SUBJECT, NULL, 0 },
 		{ CKA_VALUE, NULL, 0 }
 	};
+	X509 *x;
 	struct sshkey *key = NULL;
 	int i;
 
@@ -926,18 +979,35 @@ pkcs11_get_x509key(
 
 {	const u_char *blob = attribs[2].pValue;
 	size_t blen = attribs[2].ulValueLen;
-	int r;
 
 	if (attribs[2].ulValueLen != (unsigned long) blen) {
 		debug3_f("invalid attribute length");
 		goto fail;
 	}
 
-	if ((r = X509key_from_blob(blob, blen, &key)) != 0) {
-		debug3_f("X509key_from_blob fail");
+	if (X509_from_blob(blob, blen, &x) != 0) {
+		debug3_f("X509_from_blob fail");
 		goto fail;
 	}
 }
+
+{	EVP_PKEY *pk = X509_get_pubkey(x);
+	if (pk == NULL) {
+		debug3_f("X509_get_pubkey fail");
+		X509_free(x);
+		goto fail;
+	}
+	if (!set_ssh_pkcs11_pkey_method(pk)) {
+		debug3_f("set_ssh_pkcs11_pkey_method fail");
+		X509_free(x);
+		EVP_PKEY_free(pk);
+		goto fail;
+	}
+	EVP_PKEY_free(pk);
+}
+
+	key = x509_to_key(x);
+	if (key == NULL) goto fail;
 
 	if (pkcs11_wrap(p, slotidx, attribs, key) == 0)
 		goto done;

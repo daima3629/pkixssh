@@ -46,6 +46,10 @@
 int (*pssh_x509store_verify_cert)(X509 *cert, STACK_OF(X509) *untrusted) = NULL;
 STACK_OF(X509)* (*pssh_x509store_build_certchain)(X509 *cert, STACK_OF(X509) *untrusted) = NULL;
 
+/* functions for internal use only */
+extern struct sshkey* x509_to_key(X509 *x509);
+extern int X509_from_blob(const u_char *blob, size_t blen, X509 **xp);
+
 
 static int xkey_to_buf2(const SSHX509KeyAlgs *xkalg, const struct sshkey *key, struct sshbuf *b);
 
@@ -602,7 +606,7 @@ X509key_from_subject(const char *pkalg, const char *cp, char **ep) {
 }
 
 
-static struct sshkey*
+struct sshkey*
 x509_to_key(X509 *x509) {
 	struct sshkey *key = NULL;
 	EVP_PKEY *env_pkey;
@@ -628,7 +632,7 @@ err:
 }
 
 
-static int
+int
 X509_from_blob(const u_char *blob, size_t blen, X509 **xp) {
 	int r;
 	BIO *mbio;
