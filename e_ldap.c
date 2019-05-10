@@ -156,7 +156,7 @@ ldap_store_expect(OSSL_STORE_LOADER_CTX *ctx, int expected) {
 
 
 static int
-ldap_store_find(OSSL_STORE_LOADER_CTX *ctx, OSSL_STORE_SEARCH *criterion) {
+ldap_store_find(OSSL_STORE_LOADER_CTX *ctx, const OSSL_STORE_SEARCH *criterion) {
 	int type;
 
 	type = OSSL_STORE_SEARCH_get_type(criterion);
@@ -219,7 +219,7 @@ TRACE_BY_LDAP(__func__, "filter: '%s'", filter);
 				continue;
 
 			x509 = d2i_X509_bio(mbio, NULL);
-			if(x509 == NULL) goto exit;
+			if (x509 == NULL) goto exit;
 
 			ret = OSSL_STORE_INFO_new_CERT(x509);
 			break;
@@ -232,7 +232,7 @@ TRACE_BY_LDAP(__func__, "filter: '%s'", filter);
 				continue;
 
 			crl = d2i_X509_CRL_bio(mbio, NULL);
-			if(crl == NULL) goto exit;
+			if (crl == NULL) goto exit;
 
 			ret = OSSL_STORE_INFO_new_CRL(crl);
 			break;
