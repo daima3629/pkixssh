@@ -10,6 +10,9 @@
 # Do we want to enable building with ldap? (1=yes 0=no)
 %global enable_ldap 1
 
+# Do we use FIPS capable OpenSSL library ? (1=yes 0=no)
+%global enable_openssl_fips 1
+
 
 # norootforbuild
 
@@ -31,6 +34,12 @@ BuildRequires:	pam-devel
 BuildRequires:	libopenssl-devel openssl
 %if %{enable_ldap}
 BuildRequires:	openldap2-devel openldap2 openldap2-client
+%endif
+%if %{enable_openssl_fips}
+BuildRequires:	fipscheck-devel fipscheck
+# TODO: to run in FIPS mode, but which version 1_0_0 or 1_1?
+#BuildRequires:	libopenssl<VER>-hmac
+#Requires:	libopenssl<VER>-hmac
 %endif
 BuildRequires:	groff
 BuildRoot:	%{_tmppath}/%{name}-%{version}-build
