@@ -25,6 +25,7 @@
 #include "ssh_ldap.h"
 
 #ifdef USE_LDAP_ENGINE
+
 #include <openssl/store.h>
 #include <openssl/engine.h>
 #include <openssl/err.h>
@@ -32,7 +33,19 @@
 /* engine store */
 
 static const char ldap_store_scheme[] = "ldap";
-int ldap_version = -1;
+
+/* NOTE: Cannot set LDAP protocol version using STORE-API!
+ * Let use global static variable.
+ */
+static int ldap_version = -1;
+
+int/*bool*/
+set_ldap_version(const char *ver) {
+	int n = parse_ldap_version(ver);
+	if( n < 0) return 0;
+	ldap_version = n;
+	return 1;
+}
 
 
 struct ossl_store_loader_ctx_st {
@@ -391,4 +404,9 @@ TRACE_BY_LDAP(__func__, "");
 	ENGINE_free(e);
 	ERR_pop_to_mark();
 }
-#endif /*def USE_LDAP_ENGINE*/
+
+#else /*def USE_LDAP_ENGINE*/
+
+typedef int e_ldap_empty_translation_unit;
+
+#endif

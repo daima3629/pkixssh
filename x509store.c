@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -707,6 +707,16 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 {
 	X509_LOOKUP_METHOD* lookup_method = X509_LOOKUP_ldap();
 
+#ifdef USE_LDAP_STORE
+	/* NOTE: All LDAP-connections will use one and the same protocol version */
+	if (_locations->ldap_ver != NULL) {
+		if (!set_ldap_version(_locations->ldap_ver)) {
+			fatal("ssh_x509store_addlocations: cannot set ldap version !");
+			return 0; /* ;-) */
+		}
+	}
+#endif
+
 	if (_locations->ldap_url != NULL && lookup_method != NULL) {
 		X509_LOOKUP *lookup;
 
@@ -718,12 +728,14 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 		if (X509_LOOKUP_add_ldap(lookup, _locations->ldap_url)) {
 			debug2("ldap url '%.400s' added to x509 store", _locations->ldap_url);
 		}
+#ifndef USE_LDAP_STORE
 		if (_locations->ldap_ver != NULL) {
 			if (!X509_LOOKUP_set_protocol(lookup, _locations->ldap_ver)) {
 				fatal("ssh_x509store_addlocations: cannot set ldap version !");
 				return 0; /* ;-) */
 			}
 		}
+#endif /*ndef USE_LDAP_STORE*/
 		/*ERR_clear_error();*/
 
 #ifdef SSH_CHECK_REVOKED
@@ -735,12 +747,14 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 		if (X509_LOOKUP_add_ldap(lookup, _locations->ldap_url)) {
 			debug2("ldap url '%.400s' added to x509 store(revoked)", _locations->ldap_url);
 		}
+#ifndef USE_LDAP_STORE
 		if (_locations->ldap_ver != NULL) {
 			if (!X509_LOOKUP_set_protocol(lookup, _locations->ldap_ver)) {
 				fatal("ssh_x509store_addlocations: cannot set ldap version(revoked) !");
 				return 0; /* ;-) */
 			}
 		}
+#endif /*ndef USE_LDAP_STORE*/
 		/*ERR_clear_error();*/
 #endif /*def SSH_CHECK_REVOKED*/
 	}

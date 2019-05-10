@@ -12,7 +12,6 @@
  * called by a name other than "ssh" or "Secure Shell".
  *
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
- *
  * Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -106,15 +105,22 @@ extern STACK_OF(X509)*
 /* used in x509store.c */
 int
 ssh_ocsp_validate(X509 *cert, X509_STORE *x509store) {
-	(void)cert;
-	(void)x509store;
-	return(-1);
+	UNUSED(cert);
+	UNUSED(x509store);
+	return -1;
+}
+
+int/*bool*/ set_ldap_version(const char *ver);
+int/*bool*/
+set_ldap_version(const char *ver) {
+	UNUSED(ver);
+	return 0;
 }
 
 X509_LOOKUP_METHOD* X509_LOOKUP_ldap(void);
 X509_LOOKUP_METHOD*
 X509_LOOKUP_ldap(void) {
-	return(NULL);
+	return NULL;
 }
 #endif	/* end of minimize dependencies */
 

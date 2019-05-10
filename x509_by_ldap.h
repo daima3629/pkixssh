@@ -33,6 +33,7 @@
 #include <openssl/x509_vfy.h>
 #include <openssl/err.h>
 
+#include "ssh_ldap.h" /*for build defines*/
 
 #ifdef	__cplusplus
 extern "C" {
@@ -42,12 +43,14 @@ extern "C" {
 X509_LOOKUP_METHOD* X509_LOOKUP_ldap(void);
 
 #define X509_L_LDAP_HOST	1
-#define X509_L_LDAP_VERSION	2
-
 #define X509_LOOKUP_add_ldap(x,value) \
 		X509_LOOKUP_ctrl((x),X509_L_LDAP_HOST,(value),(long)(0),NULL)
+
+#ifndef USE_LDAP_STORE
+#define X509_L_LDAP_VERSION	2
 #define X509_LOOKUP_set_protocol(x,value) \
 		X509_LOOKUP_ctrl((x),X509_L_LDAP_VERSION,(value),(long)(0),NULL)
+#endif
 
 
 /* Error codes for the X509byLDAP functions. */

@@ -33,13 +33,6 @@ extern int     ssh_X509_NAME_cmp(X509_NAME *a, X509_NAME *b);
 
 #include <string.h>
 
-#ifdef USE_LDAP_STORE
-/* NOTE: Cannot set LDAP protocol version using STORE-API!
- * Let use global variable.
- */
-extern int ldap_version;
-#endif
-
 
 /* ================================================================== */
 /* backport OpenSSL 1.1 functions */
@@ -224,7 +217,9 @@ static int  ldaplookup_shutdown(X509_LOOKUP *ctx);
 static int  ldaplookup_by_subject(X509_LOOKUP *ctx, int type, X509_NAME *name, X509_OBJECT *ret);
 
 static int  ldaplookup_add_search(X509_LOOKUP *ctx, const char *url);
+#ifndef USE_LDAP_STORE
 static int  ldaplookup_set_protocol(X509_LOOKUP *ctx, const char *ver);
+#endif
 
 
 typedef struct lookup_item_s lookup_item;
@@ -311,9 +306,11 @@ TRACE_BY_LDAP(__func__, "ctx=%p, cmd: %d, argc: '%s'", ctx, cmd, argc);
 	case X509_L_LDAP_HOST:
 		ret = ldaplookup_add_search(ctx, argc);
 		break;
+#ifndef USE_LDAP_STORE
 	case X509_L_LDAP_VERSION:
 		ret = ldaplookup_set_protocol(ctx, argc);
 		break;
+#endif
 	default:
 		X509byLDAPerr(X509byLDAP_F_LOOKUPCRTL, X509byLDAP_R_INVALID_CRTLCMD);
 		break;
@@ -389,6 +386,7 @@ ldaplookup_add_search(X509_LOOKUP *ctx, const char *url) {
 }
 
 
+#ifndef USE_LDAP_STORE
 static int/*bool*/
 ldaplookup_set_protocol(X509_LOOKUP *ctx, const char *ver) {
 	lookup_item *p;
@@ -405,7 +403,6 @@ TRACE_BY_LDAP(__func__, "p=%p", (void*)p);
 	n = parse_ldap_version(ver);
 	if (n < 0) return 0;
 
-#ifndef USE_LDAP_STORE
 	for(; p->next != NULL; p = p->next) {
 		/*find list end*/
 		/* NOTE: after addition of LDAP look-up is called "version"
@@ -423,13 +420,10 @@ TRACE_BY_LDAP(__func__, "p=%p", (void*)p);
 			return 0;
 		}
 	}
-#else
-	/*NOTE: All LDAP-connections will use one and the same protocol version.*/
-	ldap_version = n;
-#endif
 
 	return 1;
 }
+#endif /*ndef USE_LDAP_STORE*/
 
 
 /*
