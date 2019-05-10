@@ -392,7 +392,6 @@ ldaplookup_add_search(X509_LOOKUP *ctx, const char *url) {
 static int/*bool*/
 ldaplookup_set_protocol(X509_LOOKUP *ctx, const char *ver) {
 	lookup_item *p;
-	char *q = NULL;
 	int n;
 
 TRACE_BY_LDAP(__func__, "ver: '%s'  ...", ver);
@@ -403,10 +402,8 @@ TRACE_BY_LDAP(__func__, "ver: '%s'  ...", ver);
 TRACE_BY_LDAP(__func__, "p=%p", (void*)p);
 	if (p == NULL) return 0;
 
-	n = (int) strtol(ver, &q, 10);
-TRACE_BY_LDAP(__func__, "ver: %d", n);
-	if (*q != '\0') return 0;
-	if ((n < LDAP_VERSION_MIN) || (n > LDAP_VERSION_MAX)) return 0;
+	n = parse_ldap_version(ver);
+	if (n < 0) return 0;
 
 #ifndef USE_LDAP_STORE
 	for(; p->next != NULL; p = p->next) {

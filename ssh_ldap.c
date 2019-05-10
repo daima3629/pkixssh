@@ -501,3 +501,19 @@ crypto_add_ldap_error(int err) {
 	char	buf[512];
 	ERR_add_error_data(1, ldap_errormsg(buf, sizeof(buf), err));
 }
+
+
+int
+parse_ldap_version(const char *ver) {
+	long n;
+
+	if (ver == NULL) return -1;
+
+{	char *endptr = NULL;
+	n = strtol(ver, &endptr, 10);
+	if (*endptr != '\0') return -1;
+}
+	if ((n < LDAP_VERSION_MIN) || (n > LDAP_VERSION_MAX)) return -1;
+
+	return (int) n;
+}

@@ -45,6 +45,7 @@ void	ssh_ldap_parse_result (LDAP *ld, LDAPMessage *res);
 
 
 void	crypto_add_ldap_error(int err);
+int	parse_ldap_version(const char *ver);
 
 
 /* LDAP connection details */
