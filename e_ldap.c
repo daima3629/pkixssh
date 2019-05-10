@@ -252,9 +252,12 @@ TRACE_BY_LDAP(__func__, "ctx=%p, res=%p, it=%p"
 , (void*)ctx, (void*)(ctx ? ctx->res: NULL), (void*)(ctx ? ctx->it: NULL));
 
 	if (ctx->res == NULL) return 0;
-	if (ctx->it != NULL) return 0;
+{	ldapsearch_result *it = ctx->it;
+	if (it != NULL)
+		return it->entry == NULL;
+}
 
-TRACE_BY_LDAP(__func__, "result: %ld != %ld"
+TRACE_BY_LDAP(__func__, "return: %ld != %ld"
 , (long)ctx->result, (long)LDAP_SUCCESS);
 	return ctx->result != LDAP_SUCCESS;
 }
@@ -264,6 +267,8 @@ static int
 ldap_store_error(OSSL_STORE_LOADER_CTX *ctx) {
 TRACE_BY_LDAP(__func__, "ctx=%p", (void*)ctx);
 
+TRACE_BY_LDAP(__func__, "return: %ld != %ld"
+, (long)ctx->result, (long)LDAP_SUCCESS);
 	return ctx->result != LDAP_SUCCESS;
 }
 
