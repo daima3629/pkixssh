@@ -37,6 +37,7 @@ BuildRequires:	openldap-devel openldap openldap-servers openldap-clients
 %if %{enable_openssl_fips}
 BuildRequires:	fipscheck-devel fipscheck
 %endif
+BuildRequires:	groff-base
 BuildRoot:	%{_tmppath}/%{name}-%{version}-build
 
 Source0:	https://roumenpetrov.info/secsh/src/%{name}-%{version}.tar.xz
