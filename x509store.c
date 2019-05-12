@@ -709,11 +709,9 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 
 #ifdef USE_LDAP_STORE
 	/* NOTE: All LDAP-connections will use one and the same protocol version */
-	if (_locations->ldap_ver != NULL) {
-		if (!set_ldap_version(_locations->ldap_ver)) {
-			fatal("ssh_x509store_addlocations: cannot set ldap version !");
-			return 0; /* ;-) */
-		}
+	if (!set_ldap_version(_locations->ldap_ver)) {
+		fatal("ssh_x509store_addlocations: cannot set ldap version !");
+		return 0; /* ;-) */
 	}
 #endif
 

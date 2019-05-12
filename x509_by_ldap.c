@@ -283,14 +283,6 @@ X509_LOOKUP_METHOD x509_ldap_lookup = {
 
 X509_LOOKUP_METHOD*
 X509_LOOKUP_ldap(void) {
-#ifdef USE_LDAP_STORE
-{	static int load_ldap = 1;
-	if (load_ldap) {
-		load_ldap = 0;
-		ENGINE_load_ldap();
-	}
-}
-#endif
 	return &x509_ldap_lookup;
 }
 

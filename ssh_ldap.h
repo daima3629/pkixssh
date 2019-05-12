@@ -104,7 +104,6 @@ ldapsearch_advance(ldapsearch_result* r);
 
 #ifdef USE_LDAP_ENGINE
 int/*bool*/	set_ldap_version(const char *ver);
-void ENGINE_load_ldap(void);
 #endif
 
 

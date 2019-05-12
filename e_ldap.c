@@ -34,6 +34,8 @@
 
 static const char ldap_store_scheme[] = "ldap";
 
+static void ENGINE_load_ldap(void);
+
 /* NOTE: Cannot set LDAP protocol version using STORE-API!
  * Let use global static variable.
  */
@@ -41,9 +43,19 @@ static int ldap_version = -1;
 
 int/*bool*/
 set_ldap_version(const char *ver) {
-	int n = parse_ldap_version(ver);
-	if( n < 0) return 0;
-	ldap_version = n;
+{	static int load_ldap = 1;
+	if (load_ldap) {
+		load_ldap = 0;
+		ENGINE_load_ldap();
+	}
+}
+
+	if (ver != NULL) {
+		int n = parse_ldap_version(ver);
+		if (n < 0) return 0;
+		ldap_version = n;
+	}
+
 	return 1;
 }
 
@@ -395,7 +407,7 @@ TRACE_BY_LDAP(__func__, "");
 }
 
 
-void
+static void
 ENGINE_load_ldap(void) {
 	ENGINE *e;
 
