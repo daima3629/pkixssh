@@ -706,6 +706,10 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 #ifdef LDAP_ENABLED
 {
 	X509_LOOKUP_METHOD* lookup_method = X509_LOOKUP_ldap();
+	if (lookup_method == NULL) {
+		/* available only in client and daemon program */
+		goto done;
+	}
 
 #ifdef USE_LDAP_STORE
 	/* NOTE: All LDAP-connections will use one and the same protocol version */
@@ -715,7 +719,7 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 	}
 #endif
 
-	if (_locations->ldap_url != NULL && lookup_method != NULL) {
+	if (_locations->ldap_url != NULL) {
 		X509_LOOKUP *lookup;
 
 		lookup = X509_STORE_add_lookup(x509store, lookup_method);
@@ -759,6 +763,7 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 }
 #endif /*def LDAP_ENABLED*/
 
+done:
 	return 1;
 }
 
