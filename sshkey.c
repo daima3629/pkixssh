@@ -1,4 +1,4 @@
-/* $OpenBSD: sshkey.c,v 1.73 2019/01/21 09:54:11 djm Exp $ */
+/* $OpenBSD: sshkey.c,v 1.74 2019/05/03 03:25:18 dtucker Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Alexander von Gernler.  All rights reserved.
@@ -61,11 +61,13 @@
 #include "sshkey.h"
 #include "ssh-x509.h"
 #include "ssh-xkalg.h"
-#include "sshkey-xmss.h"
 #include "match.h"
 #include "log.h"
 
+#ifdef WITH_XMSS
+#include "sshkey-xmss.h"
 #include "xmss_fast.h"
+#endif
 
 /* openssh private key file format */
 #define MARK_BEGIN		"-----BEGIN OPENSSH PRIVATE KEY-----\n"

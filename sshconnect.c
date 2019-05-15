@@ -1,4 +1,4 @@
-/* $OpenBSD: sshconnect.c,v 1.314 2019/02/27 19:37:01 markus Exp $ */
+/* $OpenBSD: sshconnect.c,v 1.315 2019/05/03 03:27:38 dtucker Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -1348,11 +1348,11 @@ ssh_login(struct ssh *ssh, Sensitive *sensitive, const char *orighost,
 	debug("Authenticating to %s:%d as '%s'", host, port, server_user);
 	ssh_kex2(ssh, host, hostaddr, port);
 	ssh_userauth2(ssh, local_user, server_user, host, sensitive);
+	free(local_user);
 	/* do not free "host" as in ssh_kex2() (from sshconnect2.c)
 	 * it is assigned to global variable "xxx_host"!
 	free(host);
 	 */
-	free(local_user);
 }
 
 /* print all known host keys for a given host, but skip keys of given type */
