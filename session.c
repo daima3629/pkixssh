@@ -1206,21 +1206,26 @@ do_setup_env(struct ssh *ssh, Session *s, const char *shell)
 	if ((cp = getenv(name)) != NULL) \
 		child_set_env(&env, &envsize, name, cp); }
 
-	/* from /init.rc */
+	/* from /init.rc (or /init.environ.rc) */
 	COPY_ANDROID_ENV("ANDROID_BOOTLOGO");
 	COPY_ANDROID_ENV("ANDROID_ROOT");
 	COPY_ANDROID_ENV("ANDROID_ASSETS");
 	COPY_ANDROID_ENV("ANDROID_DATA");
+	COPY_ANDROID_ENV("ANDROID_STORAGE");
+	/* on Android Q(10.0, API level 29) "am" requires ANDROID_RUNTIME_ROOT to run */
+	COPY_ANDROID_ENV("ANDROID_RUNTIME_ROOT");
+	COPY_ANDROID_ENV("ANDROID_TZDATA_ROOT");	/* ??? */
+	COPY_ANDROID_ENV("EXTERNAL_STORAGE");		/* ??? */
 	COPY_ANDROID_ENV("ASEC_MOUNTPOINT");
-	COPY_ANDROID_ENV("LOOP_MOUNTPOINT");
+	COPY_ANDROID_ENV("LOOP_MOUNTPOINT");		/* ??? */
 	COPY_ANDROID_ENV("BOOTCLASSPATH");
+	COPY_ANDROID_ENV("SYSTEMSERVERCLASSPATH");	/* ??? */
 
 	/* FIXME: keep android property workspace open
 	 * (see openbsd-compat/bsd-closefrom.c)
 	 */
 	COPY_ANDROID_ENV("ANDROID_PROPERTY_WORKSPACE");
 
-	COPY_ANDROID_ENV("EXTERNAL_STORAGE");		/* ??? */
 	COPY_ANDROID_ENV("SECONDARY_STORAGE");		/* ??? */
 	COPY_ANDROID_ENV("SD_EXT_DIRECTORY");		/* ??? */
 
