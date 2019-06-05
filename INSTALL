@@ -24,9 +24,9 @@ to configure PKIX-SSH --without-pie.
 
 The remaining items are optional.
 
-NB. If you operating system supports /dev/random, you should configure
+NB. If you operating system supports /dev/*random, you should configure
 libcrypto to use it. PKIX-SSH relies on libcrypto's
-direct support of /dev/random, or failing that, either prngd or egd
+direct support of /dev/*random, or failing that, either prngd or egd
 
 PRNGD:
 
@@ -37,8 +37,7 @@ http://prngd.sourceforge.net/
 
 EGD:
 
-If the kernel lacks /dev/random the Entropy Gathering Daemon (EGD) is
-supported only if libcrypto supports it.
+The Entropy Gathering Daemon (EGD) suppports the same interface as prngd.
 
 http://egd.sourceforge.net/
 
