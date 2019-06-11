@@ -26,14 +26,14 @@
 #include "xmalloc.h"
 #include "log.h"
 
+#if defined(__OpenBSD__)
+char *malloc_options = "S";
+#endif /* __OpenBSD__ */
+
 void
 ssh_malloc_init(void)
 {
-#if defined(__OpenBSD__)
-	extern char *malloc_options;
-
-	malloc_options = "S";
-#endif /* __OpenBSD__ */
+	/*NOTE reserved for future use*/
 }
 
 void *
