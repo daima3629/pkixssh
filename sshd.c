@@ -2013,6 +2013,7 @@ main(int ac, char **av)
 		 */
 		if (connection_info == NULL)
 			connection_info = get_connection_info(ssh, 0, 0);
+		connection_info->test = 1;
 		parse_server_match_config(&options, connection_info);
 		dump_config(&options);
 	}

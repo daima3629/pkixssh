@@ -262,6 +262,8 @@ struct connection_info {
 	const char *laddress;	/* local address */
 	int lport;		/* local port */
 	const char *rdomain;	/* routing domain if available */
+	int test;		/* test mode, allow some attributes to be
+				 * unspecified */
 };
 
 
