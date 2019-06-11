@@ -39,7 +39,7 @@
   * at http://www.esat.kuleuven.ac.be/~rijmen/rijndael/ (search for
   * "Barreto"). The only two files needed are rijndael-alg-fst.c and
   * rijndael-alg-fst.h. Brian Gladman's version is distributed with the GNU
-  * Public lisence at http://fp.gladman.plus.com/AES/index.htm. It
+  * Public licence at http://fp.gladman.plus.com/AES/index.htm. It
   * includes a fast IA-32 assembly version. The OpenSSL crypo library is
   * the third.
   *
