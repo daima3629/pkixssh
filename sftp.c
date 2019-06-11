@@ -2536,12 +2536,17 @@ main(int argc, char **argv)
 				port = tmp;
 			break;
 		default:
+			/* Try with user, host and path. */
 			if (parse_user_host_path(*argv, &user, &host,
-			    &file1) == -1) {
-				/* Treat as a plain hostname. */
-				host = xstrdup(*argv);
-				host = cleanhostname(host);
-			}
+			    &file1) == 0)
+				break;
+			/* Try with user and host. */
+			if (parse_user_host_port(*argv, &user, &host, NULL)
+			    == 0)
+				break;
+			/* Treat as a plain hostname. */
+			host = xstrdup(*argv);
+			host = cleanhostname(host);
 			break;
 		}
 		file2 = *(argv + 1);
