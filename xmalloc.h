@@ -1,4 +1,4 @@
-/* $OpenBSD: xmalloc.h,v 1.17 2017/05/31 09:15:42 deraadt Exp $ */
+/* $OpenBSD: xmalloc.h,v 1.18 2019/06/06 05:13:13 otto Exp $ */
 
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>

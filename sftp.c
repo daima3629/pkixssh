@@ -1,4 +1,4 @@
-/* $OpenBSD: sftp.c,v 1.190 2019/01/21 22:50:42 tb Exp $ */
+/* $OpenBSD: sftp.c,v 1.192 2019/06/07 03:47:12 dtucker Exp $ */
 /*
  * Copyright (c) 2001-2004 Damien Miller <djm@openbsd.org>
  *
