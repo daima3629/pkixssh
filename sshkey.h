@@ -144,10 +144,8 @@ X509*		SSH_X509_get_cert(SSH_X509 *xd);
 #if 0
 # define USE_X509_KEYTYPE 1
 # define X509KEY_BASETYPE(key)		(sshkey_is_x509(key) ? sshkey_type_plain(key->type) : key->type)
-# define X509TYPE_BASE(name, type)	(ssh_x509key_type(name) != KEY_UNSPEC ? sshkey_type_plain(type) : type)
 #else
 # define X509KEY_BASETYPE(key)		(key->type)
-# define X509TYPE_BASE(name, type)	(type)
 #endif
 
 

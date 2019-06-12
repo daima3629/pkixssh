@@ -3250,7 +3250,7 @@ sshkey_private_deserialize(struct sshbuf *buf, struct sshkey **kp)
 	if ((r = sshbuf_get_cstring(buf, &tname, NULL)) != 0)
 		goto out;
 	type = sshkey_type_from_name(tname);
-	switch (X509TYPE_BASE(tname, type)) {
+	switch (type) {
 #ifdef WITH_OPENSSL
 	case KEY_DSA:
 		if ((k = sshkey_new(type)) == NULL) {
