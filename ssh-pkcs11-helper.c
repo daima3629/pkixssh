@@ -36,7 +36,7 @@
 #include "sshbuf.h"
 #include "log.h"
 #include "misc.h"
-#include "sshkey.h"
+#include "sshxkey.h"
 #include "authfd.h"
 #include "ssh-pkcs11.h"
 #include "ssherr.h"
@@ -130,7 +130,7 @@ process_add(void)
 		    (r = sshbuf_put_u32(msg, nkeys)) != 0)
 			fatal("%s: buffer error: %s", __func__, ssh_err(r));
 		for (i = 0; i < nkeys; i++) {
-			if ((r = sshkey_to_blob(keys[i], &blob, &blen)) != 0) {
+			if ((r = Akey_to_blob(keys[i], &blob, &blen)) != 0) {
 				debug("%s: sshkey_to_blob: %s",
 				    __func__, ssh_err(r));
 				continue;

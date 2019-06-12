@@ -421,7 +421,7 @@ pkcs11_add_provider(char *name, char *pin, struct sshkey ***keysp)
 				k = NULL;
 				goto set_key;
 			}
-			if ((r = sshkey_from_blob(blob, blen, &k)) != 0) {
+			if ((r = Akey_from_blob(blob, blen, &k)) != 0) {
 				error("%s: bad key: %s", __func__, ssh_err(r));
 				k = NULL;
 				goto set_key;
