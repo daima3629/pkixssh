@@ -246,18 +246,6 @@ sshkey_types_from_name(const char *name, int *type, int *subtype) {
 		return; /* unreachible code */
 	}
 
-#ifdef USE_X509_KEYTYPE
-	if (strncmp(name, "x509v3-ecdsa-", 13) == 0) {
-		int plain_type;
-		sshkey_types_from_name(name+7, &plain_type, subtype);
-		/* NOTE order of key "enum types" is important as
-		 * after KEY_<FOO> is defined KEY_X509_<FOO>
-		 */
-		*type = plain_type + 1;
-		return;
-	}
-#endif
-
 	*type = sshkey_type_from_name((char*)name);
 
 	if (*type == KEY_ECDSA || *type == KEY_ECDSA_CERT)
@@ -470,13 +458,10 @@ int
 sshkey_type_plain(int type)
 {
 	switch (type) {
-	case KEY_X509_RSA:
 	case KEY_RSA_CERT:
 		return KEY_RSA;
-	case KEY_X509_DSA:
 	case KEY_DSA_CERT:
 		return KEY_DSA;
-	case KEY_X509_ECDSA:
 	case KEY_ECDSA_CERT:
 		return KEY_ECDSA;
 	case KEY_ED25519_CERT:
@@ -923,15 +908,6 @@ to_blob_buf(const struct sshkey *key, struct sshbuf *b, int force_plain,
 	UNUSED(opts);
 	if (key == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;
-
-#ifdef USE_X509_KEYTYPE
-	/* TODO X.509 legacy code, now failback case - pending removal */
-	/* NOTE: plain is used for fingerprints!
-	 * Lets match fingerprint of X.509 with public-key.
-	 */
-	if (!force_plain && sshkey_is_x509(key))
-		return X509key_to_buf(key, b);
-#endif
 
 	if (sshkey_is_cert(key)) {
 		if (key->cert == NULL)
@@ -2294,11 +2270,6 @@ sshkey_from_blob_internal(struct sshbuf *b, struct sshkey **keyp,
 #endif
 	if (keyp != NULL)
 		*keyp = NULL;
-
-	/* TODO X.509 legacy code, now failback case - pending removal */
-	ret = X509key_from_buf(b, keyp);
-	if (ret != SSH_ERR_INVALID_FORMAT)
-		return ret;
 
 	if ((copy = sshbuf_fromb(b)) == NULL) {
 		ret = SSH_ERR_ALLOC_FAIL;

@@ -62,11 +62,8 @@ struct sshbuf;
 /* Key types */
 enum sshkey_types {
 	KEY_RSA,
-	KEY_X509_RSA,
 	KEY_DSA,
-	KEY_X509_DSA,
 	KEY_ECDSA,
-	KEY_X509_ECDSA,
 	KEY_ED25519,
 	KEY_RSA_CERT,
 	KEY_DSA_CERT,
@@ -127,11 +124,6 @@ SSH_X509*	SSH_X509_new(void);
 void		SSH_X509_free(SSH_X509* xd);
 X509*		SSH_X509_get_cert(SSH_X509 *xd);
 
-#undef USE_X509_KEYTYPE
-#if 0
-# define USE_X509_KEYTYPE 1
-#endif
-
 
 /* XXX opaquify? */
 struct sshkey {
@@ -181,7 +173,10 @@ int		 sshkey_from_private(const struct sshkey *, struct sshkey **);
 int	 sshkey_type_from_name(const char *);
 void	 sshkey_types_from_name(const char *name, int *type, int *subtype);
 const char	*sshkey_name_from_types(int type, int subtype);
-int	 sshkey_is_x509(const struct sshkey *);
+static inline int/*bool*/
+sshkey_is_x509(const struct sshkey *key) {
+	return (key != NULL) && (key->x509_data != NULL);
+}
 int	 sshkey_is_cert(const struct sshkey *);
 int	 sshkey_type_is_cert(int);
 int	 sshkey_type_plain(int);

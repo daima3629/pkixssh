@@ -50,51 +50,6 @@ STACK_OF(X509)* (*pssh_x509store_build_certchain)(X509 *cert, STACK_OF(X509) *un
 static int xkey_to_buf2(const char *pkalg, const struct sshkey *key, struct sshbuf *b);
 
 
-/* Start of temporary solution, see sshkey.h */
-#define TO_X509_KEY_TYPE(key)	SET_X509_KEY_TYPE(key, key->type)
-
-#ifdef USE_X509_KEYTYPE
-static inline int
-IS_X509_KEY_TYPE(int k_type) {
-	return
-	    (k_type == KEY_X509_RSA) ||
-#ifdef OPENSSL_HAS_ECC
-	    (k_type == KEY_X509_ECDSA) ||
-#endif
-	    (k_type == KEY_X509_DSA);
-}
-#endif
-
-static inline int
-GET_X509_KEY_TYPE(int k_type) {
-#ifdef USE_X509_KEYTYPE
-	switch (k_type) {
-	case KEY_RSA	: return KEY_X509_RSA;
-	case KEY_ECDSA	: return KEY_X509_ECDSA;
-	case KEY_DSA	: return KEY_X509_DSA;
-	default		: return KEY_UNSPEC;
-	}
-#else
-	return k_type;
-#endif
-}
-
-static inline void
-SET_X509_KEY_TYPE(struct sshkey *key, int k_type) {
-#ifdef USE_X509_KEYTYPE
-	switch (k_type) {
-	case KEY_RSA	: key->type = KEY_X509_RSA	; break;
-	case KEY_ECDSA	: key->type = KEY_X509_ECDSA	; break;
-	case KEY_DSA	: key->type = KEY_X509_DSA	; break;
-	default		: /* avoid compiler warnings */	  break;
-	}
-#else
-	key->type = k_type;
-#endif
-}
-/* End of temporary solution. */
-
-
 struct ssh_x509_st {
 	X509           *cert;  /* key certificate */
 	STACK_OF(X509) *chain; /* reserved for future use */
@@ -202,16 +157,6 @@ ssh_x509_support_plain_type(int k_type) {
 #endif
 	    (k_type == KEY_DSA)
 	) ? 1 : 0;
-}
-
-
-int/*bool*/
-sshkey_is_x509(const struct sshkey *k) {
-#ifdef USE_X509_KEYTYPE
-	return (k != NULL) && IS_X509_KEY_TYPE(k->type);
-#else
-	return (k != NULL) && (k->x509_data != NULL);
-#endif
 }
 
 
@@ -613,7 +558,7 @@ x509key_from_subject(int basetype, const char* _cp) {
 		}
 	}
 
-	SET_X509_KEY_TYPE(key, basetype);
+	key->type = basetype;
 	if (!ssh_x509_set_cert(key, x, NULL)) {
 		error("%s: ssh_x509_set_cert fail", __func__);
 		goto err;
@@ -1401,8 +1346,6 @@ x509key_parse_cert(struct sshkey *key, EVP_PKEY *pk, BIO *bio) {
 	xd = key->x509_data = SSH_X509_new(); /*fatal on error*/
 	xd->cert = x;
 
-	TO_X509_KEY_TYPE(key);
-
 	(void)x509key_load_certs_bio(key, bio);
 
 	debug3("read X.509 certificate done: type %.40s", sshkey_type(key));
@@ -1590,7 +1533,7 @@ ssh_x509key_type(const char *name) {
 	if (ssh_xkalg_nameind(name, &p, -1) < 0)
 		return KEY_UNSPEC;
 
-	return GET_X509_KEY_TYPE(p->basetype);
+	return p->basetype;
 }
 
 
@@ -2180,8 +2123,6 @@ ssh_x509_set_cert(struct sshkey *key, X509 *x509, STACK_OF(X509) *untrusted) {
 		xd = key->x509_data = SSH_X509_new(); /*fatal on error*/
 
 	xd->cert = x509;
-
-	TO_X509_KEY_TYPE(key);
 
 	if (untrusted != NULL) {
 		for (x509 = sk_X509_pop(untrusted); x509 != NULL; x509 = sk_X509_pop(untrusted)) {
