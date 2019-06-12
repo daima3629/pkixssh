@@ -127,25 +127,9 @@ SSH_X509*	SSH_X509_new(void);
 void		SSH_X509_free(SSH_X509* xd);
 X509*		SSH_X509_get_cert(SSH_X509 *xd);
 
-/* NOTE
- * Final solution:
- * a) should not use {KEY_X509_RSA"|DSA|ECDSA} is switch statements, i.e
- *   X.509 support has to be redesigned to use "plain key type"
- *   and if is sshkey_is_x509() to perform specific operations;
- * b) code has to be redesigned to use "keyname" (strings) to allow
- *   a key to be used with multiple names.
- * Temporary solution.
- * - macro X509KEY_BASETYPE that return KEY_{RSA|DSA|ECDSA};
- * - use macro where is possible;
- * - remove macro after implementation of a) and b).
- */
-
 #undef USE_X509_KEYTYPE
 #if 0
 # define USE_X509_KEYTYPE 1
-# define X509KEY_BASETYPE(key)		(sshkey_is_x509(key) ? sshkey_type_plain(key->type) : key->type)
-#else
-# define X509KEY_BASETYPE(key)		(key->type)
 #endif
 
 

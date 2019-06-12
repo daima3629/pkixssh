@@ -1653,17 +1653,15 @@ Xkey_algoriths(const struct sshkey *key) {
 
 plain_alg:
 {	/* add plain algorithm */
-	int key_type = X509KEY_BASETYPE(key);
-
 	ret = realloc(ret, sizeof(*ret) * (n + 2));
 	if (ret == NULL) return NULL;
 
-	ret[n++] = sshkey_name_from_types(key_type, key->ecdsa_nid);
+	ret[n++] = sshkey_name_from_types(key->type, key->ecdsa_nid);
 	ret[n] = NULL;
 
 	/* add extra algorithms */
 #ifdef HAVE_EVP_SHA256
-	switch (key_type) {
+	switch (key->type) {
 	case KEY_RSA: {
 		/* for RSA we also support SHA2 algorithms */
 		ret = realloc(ret, sizeof(*ret) * (n + 3));
@@ -2011,22 +2009,6 @@ done:
 }
 
 
-static int
-sshkey_sign_base(
-    struct sshkey *key, u_char **sigp, size_t *lenp,
-    const u_char *data, size_t datalen, const char *alg, u_int compat
-) {
-	int ret, key_type = key->type;
-
-	key->type = X509KEY_BASETYPE(key);
-	ret = sshkey_sign(key, sigp, lenp, data, datalen, alg, compat);
-	if (ret == SSH_ERR_LIBCRYPTO_ERROR)
-		log_crypto_errors(SYSLOG_LEVEL_ERROR, __func__);
-	key->type = key_type;
-
-	return ret;
-}
-
 int
 Xkey_sign(ssh_sign_ctx *ctx,
 	  u_char **sigp, size_t *lenp,
@@ -2038,9 +2020,13 @@ Xkey_sign(ssh_sign_ctx *ctx,
 {	/* check if public algorithm is with X.509 certificates */
 	const SSHX509KeyAlgs *xkalg;
 
-	if (ssh_xkalg_nameind(ctx->alg, &xkalg, -1) < 0)
-		return sshkey_sign_base(ctx->key, sigp, lenp,
+	if (ssh_xkalg_nameind(ctx->alg, &xkalg, -1) < 0) {
+		int ret = sshkey_sign(ctx->key, sigp, lenp,
 		    data, datalen, ctx->alg, ctx->compat->datafellows);
+		if (ret == SSH_ERR_LIBCRYPTO_ERROR)
+			log_crypto_errors(SYSLOG_LEVEL_ERROR, __func__);
+		return ret;
+	}
 
 	return ssh_x509_sign(xkalg, ctx, sigp, lenp, data, datalen);
 }
@@ -2076,21 +2062,6 @@ out:
 }
 
 
-static int
-sshkey_verify_base(
-    struct sshkey *key, const u_char *sig, size_t siglen,
-    const u_char *data, size_t dlen, const char *alg, u_int compat
-) {
-	int ret, key_type = key->type;
-
-	key->type = X509KEY_BASETYPE(key);
-	ret = sshkey_verify(key, sig, siglen, data, dlen, alg, compat);
-	key->type = key_type;
-
-	return ret;
-}
-
-
 int
 Xkey_verify(ssh_sign_ctx *ctx,
 	    const u_char *sig, size_t siglen,
@@ -2107,7 +2078,7 @@ Xkey_verify(ssh_sign_ctx *ctx,
 		    check_compat_fellows(ctx->compat, SSH_BUG_SIGTYPE)) {
 			ctx->alg = NULL;
 		}
-		return sshkey_verify_base(ctx->key, sig, siglen,
+		return sshkey_verify(ctx->key, sig, siglen,
 		     data, dlen, ctx->alg, ctx->compat->datafellows);
 	}
 }
@@ -2271,19 +2242,6 @@ xkey_from_blob(const char *pkalg, const u_char *blob, u_int blen) {
 }
 
 
-static int
-sshkey_to_blob_base(const struct sshkey *ckey, u_char **blobp, size_t *lenp) {
-	struct sshkey *key = (struct sshkey *)ckey;
-	int ret, key_type = key->type;
-
-	key->type = X509KEY_BASETYPE(key);
-	ret = sshkey_to_blob(key, blobp, lenp);
-	key->type = key_type;
-
-	return ret;
-}
-
-
 int
 Xkey_to_blob(const char *pkalg, const struct sshkey *key, u_char **blobp, size_t *lenp) {
 	int RFC6187_format;
@@ -2295,7 +2253,7 @@ Xkey_to_blob(const char *pkalg, const struct sshkey *key, u_char **blobp, size_t
 	const SSHX509KeyAlgs *p;
 
 	if (ssh_xkalg_nameind(pkalg, &p, -1) < 0)
-		return sshkey_to_blob_base(key, blobp, lenp);
+		return sshkey_to_blob(key, blobp, lenp);
 
 	RFC6187_format = p->chain;
 }
@@ -2466,19 +2424,6 @@ Akey_from_blob(const u_char *blob, size_t blen, struct sshkey **keyp) {
 }
 
 
-static int
-sshkey_puts_base(const struct sshkey *ckey, struct sshbuf *b) {
-	struct sshkey *key = (struct sshkey *)ckey;
-	int ret, key_type = key->type;
-
-	key->type = X509KEY_BASETYPE(key);
-	ret = sshkey_puts(key, b);
-	key->type = key_type;
-
-	return ret;
-}
-
-
 int
 Xkey_puts(const char *pkalg, const struct sshkey *key, struct sshbuf *b) {
 	int r;
@@ -2494,7 +2439,7 @@ Xkey_puts(const char *pkalg, const struct sshkey *key, struct sshbuf *b) {
 	const SSHX509KeyAlgs *p;
 
 	if (ssh_xkalg_nameind(pkalg, &p, -1) < 0)
-		return sshkey_puts_base(key, b);
+		return sshkey_puts(key, b);
 
 	RFC6187_format = p->chain;
 }
@@ -2517,19 +2462,6 @@ Xkey_puts(const char *pkalg, const struct sshkey *key, struct sshbuf *b) {
 }
 
 
-static int
-sshkey_putb_base(const struct sshkey *ckey, struct sshbuf *b) {
-	struct sshkey *key = (struct sshkey *)ckey;
-	int ret, key_type = key->type;
-
-	key->type = X509KEY_BASETYPE(key);
-	ret = sshkey_putb(key, b);
-	key->type = key_type;
-
-	return ret;
-}
-
-
 int
 Xkey_putb(const char *pkalg, const struct sshkey *key, struct sshbuf *b) {
 	int RFC6187_format;
@@ -2541,7 +2473,7 @@ Xkey_putb(const char *pkalg, const struct sshkey *key, struct sshbuf *b) {
 	const SSHX509KeyAlgs *p;
 
 	if (ssh_xkalg_nameind(pkalg, &p, -1) < 0)
-		return sshkey_putb_base(key, b);
+		return sshkey_putb(key, b);
 
 	RFC6187_format = p->chain;
 }
