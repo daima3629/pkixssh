@@ -14,8 +14,7 @@
  *
  * Copyright (c) 1999, 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 1999 Niels Provos.  All rights reserved.
- * X.509 certificates support,
- * Copyright (c) 2002-2017 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -373,7 +372,7 @@ check_hostkeys_by_key_or_types(struct hostkeys *hostkeys,
 		if (hostkeys->entries[i].marker != want_marker)
 			continue;
 		if (k == NULL) {
-			if (X509KEY_BASETYPE(hostkeys->entries[i].key) != keytype)
+			if (hostkeys->entries[i].key->type != keytype)
 				continue;
 			/* NOTE ecdsa_nid is -1 for non ECC keys */
 			if (subtype != -1 && subtype != hostkeys->entries[i].key->ecdsa_nid)

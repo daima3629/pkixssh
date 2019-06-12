@@ -1,8 +1,6 @@
 /* $OpenBSD: auth2-pubkey.c,v 1.88 2019/05/20 00:25:55 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
- *
- * X.509 certificates support,
  * Copyright (c) 2003-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -454,7 +452,7 @@ x509_match(const struct sshkey *key, const struct sshkey *found) {
 	 * Code is same as sshkey_equal_public but without
 	 * compare by distinguished name.
 	 */
-	switch(X509KEY_BASETYPE(found)) {
+	switch(found->type) {
 	case KEY_RSA: {
 		return sshrsa_equal_public(key->rsa, found->rsa);
 		} break;

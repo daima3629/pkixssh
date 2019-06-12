@@ -13,9 +13,7 @@
  *
  * SSH2 implementation,
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
- *
- * X509 certificate support,
- * Copyright (c) 2002-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -442,7 +440,7 @@ ssh_add_identity_constrained(int sock, const struct sshkey *key,
 	if ((msg = sshbuf_new()) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
 
-	switch (X509KEY_BASETYPE(key)) {
+	switch (key->type) {
 #ifdef WITH_OPENSSL
 	case KEY_RSA:
 	case KEY_RSA_CERT:

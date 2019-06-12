@@ -996,7 +996,7 @@ pkcs11_get_x509key(
 
 {	int rv_wrap = -1;
 
-	switch(X509KEY_BASETYPE(key)) {
+	switch(key->type) {
 	case KEY_RSA:
 		rv_wrap = pkcs11_rsa_wrap(p, slotidx, attribs, key->rsa);
 		break;

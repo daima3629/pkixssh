@@ -2,7 +2,7 @@
 /*
  * Copyright (c) 2010 Markus Friedl.  All rights reserved.
  * Copyright (c) 2011 Kenneth Robinette.  All rights reserved.
- * Copyright (c) 2016-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2016-2019 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -185,7 +185,7 @@ process_key_sign(
 ) {
 	int ret;
 
-	switch(X509KEY_BASETYPE(key)) {
+	switch(key->type) {
 	case KEY_RSA: {
 		ret = RSA_size(key->rsa);
 		*signature = xmalloc(ret);

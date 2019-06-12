@@ -3,8 +3,7 @@
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Alexander von Gernler.  All rights reserved.
  * Copyright (c) 2010,2011 Damien Miller.  All rights reserved.
- * X509 certificate support,
- * Copyright (c) 2002-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -645,7 +644,7 @@ sshkey_new(int type)
 	k->ed25519_pk = NULL;
 	k->xmss_sk = NULL;
 	k->xmss_pk = NULL;
-	switch (X509KEY_BASETYPE(k)) {
+	switch (k->type) {
 #ifdef WITH_OPENSSL
 	case KEY_RSA:
 	case KEY_RSA_CERT:
@@ -696,7 +695,7 @@ sshkey_free(struct sshkey *k)
 {
 	if (k == NULL)
 		return;
-	switch (X509KEY_BASETYPE(k)) {
+	switch (k->type) {
 #ifdef WITH_OPENSSL
 	case KEY_RSA:
 	case KEY_RSA_CERT:
@@ -842,7 +841,7 @@ sshkey_equal_public(const struct sshkey *a, const struct sshkey *b)
   into 'key'(rsa,dsa,..) member of key structure.
 */
 
-	switch (X509KEY_BASETYPE(a)) {
+	switch (a->type) {
 #ifdef WITH_OPENSSL
 	case KEY_RSA_CERT:
 	case KEY_RSA:
@@ -1478,7 +1477,7 @@ sshkey_read_pkalg(struct sshkey *ret, char **cpp, char **pkalg)
 	/* caller is responsible to free memory allocated for pkalg */
 	if (pkalg) *pkalg = NULL;
 
-	switch (X509KEY_BASETYPE(ret)) {
+	switch (ret->type) {
 	case KEY_UNSPEC:
 	case KEY_RSA:
 	case KEY_DSA:
@@ -2010,7 +2009,7 @@ sshkey_from_private(const struct sshkey *k, struct sshkey **pkp)
 	int r = SSH_ERR_INTERNAL_ERROR;
 
 	*pkp = NULL;
-	switch(X509KEY_BASETYPE(k)) {
+	switch(k->type) {
 #ifdef WITH_OPENSSL
 	case KEY_DSA:
 	case KEY_DSA_CERT:
@@ -3072,7 +3071,7 @@ sshkey_private_serialize_opt(const struct sshkey *key, struct sshbuf *b,
 	pkalg = sshkey_ssh_name(key);
 	if ((r = sshbuf_put_cstring(b, pkalg)) != 0)
 		goto out;
-	switch (X509KEY_BASETYPE(key)) {
+	switch (key->type) {
 #ifdef WITH_OPENSSL
 	case KEY_RSA:
 		{
@@ -3522,7 +3521,7 @@ sshkey_private_deserialize(struct sshbuf *buf, struct sshkey **kp)
 	}
 #ifdef WITH_OPENSSL
 	/* enable blinding */
-	switch (X509KEY_BASETYPE(k)) {
+	switch (k->type) {
 	case KEY_RSA:
 	case KEY_RSA_CERT:
 		if (RSA_blinding_on(k->rsa, NULL) != 1) {
@@ -4118,7 +4117,7 @@ sshkey_private_pem_to_blob(struct sshkey *key, struct sshbuf *blob,
 	if ((bio = BIO_new(BIO_s_mem())) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
 
-	switch (X509KEY_BASETYPE(key)) {
+	switch (key->type) {
 	case KEY_DSA:
 		success = PEM_write_bio_DSAPrivateKey(bio, key->dsa,
 		    cipher, passphrase, len, NULL, NULL);
@@ -4166,7 +4165,7 @@ sshkey_private_to_fileblob(struct sshkey *key, struct sshbuf *blob,
 	/* never use proprietary format for X.509 keys */
 	if (sshkey_is_x509(key)) force_new_format = 0;
 
-	switch (X509KEY_BASETYPE(key)) {
+	switch (key->type) {
 #ifdef WITH_OPENSSL
 	case KEY_DSA:
 	case KEY_ECDSA:

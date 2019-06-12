@@ -336,7 +336,7 @@ wrap_ec_key(EC_KEY *ec)
 
 static int
 wrap_key(struct sshkey *key) {
-	switch(X509KEY_BASETYPE(key)) {
+	switch(key->type) {
 	case KEY_RSA: return (wrap_rsa_key(key->rsa));
 #ifdef OPENSSL_HAS_ECC
 	case KEY_ECDSA: return (wrap_ec_key(key->ecdsa));

@@ -20,7 +20,6 @@
  *
  * Copyright (c) 2000, 2001, 2002 Markus Friedl.  All rights reserved.
  * Copyright (c) 2002 Niels Provos.  All rights reserved.
- *
  * Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -1909,9 +1908,9 @@ main(int ac, char **av)
 		if (key == NULL && pubkey != NULL && have_agent) {
 			debug("will rely on agent for hostkey %s",
 			    options.host_key_files[i]);
-			keytype = X509KEY_BASETYPE(pubkey);
+			keytype = pubkey->type;
 		} else if (key != NULL) {
-			keytype = X509KEY_BASETYPE(key);
+			keytype = key->type;
 			accumulate_host_timing_secret(cfg, key);
 		} else {
 			do_log2(ll, "Unable to load host key: %s",
