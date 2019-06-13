@@ -47,7 +47,7 @@ int (*pssh_x509store_verify_cert)(X509 *_cert, STACK_OF(X509) *_chain) = NULL;
 STACK_OF(X509)* (*pssh_x509store_build_certchain)(X509 *cert, STACK_OF(X509) *untrusted) = NULL;
 
 
-static int xkey_to_buf2(const char *pkalg, const struct sshkey *key, struct sshbuf *b);
+static int xkey_to_buf2(const SSHX509KeyAlgs *xkalg, const struct sshkey *key, struct sshbuf *b);
 
 
 struct ssh_x509_st {
@@ -1011,28 +1011,23 @@ sshbuf_put_x509(struct sshbuf *b, X509 *x) {
 
 int
 X509key_encode_identity(const char *pkalg, const struct sshkey *key, struct sshbuf *b) {
-	int RFC6187_format;
+	const SSHX509KeyAlgs *xkalg;
 	int ret;
 
 	if (!sshkey_is_x509(key))
 		return SSH_ERR_SUCCESS;
 
-{	const SSHX509KeyAlgs *p;
-
-	if (ssh_xkalg_nameind(pkalg, &p, -1) < 0)
+	if (ssh_xkalg_nameind(pkalg, &xkalg, -1) < 0)
 		return SSH_ERR_SUCCESS;
 
-	RFC6187_format = p->chain;
-}
-
-	if (RFC6187_format) {
+	if (xkalg->chain) { /* RFC6187 format */
 		struct sshbuf *d;
 
 		d = sshbuf_new();
 		if (d == NULL)
 			return SSH_ERR_ALLOC_FAIL;
 
-		ret = xkey_to_buf2(pkalg, key, d);
+		ret = xkey_to_buf2(xkalg, key, d);
 		if (ret != SSH_ERR_SUCCESS)
 			debug3("%s: xkey_to_buf2 fail" , __func__);
 
@@ -1040,9 +1035,8 @@ X509key_encode_identity(const char *pkalg, const struct sshkey *key, struct sshb
 			ret = sshbuf_put_stringb(b, d);
 
 		sshbuf_free(d);
-	} else {
+	} else
 		ret = sshbuf_put_x509(b, key->x509_data->cert);
-	}
 
 	return ret;
 }
@@ -1172,7 +1166,7 @@ X509key_to_buf(const struct sshkey *key, struct sshbuf *b) {
 
 
 static int
-xkey_to_buf2(const char *pkalg, const struct sshkey *key, struct sshbuf *b) {
+xkey_to_buf2(const SSHX509KeyAlgs *xkalg, const struct sshkey *key, struct sshbuf *b) {
 	STACK_OF(X509) *chain;
 	int   r;
 	u_int n;
@@ -1195,7 +1189,7 @@ xkey_to_buf2(const char *pkalg, const struct sshkey *key, struct sshbuf *b) {
 
 if ((SSHX_RFC6187_MISSING_KEY_IDENTIFIER & xcompat) == 0) {
 	/* string  "algorithm-identifier" */
-	r = sshbuf_put_cstring(b, pkalg);
+	r = sshbuf_put_cstring(b, xkalg->name);
 	if (r != 0) goto end;
 }
 
@@ -2191,25 +2185,19 @@ xkey_from_blob(const char *pkalg, const u_char *blob, u_int blen) {
 
 int
 Xkey_to_blob(const char *pkalg, const struct sshkey *key, u_char **blobp, size_t *lenp) {
-	int RFC6187_format;
+	const SSHX509KeyAlgs *xkalg;
 
 	if (pkalg == NULL) return SSH_ERR_INVALID_ARGUMENT;
 	if (key == NULL) return SSH_ERR_INVALID_ARGUMENT;
 
-{	/* check if public algorithm is with X.509 certificates */
-	const SSHX509KeyAlgs *p;
-
-	if (ssh_xkalg_nameind(pkalg, &p, -1) < 0)
+	if (ssh_xkalg_nameind(pkalg, &xkalg, -1) < 0)
 		return sshkey_to_blob(key, blobp, lenp);
-
-	RFC6187_format = p->chain;
-}
 
 {	struct sshbuf *b = sshbuf_new();
 	if (b == NULL) return SSH_ERR_ALLOC_FAIL;
 
-{	int ret = RFC6187_format
-		? xkey_to_buf2(pkalg, key, b)
+{	int ret = xkalg->chain /* RFC6187 format */
+		? xkey_to_buf2(xkalg, key, b)
 		: X509key_to_buf(key, b);
 	if (ret != SSH_ERR_SUCCESS) return ret;
 }
@@ -2373,29 +2361,20 @@ Akey_from_blob(const u_char *blob, size_t blen, struct sshkey **keyp) {
 
 int
 Xkey_puts(const char *pkalg, const struct sshkey *key, struct sshbuf *b) {
+	const SSHX509KeyAlgs *xkalg;
 	int r;
-	int RFC6187_format;
 
-	if (pkalg == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
-	if (key == NULL) {
-		return SSH_ERR_INVALID_ARGUMENT;
-	}
+	if (pkalg == NULL) return SSH_ERR_INVALID_ARGUMENT;
+	if (key == NULL) return SSH_ERR_INVALID_ARGUMENT;
 
-{	/* check if public algorithm is with X.509 certificates */
-	const SSHX509KeyAlgs *p;
-
-	if (ssh_xkalg_nameind(pkalg, &p, -1) < 0)
+	if (ssh_xkalg_nameind(pkalg, &xkalg, -1) < 0)
 		return sshkey_puts(key, b);
 
-	RFC6187_format = p->chain;
-}
-
-	if (RFC6187_format) {
+	if (xkalg->chain) { /* RFC6187 format */
 		struct sshbuf *d = sshbuf_new();
 		if (d == NULL) return SSH_ERR_ALLOC_FAIL;
 
-		r = xkey_to_buf2(pkalg, key, d);
+		r = xkey_to_buf2(xkalg, key, d);
 		if (r != SSH_ERR_SUCCESS)
 			debug3("%s: xkey_to_buf2 fail" , __func__);
 		else
@@ -2411,22 +2390,16 @@ Xkey_puts(const char *pkalg, const struct sshkey *key, struct sshbuf *b) {
 
 int
 Xkey_putb(const char *pkalg, const struct sshkey *key, struct sshbuf *b) {
-	int RFC6187_format;
+	const SSHX509KeyAlgs *xkalg;
 
 	if (pkalg == NULL) return SSH_ERR_INVALID_ARGUMENT;
 	if (key == NULL) return SSH_ERR_INVALID_ARGUMENT;
 
-{	/* check if public algorithm is with X.509 certificates */
-	const SSHX509KeyAlgs *p;
-
-	if (ssh_xkalg_nameind(pkalg, &p, -1) < 0)
+	if (ssh_xkalg_nameind(pkalg, &xkalg, -1) < 0)
 		return sshkey_putb(key, b);
 
-	RFC6187_format = p->chain;
-}
-
-	return RFC6187_format
-		? xkey_to_buf2(pkalg, key, b)
+	return xkalg->chain /* RFC6187 format */
+		? xkey_to_buf2(xkalg, key, b)
 		: X509key_to_buf(key, b);
 }
 
