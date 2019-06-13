@@ -777,9 +777,8 @@ if ((SSHX_RFC6187_MISSING_KEY_IDENTIFIER & xcompat) == 0) {
 	}
 	if (loc < 0) {
 		free(pkalg);
-		return SSH_ERR_INVALID_ARGUMENT;
+		return SSH_ERR_KEY_TYPE_UNKNOWN;
 	}
-	xkalg = NULL;
 }
 }
 
@@ -823,17 +822,24 @@ if ((SSHX_RFC6187_MISSING_KEY_IDENTIFIER & xcompat) == 0) {
 		goto err;
 	}
 
-{	/* check if key match algorithm */
-	if (ssh_xkalg_typeformind(key->type, key->ecdsa_nid, X509FORMAT_RFC6187, &xkalg, -1) < 0) {
-		r = SSH_ERR_KEY_TYPE_UNKNOWN;
-		goto err;
+	if (xkalg != NULL) {
+		/* check if key match algorithm */
+		if (
+		    (key->type != xkalg->basetype) ||
+		    (key->ecdsa_nid != xkalg->subtype)
+		) {
+			r = SSH_ERR_KEY_TYPE_MISMATCH;
+			goto err;
+		}
+	} else {
+		/* check if algorithm is supported (compatibility case) */
+		if (ssh_xkalg_typeformind(key->type, key->ecdsa_nid,
+			X509FORMAT_RFC6187, &xkalg, -1) < 0
+		) {
+			r = SSH_ERR_KEY_TYPE_UNKNOWN;
+			goto err;
+		}
 	}
-
-	if ((pkalg != NULL) && (strcmp(pkalg, xkalg->name) != 0)) {
-		r = SSH_ERR_KEY_TYPE_MISMATCH;
-		goto err;
-	}
-}
 
 {	SSH_X509 *xd = key->x509_data;
 
