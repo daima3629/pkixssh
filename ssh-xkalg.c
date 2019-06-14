@@ -371,6 +371,10 @@ logit("TRACE_XKALG add_default_xkalg:");
 	/* - RFC6187 */
 	if (ssh_add_x509key_alg("x509v3-ssh-rsa,rsa-sha1,ssh-rsa") < 0)
 		fatal("ssh_init_xkalg: oops");
+#ifdef HAVE_EVP_SHA256
+	if (ssh_add_x509key_alg("x509v3-rsa2048-sha256,rsa2048-sha256,rsa2048-sha256") < 0)
+		fatal("ssh_init_xkalg: oops");
+#endif
 
 	/* DSA public key algorithm: */
 	/* - default is compatible with draft-ietf-secsh-transport-NN.txt
@@ -489,6 +493,9 @@ ssh_x509key_alg_digest(SSHX509KeyAlgs* p, const char *dgstname) {
 
 	if (strcasecmp("rsa-sha1", dgstname) == 0) { md = EVP_sha1(); goto done; }
 	if (strcasecmp("rsa-md5" , dgstname) == 0) { md = EVP_md5(); goto done; }
+#ifdef HAVE_EVP_SHA256
+	if (strcasecmp("rsa2048-sha256", dgstname) == 0) { md = EVP_sha256(); goto done; }
+#endif
 
 #ifdef OPENSSL_HAS_NISTP256
 	if (strcasecmp("ssh-sha256"  , dgstname) == 0) {
@@ -585,6 +592,12 @@ ssh_add_x509key_alg(const char *data) {
 		p->basetype = KEY_RSA;
 		p->chain = 1;
 	} else
+#ifdef HAVE_EVP_SHA256
+	if (strcmp(name, "x509v3-rsa2048-sha256") == 0) {
+		p->basetype = KEY_RSA;
+		p->chain = 1;
+	} else
+#endif
 	if (strncmp(name, "x509v3-sign-rsa", 15) == 0) {
 		p->basetype = KEY_RSA;
 		p->chain = 0;

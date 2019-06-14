@@ -50,6 +50,25 @@ STACK_OF(X509)* (*pssh_x509store_build_certchain)(X509 *cert, STACK_OF(X509) *un
 static int xkey_to_buf2(const SSHX509KeyAlgs *xkalg, const struct sshkey *key, struct sshbuf *b);
 
 
+static inline int
+check_rsa2048_sha256(const SSHX509KeyAlgs *xkalg, const struct sshkey *key) {
+#ifdef HAVE_EVP_SHA256
+	/* extra check for algorithms like x509v3-rsa2048-sha256 */
+	if (
+	    /* TODO generic */
+	    (key->type == KEY_RSA) &&
+	    (sshkey_size(key) < 2048) &&
+	    (EVP_MD_size(xkalg->dgst.evp) >= SHA256_DIGEST_LENGTH)
+	)
+		return 0;
+#else
+	UNUSED(xkalg);
+	UNUSED(key);
+#endif /*def HAVE_EVP_SHA256*/
+	return 1;
+}
+
+
 struct ssh_x509_st {
 	X509           *cert;  /* key certificate */
 	STACK_OF(X509) *chain; /* reserved for future use */
@@ -841,6 +860,11 @@ if ((SSHX_RFC6187_MISSING_KEY_IDENTIFIER & xcompat) == 0) {
 		}
 	}
 
+	if (!check_rsa2048_sha256(xkalg, key)) {
+		r = SSH_ERR_KEY_LENGTH;
+		goto err;
+	}
+
 {	SSH_X509 *xd = key->x509_data;
 
 	if (xd == NULL) {
@@ -1172,6 +1196,9 @@ xkey_to_buf2(const SSHX509KeyAlgs *xkalg, const struct sshkey *key, struct sshbu
 	u_int n;
 
 	if (!x509key_check("xkey_to_buf2", key)) return 0;
+
+	if (!check_rsa2048_sha256(xkalg, key))
+		return SSH_ERR_KEY_LENGTH;
 
 	/* RFC6187 key format */
 	chain = key->x509_data->chain;
@@ -1579,6 +1606,9 @@ Xkey_algoriths(const struct sshkey *key) {
 	) {
 		const char *s = xkalg->name;
 		int k;
+
+		if (!check_rsa2048_sha256(xkalg, key))
+			continue;
 
 		/* avoid duplicates */
 		for (k = 0; k < n; k++) {

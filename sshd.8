@@ -20,7 +20,7 @@
 .\" Copyright (c) 1999,2000 Markus Friedl.  All rights reserved.
 .\" Copyright (c) 1999 Aaron Campbell.  All rights reserved.
 .\" Copyright (c) 1999 Theo de Raadt.  All rights reserved.
-.\" Copyright (c) 2002-2018 Roumen Petrov.  All rights reserved.
+.\" Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
 .\"
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions
@@ -43,7 +43,7 @@
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
 .\" $OpenBSD: sshd.8,v 1.304 2018/07/22 12:16:59 dtucker Exp $
-.Dd $Mdocdate: July 22 2018 $
+.Dd $Mdocdate: June 14 2019 $
 .Dt SSHD 8
 .Os
 .Sh NAME
@@ -460,6 +460,7 @@ user to identify the key).
 In addition, user can use X.509 certificates. In such case keytype is
 .Dq x509v3-sign-rsa ,
 .Dq x509v3-ssh-rsa ,
+.Dq x509v3-rsa2048-sha256 ,
 .Dq x509v3-ecdsa-sha2-nistp256 ,
 .Dq x509v3-ecdsa-sha2-nistp384 ,
 .Dq x509v3-ecdsa-sha2-nistp521 ,

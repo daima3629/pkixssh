@@ -1,3 +1,11 @@
+.\" Implement .Dd with the Mdocdate RCS keyword
+.rn Dd xD
+.de Dd
+.ie \\$1$Mdocdate: \{\
+.	xD \\$2 \\$3, \\$4
+.\}
+.el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
+..
 .\"
 .\" Author: Tatu Ylonen <ylo@cs.hut.fi>
 .\" Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -12,7 +20,7 @@
 .\" Copyright (c) 1999,2000 Markus Friedl.  All rights reserved.
 .\" Copyright (c) 1999 Aaron Campbell.  All rights reserved.
 .\" Copyright (c) 1999 Theo de Raadt.  All rights reserved.
-.\" Copyright (c) 2002-2018 Roumen Petrov.  All rights reserved.
+.\" Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
 .\"
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions
@@ -35,15 +43,7 @@
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
 .\" $OpenBSD: ssh_config.5,v 1.293 2019/05/14 12:47:17 schwarze Exp $
-.\" Implement .Dd with the Mdocdate RCS keyword
-.rn Dd xD
-.de Dd
-.ie \\$1$Mdocdate: \{\
-.	xD \\$2 \\$3, \\$4
-.\}
-.el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
-..
-.Dd $Mdocdate: May 14 2019 $
+.Dd $Mdocdate: June 14 2019 $
 .Dt SSH_CONFIG 5
 .Os
 .Sh NAME
@@ -1936,6 +1936,11 @@ The default for certificates with RSA key is:
 .Cm X509KeyAlgorithm
 .Sm off
 .Ar x509v3-ssh-rsa , Ar rsa-sha1 , Ar ssh-rsa
+.Sm on
+.It
+.Cm X509KeyAlgorithm
+.Sm off
+.Ar x509v3-rsa2048-sha256 , Ar rsa2048-sha256 , Ar rsa2048-sha256
 .Sm on
 .El
 .Pp

@@ -6,8 +6,7 @@
 .\" permitted provided that due credit is given to the author and the
 .\" OpenBSD project by leaving this copyright notice intact.
 .\"
-.\" X.509 certificates support,
-.\" Copyright (c) 2002-2018 Roumen Petrov.  All rights reserved.
+.\" Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
 .\"
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions
@@ -37,7 +36,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: Jun 8 2018 $
+.Dd $Mdocdate: June 14 2018 $
 .Dt SSH-KEYSCAN 1
 .Os
 .Sh NAME
@@ -140,6 +139,7 @@ The supported host-key algorithms are
 .Dq x509v3-ecdsa-sha2-nistp521 ,
 .Dq x509v3-sign-rsa ,
 .Dq x509v3-ssh-rsa ,
+.Dq x509v3-rsa2048-sha256 ,
 .Dq x509v3-sign-dss ,
 .Dq x509v3-ssh-dss ,
 .Dq ssh-ed25519 ,
