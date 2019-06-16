@@ -20,7 +20,7 @@ Url:		https://roumenpetrov.info/secsh/
 
 Name:		pkixssh
 Summary:	PKIX-SSH, Advanced secure shell implementation
-Version:	12.0.1
+Version:	12.1
 Release:	1
 License:	BSD
 Group:		Productivity/Networking/SSH
@@ -93,14 +93,12 @@ make
 
 
 %check
-# FIXME: perform only X.509 related regression tests as multiplex usually fail.
-# TODO: first exclude multiplex from regular tests
 %if %{enable_ldap}
 LDAP_MODULEDIR=%{_libdir}/openldap
 export LDAP_MODULEDIR
 %endif
 TERM=dumb \
-make check-certs
+make check
 
 
 %install

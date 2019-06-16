@@ -23,7 +23,7 @@ Url:		https://roumenpetrov.info/secsh/
 
 Name:		pkixssh
 Summary:	PKIX-SSH, Advanced secure shell implementation
-Version:	12.0.1
+Version:	12.1
 Release:	1
 License:	BSD
 Group:		Productivity/Networking/SSH
@@ -86,10 +86,8 @@ make
 
 
 %check
-# FIXME: perform only X.509 related regression tests as multiplex usually fail!
-# TODO: exclude multiplex from regular tests as first step
 TERM=dumb \
-make check-certs
+make check
 
 
 %install
@@ -180,5 +178,7 @@ install -m744 contrib/redhat/sshd.init %{buildroot}/etc/rc.d/init.d/sshd
 
 
 %changelog
+* Sun Jun 16 2019 Roumen Petrov <pkixssh@roumenpetrov.info>
+- Version 12.1
 * Sun Apr 21 2019 Roumen Petrov <pkixssh@roumenpetrov.info>
 - Sample RPM build script
