@@ -192,7 +192,7 @@ fuzz_dump(struct fuzz *fuzz)
 	fputs(buf, stderr);
 	fprintf(stderr, "fuzz original %p len = %zu\n", fuzz->seed, fuzz->slen);
 	dump(fuzz->seed, fuzz->slen);
-	fprintf(stderr, "fuzz context %p len = %zu\n", fuzz, fuzz_len(fuzz));
+	fprintf(stderr, "fuzz context %p len = %zu\n", (void*)fuzz, fuzz_len(fuzz));
 	dump(fuzz_ptr(fuzz), fuzz_len(fuzz));
 }
 

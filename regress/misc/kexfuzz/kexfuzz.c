@@ -165,7 +165,7 @@ const char *in_test = NULL;
 			fprintf(stderr, "%s %s:%d " \
 			    "%s (%p) != expected %s (%p)\n", \
 			    in_test ? in_test : "(none)", \
-			    __func__, __LINE__, #a, (a), #b, (b)); \
+			    __func__, __LINE__, #a, (void*)(a), #b, (void*)(b)); \
 			exit(2); \
 		} \
 	} while (0)
