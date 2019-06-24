@@ -12,7 +12,7 @@
  * called by a name other than "ssh" or "Secure Shell".
  *
  * X509 certificate support,
- * Copyright (c) 2002-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -2408,16 +2408,6 @@ fill_default_options(Options * options)
 			fatal("Bad protocol 2 hostkey algorithms '%s'.",
 			    options->hostkeyalgorithms);
 	}
-{	/* see use of hostkeyalgorithms in sshconnect2.c */
-	char *p = default_publickey_algorithms();
-	char *all_key;
-
-	all_key = sshkey_alg_list(0, 0, 1, ','); /*only for compatibility*/
-	if (kex_assemble_names(&options->hostkeyalgorithms, p, all_key) != 0)
-		fatal("%s: kex_assemble_names failed", __func__);
-	free(all_key);
-	free(p);
-}
 
 	if (options->hostbased_algorithms != NULL) {
 		if (!sshkey_names_valid2(options->hostbased_algorithms, 1))

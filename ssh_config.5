@@ -43,7 +43,7 @@
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
 .\" $OpenBSD: ssh_config.5,v 1.296 2019/06/12 11:31:50 jmc Exp $
-.Dd $Mdocdate: June 14 2019 $
+.Dd $Mdocdate: June 24 2019 $
 .Dt SSH_CONFIG 5
 .Os
 .Sh NAME
@@ -883,11 +883,11 @@ Specifies the host key algorithms
 that the client wants to use in order of preference.
 Alternately if the specified value begins with a
 .Sq +
-character, then the specified key types will be appended to the default set
-instead of replacing them.
+character, then the specified key algorithms (including wildcards) will be appended
+to the default set instead of replacing them.
 If the specified value begins with a
 .Sq -
-character, then the specified key types (including wildcards) will be removed
+character, then the specified key algorithms (including wildcards) will be removed
 from the default set instead of replacing them.
 The default for this option depend from
 .Cm X509KeyAlgorithm .
@@ -909,8 +909,8 @@ ssh-dss
 If hostkeys are known for the destination host then this default is modified
 to prefer their algorithms.
 .Pp
-The list of available key types may also be obtained using
-.Qq ssh -Q key .
+The list of available key algorithms may also be obtained using
+.Qq ssh -Q key-alg .
 .It Cm HostKeyAlias
 Specifies an alias that should be used instead of the
 real host name when looking up or saving the host key
@@ -1741,8 +1741,10 @@ The argument must be
 Enabling this option allows learning alternate hostkeys for a server
 and supports graceful key rotation by allowing a server to send replacement
 public keys before old ones are removed.
-Additional hostkeys are only accepted if the key used to authenticate the
-host was already trusted or explicitly accepted by the user.
+Hostkeys are only accepted if the key algorithm used to authenticate the
+host is accepted by the user (see the
+.Cm HostKeyAlgorithms
+option for details).
 If
 .Cm UpdateHostKeys
 is set to

@@ -13,6 +13,7 @@
  *
  *
  * Copyright (c) 1999 Theo de Raadt.  All rights reserved.
+ * Copyright (c) 2017-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -37,9 +38,6 @@
  *
  * SSH2 support added by Markus Friedl.
  * Copyright (c) 1999, 2000, 2001 Markus Friedl.  All rights reserved.
- *
- * X.509 certificates support,
- * Copyright (c) 2017-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -2121,9 +2119,10 @@ client_input_hostkeys(struct ssh *ssh)
 		free(fp);
 
 		/* Check that the key is accepted in HostkeyAlgorithms */
-		if (match_pattern_list(pkalg,
-		    options.hostkeyalgorithms ? options.hostkeyalgorithms :
-		    KEX_DEFAULT_PK_ALG, 0) != 1) {
+		/* NOTE: Before key exchange option HostKeyAlgorithms
+		   is either assembled (if not set by configuration)
+		   or set to default. See ssh_kex2() in sshconnect2.c */
+		if (match_pattern_list(pkalg, options.hostkeyalgorithms, 0) != 1) {
 			debug3("%s: %s key not permitted by HostkeyAlgorithms",
 			    __func__, pkalg);
 			continue;

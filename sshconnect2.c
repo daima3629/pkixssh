@@ -160,7 +160,7 @@ void
 ssh_kex2(struct ssh *ssh, char *host, struct sockaddr *hostaddr, u_short port)
 {
 	char *myproposal[PROPOSAL_MAX] = { KEX_CLIENT };
-	char *s, *all_key;
+	char *s;
 	struct kex *kex;
 	int r;
 
@@ -179,22 +179,27 @@ ssh_kex2(struct ssh *ssh, char *host, struct sockaddr *hostaddr, u_short port)
 	    "zlib@openssh.com,zlib,none" : "none,zlib@openssh.com,zlib";
 	myproposal[PROPOSAL_MAC_ALGS_CTOS] =
 	    myproposal[PROPOSAL_MAC_ALGS_STOC] = options.macs;
+{	/* finalize set of client option HostKeyAlgorithms */
+	char *defalgs = default_publickey_algorithms();
 	if (options.hostkeyalgorithms != NULL) {
-		all_key = sshkey_alg_list(0, 0, 1, ',');
+		/* Assemble */
+		char *allalgs = sshkey_alg_list(0, 0, 1, ',');
 		if (kex_assemble_names(&options.hostkeyalgorithms,
-		    KEX_DEFAULT_PK_ALG, all_key) != 0)
-			fatal("%s: kex_assemble_namelist", __func__);
-		free(all_key);
+		    defalgs, allalgs) != 0)
+			fatal("%s: kex_assemble_names failed", __func__);
+		free(allalgs);
+		free(defalgs);
 		myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS] =
 		    compat_pkalg_proposal(options.hostkeyalgorithms);
 	} else {
 		/* Enforce default */
-		options.hostkeyalgorithms = xstrdup(KEX_DEFAULT_PK_ALG);
+		options.hostkeyalgorithms = defalgs;
 		/* Prefer algorithms that we already have keys for */
 		myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS] =
 		    compat_pkalg_proposal(
 		    order_hostkeyalgs(host, hostaddr, port));
 	}
+}
 
 	if (options.rekey_limit || options.rekey_interval)
 		ssh_packet_set_rekey_limits(ssh, options.rekey_limit,
