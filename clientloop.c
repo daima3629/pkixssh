@@ -1935,6 +1935,14 @@ update_known_hosts(struct hostkeys_update_ctx *ctx)
 	for (i = 0; i < ctx->nkeys; i++) {
 		if (ctx->keys_seen[i] != 2)
 			continue;
+		if (sshkey_is_x509(ctx->keys[i])) {
+			fp = x509key_subject(ctx->keys[i]);
+			if (fp == NULL)
+				fatal("%s: x509key_subject failed", __func__);
+			do_log2(loglevel, "Learned new hostkey: %s", fp);
+			free(fp);
+			continue;
+		}
 		if ((fp = sshkey_fingerprint(ctx->keys[i],
 		    options.fingerprint_hash, SSH_FP_DEFAULT)) == NULL)
 			fatal("%s: sshkey_fingerprint failed", __func__);
@@ -1943,6 +1951,14 @@ update_known_hosts(struct hostkeys_update_ctx *ctx)
 		free(fp);
 	}
 	for (i = 0; i < ctx->nold; i++) {
+		if (sshkey_is_x509(ctx->old_keys[i])) {
+			fp = x509key_subject(ctx->old_keys[i]);
+			if (fp == NULL)
+				fatal("%s: x509key_subject failed", __func__);
+			do_log2(loglevel, "Deprecating obsolete hostkey: %s", fp);
+			free(fp);
+			continue;
+		}
 		if ((fp = sshkey_fingerprint(ctx->old_keys[i],
 		    options.fingerprint_hash, SSH_FP_DEFAULT)) == NULL)
 			fatal("%s: sshkey_fingerprint failed", __func__);

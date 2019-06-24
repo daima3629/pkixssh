@@ -1258,7 +1258,7 @@ x509key_subject(const struct sshkey *key) {
 
 	/* match format used in Xkey_write_subject */
 	dn = X509_get_subject_name(key->x509_data->cert);
-	return ssh_X509_NAME_oneline(dn); /*fatal on error*/
+	return ssh_X509_NAME_oneline(dn);
 }
 
 

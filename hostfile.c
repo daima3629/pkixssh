@@ -604,8 +604,11 @@ hostfile_replace_entries(const char *filename, const char *host, const char *ip,
 	for (i = 0; i < nkeys; i++) {
 		if (ctx.skip_keys[i])
 			continue;
-		if ((fp = sshkey_fingerprint(keys[i], hash_alg,
-		    SSH_FP_DEFAULT)) == NULL) {
+		if (sshkey_is_x509(keys[i]))
+			fp = x509key_subject(keys[i]);
+		else
+			fp = sshkey_fingerprint(keys[i], hash_alg, SSH_FP_DEFAULT);
+		if (fp == NULL) {
 			r = SSH_ERR_ALLOC_FAIL;
 			goto fail;
 		}
