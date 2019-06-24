@@ -2,8 +2,7 @@
 
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
- * X.509 certificates support,
- * Copyright (c) 2002-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -44,7 +43,6 @@
 #  define EC_GROUP	void
 #  define EC_POINT	void
 # endif /* OPENSSL_HAS_ECC */
-#include <openssl/x509.h>
 #else /* WITH_OPENSSL */
 # define BIGNUM		void
 # define RSA		void
@@ -120,11 +118,6 @@ struct sshkey_cert {
 
 typedef struct ssh_x509_st SSH_X509;
 
-SSH_X509*	SSH_X509_new(void);
-void		SSH_X509_free(SSH_X509* xd);
-X509*		SSH_X509_get_cert(SSH_X509 *xd);
-
-
 /* XXX opaquify? */
 struct sshkey {
 	int	 type;
@@ -173,10 +166,6 @@ int		 sshkey_from_private(const struct sshkey *, struct sshkey **);
 int	 sshkey_type_from_name(const char *);
 void	 sshkey_types_from_name(const char *name, int *type, int *subtype);
 const char	*sshkey_name_from_types(int type, int subtype);
-static inline int/*bool*/
-sshkey_is_x509(const struct sshkey *key) {
-	return (key != NULL) && (key->x509_data != NULL);
-}
 int	 sshkey_is_cert(const struct sshkey *);
 int	 sshkey_type_is_cert(int);
 int	 sshkey_type_plain(int);

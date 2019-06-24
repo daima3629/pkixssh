@@ -1,7 +1,7 @@
 #ifndef SSH_X509_H
 #define SSH_X509_H
 /*
- * Copyright (c) 2002-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -25,6 +25,9 @@
  */
 
 #include "includes.h"
+
+#include <openssl/x509.h>
+
 #include "sshxkey.h"
 #include "sshkey.h"
 #include "sshbuf.h"
@@ -90,6 +93,14 @@ int	parse_key_from_blob(const u_char *blob, size_t blen,
 int	xkey_validate_cert(const struct sshkey *k);
 
 
-int	 sshkey_is_x509(const struct sshkey *);
+static inline int/*bool*/
+sshkey_is_x509(const struct sshkey *key) {
+	return (key != NULL) && (key->x509_data != NULL);
+}
+
+
+SSH_X509*	SSH_X509_new(void);
+void		SSH_X509_free(SSH_X509* xd);
+X509*		SSH_X509_get_cert(SSH_X509 *xd);
 
 #endif /* SSH_X509_H */
