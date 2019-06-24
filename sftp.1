@@ -1,4 +1,4 @@
-.\" $OpenBSD: sftp.1,v 1.126 2019/06/12 11:31:50 jmc Exp $
+.\" $OpenBSD: sftp.1,v 1.127 2019/06/19 20:12:44 jmc Exp $
 .\"
 .\" Copyright (c) 2001 Damien Miller.  All rights reserved.
 .\"
@@ -30,7 +30,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: June 12 2019 $
+.Dd $Mdocdate: June 19 2019 $
 .Dt SFTP 1
 .Os
 .Sh NAME
@@ -349,7 +349,7 @@ extension.
 Quit
 .Nm sftp .
 .It Xo Ic get
-.Op Fl afPpr
+.Op Fl afpR
 .Ar remote-path
 .Op Ar local-path
 .Xc
@@ -384,15 +384,17 @@ flag is specified, then
 will be called after the file transfer has completed to flush the file
 to disk.
 .Pp
-If either the
-.Fl P
-or
+If the
 .Fl p
+.\" or undocumented redundant alias
+.\" .Fl P
 flag is specified, then full file permissions and access times are
 copied too.
 .Pp
 If the
-.Fl r
+.Fl R
+.\" or undocumented redundant alias
+.\" .Fl r
 flag is specified then directories will be copied recursively.
 Note that
 .Nm
@@ -490,7 +492,7 @@ Create remote directory specified by
 .It Ic progress
 Toggle display of progress meter.
 .It Xo Ic put
-.Op Fl afPpr
+.Op Fl afpR
 .Ar local-path
 .Op Ar remote-path
 .Xc
@@ -526,15 +528,17 @@ after the file has been transferred.
 Note that this is only supported by servers that implement
 the "fsync@openssh.com" extension.
 .Pp
-If either the
-.Fl P
-or
+If the
 .Fl p
+.\" or undocumented redundant alias
+.\" .Fl P
 flag is specified, then full file permissions and access times are
 copied too.
 .Pp
 If the
-.Fl r
+.Fl R
+.\" or undocumented redundant alias
+.\" .Fl r
 flag is specified then directories will be copied recursively.
 Note that
 .Nm
@@ -545,7 +549,7 @@ Display remote working directory.
 Quit
 .Nm sftp .
 .It Xo Ic reget
-.Op Fl Ppr
+.Op Fl fpR
 .Ar remote-path
 .Op Ar local-path
 .Xc
@@ -557,12 +561,12 @@ with the
 .Fl a
 flag set.
 .It Xo Ic reput
-.Op Fl Ppr
-.Op Ar local-path
-.Ar remote-path
+.Op Fl fpR
+.Ar local-path
+.Op Ar remote-path
 .Xc
 Resume upload of
-.Op Ar local-path .
+.Ar local-path .
 Equivalent to
 .Ic put
 with the
