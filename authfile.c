@@ -393,7 +393,7 @@ sshkey_load_public(const char *filename, struct sshkey **keyp, char **commentp)
 	sshkey_free(pub);
 
 	/* try .pub suffix */
-	if (asprintf(&file, "%s.pub", filename) == -1)
+	if (asprintf(&file, "%s.pub", filename) < 0)
 		return SSH_ERR_ALLOC_FAIL;
 	if ((pub = sshkey_new(KEY_UNSPEC)) == NULL) {
 		r = SSH_ERR_ALLOC_FAIL;
@@ -425,7 +425,7 @@ sshkey_load_cert(const char *filename, struct sshkey **keyp)
 	if (keyp != NULL)
 		*keyp = NULL;
 
-	if (asprintf(&file, "%s-cert.pub", filename) == -1)
+	if (asprintf(&file, "%s-cert.pub", filename) < 0)
 		return SSH_ERR_ALLOC_FAIL;
 
 	if ((pub = sshkey_new(KEY_UNSPEC)) == NULL) {

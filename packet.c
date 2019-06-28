@@ -1841,7 +1841,7 @@ sshpkt_vfatal(struct ssh *ssh, int r, const char *fmt, va_list ap)
 		}
 		/* FALLTHROUGH */
 	default:
-		if (vasprintf(&tag, fmt, ap) == -1) {
+		if (vasprintf(&tag, fmt, ap) < 0) {
 			ssh_packet_clear_keys(ssh);
 			logdie("%s: could not allocate failure message",
 			    __func__);

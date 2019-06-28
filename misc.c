@@ -975,7 +975,7 @@ addargs(arglist *args, char *fmt, ...)
 	va_start(ap, fmt);
 	r = vasprintf(&cp, fmt, ap);
 	va_end(ap);
-	if (r == -1)
+	if (r < 0)
 		fatal("addargs: argument too long");
 
 	nalloc = args->nalloc;
@@ -1001,7 +1001,7 @@ replacearg(arglist *args, u_int which, char *fmt, ...)
 	va_start(ap, fmt);
 	r = vasprintf(&cp, fmt, ap);
 	va_end(ap);
-	if (r == -1)
+	if (r < 0)
 		fatal("replacearg: argument too long");
 
 	if (which >= args->num)
