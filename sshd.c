@@ -112,6 +112,7 @@
 #include "myproposal.h"
 #include "authfile.h"
 #include "pathnames.h"
+#include "atomicio.h"
 #include "canohost.h"
 #include "hostfile.h"
 #include "auth.h"
@@ -129,7 +130,6 @@
 #include "auth-options.h"
 #include "version.h"
 #include "ssherr.h"
-#include "atomicio.h"
 
 #ifdef LIBWRAP
 #include <tcpd.h>
@@ -322,12 +322,12 @@ close_startup_pipes(void)
  * the server key).
  */
 
-/*ARGSUSED*/
 static void
 sighup_handler(int sig)
 {
 	int save_errno = errno;
 
+	UNUSED(sig);
 	received_sighup = 1;
 	errno = save_errno;
 }
@@ -356,7 +356,6 @@ sighup_restart(void)
 /*
  * Generic signal handler for terminating signals in the master daemon.
  */
-/*ARGSUSED*/
 static void
 sigterm_handler(int sig)
 {
@@ -367,7 +366,6 @@ sigterm_handler(int sig)
  * SIGCHLD handler.  This is called whenever a child dies.  This will then
  * reap any zombies left by exited children.
  */
-/*ARGSUSED*/
 static void
 main_sigchld_handler(int sig)
 {
@@ -375,6 +373,7 @@ main_sigchld_handler(int sig)
 	pid_t pid;
 	int status;
 
+	UNUSED(sig);
 	while ((pid = waitpid(-1, &status, WNOHANG)) > 0 ||
 	    (pid < 0 && errno == EINTR))
 		;
@@ -384,10 +383,10 @@ main_sigchld_handler(int sig)
 /*
  * Signal handler for the alarm after the login grace period has expired.
  */
-/*ARGSUSED*/
 static void
 grace_alarm_handler(int sig)
 {
+	UNUSED(sig);
 	if (use_privsep && pmonitor != NULL && pmonitor->m_pid > 0)
 		kill(pmonitor->m_pid, SIGALRM);
 
@@ -753,7 +752,7 @@ get_hostkey_by_type(int type, int subtype, int need_private, struct ssh *ssh)
 	u_int i;
 	struct sshkey *key;
 
-	(void)ssh;
+	UNUSED(ssh);
 	for (i = 0; i < options.num_host_key_files; i++) {
 		switch (type) {
 		case KEY_RSA_CERT:
@@ -783,7 +782,7 @@ get_hostkey_by_alg(const char* alg, int need_private, struct ssh *ssh) {
 	u_int i;
 	struct sshkey *key;
 
-	(void)ssh;
+	UNUSED(ssh);
 	for (i = 0; i < options.num_host_key_files; i++) {
 		key = sensitive_data.host_keys[i];
 		if (key == NULL && !need_private)
@@ -844,7 +843,7 @@ get_hostkey_by_index(u_int ind)
 struct sshkey *
 get_hostkey_public_by_index(u_int ind, struct ssh *ssh)
 {
-	(void)ssh;
+	UNUSED(ssh);
 	return ind < options.num_host_key_files
 		? sensitive_data.host_pubkeys[ind]
 		: NULL;
@@ -853,7 +852,7 @@ get_hostkey_public_by_index(u_int ind, struct ssh *ssh)
 static const char**
 get_hostkey_alg_by_index(u_int ind, struct ssh *ssh)
 {
-	(void)ssh;
+	UNUSED(ssh);
 	return ind < options.num_host_key_files
 		? sensitive_data.host_algorithms[ind]
 		: NULL;
@@ -864,7 +863,7 @@ get_hostkey_index(struct sshkey *key, int compare, struct ssh *ssh)
 {
 	u_int i;
 
-	(void)ssh;
+	UNUSED(ssh);
 	for (i = 0; i < options.num_host_key_files; i++) {
 		if (sshkey_is_cert(key)) {
 			if (key == sensitive_data.host_certificates[i] ||
@@ -1522,6 +1521,8 @@ set_process_rdomain(struct ssh *ssh, const char *name)
 		    rtable, strerror(errno));
 	debug("%s: set routing domain %d (was %d)", __func__, rtable, ortable);
 #else /* defined(__OpenBSD__) */
+	UNUSED(ssh);
+	UNUSED(name);
 	fatal("Unable to set routing domain: not supported in this platform");
 #endif
 }
@@ -2425,7 +2426,7 @@ static void
 do_ssh2_kex(struct ssh *ssh)
 {
 	char *myproposal[PROPOSAL_MAX] = { KEX_SERVER };
-	struct kex *kex = ssh->kex;
+	struct kex *kex;
 	int r;
 
 	myproposal[PROPOSAL_KEX_ALGS] = compat_kex_proposal(
@@ -2452,6 +2453,7 @@ do_ssh2_kex(struct ssh *ssh)
 	/* start key exchange */
 	if ((r = kex_setup(ssh, myproposal)) != 0)
 		fatal("kex_setup: %s", ssh_err(r));
+	kex = ssh->kex;
 #ifdef WITH_OPENSSL
 	kex->kex[KEX_DH_GRP1_SHA1] = kex_gen_server;
 	kex->kex[KEX_DH_GRP14_SHA1] = kex_gen_server;
