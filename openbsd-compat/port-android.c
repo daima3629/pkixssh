@@ -131,13 +131,10 @@ extern int __real_open(const char *path, int flags, mode_t mode);
 
 int
 __wrap_open(const char *path, int flags, mode_t mode) {
-	int ret;
+	char r_path[PATH_MAX];
 
-{	char newpath[PATH_MAX];
-	path = relocate_path(path, newpath, sizeof(newpath));
-	ret = __real_open(path, flags, mode);
-}
-	return ret;
+	path = relocate_path(path, r_path, sizeof(r_path));
+	return __real_open(path, flags, mode);
 }
 
 
@@ -145,13 +142,23 @@ extern FILE* __real_fopen(const char *path, const char *mode);
 
 FILE*
 __wrap_fopen(const char *path, const char *mode) {
-	FILE *ret;
+	char r_path[PATH_MAX];
 
-{	char newpath[PATH_MAX];
-	path = relocate_path(path, newpath, sizeof(newpath));
-	ret = __real_fopen(path, mode);
+	path = relocate_path(path, r_path, sizeof(r_path));
+	return  __real_fopen(path, mode);
 }
-	return ret;
+
+
+extern int __real_rename(const char *oldpath, const char *newpath);
+
+int
+__wrap_rename(const char *oldpath, const char *newpath) {
+	char r_oldpath[PATH_MAX], r_newpath[PATH_MAX];
+
+	oldpath = relocate_path(oldpath, r_oldpath, sizeof(r_oldpath));
+	newpath = relocate_path(newpath, r_newpath, sizeof(r_newpath));
+
+	return __real_rename(oldpath, newpath);
 }
 
 

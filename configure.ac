@@ -838,6 +838,7 @@ main() { if (NSVersionOfRunTimeLibrary("System") >= (60 << 16))
 	*-*-linux-android*)
 		LIBS="$LIBS -llog"
 		XLDFLAGS="$XLDFLAGS -Wl,--wrap=open -Wl,--wrap=fopen"
+		XLDFLAGS="$XLDFLAGS -Wl,--wrap=rename"
 		;;
 	esac
 
