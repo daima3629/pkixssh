@@ -1668,7 +1668,6 @@ main(int ac, char **av)
 		case 'i':
 			inetd_flag = 1;
 			break;
-#ifndef __ANDROID__
 		case 'r':
 			rexec_flag = 0;
 			break;
@@ -1676,7 +1675,6 @@ main(int ac, char **av)
 			rexeced_flag = 1;
 			inetd_flag = 1;
 			break;
-#endif /*def __ANDROID__*/
 		case 'Q':
 			/* ignored */
 			break;
@@ -1743,9 +1741,6 @@ main(int ac, char **av)
 			break;
 		}
 	}
-#ifdef __ANDROID__
-	rexec_flag = 0; /*TODO reexec does not work on android*/
-#endif
 	if (rexeced_flag || inetd_flag)
 		rexec_flag = 0;
 	if (!test_flag && rexec_flag && !path_absolute(av[0]))
