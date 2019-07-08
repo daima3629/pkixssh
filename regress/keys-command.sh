@@ -14,8 +14,8 @@ rm -f $OBJ/keys-command-args
 touch $OBJ/keys-command-args
 chmod a+rw $OBJ/keys-command-args
 
-expected_key_text=`awk '{ print $2 }' < $OBJ/rsa.pub`
-expected_key_fp=`$SSHKEYGEN -lf $OBJ/rsa.pub | awk '{ print $2 }'`
+expected_key_text=`awk '{ print $2 }' < $OBJ/ssh-rsa.pub`
+expected_key_fp=`$SSHKEYGEN -lf $OBJ/ssh-rsa.pub | awk '{ print $2 }'`
 
 # Establish a AuthorizedKeysCommand in /var/run where it will have
 # acceptable directory permissions.
