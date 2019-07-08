@@ -44,7 +44,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: May 20 2019 $
+.Dd $Mdocdate: July 8 2019 $
 .Dt SSH-KEYGEN 1
 .Os
 .Sh NAME
@@ -59,6 +59,7 @@
 .Op Fl N Ar new_passphrase
 .Op Fl C Ar comment
 .Op Fl f Ar output_keyfile
+.Op Fl o
 .Op Fl m Ar format
 .Nm ssh-keygen
 .Fl p
@@ -66,14 +67,14 @@
 .Op Fl N Ar new_passphrase
 .Op Fl f Ar keyfile
 .Op Fl o
-.Op Fl m Ar PEM
+.Op Fl m Ar format
 .Nm ssh-keygen
 .Fl i
-.Op Fl m Ar key_format
+.Op Fl m Ar format
 .Op Fl f Ar input_keyfile
 .Nm ssh-keygen
 .Fl e
-.Op Fl m Ar key_format
+.Op Fl m Ar format
 .Op Fl f Ar input_keyfile
 .Nm ssh-keygen
 .Fl y
@@ -165,12 +166,18 @@ If invoked without any arguments,
 .Nm
 will generate an RSA key.
 .Pp
-By default key is stored in PEM format.
+By default key is stored in PKCS#8 PEM format.
+For compatibility with earlier versions programs
+read keys stored in PEM format as well.
 Option
-.Op Fl p Fl m Ar PEM
-could be used to convert private key from proprietary
-in more portable and widely used PEM format.
-Note if key contain X.509 certificate PEM format is required.
+.Fl p
+could be used to convert private key between OpenSSH proprietary
+and more portable and widely used PKCS#8 PEM format
+depending from option arguments:
+.Fl m Ar PKCS8
+or
+.Fl o .
+Note if key contain X.509 certificate PKCS#8 PEM format is required.
 For those keys request to store in proprietary format is ignored.
 .Pp
 .Nm
@@ -380,6 +387,9 @@ This option allows importing keys from other software, including several
 commercial SSH implementations.
 The default import format is
 .Dq RFC4716 .
+Note 
+.Ar PKCS8
+format is usable only for public keys.
 .It Fl J Ar num_lines
 Exit after screening the specified number of lines
 while performing DH candidate screening using the
@@ -425,7 +435,7 @@ fingerprint.
 .It Fl M Ar memory
 Specify the amount of memory to use (in megabytes) when generating
 candidate moduli for DH-GEX.
-.It Fl m Ar key_format
+.It Fl m Ar format
 Specify a key format for key generation, the
 .Fl i
 (import),
@@ -434,21 +444,23 @@ Specify a key format for key generation, the
 .Fl p
 change passphrase operation.
 The latter may be used to convert between proprietary OpenSSH private key
-and portable PEM private key formats.
+and portable PKCS#8 PEM private key formats.
 The supported key formats are:
 .Dq RFC4716
 (RFC 4716/SSH2 public or private key),
-.Dq PKCS8
-(PEM PKCS8 public key)
 or
-.Dq PEM
-(PEM public key).
+.Dq PKCS8
+(PKCS#8 PEM public or private key).
 The default conversion format is
 .Dq RFC4716 .
 Setting a format of
+.Dq PKCS8
+or
 .Dq PEM
+(compatibility option)
 when generating or updating a supported private key type will cause the
-key to be stored in the portable PEM private key format.
+key to be stored in the portable PKCS#8 PEM private key format.
+.\" Ignore obsolete PEM for import/export - it is only for RSA public!
 .It Fl N Ar new_passphrase
 Provides the new passphrase.
 .It Fl n Ar principals
@@ -547,7 +559,7 @@ format.
 Causes
 .Nm
 to save private keys using the proprietary OpenSSH format rather than
-the more compatible PEM format.
+the more compatible PKCS#8 PEM format.
 Ed25519 keys always use the proprietary key format.
 .It Fl P Ar passphrase
 Provides the (old) passphrase.
@@ -558,11 +570,11 @@ The program will prompt for the file
 containing the private key, for the old passphrase, and twice for the
 new passphrase.
 Options
-.Fl "m PEM"
+.Fl m Ar PKCS8
 or
 .Fl o
 could change format of stored key:
-either compatible PEM format
+either compatible PKCS#8 PEM format
 or proprietary OpenSSH format.
 .It Fl Q
 Test whether keys have been revoked in a KRL.

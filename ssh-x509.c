@@ -1732,7 +1732,7 @@ ssh_x509_sign(
 		goto end_sign_pkey;
 	}
 
-	if (res <= 0) {
+	if (!res) { /*EVP_PKEY_set1_... returns boolean*/
 		error("ssh_x509_sign: EVP_PKEY_set1_XXX: fail");
 		log_crypto_errors(SYSLOG_LEVEL_ERROR, __func__);
 		r = SSH_ERR_LIBCRYPTO_ERROR;

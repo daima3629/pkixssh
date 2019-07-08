@@ -643,7 +643,7 @@ get_line(FILE *fp, char *line, size_t len)
 }
 
 static void
-do_convert_from_ssh2(struct passwd *pw, struct sshkey **k, int *private)
+do_convert_from_ssh2(struct sshkey **k, int *private)
 {
 	int r, blen, escaped = 0;
 	u_int len;
@@ -652,7 +652,6 @@ do_convert_from_ssh2(struct passwd *pw, struct sshkey **k, int *private)
 	char encoded[8096];
 	FILE *fp;
 
-	UNUSED(pw);
 	if ((fp = fopen(identity_file, "r")) == NULL)
 		fatal("%s: %s: %s", __progname, identity_file, strerror(errno));
 	encoded[0] = '\0';
@@ -770,7 +769,7 @@ do_convert_from(struct passwd *pw)
 
 	switch (convert_format) {
 	case FMT_RFC4716:
-		do_convert_from_ssh2(pw, &k, &private);
+		do_convert_from_ssh2(&k, &private);
 		break;
 	case FMT_PKCS8:
 		do_convert_from_pkcs8(&k, &private);
@@ -781,6 +780,7 @@ do_convert_from(struct passwd *pw)
 	default:
 		fatal("%s: unknown key format %d", __func__, convert_format);
 	}
+	if (k == NULL) exit(1);
 
 	if (!private) {
 		if ((r = sshkey_write(k, stdout)) == 0)
@@ -788,27 +788,24 @@ do_convert_from(struct passwd *pw)
 		if (ok)
 			fprintf(stdout, "\n");
 	} else {
-		switch (k->type) {
-		case KEY_DSA:
-			ok = PEM_write_DSAPrivateKey(stdout, k->dsa, NULL,
-			    NULL, 0, NULL, NULL);
-			break;
-#ifdef OPENSSL_HAS_ECC
-		case KEY_ECDSA:
-			ok = PEM_write_ECPrivateKey(stdout, k->ecdsa, NULL,
-			    NULL, 0, NULL, NULL);
-			break;
+		BIO *out = BIO_new_fp(stdout, BIO_NOCLOSE);
+		if (out == NULL) goto done;
+#ifdef VMS
+	{
+		BIO *tmpbio = BIO_new(BIO_f_linebuffer());
+		out = BIO_push(tmpbio, out);
+	}
 #endif
-		case KEY_RSA:
-			ok = PEM_write_RSAPrivateKey(stdout, k->rsa, NULL,
-			    NULL, 0, NULL, NULL);
-			break;
-		default:
+		r = sshkey_private_pem_to_bio(k, out, "");
+		if (r == 0)
+			ok = 1;
+		else if (r == SSH_ERR_INVALID_ARGUMENT)
 			fatal("%s: unsupported key type %s", __func__,
 			    sshkey_type(k));
-		}
+		BIO_free_all(out);
 	}
 
+done:
 	if (!ok)
 		fatal("key write failed");
 	sshkey_free(k);
@@ -2480,10 +2477,10 @@ usage(void)
 	fprintf(stderr,
 	    "usage: ssh-keygen [-q] [-b bits] [-t dsa | ecdsa | ed25519 | rsa] [-o] [-m format]\n"
 	    "                  [-N new_passphrase] [-C comment] [-f output_keyfile]\n"
-	    "       ssh-keygen -p [-P old_passphrase] [-N new_passphrase] [-o] [-m PEM]\n"
+	    "       ssh-keygen -p [-P old_passphrase] [-N new_passphrase] [-o] [-m format]\n"
 	    "                   [-f keyfile]\n"
-	    "       ssh-keygen -i [-m key_format] [-f input_keyfile]\n"
-	    "       ssh-keygen -e [-m key_format] [-f input_keyfile]\n"
+	    "       ssh-keygen -i [-m format] [-f input_keyfile]\n"
+	    "       ssh-keygen -e [-m format] [-f input_keyfile]\n"
 	    "       ssh-keygen -y [-f input_keyfile]\n"
 	    "       ssh-keygen -c [-P passphrase] [-C comment] [-f keyfile]\n"
 	    "       ssh-keygen -l [-v] [-E fingerprint_hash] [-f input_keyfile]\n"
@@ -2635,7 +2632,6 @@ main(int argc, char **argv)
 			}
 			if (strcasecmp(optarg, "PEM") == 0) {
 				convert_format = FMT_PEM;
-				use_new_format = 0;
 				break;
 			}
 			fatal("Unsupported conversion format \"%s\"", optarg);
