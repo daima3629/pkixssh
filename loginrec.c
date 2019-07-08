@@ -1114,7 +1114,7 @@ wtmp_write(struct logininfo *li, struct utmp *ut)
 		    WTMP_FILE, strerror(errno));
 		return (0);
 	}
-	if (fstat(fd, &buf) == 0)
+	if (fstat(fd, &buf) != -1)
 		if (atomicio(vwrite, fd, ut, sizeof(*ut)) != sizeof(*ut)) {
 			ftruncate(fd, buf.st_size);
 			logit("%s: problem writing %s: %s", __func__,
@@ -1208,7 +1208,7 @@ wtmp_get_entry(struct logininfo *li)
 		    WTMP_FILE, strerror(errno));
 		return (0);
 	}
-	if (fstat(fd, &st) != 0) {
+	if (fstat(fd, &st) == -1) {
 		logit("%s: couldn't stat %s: %s", __func__,
 		    WTMP_FILE, strerror(errno));
 		close(fd);
@@ -1287,7 +1287,7 @@ wtmpx_write(struct logininfo *li, struct utmpx *utx)
 		return (0);
 	}
 
-	if (fstat(fd, &buf) == 0)
+	if (fstat(fd, &buf) != -1)
 		if (atomicio(vwrite, fd, utx, sizeof(*utx)) != sizeof(*utx)) {
 			ftruncate(fd, buf.st_size);
 			logit("%s: problem writing %s: %s", __func__,
@@ -1373,7 +1373,7 @@ wtmpx_get_entry(struct logininfo *li)
 		    WTMPX_FILE, strerror(errno));
 		return (0);
 	}
-	if (fstat(fd, &st) != 0) {
+	if (fstat(fd, &st) == -1) {
 		logit("%s: couldn't stat %s: %s", __func__,
 		    WTMPX_FILE, strerror(errno));
 		close(fd);
@@ -1495,7 +1495,7 @@ lastlog_openseek(struct logininfo *li, int *fd, int filemode)
 	char lastlog_file[1024];
 	struct stat st;
 
-	if (stat(LASTLOG_FILE, &st) != 0) {
+	if (stat(LASTLOG_FILE, &st) == -1) {
 		logit("%s: Couldn't stat %s: %s", __func__,
 		    LASTLOG_FILE, strerror(errno));
 		return (0);
@@ -1692,7 +1692,7 @@ record_failed_login(struct ssh *ssh, const char *username, const char *hostname,
 		    strerror(errno));
 		return;
 	}
-	if (fstat(fd, &fst) < 0) {
+	if (fstat(fd, &fst) == -1) {
 		logit("%s: fstat of %s failed: %s", __func__, _PATH_BTMP,
 		    strerror(errno));
 		goto out;

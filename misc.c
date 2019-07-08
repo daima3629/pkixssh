@@ -1970,7 +1970,7 @@ safe_path(const char *name, struct stat *stp, const char *pw_dir,
 		}
 		strlcpy(buf, cp, sizeof(buf));
 
-		if (stat(buf, &st) < 0 ||
+		if (stat(buf, &st) == -1 ||
 		    (!platform_sys_dir_uid(st.st_uid) && st.st_uid != uid) ||
 		    (st.st_mode & SECURE_MASK_DIR) != 0) {
 			snprintf(err, errlen,
@@ -2005,7 +2005,7 @@ safe_path_fd(int fd, const char *file, struct passwd *pw,
 	struct stat st;
 
 	/* check the open file to avoid races */
-	if (fstat(fd, &st) < 0) {
+	if (fstat(fd, &st) == -1) {
 		snprintf(err, errlen, "cannot stat file %s: %s",
 		    file, strerror(errno));
 		return -1;

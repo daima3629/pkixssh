@@ -58,7 +58,7 @@ safely_chroot(const char *path, uid_t uid)
 
 		/* debug3("%s: checking '%s'", __func__, component); */
 
-		if (stat(component, &st) != 0)
+		if (stat(component, &st) == -1)
 			fatal("%s: stat(\"%s\"): %s", __func__,
 			    component, strerror(errno));
 		if (st.st_uid != 0 || (st.st_mode & 022) != 0)
@@ -126,7 +126,7 @@ auth_secure_path(const char *name, struct stat *stp, const char *pw_dir,
 		}
 		strlcpy(buf, cp, sizeof(buf));
 
-		if (stat(buf, &st) < 0 ||
+		if (stat(buf, &st) == -1 ||
 		    (!platform_sys_dir_uid(st.st_uid) && st.st_uid != uid) ||
 		    (st.st_mode & 022) != 0) {
 			snprintf(err, errlen,
@@ -192,7 +192,7 @@ main(int argc, char **argv)
 	if (mode == 1)
 		safely_chroot(path, getuid());
 	else if (mode == 2) {
-		if (stat(path, &st) < 0)
+		if (stat(path, &st) == -1)
 			fatal("Could not stat %s: %s", path, strerror(errno));
 		if (auth_secure_path(path, &st, NULL, 0,
 		    errmsg, sizeof(errmsg)) != 0)

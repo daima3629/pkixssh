@@ -847,7 +847,7 @@ main(int ac, char **av)
 				: NULL;
 		}
 			if (p != NULL &&
-			    stat(p, &st) < 0)
+			    stat(p, &st) == -1)
 				fprintf(stderr, "Warning: Identity file %s "
 				    "not accessible: %s.\n", p,
 				    strerror(errno));
@@ -1522,7 +1522,7 @@ main(int ac, char **av)
 	if (config == NULL) {
 		r = snprintf(buf, sizeof buf, "%s%s%s", pw->pw_dir,
 		    strcmp(pw->pw_dir, "/") ? "/" : "", _PATH_SSH_USER_DIR);
-		if (r > 0 && (size_t)r < sizeof(buf) && stat(buf, &st) < 0) {
+		if (r > 0 && (size_t)r < sizeof(buf) && stat(buf, &st) == -1) {
 #ifdef WITH_SELINUX
 			ssh_selinux_setfscreatecon(buf);
 #endif

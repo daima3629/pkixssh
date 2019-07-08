@@ -173,7 +173,7 @@ allowed_user(struct ssh *ssh, struct passwd * pw)
 		char *shell = xstrdup((pw->pw_shell[0] == '\0') ?
 		    _PATH_BSHELL : pw->pw_shell); /* empty = /bin/sh */
 
-		if (stat(shell, &st) != 0) {
+		if (stat(shell, &st) == -1) {
 			logit("User %.100s not allowed because shell %.100s "
 			    "does not exist", pw->pw_name, shell);
 			free(shell);
@@ -477,7 +477,7 @@ check_key_in_hostfiles(struct passwd *pw, struct sshkey *key, const char *host,
 	if (userfile != NULL) {
 		user_hostfile = tilde_expand_filename(userfile, pw->pw_uid);
 		if (options.strict_modes &&
-		    (stat(user_hostfile, &st) == 0) &&
+		    (stat(user_hostfile, &st) != -1) &&
 		    ((st.st_uid != 0 && st.st_uid != pw->pw_uid) ||
 		    (st.st_mode & 022) != 0)) {
 			logit("Authentication refused for %.100s: "
@@ -523,7 +523,7 @@ auth_openfile(const char *file, struct passwd *pw, int strict_modes,
 		return NULL;
 	}
 
-	if (fstat(fd, &st) < 0) {
+	if (fstat(fd, &st) == -1) {
 		close(fd);
 		return NULL;
 	}
@@ -890,7 +890,7 @@ subprocess(const char *tag, struct passwd *pw, const char *command,
 		return 0;
 	}
 	temporarily_use_uid(pw);
-	if (stat(av[0], &st) < 0) {
+	if (stat(av[0], &st) == -1) {
 		error("Could not stat %s \"%s\": %s", tag,
 		    av[0], strerror(errno));
 		restore_uid();

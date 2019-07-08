@@ -104,7 +104,7 @@ sshkey_load_file(int fd, struct sshbuf *blob)
 	struct stat st;
 	int r;
 
-	if (fstat(fd, &st) < 0)
+	if (fstat(fd, &st) == -1)
 		return SSH_ERR_SYSTEM_ERROR;
 	if ((st.st_mode & (S_IFSOCK|S_IFCHR|S_IFIFO)) == 0 &&
 	    st.st_size > MAX_KEY_FILE_SIZE)
@@ -144,7 +144,7 @@ sshkey_perm_ok(int fd, const char *filename)
 {
 	struct stat st;
 
-	if (fstat(fd, &st) < 0)
+	if (fstat(fd, &st) == -1)
 		return SSH_ERR_SYSTEM_ERROR;
 	/*
 	 * if a key owned by the user is accessed, then we check the

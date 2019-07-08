@@ -850,10 +850,10 @@ check_quietlogin(Session *s, const char *command)
 		return 1;
 	snprintf(buf, sizeof(buf), "%.200s/.hushlogin", pw->pw_dir);
 #ifdef HAVE_LOGIN_CAP
-	if (login_getcapbool(lc, "hushlogin", 0) || stat(buf, &st) >= 0)
+	if (login_getcapbool(lc, "hushlogin", 0) || stat(buf, &st) != -1)
 		return 1;
 #else
-	if (stat(buf, &st) >= 0)
+	if (stat(buf, &st) != -1)
 		return 1;
 #endif
 	return 0;
@@ -1263,7 +1263,7 @@ do_rc_files(struct ssh *ssh, Session *s, const char *shell)
 	/* ignore _PATH_SSH_USER_RC for subsystems and admin forced commands */
 	if (!s->is_subsystem && options.adm_forced_command == NULL &&
 	    auth_opts->permit_user_rc && options.permit_user_rc &&
-	    stat(_PATH_SSH_USER_RC, &st) >= 0) {
+	    stat(_PATH_SSH_USER_RC, &st) != -1) {
 		snprintf(cmd, sizeof cmd, "%s -c '%s %s'",
 		    shell, _PATH_BSHELL, _PATH_SSH_USER_RC);
 		if (debug_flag)
@@ -1277,7 +1277,7 @@ do_rc_files(struct ssh *ssh, Session *s, const char *shell)
 		} else
 			fprintf(stderr, "Could not run %s\n",
 			    _PATH_SSH_USER_RC);
-	} else if (stat(_PATH_SSH_SYSTEM_RC, &st) >= 0) {
+	} else if (stat(_PATH_SSH_SYSTEM_RC, &st) != -1) {
 		if (debug_flag)
 			fprintf(stderr, "Running %s %s\n", _PATH_BSHELL,
 			    _PATH_SSH_SYSTEM_RC);
@@ -1382,7 +1382,7 @@ safely_chroot(const char *path, uid_t uid)
 	
 		debug3("%s: checking '%s'", __func__, component);
 
-		if (stat(component, &st) != 0)
+		if (stat(component, &st) == -1)
 			fatal("%s: stat(\"%s\"): %s", __func__,
 			    component, strerror(errno));
 		if (st.st_uid != 0 || (st.st_mode & 022) != 0)
@@ -2047,7 +2047,7 @@ session_subsystem_req(struct ssh *ssh, Session *s)
 				s->is_subsystem = SUBSYSTEM_INT_SFTP;
 				debug("subsystem: %s", prog);
 			} else {
-				if (stat(prog, &st) < 0)
+				if (stat(prog, &st) == -1)
 					debug("subsystem: cannot stat %s: %s",
 					    prog, strerror(errno));
 				s->is_subsystem = SUBSYSTEM_EXT;

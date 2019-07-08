@@ -1083,7 +1083,7 @@ source(int argc, char **argv)
 			strnvis(encname, name, sizeof(encname), VIS_NL);
 			name = encname;
 		}
-		if (fstat(fd, &stb) < 0) {
+		if (fstat(fd, &stb) == -1) {
 syserr:			run_err("%s: %s", name, strerror(errno));
 			goto next;
 		}
@@ -1266,7 +1266,7 @@ sink(int argc, char **argv, const char *src)
 		verifydir(targ);
 
 	(void) atomicio(vwrite, remout, "", 1);
-	if (stat(targ, &stb) == 0 && S_ISDIR(stb.st_mode))
+	if (stat(targ, &stb) != -1 && S_ISDIR(stb.st_mode))
 		targisdir = 1;
 	if (src != NULL && !iamrecursive && !Tflag) {
 		/*
@@ -1405,7 +1405,7 @@ sink(int argc, char **argv, const char *src)
 		} else
 			np = targ;
 		curfile = cp;
-		exists = stat(np, &stb) == 0;
+		exists = stat(np, &stb) != -1;
 		if (buf[0] == 'D') {
 			int mod_flag = pflag;
 			if (!iamrecursive)
@@ -1637,7 +1637,7 @@ verifydir(char *cp)
 {
 	struct stat stb;
 
-	if (!stat(cp, &stb)) {
+	if (stat(cp, &stb) != -1) {
 		if (S_ISDIR(stb.st_mode))
 			return;
 		errno = ENOTDIR;
@@ -1683,7 +1683,7 @@ allocbuf(BUF *bp, int fd, int blksize)
 #ifdef HAVE_STRUCT_STAT_ST_BLKSIZE
 	struct stat stb;
 
-	if (fstat(fd, &stb) < 0) {
+	if (fstat(fd, &stb) == -1) {
 		run_err("fstat: %s", strerror(errno));
 		return (0);
 	}

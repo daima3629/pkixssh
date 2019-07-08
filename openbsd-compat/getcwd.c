@@ -97,7 +97,7 @@ getcwd(char *pt, size_t size)
 	up[1] = '\0';
 
 	/* Save root values, so know when to stop. */
-	if (stat("/", &s))
+	if (stat("/", &s) == -1)
 		goto err;
 	root_dev = s.st_dev;
 	root_ino = s.st_ino;
@@ -106,7 +106,7 @@ getcwd(char *pt, size_t size)
 
 	for (first = 1;; first = 0) {
 		/* Stat the current level. */
-		if (lstat(up, &s))
+		if (lstat(up, &s) == -1)
 			goto err;
 
 		/* Save current node values. */
@@ -145,7 +145,7 @@ getcwd(char *pt, size_t size)
 		*bup = '\0';
 
 		/* Open and stat parent directory. */
-		if (!(dir = opendir(up)) || fstat(dirfd(dir), &s))
+		if (!(dir = opendir(up)) || fstat(dirfd(dir), &s) == -1)
 			goto err;
 
 		/* Add trailing slash for next directory. */
@@ -173,7 +173,7 @@ getcwd(char *pt, size_t size)
 				memcpy(bup, dp->d_name, dp->d_namlen + 1);
 
 				/* Save the first error for later. */
-				if (lstat(up, &s)) {
+				if (lstat(up, &s) == -1) {
 					if (!save_errno)
 						save_errno = errno;
 					errno = 0;

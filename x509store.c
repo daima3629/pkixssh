@@ -781,7 +781,7 @@ ssh_x509store_addpaths(const STACK_OF(SSHXSTOREPATH) *paths) {
 		struct stat st;
 		char *path = sk_SSHXSTOREPATH_value(paths, k);
 
-		if (stat(path, &st) < 0) {
+		if (stat(path, &st) == -1) {
 			error("%s: error %s for path='%s'", __func__, strerror(errno), path);
 			return 0;
 		}

@@ -1352,7 +1352,7 @@ load_identity_file(Identity *id)
 	    0
 	);
 	if (!external &&
-	    stat(id->filename, &st) < 0) {
+	    stat(id->filename, &st) == -1) {
 		(id->userprovided ? logit : debug3)("no such identity: %s: %s",
 		    id->filename, strerror(errno));
 		return NULL;
@@ -1889,7 +1889,7 @@ ssh_keysign(struct ssh *ssh, struct sshkey *key, u_char **sigp, size_t *lenp,
 	*sigp = NULL;
 	*lenp = 0;
 
-	if (stat(_PATH_SSH_KEY_SIGN, &st) < 0) {
+	if (stat(_PATH_SSH_KEY_SIGN, &st) == -1) {
 		error("%s: not installed: %s", __func__, strerror(errno));
 		return -1;
 	}

@@ -261,7 +261,7 @@ sys_auth_allowed_user(struct passwd *pw, struct sshbuf *loginmsg)
 	 * in session.c after the nologin message is sent, so allow for now
 	 * and do not append the returned message.
 	 */
-	if (result == -1 && errno == EPERM && stat(_PATH_NOLOGIN, &st) == 0)
+	if (result == -1 && errno == EPERM && stat(_PATH_NOLOGIN, &st) != -1)
 		permitted = 1;
 	else if (msg != NULL) {
 		if ((r = sshbuf_put(loginmsg, msg, strlen(msg))) != 0)

@@ -161,7 +161,7 @@ realpath(const char *path, char *resolved)
 			errno = ENAMETOOLONG;
 			goto err;
 		}
-		if (lstat(resolved, &sb) != 0) {
+		if (lstat(resolved, &sb) == -1) {
 			if (errno == ENOENT && p == NULL) {
 				errno = serrno;
 				return (resolved);

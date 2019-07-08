@@ -4740,13 +4740,13 @@ is_path_to_xsocket(const char *display, char *path, size_t pathlen)
 	}
 	if (display[0] != '/')
 		return 0;
-	if (stat(path, &sbuf) == 0) {
+	if (stat(path, &sbuf) != -1) {
 		return 1;
 	} else {
 		char *dot = strrchr(path, '.');
 		if (dot != NULL) {
 			*dot = '\0';
-			if (stat(path, &sbuf) == 0) {
+			if (stat(path, &sbuf) != -1) {
 				return 1;
 			}
 		}

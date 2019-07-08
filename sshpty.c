@@ -179,7 +179,7 @@ pty_setowner(struct passwd *pw, const char *tty)
 	 * Warn but continue if filesystem is read-only and the uids match/
 	 * tty is owned by root.
 	 */
-	if (stat(tty, &st))
+	if (stat(tty, &st) == -1)
 		fatal("stat(%.100s) failed: %.100s", tty,
 		    strerror(errno));
 

@@ -75,7 +75,7 @@ mktemp_internal(char *path, int slen, int mode)
 
 		switch (mode) {
 		case MKTEMP_NAME:
-			if (lstat(path, &sb) != 0)
+			if (lstat(path, &sb) == -1)
 				return(errno == ENOENT ? 0 : -1);
 			break;
 		case MKTEMP_FILE:

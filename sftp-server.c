@@ -830,7 +830,7 @@ process_do_stat(u_int32_t id, int do_lstat)
 	debug3("request %u: %sstat", id, do_lstat ? "l" : "");
 	verbose("%sstat name \"%s\"", do_lstat ? "l" : "", name);
 	r = do_lstat ? lstat(name, &st) : stat(name, &st);
-	if (r < 0) {
+	if (r == -1) {
 		status = errno_to_portable(errno);
 	} else {
 		stat_to_attrib(&st, &a);
@@ -868,7 +868,7 @@ process_fstat(u_int32_t id)
 	fd = handle_to_fd(handle);
 	if (fd >= 0) {
 		r = fstat(fd, &st);
-		if (r < 0) {
+		if (r == -1) {
 			status = errno_to_portable(errno);
 		} else {
 			stat_to_attrib(&st, &a);
@@ -1078,7 +1078,7 @@ process_readdir(u_int32_t id)
 /* XXX OVERFLOW ? */
 			snprintf(pathname, sizeof pathname, "%s%s%s", path,
 			    strcmp(path, "/") ? "/" : "", dp->d_name);
-			if (lstat(pathname, &st) < 0)
+			if (lstat(pathname, &st) == -1)
 				continue;
 			stat_to_attrib(&st, &(stats[count].attrib));
 			stats[count].name = xstrdup(dp->d_name);

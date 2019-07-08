@@ -433,7 +433,7 @@ do_convert_to(struct passwd *pw)
 
 	if (!have_identity)
 		ask_filename(pw, "Enter file in which the key is");
-	if (stat(identity_file, &st) < 0)
+	if (stat(identity_file, &st) == -1)
 		fatal("%s: %s: %s", __progname, identity_file, strerror(errno));
 	if ((r = sshkey_load_public(identity_file, &k, NULL)) != 0)
 		k = load_identity(identity_file);
@@ -765,7 +765,7 @@ do_convert_from(struct passwd *pw)
 
 	if (!have_identity)
 		ask_filename(pw, "Enter file in which the key is");
-	if (stat(identity_file, &st) < 0)
+	if (stat(identity_file, &st) == -1)
 		fatal("%s: %s: %s", __progname, identity_file, strerror(errno));
 
 	switch (convert_format) {
@@ -824,7 +824,7 @@ do_print_public(struct passwd *pw)
 
 	if (!have_identity)
 		ask_filename(pw, "Enter file in which the key is");
-	if (Xstat(identity_file) < 0)
+	if (Xstat(identity_file) == -1)
 		fatal("%s: %s", identity_file, strerror(errno));
 	prv = load_identity(identity_file);
 	if ((r = sshkey_write(prv, stdout)) != 0)
@@ -923,7 +923,7 @@ fingerprint_private(const char *path)
 	struct sshkey *public = NULL;
 	int r;
 
-	if (stat(identity_file, &st) < 0)
+	if (stat(identity_file, &st) == -1)
 		fatal("%s: %s", path, strerror(errno));
 	if ((r = sshkey_load_public(path, &public, &comment)) != 0) {
 		debug("load public \"%s\": %s", path, ssh_err(r));
@@ -1072,7 +1072,7 @@ do_gen_all_hostkeys(struct passwd *pw)
 		    identity_file, key_types[i].path);
 
 		/* Check whether private key exists and is not zero-length */
-		if (stat(prv_file, &st) == 0) {
+		if (stat(prv_file, &st) != -1) {
 			if (st.st_size != 0)
 				goto next;
 		} else if (errno != ENOENT) {
@@ -1412,7 +1412,7 @@ do_change_passphrase(struct passwd *pw)
 
 	if (!have_identity)
 		ask_filename(pw, "Enter file in which the key is");
-	if (stat(identity_file, &st) < 0)
+	if (stat(identity_file, &st) == -1)
 		fatal("%s: %s", identity_file, strerror(errno));
 	/* Try to load the file with empty passphrase. */
 	r = sshkey_load_private(identity_file, "", &private, &comment);
@@ -1497,7 +1497,7 @@ do_print_resource_record(struct passwd *pw, char *fname, char *hname,
 	UNUSED(pw);
 	if (fname == NULL)
 		fatal("%s: no filename", __func__);
-	if (stat(fname, &st) < 0) {
+	if (stat(fname, &st) == -1) {
 		if (errno == ENOENT)
 			return 0;
 		fatal("%s: %s", fname, strerror(errno));
@@ -1526,7 +1526,7 @@ do_change_comment(struct passwd *pw, const char *identity_comment)
 
 	if (!have_identity)
 		ask_filename(pw, "Enter file in which the key is");
-	if (stat(identity_file, &st) < 0)
+	if (stat(identity_file, &st) == -1)
 		fatal("%s: %s", identity_file, strerror(errno));
 	if ((r = sshkey_load_private(identity_file, "",
 	    &private, &comment)) == 0)
@@ -2125,7 +2125,7 @@ do_show_cert(struct passwd *pw)
 
 	if (!have_identity)
 		ask_filename(pw, "Enter file in which the key is");
-	if (strcmp(identity_file, "-") != 0 && stat(identity_file, &st) < 0)
+	if (strcmp(identity_file, "-") != 0 && stat(identity_file, &st) == -1)
 		fatal("%s: %s: %s", __progname, identity_file, strerror(errno));
 
 	path = identity_file;
@@ -2966,7 +2966,7 @@ main(int argc, char **argv)
 	snprintf(dotsshdir, sizeof dotsshdir, "%s/%s",
 	    pw->pw_dir, _PATH_SSH_USER_DIR);
 	if (strstr(identity_file, dotsshdir) != NULL) {
-		if (stat(dotsshdir, &st) < 0) {
+		if (stat(dotsshdir, &st) == -1) {
 			if (errno != ENOENT) {
 				error("Could not stat %s: %s", dotsshdir,
 				    strerror(errno));
@@ -2978,7 +2978,7 @@ main(int argc, char **argv)
 		}
 	}
 	/* If the file already exists, ask the user to confirm. */
-	if (stat(identity_file, &st) >= 0) {
+	if (stat(identity_file, &st) != -1) {
 		char yesno[3];
 		printf("%s already exists.\n", identity_file);
 		printf("Overwrite (y/n)? ");
