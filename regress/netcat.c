@@ -1603,7 +1603,7 @@ socks_connect(const char *host, const char *port,
 			    "CONNECT %s:%d HTTP/1.0\r\n",
 			    host, ntohs(serverport));
 		}
-		if (r == -1 || (size_t)r >= sizeof(buf))
+		if (r < 0 || (size_t)r >= sizeof(buf))
 			errx(1, "hostname too long");
 		r = strlen(buf);
 
@@ -1617,13 +1617,13 @@ socks_connect(const char *host, const char *port,
 			proxypass = getproxypass(proxyuser, proxyhost);
 			r = snprintf(buf, sizeof(buf), "%s:%s",
 			    proxyuser, proxypass);
-			if (r == -1 || (size_t)r >= sizeof(buf) ||
+			if (r < 0 || (size_t)r >= sizeof(buf) ||
 			    b64_ntop(buf, strlen(buf), resp,
 			    sizeof(resp)) == -1)
 				errx(1, "Proxy username/password too long");
 			r = snprintf(buf, sizeof(buf), "Proxy-Authorization: "
 			    "Basic %s\r\n", resp);
-			if (r == -1 || (size_t)r >= sizeof(buf))
+			if (r < 0 || (size_t)r >= sizeof(buf))
 				errx(1, "Proxy auth response too long");
 			r = strlen(buf);
 			if ((cnt = atomicio(vwrite, proxyfd, buf, r)) != (size_t)r)

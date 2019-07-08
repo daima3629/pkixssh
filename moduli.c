@@ -453,7 +453,7 @@ write_checkpoint(char *cpfile, u_int32_t lineno)
 	int r;
 
 	r = snprintf(tmp, sizeof(tmp), "%s.XXXXXXXXXX", cpfile);
-	if (r == -1 || r >= PATH_MAX) {
+	if (r < 0 || r >= PATH_MAX) {
 		logit("write_checkpoint: temp pathname too long");
 		return;
 	}

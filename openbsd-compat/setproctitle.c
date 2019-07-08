@@ -148,7 +148,7 @@ setproctitle(const char *fmt, ...)
 			r = vsnprintf(buf + len, sizeof(buf) - len , fmt, ap);
 	}
 	va_end(ap);
-	if (r == -1 || (size_t)r >= sizeof(buf) - len)
+	if (r < 0 || (size_t)r >= sizeof(buf) - len)
 		return;
 	strnvis(ptitle, buf, sizeof(ptitle),
 	    VIS_CSTYLE|VIS_NL|VIS_TAB|VIS_OCTAL);
