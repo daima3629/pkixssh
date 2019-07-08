@@ -74,7 +74,7 @@
  * supplied.
  * Returns 0 on success, -1 on error
  */
-int
+static int
 get_random_bytes_prngd(unsigned char *buf, int len,
     unsigned short tcp_port, char *socket_path)
 {
@@ -201,14 +201,14 @@ rexec_send_rng_seed(struct sshbuf *m)
 void
 rexec_recv_rng_seed(struct sshbuf *m)
 {
-	u_char *buf = NULL;
+	const u_char *buf = NULL;
 	size_t len = 0;
 	int r;
 
-	if ((r = sshbuf_get_string_direct(m, &buf, &len)) != 0
+	if ((r = sshbuf_get_string_direct(m, &buf, &len)) != 0)
 		fatal("%s: buffer error: %s", __func__, ssh_err(r));
 
-	debug3("rexec_recv_rng_seed: seeding rng with %u bytes", len);
+	debug3("rexec_recv_rng_seed: seeding rng with %zu bytes", len);
 	RAND_add(buf, len, len);
 }
 #endif /* OPENSSL_PRNG_ONLY */
