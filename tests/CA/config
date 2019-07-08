@@ -107,11 +107,12 @@ printf "        version: ${attn}%s${norm}\n" "$openssl_version"
 
 openssl_nopkcs8_keys=false
 if test -n "$OPENSSL_FIPS"; then
-  #NOTE
-  # - 1.0.0* and 1.1+ does not support FIPS build
-  # - Usually in FIPS mode keys are in PKCS8 format by default
-  # - Only OpenSSL 1.0.1* before 1.0.1d does not create keys in PKCS8 format
-  # - Do conversion only for 1.0.1* branch
+  # NOTES
+  # - OpenSSL 1.0.0* and 1.1.+ does not support FIPS build/mode;
+  # - Usually in FIPS mode keys are in PKCS#8 format by default;
+  # - OpenSSL 1.0.1* before 1.0.1d does not create keys in PKCS#8 format.
+  # => do conversion only for 1.0.1*
+  # Remark used in 2-cre_cakeys.sh.
   case $openssl_version in
     1.0.1*)
       openssl_nopkcs8_keys=:
