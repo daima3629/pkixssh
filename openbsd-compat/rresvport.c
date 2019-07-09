@@ -82,7 +82,7 @@ rresvport_af(int *alport, sa_family_t af)
 	sa->sa_family = af;
 	
 	s = socket(af, SOCK_STREAM, 0);
-	if (s < 0)
+	if (s == -1)
 		return (-1);
 
 	*portp = htons(*alport);

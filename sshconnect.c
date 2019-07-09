@@ -391,7 +391,7 @@ ssh_create_socket(struct addrinfo *ai)
 	char ntop[NI_MAXHOST];
 
 	sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
-	if (sock < 0) {
+	if (sock == -1) {
 		error("socket: %s", strerror(errno));
 		return -1;
 	}
@@ -515,7 +515,7 @@ ssh_connect_direct(struct ssh *ssh, const char *host, struct addrinfo *aitop,
 
 			/* Create a socket for connecting. */
 			sock = ssh_create_socket(ai);
-			if (sock < 0) {
+			if (sock == -1) {
 				/* Any error is already output */
 				errno = 0;
 				continue;

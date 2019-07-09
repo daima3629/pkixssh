@@ -3477,7 +3477,7 @@ channel_setup_fwd_listener_tcpip(struct ssh *ssh, int type,
 		}
 		/* Create a port to listen for the host. */
 		sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
-		if (sock < 0) {
+		if (sock == -1) {
 			/* this is no error since kernel may not support ipv6 */
 			verbose("socket [%s]:%s: %.100s", ntop, strport,
 			    strerror(errno));
@@ -4633,7 +4633,7 @@ x11_create_display_inet(struct ssh *ssh, int x11_display_offset,
 				continue;
 			sock = socket(ai->ai_family, ai->ai_socktype,
 			    ai->ai_protocol);
-			if (sock < 0) {
+			if (sock == -1) {
 				if ((errno != EINVAL) && (errno != EAFNOSUPPORT)
 #ifdef EPFNOSUPPORT
 				    && (errno != EPFNOSUPPORT)
@@ -4708,7 +4708,7 @@ connect_local_xsocket_path(const char *pathname)
 	struct sockaddr_un addr;
 
 	sock = socket(AF_UNIX, SOCK_STREAM, 0);
-	if (sock < 0)
+	if (sock == -1)
 		error("socket: %.100s", strerror(errno));
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_UNIX;
@@ -4809,7 +4809,7 @@ x11_connect_display(struct ssh *ssh)
 		}
 		/* Create a socket. */
 		sock = connect_local_xsocket(display_number);
-		if (sock < 0)
+		if (sock == -1)
 			return -1;
 
 		/* OK, we now have a connection to the display. */
@@ -4849,7 +4849,7 @@ x11_connect_display(struct ssh *ssh)
 	for (ai = aitop; ai; ai = ai->ai_next) {
 		/* Create a socket. */
 		sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
-		if (sock < 0) {
+		if (sock == -1) {
 			debug2("socket: %.100s", strerror(errno));
 			continue;
 		}

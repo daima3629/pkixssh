@@ -521,7 +521,7 @@ unix_bind(char *path)
 
 	/* Create unix domain socket. */
 	if ((s = socket(AF_UNIX, uflag ? SOCK_DGRAM : SOCK_STREAM,
-	     0)) < 0)
+	     0)) == -1)
 		return (-1);
 
 	memset(&sun_sa, 0, sizeof(struct sockaddr_un));
@@ -555,7 +555,7 @@ unix_connect(char *path)
 		if ((s = unix_bind(unix_dg_tmp_socket)) < 0)
 			return (-1);
 	} else {
-		if ((s = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
+		if ((s = socket(AF_UNIX, SOCK_STREAM, 0)) == -1)
 			return (-1);
 	}
 	(void)fcntl(s, F_SETFD, FD_CLOEXEC);
@@ -615,7 +615,7 @@ remote_connect(const char *host, const char *port, struct addrinfo hints)
 	res0 = res;
 	do {
 		if ((s = socket(res0->ai_family, res0->ai_socktype,
-		    res0->ai_protocol)) < 0)
+		    res0->ai_protocol)) == -1)
 			continue;
 
 #ifdef SO_RTABLE
@@ -727,7 +727,7 @@ local_listen(char *host, char *port, struct addrinfo hints)
 	res0 = res;
 	do {
 		if ((s = socket(res0->ai_family, res0->ai_socktype,
-		    res0->ai_protocol)) < 0)
+		    res0->ai_protocol)) == -1)
 			continue;
 
 #ifdef SO_RTABLE

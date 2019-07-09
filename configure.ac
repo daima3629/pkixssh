@@ -2380,7 +2380,7 @@ if test "x$ac_cv_func_getaddrinfo" = "xyes" && \
 		}
 
 		sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
-		if (sock < 0)
+		if (sock == -1)
 			perror("socket");
 		if (bind(sock, ai->ai_addr, ai->ai_addrlen) < 0) {
 			if (errno == EBADF)
