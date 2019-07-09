@@ -86,9 +86,9 @@ void
 pty_release(const char *tty)
 {
 #if !defined(__APPLE_PRIVPTY__) && !defined(HAVE_OPENPTY)
-	if (chown(tty, (uid_t) 0, (gid_t) 0) < 0)
+	if (chown(tty, (uid_t) 0, (gid_t) 0) == -1)
 		error("chown %.100s 0 0 failed: %.100s", tty, strerror(errno));
-	if (chmod(tty, (mode_t) 0666) < 0)
+	if (chmod(tty, (mode_t) 0666) == -1)
 		error("chmod %.100s 0666 failed: %.100s", tty, strerror(errno));
 #endif /* !__APPLE_PRIVPTY__ && !HAVE_OPENPTY */
 }
@@ -188,7 +188,7 @@ pty_setowner(struct passwd *pw, const char *tty)
 #endif
 
 	if (st.st_uid != pw->pw_uid || st.st_gid != gid) {
-		if (chown(tty, pw->pw_uid, gid) < 0) {
+		if (chown(tty, pw->pw_uid, gid) == -1) {
 			if (errno == EROFS &&
 			    (st.st_uid == pw->pw_uid || st.st_uid == 0))
 				debug("chown(%.100s, %u, %u) failed: %.100s",
@@ -202,7 +202,7 @@ pty_setowner(struct passwd *pw, const char *tty)
 	}
 
 	if ((st.st_mode & (S_IRWXU|S_IRWXG|S_IRWXO)) != mode) {
-		if (chmod(tty, mode) < 0) {
+		if (chmod(tty, mode) == -1) {
 			if (errno == EROFS &&
 			    (st.st_mode & (S_IRGRP | S_IROTH)) == 0)
 				debug("chmod(%.100s, 0%o) failed: %.100s",

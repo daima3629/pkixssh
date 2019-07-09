@@ -652,7 +652,7 @@ sshkey_xmss_update_state(const struct sshkey *k, sshkey_printfn *pr)
 			goto done;
 		}
 	}
-	if (rename(nstatefile, statefile) < 0) {
+	if (rename(nstatefile, statefile) == -1) {
 		ret = SSH_ERR_SYSTEM_ERROR;
 		PRINT("%s: rename %s to %s", __func__, nstatefile, statefile);
 		goto done;

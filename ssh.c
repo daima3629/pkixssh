@@ -1526,7 +1526,7 @@ main(int ac, char **av)
 #ifdef WITH_SELINUX
 			ssh_selinux_setfscreatecon(buf);
 #endif
-			if (mkdir(buf, 0700) < 0)
+			if (mkdir(buf, 0700) == -1)
 				error("Could not create directory '%.200s'.",
 				    buf);
 #ifdef WITH_SELINUX

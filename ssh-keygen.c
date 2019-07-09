@@ -1148,12 +1148,12 @@ do_gen_all_hostkeys(struct passwd *pw)
 		}
 
 		/* Rename temporary files to their permanent locations. */
-		if (rename(pub_tmp, pub_file) != 0) {
+		if (rename(pub_tmp, pub_file) == -1) {
 			error("Unable to move %s into position: %s",
 			    pub_file, strerror(errno));
 			goto failnext;
 		}
-		if (rename(prv_tmp, prv_file) != 0) {
+		if (rename(prv_tmp, prv_file) == -1) {
 			error("Unable to move %s into position: %s",
 			    key_types[i].path, strerror(errno));
  failnext:
@@ -2966,7 +2966,7 @@ main(int argc, char **argv)
 			if (errno != ENOENT) {
 				error("Could not stat %s: %s", dotsshdir,
 				    strerror(errno));
-			} else if (mkdir(dotsshdir, 0700) < 0) {
+			} else if (mkdir(dotsshdir, 0700) == -1) {
 				error("Could not create directory '%s': %s",
 				    dotsshdir, strerror(errno));
 			} else if (!quiet)

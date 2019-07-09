@@ -1671,7 +1671,7 @@ do_child(struct ssh *ssh, Session *s, const char *command)
 #endif
 
 	/* Change current directory to the user's home directory. */
-	if (chdir(pw->pw_dir) < 0) {
+	if (chdir(pw->pw_dir) == -1) {
 		/* Suppress missing homedir warning for chroot case */
 #ifdef HAVE_LOGIN_CAP
 		r = login_getcapbool(lc, "requirehome", 0);

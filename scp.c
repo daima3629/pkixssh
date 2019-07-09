@@ -1421,14 +1421,14 @@ sink(int argc, char **argv, const char *src)
 				/* Handle copying from a read-only
 				   directory */
 				mod_flag = 1;
-				if (mkdir(np, mode | S_IRWXU) < 0)
+				if (mkdir(np, mode | S_IRWXU) == -1)
 					goto bad;
 			}
 			vect[0] = xstrdup(np);
 			sink(1, vect, src);
 			if (setimes) {
 				setimes = 0;
-				if (utimes(vect[0], tv) < 0)
+				if (utimes(vect[0], tv) == -1)
 					run_err("%s: set times: %s",
 					    vect[0], strerror(errno));
 			}
@@ -1500,9 +1500,9 @@ bad:			run_err("%s: %s", np, strerror(errno));
 		if (pflag) {
 			if (exists || omode != mode)
 #ifdef HAVE_FCHMOD
-				if (fchmod(ofd, omode)) {
+				if (fchmod(ofd, omode) == -1) {
 #else /* HAVE_FCHMOD */
-				if (chmod(np, omode)) {
+				if (chmod(np, omode) == -1) {
 #endif /* HAVE_FCHMOD */
 					run_err("%s: set mode: %s",
 					    np, strerror(errno));
@@ -1511,9 +1511,9 @@ bad:			run_err("%s: %s", np, strerror(errno));
 		} else {
 			if (!exists && omode != mode)
 #ifdef HAVE_FCHMOD
-				if (fchmod(ofd, omode & ~mask)) {
+				if (fchmod(ofd, omode & ~mask) == -1) {
 #else /* HAVE_FCHMOD */
-				if (chmod(np, omode & ~mask)) {
+				if (chmod(np, omode & ~mask) == -1) {
 #endif /* HAVE_FCHMOD */
 					run_err("%s: set mode: %s",
 					    np, strerror(errno));
@@ -1529,7 +1529,7 @@ bad:			run_err("%s: %s", np, strerror(errno));
 			stop_progress_meter();
 		if (setimes && wrerr == NO) {
 			setimes = 0;
-			if (utimes(np, tv) < 0) {
+			if (utimes(np, tv) == -1) {
 				run_err("%s: set times: %s",
 				    np, strerror(errno));
 				wrerr = DISPLAYED;

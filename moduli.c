@@ -468,7 +468,7 @@ write_checkpoint(char *cpfile, u_int32_t lineno)
 		return;
 	}
 	if (fprintf(fp, "%lu\n", (unsigned long)lineno) > 0 && fclose(fp) == 0
-	    && rename(tmp, cpfile) == 0)
+	    && rename(tmp, cpfile) != -1)
 		debug3("wrote checkpoint line %lu to '%s'",
 		    (unsigned long)lineno, cpfile);
 	else
