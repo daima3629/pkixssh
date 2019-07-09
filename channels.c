@@ -1675,7 +1675,7 @@ channel_post_x11_listener(struct ssh *ssh, Channel *c,
 		chan_mark_dead(ssh, c);
 		errno = oerrno;
 	}
-	if (newsock < 0) {
+	if (newsock == -1) {
 		if (errno != EINTR && errno != EWOULDBLOCK &&
 		    errno != ECONNABORTED)
 			error("accept: %.100s", strerror(errno));
@@ -1819,7 +1819,7 @@ channel_post_port_listener(struct ssh *ssh, Channel *c,
 
 	addrlen = sizeof(addr);
 	newsock = accept(c->sock, (struct sockaddr *)&addr, &addrlen);
-	if (newsock < 0) {
+	if (newsock == -1) {
 		if (errno != EINTR && errno != EWOULDBLOCK &&
 		    errno != ECONNABORTED)
 			error("accept: %.100s", strerror(errno));
@@ -1859,7 +1859,7 @@ channel_post_auth_listener(struct ssh *ssh, Channel *c,
 
 	addrlen = sizeof(addr);
 	newsock = accept(c->sock, (struct sockaddr *)&addr, &addrlen);
-	if (newsock < 0) {
+	if (newsock == -1) {
 		error("accept from auth socket: %.100s", strerror(errno));
 		if (errno == EMFILE || errno == ENFILE)
 			c->notbefore = monotime() + 1;
@@ -3492,7 +3492,7 @@ channel_setup_fwd_listener_tcpip(struct ssh *ssh, int type,
 		    ntop, strport);
 
 		/* Bind the socket to the address. */
-		if (bind(sock, ai->ai_addr, ai->ai_addrlen) < 0) {
+		if (bind(sock, ai->ai_addr, ai->ai_addrlen) == -1) {
 			/*
 			 * address can be in if use ipv6 address is
 			 * already bound
@@ -3508,7 +3508,7 @@ channel_setup_fwd_listener_tcpip(struct ssh *ssh, int type,
 			continue;
 		}
 		/* Start listening for connections on the socket. */
-		if (listen(sock, SSH_LISTEN_BACKLOG) < 0) {
+		if (listen(sock, SSH_LISTEN_BACKLOG) == -1) {
 			error("listen: %.100s", strerror(errno));
 			error("listen [%s]:%s: %.100s", ntop, strport,
 			    strerror(errno));
@@ -4652,7 +4652,7 @@ x11_create_display_inet(struct ssh *ssh, int x11_display_offset,
 				sock_set_v6only(sock);
 			if (x11_use_localhost)
 				set_reuseaddr(sock);
-			if (bind(sock, ai->ai_addr, ai->ai_addrlen) < 0) {
+			if (bind(sock, ai->ai_addr, ai->ai_addrlen) == -1) {
 				debug2("%s: bind port %d: %.100s", __func__,
 				    port, strerror(errno));
 				close(sock);
@@ -4676,7 +4676,7 @@ x11_create_display_inet(struct ssh *ssh, int x11_display_offset,
 	/* Start listening for connections on the socket. */
 	for (n = 0; n < num_socks; n++) {
 		sock = socks[n];
-		if (listen(sock, SSH_LISTEN_BACKLOG) < 0) {
+		if (listen(sock, SSH_LISTEN_BACKLOG) == -1) {
 			error("listen: %.100s", strerror(errno));
 			close(sock);
 			return -1;

@@ -443,7 +443,7 @@ ssh_create_socket(struct addrinfo *ai)
 		    ssh_gai_strerror(r));
 		goto fail;
 	}
-	if (bind(sock, (struct sockaddr *)&bindaddr, bindaddrlen) != 0) {
+	if (bind(sock, (struct sockaddr *)&bindaddr, bindaddrlen) == -1) {
 		error("bind %s: %s", ntop, strerror(errno));
 		goto fail;
 	}

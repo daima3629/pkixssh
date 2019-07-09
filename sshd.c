@@ -1144,7 +1144,7 @@ listen_on_addrs(struct listenaddr *la)
 		debug("Bind to port %s on %s.", strport, ntop);
 
 		/* Bind the socket to the desired port. */
-		if (bind(listen_sock, ai->ai_addr, ai->ai_addrlen) < 0) {
+		if (bind(listen_sock, ai->ai_addr, ai->ai_addrlen) == -1) {
 			error("Bind to port %s on %s failed: %.200s.",
 			    strport, ntop, strerror(errno));
 			close(listen_sock);
@@ -1154,7 +1154,7 @@ listen_on_addrs(struct listenaddr *la)
 		num_listen_socks++;
 
 		/* Start listening on the port. */
-		if (listen(listen_sock, SSH_LISTEN_BACKLOG) < 0)
+		if (listen(listen_sock, SSH_LISTEN_BACKLOG) == -1)
 			fatal("listen on [%s]:%s: %.100s",
 			    ntop, strport, strerror(errno));
 		logit("Server listening on %s port %s%s%s.",
@@ -1293,7 +1293,7 @@ server_accept_loop(int *sock_in, int *sock_out, int *newsock, int *config_s)
 			fromlen = sizeof(from);
 			*newsock = accept(listen_socks[i],
 			    (struct sockaddr *)&from, &fromlen);
-			if (*newsock < 0) {
+			if (*newsock == -1) {
 				if (errno != EINTR && errno != EWOULDBLOCK &&
 				    errno != ECONNABORTED && errno != EAGAIN)
 					error("accept: %.100s",

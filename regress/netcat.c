@@ -379,7 +379,7 @@ main(int argc, char *argv[])
 		for (;;) {
 			if (family != AF_UNIX)
 				s = local_listen(host, uport, hints);
-			if (s < 0)
+			if (s == -1)
 				err(1, "local_listen");
 			/*
 			 * For UDP and -k, don't connect the socket, let it
@@ -534,7 +534,7 @@ unix_bind(char *path)
 		return (-1);
 	}
 
-	if (bind(s, (struct sockaddr *)&sun_sa, SUN_LEN(&sun_sa)) < 0) {
+	if (bind(s, (struct sockaddr *)&sun_sa, SUN_LEN(&sun_sa)) == -1) {
 		close(s);
 		return (-1);
 	}
@@ -588,7 +588,7 @@ unix_listen(char *path)
 	if ((s = unix_bind(path)) < 0)
 		return (-1);
 
-	if (listen(s, 5) < 0) {
+	if (listen(s, 5) == -1) {
 		close(s);
 		return (-1);
 	}
@@ -640,7 +640,7 @@ remote_connect(const char *host, const char *port, struct addrinfo hints)
 				errx(1, "getaddrinfo: %s", gai_strerror(error));
 
 			if (bind(s, (struct sockaddr *)ares->ai_addr,
-			    ares->ai_addrlen) < 0)
+			    ares->ai_addrlen) == -1)
 				err(1, "bind failed");
 			freeaddrinfo(ares);
 		}
@@ -748,7 +748,7 @@ local_listen(char *host, char *port, struct addrinfo hints)
 		set_common_sockopts(s);
 
 		if (bind(s, (struct sockaddr *)res0->ai_addr,
-		    res0->ai_addrlen) == 0)
+		    res0->ai_addrlen) != -1)
 			break;
 
 		close(s);
@@ -756,7 +756,7 @@ local_listen(char *host, char *port, struct addrinfo hints)
 	} while ((res0 = res0->ai_next) != NULL);
 
 	if (!uflag && s != -1) {
-		if (listen(s, 1) < 0)
+		if (listen(s, 1) == -1)
 			err(1, "listen");
 	}
 

@@ -914,7 +914,7 @@ handle_socket_read(u_int socknum)
 
 	slen = sizeof(sunaddr);
 	fd = accept(sockets[socknum].fd, (struct sockaddr *)&sunaddr, &slen);
-	if (fd < 0) {
+	if (fd == -1) {
 		error("accept from AUTH_SOCKET: %s", strerror(errno));
 		return -1;
 	}

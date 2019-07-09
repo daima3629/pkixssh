@@ -101,11 +101,11 @@ bindresvport_sa(int sd, struct sockaddr *sa)
 		error = bind(sd, sa, salen);
 
 		/* Terminate on success */
-		if (error == 0)
+		if (error != -1)
 			break;
 			
 		/* Terminate on errors, except "address already in use" */
-		if ((error < 0) && !((errno == EADDRINUSE) || (errno == EINVAL)))
+		if (!((errno == EADDRINUSE) || (errno == EINVAL)))
 			break;
 			
 		port++;

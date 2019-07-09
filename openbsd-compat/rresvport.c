@@ -87,7 +87,7 @@ rresvport_af(int *alport, sa_family_t af)
 
 	*portp = htons(*alport);
 	if (*alport < IPPORT_RESERVED - 1) {
-		if (bind(s, sa, salen) >= 0)
+		if (bind(s, sa, salen) != -1)
 			return (s);
 		if (errno != EADDRINUSE) {
 			(void)close(s);
