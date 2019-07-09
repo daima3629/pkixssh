@@ -253,13 +253,13 @@ do_cmd(char *host, char *remuser, int port, char *cmd, int *fdin, int *fdout)
 	 * Reserve two descriptors so that the real pipes won't get
 	 * descriptors 0 and 1 because that will screw up dup2 below.
 	 */
-	if (pipe(reserved) < 0)
+	if (pipe(reserved) == -1)
 		fatal("pipe: %s", strerror(errno));
 
 	/* Create a socket pair for communicating with ssh. */
-	if (pipe(pin) < 0)
+	if (pipe(pin) == -1)
 		fatal("pipe: %s", strerror(errno));
-	if (pipe(pout) < 0)
+	if (pipe(pout) == -1)
 		fatal("pipe: %s", strerror(errno));
 
 	/* Free the reserved descriptors. */

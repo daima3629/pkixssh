@@ -1897,11 +1897,11 @@ ssh_keysign(struct ssh *ssh, struct sshkey *key, u_char **sigp, size_t *lenp,
 		error("%s: fflush: %s", __func__, strerror(errno));
 		return -1;
 	}
-	if (pipe(to) < 0) {
+	if (pipe(to) == -1) {
 		error("%s: pipe: %s", __func__, strerror(errno));
 		return -1;
 	}
-	if (pipe(from) < 0) {
+	if (pipe(from) == -1) {
 		error("%s: pipe: %s", __func__, strerror(errno));
 		return -1;
 	}

@@ -235,7 +235,7 @@ ssh_proxy_connect(struct ssh *ssh, const char *host, u_short port,
 		shell = _PATH_BSHELL;
 
 	/* Create pipes for communicating with the proxy. */
-	if (pipe(pin) < 0 || pipe(pout) < 0)
+	if (pipe(pin) == -1 || pipe(pout) == -1)
 		fatal("Could not create pipes to communicate with the proxy: %.100s",
 		    strerror(errno));
 

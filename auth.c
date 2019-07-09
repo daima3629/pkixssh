@@ -902,7 +902,7 @@ subprocess(const char *tag, struct passwd *pw, const char *command,
 		return 0;
 	}
 	/* Prepare to keep the child's stdout if requested */
-	if (pipe(p) != 0) {
+	if (pipe(p) == -1) {
 		error("%s: pipe: %s", tag, strerror(errno));
 		restore_uid();
 		return 0;

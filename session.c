@@ -413,17 +413,17 @@ do_exec_no_pty(struct ssh *ssh, Session *s, const char *command)
 		fatal("do_exec_no_pty: no session");
 
 	/* Allocate pipes for communicating with the program. */
-	if (pipe(pin) < 0) {
+	if (pipe(pin) == -1) {
 		error("%s: pipe in: %.100s", __func__, strerror(errno));
 		return -1;
 	}
-	if (pipe(pout) < 0) {
+	if (pipe(pout) == -1) {
 		error("%s: pipe out: %.100s", __func__, strerror(errno));
 		close(pin[0]);
 		close(pin[1]);
 		return -1;
 	}
-	if (pipe(perr) < 0) {
+	if (pipe(perr) == -1) {
 		error("%s: pipe err: %.100s", __func__,
 		    strerror(errno));
 		close(pin[0]);

@@ -124,7 +124,7 @@ static int notify_pipe[2];
 static void
 notify_setup(void)
 {
-	if (pipe(notify_pipe) < 0) {
+	if (pipe(notify_pipe) == -1) {
 		error("pipe(notify_pipe) failed %s", strerror(errno));
 	} else if ((fcntl(notify_pipe[0], F_SETFD, FD_CLOEXEC) == -1) ||
 	    (fcntl(notify_pipe[1], F_SETFD, FD_CLOEXEC) == -1)) {

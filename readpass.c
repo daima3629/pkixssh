@@ -60,7 +60,7 @@ ssh_askpass(char *askpass, const char *msg)
 		error("ssh_askpass: fflush: %s", strerror(errno));
 	if (askpass == NULL)
 		fatal("internal error: askpass undefined");
-	if (pipe(p) < 0) {
+	if (pipe(p) == -1) {
 		error("ssh_askpass: pipe: %s", strerror(errno));
 		return NULL;
 	}
