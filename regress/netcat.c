@@ -405,7 +405,7 @@ main(int argc, char *argv[])
 					err(1, "recvfrom");
 
 				rv = connect(s, (struct sockaddr *)&z, len);
-				if (rv < 0)
+				if (rv == -1)
 					err(1, "connect");
 
 				if (vflag)
@@ -430,7 +430,7 @@ main(int argc, char *argv[])
 			if (family != AF_UNIX)
 				close(s);
 			else if (uflag) {
-				if (connect(s, NULL, 0) < 0)
+				if (connect(s, NULL, 0) == -1)
 					err(1, "connect");
 			}
 
@@ -676,7 +676,7 @@ timeout_connect(int s, const struct sockaddr *name, socklen_t namelen)
 			err(1, "set non-blocking mode");
 	}
 
-	if ((ret = connect(s, name, namelen)) != 0 && errno == EINPROGRESS) {
+	if ((ret = connect(s, name, namelen)) == -1 && errno == EINPROGRESS) {
 		pfd.fd = s;
 		pfd.events = POLLOUT;
 		if ((ret = poll(&pfd, 1, timeout)) == 1) {

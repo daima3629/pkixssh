@@ -107,7 +107,7 @@ ssh_get_authentication_socket(int *fdp)
 
 	/* close on exec */
 	if (fcntl(sock, F_SETFD, FD_CLOEXEC) == -1 ||
-	    connect(sock, (struct sockaddr *)&sunaddr, sizeof(sunaddr)) < 0) {
+	    connect(sock, (struct sockaddr *)&sunaddr, sizeof(sunaddr)) == -1) {
 		oerrno = errno;
 		close(sock);
 		errno = oerrno;

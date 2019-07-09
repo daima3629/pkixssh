@@ -4713,7 +4713,7 @@ connect_local_xsocket_path(const char *pathname)
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_UNIX;
 	strlcpy(addr.sun_path, pathname, sizeof addr.sun_path);
-	if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)) == 0)
+	if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)) != -1)
 		return sock;
 	close(sock);
 	error("connect %.100s: %.100s", addr.sun_path, strerror(errno));
@@ -4854,7 +4854,7 @@ x11_connect_display(struct ssh *ssh)
 			continue;
 		}
 		/* Connect it to the display. */
-		if (connect(sock, ai->ai_addr, ai->ai_addrlen) < 0) {
+		if (connect(sock, ai->ai_addr, ai->ai_addrlen) == -1) {
 			debug2("connect %.100s port %u: %.100s", buf,
 			    6000 + display_number, strerror(errno));
 			close(sock);

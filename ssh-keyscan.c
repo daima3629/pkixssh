@@ -340,7 +340,7 @@ tcpconnect(char *host)
 		}
 		if (set_nonblock(s) == -1)
 			fatal("%s: set_nonblock(%d)", __func__, s);
-		if (connect(s, ai->ai_addr, ai->ai_addrlen) < 0 &&
+		if (connect(s, ai->ai_addr, ai->ai_addrlen) == -1 &&
 		    errno != EINPROGRESS)
 			error("connect (`%s'): %s", host, strerror(errno));
 		else
@@ -366,7 +366,7 @@ conalloc(char *iname, char *oname, const char *keyname)
 			free(namebase);
 			return (-1);
 		}
-	} while ((s = tcpconnect(name)) < 0);
+	} while ((s = tcpconnect(name)) == -1);
 
 	if (s >= maxfd)
 		fatal("conalloc: fdno %d too high", s);

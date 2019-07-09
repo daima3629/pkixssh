@@ -296,7 +296,7 @@ timeout_connect(int sockfd, const struct sockaddr *serv_addr,
 		return connect(sockfd, serv_addr, addrlen);
 
 	set_nonblock(sockfd);
-	if (connect(sockfd, serv_addr, addrlen) == 0) {
+	if (connect(sockfd, serv_addr, addrlen) != -1) {
 		/* Succeeded already? */
 		unset_nonblock(sockfd);
 		return 0;
