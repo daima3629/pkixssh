@@ -276,8 +276,8 @@ do_cmd(char *host, char *remuser, int port, char *cmd, int *fdin, int *fdout)
 		/* Child. */
 		close(pin[1]);
 		close(pout[0]);
-		dup2(pin[0], 0);
-		dup2(pout[1], 1);
+		dup2(pin[0], STDIN_FILENO);
+		dup2(pout[1], STDOUT_FILENO);
 		close(pin[0]);
 		close(pout[1]);
 
@@ -334,8 +334,8 @@ do_cmd2(char *host, char *remuser, int port, char *cmd, int fdin, int fdout)
 	/* Fork a child to execute the command on the remote host using ssh. */
 	pid = fork();
 	if (pid == 0) {
-		dup2(fdin, 0);
-		dup2(fdout, 1);
+		dup2(fdin, STDIN_FILENO);
+		dup2(fdout, STDOUT_FILENO);
 
 		replacearg(&args, 0, "%s", ssh_program);
 		if (port != -1) {

@@ -1912,15 +1912,15 @@ ssh_keysign(struct ssh *ssh, struct sshkey *key, u_char **sigp, size_t *lenp,
 	osigchld = signal(SIGCHLD, SIG_DFL);
 	if (pid == 0) {
 		close(from[0]);
-		if (dup2(from[1], STDOUT_FILENO) < 0)
+		if (dup2(from[1], STDOUT_FILENO) == -1)
 			fatal("%s: dup2: %s", __func__, strerror(errno));
 		close(to[1]);
-		if (dup2(to[0], STDIN_FILENO) < 0)
+		if (dup2(to[0], STDIN_FILENO) == -1)
 			fatal("%s: dup2: %s", __func__, strerror(errno));
 		close(from[1]);
 		close(to[0]);
 
-		if (dup2(sock, STDERR_FILENO + 1) < 0)
+		if (dup2(sock, STDERR_FILENO + 1) == -1)
 			fatal("%s: dup2: %s", __func__, strerror(errno));
 		sock = STDERR_FILENO + 1;
 		fcntl(sock, F_SETFD, 0);	/* keep the socket on exec */

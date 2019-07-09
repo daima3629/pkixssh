@@ -166,12 +166,12 @@ ssh_proxy_fdpass_connect(struct ssh *ssh, const char *host, u_short port,
 
 		close(sp[1]);
 		/* Redirect stdin and stdout. */
-		if (sp[0] != 0) {
-			if (dup2(sp[0], 0) < 0)
+		if (sp[0] != STDIN_FILENO) {
+			if (dup2(sp[0], STDIN_FILENO) == -1)
 				perror("dup2 stdin");
 		}
-		if (sp[0] != 1) {
-			if (dup2(sp[0], 1) < 0)
+		if (sp[0] != STDOUT_FILENO) {
+			if (dup2(sp[0], STDOUT_FILENO) == -1)
 				perror("dup2 stdout");
 		}
 		if (sp[0] >= 2)
@@ -249,15 +249,16 @@ ssh_proxy_connect(struct ssh *ssh, const char *host, u_short port,
 
 		/* Redirect stdin and stdout. */
 		close(pin[1]);
-		if (pin[0] != 0) {
-			if (dup2(pin[0], 0) < 0)
+		if (pin[0] != STDIN_FILENO) {
+			if (dup2(pin[0], STDIN_FILENO) == -1)
 				perror("dup2 stdin");
 			close(pin[0]);
 		}
 		close(pout[0]);
-		if (dup2(pout[1], 1) < 0)
+		/* Cannot be 1(STDOUT_FILENO) because pipe() allocates
+		   two descriptors for pin. */
+		if (dup2(pout[1], STDOUT_FILENO) == -1)
 			perror("dup2 stdout");
-		/* Cannot be 1 because pin allocated two descriptors. */
 		close(pout[1]);
 
 		/*
@@ -572,9 +573,9 @@ ssh_connect(struct ssh *ssh, const char *host, struct addrinfo *addrs,
 	} else if (strcmp(options.proxy_command, "-") == 0) {
 		int in, out;
 
-		if ((in = dup(STDIN_FILENO)) < 0 ||
-		    (out = dup(STDOUT_FILENO)) < 0) {
-			if (in >= 0)
+		if ((in = dup(STDIN_FILENO)) == -1 ||
+		    (out = dup(STDOUT_FILENO)) == -1) {
+			if (in != -1)
 				close(in);
 			error("%s: dup() in/out failed", __func__);
 			return -1; /* ssh_packet_set_connection logs error */

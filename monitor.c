@@ -1531,7 +1531,7 @@ mm_answer_pty(struct ssh *ssh, int sock, struct sshbuf *m)
 		fatal("%s: buffer error: %s", __func__, ssh_err(r));
 
 	/* We need to trick ttyslot */
-	if (dup2(s->ttyfd, 0) == -1)
+	if (dup2(s->ttyfd, STDIN_FILENO) == -1)
 		fatal("%s: dup2", __func__);
 
 	mm_record_login(ssh, s, authctxt->pw);

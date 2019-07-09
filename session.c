@@ -492,19 +492,19 @@ do_exec_no_pty(struct ssh *ssh, Session *s, const char *command)
 		 * pair, and make the child side the standard input.
 		 */
 		close(pin[1]);
-		if (dup2(pin[0], 0) < 0)
+		if (dup2(pin[0], STDIN_FILENO) == -1)
 			perror("dup2 stdin");
 		close(pin[0]);
 
 		/* Redirect stdout. */
 		close(pout[0]);
-		if (dup2(pout[1], 1) < 0)
+		if (dup2(pout[1], STDOUT_FILENO) == -1)
 			perror("dup2 stdout");
 		close(pout[1]);
 
 		/* Redirect stderr. */
 		close(perr[0]);
-		if (dup2(perr[1], 2) < 0)
+		if (dup2(perr[1], STDERR_FILENO) == -1)
 			perror("dup2 stderr");
 		close(perr[1]);
 #else
@@ -515,12 +515,12 @@ do_exec_no_pty(struct ssh *ssh, Session *s, const char *command)
 		 */
 		close(inout[1]);
 		close(err[1]);
-		if (dup2(inout[0], 0) < 0)	/* stdin */
+		if (dup2(inout[0], STDIN_FILENO) == -1)
 			perror("dup2 stdin");
-		if (dup2(inout[0], 1) < 0)	/* stdout (same as stdin) */
+		if (dup2(inout[0], STDOUT_FILENO) == -1)
 			perror("dup2 stdout");
 		close(inout[0]);
-		if (dup2(err[0], 2) < 0)	/* stderr */
+		if (dup2(err[0], STDERR_FILENO) == -1)
 			perror("dup2 stderr");
 		close(err[0]);
 #endif
@@ -595,14 +595,14 @@ do_exec_pty(struct ssh *ssh, Session *s, const char *command)
 	 * Do this before forking (and cleanup in the child) so as to
 	 * detect and gracefully fail out-of-fd conditions.
 	 */
-	if ((fdout = dup(ptyfd)) < 0) {
+	if ((fdout = dup(ptyfd)) == -1) {
 		error("%s: dup #1: %s", __func__, strerror(errno));
 		close(ttyfd);
 		close(ptyfd);
 		return -1;
 	}
 	/* we keep a reference to the pty master */
-	if ((ptymaster = dup(ptyfd)) < 0) {
+	if ((ptymaster = dup(ptyfd)) == -1) {
 		error("%s: dup #2: %s", __func__, strerror(errno));
 		close(ttyfd);
 		close(ptyfd);
@@ -635,11 +635,11 @@ do_exec_pty(struct ssh *ssh, Session *s, const char *command)
 		pty_make_controlling_tty(&ttyfd, s->tty);
 
 		/* Redirect stdin/stdout/stderr from the pseudo tty. */
-		if (dup2(ttyfd, 0) < 0)
+		if (dup2(ttyfd, STDIN_FILENO) == -1)
 			error("dup2 stdin: %s", strerror(errno));
-		if (dup2(ttyfd, 1) < 0)
+		if (dup2(ttyfd, STDOUT_FILENO) == -1)
 			error("dup2 stdout: %s", strerror(errno));
-		if (dup2(ttyfd, 2) < 0)
+		if (dup2(ttyfd, STDERR_FILENO) == -1)
 			error("dup2 stderr: %s", strerror(errno));
 
 		/* Close the extra descriptor for the pseudo tty. */

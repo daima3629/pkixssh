@@ -72,7 +72,7 @@ ssh_askpass(char *askpass, const char *msg)
 	}
 	if (pid == 0) {
 		close(p[0]);
-		if (dup2(p[1], STDOUT_FILENO) < 0)
+		if (dup2(p[1], STDOUT_FILENO) == -1)
 			fatal("ssh_askpass: dup2: %s", strerror(errno));
 		execlp(askpass, askpass, msg, (char *)NULL);
 		fatal("ssh_askpass: exec(%s): %s", askpass, strerror(errno));

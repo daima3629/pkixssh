@@ -1796,8 +1796,8 @@ ssh_init_stdio_forwarding(struct ssh *ssh)
 	debug3("%s: %s:%d", __func__, options.stdio_forward_host,
 	    options.stdio_forward_port);
 
-	if ((in = dup(STDIN_FILENO)) < 0 ||
-	    (out = dup(STDOUT_FILENO)) < 0)
+	if ((in = dup(STDIN_FILENO)) == -1 ||
+	    (out = dup(STDOUT_FILENO)) == -1)
 		fatal("channel_connect_stdio_fwd: dup() in/out failed");
 	if ((c = channel_connect_stdio_fwd(ssh, options.stdio_forward_host,
 	    options.stdio_forward_port, in, out)) == NULL)
@@ -1951,7 +1951,7 @@ ssh_session2_open(struct ssh *ssh)
 	out = dup(STDOUT_FILENO);
 	err = dup(STDERR_FILENO);
 
-	if (in == -1 || out < 0 || err < 0)
+	if (in == -1 || out == -1 || err == -1)
 		fatal("dup() in/out/err failed");
 
 	/* enable nonblocking unless tty */
@@ -2082,7 +2082,7 @@ ssh_session2(struct ssh *ssh, struct passwd *pw)
 		if ((devnull = open(_PATH_DEVNULL, O_WRONLY)) == -1)
 			error("%s: open %s: %s", __func__,
 			    _PATH_DEVNULL, strerror(errno));
-		if (dup2(devnull, STDOUT_FILENO) < 0)
+		if (dup2(devnull, STDOUT_FILENO) == -1)
 			fatal("%s: dup2() stdout failed", __func__);
 		if (devnull > STDERR_FILENO)
 			close(devnull);
