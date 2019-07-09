@@ -1077,7 +1077,7 @@ source(int argc, char **argv)
 		len = strlen(name);
 		while (len > 1 && name[len-1] == '/')
 			name[--len] = '\0';
-		if ((fd = open(name, O_RDONLY|O_NONBLOCK, 0)) < 0)
+		if ((fd = open(name, O_RDONLY|O_NONBLOCK, 0)) == -1)
 			goto syserr;
 		if (strchr(name, '\n') != NULL) {
 			strnvis(encname, name, sizeof(encname), VIS_NL);
@@ -1157,7 +1157,7 @@ next:			if (fd != -1) {
 		unset_nonblock(remout);
 
 		if (fd != -1) {
-			if (close(fd) < 0 && !haderr)
+			if (close(fd) == -1 && !haderr)
 				haderr = errno;
 			fd = -1;
 		}
@@ -1439,7 +1439,7 @@ sink(int argc, char **argv, const char *src)
 		}
 		omode = mode;
 		mode |= S_IWUSR;
-		if ((ofd = open(np, O_WRONLY|O_CREAT, mode)) < 0) {
+		if ((ofd = open(np, O_WRONLY|O_CREAT, mode)) == -1) {
 bad:			run_err("%s: %s", np, strerror(errno));
 			continue;
 		}

@@ -60,7 +60,7 @@ sshkey_save_private_blob(struct sshbuf *keybuf, const char *filename)
 {
 	int fd, oerrno;
 
-	if ((fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0600)) < 0)
+	if ((fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0600)) == -1)
 		return SSH_ERR_SYSTEM_ERROR;
 	if (atomicio(vwrite, fd, sshbuf_mutable_ptr(keybuf),
 	    sshbuf_len(keybuf)) != sshbuf_len(keybuf)) {
@@ -199,7 +199,7 @@ sshkey_load_private_type(int type, const char *filename, const char *passphrase,
 	}
 #endif
 
-	if ((fd = open(filename, O_RDONLY)) < 0) {
+	if ((fd = open(filename, O_RDONLY)) == -1) {
 		if (perm_ok != NULL)
 			*perm_ok = 0;
 		return SSH_ERR_SYSTEM_ERROR;
@@ -261,7 +261,7 @@ sshkey_load_private(const char *filename, const char *passphrase,
 	if (commentp != NULL)
 		*commentp = NULL;
 
-	if ((fd = open(filename, O_RDONLY)) < 0)
+	if ((fd = open(filename, O_RDONLY)) == -1)
 		return SSH_ERR_SYSTEM_ERROR;
 	if (sshkey_perm_ok(fd, filename) != 0) {
 		r = SSH_ERR_KEY_BAD_PERMISSIONS;

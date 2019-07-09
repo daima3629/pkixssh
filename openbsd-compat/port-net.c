@@ -247,7 +247,7 @@ sys_tun_open(int tun, int mode, char **ifname)
 		return (-1);
 	}
 
-	if (fd < 0) {
+	if (fd == -1) {
 		debug("%s: %s open failed: %s", __func__, name,
 		    strerror(errno));
 		return (-1);

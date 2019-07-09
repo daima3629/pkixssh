@@ -1951,7 +1951,7 @@ ssh_session2_open(struct ssh *ssh)
 	out = dup(STDOUT_FILENO);
 	err = dup(STDERR_FILENO);
 
-	if (in < 0 || out < 0 || err < 0)
+	if (in == -1 || out < 0 || err < 0)
 		fatal("dup() in/out/err failed");
 
 	/* enable nonblocking unless tty */

@@ -290,7 +290,7 @@ prepare_auth_info_file(struct passwd *pw, struct sshbuf *info)
 		error("%s: write: %s", __func__, strerror(errno));
 		goto out;
 	}
-	if (close(fd) != 0) {
+	if (close(fd) == -1) {
 		error("%s: close: %s", __func__, strerror(errno));
 		goto out;
 	}
@@ -2373,7 +2373,7 @@ session_pty_cleanup2(Session *s)
 	 * the pty cleanup, so that another process doesn't get this pty
 	 * while we're still cleaning up.
 	 */
-	if (s->ptymaster != -1 && close(s->ptymaster) < 0)
+	if (s->ptymaster != -1 && close(s->ptymaster) == -1)
 		error("close(s->ptymaster/%d): %s",
 		    s->ptymaster, strerror(errno));
 

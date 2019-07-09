@@ -235,7 +235,7 @@ add_file(int agent_fd, const char *filename, int key_only, int qflag)
 	if (strcmp(filename, "-") == 0) {
 		fd = STDIN_FILENO;
 		filename = "(stdin)";
-	} else if ((fd = open(filename, O_RDONLY)) < 0) {
+	} else if ((fd = open(filename, O_RDONLY)) == -1) {
 		perror(filename);
 		return -1;
 	}

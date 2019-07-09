@@ -2315,7 +2315,7 @@ if test ! -z "$check_for_openpty_ctty_bug"; then
 		setsid();
 		openpty(&ptyfd, &ttyfd, NULL, NULL, NULL);
 		fd = open("/dev/tty", O_RDWR | O_NOCTTY);
-		if (fd >= 0)
+		if (fd != -1)
 			exit(3);	/* Acquired ctty: broken */
 		else
 			exit(0);	/* Did not acquire ctty: OK */

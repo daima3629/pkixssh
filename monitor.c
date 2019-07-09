@@ -1551,7 +1551,7 @@ mm_answer_pty(struct ssh *ssh, int sock, struct sshbuf *m)
 		fatal("%s: send fds failed", __func__);
 
 	/* make sure nothing uses fd 0 */
-	if ((fd0 = open(_PATH_DEVNULL, O_RDONLY)) < 0)
+	if ((fd0 = open(_PATH_DEVNULL, O_RDONLY)) == -1)
 		fatal("%s: open(/dev/null): %s", __func__, strerror(errno));
 	if (fd0 != 0)
 		error("%s: fd0 %d != 0", __func__, fd0);

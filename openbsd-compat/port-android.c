@@ -198,7 +198,7 @@ parse_fake_passwd() {
 {	const char *path = _PATH_PREFIX _PATH_PASSWD;
 
 	fd = open(path, O_RDONLY);
-	if (fd < 0)
+	if (fd == -1)
 		return;
 }
 

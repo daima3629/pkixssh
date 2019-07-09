@@ -655,7 +655,7 @@ mm_session_pty_cleanup2(Session *s)
 	sshbuf_free(m);
 
 	/* closed dup'ed master */
-	if (s->ptymaster != -1 && close(s->ptymaster) < 0)
+	if (s->ptymaster != -1 && close(s->ptymaster) == -1)
 		error("close(s->ptymaster/%d): %s",
 		    s->ptymaster, strerror(errno));
 

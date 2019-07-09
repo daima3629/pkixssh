@@ -116,7 +116,7 @@ pty_make_controlling_tty(int *ttyfd, const char *tty)
 	 * tty.
 	 */
 	fd = open(_PATH_TTY, O_RDWR | O_NOCTTY);
-	if (fd >= 0) {
+	if (fd != -1) {
 		error("Failed to disconnect from controlling tty.");
 		close(fd);
 	}
@@ -131,14 +131,14 @@ pty_make_controlling_tty(int *ttyfd, const char *tty)
 		error("SETPGRP %s",strerror(errno));
 #endif /* NEED_SETPGRP */
 	fd = open(tty, O_RDWR);
-	if (fd < 0)
+	if (fd == -1)
 		error("%.100s: %.100s", tty, strerror(errno));
 	else
 		close(fd);
 
 	/* Verify that we now have a controlling tty. */
 	fd = open(_PATH_TTY, O_WRONLY);
-	if (fd < 0)
+	if (fd == -1)
 		error("open /dev/tty failed - could not set controlling tty: %.100s",
 		    strerror(errno));
 	else
@@ -221,7 +221,7 @@ disconnect_controlling_tty(void)
 #ifdef TIOCNOTTY
 	int fd;
 
-	if ((fd = open(_PATH_TTY, O_RDWR | O_NOCTTY)) >= 0) {
+	if ((fd = open(_PATH_TTY, O_RDWR | O_NOCTTY)) != -1) {
 		(void) ioctl(fd, TIOCNOTTY, NULL);
 		close(fd);
 	}

@@ -130,7 +130,7 @@ read_passphrase(const char *prompt, int flags)
 	} else {
 		rppflags |= RPP_REQUIRE_TTY;
 		ttyfd = open(_PATH_TTY, O_RDWR);
-		if (ttyfd >= 0) {
+		if (ttyfd != -1) {
 			/*
 			 * If we're on a tty, ensure that show the prompt at
 			 * the beginning of the line. This will hopefully

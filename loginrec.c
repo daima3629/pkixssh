@@ -884,7 +884,7 @@ utmp_write_direct(struct logininfo *li, struct utmp *ut)
 
 #endif /* HAVE_GETTTYENT */
 
-	if (tty > 0 && (fd = open(UTMP_FILE, O_RDWR|O_CREAT, 0644)) >= 0) {
+	if (tty > 0 && (fd = open(UTMP_FILE, O_RDWR|O_CREAT, 0644)) != -1) {
 		off_t pos, ret;
 
 		pos = (off_t)tty * sizeof(struct utmp);
@@ -1109,7 +1109,7 @@ wtmp_write(struct logininfo *li, struct utmp *ut)
 	struct stat buf;
 	int fd, ret = 1;
 
-	if ((fd = open(WTMP_FILE, O_WRONLY|O_APPEND, 0)) < 0) {
+	if ((fd = open(WTMP_FILE, O_WRONLY|O_APPEND, 0)) == -1) {
 		logit("%s: problem writing %s: %s", __func__,
 		    WTMP_FILE, strerror(errno));
 		return (0);
@@ -1203,7 +1203,7 @@ wtmp_get_entry(struct logininfo *li)
 	/* Clear the time entries in our logininfo */
 	li->tv_sec = li->tv_usec = 0;
 
-	if ((fd = open(WTMP_FILE, O_RDONLY)) < 0) {
+	if ((fd = open(WTMP_FILE, O_RDONLY)) == -1) {
 		logit("%s: problem opening %s: %s", __func__,
 		    WTMP_FILE, strerror(errno));
 		return (0);
@@ -1281,7 +1281,7 @@ wtmpx_write(struct logininfo *li, struct utmpx *utx)
 	struct stat buf;
 	int fd, ret = 1;
 
-	if ((fd = open(WTMPX_FILE, O_WRONLY|O_APPEND, 0)) < 0) {
+	if ((fd = open(WTMPX_FILE, O_WRONLY|O_APPEND, 0)) == -1) {
 		logit("%s: problem opening %s: %s", __func__,
 		    WTMPX_FILE, strerror(errno));
 		return (0);
@@ -1368,7 +1368,7 @@ wtmpx_get_entry(struct logininfo *li)
 	/* Clear the time entries */
 	li->tv_sec = li->tv_usec = 0;
 
-	if ((fd = open(WTMPX_FILE, O_RDONLY)) < 0) {
+	if ((fd = open(WTMPX_FILE, O_RDONLY)) == -1) {
 		logit("%s: problem opening %s: %s", __func__,
 		    WTMPX_FILE, strerror(errno));
 		return (0);
@@ -1512,7 +1512,7 @@ lastlog_openseek(struct logininfo *li, int *fd, int filemode)
 	}
 
 	*fd = open(lastlog_file, filemode, 0600);
-	if (*fd < 0) {
+	if (*fd == -1) {
 		debug("%s: Couldn't open %s: %s", __func__,
 		    lastlog_file, strerror(errno));
 		return (0);
@@ -1687,7 +1687,7 @@ record_failed_login(struct ssh *ssh, const char *username, const char *hostname,
 
 	if (geteuid() != 0)
 		return;
-	if ((fd = open(_PATH_BTMP, O_WRONLY | O_APPEND)) < 0) {
+	if ((fd = open(_PATH_BTMP, O_WRONLY | O_APPEND)) == -1) {
 		debug("Unable to open the btmp file %s: %s", _PATH_BTMP,
 		    strerror(errno));
 		return;

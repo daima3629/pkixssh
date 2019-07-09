@@ -700,7 +700,7 @@ process_open(u_int32_t id)
 		status = SSH2_FX_PERMISSION_DENIED;
 	} else {
 		fd = open(name, flags, mode);
-		if (fd < 0) {
+		if (fd == -1) {
 			status = errno_to_portable(errno);
 		} else {
 			handle = handle_new(HANDLE_FILE, name, fd, flags, NULL);

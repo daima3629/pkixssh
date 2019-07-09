@@ -254,7 +254,7 @@ int truncate(const char *path, off_t length)
 	int fd, ret, saverrno;
 
 	fd = open(path, O_WRONLY);
-	if (fd < 0)
+	if (fd == -1)
 		return (-1);
 
 	ret = ftruncate(fd, length);

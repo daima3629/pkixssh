@@ -1159,7 +1159,7 @@ tun_open(int tun, int mode, char **ifname)
 		for (tun = 100; tun >= 0; tun--) {
 			snprintf(name, sizeof(name), "/dev/%s%d",
 			    tunbase, tun);
-			if ((fd = open(name, O_RDWR)) >= 0)
+			if ((fd = open(name, O_RDWR)) != -1)
 				break;
 		}
 	} else {
@@ -1167,7 +1167,7 @@ tun_open(int tun, int mode, char **ifname)
 		return -1;
 	}
 
-	if (fd < 0) {
+	if (fd == -1) {
 		debug("%s: %s open: %s", __func__, name, strerror(errno));
 		return -1;
 	}
@@ -1726,7 +1726,7 @@ daemonized(void)
 {
 	int fd;
 
-	if ((fd = open(_PATH_TTY, O_RDONLY | O_NOCTTY)) >= 0) {
+	if ((fd = open(_PATH_TTY, O_RDONLY | O_NOCTTY)) != -1) {
 		close(fd);
 		return 0;	/* have controlling terminal */
 	}
