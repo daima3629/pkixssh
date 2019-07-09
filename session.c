@@ -439,11 +439,11 @@ do_exec_no_pty(struct ssh *ssh, Session *s, const char *command)
 		fatal("do_exec_no_pty: no session");
 
 	/* Uses socket pairs to communicate with the program. */
-	if (socketpair(AF_UNIX, SOCK_STREAM, 0, inout) < 0) {
+	if (socketpair(AF_UNIX, SOCK_STREAM, 0, inout) == -1) {
 		error("%s: socketpair #1: %.100s", __func__, strerror(errno));
 		return -1;
 	}
-	if (socketpair(AF_UNIX, SOCK_STREAM, 0, err) < 0) {
+	if (socketpair(AF_UNIX, SOCK_STREAM, 0, err) == -1) {
 		error("%s: socketpair #2: %.100s", __func__,
 		    strerror(errno));
 		close(inout[0]);

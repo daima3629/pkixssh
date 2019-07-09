@@ -1726,7 +1726,7 @@ sftp_server_main(int argc, char **argv, struct passwd *user_pw)
 		if (olen > 0)
 			FD_SET(out, wset);
 
-		if (select(max+1, rset, wset, NULL, NULL) < 0) {
+		if (select(max+1, rset, wset, NULL, NULL) == -1) {
 			if (errno == EINTR)
 				continue;
 			error("select: %s", strerror(errno));

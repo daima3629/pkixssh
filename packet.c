@@ -1329,7 +1329,7 @@ ssh_packet_read_seqnr(struct ssh *ssh, u_char *typep, u_int32_t *seqnr_p)
 				monotime_tv(&start);
 			}
 			if ((r = select(state->connection_in + 1, setp,
-			    NULL, NULL, timeoutp)) >= 0)
+			    NULL, NULL, timeoutp)) != -1)
 				break;
 			if (errno != EAGAIN && errno != EINTR &&
 			    errno != EWOULDBLOCK) {
@@ -1974,7 +1974,7 @@ ssh_packet_write_wait(struct ssh *ssh)
 				monotime_tv(&start);
 			}
 			if ((ret = select(state->connection_out + 1,
-			    NULL, setp, NULL, timeoutp)) >= 0)
+			    NULL, setp, NULL, timeoutp)) != -1)
 				break;
 			if (errno != EAGAIN && errno != EINTR &&
 			    errno != EWOULDBLOCK)
@@ -2030,7 +2030,7 @@ ssh_packet_set_tos(struct ssh *ssh, int tos)
 	case AF_INET:
 		debug3("%s: set IP_TOS 0x%02x", __func__, tos);
 		if (setsockopt(ssh->state->connection_in,
-		    IPPROTO_IP, IP_TOS, &tos, sizeof(tos)) < 0)
+		    IPPROTO_IP, IP_TOS, &tos, sizeof(tos)) == -1)
 			error("setsockopt IP_TOS %d: %.100s:",
 			    tos, strerror(errno));
 		break;
@@ -2039,7 +2039,7 @@ ssh_packet_set_tos(struct ssh *ssh, int tos)
 	case AF_INET6:
 		debug3("%s: set IPV6_TCLASS 0x%02x", __func__, tos);
 		if (setsockopt(ssh->state->connection_in,
-		    IPPROTO_IPV6, IPV6_TCLASS, &tos, sizeof(tos)) < 0)
+		    IPPROTO_IPV6, IPV6_TCLASS, &tos, sizeof(tos)) == -1)
 			error("setsockopt IPV6_TCLASS %d: %.100s:",
 			    tos, strerror(errno));
 		break;

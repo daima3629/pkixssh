@@ -380,7 +380,7 @@ chan_shutdown_write(struct ssh *ssh, Channel *c)
 	    c->self, __func__, c->istate, c->ostate, c->sock, c->wfd, c->efd,
 	    channel_format_extended_usage(c));
 	if (c->sock != -1) {
-		if (shutdown(c->sock, SHUT_WR) < 0) {
+		if (shutdown(c->sock, SHUT_WR) == -1) {
 			debug2("channel %d: %s: shutdown() failed for "
 			    "fd %d [i%d o%d]: %.100s", c->self, __func__,
 			    c->sock, c->istate, c->ostate,
@@ -410,7 +410,7 @@ chan_shutdown_read(struct ssh *ssh, Channel *c)
 		 * write side has been closed already. (bug on Linux)
 		 * HP-UX may return ENOTCONN also.
 		 */
-		if (shutdown(c->sock, SHUT_RD) < 0 && errno != ENOTCONN) {
+		if (shutdown(c->sock, SHUT_RD) == -1 && errno != ENOTCONN) {
 			error("channel %d: %s: shutdown() failed for "
 			    "fd %d [i%d o%d]: %.100s",
 			    c->self, __func__, c->sock, c->istate, c->ostate,

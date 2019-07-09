@@ -1238,7 +1238,7 @@ server_accept_loop(int *sock_in, int *sock_out, int *newsock, int *config_s)
 
 		/* Wait in select until there is a connection. */
 		ret = select(maxfd+1, fdset, NULL, NULL, NULL);
-		if (ret < 0 && errno != EINTR)
+		if (ret == -1 && errno != EINTR)
 			error("select: %.100s", strerror(errno));
 		if (received_sigterm) {
 			logit("Received signal %d; terminating.",
@@ -1248,7 +1248,7 @@ server_accept_loop(int *sock_in, int *sock_out, int *newsock, int *config_s)
 				unlink(options.pid_file);
 			exit(received_sigterm == SIGTERM ? 0 : 255);
 		}
-		if (ret < 0)
+		if (ret == -1)
 			continue;
 
 		for (i = 0; i < options.max_startups; i++) {
@@ -1473,7 +1473,7 @@ check_ip_options(struct ssh *ssh)
 	/* XXX IPv6 options? */
 
 	if (getsockopt(sock_in, IPPROTO_IP, IP_OPTIONS, opts,
-	    &option_size) >= 0 && option_size != 0) {
+	    &option_size) != -1 && option_size != 0) {
 		text[0] = '\0';
 		for (i = 0; i < option_size; i++)
 			snprintf(text + i*3, sizeof(text) - i*3,
@@ -2194,7 +2194,7 @@ main(int ac, char **av)
 
 	/* Set SO_KEEPALIVE if requested. */
 	if (options.tcp_keep_alive && ssh_packet_connection_is_on_socket(ssh) &&
-	    setsockopt(sock_in, SOL_SOCKET, SO_KEEPALIVE, &on, sizeof(on)) < 0)
+	    setsockopt(sock_in, SOL_SOCKET, SO_KEEPALIVE, &on, sizeof(on)) == -1)
 		error("setsockopt SO_KEEPALIVE: %.100s", strerror(errno));
 
 	if ((remote_port = ssh_remote_port(ssh)) < 0) {
