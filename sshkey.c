@@ -4105,7 +4105,7 @@ sshkey_private_pem_to_bio(struct sshkey *key, BIO *bio,
 		const EVP_CIPHER *cipher = (len > 0) ? EVP_aes_256_cbc() : NULL;
 		u_char *_passphrase = (len > 0) ? (u_char*)passphrase : NULL;
 
-		res = PEM_write_bio_PrivateKey(bio, pkey, cipher,
+		res = PEM_write_bio_PKCS8PrivateKey(bio, pkey, cipher,
 		    _passphrase, len, NULL, NULL);
 	}
 	if (res && sshkey_is_x509(key))
