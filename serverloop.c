@@ -386,7 +386,7 @@ collect_children(struct ssh *ssh)
 	if (child_terminated) {
 		debug("Received SIGCHLD.");
 		while ((pid = waitpid(-1, &status, WNOHANG)) > 0 ||
-		    (pid < 0 && errno == EINTR))
+		    (pid == -1 && errno == EINTR))
 			if (pid > 0)
 				session_close_by_pid(ssh, pid, status);
 		child_terminated = 0;

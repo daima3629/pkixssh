@@ -65,7 +65,7 @@ ssh_askpass(char *askpass, const char *msg)
 		return NULL;
 	}
 	osigchld = signal(SIGCHLD, SIG_DFL);
-	if ((pid = fork()) < 0) {
+	if ((pid = fork()) == -1) {
 		error("ssh_askpass: fork: %s", strerror(errno));
 		signal(SIGCHLD, osigchld);
 		return NULL;
@@ -92,7 +92,7 @@ ssh_askpass(char *askpass, const char *msg)
 	buf[len] = '\0';
 
 	close(p[0]);
-	while ((ret = waitpid(pid, &status, 0)) < 0)
+	while ((ret = waitpid(pid, &status, 0)) == -1)
 		if (errno != EINTR)
 			break;
 	signal(SIGCHLD, osigchld);

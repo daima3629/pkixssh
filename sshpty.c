@@ -108,7 +108,7 @@ pty_make_controlling_tty(int *ttyfd, const char *tty)
 		close(fd);
 	}
 #endif /* TIOCNOTTY */
-	if (setsid() < 0)
+	if (setsid() == -1)
 		error("setsid: %.100s", strerror(errno));
 
 	/*

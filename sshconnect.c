@@ -199,7 +199,7 @@ ssh_proxy_fdpass_connect(struct ssh *ssh, const char *host, u_short port,
 		exit(1);
 	}
 	/* Parent. */
-	if (pid < 0)
+	if (pid == -1)
 		fatal("fork failed: %.100s", strerror(errno));
 	close(sp[0]);
 	free(command_string);
@@ -282,7 +282,7 @@ ssh_proxy_connect(struct ssh *ssh, const char *host, u_short port,
 		exit(1);
 	}
 	/* Parent. */
-	if (pid < 0)
+	if (pid == -1)
 		fatal("fork failed: %.100s", strerror(errno));
 	else
 		proxy_command_pid = pid; /* save pid to clean up later */

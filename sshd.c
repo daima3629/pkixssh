@@ -375,7 +375,7 @@ main_sigchld_handler(int sig)
 
 	UNUSED(sig);
 	while ((pid = waitpid(-1, &status, WNOHANG)) > 0 ||
-	    (pid < 0 && errno == EINTR))
+	    (pid == -1 && errno == EINTR))
 		;
 	errno = save_errno;
 }
@@ -562,7 +562,7 @@ privsep_preauth(struct ssh *ssh)
 		monitor_child_preauth(ssh, pmonitor);
 
 		/* Wait for the child's exit status */
-		while (waitpid(pid, &status, 0) < 0) {
+		while (waitpid(pid, &status, 0) == -1) {
 			if (errno == EINTR)
 				continue;
 			pmonitor->m_pid = -1;
@@ -1413,7 +1413,7 @@ server_accept_loop(int *sock_in, int *sock_out, int *newsock, int *config_s)
 
 			/* Parent.  Stay in the loop. */
 			platform_post_fork_parent(pid);
-			if (pid < 0)
+			if (pid == -1)
 				error("fork: %.100s", strerror(errno));
 			else
 				debug("Forked child %ld.", (long)pid);
@@ -2056,7 +2056,7 @@ main(int ac, char **av)
 	already_daemon = daemonized();
 	if (!(debug_flag || inetd_flag || no_daemon_flag || already_daemon)) {
 
-		if (daemon(0, 0) < 0)
+		if (daemon(0, 0) == -1)
 			fatal("daemon() failed: %.200s", strerror(errno));
 
 		disconnect_controlling_tty();
@@ -2119,7 +2119,7 @@ main(int ac, char **av)
 	 * controlling terminal which will result in "could not set
 	 * controlling tty" errors.
 	 */
-	if (!debug_flag && !inetd_flag && setsid() < 0)
+	if (!debug_flag && !inetd_flag && setsid() == -1)
 		error("setsid: %.100s", strerror(errno));
 #endif
 

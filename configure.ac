@@ -2302,7 +2302,7 @@ if test ! -z "$check_for_openpty_ctty_bug"; then
 	int fd, ptyfd, ttyfd, status;
 
 	pid = fork();
-	if (pid < 0) {		/* failed */
+	if (pid == -1) {	/* failed */
 		exit(1);
 	} else if (pid > 0) {	/* parent */
 		waitpid(pid, &status, 0);

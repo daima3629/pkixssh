@@ -1905,7 +1905,7 @@ ssh_keysign(struct ssh *ssh, struct sshkey *key, u_char **sigp, size_t *lenp,
 		error("%s: pipe: %s", __func__, strerror(errno));
 		return -1;
 	}
-	if ((pid = fork()) < 0) {
+	if ((pid = fork()) == -1) {
 		error("%s: fork: %s", __func__, strerror(errno));
 		return -1;
 	}
@@ -1954,7 +1954,7 @@ ssh_keysign(struct ssh *ssh, struct sshkey *key, u_char **sigp, size_t *lenp,
 	}
 
 	errno = 0;
-	while (waitpid(pid, &status, 0) < 0) {
+	while (waitpid(pid, &status, 0) == -1) {
 		if (errno != EINTR) {
 			error("%s: waitpid %ld: %s",
 			    __func__, (long)pid, strerror(errno));
