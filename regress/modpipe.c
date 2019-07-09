@@ -107,7 +107,7 @@ main(int argc, char **argv)
 		r = s = read(STDIN_FILENO, buf, sizeof(buf));
 		if (r == 0)
 			break;
-		if (r < 0) {
+		if (r == -1) {
 			if (errno == EAGAIN || errno == EINTR)
 				continue;
 			err(1, "read");
@@ -130,7 +130,7 @@ main(int argc, char **argv)
 			r = write(STDOUT_FILENO, buf, s - o);
 			if (r == 0)
 				break;
-			if (r < 0) {
+			if (r == -1) {
 				if (errno == EAGAIN || errno == EINTR)
 					continue;
 				err(1, "write");

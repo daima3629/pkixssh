@@ -1964,7 +1964,7 @@ channel_handle_rfd(struct ssh *ssh, Channel *c,
 
 	errno = 0;
 	len = read(c->rfd, buf, sizeof(buf));
-	if (len < 0 && (errno == EINTR ||
+	if (len == -1 && (errno == EINTR ||
 	    ((errno == EAGAIN || errno == EWOULDBLOCK) && !force)))
 		return 1;
 #ifndef PTY_ZEROREAD
@@ -2039,7 +2039,7 @@ channel_handle_wfd(struct ssh *ssh, Channel *c,
 		/* ignore truncated writes, datagrams might get lost */
 		len = write(c->wfd, buf, dlen);
 		free(data);
-		if (len < 0 && (errno == EINTR || errno == EAGAIN ||
+		if (len == -1 && (errno == EINTR || errno == EAGAIN ||
 		    errno == EWOULDBLOCK))
 			return 1;
 		if (len <= 0)
@@ -2054,7 +2054,7 @@ channel_handle_wfd(struct ssh *ssh, Channel *c,
 #endif
 
 	len = write(c->wfd, buf, dlen);
-	if (len < 0 &&
+	if (len == -1 &&
 	    (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK))
 		return 1;
 	if (len <= 0) {
@@ -2109,7 +2109,7 @@ channel_handle_efd_write(struct ssh *ssh, Channel *c,
 	len = write(c->efd, sshbuf_ptr(c->extended),
 	    sshbuf_len(c->extended));
 	debug2("channel %d: written %zd to efd %d", c->self, len, c->efd);
-	if (len < 0 && (errno == EINTR || errno == EAGAIN ||
+	if (len == -1 && (errno == EINTR || errno == EAGAIN ||
 	    errno == EWOULDBLOCK))
 		return 1;
 	if (len <= 0) {
@@ -2142,7 +2142,7 @@ channel_handle_efd_read(struct ssh *ssh, Channel *c,
 	errno = 0;
 	len = read(c->efd, buf, sizeof(buf));
 	debug2("channel %d: read %zd from efd %d", c->self, len, c->efd);
-	if (len < 0 && (errno == EINTR || ((errno == EAGAIN ||
+	if (len == -1 && (errno == EINTR || ((errno == EAGAIN ||
 	    errno == EWOULDBLOCK) && !force)))
 		return 1;
 	if (len <= 0) {
@@ -2231,7 +2231,7 @@ read_mux(struct ssh *ssh, Channel *c, u_int need)
 	if (sshbuf_len(c->input) < need) {
 		rlen = need - sshbuf_len(c->input);
 		len = read(c->rfd, buf, MINIMUM(rlen, CHAN_RBUF));
-		if (len < 0 && (errno == EINTR || errno == EAGAIN))
+		if (len == -1 && (errno == EINTR || errno == EAGAIN))
 			return sshbuf_len(c->input);
 		if (len <= 0) {
 			debug2("channel %d: ctl read<=0 rfd %d len %zd",
@@ -2297,7 +2297,7 @@ channel_post_mux_client_write(struct ssh *ssh, Channel *c,
 		return;
 
 	len = write(c->wfd, sshbuf_ptr(c->output), sshbuf_len(c->output));
-	if (len < 0 && (errno == EINTR || errno == EAGAIN))
+	if (len == -1 && (errno == EINTR || errno == EAGAIN))
 		return;
 	if (len <= 0) {
 		chan_mark_dead(ssh, c);

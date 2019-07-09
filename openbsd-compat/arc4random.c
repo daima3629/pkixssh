@@ -165,7 +165,7 @@ getrnd(u_char *s, size_t len)
 		fatal("Couldn't open %s: %s", SSH_RANDOM_DEV, strerror(errno));
 	while (o < len) {
 		r = read(fd, s + o, len - o);
-		if (r < 0) {
+		if (r == -1) {
 			if (errno == EAGAIN || errno == EINTR ||
 			    errno == EWOULDBLOCK)
 				continue;

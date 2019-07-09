@@ -1354,7 +1354,7 @@ ssh_packet_read_seqnr(struct ssh *ssh, u_char *typep, u_int32_t *seqnr_p)
 			r = SSH_ERR_CONN_CLOSED;
 			goto out;
 		}
-		if (len < 0) {
+		if (len == -1) {
 			r = SSH_ERR_SYSTEM_ERROR;
 			goto out;
 		}

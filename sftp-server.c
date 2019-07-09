@@ -753,12 +753,12 @@ process_read(u_int32_t id)
 	}
 	fd = handle_to_fd(handle);
 	if (fd >= 0) {
-		if (lseek(fd, off, SEEK_SET) < 0) {
+		if (lseek(fd, off, SEEK_SET) == -1) {
 			error("process_read: seek failed");
 			status = errno_to_portable(errno);
 		} else {
 			ret = read(fd, buf, len);
-			if (ret < 0) {
+			if (ret == -1) {
 				status = errno_to_portable(errno);
 			} else if (ret == 0) {
 				status = SSH2_FX_EOF;
@@ -794,13 +794,13 @@ process_write(u_int32_t id)
 		status = SSH2_FX_FAILURE;
 	else {
 		if (!(handle_to_flags(handle) & O_APPEND) &&
-				lseek(fd, off, SEEK_SET) < 0) {
+				lseek(fd, off, SEEK_SET) == -1) {
 			status = errno_to_portable(errno);
 			error("process_write: seek failed");
 		} else {
 /* XXX ATOMICIO ? */
 			ret = write(fd, data, len);
-			if (ret < 0) {
+			if (ret == -1) {
 				error("process_write: write failed");
 				status = errno_to_portable(errno);
 			} else if ((size_t)ret == len) {
@@ -1739,7 +1739,7 @@ sftp_server_main(int argc, char **argv, struct passwd *user_pw)
 			if (len == 0) {
 				debug("read eof");
 				sftp_server_cleanup_exit(0);
-			} else if (len < 0) {
+			} else if (len == -1) {
 				error("read: %s", strerror(errno));
 				sftp_server_cleanup_exit(1);
 			} else if ((r = sshbuf_put(iqueue, buf, len)) != 0) {
@@ -1750,7 +1750,7 @@ sftp_server_main(int argc, char **argv, struct passwd *user_pw)
 		/* send oqueue to stdout */
 		if (FD_ISSET(out, wset)) {
 			len = write(out, sshbuf_ptr(oqueue), olen);
-			if (len < 0) {
+			if (len == -1) {
 				error("write: %s", strerror(errno));
 				sftp_server_cleanup_exit(1);
 			} else if ((r = sshbuf_consume(oqueue, len)) != 0) {

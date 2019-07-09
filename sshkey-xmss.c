@@ -478,7 +478,7 @@ sshkey_xmss_get_state(const struct sshkey *k, sshkey_printfn *pr)
 		PRINT("%s: cannot open/create: %s", __func__, lockfile);
 		goto done;
 	}
-	while (flock(lockfd, LOCK_EX|LOCK_NB) < 0) {
+	while (flock(lockfd, LOCK_EX|LOCK_NB) == -1) {
 		if (errno != EWOULDBLOCK) {
 			ret = SSH_ERR_SYSTEM_ERROR;
 			PRINT("%s: cannot lock: %s", __func__, lockfile);
@@ -632,7 +632,7 @@ sshkey_xmss_update_state(const struct sshkey *k, sshkey_printfn *pr)
 		close(fd);
 		goto done;
 	}
-	if (fsync(fd) < 0) {
+	if (fsync(fd) == -1) {
 		ret = SSH_ERR_SYSTEM_ERROR;
 		PRINT("%s: sync new state file: %s", __func__, nstatefile);
 		close(fd);

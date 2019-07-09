@@ -330,7 +330,7 @@ process_input(struct ssh *ssh, fd_set *readset, int connection_in)
 			verbose("Connection closed by %.100s port %d",
 			    ssh_remote_ipaddr(ssh), ssh_remote_port(ssh));
 			return -1;
-		} else if (len < 0) {
+		} else if (len == -1) {
 			if (errno != EINTR && errno != EAGAIN &&
 			    errno != EWOULDBLOCK) {
 				verbose("Read error from remote host "

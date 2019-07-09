@@ -1503,7 +1503,7 @@ mux_client_read(int fd, struct sshbuf *b, size_t need)
 			return -1;
 		}
 		len = read(fd, p + have, need - have);
-		if (len < 0) {
+		if (len == -1) {
 			switch (errno) {
 #if defined(EWOULDBLOCK) && (EWOULDBLOCK != EAGAIN)
 			case EWOULDBLOCK:
@@ -1552,7 +1552,7 @@ mux_client_write_packet(int fd, struct sshbuf *m)
 			return -1;
 		}
 		len = write(fd, ptr + have, need - have);
-		if (len < 0) {
+		if (len == -1) {
 			switch (errno) {
 #if defined(EWOULDBLOCK) && (EWOULDBLOCK != EAGAIN)
 			case EWOULDBLOCK:

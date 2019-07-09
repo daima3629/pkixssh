@@ -418,7 +418,7 @@ main(int argc, char **argv)
 			if (len == 0) {
 				debug("read eof");
 				cleanup_exit(0);
-			} else if (len < 0) {
+			} else if (len == -1) {
 				error("read: %s", strerror(errno));
 				cleanup_exit(1);
 			} else if ((r = sshbuf_put(iqueue, buf, len)) != 0) {
@@ -430,7 +430,7 @@ main(int argc, char **argv)
 		if ((pfd[1].revents & (POLLOUT|POLLHUP)) != 0) {
 			len = write(out, sshbuf_ptr(oqueue),
 			    sshbuf_len(oqueue));
-			if (len < 0) {
+			if (len == -1) {
 				error("write: %s", strerror(errno));
 				cleanup_exit(1);
 			} else if ((r = sshbuf_consume(oqueue, len)) != 0) {
