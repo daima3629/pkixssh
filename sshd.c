@@ -1466,7 +1466,7 @@ check_ip_options(struct ssh *ssh)
 
 	memset(&from, 0, sizeof(from));
 	if (getpeername(sock_in, (struct sockaddr *)&from,
-	    &fromlen) < 0)
+	    &fromlen) == -1)
 		return;
 	if (from.ss_family != AF_INET)
 		return;

@@ -2346,7 +2346,7 @@ channel_post_mux_listener(struct ssh *ssh, Channel *c,
 		return;
 	}
 
-	if (getpeereid(newsock, &euid, &egid) < 0) {
+	if (getpeereid(newsock, &euid, &egid) == -1) {
 		error("%s getpeereid failed: %s", __func__,
 		    strerror(errno));
 		close(newsock);

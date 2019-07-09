@@ -1718,7 +1718,7 @@ record_failed_login(struct ssh *ssh, const char *username, const char *hostname,
 
 	if (ssh_packet_connection_is_on_socket(ssh) &&
 	    getpeername(ssh_packet_get_connection_in(ssh),
-	    (struct sockaddr *)&from, &fromlen) == 0) {
+	    (struct sockaddr *)&from, &fromlen) != -1) {
 		ipv64_normalise_mapped(&from, &fromlen);
 		if (from.ss_family == AF_INET) {
 			a4 = (struct sockaddr_in *)&from;

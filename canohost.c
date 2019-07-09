@@ -77,10 +77,10 @@ get_socket_address(int sock, int remote, int flags)
 	memset(&addr, 0, sizeof(addr));
 
 	if (remote) {
-		if (getpeername(sock, (struct sockaddr *)&addr, &addrlen) != 0)
+		if (getpeername(sock, (struct sockaddr *)&addr, &addrlen) == -1)
 			return NULL;
 	} else {
-		if (getsockname(sock, (struct sockaddr *)&addr, &addrlen) != 0)
+		if (getsockname(sock, (struct sockaddr *)&addr, &addrlen) == -1)
 			return NULL;
 	}
 
@@ -164,12 +164,12 @@ get_sock_port(int sock, int local)
 	fromlen = sizeof(from);
 	memset(&from, 0, sizeof(from));
 	if (local) {
-		if (getsockname(sock, (struct sockaddr *)&from, &fromlen) < 0) {
+		if (getsockname(sock, (struct sockaddr *)&from, &fromlen) == -1) {
 			error("getsockname failed: %.100s", strerror(errno));
 			return 0;
 		}
 	} else {
-		if (getpeername(sock, (struct sockaddr *)&from, &fromlen) < 0) {
+		if (getpeername(sock, (struct sockaddr *)&from, &fromlen) == -1) {
 			debug("getpeername failed: %.100s", strerror(errno));
 			return -1;
 		}

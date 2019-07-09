@@ -433,12 +433,12 @@ ssh_packet_connection_is_on_socket(struct ssh *ssh)
 	fromlen = sizeof(from);
 	memset(&from, 0, sizeof(from));
 	if (getpeername(state->connection_in, (struct sockaddr *)&from,
-	    &fromlen) < 0)
+	    &fromlen) == -1)
 		return 0;
 	tolen = sizeof(to);
 	memset(&to, 0, sizeof(to));
 	if (getpeername(state->connection_out, (struct sockaddr *)&to,
-	    &tolen) < 0)
+	    &tolen) == -1)
 		return 0;
 	if (fromlen != tolen || memcmp(&from, &to, fromlen) != 0)
 		return 0;
@@ -464,7 +464,7 @@ ssh_packet_connection_af(struct ssh *ssh)
 
 	memset(&to, 0, sizeof(to));
 	if (getsockname(ssh->state->connection_out, (struct sockaddr *)&to,
-	    &tolen) < 0)
+	    &tolen) == -1)
 		return 0;
 #ifdef IPV4_IN_IPV6
 	if (to.ss_family == AF_INET6 &&

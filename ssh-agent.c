@@ -918,7 +918,7 @@ handle_socket_read(u_int socknum)
 		error("accept from AUTH_SOCKET: %s", strerror(errno));
 		return -1;
 	}
-	if (getpeereid(fd, &euid, &egid) < 0) {
+	if (getpeereid(fd, &euid, &egid) == -1) {
 		error("getpeereid %d failed: %s", fd, strerror(errno));
 		close(fd);
 		return -1;
