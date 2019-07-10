@@ -123,7 +123,7 @@ pty_make_controlling_tty(int *ttyfd, const char *tty)
 	/* Make it our controlling tty. */
 #ifdef TIOCSCTTY
 	debug("Setting controlling tty using TIOCSCTTY.");
-	if (ioctl(*ttyfd, TIOCSCTTY, NULL) < 0)
+	if (ioctl(*ttyfd, TIOCSCTTY, NULL) == -1)
 		error("ioctl(TIOCSCTTY): %.100s", strerror(errno));
 #endif /* TIOCSCTTY */
 #ifdef NEED_SETPGRP

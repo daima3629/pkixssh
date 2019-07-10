@@ -69,7 +69,7 @@ flock(int fd, int op)
 	fl.l_whence = SEEK_SET;
 	rc = fcntl(fd, op & LOCK_NB ? F_SETLK : F_SETLKW, &fl);
 
-	if (rc && (errno == EAGAIN))
+	if (rc == -1 && (errno == EAGAIN))
 		errno = EWOULDBLOCK;
 #else
 	rc = -1;

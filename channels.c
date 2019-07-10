@@ -2070,7 +2070,7 @@ channel_handle_wfd(struct ssh *ssh, Channel *c,
 	}
 #ifndef BROKEN_TCGETATTR_ICANON
 	if (c->isatty && dlen >= 1 && buf[0] != '\r') {
-		if (tcgetattr(c->wfd, &tio) == 0 &&
+		if (tcgetattr(c->wfd, &tio) != -1 &&
 		    !(tio.c_lflag & ECHO) && (tio.c_lflag & ICANON)) {
 			/*
 			 * Simulate echo to reduce the impact of
@@ -4530,7 +4530,7 @@ channel_send_window_changes(struct ssh *ssh)
 		if (sc->channels[i] == NULL || !sc->channels[i]->client_tty ||
 		    sc->channels[i]->type != SSH_CHANNEL_OPEN)
 			continue;
-		if (ioctl(sc->channels[i]->rfd, TIOCGWINSZ, &ws) < 0)
+		if (ioctl(sc->channels[i]->rfd, TIOCGWINSZ, &ws) == -1)
 			continue;
 		channel_request_start(ssh, i, "window-change", 0);
 		if ((r = sshpkt_put_u32(ssh, (u_int)ws.ws_col)) != 0 ||
