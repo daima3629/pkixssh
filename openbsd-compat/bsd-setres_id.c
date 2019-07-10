@@ -42,13 +42,13 @@ setresgid(gid_t rgid, gid_t egid, gid_t sgid)
 		ret = -1;
 	}
 #else
-	if (setegid(egid) < 0) {
+	if (setegid(egid) == -1) {
 		saved_errno = errno;
 		error("setegid %lu: %.100s", (u_long)egid, strerror(errno));
 		errno = saved_errno;
 		ret = -1;
 	}
-	if (setgid(rgid) < 0) {
+	if (setgid(rgid) == -1) {
 		saved_errno = errno;
 		error("setgid %lu: %.100s", (u_long)rgid, strerror(errno));
 		errno = saved_errno;
@@ -79,14 +79,14 @@ setresuid(uid_t ruid, uid_t euid, uid_t suid)
 #else
 
 # ifndef SETEUID_BREAKS_SETUID
-	if (seteuid(euid) < 0) {
+	if (seteuid(euid) == -1) {
 		saved_errno = errno;
 		error("seteuid %lu: %.100s", (u_long)euid, strerror(errno));
 		errno = saved_errno;
 		ret = -1;
 	}
 # endif
-	if (setuid(ruid) < 0) {
+	if (setuid(ruid) == -1) {
 		saved_errno = errno;
 		error("setuid %lu: %.100s", (u_long)ruid, strerror(errno));
 		errno = saved_errno;

@@ -121,13 +121,13 @@ temporarily_use_uid(struct passwd *pw)
 		fatal("setgroups: %.100s", strerror(errno));
 #ifndef SAVED_IDS_WORK_WITH_SETEUID
 	/* Propagate the privileged gid to all of our gids. */
-	if (setgid(getegid()) < 0)
+	if (setgid(getegid()) == -1)
 		debug("setgid %u: %.100s", (u_int) getegid(), strerror(errno));
 	/* Propagate the privileged uid to all of our uids. */
-	if (setuid(geteuid()) < 0)
+	if (setuid(geteuid()) == -1)
 		debug("setuid %u: %.100s", (u_int) geteuid(), strerror(errno));
 #endif /* SAVED_IDS_WORK_WITH_SETEUID */
-	if (setegid(pw->pw_gid) < 0)
+	if (setegid(pw->pw_gid) == -1)
 		fatal("setegid %u: %.100s", (u_int)pw->pw_gid,
 		    strerror(errno));
 	if (seteuid(pw->pw_uid) == -1)
@@ -152,9 +152,9 @@ restore_uid(void)
 #ifdef SAVED_IDS_WORK_WITH_SETEUID
 	debug("restore_uid: %u/%u", (u_int)saved_euid, (u_int)saved_egid);
 	/* Set the effective uid back to the saved privileged uid. */
-	if (seteuid(saved_euid) < 0)
+	if (seteuid(saved_euid) == -1)
 		fatal("seteuid %u: %.100s", (u_int)saved_euid, strerror(errno));
-	if (setegid(saved_egid) < 0)
+	if (setegid(saved_egid) == -1)
 		fatal("setegid %u: %.100s", (u_int)saved_egid, strerror(errno));
 #else /* SAVED_IDS_WORK_WITH_SETEUID */
 	/*
@@ -190,7 +190,7 @@ permanently_set_uid(struct passwd *pw)
 	debug("permanently_set_uid: %u/%u", (u_int)pw->pw_uid,
 	    (u_int)pw->pw_gid);
 
-	if (setresgid(pw->pw_gid, pw->pw_gid, pw->pw_gid) < 0)
+	if (setresgid(pw->pw_gid, pw->pw_gid, pw->pw_gid) == -1)
 		fatal("setresgid %u: %.100s", (u_int)pw->pw_gid, strerror(errno));
 
 #ifdef __APPLE__
@@ -203,7 +203,7 @@ permanently_set_uid(struct passwd *pw)
 		    pw->pw_name, (u_int)pw->pw_gid, strerror(errno));
 #endif
 
-	if (setresuid(pw->pw_uid, pw->pw_uid, pw->pw_uid) < 0)
+	if (setresuid(pw->pw_uid, pw->pw_uid, pw->pw_uid) == -1)
 		fatal("setresuid %u: %.100s", (u_int)pw->pw_uid, strerror(errno));
 
 #ifndef NO_UID_RESTORATION_TEST
