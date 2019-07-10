@@ -1,4 +1,4 @@
-/* $OpenBSD: sshkey-xmss.c,v 1.3 2018/07/09 21:59:10 markus Exp $ */
+/* $OpenBSD: sshkey-xmss.c,v 1.5 2019/06/28 13:35:04 deraadt Exp $ */
 /*
  * Copyright (c) 2017 Markus Friedl.  All rights reserved.
  *

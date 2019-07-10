@@ -1,4 +1,4 @@
-/* $OpenBSD: readpass.c,v 1.53 2019/01/19 04:15:56 tb Exp $ */
+/* $OpenBSD: readpass.c,v 1.54 2019/06/28 13:35:04 deraadt Exp $ */
 /*
  * Copyright (c) 2001 Markus Friedl.  All rights reserved.
  *

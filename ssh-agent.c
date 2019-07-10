@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-agent.c,v 1.235 2019/06/14 03:51:47 djm Exp $ */
+/* $OpenBSD: ssh-agent.c,v 1.237 2019/06/28 13:35:04 deraadt Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland

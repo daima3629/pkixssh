@@ -1,4 +1,4 @@
-/* $OpenBSD: sshpty.c,v 1.31 2016/11/29 03:54:50 dtucker Exp $ */
+/* $OpenBSD: sshpty.c,v 1.34 2019/07/04 16:20:10 deraadt Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland

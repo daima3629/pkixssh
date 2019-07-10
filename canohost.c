@@ -1,4 +1,4 @@
-/* $OpenBSD: canohost.c,v 1.73 2016/03/07 19:02:43 djm Exp $ */
+/* $OpenBSD: canohost.c,v 1.74 2019/06/28 13:35:04 deraadt Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
