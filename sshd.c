@@ -522,7 +522,7 @@ privsep_preauth_child(void)
 		debug3("privsep user:group %u:%u", (u_int)privsep_pw->pw_uid,
 		    (u_int)privsep_pw->pw_gid);
 		gidset[0] = privsep_pw->pw_gid;
-		if (setgroups(1, gidset) < 0)
+		if (setgroups(1, gidset) == -1)
 			fatal("setgroups: %.100s", strerror(errno));
 		permanently_set_uid(privsep_pw);
 	}
@@ -2024,7 +2024,7 @@ main(int ac, char **av)
 	 * to create a file, and we can't control the code in every
 	 * module which might be used).
 	 */
-	if (setgroups(0, NULL) < 0)
+	if (setgroups(0, NULL) == -1)
 		debug("setgroups() failed: %.200s", strerror(errno));
 
 	if (rexec_flag) {

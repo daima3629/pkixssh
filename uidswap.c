@@ -84,12 +84,12 @@ temporarily_use_uid(struct passwd *pw)
 	temporarily_use_uid_effective = 1;
 
 	saved_egroupslen = getgroups(0, NULL);
-	if (saved_egroupslen < 0)
+	if (saved_egroupslen == -1)
 		fatal("getgroups: %.100s", strerror(errno));
 	if (saved_egroupslen > 0) {
 		saved_egroups = xreallocarray(saved_egroups,
 		    saved_egroupslen, sizeof(gid_t));
-		if (getgroups(saved_egroupslen, saved_egroups) < 0)
+		if (getgroups(saved_egroupslen, saved_egroups) == -1)
 			fatal("getgroups: %.100s", strerror(errno));
 	} else { /* saved_egroupslen == 0 */
 		free(saved_egroups);
@@ -98,17 +98,17 @@ temporarily_use_uid(struct passwd *pw)
 
 	/* set and save the user's groups */
 	if (user_groupslen == -1 || user_groups_uid != pw->pw_uid) {
-		if (initgroups(pw->pw_name, pw->pw_gid) < 0)
+		if (initgroups(pw->pw_name, pw->pw_gid) == -1)
 			fatal("initgroups: %s: %.100s", pw->pw_name,
 			    strerror(errno));
 
 		user_groupslen = getgroups(0, NULL);
-		if (user_groupslen < 0)
+		if (user_groupslen == -1)
 			fatal("getgroups: %.100s", strerror(errno));
 		if (user_groupslen > 0) {
 			user_groups = xreallocarray(user_groups,
 			    user_groupslen, sizeof(gid_t));
-			if (getgroups(user_groupslen, user_groups) < 0)
+			if (getgroups(user_groupslen, user_groups) == -1)
 				fatal("getgroups: %.100s", strerror(errno));
 		} else { /* user_groupslen == 0 */
 			free(user_groups);
@@ -117,7 +117,7 @@ temporarily_use_uid(struct passwd *pw)
 		user_groups_uid = pw->pw_uid;
 	}
 	/* Set the effective uid to the given (unprivileged) uid. */
-	if (setgroups(user_groupslen, user_groups) < 0)
+	if (setgroups(user_groupslen, user_groups) == -1)
 		fatal("setgroups: %.100s", strerror(errno));
 #ifndef SAVED_IDS_WORK_WITH_SETEUID
 	/* Propagate the privileged gid to all of our gids. */
@@ -166,7 +166,7 @@ restore_uid(void)
 	setgid(getgid());
 #endif /* SAVED_IDS_WORK_WITH_SETEUID */
 
-	if (setgroups(saved_egroupslen, saved_egroups) < 0)
+	if (setgroups(saved_egroupslen, saved_egroups) == -1)
 		fatal("setgroups: %.100s", strerror(errno));
 	temporarily_use_uid_effective = 0;
 }
@@ -198,7 +198,7 @@ permanently_set_uid(struct passwd *pw)
 	 * OS X requires initgroups after setgid to opt back into
 	 * memberd support for >16 supplemental groups.
 	 */
-	if (initgroups(pw->pw_name, pw->pw_gid) < 0)
+	if (initgroups(pw->pw_name, pw->pw_gid) == -1)
 		fatal("initgroups %.100s %u: %.100s",
 		    pw->pw_name, (u_int)pw->pw_gid, strerror(errno));
 #endif

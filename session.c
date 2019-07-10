@@ -1429,7 +1429,7 @@ do_setusercontext(struct passwd *pw)
 			exit(1);
 		}
 		/* Initialize the group list. */
-		if (initgroups(pw->pw_name, pw->pw_gid) < 0) {
+		if (initgroups(pw->pw_name, pw->pw_gid) == -1) {
 			perror("initgroups");
 			exit(1);
 		}
