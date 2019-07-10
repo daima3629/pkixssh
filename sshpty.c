@@ -68,7 +68,7 @@ pty_allocate(int *ptyfd, int *ttyfd, char *namebuf, size_t namebuflen)
 	int i;
 
 	i = openpty(ptyfd, ttyfd, NULL, NULL, NULL);
-	if (i < 0) {
+	if (i == -1) {
 		error("openpty: %.100s", strerror(errno));
 		return 0;
 	}

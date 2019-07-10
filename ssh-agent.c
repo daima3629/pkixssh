@@ -1465,7 +1465,7 @@ skip:
 		if (parent_alive_interval != 0)
 			check_parent_exists();
 		(void) reaper();	/* remove expired keys */
-		if (result < 0) {
+		if (result == -1) {
 			if (saved_errno == EINTR)
 				continue;
 			fatal("poll: %s", strerror(saved_errno));

@@ -1439,8 +1439,8 @@ int openpty(
 (void)termp; (void)winp;
 return 0; }
     ]], [[
-int rc, ptyfd = 1, ttyfd = 2;
-rc = openpty(&ptyfd, &ttyfd, NULL, NULL, NULL);
+int ptyfd = 1, ttyfd = 2;
+(void)openpty(&ptyfd, &ttyfd, NULL, NULL, NULL);
     ]])],
     [ AC_MSG_RESULT([yes]) ],
     [ AC_MSG_RESULT([no])

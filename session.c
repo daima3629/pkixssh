@@ -2687,7 +2687,7 @@ session_setup_x11fwd(struct ssh *ssh, Session *s)
 	}
 
 	/* Set up a suitable value for the DISPLAY variable. */
-	if (gethostname(hostname, sizeof(hostname)) < 0)
+	if (gethostname(hostname, sizeof(hostname)) == -1)
 		fatal("gethostname: %.100s", strerror(errno));
 	/*
 	 * auth_display must be used as the displayname when the
