@@ -138,7 +138,7 @@ fdlim_get(int hard)
 #if defined(HAVE_GETRLIMIT) && defined(RLIMIT_NOFILE)
 	struct rlimit rlfd;
 
-	if (getrlimit(RLIMIT_NOFILE, &rlfd) < 0)
+	if (getrlimit(RLIMIT_NOFILE, &rlfd) == -1)
 		return (-1);
 	if ((hard ? rlfd.rlim_max : rlfd.rlim_cur) == RLIM_INFINITY)
 		return SSH_SYSFDMAX;
@@ -159,10 +159,10 @@ fdlim_set(int lim)
 	if (lim <= 0)
 		return (-1);
 #if defined(HAVE_SETRLIMIT) && defined(RLIMIT_NOFILE)
-	if (getrlimit(RLIMIT_NOFILE, &rlfd) < 0)
+	if (getrlimit(RLIMIT_NOFILE, &rlfd) == -1)
 		return (-1);
 	rlfd.rlim_cur = lim;
-	if (setrlimit(RLIMIT_NOFILE, &rlfd) < 0)
+	if (setrlimit(RLIMIT_NOFILE, &rlfd) == -1)
 		return (-1);
 #elif defined (HAVE_SETDTABLESIZE)
 	setdtablesize(lim);

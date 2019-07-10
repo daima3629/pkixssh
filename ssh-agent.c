@@ -1432,7 +1432,7 @@ main(int ac, char **av)
 #ifdef HAVE_SETRLIMIT
 	/* deny core dumps, since memory contains unencrypted private keys */
 	rlim.rlim_cur = rlim.rlim_max = 0;
-	if (setrlimit(RLIMIT_CORE, &rlim) < 0) {
+	if (setrlimit(RLIMIT_CORE, &rlim) == -1) {
 		error("setrlimit RLIMIT_CORE: %s", strerror(errno));
 		cleanup_exit(1);
 	}

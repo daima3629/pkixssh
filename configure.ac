@@ -3436,10 +3436,12 @@ AC_RUN_IFELSE(
 #include <sys/resource.h>
 #include <stdlib.h>
 	]],[[
-		struct rlimit rl_zero;
+	struct rlimit rl_zero;
+	int r;
 
-		rl_zero.rlim_cur = rl_zero.rlim_max = 0;
-		exit(setrlimit(RLIMIT_FSIZE, &rl_zero) != 0);
+	rl_zero.rlim_cur = rl_zero.rlim_max = 0;
+	r = setrlimit(RLIMIT_FSIZE, &rl_zero);
+	exit(r == -1 ? 1 : 0);
 	]])],
 	[AC_MSG_RESULT([yes])],
 	[AC_MSG_RESULT([no])
