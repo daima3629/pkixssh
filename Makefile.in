@@ -613,9 +613,11 @@ regress-binaries: regress/modpipe$(EXEEXT) \
 	regress/misc/kexfuzz/kexfuzz$(EXEEXT)
 
 # Target check is more common for the projects using autoXXXX tools
-check: tests
+check tests:
+	$(MAKE) check-core
+	$(MAKE) check-certs
 
-tests interop-tests t-exec unit: regress-prep regress-binaries $(TARGETS)
+check-core interop-tests t-exec unit: regress-prep regress-binaries $(TARGETS)
 	BUILDDIR=`pwd`; \
 	TEST_SSH_SCP="$${BUILDDIR}/scp"; \
 	TEST_SSH_SSH="$${BUILDDIR}/ssh"; \
@@ -660,9 +662,7 @@ tests interop-tests t-exec unit: regress-prep regress-binaries $(TARGETS)
 		TEST_SSH_ECC="$${TEST_SSH_ECC}" \
 		TEST_SHELL="${TEST_SHELL}" \
 		EXEEXT="$(EXEEXT)" \
-		$@ && echo all mainstream tests passed
-	$(MAKE) check-certs
-
+		$@ && echo all core tests passed
 
 CHECKCERTSENV = \
 	TEST_SSH_SSH="$${TEST_SSH_SSH-$$BUILDDIR/ssh}" \
