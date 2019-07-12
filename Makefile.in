@@ -613,9 +613,12 @@ regress-binaries: regress/modpipe$(EXEEXT) \
 	regress/misc/kexfuzz/kexfuzz$(EXEEXT)
 
 # Target check is more common for the projects using autoXXXX tools
-check tests:
+check:
 	$(MAKE) check-core
 	$(MAKE) check-certs
+
+# for compatibility
+tests: check
 
 check-core interop-tests t-exec unit: regress-prep regress-binaries $(TARGETS)
 	BUILDDIR=`pwd`; \
