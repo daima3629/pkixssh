@@ -951,7 +951,7 @@ pkcs11_get_x509key(
 
 	rv = f->C_GetAttributeValue(session, obj, attribs, 3);
 	if (rv != CKR_OK) {
-		error("C_GetAttributeValue failed: %lu", rv);
+		error("%s: C_GetAttributeValue failed: %lu", __func__, rv);
 		return NULL;
 	}
 	/*
@@ -971,7 +971,7 @@ pkcs11_get_x509key(
 	/* retrieve ID, subject and value for certificate */
 	rv = f->C_GetAttributeValue(session, obj, attribs, 3);
 	if (rv != CKR_OK) {
-		error("C_GetAttributeValue failed: %lu", rv);
+		error("%s: C_GetAttributeValue failed: %lu", __func__, rv);
 		goto done;
 	}
 
@@ -1055,13 +1055,13 @@ pkcs11_fetch_certs(struct pkcs11_provider *p, CK_ULONG slotidx,
 	/* setup a filter the looks for certificates */
 	rv = f->C_FindObjectsInit(session, filter, 2);
 	if (rv != CKR_OK) {
-		error("C_FindObjectsInit failed: %lu", rv);
-		return (-1);
+		error("%s: C_FindObjectsInit failed: %lu", __func__, rv);
+		return -1;
 	}
 	while (1) {
 		rv = f->C_FindObjects(session, &obj, 1, &nfound);
 		if (rv != CKR_OK) {
-			error("C_FindObjects failed: %lu", rv);
+			error("%s: C_FindObjects failed: %lu", __func__, rv);
 			break;
 		}
 		if (nfound == 0)
@@ -1079,10 +1079,10 @@ pkcs11_fetch_certs(struct pkcs11_provider *p, CK_ULONG slotidx,
 
 	rv = f->C_FindObjectsFinal(session);
 	if (rv != CKR_OK)
-		error("C_FindObjectsFinal failed: %lu", rv);
+		error("%s: C_FindObjectsFinal failed: %lu", __func__, rv);
 }
 
-	return (0);
+	return 0;
 }
 
 /*
