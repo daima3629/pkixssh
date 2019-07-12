@@ -407,14 +407,12 @@ static int
 pkcs11_find(struct pkcs11_provider *p, CK_ULONG slotidx, CK_ATTRIBUTE *attr,
     CK_ULONG nattr, CK_OBJECT_HANDLE *obj)
 {
-	CK_FUNCTION_LIST	*f;
-	CK_SESSION_HANDLE	session;
+	CK_FUNCTION_LIST	*f = p->function_list;
+	CK_SESSION_HANDLE	session = p->slotinfo[slotidx].session;
 	CK_ULONG		nfound = 0;
 	CK_RV			rv;
 	int			ret = -1;
 
-	f = p->function_list;
-	session = p->slotinfo[slotidx].session;
 	if ((rv = f->C_FindObjectsInit(session, attr, nattr)) != CKR_OK) {
 		error("C_FindObjectsInit failed (nattr %lu): %lu", nattr, rv);
 		return (-1);
@@ -899,11 +897,10 @@ pkcs11_open_session(struct pkcs11_provider *p, CK_ULONG slotidx, char *pin,
     CK_USER_TYPE user_type)
 {
 	CK_RV			rv;
-	CK_FUNCTION_LIST	*f;
+	CK_FUNCTION_LIST	*f = p->function_list;
 	CK_SESSION_HANDLE	session;
 	int			login_required, ret;
 
-	f = p->function_list;
 	login_required = p->slotinfo[slotidx].token.flags & CKF_LOGIN_REQUIRED;
 	if (pin && login_required && !strlen(pin)) {
 		error("pin required");
@@ -1034,6 +1031,9 @@ static int
 pkcs11_fetch_certs(struct pkcs11_provider *p, CK_ULONG slotidx,
     struct sshkey ***keysp, int *nkeys)
 {
+	CK_FUNCTION_LIST *f = p->function_list;
+	CK_SESSION_HANDLE session = p->slotinfo[slotidx].session;
+
 	/* Find objects with cert class and X.509 cert type. */
 	CK_OBJECT_CLASS		cert_class = CKO_CERTIFICATE;
 	CK_CERTIFICATE_TYPE	type = CKC_X_509;
@@ -1052,12 +1052,6 @@ pkcs11_fetch_certs(struct pkcs11_provider *p, CK_ULONG slotidx,
 	CK_RV			rv;
 	CK_OBJECT_HANDLE	obj;
 	CK_ULONG		nfound;
-	CK_SESSION_HANDLE	session;
-	CK_FUNCTION_LIST	*f;
-
-	f = p->function_list;
-	session = p->slotinfo[slotidx].session;
-
 	/* setup a filter the looks for certificates */
 	rv = f->C_FindObjectsInit(session, filter, 2);
 	if (rv != CKR_OK) {
