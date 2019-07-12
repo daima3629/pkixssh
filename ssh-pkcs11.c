@@ -1033,7 +1033,9 @@ pkcs11_fetch_certs(struct pkcs11_provider *p, CK_ULONG slotidx,
 {
 	CK_FUNCTION_LIST *f = p->function_list;
 	CK_SESSION_HANDLE session = p->slotinfo[slotidx].session;
+	CK_RV rv;
 
+{	/* setup a filter that looks for certificates */
 	/* Find objects with cert class and X.509 cert type. */
 	CK_OBJECT_CLASS		cert_class = CKO_CERTIFICATE;
 	CK_CERTIFICATE_TYPE	type = CKC_X_509;
@@ -1041,24 +1043,23 @@ pkcs11_fetch_certs(struct pkcs11_provider *p, CK_ULONG slotidx,
 		{ CKA_CLASS, NULL, sizeof(cert_class) }
 	,	{ CKA_CERTIFICATE_TYPE, NULL, sizeof(type) }
 	};
-
 	/* some compilers complain about non-constant initializer so we
 	   use NULL in CK_ATTRIBUTE above and set the value here */
 	filter[0].pValue = &cert_class;
 	filter[1].pValue = &type;
 
-{
-	struct sshkey		*key;
-	CK_RV			rv;
-	CK_OBJECT_HANDLE	obj;
-	CK_ULONG		nfound;
-	/* setup a filter the looks for certificates */
 	rv = f->C_FindObjectsInit(session, filter, 2);
 	if (rv != CKR_OK) {
 		error("%s: C_FindObjectsInit failed: %lu", __func__, rv);
 		return -1;
 	}
+}
+
 	while (1) {
+		CK_OBJECT_HANDLE obj;
+		CK_ULONG nfound;
+		struct sshkey *key;
+
 		rv = f->C_FindObjects(session, &obj, 1, &nfound);
 		if (rv != CKR_OK) {
 			error("%s: C_FindObjects failed: %lu", __func__, rv);
@@ -1080,7 +1081,6 @@ pkcs11_fetch_certs(struct pkcs11_provider *p, CK_ULONG slotidx,
 	rv = f->C_FindObjectsFinal(session);
 	if (rv != CKR_OK)
 		error("%s: C_FindObjectsFinal failed: %lu", __func__, rv);
-}
 
 	return 0;
 }
