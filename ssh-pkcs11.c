@@ -1022,6 +1022,26 @@ done:
 	return key;
 }
 
+static void
+pkcs11_push_key(struct sshkey *key,
+    struct sshkey ***keysp, int *nkeys)
+{
+	if (key == NULL) return;
+
+{	struct sshkey **sp = *keysp;
+	int i;
+	for (i = 0; i < *nkeys; i++, sp++)
+		if (sshkey_equal_public(key, *sp))
+			return;
+}
+
+	/* expand key array and add key */
+	*keysp = xreallocarray(*keysp, *nkeys + 1, sizeof(struct sshkey *));
+	(*keysp)[*nkeys] = key;
+	*nkeys = *nkeys + 1;
+	debug("have %d keys", *nkeys);
+}
+
 /*
  * lookup certificates for token in slot identified by slotidx,
  * add 'wrapped' public keys to the 'keysp' array and increment nkeys.
@@ -1069,13 +1089,7 @@ pkcs11_fetch_certs(struct pkcs11_provider *p, CK_ULONG slotidx,
 			break;
 
 		key = pkcs11_get_x509key(p, slotidx, obj);
-		if (key != NULL) {
-			/* expand key array and add key */
-			*keysp = xreallocarray(*keysp, *nkeys + 1, sizeof(struct sshkey *));
-			(*keysp)[*nkeys] = key;
-			*nkeys = *nkeys + 1;
-			debug("have %d keys", *nkeys);
-		}
+		pkcs11_push_key(key, keysp, nkeys);
 	}
 
 	rv = f->C_FindObjectsFinal(session);
