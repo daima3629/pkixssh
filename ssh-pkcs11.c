@@ -1099,6 +1099,178 @@ pkcs11_fetch_certs(struct pkcs11_provider *p, CK_ULONG slotidx,
 	return 0;
 }
 
+static struct sshkey*
+pkcs11_get_pubkey_rsa(
+    struct pkcs11_provider *p, CK_ULONG slotidx,
+    CK_OBJECT_HANDLE obj)
+{
+	CK_FUNCTION_LIST *f = p->function_list;
+	CK_SESSION_HANDLE session = p->slotinfo[slotidx].session;
+	CK_RV rv;
+	/* NOTE: for RSA public key retrieve ID,
+	 * modulus "m" and public exponent "e"
+	 */
+	CK_ATTRIBUTE attribs[3] = {
+		{ CKA_ID, NULL, 0 },
+		{ CKA_MODULUS, NULL, 0 },
+		{ CKA_PUBLIC_EXPONENT, NULL, 0 }
+	};
+	struct sshkey *key = NULL;
+	int i;
+
+	rv = f->C_GetAttributeValue(session, obj, attribs, 3);
+	if (rv != CKR_OK) {
+		error("%s: C_GetAttributeValue failed: %lu", __func__, rv);
+		return NULL;
+	}
+	/*
+	 * Allow CKA_ID (always first attribute) to be empty, but
+	 * ensure that none of the others are zero length.
+	 */
+	if (attribs[1].ulValueLen == 0 ||
+	    attribs[2].ulValueLen == 0)
+		return NULL;
+
+	/* allocate buffers for attributes */
+	for (i = 0; i < 3; i++) {
+		if (attribs[i].ulValueLen == 0) continue;
+		attribs[i].pValue = xmalloc(attribs[i].ulValueLen);
+	}
+
+	/* retrieve ID, modulus and public exponent of RSA key */
+	rv = f->C_GetAttributeValue(session, obj, attribs, 3);
+	if (rv != CKR_OK) {
+		error("%s: C_GetAttributeValue failed: %lu", __func__, rv);
+		goto done;
+	}
+
+	key = sshkey_new(KEY_RSA);
+	if (key == NULL) {
+		error("%s: sshkey_new failed", __func__);
+		goto done;
+	}
+
+{	BIGNUM *rsa_n = NULL, *rsa_e = NULL;
+
+	rsa_n = BN_bin2bn(attribs[1].pValue, attribs[1].ulValueLen, NULL);
+	rsa_e = BN_bin2bn(attribs[2].pValue, attribs[2].ulValueLen, NULL);
+	if (rsa_n == NULL || rsa_e == NULL) {
+		BN_free(rsa_n);
+		BN_free(rsa_e);
+		error("%s: BN_bin2bn failed", __func__);
+		goto fail;
+	}
+	if (!RSA_set0_key(key->rsa, rsa_n, rsa_e, NULL)) {
+		BN_free(rsa_n);
+		BN_free(rsa_e);
+		error("%s: RSA_set0_key failed", __func__);
+		goto fail;
+	}
+}
+
+	if (pkcs11_rsa_wrap(p, slotidx, attribs, key->rsa) == 0) {
+		key->flags |= SSHKEY_FLAG_EXT;
+		goto done;
+	}
+
+fail:
+	sshkey_free(key);
+	key = NULL;
+
+done:
+	for (i = 0; i < 3; i++)
+		free(attribs[i].pValue);
+
+	return key;
+}
+
+static struct sshkey*
+pkcs11_get_pubkey(
+    struct pkcs11_provider *p, CK_ULONG slotidx,
+    CK_OBJECT_HANDLE obj)
+{
+	CK_FUNCTION_LIST *f = p->function_list;
+	CK_SESSION_HANDLE session = p->slotinfo[slotidx].session;
+	CK_RV rv;
+	CK_KEY_TYPE type;
+	CK_ATTRIBUTE attribs[] = {
+		{ CKA_KEY_TYPE, NULL, sizeof(type) }
+	};
+
+	/* some compilers complain about non-constant initializer so we
+	   use NULL in CK_ATTRIBUTE above and set the value here */
+	attribs[0].pValue = &type;
+
+	rv = f->C_GetAttributeValue(session, obj, attribs, 1);
+	if (rv != CKR_OK) {
+		error("%s: C_GetAttributeValue failed: %lu", __func__, rv);
+		return NULL;
+	}
+
+	switch (type) {
+	case CKK_RSA:
+		return pkcs11_get_pubkey_rsa(p, slotidx, obj);
+	default:
+		error("%s: unsupported key type: %lu", __func__, type);
+	}
+
+	return NULL;
+}
+
+/*
+ * lookup public keys for token in slot identified by slotidx,
+ * add 'wrapped' public keys to the 'keysp' array and increment nkeys.
+ * keysp points to an (possibly empty) array with *nkeys keys.
+ */
+static int
+pkcs11_fetch_keys(struct pkcs11_provider *p, CK_ULONG slotidx,
+    struct sshkey ***keysp, int *nkeys)
+{
+	CK_FUNCTION_LIST *f = p->function_list;
+	CK_SESSION_HANDLE session = p->slotinfo[slotidx].session;
+	CK_RV rv;
+
+{	/* setup a filter that looks for public keys */
+	/* Find objects with public key class. */
+	CK_OBJECT_CLASS		key_class = CKO_PUBLIC_KEY;
+	CK_ATTRIBUTE		filter[] = {
+		{ CKA_CLASS, NULL, sizeof(key_class) }
+	};
+	/* some compilers complain about non-constant initializer so we
+	   use NULL in CK_ATTRIBUTE above and set the value here */
+	filter[0].pValue = &key_class;
+
+	rv = f->C_FindObjectsInit(session, filter, 1);
+	if (rv != CKR_OK) {
+		error("%s: C_FindObjectsInit failed: %lu", __func__, rv);
+		return -1;
+	}
+}
+
+	while (1) {
+		CK_OBJECT_HANDLE obj;
+		CK_ULONG nfound;
+		struct sshkey *key;
+
+		rv = f->C_FindObjects(session, &obj, 1, &nfound);
+		if (rv != CKR_OK) {
+			error("%s: C_FindObjects failed: %lu", __func__, rv);
+			break;
+		}
+		if (nfound == 0)
+			break;
+
+		key = pkcs11_get_pubkey(p, slotidx, obj);
+		pkcs11_push_key(key, keysp, nkeys);
+	}
+
+	rv = f->C_FindObjectsFinal(session);
+	if (rv != CKR_OK)
+		error("%s: C_FindObjectsFinal failed: %lu", __func__, rv);
+
+	return 0;
+}
+
 /*
  * register a new provider, fails if provider already exists. if
  * keyp is provided, fetch keys.
@@ -1230,6 +1402,7 @@ pkcs11_register_provider(char *provider_id, char *pin, struct sshkey ***keyp,
 			if (keyp == NULL)
 				continue;
 			pkcs11_fetch_certs(p, i, keyp, &nkeys);
+			pkcs11_fetch_keys(p, i, keyp, &nkeys);
 		}
 	}
 
