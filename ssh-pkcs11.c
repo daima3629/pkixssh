@@ -1184,6 +1184,119 @@ done:
 	return key;
 }
 
+#ifdef OPENSSL_HAS_ECC
+static struct sshkey*
+pkcs11_get_pubkey_ec(
+    struct pkcs11_provider *p, CK_ULONG slotidx,
+    CK_OBJECT_HANDLE obj
+) {
+	CK_FUNCTION_LIST *f = p->function_list;
+	CK_SESSION_HANDLE session = p->slotinfo[slotidx].session;
+	CK_RV rv;
+	/* NOTE: for EC public key retrieve ID,
+	 * point "q" and curve parameters
+	 */
+	CK_ATTRIBUTE attribs[3] = {
+		{ CKA_ID, NULL, 0 },
+		{ CKA_EC_PARAMS, NULL, 0 },
+		{ CKA_EC_POINT, NULL, 0 }
+	};
+	struct sshkey *key = NULL;
+	int i;
+
+	rv = f->C_GetAttributeValue(session, obj, attribs, 3);
+	if (rv != CKR_OK) {
+		error("%s: C_GetAttributeValue failed: %lu", __func__, rv);
+		return NULL;
+	}
+	/*
+	 * Allow CKA_ID (always first attribute) to be empty, but
+	 * ensure that none of the others are zero length.
+	 */
+	if (attribs[1].ulValueLen == 0 ||
+	    attribs[2].ulValueLen == 0)
+		return NULL;
+
+	/* allocate buffers for attributes */
+	for (i = 0; i < 3; i++) {
+		if (attribs[i].ulValueLen == 0) continue;
+		attribs[i].pValue = xmalloc(attribs[i].ulValueLen);
+	}
+
+	/* retrieve ID, point and curve parameters of EC key */
+	rv = f->C_GetAttributeValue(session, obj, attribs, 3);
+	if (rv != CKR_OK) {
+		error("%s: C_GetAttributeValue failed: %lu", __func__, rv);
+		goto done;
+	}
+
+	key = sshkey_new(KEY_ECDSA);
+	if (key == NULL) {
+		error("%s: sshkey_new failed", __func__);
+		goto done;
+	}
+
+{	const unsigned char *q;
+	/* DER-encoding of an ANSI X9.62 Parameters value */
+
+	q = attribs[1].pValue;
+	if (d2i_ECParameters(&key->ecdsa, &q, attribs[1].ulValueLen) == NULL) {
+		error("%s: d2i_ECParameters failed", __func__);
+		goto fail;
+	}
+}
+{	const unsigned char *q;
+	/* "DER-encoding of ANSI X9.62 ECPoint value Q" */
+	ASN1_OCTET_STRING *point;
+	EC_KEY *ec;
+
+	rv = CKR_GENERAL_ERROR;
+
+	q = attribs[2].pValue;
+	point = d2i_ASN1_OCTET_STRING(NULL, &q, attribs[2].ulValueLen);
+	if (point == NULL)  {
+		error("%s: d2i_ASN1_OCTET_STRING failed", __func__);
+		goto fail;
+	}
+
+	q = point->data;
+	ec = o2i_ECPublicKey(&key->ecdsa, &q, point->length);
+	ASN1_STRING_free(point);
+	if (ec != NULL) goto wrap;
+
+	/* try raw data (broken PKCS#11 module) */
+	q = attribs[2].pValue;
+	ec = o2i_ECPublicKey(&key->ecdsa, &q, attribs[2].ulValueLen);
+	if (ec == NULL) {
+		error("%s: o2i_ECPublicKey failed", __func__);
+		goto fail;
+	}
+}
+
+wrap:
+	key->ecdsa_nid  = sshkey_ecdsa_key_to_nid(key->ecdsa);
+	if (key->ecdsa_nid  < 0) {
+		error("couldn't get curve nid");
+		goto fail;
+	}
+	if (pkcs11_ec_wrap(p, slotidx, attribs, key->ecdsa) == 0) {
+		key->flags |= SSHKEY_FLAG_EXT;
+		goto done;
+	}
+
+fail:
+	sshkey_free(key);
+	key = NULL;
+
+done:
+	for (i = 0; i < 3; i++)
+		free(attribs[i].pValue);
+
+	return key;
+}
+
+#endif /* OPENSSL_HAS_ECC */
+
 static struct sshkey*
 pkcs11_get_pubkey(
     struct pkcs11_provider *p, CK_ULONG slotidx,
@@ -1210,6 +1323,10 @@ pkcs11_get_pubkey(
 	switch (type) {
 	case CKK_RSA:
 		return pkcs11_get_pubkey_rsa(p, slotidx, obj);
+#ifdef OPENSSL_HAS_ECC
+	case CKK_ECDSA:
+		return pkcs11_get_pubkey_ec(p, slotidx, obj);
+#endif /* OPENSSL_HAS_ECC */
 	default:
 		error("%s: unsupported key type: %lu", __func__, type);
 	}
