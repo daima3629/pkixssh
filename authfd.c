@@ -430,7 +430,7 @@ encode_constraints(struct sshbuf *m, u_int life, u_int confirm, u_int maxsign)
  * This call is intended only for use by ssh-add(1) and like applications.
  */
 int
-ssh_add_identity_constrained(int sock, const struct sshkey *key,
+ssh_add_identity_constrained(int sock, struct sshkey *key,
     const char *comment, u_int life, u_int confirm, u_int maxsign)
 {
 	struct sshbuf *msg;

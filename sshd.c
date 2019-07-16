@@ -1529,7 +1529,7 @@ set_process_rdomain(struct ssh *ssh, const char *name)
 
 static void
 accumulate_host_timing_secret(struct sshbuf *server_cfg,
-    const struct sshkey *key)
+    struct sshkey *key)
 {
 	static struct ssh_digest_ctx *ctx;
 	int digest_alg;

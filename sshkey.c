@@ -1,4 +1,4 @@
-/* $OpenBSD: sshkey.c,v 1.79 2019/07/07 01:05:00 dtucker Exp $ */
+/* $OpenBSD: sshkey.c,v 1.80 2019/07/15 13:16:29 djm Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Alexander von Gernler.  All rights reserved.
@@ -82,7 +82,7 @@
 /* Version identification string for SSH v1 identity files. */
 #define LEGACY_BEGIN		"SSH PRIVATE KEY FILE FORMAT 1.1\n"
 
-int	sshkey_private_serialize_opt(const struct sshkey *key,
+int	sshkey_private_serialize_opt(struct sshkey *key,
     struct sshbuf *buf, enum sshkey_serialize_rep);
 static int sshkey_from_blob_internal(struct sshbuf *buf,
     struct sshkey **keyp, int allow_cert);
@@ -2629,7 +2629,7 @@ sshkey_check_sigtype(const u_char *sig, size_t siglen,
 }
 
 int
-sshkey_sign(const struct sshkey *key,
+sshkey_sign(struct sshkey *key,
     u_char **sigp, size_t *lenp,
     const u_char *data, size_t datalen, const char *alg, u_int compat)
 {
@@ -2920,7 +2920,7 @@ sshkey_certify_custom(struct sshkey *k, struct sshkey *ca, const char *alg,
 }
 
 static int
-default_key_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
+default_key_sign(struct sshkey *key, u_char **sigp, size_t *lenp,
     const u_char *data, size_t datalen,
     const char *alg, u_int compat, void *ctx)
 {
@@ -3030,7 +3030,7 @@ sshkey_format_cert_validity(const struct sshkey_cert *cert, char *s, size_t l)
 }
 
 int
-sshkey_private_serialize_opt(const struct sshkey *key, struct sshbuf *b,
+sshkey_private_serialize_opt(struct sshkey *key, struct sshbuf *b,
     enum sshkey_serialize_rep opts)
 {
 	const char *pkalg;
@@ -3194,7 +3194,7 @@ sshkey_private_serialize_opt(const struct sshkey *key, struct sshbuf *b,
 }
 
 int
-sshkey_private_serialize(const struct sshkey *key, struct sshbuf *b)
+sshkey_private_serialize(struct sshkey *key, struct sshbuf *b)
 {
 	return sshkey_private_serialize_opt(key, b,
 	    SSHKEY_SERIALIZE_DEFAULT);
@@ -3699,7 +3699,7 @@ sshkey_dump_ec_key(const EC_KEY *key)
 #endif /* WITH_OPENSSL && OPENSSL_HAS_ECC */
 
 static int
-sshkey_private_to_blob2(const struct sshkey *prv, struct sshbuf *blob,
+sshkey_private_to_blob2(struct sshkey *prv, struct sshbuf *blob,
     const char *passphrase, const char *comment, const char *ciphername,
     int rounds)
 {
@@ -4342,7 +4342,7 @@ sshkey_parse_private_fileblob(struct sshbuf *buffer, const char *passphrase,
  * maxsign times.
  */
 int
-sshkey_private_serialize_maxsign(const struct sshkey *k, struct sshbuf *b,
+sshkey_private_serialize_maxsign(struct sshkey *k, struct sshbuf *b,
     u_int32_t maxsign, sshkey_printfn *pr)
 {
 	int r, rupdate;
@@ -4396,7 +4396,7 @@ sshkey_set_filename(struct sshkey *k, const char *filename)
 }
 #else
 int
-sshkey_private_serialize_maxsign(const struct sshkey *k, struct sshbuf *b,
+sshkey_private_serialize_maxsign(struct sshkey *k, struct sshbuf *b,
     u_int32_t maxsign, sshkey_printfn *pr)
 {
 	UNUSED(maxsign);
