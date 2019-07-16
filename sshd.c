@@ -1889,6 +1889,12 @@ main(int ac, char **av)
 		    &key, NULL)) != 0 && r != SSH_ERR_SYSTEM_ERROR)
 			do_log2(ll, "Unable to load host key \"%s\": %s",
 			    options.host_key_files[i], ssh_err(r));
+		if (r == 0 && (r = sshkey_shield_private(key)) != 0) {
+			do_log2(ll, "Unable to shield host key \"%s\": %s",
+			    options.host_key_files[i], ssh_err(r));
+			sshkey_free(key);
+			key = NULL;
+		}
 		if ((r = sshkey_load_public(options.host_key_files[i],
 		    &pubkey, NULL)) != 0 && r != SSH_ERR_SYSTEM_ERROR)
 			do_log2(ll, "Unable to load host key \"%s\": %s",

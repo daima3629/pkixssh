@@ -1,4 +1,4 @@
-/* $OpenBSD: sshkey.h,v 1.32 2019/06/21 04:21:05 djm Exp $ */
+/* $OpenBSD: sshkey.h,v 1.33 2019/07/15 13:16:29 djm Exp $ */
 
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
@@ -99,6 +99,9 @@ enum sshkey_serialize_rep {
 /* key is stored in external hardware */
 #define SSHKEY_FLAG_EXT		0x0001
 
+/* "key shielding" is experimental */
+#undef USE_SSHKEY_SHIELDING
+
 #define SSHKEY_CERT_MAX_PRINCIPALS	256
 /* XXX opaquify? */
 struct sshkey_cert {
@@ -135,6 +138,12 @@ struct sshkey {
 	u_char	*xmss_sk;
 	u_char	*xmss_pk;
 	struct sshkey_cert *cert;
+#ifdef USE_SSHKEY_SHIELDING
+	u_char	*shielded_private;
+	size_t	shielded_len;
+	u_char	*shield_prekey;
+	size_t	shield_prekey_len;
+#endif /*def USE_SSHKEY_SHIELDING*/
 };
 
 #define	ED25519_SK_SZ	crypto_sign_ed25519_SECRETKEYBYTES
@@ -163,6 +172,29 @@ u_int		 sshkey_size(const struct sshkey *);
 
 int		 sshkey_generate(int type, u_int bits, struct sshkey **keyp);
 int		 sshkey_from_private(const struct sshkey *, struct sshkey **);
+
+#ifdef USE_SSHKEY_SHIELDING
+int		 sshkey_is_shielded(struct sshkey *);
+int		 sshkey_shield_private(struct sshkey *);
+int		 sshkey_unshield_private(struct sshkey *);
+#else
+static inline int
+sshkey_is_shielded(struct sshkey *key) {
+	UNUSED(key);
+	return 0;
+}
+static inline int
+sshkey_shield_private(struct sshkey *key) {
+	UNUSED(key);
+	return 0/*SSH_ERR_SUCCESS*/;
+}
+static inline int
+sshkey_unshield_private(struct sshkey *key) {
+	UNUSED(key);
+	return 0/*SSH_ERR_SUCCESS*/;
+}
+#endif /*ndef USE_SSHKEY_SHIELDING*/
+
 int	 sshkey_type_from_name(const char *);
 void	 sshkey_types_from_name(const char *name, int *type, int *subtype);
 const char	*sshkey_name_from_types(int type, int subtype);

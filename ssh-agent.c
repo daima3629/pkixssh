@@ -484,7 +484,10 @@ process_add_identity(SocketEntry *e)
 		error("%s: decode private key: %s", __func__, ssh_err(r));
 		goto err;
 	}
-
+	if ((r = sshkey_shield_private(k)) != 0) {
+		error("%s: shield private key: %s", __func__, ssh_err(r));
+		goto err;
+	}
 	while (sshbuf_len(e->request)) {
 		if ((r = sshbuf_get_u8(e->request, &ctype)) != 0) {
 			error("%s: buffer error: %s", __func__, ssh_err(r));

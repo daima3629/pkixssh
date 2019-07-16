@@ -1987,21 +1987,40 @@ Xkey_sign(ssh_sign_ctx *ctx,
 	  u_char **sigp, size_t *lenp,
 	  const u_char *data, size_t datalen
 ) {
-	if (ctx->alg == NULL)
-		ctx->alg = sshkey_ssh_name(ctx->key);
-
-{	/* check if public algorithm is with X.509 certificates */
+	struct sshkey *key = ctx->key;
 	const SSHX509KeyAlgs *xkalg;
 
+	if (ctx->alg == NULL)
+		ctx->alg = sshkey_ssh_name(key);
+
+	/* check if public algorithm is with X.509 certificates */
 	if (ssh_xkalg_nameind(ctx->alg, &xkalg, -1) < 0) {
-		int ret = sshkey_sign(ctx->key, sigp, lenp,
+		int ret = sshkey_sign(key, sigp, lenp,
 		    data, datalen, ctx->alg, ctx->compat->datafellows);
 		if (ret == SSH_ERR_LIBCRYPTO_ERROR)
 			log_crypto_errors(SYSLOG_LEVEL_ERROR, __func__);
+		else
+			debug3("%s: return %d", __func__, ret);
 		return ret;
 	}
 
-	return ssh_x509_sign(xkalg, ctx, sigp, lenp, data, datalen);
+{
+	int is_shielded = sshkey_is_shielded(key);
+	int ret;
+
+	if ((ret = sshkey_unshield_private(key)) != 0)
+		goto done;
+
+	ret = ssh_x509_sign(xkalg, ctx, sigp, lenp, data, datalen);
+
+	if (is_shielded) {
+		int r = sshkey_shield_private(key);
+		if (ret == 0) ret = r;
+	}
+
+done:
+	debug3("%s: return %d", __func__, ret);
+	return ret;
 }
 }
 
