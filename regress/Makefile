@@ -1,4 +1,4 @@
-#	$OpenBSD: Makefile,v 1.101 2019/07/05 04:19:39 dtucker Exp $
+#	$OpenBSD: Makefile,v 1.103 2019/07/16 03:21:54 dtucker Exp $
 
 REGRESS_TARGETS=	unit t1 t2 t3 t4 t5 t6 t7 t8 t9 t10 t11 t12 t-exec
 tests:		prep $(REGRESS_TARGETS)
@@ -104,19 +104,22 @@ CLEANFILES=	*.core actual agent-key.* authkeys_orig \
 		authorized_keys_${USERNAME}* \
 		authorized_principals_${USERNAME} \
 		banner.in banner.out cert_host_key* cert_user_key* \
-		copy.1 copy.2 data ed25519-agent ed25519-agent* \
-		ed25519-agent.pub ed25519 ed25519.pub empty.in \
+		copy.1 copy.2 data \
+		ssh-dss-agent* ssh-dss ssh-dss.pub \
+		ssh-ed25519-agent* ssh-ed25519 ssh-ed25519.pub empty.in \
+		ecdsa-sha2-nistp256-agent* ecdsa-sha2-nistp256 ecdsa-sha2-nistp256.pub \
+		ecdsa-sha2-nistp384-agent* ecdsa-sha2-nistp384 ecdsa-sha2-nistp384.pub \
+		ecdsa-sha2-nistp521-agent* ecdsa-sha2-nistp521 ecdsa-sha2-nistp521.pub \
 		expect failed-regress.log failed-ssh.log failed-sshd.log \
-		hkr.* host.ed25519 host.rsa host.rsa1 host_* \
-		host_ca_key* host_krl_* host_revoked_* key.* \
+		hkr.* host.ecdsa-sha2-nistp256 host.ecdsa-sha2-nistp384 \
+		host.ecdsa-sha2-nistp521 host.ssh-dss host.ssh-ed25519 \
+		host.ssh-rsa host_ca_key* host_krl_* host_revoked_* key.* \
 		key.dsa-* key.ecdsa-* key.ed25519-512 \
 		key.ed25519-512.pub key.rsa-* keys-command-args kh.* \
 		known_hosts known_hosts-cert known_hosts.* krl-* ls.copy \
 		modpipe netcat no_identity_config \
-		pidfile putty.rsa2 ready regress.log \
-		remote_pid revoked-* rsa rsa-agent rsa-agent.pub rsa.pub \
-		rsa-agent-cert.pub \
-		rsa1 rsa1-agent rsa1-agent.pub rsa1.pub rsa_ssh2_cr.prv \
+		pidfile putty.rsa2 ready regress.log remote_pid \
+		revoked-* ssh-rsa-agent* ssh-rsa ssh-rsa.pub rsa_ssh2_cr.prv \
 		rsa_ssh2_crnl.prv scp-ssh-wrapper.exe \
 		scp-ssh-wrapper.scp setuid-allowed sftp-server.log \
 		sftp-server.sh sftp.log ssh-log-wrapper.sh ssh.log \
