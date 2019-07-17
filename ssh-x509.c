@@ -35,7 +35,6 @@
 #include "compat.h"
 #include "xmalloc.h"
 #include "ssherr.h"
-#include "uuencode.h"
 #include "log.h"
 
 #ifndef ISSPACE
@@ -1274,7 +1273,7 @@ x509key_write(const struct sshkey *key, struct sshbuf *b) {
 	r = X509key_to_buf(key, b64);
 	if (r != 0) goto done;
 
-	uu = sshbuf_dtob64(b64);
+	uu = sshbuf_dtob64_string(b64, 0);
 	if (uu == NULL) goto done;
 
 	r = sshbuf_putf(b, "%s %s", sshkey_ssh_name(key), uu);

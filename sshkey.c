@@ -1655,7 +1655,7 @@ sshkey_to_base64(const struct sshkey *key, char **b64p)
 		return SSH_ERR_ALLOC_FAIL;
 	if ((r = sshkey_putb(key, b)) != 0)
 		goto out;
-	if ((uu = sshbuf_dtob64(b)) == NULL) {
+	if ((uu = sshbuf_dtob64_string(b, 0)) == NULL) {
 		r = SSH_ERR_ALLOC_FAIL;
 		goto out;
 	}
@@ -4063,7 +4063,7 @@ sshkey_private_to_blob2(struct sshkey *prv, struct sshbuf *blob,
 		goto out;
 
 	/* uuencode */
-	if ((b64 = sshbuf_dtob64(encoded)) == NULL) {
+	if ((b64 = sshbuf_dtob64_string(encoded, 0)) == NULL) {
 		r = SSH_ERR_ALLOC_FAIL;
 		goto out;
 	}
