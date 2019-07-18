@@ -43,7 +43,6 @@
 #include "dns.h"
 #include "xmalloc.h"
 #include "ssherr.h"
-#include "uuencode.h"
 #include "log.h"
 #include "digest.h"
 
@@ -265,10 +264,10 @@ done:
 }
 
 /*
- * Read CERT parameters from key buffer.
+ * Initialize DNS CERT parameters from key certificate.
  */
 static int/*bool*/
-dns_read_cert(ssh_dns_cert_param *param, const struct sshkey *key)
+cert_param_from_key(ssh_dns_cert_param *param, const struct sshkey *key)
 {
 	int   ret = 0;
 	X509 *x509;
@@ -293,9 +292,21 @@ dns_read_cert(ssh_dns_cert_param *param, const struct sshkey *key)
 	param->cert_data = xmalloc(k + 1); /*fatal on error*/
 	param->cert_len = BIO_read(bio, param->cert_data, k);
 
-	k = param->cert_len << 1;
-	param->b64_data = xmalloc(k); /*fatal on error*/
-	param->b64_len = uuencode(param->cert_data, param->cert_len, (char*)param->b64_data, k);
+{
+	struct sshbuf *b = sshbuf_from(param->cert_data, param->cert_len);
+	if (b == NULL) {
+		ret = 0;
+		goto done;
+	}
+	param->b64_data = sshbuf_dtob64_string(b, 0);
+	if (param->b64_data == NULL) {
+		sshbuf_free(b);
+		ret = 0;
+		goto done;
+	}
+	param->b64_len = strlen(param->b64_data);
+	sshbuf_free(b);
+}
 
 	param->algo = get_dns_sign_algo(x509);
 	param->key_tag = calc_dns_key_tag(x509);
@@ -428,8 +439,8 @@ verify_hostcert_dns(const char *hostname, const struct sshkey *hostkey, int *fla
 		    certs->rri_nrdatas);
 	}
 
-	/* Initialize host key parameters */
-	if (!dns_read_cert(&hostkey_param, hostkey)) {
+	/* Initialize host key CERT parameters */
+	if (!cert_param_from_key(&hostkey_param, hostkey)) {
 		error("Error calculating host key certificate.");
 		cert_param_clean(&hostkey_param);
 		freerrset(certs);
@@ -626,7 +637,7 @@ export_dns_rr(const char *hostname, struct sshkey *key, FILE *f, int generic)
 
 	memset(&cert_param, 0, sizeof(cert_param));
 
-	if (dns_read_cert(&cert_param, key)) {
+	if (cert_param_from_key(&cert_param, key)) {
 		u_char *p;
 		int k;
 
