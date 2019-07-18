@@ -3,9 +3,7 @@
 /*
  * Copyright (c) 2003 Wesley Griffin. All rights reserved.
  * Copyright (c) 2003 Jakob Schlyter. All rights reserved.
- *
- * X.509 certificates support:
- * Copyright (c) 2005,2011,2012 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2005-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -179,17 +177,17 @@ cert_param_clean(ssh_dns_cert_param *param) {
 static const char*
 bind_cert_type(const ssh_dns_cert_param *param) {
 	switch(param->cert_type) {
-	case DNS_CERT_TYPE_PKIX: return("PKIX");
+	case DNS_CERT_TYPE_PKIX: return "PKIX";
 #if 0
-	case DNS_CERT_TYPE_SPKI: return("SPKI");
-	case DNS_CERT_TYPE_PGP : return("PGP");
-	case DNS_CERT_TYPE_URI : return("URI");
-	case DNS_CERT_TYPE_OID : return("OID");
+	case DNS_CERT_TYPE_SPKI: return "SPKI";
+	case DNS_CERT_TYPE_PGP : return "PGP";
+	case DNS_CERT_TYPE_URI : return "URI";
+	case DNS_CERT_TYPE_OID : return "OID";
 #endif
 	default:
 		break;
 	}
-	return("<UNSUPPORTED>");
+	return "<UNSUPPORTED>";
 }
 
 static const char*
@@ -197,35 +195,36 @@ bind_key_algo(const ssh_dns_cert_param *param) {
 	switch(param->algo) {
 #if 0
 	case DNS_KEY_ALGO_UNKNOWN: /*specific case for CERT RR*/
-				    return("????");
+				    return "????";
 #endif
-	case DNS_KEY_ALGO_RSAMD5  : return("RSAMD5");
-	case DNS_KEY_ALGO_DSA     : return("DSA");
-	case DNS_KEY_ALGO_RSASHA1 : return("RSASHA1");
+	case DNS_KEY_ALGO_RSASHA1 : return "RSASHA1";
+	case DNS_KEY_ALGO_RSAMD5  : return "RSAMD5";
+	case DNS_KEY_ALGO_DSA     : return "DSA";
 	}
-	return("<UNSUPPORTED>");
+	return "<UNSUPPORTED>";
 }
 
 static u_int16_t
 calc_dns_key_tag(X509 *x509) {
 	/* [RFC 2535] Appendix C: Key Tag Calculation */
 
+	UNUSED(x509);
 	/* TODO: to be implemented or not ?
 	 * I'm happy without this.
 	 */
-	return(1);
+	return 1;
 }
 
 static inline const X509_ALGOR*
 ssh_X509_get0_tbs_sigalg(X509 *x509) {
-	if (x509 == NULL) return(NULL);
+	if (x509 == NULL) return NULL;
 
 #ifdef HAVE_X509_GET0_TBS_SIGALG
-	return(X509_get0_tbs_sigalg(x509));
+	return X509_get0_tbs_sigalg(x509);
 #else
 {
 	X509_CINF *ci = x509->cert_info;
-	return(ci != NULL ? ci->signature: NULL);
+	return ci != NULL ? ci->signature: NULL;
 }
 #endif
 }
@@ -254,12 +253,6 @@ get_dns_sign_algo(X509 *x509) {
 	case NID_sha1WithRSAEncryption:
 		rsa_algo = DNS_KEY_ALGO_RSASHA1;
 		break;
-	case NID_md2WithRSAEncryption:
-	case NID_md4WithRSAEncryption:
-	case NID_ripemd160WithRSA:
-		/* not defined in [RFC 2535] ! */
-		rsa_algo = DNS_KEY_ALGO_UNKNOWN;
-		break;
 	case NID_dsaWithSHA1:
 		rsa_algo = DNS_KEY_ALGO_DSA;
 		break;
@@ -268,7 +261,7 @@ get_dns_sign_algo(X509 *x509) {
 	}
 
 done:
-	return(rsa_algo);
+	return rsa_algo;
 }
 
 /*
@@ -312,7 +305,7 @@ dns_read_cert(ssh_dns_cert_param *param, const struct sshkey *key)
 
 done:
 	BIO_free_all(bio);
-	return(ret);
+	return ret;
 }
 
 /*
@@ -385,7 +378,7 @@ dns_read_cert_rdata(ssh_dns_cert_param *param, u_char *rdata, int rdata_len)
 
 	cert_param_clean(param);
 
-	if (rdata_len < 5) return(0);
+	if (rdata_len < 5) return 0;
 
 	param->cert_type = (rdata[0] << 8) + rdata[1];
 	param->key_tag   = (rdata[2] << 8) + rdata[3];
@@ -397,7 +390,7 @@ dns_read_cert_rdata(ssh_dns_cert_param *param, u_char *rdata, int rdata_len)
 		param->cert_data = (u_char *) xmalloc(len);
 		memcpy(param->cert_data, rdata + 5, len);
 	}
-	return(1);
+	return 1;
 }
 
 /*
@@ -423,7 +416,7 @@ verify_hostcert_dns(const char *hostname, const struct sshkey *hostkey, int *fla
 	    DNS_RDATATYPE_CERT, 0, &certs);
 	if (result) {
 		verbose("DNS lookup error: %s", dns_result_totext(result));
-		return(-1);
+		return -1;
 	}
 
 	if (certs->rri_flags & RRSET_VALIDATED) {
@@ -440,7 +433,7 @@ verify_hostcert_dns(const char *hostname, const struct sshkey *hostkey, int *fla
 		error("Error calculating host key certificate.");
 		cert_param_clean(&hostkey_param);
 		freerrset(certs);
-		return(-1);
+		return -1;
 	}
 
 	if (certs->rri_nrdatas)
@@ -494,7 +487,7 @@ next:
 	else
 		debug("no host key certificate found in DNS");
 
-	return(0);
+	return 0;
 }
 
 /*
@@ -519,6 +512,7 @@ verify_host_key_dns(const char *hostname, struct sockaddr *address,
 	u_char *dnskey_digest;
 	size_t dnskey_digest_len;
 
+	UNUSED(address);
 	*flags = 0;
 
 	debug3("verify_host_key_dns");
@@ -532,9 +526,8 @@ verify_host_key_dns(const char *hostname, struct sockaddr *address,
 
 	if (sshkey_is_x509(hostkey)) {
 		result = verify_hostcert_dns(hostname, hostkey, flags);
-		if (*flags & DNS_VERIFY_FOUND) {
-			return(result);
-		}
+		if (*flags & DNS_VERIFY_FOUND)
+			return result;
 		/*try to found SSHFP RR*/
 	}
 

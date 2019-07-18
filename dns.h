@@ -3,9 +3,7 @@
 /*
  * Copyright (c) 2003 Wesley Griffin. All rights reserved.
  * Copyright (c) 2003 Jakob Schlyter. All rights reserved.
- *
- * X.509 certificates support:
- * Copyright (c) 2005 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2005-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -67,7 +65,7 @@ enum dns_key_algo {
 	DNS_KEY_ALGO_DSA        =   3, /* DSA [RFC 2536] */
 	DNS_KEY_ALGO_ECC        =   4, /* reserved for elliptic curve crypto */
 /* 5-251  available, see [RFC 2535] Section 11 */
-	DNS_KEY_ALGO_RSASHA1    =   5, /* RSA/SHA1 [RFC 4034] */
+	DNS_KEY_ALGO_RSASHA1    =   5, /* RSA/SHA1 [RFC 3110] */
 /* 6-251  available, see [RFC 4034] Section A.1. */
 	DNS_KEY_ALGO_INDIRECT   = 252, /* reserved for indirect keys */
 	DNS_KEY_ALGO_PRIVATEDNS = 253, /* private - domain name (see [RFC 2535]) */
