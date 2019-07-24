@@ -364,25 +364,30 @@ load_identity(char *filename)
 static void
 do_convert_to_ssh2(struct passwd *pw, struct sshkey *k)
 {
-	size_t len;
-	u_char *blob;
-	char comment[61];
+	struct sshbuf *b;
+	char comment[61], *b64;
 	int r;
 
-	if ((r = sshkey_to_blob(k, &blob, &len)) != 0)
+	if ((b = sshbuf_new()) == NULL)
+		fatal("%s: sshbuf_new failed", __func__);
+	if ((r = sshkey_putb(k, b)) != 0)
 		fatal("key_to_blob failed: %s", ssh_err(r));
+	if ((b64 = sshbuf_dtob64_string(b, 1)) == NULL)
+		fatal("%s: sshbuf_dtob64_string failed", __func__);
+
 	/* Comment + surrounds must fit into 72 chars (RFC 4716 sec 3.3) */
 	snprintf(comment, sizeof(comment),
 	    "%u-bit %s, converted by %s@%s from " PACKAGE_NAME,
 	    sshkey_size(k), sshkey_type(k),
 	    pw->pw_name, hostname);
 
-	fprintf(stdout, "%s\n", SSH_COM_PUBLIC_BEGIN);
-	fprintf(stdout, "Comment: \"%s\"\n", comment);
-	dump_base64(stdout, blob, len);
-	fprintf(stdout, "%s\n", SSH_COM_PUBLIC_END);
 	sshkey_free(k);
-	free(blob);
+	sshbuf_free(b);
+
+	fprintf(stdout, "%s\n", SSH_COM_PUBLIC_BEGIN);
+	fprintf(stdout, "Comment: \"%s\"\n%s", comment, b64);
+	fprintf(stdout, "%s\n", SSH_COM_PUBLIC_END);
+	free(b64);
 	exit(0);
 }
 
