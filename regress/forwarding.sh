@@ -34,7 +34,7 @@ ${SSH} -F $OBJ/ssh_config -p$last -o 'ConnectionAttempts=4' \
 test -s ${COPY}		|| fail "failed copy of ${DATA}"
 cmp ${DATA} ${COPY}	|| fail "corrupted copy of ${DATA}"
 
-${SSH} -F $OBJ/ssh_config -S $CTL -O exit somehost
+${SSH} -F $OBJ/ssh_config -S $CTL -O exit somehost 2>/dev/null
 
 for d in L R; do
 	trace "exit on -$d forward failure"
@@ -79,7 +79,7 @@ else
 	     >>$TEST_REGRESS_LOGFILE 2>&1 && \
 		fail "local forwarding not cleared"
 fi
-${SSH} -F $OBJ/ssh_config -S $CTL -O exit somehost
+${SSH} -F $OBJ/ssh_config -S $CTL -O exit somehost 2>/dev/null
 
 trace "clear remote forward"
 rm -f $CTL
@@ -93,7 +93,7 @@ else
 	     >>$TEST_REGRESS_LOGFILE 2>&1 && \
 		fail "remote forwarding not cleared"
 fi
-${SSH} -F $OBJ/ssh_config -S $CTL -O exit somehost
+${SSH} -F $OBJ/ssh_config -S $CTL -O exit somehost 2>/dev/null
 
 trace "stdio forwarding"
 cmd="${SSH} -F $OBJ/ssh_config"
@@ -115,7 +115,7 @@ ${SSH} -F $OBJ/ssh_config -p${base}02 -o 'ConnectionAttempts=4' \
 test -s ${COPY}		|| fail "failed copy of ${DATA}"
 cmp ${DATA} ${COPY}	|| fail "corrupted copy of ${DATA}"
 
-${SSH} -F $OBJ/ssh_config -S $CTL -O exit somehost
+${SSH} -F $OBJ/ssh_config -S $CTL -O exit somehost 2>/dev/null
 
 trace "transfer over chained unix domain socket forwards and check result"
 rm -f $OBJ/unix-[123].fwd
@@ -129,8 +129,8 @@ ${SSH} -F $OBJ/ssh_config -p${base}01 -o 'ConnectionAttempts=4' \
 test -s ${COPY}			|| fail "failed copy ${DATA}"
 cmp ${DATA} ${COPY}		|| fail "corrupted copy of ${DATA}"
 
-${SSH} -F $OBJ/ssh_config -S $CTL -O exit somehost
-${SSH} -F $OBJ/ssh_config -S $CTL.1 -O exit somehost
-${SSH} -F $OBJ/ssh_config -S $CTL.2 -O exit somehost
-${SSH} -F $OBJ/ssh_config -S $CTL.3 -O exit somehost
+${SSH} -F $OBJ/ssh_config -S $CTL -O exit somehost 2>/dev/null
+${SSH} -F $OBJ/ssh_config -S $CTL.1 -O exit somehost 2>/dev/null
+${SSH} -F $OBJ/ssh_config -S $CTL.2 -O exit somehost 2>/dev/null
+${SSH} -F $OBJ/ssh_config -S $CTL.3 -O exit somehost 2>/dev/null
 
