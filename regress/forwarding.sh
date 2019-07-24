@@ -1,4 +1,4 @@
-#	$OpenBSD: forwarding.sh,v 1.20 2017/04/30 23:34:55 djm Exp $
+#	$OpenBSD: forwarding.sh,v 1.23 2019/07/20 09:50:58 dtucker Exp $
 #	Placed in the Public Domain.
 
 tid="local and remote forwarding"
@@ -26,7 +26,7 @@ done
 
 trace "start forwarding, fork to background"
 rm -f $CTL
-${SSH} -S $CTL -M -F $OBJ/ssh_config -f $fwd somehost sleep 10
+${SSH} -S $CTL -N -M -F $OBJ/ssh_config -f $fwd somehost
 
 trace "transfer over forwarded channels and check result"
 ${SSH} -F $OBJ/ssh_config -p$last -o 'ConnectionAttempts=4' \
@@ -69,8 +69,8 @@ ${SSH} -F $OBJ/ssh_config -oClearAllForwardings=yes somehost true
 
 trace "clear local forward"
 rm -f $CTL
-${SSH} -S $CTL -M -f -F $OBJ/ssh_config -L ${base}01:127.0.0.1:$PORT \
-    -oClearAllForwardings=yes somehost sleep 10
+${SSH} -S $CTL -N -M -f -F $OBJ/ssh_config -L ${base}01:127.0.0.1:$PORT \
+    -oClearAllForwardings=yes somehost
 if [ $? != 0 ]; then
 	fail "connection failed with cleared local forwarding"
 else
@@ -83,8 +83,8 @@ ${SSH} -F $OBJ/ssh_config -S $CTL -O exit somehost 2>/dev/null
 
 trace "clear remote forward"
 rm -f $CTL
-${SSH} -S $CTL -M -f -F $OBJ/ssh_config -R ${base}01:127.0.0.1:$PORT \
-    -oClearAllForwardings=yes somehost sleep 10
+${SSH} -S $CTL -N -M -f -F $OBJ/ssh_config -R ${base}01:127.0.0.1:$PORT \
+    -oClearAllForwardings=yes somehost
 if [ $? != 0 ]; then
 	fail "connection failed with cleared remote forwarding"
 else
@@ -107,7 +107,7 @@ echo "RemoteForward ${base}02 127.0.0.1:${base}01" >> $OBJ/ssh_config
 
 trace "config file: start forwarding, fork to background"
 rm -f $CTL
-${SSH} -S $CTL -M -F $OBJ/ssh_config -f somehost sleep 10
+${SSH} -S $CTL -N -M -F $OBJ/ssh_config -f somehost
 
 trace "config file: transfer over forwarded channels and check result"
 ${SSH} -F $OBJ/ssh_config -p${base}02 -o 'ConnectionAttempts=4' \
@@ -120,10 +120,10 @@ ${SSH} -F $OBJ/ssh_config -S $CTL -O exit somehost 2>/dev/null
 trace "transfer over chained unix domain socket forwards and check result"
 rm -f $OBJ/unix-[123].fwd
 rm -f $CTL $CTL.[123]
-${SSH} -S $CTL -M -f -F $OBJ/ssh_config -R${base}01:[$OBJ/unix-1.fwd] somehost sleep 10
-${SSH} -S $CTL.1 -M -f -F $OBJ/ssh_config -L[$OBJ/unix-1.fwd]:[$OBJ/unix-2.fwd] somehost sleep 10
-${SSH} -S $CTL.2 -M -f -F $OBJ/ssh_config -R[$OBJ/unix-2.fwd]:[$OBJ/unix-3.fwd] somehost sleep 10
-${SSH} -S $CTL.3 -M -f -F $OBJ/ssh_config -L[$OBJ/unix-3.fwd]:127.0.0.1:$PORT somehost sleep 10
+${SSH} -S $CTL -N -M -f -F $OBJ/ssh_config -R${base}01:[$OBJ/unix-1.fwd] somehost
+${SSH} -S $CTL.1 -N -M -f -F $OBJ/ssh_config -L[$OBJ/unix-1.fwd]:[$OBJ/unix-2.fwd] somehost
+${SSH} -S $CTL.2 -N -M -f -F $OBJ/ssh_config -R[$OBJ/unix-2.fwd]:[$OBJ/unix-3.fwd] somehost
+${SSH} -S $CTL.3 -N -M -f -F $OBJ/ssh_config -L[$OBJ/unix-3.fwd]:127.0.0.1:$PORT somehost
 ${SSH} -F $OBJ/ssh_config -p${base}01 -o 'ConnectionAttempts=4' \
 	somehost cat ${DATA} > ${COPY}
 test -s ${COPY}			|| fail "failed copy ${DATA}"
