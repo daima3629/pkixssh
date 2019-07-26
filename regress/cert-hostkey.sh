@@ -1,4 +1,4 @@
-#	$OpenBSD: cert-hostkey.sh,v 1.17 2018/10/31 11:09:27 dtucker Exp $
+#	$OpenBSD: cert-hostkey.sh,v 1.18 2019/07/25 08:28:15 dtucker Exp $
 #	Placed in the Public Domain.
 
 tid="certified host keys"
@@ -7,6 +7,7 @@ rm -f $OBJ/known_hosts-cert* $OBJ/host_ca_key* $OBJ/host_revoked_*
 rm -f $OBJ/cert_host_key* $OBJ/host_krl_*
 
 # Allow all hostkey/pubkey types, prefer certs for the client
+has_rsa=false
 types=""
 for i in `$SSH -Q key | grep -v "^x509v3-"`; do
 	if [ -z "$types" ]; then
@@ -17,9 +18,10 @@ for i in `$SSH -Q key | grep -v "^x509v3-"`; do
 		# special treatment for RSA keys:
 		case "$i" in
 		*rsa*cert*)
-			i="rsa-sha2-256-cert-v01@openssh.com,$i"
-			i="rsa-sha2-512-cert-v01@openssh.com,$i";;
+			i="rsa-sha2-512-cert-v01@openssh.com,$i"
+			i="rsa-sha2-256-cert-v01@openssh.com,$i";;
 		*rsa*)
+			has_rsa=true;
 			i="rsa-sha2-256,rsa-sha2-512,$i";;
 		esac
 	fi
@@ -55,10 +57,12 @@ kh_revoke() {
 }
 
 # Create a CA key and add it to known hosts. Ed25519 chosen for speed.
-# RSA for testing RSA/SHA2 signatures.
+# RSA for testing RSA/SHA2 signatures if supported.
+ktype2=ed25519
+$has_rsa && ktype2=rsa
 ${SSHKEYGEN} -q -N '' -t ed25519  -f $OBJ/host_ca_key ||\
 	fail "ssh-keygen of host_ca_key failed"
-${SSHKEYGEN} -q -N '' -t rsa  -f $OBJ/host_ca_key2 ||\
+${SSHKEYGEN} -q -N '' -t $ktype2  -f $OBJ/host_ca_key2 ||\
 	fail "ssh-keygen of host_ca_key failed"
 
 kh_ca host_ca_key.pub host_ca_key2.pub > $OBJ/known_hosts-cert.orig
@@ -220,7 +224,7 @@ test_one() {
 	result=$2
 	sign_opts=$3
 
-	for kt in rsa ed25519 ; do
+	for kt in $PLAIN_TYPES; do
 		case $ktype in
 		rsa-sha2-*)	tflag="-t $ktype"; ca="$OBJ/host_ca_key2" ;;
 		*)		tflag=""; ca="$OBJ/host_ca_key" ;;
