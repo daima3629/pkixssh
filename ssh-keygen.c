@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keygen.c,v 1.336 2019/07/15 13:16:29 djm Exp $ */
+/* $OpenBSD: ssh-keygen.c,v 1.338 2019/07/19 03:38:01 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1994 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -1260,16 +1260,21 @@ known_hosts_hash(struct hostkey_foreach_line *l, void *_ctx)
 	return -1;
 }
 
+static void
+print_fingerprint_known_hosts(
+    const struct sshkey *public, const char *comment, const char *fp,
+    va_list ap)
+{
+	char *host;
+	host = va_arg(ap, char*);
+	mprintf("%s %s %s %s\n", host,
+	    sshkey_type(public), fp, comment);
+}
+
 static int
 known_hosts_find_delete(struct hostkey_foreach_line *l, void *_ctx)
 {
 	struct known_hosts_ctx *ctx = (struct known_hosts_ctx *)_ctx;
-	enum sshkey_fp_rep rep;
-	int fptype;
-	char *fp;
-
-	fptype = print_bubblebabble ? SSH_DIGEST_SHA1 : fingerprint_hash;
-	rep =    print_bubblebabble ? SSH_FP_BUBBLEBABBLE : SSH_FP_DEFAULT;
 
 	if (l->status == HKF_STATUS_MATCHED) {
 		if (ctx->delete_host) {
@@ -1299,10 +1304,8 @@ known_hosts_find_delete(struct hostkey_foreach_line *l, void *_ctx)
 			if (ctx->hash_hosts)
 				known_hosts_hash(l, ctx);
 			else if (print_fingerprint) {
-				fp = sshkey_fingerprint(l->key, fptype, rep);
-				mprintf("%s %s %s %s\n", ctx->host,
-				    sshkey_type(l->key), fp, l->comment);
-				free(fp);
+				fingerprint_format(l->key, l->comment,
+				    print_fingerprint_known_hosts, ctx->host);
 			} else
 				fprintf(ctx->out, "%s\n", l->line);
 			return 0;
@@ -2516,7 +2519,7 @@ usage(void)
 	    "       ssh-keygen -D pkcs11 [-l] [-v]\n");
 #endif
 	fprintf(stderr,
-	    "       ssh-keygen -F hostname [-f known_hosts_file] [-l]\n"
+	    "       ssh-keygen -F hostname [-f known_hosts_file] [-l] [-v]\n"
 	    "       ssh-keygen -H [-f known_hosts_file]\n"
 	    "       ssh-keygen -R hostname [-f known_hosts_file]\n"
 	    "       ssh-keygen -r hostname [-f input_keyfile] [-g]\n"
