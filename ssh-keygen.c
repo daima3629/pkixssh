@@ -67,7 +67,7 @@
 #include <time.h>
 
 #include "xmalloc.h"
-#include "sshxkey.h"
+#include "ssh-x509.h"
 #include "key-eng.h"
 #include "ssh-xkalg.h"
 #include "compat.h"
@@ -882,25 +882,60 @@ try_read_key(char **cpp)
 	return NULL;
 }
 
+typedef void (*fingerprint_format_f)(const struct sshkey *public,
+    const char *comment, const char *fp, va_list ap);
+
 static void
-fingerprint_one_key(const struct sshkey *public, const char *comment)
+fingerprint_format(const struct sshkey *public, const char *comment,
+    fingerprint_format_f format_f, ...)
 {
-	char *fp = NULL, *ra = NULL;
+	char *fp;
 	enum sshkey_fp_rep rep;
 	int fptype;
 
 	fptype = print_bubblebabble ? SSH_DIGEST_SHA1 : fingerprint_hash;
 	rep =    print_bubblebabble ? SSH_FP_BUBBLEBABBLE : SSH_FP_DEFAULT;
+
 	fp = sshkey_fingerprint(public, fptype, rep);
-	ra = sshkey_fingerprint(public, fingerprint_hash, SSH_FP_RANDOMART);
-	if (fp == NULL || ra == NULL)
-		fatal("%s: sshkey_fingerprint failed", __func__);
+	if (fp == NULL) {
+		if (sshkey_is_x509(public))
+			verbose("Key only with X.509 certificate distinguished name");
+		else
+			error("Cannot obtain key fingerprint");
+		return;
+	}
+{
+	va_list ap;
+	va_start(ap, format_f);
+	format_f(public, comment, fp, ap);
+	va_end(ap);
+}
+	free(fp);
+
+	if (get_log_level() < SYSLOG_LEVEL_VERBOSE)
+		return;
+
+	fp = sshkey_fingerprint(public, fingerprint_hash, SSH_FP_RANDOMART);
+	if (fp == NULL) {
+		error("Cannot obtain key random-art");
+		return;
+	}
+	printf("%s\n", fp);
+	free(fp);
+}
+
+static void
+print_fingerprint_one_key(const struct sshkey *public,
+    const char *comment, const char *fp, va_list ap)
+{
+	UNUSED(ap);
 	mprintf("%u %s %s (%s)\n", sshkey_size(public), fp,
 	    comment ? comment : "no comment", sshkey_type(public));
-	if (get_log_level() >= SYSLOG_LEVEL_VERBOSE)
-		printf("%s\n", ra);
-	free(ra);
-	free(fp);
+}
+
+static inline void
+fingerprint_one_key(const struct sshkey *public, const char *comment) {
+	fingerprint_format(public, comment, print_fingerprint_one_key);
 }
 
 static void
