@@ -2704,13 +2704,8 @@ main(int argc, char **argv)
 			update_krl = 1;
 			break;
 		case 'v':
-			if (log_level == SYSLOG_LEVEL_INFO)
-				log_level = SYSLOG_LEVEL_DEBUG1;
-			else {
-				if (log_level >= SYSLOG_LEVEL_DEBUG1 &&
-				    log_level < SYSLOG_LEVEL_DEBUG3)
-					log_level++;
-			}
+			if (log_level < SYSLOG_LEVEL_DEBUG3)
+				log_level++;
 			break;
 		case 'r':
 			rr_hostname = optarg;
