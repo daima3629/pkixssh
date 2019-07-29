@@ -116,6 +116,7 @@ static int quiet = 0;
 /* Flag indicating that we just want to see the key fingerprint */
 static int print_fingerprint = 0;
 static int print_bubblebabble = 0;
+static void fingerprint_one_key(const struct sshkey *public, const char *comment);
 
 /* Hash algorithm to use for fingerprints. */
 static int fingerprint_hash = SSH_FP_HASH_DEFAULT;
@@ -842,13 +843,8 @@ do_download(struct passwd *pw)
 #ifdef ENABLE_PKCS11
 	struct sshkey **keys = NULL;
 	int i, nkeys;
-	enum sshkey_fp_rep rep;
-	int fptype;
-	char *fp, *ra;
 
 	UNUSED(pw);
-	fptype = print_bubblebabble ? SSH_DIGEST_SHA1 : fingerprint_hash;
-	rep =    print_bubblebabble ? SSH_FP_BUBBLEBABBLE : SSH_FP_DEFAULT;
 
 	pkcs11_init(1);
 	nkeys = pkcs11_add_provider(pkcs11provider, NULL, &keys);
@@ -856,17 +852,7 @@ do_download(struct passwd *pw)
 		fatal("cannot read public key from pkcs11");
 	for (i = 0; i < nkeys; i++) {
 		if (print_fingerprint) {
-			fp = sshkey_fingerprint(keys[i], fptype, rep);
-			ra = sshkey_fingerprint(keys[i], fingerprint_hash,
-			    SSH_FP_RANDOMART);
-			if (fp == NULL || ra == NULL)
-				fatal("%s: sshkey_fingerprint fail", __func__);
-			printf("%u %s %s (PKCS11 key)\n", sshkey_size(keys[i]),
-			    fp, sshkey_type(keys[i]));
-			if (get_log_level() >= SYSLOG_LEVEL_VERBOSE)
-				printf("%s\n", ra);
-			free(ra);
-			free(fp);
+			fingerprint_one_key(keys[i], "PKCS11 key");
 		} else {
 			(void) sshkey_write(keys[i], stdout); /* XXX check */
 			fprintf(stdout, "\n");
@@ -2492,7 +2478,7 @@ usage(void)
 	    "       ssh-keygen -B [-f input_keyfile]\n");
 #ifdef ENABLE_PKCS11
 	fprintf(stderr,
-	    "       ssh-keygen -D pkcs11\n");
+	    "       ssh-keygen -D pkcs11 [-l] [-v]\n");
 #endif
 	fprintf(stderr,
 	    "       ssh-keygen -F hostname [-f known_hosts_file] [-l]\n"
