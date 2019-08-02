@@ -1893,6 +1893,7 @@ AC_CHECK_FUNCS([ \
 	innetgr \
 	login_getcapbool \
 	md5_crypt \
+	memmem \
 	memmove \
 	memset_s \
 	mkdtemp \
