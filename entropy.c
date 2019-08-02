@@ -39,6 +39,7 @@
 
 #include <errno.h>
 #include <signal.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <stddef.h> /* for offsetof */
@@ -251,6 +252,9 @@ seed_rng(void)
 }
 
 #else /* WITH_OPENSSL */
+
+#include <stdlib.h>
+#include <string.h>
 
 /* Actual initialisation is handled in arc4random() */
 void

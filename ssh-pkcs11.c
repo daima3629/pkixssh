@@ -1565,11 +1565,14 @@ pkcs11_add_provider(char *provider_id, char *pin, struct sshkey ***keyp)
 	return nkeys;
 }
 
-#else
+#else /* ENABLE_PKCS11 */
+
+#include "ssh-pkcs11.h"
 
 int
 pkcs11_init(int interactive)
 {
+	UNUSED(interactive);
 	return -1;
 }
 
