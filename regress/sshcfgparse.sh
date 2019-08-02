@@ -1,4 +1,4 @@
-#	$OpenBSD: sshcfgparse.sh,v 1.4 2018/07/04 13:51:12 djm Exp $
+#	$OpenBSD: sshcfgparse.sh,v 1.5 2019/07/23 13:32:48 dtucker Exp $
 #	Placed in the Public Domain.
 
 tid="ssh config parse"

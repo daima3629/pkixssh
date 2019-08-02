@@ -1,4 +1,4 @@
-/* $OpenBSD: authfile.c,v 1.132 2019/06/28 13:35:04 deraadt Exp $ */
+/* $OpenBSD: authfile.c,v 1.133 2019/07/15 13:16:29 djm Exp $ */
 /*
  * Copyright (c) 2000, 2013 Markus Friedl.  All rights reserved.
  * X509 certificate support,
