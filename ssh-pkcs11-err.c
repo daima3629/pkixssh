@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2018-2019 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -24,8 +24,6 @@
 
 
 #ifndef OPENSSL_NO_ERR
-
-static int ERR_LIB_PKCS11 = 0;
 
 static ERR_STRING_DATA PKCS11_str_functs[] = {
 	{ ERR_PACK(0, PKCS11_LOGIN, 0)			, "login" },
@@ -54,13 +52,14 @@ static ERR_STRING_DATA PKCS11_lib_name[] = {
 #endif /*ndef OPENSSL_NO_ERR*/
 
 
+static int ERR_LIB_PKCS11 = 0;
+
 void
 ERR_PKCS11_PUT_error(int function, int reason, char *file, int line) {
-#ifndef OPENSSL_NO_ERR
 	if (ERR_LIB_PKCS11 == 0)
 		ERR_LIB_PKCS11 = ERR_get_next_error_library();
+
 	ERR_PUT_error(ERR_LIB_PKCS11, function, reason, file, line);
-#endif
 }
 
 
@@ -78,7 +77,7 @@ ERR_load_PKCS11_strings(void) {
 
 	PKCS11_lib_name[0].error = ERR_PACK(ERR_LIB_PKCS11, 0, 0);
 	ERR_load_strings(0, PKCS11_lib_name);
-#endif
+#endif /*ndef OPENSSL_NO_ERR*/
 }
 
 #else /*def ENABLE_PKCS11*/

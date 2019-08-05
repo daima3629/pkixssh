@@ -102,7 +102,9 @@ struct x509_object_st {
 
 /* ================================================================== */
 /* ERRORS */
+
 #ifndef OPENSSL_NO_ERR
+
 static ERR_STRING_DATA X509byLDAP_str_functs[] = {
 	{ ERR_PACK(0, X509byLDAP_F_LOOKUPCRTL, 0)	, "LOOKUPCRTL" },
 	{ ERR_PACK(0, X509byLDAP_F_SET_PROTOCOL, 0)	, "SET_PROTOCOL" },
@@ -125,10 +127,12 @@ static ERR_STRING_DATA X509byLDAP_lib_name[] = {
 	{ 0, "X509byLDAP" },
 	{ 0, NULL }
 };
+
 #endif /*ndef OPENSSL_NO_ERR*/
 
 
 static int ERR_LIB_X509byLDAP = 0;
+
 static inline void
 X509byLDAP_PUT_error(int function, int reason, const char *file, int line) {
 	if (ERR_LIB_X509byLDAP == 0)
@@ -136,6 +140,7 @@ X509byLDAP_PUT_error(int function, int reason, const char *file, int line) {
 
 	ERR_PUT_error(ERR_LIB_X509byLDAP, function, reason, file, line);
 }
+
 #define X509byLDAPerr(f,r) X509byLDAP_PUT_error((f),(r),__FILE__,__LINE__)
 
 
@@ -154,7 +159,7 @@ ERR_load_X509byLDAP_strings(void) {
 
 	X509byLDAP_lib_name[0].error = ERR_PACK(ERR_LIB_X509byLDAP, 0, 0);
 	ERR_load_strings(0, X509byLDAP_lib_name);
-#endif
+#endif /*ndef OPENSSL_NO_ERR*/
 }
 
 

@@ -140,8 +140,6 @@ ssh_ldap_parse_result (
 extern void ERR_load_SSHLDAP_strings(void);
 extern void ERR_load_X509byLDAP_strings(void);
 
-#ifndef OPENSSL_NO_ERR
-
 /* Function codes. */
 #define SSHLDAP_F_LDAPHOST_NEW				101
 #define SSHLDAP_F_LDAPSEARCH_ITERATOR			102
@@ -153,6 +151,8 @@ extern void ERR_load_X509byLDAP_strings(void);
 #define SSHLDAP_R_UNABLE_TO_GET_PROTOCOL_VERSION	104
 #define SSHLDAP_R_UNABLE_TO_COUNT_ENTRIES		105
 
+
+#ifndef OPENSSL_NO_ERR
 
 static ERR_STRING_DATA SSHLDAP_str_functs[] = {
 	{ ERR_PACK(0, SSHLDAP_F_LDAPHOST_NEW, 0)	, "LDAPHOST_NEW" },
@@ -174,8 +174,11 @@ static ERR_STRING_DATA SSHLDAP_lib_name[] = {
 	{ 0, NULL }
 };
 
+#endif /*ndef OPENSSL_NO_ERR*/
+
 
 static int ERR_LIB_SSHLDAP = 0;
+
 static inline void
 SSHLDAP_PUT_error(int function, int reason, const char *file, int line) {
 	if (ERR_LIB_SSHLDAP == 0)
@@ -185,12 +188,6 @@ SSHLDAP_PUT_error(int function, int reason, const char *file, int line) {
 }
 
 #define SSHLDAPerr(f,r) SSHLDAP_PUT_error((f),(r),__FILE__,__LINE__)
-
-#else
-
-#define SSHLDAPerr(f,r)
-
-#endif /*ndef OPENSSL_NO_ERR*/
 
 
 void
@@ -207,7 +204,7 @@ ERR_load_SSHLDAP_strings(void) {
 
 	SSHLDAP_lib_name[0].error = ERR_PACK(ERR_LIB_SSHLDAP, 0, 0);
 	ERR_load_strings(0, SSHLDAP_lib_name);
-#endif
+#endif /*ndef OPENSSL_NO_ERR*/
 	ERR_load_X509byLDAP_strings();
 }
 
