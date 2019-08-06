@@ -597,7 +597,8 @@ regress/misc/kexfuzz/kexfuzz$(EXEEXT): ${MISC_KEX_FUZZ_OBJS} libssh.a
 	$(LD) -o $@ $(LDFLAGS) $(MISC_KEX_FUZZ_OBJS) \
 	    -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(LIBS)
 
-regress-binaries: regress/modpipe$(EXEEXT) \
+regress-binaries: regress-prep \
+	regress/modpipe$(EXEEXT) \
 	regress/setuid-allowed$(EXEEXT) \
 	regress/netcat$(EXEEXT) \
 	regress/check-perm$(EXEEXT) \
@@ -620,7 +621,7 @@ check:
 # for compatibility
 tests: check
 
-check-core interop-tests t-exec unit: regress-prep regress-binaries $(TARGETS)
+check-core unit file-tests t-exec f-exec interop-tests: regress-binaries $(TARGETS)
 	BUILDDIR=`pwd`; \
 	TEST_SSH_SCP="$${BUILDDIR}/scp"; \
 	TEST_SSH_SSH="$${BUILDDIR}/ssh"; \
@@ -665,7 +666,7 @@ check-core interop-tests t-exec unit: regress-prep regress-binaries $(TARGETS)
 		TEST_SSH_ECC="$${TEST_SSH_ECC}" \
 		TEST_SHELL="${TEST_SHELL}" \
 		EXEEXT="$(EXEEXT)" \
-		$@ && echo all core tests passed
+		$@ && echo 'regress test "$@" pass'
 
 CHECKCERTSENV = \
 	TEST_SSH_SSH="$${TEST_SSH_SSH-$$BUILDDIR/ssh}" \
