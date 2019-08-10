@@ -240,7 +240,7 @@ int
 sys_auth_allowed_user(struct passwd *pw, struct sshbuf *loginmsg)
 {
 	char *msg = NULL;
-	int result, permitted = 0;
+	int r, result, permitted = 0;
 	struct stat st;
 
 	/*
@@ -266,6 +266,7 @@ sys_auth_allowed_user(struct passwd *pw, struct sshbuf *loginmsg)
 	else if (msg != NULL) {
 		if ((r = sshbuf_put(loginmsg, msg, strlen(msg))) != 0)
 			fatal("%s: buffer error: %s", __func__, ssh_err(r));
+	}
 	if (msg == NULL)
 		msg = xstrdup("(none)");
 	aix_remove_embedded_newlines(msg);
