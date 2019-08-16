@@ -2562,7 +2562,6 @@ main(int argc, char **argv)
 			addargs(&args, "-l");
 			addargs(&args, "%s", user);
 		}
-		addargs(&args, "-oProtocol %d", sshver);
 
 		/* no subsystem if the server-spec contains a '/' */
 		if (sftp_server == NULL || strchr(sftp_server, '/') == NULL)
