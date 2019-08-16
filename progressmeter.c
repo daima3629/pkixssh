@@ -240,11 +240,10 @@ done:
 	last_update = now;
 }
 
-/*ARGSUSED*/
 static void
 sig_alarm(int ignore)
 {
-	signal(SIGALRM, sig_alarm);
+	UNUSED(ignore);
 	alarm_fired = 1;
 	alarm(UPDATE_INTERVAL);
 }
@@ -284,11 +283,10 @@ stop_progress_meter(void)
 	atomicio(vwrite, STDOUT_FILENO, "\n", 1);
 }
 
-/*ARGSUSED*/
 static void
 sig_winch(int sig)
 {
-	signal(SIGWINCH, sig_winch);
+	UNUSED(sig);
 	win_resized = 1;
 }
 
