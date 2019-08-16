@@ -271,6 +271,8 @@ start_progress_meter(const char *f, off_t filesize, off_t *ctr)
 void
 stop_progress_meter(void)
 {
+	/* stop watching for window change */
+	signal(SIGWINCH, SIG_DFL);
 	alarm(0);
 
 	if (!can_output())
