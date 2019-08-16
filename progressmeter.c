@@ -1,6 +1,7 @@
 /* $OpenBSD: progressmeter.c,v 1.48 2019/05/03 06:06:30 dtucker Exp $ */
 /*
  * Copyright (c) 2003 Nils Nordman.  All rights reserved.
+ * Copyright (c) 2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -96,7 +97,7 @@ format_rate(char *buf, int size, off_t bytes)
 		i++;
 		bytes = (bytes + 512) / 1024;
 	}
-	snprintf(buf, size, "%3lld.%1lld%c%s",
+	snprintf(buf, size, "%3lld.%1lld%c%s/s ",
 	    (long long) (bytes + 5) / 100,
 	    (long long) (bytes + 5) / 10 % 10,
 	    unit[i],
@@ -110,7 +111,7 @@ format_size(char *buf, int size, off_t bytes)
 
 	for (i = 0; bytes >= 10000 && unit[i] != 'T'; i++)
 		bytes = (bytes + 512) / 1024;
-	snprintf(buf, size, "%4lld%c%s",
+	snprintf(buf, size, "%4lld%c%s ",
 	    (long long) bytes,
 	    unit[i],
 	    i ? "B" : " ");
@@ -122,11 +123,9 @@ refresh_progress_meter(int force_update)
 	char buf[MAX_WINSIZE + 1];
 	off_t transferred;
 	double elapsed, now;
-	int percent;
 	off_t bytes_left;
 	int cur_speed;
-	int hours, minutes, seconds;
-	int file_len;
+	int len;
 
 	if ((!force_update && !alarm_fired && !win_resized) || !can_output())
 		return;
@@ -164,32 +163,36 @@ refresh_progress_meter(int force_update)
 	} else
 		bytes_per_second = cur_speed;
 
+	buf[0] = '\r';
+	buf[1] = '\0';
+
 	/* filename */
-	buf[0] = '\0';
-	file_len = win_size - 36;
-	if (file_len > 0) {
-		buf[0] = '\r';
-		snmprintf(buf+1, sizeof(buf)-1, &file_len, "%-*s",
+	if (win_size > 36) {
+		int file_len = win_size - 36;
+		snmprintf(buf+1, sizeof(buf)-1, &file_len, "%-*s ",
 		    file_len, file);
 	}
 
 	/* percent of transfer done */
+	len = strlen(buf);
+	if (win_size <= len) goto done;
+{	int percent;
 	if (end_pos == 0 || cur_pos == end_pos)
 		percent = 100;
 	else
 		percent = ((float)cur_pos / end_pos) * 100;
-	snprintf(buf + strlen(buf), win_size - strlen(buf),
-	    " %3d%% ", percent);
+	snprintf(buf + len, win_size - len, "%3d%% ", percent);
+}
 
 	/* amount transferred */
-	format_size(buf + strlen(buf), win_size - strlen(buf),
-	    cur_pos);
-	strlcat(buf, " ", win_size);
+	len = strlen(buf);
+	if (win_size <= len) goto done;
+	format_size(buf + len, win_size - len, cur_pos);
 
 	/* bandwidth usage */
-	format_rate(buf + strlen(buf), win_size - strlen(buf),
-	    (off_t)bytes_per_second);
-	strlcat(buf, "/s ", win_size);
+	len = strlen(buf);
+	if (win_size <= len) goto done;
+	format_rate(buf + len, win_size - len, (off_t)bytes_per_second);
 
 	/* ETA */
 	if (!transferred)
@@ -197,11 +200,14 @@ refresh_progress_meter(int force_update)
 	else
 		stalled = 0;
 
+	len = strlen(buf);
 	if (stalled >= STALL_TIME)
 		strlcat(buf, "- stalled -", win_size);
 	else if (bytes_per_second == 0 && bytes_left)
 		strlcat(buf, "  --:-- ETA", win_size);
-	else {
+	else if (win_size > len) {
+		int hours, minutes, seconds;
+
 		if (bytes_left > 0)
 			seconds = bytes_left / bytes_per_second;
 		else
@@ -213,10 +219,10 @@ refresh_progress_meter(int force_update)
 		seconds -= minutes * 60;
 
 		if (hours != 0)
-			snprintf(buf + strlen(buf), win_size - strlen(buf),
+			snprintf(buf + len, win_size - len,
 			    "%d:%02d:%02d", hours, minutes, seconds);
 		else
-			snprintf(buf + strlen(buf), win_size - strlen(buf),
+			snprintf(buf + len, win_size - len,
 			    "  %02d:%02d", minutes, seconds);
 
 		if (bytes_left > 0)
@@ -225,7 +231,12 @@ refresh_progress_meter(int force_update)
 			strlcat(buf, "    ", win_size);
 	}
 
-	atomicio(vwrite, STDOUT_FILENO, buf, win_size - 1);
+	/* cleanup last column */
+	strlcat(buf, " ", win_size);
+
+done:
+	len = strnlen(buf, win_size - 1);
+	atomicio(vwrite, STDOUT_FILENO, buf, len);
 	last_update = now;
 }
 
