@@ -36,7 +36,24 @@
  * In $(prefix)/bin is installed wrapper script that set custom configuration
  * like library patch and etc. and then execute real binary.
  */
-char *android_progpath = NULL;
+static char *android_progpath = NULL;
+
+void set_android_progpath(const char *argv0);
+
+void
+set_android_progpath(const char *argv0) {
+	char *p;
+
+	android_progpath = strdup(argv0);
+
+	p = strrchr(android_progpath, '/');
+	if (p != NULL) *p = '\0';
+
+	p = android_progpath;
+	android_progpath = realpath(p, NULL);
+
+	free(p);
+}
 
 
 /* bionic stub replacement

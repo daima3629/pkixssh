@@ -39,7 +39,7 @@ char *__progname;
 #endif
 
 #ifdef __ANDROID__
-extern char *android_progpath;
+void set_android_progpath(const char *argv0);
 #endif
 
 /*
@@ -68,14 +68,7 @@ char *ssh_get_progname(char *argv0)
 	}
 
 #ifdef __ANDROID__
-{
-	android_progpath = strdup(argv0);
-	p = strrchr(android_progpath, '/');
-	if (p != NULL) *p = '\0';
-	p = android_progpath;
-	android_progpath = realpath(p, NULL);
-	free(p);
-}
+	set_android_progpath(argv0);
 #endif /*def __ANDROID__*/
 
 	return q;
