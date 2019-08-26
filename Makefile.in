@@ -191,8 +191,7 @@ libssh.a: $(LIBSSH_OBJS)
 	$(AR) rv $@ $(LIBSSH_OBJS)
 	$(RANLIB) $@
 
-XDEPLIBS = @XDEPLIBS@
-DEPLIBS = $(LIBCOMPAT) libssh.a $(XDEPLIBS)
+DEPLIBS = $(LIBCOMPAT) libssh.a
 
 
 ssh$(EXEEXT): $(DEPLIBS) $(SSHOBJS) ssh-pkcs11.o
