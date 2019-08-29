@@ -31,6 +31,15 @@
 #include <stdio.h>
 #include <string.h>
 
+
+/* path to application data directory (prefix).
+ * Application specific path and may match ContextWrapper.getDataDir().
+ * It is expected all files except executables and binaries to be stored
+ * in subdirectory of prefix.
+ */
+extern char *get_app_datadir(void);
+
+
 /* path to current program.
  * Note it is expected binaries to be installed in $(prefix)/xbin.
  * In $(prefix)/bin is installed wrapper script that set custom configuration
@@ -135,12 +144,17 @@ relocate_path(const char *pathname, char *pathbuf, size_t pathlen) {
 
 	if (pathlen <= len) return pathname;
 
-	if (strncmp(pathname, _PATH_PREFIX, len) == 0) {
+	if (strncmp(pathname, _PATH_PREFIX, len) != 0) return pathname;
+
+{	const char *datadir = get_app_datadir();
+	/* TODO check path ...? */
+	if (datadir != NULL) {
+		len = snprintf(pathbuf, pathlen, "%s%s", datadir, pathname + len);
+		free((void*)datadir);
+	} else
 		len = snprintf(pathbuf, pathlen, "%s/..%s", android_progpath, pathname + len);
-		if (len <= pathlen)
-			return pathbuf;
-	}
-	return pathname;
+}
+	return (len <= pathlen) ? pathbuf: pathname;
 }
 
 

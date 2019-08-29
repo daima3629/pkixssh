@@ -191,7 +191,11 @@ libssh.a: $(LIBSSH_OBJS)
 	$(AR) rv $@ $(LIBSSH_OBJS)
 	$(RANLIB) $@
 
-DEPLIBS = $(LIBCOMPAT) libssh.a
+libappinfo.so: appinfo.o
+	$(LD) -shared -o $@ appinfo.o
+
+XDEPLIBS = @XDEPLIBS@
+DEPLIBS = $(LIBCOMPAT) libssh.a $(XDEPLIBS)
 
 
 ssh$(EXEEXT): $(DEPLIBS) $(SSHOBJS) ssh-pkcs11.o

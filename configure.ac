@@ -535,6 +535,7 @@ SOLARIS_PRIVS="no"
 
 # Check for some target-specific stuff
 AC_SUBST([XLDFLAGS])
+AC_SUBST([XDEPLIBS])
 ssh_disable_utmpx=no
 case "$host" in
 *-*-aix*)
@@ -839,6 +840,9 @@ main() { if (NSVersionOfRunTimeLibrary("System") >= (60 << 16))
 		LIBS="$LIBS -llog"
 		XLDFLAGS="$XLDFLAGS -Wl,--wrap=open -Wl,--wrap=fopen"
 		XLDFLAGS="$XLDFLAGS -Wl,--wrap=rename"
+		dnl app library stub
+		XLDFLAGS="$XLDFLAGS -L. -lappinfo"
+		XDEPLIBS="$XDEPLIBS libappinfo.so"
 		;;
 	esac
 
