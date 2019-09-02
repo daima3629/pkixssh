@@ -45,8 +45,6 @@ BuildRequires:	groff
 BuildRoot:	%{_tmppath}/%{name}-%{version}-build
 
 Source0:	https://roumenpetrov.info/secsh/src/%{name}-%{version}.tar.xz
-# load dynamic ldap backend modules
-Patch0:		0001-load-dynamic-ldap-backend-module.patch
 
 
 # Default values for additional components
