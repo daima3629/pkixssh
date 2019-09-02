@@ -446,13 +446,6 @@ cat << EOF > $OBJ/sshd_config
 	Subsystem	sftp	$SFTPSERVER
 EOF
 
-# This may be necessary if /usr/src and/or /usr/obj are group-writable,
-# but if you aren't careful with permissions then the unit tests could
-# be abused to locally escalate privileges.
-if [ ! -z "$TEST_SSH_UNSAFE_PERMISSIONS" ]; then
-	echo "StrictModes no" >> $OBJ/sshd_config
-fi
-
 if [ ! -z "$TEST_SSH_SSHD_CONFOPTS" ]; then
 	trace "adding sshd_config option $TEST_SSH_SSHD_CONFOPTS"
 	echo "$TEST_SSH_SSHD_CONFOPTS" >> $OBJ/sshd_config
@@ -460,9 +453,6 @@ fi
 
 # server config for proxy connects
 cp $OBJ/sshd_config $OBJ/sshd_proxy
-
-# allow group-writable directories in proxy-mode
-echo 'StrictModes no' >> $OBJ/sshd_proxy
 
 # create client config
 cat << EOF > $OBJ/ssh_config
