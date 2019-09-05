@@ -139,7 +139,8 @@ Remove keys provided by the PKCS#11 shared library
 .Ar pkcs11 .
 .It Fl k
 When loading keys into or deleting keys from the agent, process plain private
-keys only and skip certificates.
+keys only and skip custom certificates.
+Option is ignored for X.509 certificate based identities.
 .It Fl L
 Lists public key parameters of all identities currently represented
 by the agent.
