@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keygen.c,v 1.341 2019/09/01 23:47:32 djm Exp $ */
+/* $OpenBSD: ssh-keygen.c,v 1.343 2019/09/03 08:27:52 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1994 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -250,6 +250,31 @@ type_bits_valid(int type, const char *name, u_int32_t *bitsp)
 #endif
 	}
 #endif
+}
+
+/*
+ * Checks whether a file exists and, if so, asks the user whether they wish
+ * to overwrite it.
+ * Returns nonzero if the file does not already exist or if the user agrees to
+ * overwrite, or zero otherwise.
+ */
+static int
+confirm_overwrite(const char *filename)
+{
+	char yesno[3];
+	struct stat st;
+
+	if (stat(filename, &st) == -1)
+		return 1;
+
+	fprintf(stderr, "%s already exists.\n", filename);
+	fprintf(stderr, "Overwrite (y/n)? :");
+	fflush(stderr); /*non-buffered but on some systems ...*/
+
+	if (fgets(yesno, sizeof(yesno), stdin) == NULL)
+		return 0;
+
+	return yesno[0] == 'y' || yesno[0] == 'Y';
 }
 
 static void
@@ -2998,16 +3023,8 @@ main(int argc, char **argv)
 		}
 	}
 	/* If the file already exists, ask the user to confirm. */
-	if (stat(identity_file, &st) != -1) {
-		char yesno[3];
-		printf("%s already exists.\n", identity_file);
-		printf("Overwrite (y/n)? ");
-		fflush(stdout);
-		if (fgets(yesno, sizeof(yesno), stdin) == NULL)
-			exit(1);
-		if (yesno[0] != 'y' && yesno[0] != 'Y')
-			exit(1);
-	}
+	if (!confirm_overwrite(identity_file))
+		exit(1);
 	/* Ask for a passphrase (twice). */
 	if (identity_passphrase)
 		passphrase1 = xstrdup(identity_passphrase);
