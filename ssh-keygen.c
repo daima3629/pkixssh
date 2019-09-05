@@ -72,7 +72,6 @@
 #include "ssh-xkalg.h"
 #include "compat.h"
 #include "authfile.h"
-#include "uuencode.h"
 #include "sshbuf.h"
 #include "pathnames.h"
 #include "log.h"
@@ -486,9 +485,8 @@ buffer_get_bignum_bits(struct sshbuf *b, BIGNUM *value)
 }
 
 static struct sshkey *
-do_convert_private_ssh2_from_blob(u_char *blob, u_int blen)
+do_convert_private_ssh2(struct sshbuf *b)
 {
-	struct sshbuf *b;
 	struct sshkey *key = NULL;
 	char *type, *cipher;
 	u_char e1, e2, e3, *sig = NULL, data[] = "abcde12345";
@@ -497,15 +495,12 @@ do_convert_private_ssh2_from_blob(u_char *blob, u_int blen)
 	size_t slen;
 	u_long e;
 
-	if ((b = sshbuf_from(blob, blen)) == NULL)
-		fatal("%s: sshbuf_from failed", __func__);
 	if ((r = sshbuf_get_u32(b, &magic)) != 0)
 		fatal("%s: buffer error: %s", __func__, ssh_err(r));
 
 	if (magic != SSH_COM_PRIVATE_KEY_MAGIC) {
 		error("bad magic 0x%x != 0x%x", magic,
 		    SSH_COM_PRIVATE_KEY_MAGIC);
-		sshbuf_free(b);
 		return NULL;
 	}
 	if ((r = sshbuf_get_u32(b, &i1)) != 0 ||
@@ -519,7 +514,6 @@ do_convert_private_ssh2_from_blob(u_char *blob, u_int blen)
 	if (strcmp(cipher, "none") != 0) {
 		error("unsupported cipher %s", cipher);
 		free(cipher);
-		sshbuf_free(b);
 		free(type);
 		return NULL;
 	}
@@ -530,7 +524,6 @@ do_convert_private_ssh2_from_blob(u_char *blob, u_int blen)
 	} else if (strstr(type, "rsa")) {
 		ktype = KEY_RSA;
 	} else {
-		sshbuf_free(b);
 		free(type);
 		return NULL;
 	}
@@ -584,7 +577,6 @@ do_convert_private_ssh2_from_blob(u_char *blob, u_int blen)
 			fatal("%s: BN_new", __func__);
 		if (!BN_set_word(rsa_e, e)) {
 			BN_clear_free(rsa_e);
-			sshbuf_free(b);
 			sshkey_free(key);
 			return NULL;
 		}
@@ -611,9 +603,7 @@ do_convert_private_ssh2_from_blob(u_char *blob, u_int blen)
 	}
 	rlen = sshbuf_len(b);
 	if (rlen != 0)
-		error("do_convert_private_ssh2_from_blob: "
-		    "remaining bytes in key blob %d", rlen);
-	sshbuf_free(b);
+		error("%s: remaining bytes in key blob %d", __func__, rlen);
 
 	/* try the key */
 	if (sshkey_sign(key, &sig, &slen, data, sizeof(data), NULL, 0) != 0 ||
@@ -658,10 +648,12 @@ do_convert_from_ssh2(struct sshkey **k, int *private)
 	int r, blen, escaped = 0;
 	u_int len;
 	char line[1024];
-	u_char blob[8096];
+	struct sshbuf *buf;
 	char encoded[8096];
 	FILE *fp;
 
+	if ((buf = sshbuf_new()) == NULL)
+		fatal("sshbuf_new failed");
 	if ((fp = fopen(identity_file, "r")) == NULL)
 		fatal("%s: %s: %s", __progname, identity_file, strerror(errno));
 	encoded[0] = '\0';
@@ -691,12 +683,11 @@ do_convert_from_ssh2(struct sshkey **k, int *private)
 	    (encoded[len-2] == '=') &&
 	    (encoded[len-3] == '='))
 		encoded[len-3] = '\0';
-	blen = uudecode(encoded, blob, sizeof(blob));
-	if (blen < 0)
-		fatal("uudecode failed.");
+	if ((r = sshbuf_b64tod(buf, encoded)) != 0)
+		fatal("%s: base64 decoding failed: %s", __func__, ssh_err(r));
 	if (*private)
-		*k = do_convert_private_ssh2_from_blob(blob, blen);
-	else if ((r = sshkey_from_blob(blob, blen, k)) != 0)
+		*k = do_convert_private_ssh2(buf);
+	else if ((r = sshkey_fromb(buf, k)) != 0)
 		fatal("decode blob failed: %s", ssh_err(r));
 	fclose(fp);
 }
@@ -1851,7 +1842,7 @@ do_ca_sign(struct passwd *pw, const char *ca_key_path, int prefer_agent,
 		}
 		if (n > SSHKEY_CERT_MAX_PRINCIPALS)
 			fatal("Too many certificate principals specified");
-	
+
 		tmp = tilde_expand_filename(argv[i], pw->pw_uid);
 		if ((r = sshkey_load_public(tmp, &public, &comment)) != 0)
 			fatal("%s: unable to open \"%s\": %s",

@@ -2754,6 +2754,12 @@ sshkey_from_blob(const u_char *blob, size_t blen, struct sshkey **keyp)
 }
 
 int
+sshkey_fromb(struct sshbuf *b, struct sshkey **keyp)
+{
+	return sshkey_from_blob_internal(b, keyp, 1);
+}
+
+int
 sshkey_froms(struct sshbuf *buf, struct sshkey **keyp)
 {
 	struct sshbuf *b;
@@ -4064,7 +4070,7 @@ sshkey_private_to_blob2(struct sshkey *prv, struct sshbuf *blob,
 
 	sshbuf_reset(blob);
 
-	/* assemble uuencoded key */
+	/* assemble base64-encoded key */
 	if ((r = sshbuf_put(blob, MARK_BEGIN, MARK_BEGIN_LEN)) != 0 ||
 	    (r = sshbuf_dtob64(encoded, blob, 1)) != 0 ||
 	    (r = sshbuf_put(blob, MARK_END, MARK_END_LEN)) != 0)
