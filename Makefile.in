@@ -173,11 +173,20 @@ FIXPATHSCMD	= $(SED) $(PATHSUBS)
 FIXALGORITHMSCMD= $(SHELL) $(srcdir)/fixalgorithms $(SED) \
 		     @UNSUPPORTED_ALGORITHMS@
 
-all: $(CONFIGFILES) $(MANPAGES) $(TARGETS)
+all: configure-check $(CONFIGFILES) $(MANPAGES) $(TARGETS)
 
 $(LIBSSH_OBJS): Makefile.in config.h
 $(SSHOBJS): Makefile.in config.h
 $(SSHDOBJS): Makefile.in config.h
+configure-check: $(srcdir)/configure
+
+$(srcdir)/configure: \
+	$(srcdir)/m4/android.m4 \
+	$(srcdir)/m4/ldap.m4 \
+	$(srcdir)/configure.ac \
+	$(srcdir)/aclocal.m4
+	@(echo; echo " ERROR: $@ is out of date; please re-genenarate (and configure)"; echo) 1>&2
+	@exit 1
 
 .c.o:
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
