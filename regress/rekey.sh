@@ -62,6 +62,9 @@ if ${SSH} -Q cipher-auth | grep '^.*$' >/dev/null 2>&1 ; then
   done
 fi
 
+# restore configuration to prevent impact from previous tests
+cp $OBJ/sshd_proxy_bak $OBJ/sshd_proxy
+
 for s in 16 1k 128k 256k; do
 	verbose "client rekeylimit ${s}"
 	ssh_data_rekeying "" -oCompression=no -oRekeyLimit=$s
