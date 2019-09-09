@@ -1,4 +1,4 @@
-/* $OpenBSD: kex.c,v 1.150 2019/01/21 12:08:13 djm Exp $ */
+/* $OpenBSD: kex.c,v 1.151 2019/09/05 09:25:13 djm Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  *
@@ -425,6 +425,7 @@ kex_send_ext_info(struct ssh *ssh)
 {
 	int r;
 
+	debug("Sending SSH2_MSG_EXT_INFO");
 	if (server_pkalgs == NULL) return 0;
 
 	if (
@@ -452,11 +453,11 @@ kex_send_newkeys(struct ssh *ssh)
 	    (r = sshpkt_send(ssh)) != 0)
 		return r;
 	debug("SSH2_MSG_NEWKEYS sent");
-	debug("expecting SSH2_MSG_NEWKEYS");
 	ssh_dispatch_set(ssh, SSH2_MSG_NEWKEYS, &kex_input_newkeys);
-	if (ssh->kex->ext_info_c)
+	if (ssh->kex->ext_info_c && (ssh->kex->flags & KEX_INITIAL) != 0)
 		if ((r = kex_send_ext_info(ssh)) != 0)
 			return r;
+	debug("expecting SSH2_MSG_NEWKEYS");
 	return 0;
 }
 
