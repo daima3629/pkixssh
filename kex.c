@@ -1,7 +1,6 @@
-/* $OpenBSD: kex.c,v 1.151 2019/09/05 09:25:13 djm Exp $ */
+/* $OpenBSD: kex.c,v 1.152 2019/09/05 09:35:19 djm Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
- *
  * Copyright (c) 2014-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -362,18 +361,25 @@ kex_buf2prop(struct sshbuf *raw, int *first_kex_follows, char ***propp)
 		r = SSH_ERR_ALLOC_FAIL;
 		goto out;
 	}
-	if ((r = sshbuf_consume(b, KEX_COOKIE_LEN)) != 0) /* skip cookie */
+	if ((r = sshbuf_consume(b, KEX_COOKIE_LEN)) != 0) { /* skip cookie */
+		error("%s: consume cookie: %s", __func__, ssh_err(r));
 		goto out;
+	}
 	/* extract kex init proposal strings */
 	for (i = 0; i < PROPOSAL_MAX; i++) {
-		if ((r = sshbuf_get_cstring(b, &(proposal[i]), NULL)) != 0)
+		if ((r = sshbuf_get_cstring(b, &(proposal[i]), NULL)) != 0) {
+			error("%s: parse proposal %u: %s", __func__,
+			    i, ssh_err(r));
 			goto out;
+		}
 		debug2("%s: %s", proposal_names[i], proposal[i]);
 	}
 	/* first kex follows / reserved */
 	if ((r = sshbuf_get_u8(b, &v)) != 0 ||	/* first_kex_follows */
-	    (r = sshbuf_get_u32(b, &i)) != 0)	/* reserved */
+	    (r = sshbuf_get_u32(b, &i)) != 0) {	/* reserved */
+		error("%s: parse: %s", __func__, ssh_err(r));
 		goto out;
+	}
 	if (first_kex_follows != NULL)
 		*first_kex_follows = v;
 	debug2("first_kex_follows %d ", v);
@@ -434,8 +440,10 @@ kex_send_ext_info(struct ssh *ssh)
 	    (r = sshpkt_put_cstring(ssh, srv_extinfo_pkalgs)) != 0 ||
 	    (r = sshpkt_put_cstring(ssh, server_pkalgs)) != 0 ||
 	    (r = sshpkt_put_cstring(ssh, "server-sig-algs")) != 0 ||
-	    (r = sshpkt_put_cstring(ssh, server_pkalgs)) != 0
-	) goto out;
+	    (r = sshpkt_put_cstring(ssh, server_pkalgs)) != 0) {
+		error("%s: compose: %s", __func__, ssh_err(r));
+		goto out;
+	}
 
 	r = sshpkt_send(ssh);
 
@@ -601,23 +609,32 @@ kex_send_kexinit(struct ssh *ssh)
 	struct kex *kex = ssh->kex;
 	int r;
 
-	if (kex == NULL)
+	if (kex == NULL) {
+		error("%s: no hex", __func__);
 		return SSH_ERR_INTERNAL_ERROR;
+	}
 	if (kex->flags & KEX_INIT_SENT)
 		return 0;
 	kex->done = 0;
 
 	/* generate a random cookie */
-	if (sshbuf_len(kex->my) < KEX_COOKIE_LEN)
+	if (sshbuf_len(kex->my) < KEX_COOKIE_LEN) {
+		error("%s: bad kex length: %zu < %d", __func__,
+		    sshbuf_len(kex->my), KEX_COOKIE_LEN);
 		return SSH_ERR_INVALID_FORMAT;
-	if ((cookie = sshbuf_mutable_ptr(kex->my)) == NULL)
+	}
+	if ((cookie = sshbuf_mutable_ptr(kex->my)) == NULL) {
+		error("%s: buffer error", __func__);
 		return SSH_ERR_INTERNAL_ERROR;
+	}
 	arc4random_buf(cookie, KEX_COOKIE_LEN);
 
 	if ((r = sshpkt_start(ssh, SSH2_MSG_KEXINIT)) != 0 ||
 	    (r = sshpkt_putb(ssh, kex->my)) != 0 ||
-	    (r = sshpkt_send(ssh)) != 0)
+	    (r = sshpkt_send(ssh)) != 0) {
+		error("%s: compose reply: %s", __func__, ssh_err(r));
 		return r;
+	}
 	debug("SSH2_MSG_KEXINIT sent");
 	kex->flags |= KEX_INIT_SENT;
 	return 0;
@@ -636,21 +653,28 @@ kex_input_kexinit(int type, u_int32_t seq, struct ssh *ssh)
 	UNUSED(type);
 	UNUSED(seq);
 	debug("SSH2_MSG_KEXINIT received");
-	if (kex == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
-
+	if (kex == NULL) {
+		error("%s: no hex", __func__);
+		return SSH_ERR_INTERNAL_ERROR;
+	}
 	ssh_dispatch_set(ssh, SSH2_MSG_KEXINIT, NULL);
 	ptr = sshpkt_ptr(ssh, &dlen);
 	if ((r = sshbuf_put(kex->peer, ptr, dlen)) != 0)
 		return r;
 
 	/* discard packet */
-	for (i = 0; i < KEX_COOKIE_LEN; i++)
-		if ((r = sshpkt_get_u8(ssh, NULL)) != 0)
+	for (i = 0; i < KEX_COOKIE_LEN; i++) {
+		if ((r = sshpkt_get_u8(ssh, NULL)) != 0) {
+			error("%s: discard cookie: %s", __func__, ssh_err(r));
 			return r;
-	for (i = 0; i < PROPOSAL_MAX; i++)
-		if ((r = sshpkt_get_string(ssh, NULL, NULL)) != 0)
+		}
+	}
+	for (i = 0; i < PROPOSAL_MAX; i++) {
+		if ((r = sshpkt_get_string(ssh, NULL, NULL)) != 0) {
+			error("%s: discard proposal: %s", __func__, ssh_err(r));
 			return r;
+		}
+	}
 	/*
 	 * XXX RFC4253 sec 7: "each side MAY guess" - currently no supported
 	 * KEX method has the server move first, but a server might be using
@@ -675,6 +699,7 @@ kex_input_kexinit(int type, u_int32_t seq, struct ssh *ssh)
 	if (kex->kex_type < KEX_MAX && kex->kex[kex->kex_type] != NULL)
 		return (kex->kex[kex->kex_type])(ssh);
 
+	error("%s: unknown kex type %u", __func__, kex->kex_type);
 	return SSH_ERR_INTERNAL_ERROR;
 }
 
@@ -683,9 +708,8 @@ kex_new(void)
 {
 	struct kex *kex;
 
-	if ((kex = calloc(1, sizeof(*kex))) == NULL)
-		return NULL;
-	if ((kex->peer = sshbuf_new()) == NULL ||
+	if ((kex = calloc(1, sizeof(*kex))) == NULL ||
+	    (kex->peer = sshbuf_new()) == NULL ||
 	    (kex->my = sshbuf_new()) == NULL ||
 	    (kex->client_version = sshbuf_new()) == NULL ||
 	    (kex->server_version = sshbuf_new()) == NULL) {
@@ -731,7 +755,8 @@ kex_free(struct kex *kex)
 {
 	u_int mode;
 
-	if (kex == NULL) return;
+	if (kex == NULL)
+		return;
 
 #ifdef WITH_OPENSSL
 	DH_free(kex->dh);
@@ -813,6 +838,7 @@ choose_enc(struct sshenc *enc, char *client, char *server)
 	if (name == NULL)
 		return SSH_ERR_NO_CIPHER_ALG_MATCH;
 	if ((enc->cipher = cipher_by_name(name)) == NULL) {
+		error("%s: unsupported cipher %s", __func__, name);
 		free(name);
 		return SSH_ERR_INTERNAL_ERROR;
 	}
@@ -835,6 +861,7 @@ choose_mac(struct ssh *ssh, struct sshmac *mac, char *client, char *server)
 	if (name == NULL)
 		return SSH_ERR_NO_MAC_ALG_MATCH;
 	if (mac_setup(mac, name) < 0) {
+		error("%s: unsupported MAC %s", __func__, name);
 		free(name);
 		return SSH_ERR_INTERNAL_ERROR;
 	}
@@ -858,6 +885,7 @@ choose_comp(struct sshcomp *comp, char *client, char *server)
 	} else if (strcmp(name, "none") == 0) {
 		comp->type = COMP_NONE;
 	} else {
+		error("%s: unsupported compression scheme %s", __func__, name);
 		free(name);
 		return SSH_ERR_INTERNAL_ERROR;
 	}
@@ -875,8 +903,10 @@ choose_kex(struct kex *k, char *client, char *server)
 	debug("kex: algorithm: %s", k->name ? k->name : "(no match)");
 	if (k->name == NULL)
 		return SSH_ERR_NO_KEX_ALG_MATCH;
-	if ((kexalg = kex_alg_by_name(k->name)) == NULL)
+	if ((kexalg = kex_alg_by_name(k->name)) == NULL) {
+		error("%s: unsupported KEX method %s", __func__, k->name);
 		return SSH_ERR_INTERNAL_ERROR;
+	}
 	k->kex_type = kexalg->type;
 	k->hash_alg = kexalg->hash_alg;
 	k->ec_nid = kexalg->ec_nid;
@@ -892,8 +922,11 @@ choose_hostkeyalg(struct kex *k, char *client, char *server)
 	    k->hostkey_alg ? k->hostkey_alg : "(no match)");
 	if (k->hostkey_alg == NULL)
 		return SSH_ERR_NO_HOSTKEY_ALG_MATCH;
-	if (sshkey_type_from_name(k->hostkey_alg) == KEY_UNSPEC)
+	if (sshkey_type_from_name(k->hostkey_alg) == KEY_UNSPEC) {
+		error("%s: unsupported hostkey algorithm %s", __func__,
+		    k->hostkey_alg);
 		return SSH_ERR_INTERNAL_ERROR;
+	}
 	return 0;
 }
 
@@ -1061,6 +1094,7 @@ derive_key(struct ssh *ssh, int id, u_int need, u_char *hash, u_int hashlen,
 	    kex->session_id_len) != 0 ||
 	    ssh_digest_final(hashctx, digest, mdsz) != 0) {
 		r = SSH_ERR_LIBCRYPTO_ERROR;
+		error("%s: KEX hash failed", __func__);
 		goto out;
 	}
 	ssh_digest_free(hashctx);
@@ -1077,6 +1111,7 @@ derive_key(struct ssh *ssh, int id, u_int need, u_char *hash, u_int hashlen,
 		    ssh_digest_update(hashctx, hash, hashlen) != 0 ||
 		    ssh_digest_update(hashctx, digest, have) != 0 ||
 		    ssh_digest_final(hashctx, digest + have, mdsz) != 0) {
+			error("%s: KDF failed", __func__);
 			r = SSH_ERR_LIBCRYPTO_ERROR;
 			goto out;
 		}
@@ -1144,6 +1179,7 @@ kex_load_host_keys(struct ssh *ssh, struct sshkey **hostpub, struct sshkey **hos
 
 	if (kex->find_host_public_key == NULL ||
 	    kex->find_host_private_key == NULL) {
+		error("%s: missing hostkey find callback", __func__);
 		r = SSH_ERR_INVALID_ARGUMENT;
 		goto done;
 	}
@@ -1166,8 +1202,10 @@ kex_verify_host_key(struct ssh *ssh, struct sshkey *server_host_key)
 {
 	struct kex *kex = ssh->kex;
 
-	if (kex->verify_host_key == NULL)
+	if (kex->verify_host_key == NULL) {
+		error("%s: missing hostkey verify callback", __func__);
 		return SSH_ERR_INVALID_ARGUMENT;
+	}
 	if (!sshkey_match_pkalg(server_host_key, kex->hostkey_alg))
 		return SSH_ERR_KEY_TYPE_MISMATCH;
 	if (kex->verify_host_key(server_host_key, ssh) == -1)
