@@ -180,7 +180,7 @@ sshkey_tests(void)
 	struct sshkey *k1, *k2, *k3, *k4, *kr, *kd, *kf;
 #ifdef OPENSSL_HAS_ECC
 	struct sshkey *ke;
-#endif
+#endif /* OPENSSL_HAS_ECC */
 	struct sshbuf *b;
 
 	TEST_START("new invalid");
@@ -315,7 +315,7 @@ sshkey_tests(void)
 	ASSERT_PTR_NE(EC_KEY_get0_public_key(ke->ecdsa), NULL);
 	ASSERT_PTR_NE(EC_KEY_get0_private_key(ke->ecdsa), NULL);
 	TEST_DONE();
-#endif
+#endif /* OPENSSL_HAS_ECC */
 
 	TEST_START("generate KEY_ED25519");
 	ASSERT_INT_EQ(sshkey_generate(KEY_ED25519, 256, &kf), 0);
@@ -386,7 +386,7 @@ sshkey_tests(void)
 	ASSERT_INT_EQ(sshkey_equal(ke, k1), 1);
 	sshkey_free(k1);
 	TEST_DONE();
-#endif
+#endif /* OPENSSL_HAS_ECC */
 
 	TEST_START("demote KEY_ED25519");
 	ASSERT_INT_EQ(sshkey_from_private(kf, &k1), 0);
@@ -408,7 +408,7 @@ sshkey_tests(void)
 	ASSERT_INT_EQ(sshkey_equal(kd, ke), 0);
 	ASSERT_INT_EQ(sshkey_equal(kr, ke), 0);
 	ASSERT_INT_EQ(sshkey_equal(ke, kf), 0);
-#endif
+#endif /* OPENSSL_HAS_ECC */
 	ASSERT_INT_EQ(sshkey_equal(kd, kf), 0);
 	TEST_DONE();
 
@@ -423,7 +423,7 @@ sshkey_tests(void)
 	ASSERT_INT_EQ(sshkey_generate(KEY_ECDSA, 256, &k1), 0);
 	ASSERT_INT_EQ(sshkey_equal(ke, k1), 0);
 	sshkey_free(k1);
-#endif
+#endif /* OPENSSL_HAS_ECC */
 	ASSERT_INT_EQ(sshkey_generate(KEY_ED25519, 256, &k1), 0);
 	ASSERT_INT_EQ(sshkey_equal(kf, k1), 0);
 	sshkey_free(k1);
@@ -433,7 +433,7 @@ sshkey_tests(void)
 	sshkey_free(kd);
 #ifdef OPENSSL_HAS_ECC
 	sshkey_free(ke);
-#endif
+#endif /* OPENSSL_HAS_ECC */
 	sshkey_free(kf);
 
 	TEST_START("certify key");
@@ -531,7 +531,7 @@ sshkey_tests(void)
 	sshkey_free(k1);
 	sshkey_free(k2);
 	TEST_DONE();
-#endif
+#endif /* OPENSSL_HAS_ECC */
 
 	TEST_START("sign and verify ED25519");
 	k1 = get_private("ed25519_1");

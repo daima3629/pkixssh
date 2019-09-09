@@ -97,7 +97,7 @@ check(struct hostkey_foreach_line *l, void *_ctx)
 		expected_keytype = KEY_UNSPEC;
 		parse_key = 0;
 	}
-#endif
+#endif /* OPENSSL_HAS_ECC */
 
 	UPDATE_MATCH_STATUS(match_host_p);
 	UPDATE_MATCH_STATUS(match_host_s);
@@ -145,7 +145,7 @@ prepare_expected(struct expected *expected, size_t n)
 #ifndef OPENSSL_HAS_ECC
 		if (expected[i].l.keytype == KEY_ECDSA)
 			continue;
-#endif
+#endif /* OPENSSL_HAS_ECC */
 		ASSERT_INT_EQ(sshkey_load_public(
 		    test_data_file(expected[i].key_file), &expected[i].l.key,
 		    NULL), 0);

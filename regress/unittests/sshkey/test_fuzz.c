@@ -246,7 +246,7 @@ sshkey_fuzz_tests(void)
 	sshbuf_free(fuzzed);
 	fuzz_cleanup(fuzz);
 	TEST_DONE();
-#endif
+#endif /* OPENSSL_HAS_ECC */
 
 	TEST_START("fuzz Ed25519 private");
 	buf = load_file("ed25519_1");
@@ -312,7 +312,7 @@ sshkey_fuzz_tests(void)
 	public_fuzz(k1);
 	sshkey_free(k1);
 	TEST_DONE();
-#endif
+#endif /* OPENSSL_HAS_ECC */
 
 	TEST_START("fuzz Ed25519 public");
 	buf = load_file("ed25519_1");
@@ -372,7 +372,7 @@ sshkey_fuzz_tests(void)
 	sig_fuzz(k1, NULL);
 	sshkey_free(k1);
 	TEST_DONE();
-#endif
+#endif /* OPENSSL_HAS_ECC */
 
 	TEST_START("fuzz Ed25519 sig");
 	buf = load_file("ed25519_1");
