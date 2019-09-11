@@ -899,7 +899,7 @@ pkcs11_open_session(struct pkcs11_provider *p, CK_ULONG slotidx, char *pin,
 	int			login_required, ret;
 
 	login_required = p->slotinfo[slotidx].token.flags & CKF_LOGIN_REQUIRED;
-	if (pin && login_required && !strlen(pin)) {
+	if (login_required && pin && !strlen(pin)) {
 		error("pin required");
 		return SSH_PKCS11_ERR_PIN_REQUIRED;
 	}
@@ -1407,9 +1407,6 @@ pkcs11_register_provider(char *provider_id, char *pin, struct sshkey ***keyp,
 		goto fail;
 	*providerp = NULL;
 
-	if (keyp != NULL)
-		*keyp = NULL;
-
 	if (pkcs11_provider_lookup(provider_id) != NULL) {
 		debug("%s: provider already registered: %s",
 		    __func__, provider_id);
@@ -1467,6 +1464,7 @@ pkcs11_register_provider(char *provider_id, char *pin, struct sshkey ***keyp,
 	    p->info.libraryVersion.minor);
 	if ((rv = f->C_GetSlotList(CK_TRUE, NULL, &p->nslots)) != CKR_OK) {
 		error("C_GetSlotList failed: %lu", rv);
+		ret = SSH_PKCS11_ERR_NO_SLOTS;
 		goto fail;
 	}
 	if (p->nslots == 0) {
@@ -1480,6 +1478,7 @@ pkcs11_register_provider(char *provider_id, char *pin, struct sshkey ***keyp,
 	    != CKR_OK) {
 		error("C_GetSlotList for provider %s failed: %lu",
 		    provider_id, rv);
+		ret = SSH_PKCS11_ERR_NO_SLOTS;
 		goto fail;
 	}
 	p->slotinfo = xcalloc(p->nslots, sizeof(struct pkcs11_slotinfo));
@@ -1509,15 +1508,19 @@ pkcs11_register_provider(char *provider_id, char *pin, struct sshkey ***keyp,
 		    token->label, token->manufacturerID, token->model,
 		    token->serialNumber, token->flags);
 		/*
-		 * open session, login with pin and retrieve public
-		 * keys (if keyp is provided)
+		 * open session, login with pin if required and
+		 * retrieve public keys
 		 */
-		if ((ret = pkcs11_open_session(p, i, pin, user)) == 0) {
-			if (keyp == NULL)
-				continue;
-			pkcs11_fetch_certs(p, i, keyp, &nkeys);
-			pkcs11_fetch_keys(p, i, keyp, &nkeys);
+	{	int r = pkcs11_open_session(p, i, pin, user);
+		if (r != 0) {
+			error("pkcs11_open_session for provider %s slot %lu "
+			    "failed: %s", provider_id, (unsigned long)i,
+			    ssh_err(r));
+			continue;
 		}
+	}
+		pkcs11_fetch_certs(p, i, keyp, &nkeys);
+		pkcs11_fetch_keys(p, i, keyp, &nkeys);
 	}
 
 	/* now owned by caller */
@@ -1546,6 +1549,10 @@ pkcs11_add_provider(char *provider_id, char *pin, struct sshkey ***keyp)
 {
 	struct pkcs11_provider *p = NULL;
 	int nkeys;
+
+	if (keyp == NULL)
+		return -1;
+	*keyp = NULL;
 
 	nkeys = pkcs11_register_provider(provider_id, pin, keyp, &p, CKU_USER);
 
