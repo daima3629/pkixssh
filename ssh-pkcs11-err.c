@@ -59,6 +59,10 @@ ERR_PKCS11_PUT_error(int function, int reason, char *file, int line) {
 	if (ERR_LIB_PKCS11 == 0)
 		ERR_LIB_PKCS11 = ERR_get_next_error_library();
 
+#ifdef OPENSSL_NO_FILENAMES /* OpenSSL 1.1+ */
+	file = NULL;
+	line = 0;
+#endif
 	ERR_PUT_error(ERR_LIB_PKCS11, function, reason, file, line);
 }
 

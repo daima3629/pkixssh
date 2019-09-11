@@ -151,6 +151,10 @@ X509byLDAP_PUT_error(int function, int reason, const char *file, int line) {
 	if (ERR_LIB_X509byLDAP == 0)
 		ERR_LIB_X509byLDAP = ERR_get_next_error_library();
 
+#ifdef OPENSSL_NO_FILENAMES /* OpenSSL 1.1+ */
+	file = NULL;
+	line = 0;
+#endif
 	ERR_PUT_error(ERR_LIB_X509byLDAP, function, reason, file, line);
 }
 
