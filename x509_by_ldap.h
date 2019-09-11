@@ -53,32 +53,6 @@ X509_LOOKUP_METHOD* X509_LOOKUP_ldap(void);
 #endif
 
 
-/* Error codes for the X509byLDAP functions. */
-#ifdef NO_ERR /* openssl < 0.7.x */
-#  define OPENSSL_NO_ERR /* openssl >= 0.7.x */
-#endif
-
-#ifndef OPENSSL_NO_ERR
-
-/* library */
-/* BEGIN ERROR CODES */
-
-/* Function codes. */
-#define X509byLDAP_F_LOOKUPCRTL			100
-#define X509byLDAP_F_SET_PROTOCOL		102
-#define X509byLDAP_F_GET_BY_SUBJECT		104
-
-/* Reason codes. */
-#define X509byLDAP_R_INVALID_CRTLCMD			100
-#define X509byLDAP_R_UNABLE_TO_SET_PROTOCOL_VERSION	105
-#define X509byLDAP_R_WRONG_LOOKUP_TYPE			107
-#define X509byLDAP_R_UNABLE_TO_GET_FILTER		108
-#define X509byLDAP_R_UNABLE_TO_BIND			109
-#define X509byLDAP_R_SEARCH_FAIL			110
-
-#endif /*ndef OPENSSL_NO_ERR*/
-
-
 #ifdef	__cplusplus
 }
 #endif
