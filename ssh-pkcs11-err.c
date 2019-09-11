@@ -55,7 +55,7 @@ static ERR_STRING_DATA PKCS11_lib_name[] = {
 static int ERR_LIB_PKCS11 = 0;
 
 void
-ERR_PKCS11_PUT_error(int function, int reason, char *file, int line) {
+ERR_PKCS11_PUT_error(int function, int reason, char *file, int line, const char* funcname) {
 	if (ERR_LIB_PKCS11 == 0)
 		ERR_LIB_PKCS11 = ERR_get_next_error_library();
 
@@ -63,7 +63,15 @@ ERR_PKCS11_PUT_error(int function, int reason, char *file, int line) {
 	file = NULL;
 	line = 0;
 #endif
+#ifdef ERR_raise_data
+	UNUSED(function);
+	ERR_new();
+	ERR_set_debug(file, line, funcname);
+	ERR_set_error(ERR_LIB_PKCS11, reason, NULL);
+#else
+	UNUSED(funcname);
 	ERR_PUT_error(ERR_LIB_PKCS11, function, reason, file, line);
+#endif /*ndef ERR_raise_data*/
 }
 
 
@@ -74,7 +82,8 @@ ERR_load_PKCS11_strings(void) {
 	if (loaded) return;
 	loaded = 1;
 }
-	ERR_LIB_PKCS11 = ERR_get_next_error_library();
+	if (ERR_LIB_PKCS11 == 0)
+		ERR_LIB_PKCS11 = ERR_get_next_error_library();
 
 	ERR_load_strings(ERR_LIB_PKCS11, PKCS11_str_functs);
 	ERR_load_strings(ERR_LIB_PKCS11, PKCS11_str_reasons);

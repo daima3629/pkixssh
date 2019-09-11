@@ -87,12 +87,9 @@ TAILQ_HEAD(, pkcs11_provider) pkcs11_providers;
 
 static inline void
 crypto_pkcs11_error(CK_RV err) {
-#ifndef OPENSSL_NO_ERR
-{	char buf[64];
+	char buf[64];
 	snprintf(buf, sizeof(buf), "pkcs#11 result 0x%lx", (unsigned long)err);
 	ERR_add_error_data(1, buf);
-}
-#endif
 }
 
 

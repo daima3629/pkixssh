@@ -49,8 +49,8 @@ int	pkcs11_del_provider(char *);
 #define PKCS11_C_LOGIN_FAIL		103
 #define PKCS11_FINDKEY_FAIL		104
 
-void ERR_PKCS11_PUT_error(int function, int reason, char *file, int line);
-#define PKCS11err(f,r) ERR_PKCS11_PUT_error((f),(r),__FILE__,__LINE__)
+void ERR_PKCS11_PUT_error(int function, int reason, char *file, int line, const char* funcname);
+#define PKCS11err(f,r) ERR_PKCS11_PUT_error((f),(r),__FILE__,__LINE__, __func__)
 
 void ERR_load_PKCS11_strings(void);
 

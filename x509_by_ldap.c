@@ -147,7 +147,7 @@ static ERR_STRING_DATA X509byLDAP_lib_name[] = {
 static int ERR_LIB_X509byLDAP = 0;
 
 static inline void
-X509byLDAP_PUT_error(int function, int reason, const char *file, int line) {
+X509byLDAP_PUT_error(int function, int reason, const char *file, int line, const char *funcname) {
 	if (ERR_LIB_X509byLDAP == 0)
 		ERR_LIB_X509byLDAP = ERR_get_next_error_library();
 
@@ -155,10 +155,18 @@ X509byLDAP_PUT_error(int function, int reason, const char *file, int line) {
 	file = NULL;
 	line = 0;
 #endif
+#ifdef ERR_raise_data
+	UNUSED(function);
+	ERR_new();
+	ERR_set_debug(file, line, funcname);
+	ERR_set_error(ERR_LIB_X509byLDAP, reason, NULL);
+#else
+	UNUSED(funcname);
 	ERR_PUT_error(ERR_LIB_X509byLDAP, function, reason, file, line);
+#endif /*ndef ERR_raise_data*/
 }
 
-#define X509byLDAPerr(f,r) X509byLDAP_PUT_error((f),(r),__FILE__,__LINE__)
+#define X509byLDAPerr(f,r) X509byLDAP_PUT_error((f),(r),__FILE__,__LINE__, __func__)
 
 
 extern void ERR_load_X509byLDAP_strings(void);
@@ -169,7 +177,8 @@ ERR_load_X509byLDAP_strings(void) {
 	if (loaded) return;
 	loaded = 1;
 }
-	ERR_LIB_X509byLDAP = ERR_get_next_error_library();
+	if (ERR_LIB_X509byLDAP == 0)
+		ERR_LIB_X509byLDAP = ERR_get_next_error_library();
 
 	ERR_load_strings(ERR_LIB_X509byLDAP, X509byLDAP_str_functs);
 	ERR_load_strings(ERR_LIB_X509byLDAP, X509byLDAP_str_reasons);

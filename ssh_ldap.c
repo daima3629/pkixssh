@@ -180,7 +180,7 @@ static ERR_STRING_DATA SSHLDAP_lib_name[] = {
 static int ERR_LIB_SSHLDAP = 0;
 
 static inline void
-SSHLDAP_PUT_error(int function, int reason, const char *file, int line) {
+SSHLDAP_PUT_error(int function, int reason, const char *file, int line, const char *funcname) {
 	if (ERR_LIB_SSHLDAP == 0)
 		ERR_LIB_SSHLDAP = ERR_get_next_error_library();
 
@@ -188,10 +188,18 @@ SSHLDAP_PUT_error(int function, int reason, const char *file, int line) {
 	file = NULL;
 	line = 0;
 #endif
+#ifdef ERR_raise_data
+	UNUSED(function);
+	ERR_new();
+	ERR_set_debug(file, line, funcname);
+	ERR_set_error(ERR_LIB_SSHLDAP, reason, NULL);
+#else
+	UNUSED(funcname);
 	ERR_PUT_error(ERR_LIB_SSHLDAP, function, reason, file, line);
+#endif /*ndef ERR_raise_data*/
 }
 
-#define SSHLDAPerr(f,r) SSHLDAP_PUT_error((f),(r),__FILE__,__LINE__)
+#define SSHLDAPerr(f,r) SSHLDAP_PUT_error((f),(r),__FILE__,__LINE__, __func__)
 
 
 void
@@ -201,7 +209,8 @@ ERR_load_SSHLDAP_strings(void) {
 	if (loaded) return;
 	loaded = 1;
 }
-	ERR_LIB_SSHLDAP = ERR_get_next_error_library();
+	if (ERR_LIB_SSHLDAP == 0)
+		ERR_LIB_SSHLDAP = ERR_get_next_error_library();
 
 	ERR_load_strings(ERR_LIB_SSHLDAP, SSHLDAP_str_functs);
 	ERR_load_strings(ERR_LIB_SSHLDAP, SSHLDAP_str_reasons);
@@ -490,7 +499,7 @@ TRACE_BY_LDAP(__func__, "end");
 
 /* ================================================================== */
 
-static char*
+static inline char*
 ldap_errormsg(char *buf, size_t len, int err) {
 	snprintf(buf, len, "ldaperror=0x%x(%.256s)", err, ldap_err2string(err));
 	return buf;
