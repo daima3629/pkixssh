@@ -23,6 +23,7 @@
 #include <sys/param.h>
 #include <sys/uio.h>
 
+#include <stdarg.h>
 #include <fcntl.h>
 #include <stdio.h>
 #ifdef HAVE_STDINT_H

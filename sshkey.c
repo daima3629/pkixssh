@@ -1,4 +1,4 @@
-/* $OpenBSD: sshkey.c,v 1.81 2019/07/16 13:18:39 djm Exp $ */
+/* $OpenBSD: sshkey.c,v 1.83 2019/09/06 05:23:55 djm Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Alexander von Gernler.  All rights reserved.
@@ -45,6 +45,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <resolv.h>
+#include <time.h>
 #ifdef HAVE_UTIL_H
 #include <util.h>
 #endif /* HAVE_UTIL_H */
