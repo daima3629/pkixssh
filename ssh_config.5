@@ -42,8 +42,8 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: ssh_config.5,v 1.300 2019/09/04 20:31:15 naddy Exp $
-.Dd $Mdocdate: September 4 2019 $
+.\" $OpenBSD: ssh_config.5,v 1.301 2019/09/06 14:45:34 naddy Exp $
+.Dd $Mdocdate: September 6 2019 $
 .Dt SSH_CONFIG 5
 .Os
 .Sh NAME
@@ -507,6 +507,10 @@ If the specified list begins with a
 .Sq -
 character, then the specified ciphers (including wildcards) will be removed
 from the default set instead of replacing them.
+If the specified list begins with a
+.Sq ^
+character, then the specified ciphers will be placed at the head of the
+default set.
 .Pp
 The supported ciphers are:
 .Bd -literal -offset indent
@@ -883,12 +887,16 @@ Specifies the host key algorithms
 that the client wants to use in order of preference.
 Alternately if the specified list begins with a
 .Sq +
-character, then the specified key algorithms (including wildcards) will be appended
+character, then the specified key algorithms will be appended
 to the default set instead of replacing them.
 If the specified list begins with a
 .Sq -
 character, then the specified key algorithms (including wildcards) will be removed
 from the default set instead of replacing them.
+If the specified list begins with a
+.Sq ^
+character, then the specified key algorithms will be placed at the head of the
+default set.
 The default for this option depend from
 .Cm X509KeyAlgorithm .
 By default it contain unique list build from names of X509KeyAlgorithm
@@ -1152,6 +1160,10 @@ If the specified list begins with a
 .Sq -
 character, then the specified methods (including wildcards) will be removed
 from the default set instead of replacing them.
+If the specified list begins with a
+.Sq ^
+character, then the specified methods will be placed at the head of the
+default set.
 The default is:
 .Bd -literal -offset indent
 curve25519-sha256,curve25519-sha256@libssh.org,
@@ -1233,6 +1245,10 @@ If the specified list begins with a
 .Sq -
 character, then the specified algorithms (including wildcards) will be removed
 from the default set instead of replacing them.
+If the specified list begins with a
+.Sq ^
+character, then the specified algorithms will be placed at the head of the
+default set.
 .Pp
 The algorithms that contain
 .Qq -etm

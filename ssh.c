@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh.c,v 1.505 2019/06/28 13:35:04 deraadt Exp $ */
+/* $OpenBSD: ssh.c,v 1.506 2019/09/06 14:45:34 naddy Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -946,7 +946,8 @@ main(int ac, char **av)
 			}
 			break;
 		case 'c':
-			if (!ciphers_valid(*optarg == '+' ?
+			if (*optarg != '-' &&
+			    !ciphers_valid(*optarg == '+' || *optarg == '^' ?
 			    optarg + 1 : optarg)) {
 				fprintf(stderr, "Unknown cipher type '%s'\n",
 				    optarg);
@@ -956,14 +957,15 @@ main(int ac, char **av)
 			options.ciphers = xstrdup(optarg);
 			break;
 		case 'm':
-			if (mac_valid(optarg)) {
-				free(options.macs);
-				options.macs = xstrdup(optarg);
-			} else {
+			if (*optarg != '-' &&
+			    !mac_valid(*optarg == '+' || *optarg == '^' ?
+			    optarg + 1 : optarg)) {
 				fprintf(stderr, "Unknown mac type '%s'\n",
 				    optarg);
 				exit(255);
 			}
+			free(options.macs);
+			options.macs = xstrdup(optarg);
 			break;
 		case 'M':
 			if (options.control_master == SSHCTL_MASTER_YES)

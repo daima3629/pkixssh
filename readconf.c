@@ -1,4 +1,4 @@
-/* $OpenBSD: readconf.c,v 1.308 2019/08/09 05:05:54 djm Exp $ */
+/* $OpenBSD: readconf.c,v 1.309 2019/09/06 14:45:34 naddy Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -1384,7 +1384,8 @@ parse_int:
 		arg = strdelim(&s);
 		if (!arg || *arg == '\0')
 			fatal("%.200s line %d: Missing argument.", filename, linenum);
-		if (*arg != '-' && !ciphers_valid(*arg == '+' ? arg + 1 : arg))
+		if (*arg != '-' &&
+		    !ciphers_valid(*arg == '+' || *arg == '^' ? arg + 1 : arg))
 			fatal("%.200s line %d: Bad SSH2 cipher spec '%s'.",
 			    filename, linenum, arg ? arg : "<NONE>");
 		if (*activep && options->ciphers == NULL)
@@ -1395,7 +1396,8 @@ parse_int:
 		arg = strdelim(&s);
 		if (!arg || *arg == '\0')
 			fatal("%.200s line %d: Missing argument.", filename, linenum);
-		if (*arg != '-' && !mac_valid(*arg == '+' ? arg + 1 : arg))
+		if (*arg != '-' &&
+		    !mac_valid(*arg == '+' || *arg == '^' ? arg + 1 : arg))
 			fatal("%.200s line %d: Bad SSH2 MAC spec '%s'.",
 			    filename, linenum, arg ? arg : "<NONE>");
 		if (*activep && options->macs == NULL)
@@ -1408,7 +1410,8 @@ parse_int:
 			fatal("%.200s line %d: Missing argument.",
 			    filename, linenum);
 		if (*arg != '-' &&
-		    !kex_names_valid(*arg == '+' ? arg + 1 : arg))
+		    !kex_names_valid(*arg == '+' || *arg == '^' ?
+		    arg + 1 : arg))
 			fatal("%.200s line %d: Bad SSH2 KexAlgorithms '%s'.",
 			    filename, linenum, arg ? arg : "<NONE>");
 		if (*activep && options->kex_algorithms == NULL)
@@ -1424,7 +1427,8 @@ parse_keytypes:
 			    filename, linenum);
 #if 0		/* cannot validate here - depend from X509KeyAlgorithm */
 		if (*arg != '-' &&
-		    !sshkey_names_valid2(*arg == '+' ? arg + 1 : arg, 1))
+		    !sshkey_names_valid2(*arg == '+' || *arg == '^' ?
+		    arg + 1 : arg, 1))
 			fatal("%s line %d: Bad key types '%s'.",
 				filename, linenum, arg ? arg : "<NONE>");
 #endif
@@ -2407,9 +2411,10 @@ fill_default_options(Options * options)
 #endif /*def SSH_OCSP_ENABLED*/
 
 	if (options->hostkeyalgorithms != NULL) {
-		char *alg = options->hostkeyalgorithms;
-		if (*alg == '+' || *alg == '-') alg++;
-		if (!sshkey_names_valid2(alg, 1))
+		char *arg = options->hostkeyalgorithms;
+		if (*arg != '-' &&
+		    !sshkey_names_valid2(*arg == '+' || *arg == '^' ?
+		    arg + 1 : arg, 1))
 			fatal("Bad protocol 2 hostkey algorithms '%s'.",
 			    options->hostkeyalgorithms);
 	}
