@@ -24,7 +24,7 @@
 
 #include "ssh_ldap.h"
 
-#ifdef USE_LDAP_ENGINE
+#ifdef USE_LDAP_STORE
 
 #include <openssl/store.h>
 #include <openssl/engine.h>
@@ -422,7 +422,7 @@ TRACE_BY_LDAP(__func__, "");
 	ERR_pop_to_mark();
 }
 
-#else /*def USE_LDAP_ENGINE*/
+#else /*def USE_LDAP_STORE*/
 
 typedef int e_ldap_empty_translation_unit;
 

@@ -88,21 +88,9 @@ ldapsearch_advance(ldapsearch_result* r);
 
 
 #undef USE_LDAP_STORE
-#if defined(HAVE_OSSL_STORE_OPEN) && \
-    defined(USE_OPENSSL_ENGINE)
+#if defined(USE_OPENSSL_ENGINE) && defined(HAVE_OSSL_STORE_OPEN)
+#  define USE_LDAP_STORE	1
 
-#  if 1 /*experimental*/
-#    define USE_LDAP_STORE	1
-#  endif
-
-#endif
-
-#undef USE_LDAP_ENGINE
-#ifdef USE_LDAP_STORE
-#  define USE_LDAP_ENGINE	1
-#endif
-
-#ifdef USE_LDAP_ENGINE
 int/*bool*/	set_ldap_version(const char *ver);
 #endif
 
