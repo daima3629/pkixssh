@@ -142,6 +142,7 @@ do_kex_with_key(char *kex, int keytype, int bits)
 	sshbuf_free(state);
 	ASSERT_PTR_NE(server2->kex, NULL);
 	/* XXX we need to set the callbacks */
+#ifdef WITH_OPENSSL
 	server2->kex->kex[KEX_DH_GRP1_SHA1] = kex_gen_server;
 	server2->kex->kex[KEX_DH_GRP14_SHA1] = kex_gen_server;
 	server2->kex->kex[KEX_DH_GEX_SHA1] = kexgex_server;
@@ -150,6 +151,7 @@ do_kex_with_key(char *kex, int keytype, int bits)
 #ifdef OPENSSL_HAS_ECC
 	server2->kex->kex[KEX_ECDH_SHA2] = kex_gen_server;
 #endif /* OPENSSL_HAS_ECC */
+#endif /* WITH_OPENSSL */
 	server2->kex->kex[KEX_C25519_SHA256] = kex_gen_server;
 	server2->kex->kex[KEX_KEM_SNTRUP4591761X25519_SHA512] = kex_gen_server;
 #endif /*def HAVE_EVP_SHA256*/
@@ -178,12 +180,14 @@ do_kex_with_key(char *kex, int keytype, int bits)
 static void
 do_kex(char *kex)
 {
+#ifdef WITH_OPENSSL
 	do_kex_with_key(kex, KEY_RSA, 2048);
 	do_kex_with_key(kex, KEY_DSA, 1024);
 #ifdef HAVE_EVP_SHA256
 #ifdef OPENSSL_HAS_ECC
 	do_kex_with_key(kex, KEY_ECDSA, 256);
 #endif /* OPENSSL_HAS_ECC */
+#endif /* WITH_OPENSSL */
 	do_kex_with_key(kex, KEY_ED25519, 256);
 #endif /*def HAVE_EVP_SHA256*/
 }
@@ -193,6 +197,7 @@ kex_tests(void)
 {
 #ifdef HAVE_EVP_SHA256
 	do_kex("curve25519-sha256@libssh.org");
+#ifdef WITH_OPENSSL
 #ifdef OPENSSL_HAS_ECC
 	do_kex("ecdh-sha2-nistp256");
 	do_kex("ecdh-sha2-nistp384");
@@ -206,4 +211,5 @@ kex_tests(void)
 	do_kex("diffie-hellman-group-exchange-sha1");
 	do_kex("diffie-hellman-group14-sha1");
 	do_kex("diffie-hellman-group1-sha1");
+#endif /* WITH_OPENSSL */
 }

@@ -19,13 +19,15 @@
 #include <string.h>
 #include <unistd.h>
 
+#ifdef WITH_OPENSSL
 #include <openssl/bn.h>
 #include <openssl/rsa.h>
 #include <openssl/dsa.h>
 #include <openssl/objects.h>
 #ifdef OPENSSL_HAS_NISTP256
 # include <openssl/ec.h>
-#endif
+#endif /* OPENSSL_HAS_NISTP256 */
+#endif /* WITH_OPENSSL */
 
 #include "../test_helper/test_helper.h"
 
@@ -70,6 +72,7 @@ load_text_file(const char *name)
 	return ret;
 }
 
+#ifdef WITH_OPENSSL
 BIGNUM *
 load_bignum(const char *name)
 {
@@ -81,4 +84,4 @@ load_bignum(const char *name)
 	sshbuf_free(buf);
 	return ret;
 }
-
+#endif /* WITH_OPENSSL */

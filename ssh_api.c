@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh_api.c,v 1.16 2019/09/06 04:53:27 djm Exp $ */
+/* $OpenBSD: ssh_api.c,v 1.17 2019/09/06 05:23:55 djm Exp $ */
 /*
  * Copyright (c) 2012 Markus Friedl.  All rights reserved.
  *
@@ -54,7 +54,10 @@ struct sshkey *_ssh_host_private_key(const char*, struct ssh *);
 int	use_privsep = 0;
 int	mm_sshkey_sign(struct sshkey *, u_char **, u_int *,
     u_char *, u_int, char *, u_int);
+
+#ifdef WITH_OPENSSL
 DH	*mm_choose_dh(int, int, int);
+#endif
 
 /* Define these two variables here so that they are part of the library */
 u_char *session_id2 = NULL;
@@ -71,12 +74,14 @@ mm_sshkey_sign(struct sshkey *key, u_char **sigp, u_int *lenp,
 	return (-1);
 }
 
+#ifdef WITH_OPENSSL
 DH *
 mm_choose_dh(int min, int nbits, int max)
 {
 	UNUSED(min); UNUSED(nbits); UNUSED(max);
 	return (NULL);
 }
+#endif
 
 static int
 _ssh_host_key_sign(

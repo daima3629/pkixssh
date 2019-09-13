@@ -1,4 +1,4 @@
-/* $OpenBSD: cipher.c,v 1.111 2018/02/23 15:58:37 markus Exp $ */
+/* $OpenBSD: cipher.c,v 1.113 2019/09/06 05:23:55 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -52,8 +52,11 @@
 #include "ssherr.h"
 #include "digest.h"
 
-#include "openbsd-compat/openssl-compat.h"
-#include "evp-compat.h"
+#ifdef WITH_OPENSSL
+# include "evp-compat.h"
+#else
+# define EVP_CIPHER_CTX void
+#endif
 
 #if defined(HAVE_OPENSSL_INIT_CRYPTO) && !defined(LIBRESSL_VERSION_NUMBER)
 /* NOTE: OpenSSL 1.1.* resets EVP_CIPHER_CTX on each call of

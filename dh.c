@@ -1,4 +1,4 @@
-/* $OpenBSD: dh.c,v 1.69 2018/11/09 02:56:22 djm Exp $ */
+/* $OpenBSD: dh.c,v 1.71 2019/09/06 06:08:11 djm Exp $ */
 /*
  * Copyright (c) 2000 Niels Provos.  All rights reserved.
  *
@@ -27,9 +27,6 @@
 
 #ifdef WITH_OPENSSL
 
-#include <openssl/bn.h>
-#include <openssl/dh.h>
-
 #include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -37,7 +34,10 @@
 #include <string.h>
 #include <limits.h>
 
+#include <openssl/bn.h>
+#include <openssl/dh.h>
 #include "evp-compat.h"
+
 #include "dh.h"
 #include "pathnames.h"
 #include "log.h"
