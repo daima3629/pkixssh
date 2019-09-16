@@ -25,14 +25,17 @@
 
 #include "includes.h"
 
-/* Android application must provide own implementation. */
+/* Android application must provide own implementation: */
+char *get_app_etcdir(void);
+char *get_app_bindir(void);
+char *get_app_libexecdir(void);
 char *get_app_datadir(void);
 
-
-char*
-get_app_datadir() {
-	return NULL; /*stub*/
-}
+/*stubs*/
+char* get_app_etcdir()     { return NULL; }
+char* get_app_bindir()     { return NULL; }
+char* get_app_libexecdir() { return NULL; }
+char* get_app_datadir()    { return NULL; }
 
 #else
 

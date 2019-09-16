@@ -1,4 +1,9 @@
 prefix=@prefix@
+exec_prefix=@exec_prefix@
+bindir=@bindir@
+libexecdir=@libexecdir@
+sysconfdir=@sysconfdir@
+sshcadir=@sshcadir@
 srcdir=@srcdir@
 top_srcdir=@top_srcdir@
 
@@ -7,7 +12,13 @@ FIPSLD_CC=@FIPSLD_CC@
 CC=@CC@
 LD=@LD@
 CFLAGS=@CFLAGS@ $(CFLAGS_EXTRA)
-CPPFLAGS=-I. -I.. -I$(srcdir) -I$(srcdir)/.. @CPPFLAGS@ @DEFS@ -D_PATH_PREFIX=\"$(prefix)\"
+PATHDEFS=\
+	-D_PATH_PREFIX=\"$(prefix)\" \
+	-DSSHDIR=\"$(sysconfdir)\" \
+	-DSSHCADIR=\"$(sshcadir)\" \
+	-DSSHBINDIR=\"$(bindir)\" \
+	-DSSHLIBEXECDIR=\"$(libexecdir)\"
+CPPFLAGS=-I. -I.. -I$(srcdir) -I$(srcdir)/.. @CPPFLAGS@ @DEFS@ $(PATHDEFS)
 LIBS=@LIBS@
 AR=@AR@
 RANLIB=@RANLIB@

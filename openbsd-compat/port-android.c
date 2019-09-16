@@ -31,12 +31,12 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "pathnames.h"
 
-/* path to application data directory (prefix).
- * Application specific path and may match ContextWrapper.getDataDir().
- * It is expected all files except executables and binaries to be stored
- * in subdirectory of prefix.
- */
+/* paths to application specific directories: */
+extern char *get_app_etcdir(void);
+extern char *get_app_bindir(void);
+extern char *get_app_libexecdir(void);
 extern char *get_app_datadir(void);
 
 
@@ -138,9 +138,66 @@ endpwent(void) {
 }
 
 
+static int/*bool*/
+relocate_etcdir(const char *pathname, char *pathbuf, size_t pathlen) {
+	size_t len = strlen(SSHDIR);
+
+	if (pathlen <= len) return 0;
+	if (strncmp(pathname, SSHDIR, len) != 0) return 0;
+
+{	const char *appdir = get_app_etcdir();
+	if (appdir == NULL) return 0;
+
+	len = snprintf(pathbuf, pathlen, "%s%s", appdir, pathname + len);
+	free((void*)appdir);
+}
+
+	return len <= pathlen;
+}
+
+static int/*bool*/
+relocate_bindir(const char *pathname, char *pathbuf, size_t pathlen) {
+	size_t len = strlen(SSHBINDIR);
+
+	if (pathlen <= len) return 0;
+	if (strncmp(pathname, SSHBINDIR, len) != 0) return 0;
+
+{	const char *appdir = get_app_bindir();
+	if (appdir == NULL) return 0;
+
+	len = snprintf(pathbuf, pathlen, "%s%s", appdir, pathname + len);
+	free((void*)appdir);
+}
+
+	return len <= pathlen;
+}
+
+static int/*bool*/
+relocate_libexecdir(const char *pathname, char *pathbuf, size_t pathlen) {
+	size_t len = strlen(SSHLIBEXECDIR);
+
+	if (pathlen <= len) return 0;
+	if (strncmp(pathname, SSHLIBEXECDIR, len) != 0) return 0;
+
+{	const char *appdir = get_app_libexecdir();
+	if (appdir == NULL) return 0;
+
+	len = snprintf(pathbuf, pathlen, "%s%s", appdir, pathname + len);
+	free((void*)appdir);
+}
+
+	return len <= pathlen;
+}
+
 const char*
 relocate_path(const char *pathname, char *pathbuf, size_t pathlen) {
 	size_t len = strlen(_PATH_PREFIX);
+
+	if (relocate_etcdir(pathname, pathbuf, pathlen) ||
+	    relocate_bindir(pathname, pathbuf, pathlen) ||
+	    relocate_libexecdir(pathname, pathbuf, pathlen)) {
+		return pathbuf;
+	}
 
 	if (pathlen <= len) return pathname;
 
