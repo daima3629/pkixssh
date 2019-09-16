@@ -20,10 +20,6 @@ top_srcdir=@top_srcdir@
 
 DESTDIR=
 VPATH=@srcdir@
-SSH_PROGRAM=@bindir@/ssh
-SFTP_SERVER=$(libexecdir)/sftp-server
-SSH_KEYSIGN=$(libexecdir)/ssh-keysign
-SSH_PKCS11_HELPER=$(libexecdir)/ssh-pkcs11-helper
 PRIVSEP_PATH=@PRIVSEP_PATH@
 SSH_PRIVSEP_USER=@SSH_PRIVSEP_USER@
 STRIP_OPT=@STRIP_OPT@
@@ -31,11 +27,8 @@ TEST_SHELL=@TEST_SHELL@
 
 PATHS= -DSSHDIR=\"$(sysconfdir)\" \
 	-DSSHCADIR=\"$(sshcadir)\" \
+	-DSSHBINDIR=\"$(bindir)\" \
 	-DSSHLIBEXECDIR=\"$(libexecdir)\" \
-	-D_PATH_SSH_PROGRAM=\"$(SSH_PROGRAM)\" \
-	-D_PATH_SFTP_SERVER=\"$(SFTP_SERVER)\" \
-	-D_PATH_SSH_KEY_SIGN=\"$(SSH_KEYSIGN)\" \
-	-D_PATH_SSH_PKCS11_HELPER=\"$(SSH_PKCS11_HELPER)\" \
 	-D_PATH_SSH_PIDDIR=\"$(piddir)\" \
 	-D_PATH_PRIVSEP_CHROOT_DIR=\"$(PRIVSEP_PATH)\"
 
@@ -377,10 +370,10 @@ install-files:
 	$(INSTALL) -m 0755 $(STRIP_OPT) ssh-keygen$(EXEEXT) $(DESTDIR)$(bindir)/ssh-keygen$(EXEEXT)
 	$(INSTALL) -m 0755 $(STRIP_OPT) ssh-keyscan$(EXEEXT) $(DESTDIR)$(bindir)/ssh-keyscan$(EXEEXT)
 	$(INSTALL) -m 0755 $(STRIP_OPT) sshd$(EXEEXT) $(DESTDIR)$(sbindir)/sshd$(EXEEXT)
-	$(INSTALL) -m 4711 $(STRIP_OPT) ssh-keysign$(EXEEXT) $(DESTDIR)$(SSH_KEYSIGN)$(EXEEXT)
-	$(INSTALL) -m 0755 $(STRIP_OPT) ssh-pkcs11-helper$(EXEEXT) $(DESTDIR)$(SSH_PKCS11_HELPER)$(EXEEXT)
+	$(INSTALL) -m 4711 $(STRIP_OPT) ssh-keysign$(EXEEXT) $(DESTDIR)$(libexecdir)/ssh-keysign$(EXEEXT)
+	$(INSTALL) -m 0755 $(STRIP_OPT) ssh-pkcs11-helper$(EXEEXT) $(DESTDIR)$(libexecdir)/ssh-pkcs11-helper$(EXEEXT)
 	$(INSTALL) -m 0755 $(STRIP_OPT) sftp$(EXEEXT) $(DESTDIR)$(bindir)/sftp$(EXEEXT)
-	$(INSTALL) -m 0755 $(STRIP_OPT) sftp-server$(EXEEXT) $(DESTDIR)$(SFTP_SERVER)$(EXEEXT)
+	$(INSTALL) -m 0755 $(STRIP_OPT) sftp-server$(EXEEXT) $(DESTDIR)$(libexecdir)/sftp-server$(EXEEXT)
 	@@FIPSHMAC@ $(DESTDIR)$(bindir)/ssh$(EXEEXT)
 	@@FIPSHMAC@ $(DESTDIR)$(bindir)/ssh-agent$(EXEEXT)
 	@@FIPSHMAC@ $(DESTDIR)$(bindir)/ssh-keygen$(EXEEXT)
@@ -457,9 +450,9 @@ uninstall:
 	-rm -f $(DESTDIR)$(bindir)/ssh-keyscan$(EXEEXT)
 	-rm -f $(DESTDIR)$(bindir)/sftp$(EXEEXT)
 	-rm -f $(DESTDIR)$(sbindir)/sshd$(EXEEXT)
-	-rm -r $(DESTDIR)$(SFTP_SERVER)$(EXEEXT)
-	-rm -f $(DESTDIR)$(SSH_KEYSIGN)$(EXEEXT)
-	-rm -f $(DESTDIR)$(SSH_PKCS11_HELPER)$(EXEEXT)
+	-rm -r $(DESTDIR)$(libexecdir)/sftp-server$(EXEEXT)
+	-rm -f $(DESTDIR)$(libexecdir)/ssh-keysign$(EXEEXT)
+	-rm -f $(DESTDIR)$(libexecdir)/ssh-pkcs11-helper$(EXEEXT)
 	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/ssh.1
 	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/scp.1
 	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/ssh-add.1

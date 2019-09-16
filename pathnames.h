@@ -40,6 +40,10 @@
 #define SSHDIR				ETCDIR "/ssh"
 #endif
 
+#ifndef SSHBINDIR
+#define SSHBINDIR			"/usr/bin"
+#endif
+
 #ifndef SSHLIBEXECDIR
 #define SSHLIBEXECDIR			"/usr/libexec"
 #endif
@@ -69,9 +73,7 @@
 #define _PATH_HOST_RSA_KEY_FILE		SSHDIR "/ssh_host_rsa_key"
 #define _PATH_DH_MODULI			SSHDIR "/moduli"
 
-#ifndef _PATH_SSH_PROGRAM
-#define _PATH_SSH_PROGRAM		"/usr/bin/ssh"
-#endif
+#define _PATH_SSH_PROGRAM		SSHBINDIR "/ssh"
 
 /*
  * The process id of the daemon listening for connections is saved here to
@@ -153,14 +155,10 @@
 #define _PATH_SSH_ASKPASS		SSHLIBEXECDIR "/ssh-askpass"
 
 /* Location of ssh-keysign for hostbased authentication */
-#ifndef _PATH_SSH_KEY_SIGN
-#define _PATH_SSH_KEY_SIGN		"/usr/libexec/ssh-keysign"
-#endif
+#define _PATH_SSH_KEY_SIGN		SSHLIBEXECDIR "/ssh-keysign"
 
 /* Location of ssh-pkcs11-helper to support keys in tokens */
-#ifndef _PATH_SSH_PKCS11_HELPER
-#define _PATH_SSH_PKCS11_HELPER		"/usr/libexec/ssh-pkcs11-helper"
-#endif
+#define _PATH_SSH_PKCS11_HELPER		SSHLIBEXECDIR "/ssh-pkcs11-helper"
 
 /* xauth for X11 forwarding */
 #ifndef _PATH_XAUTH
@@ -177,10 +175,8 @@
 #define _PATH_CP			"cp"
 #endif
 
-/* for sftp */
-#ifndef _PATH_SFTP_SERVER
-#define _PATH_SFTP_SERVER		"/usr/libexec/sftp-server"
-#endif
+/* for external sftp sever */
+#define _PATH_SFTP_SERVER		SSHLIBEXECDIR "/sftp-server"
 
 /* chroot directory for unprivileged user when UsePrivilegeSeparation=yes */
 #ifndef _PATH_PRIVSEP_CHROOT_DIR
