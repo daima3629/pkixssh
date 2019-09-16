@@ -11,8 +11,7 @@
  * incompatible with the protocol description in the RFC file, it must be
  * called by a name other than "ssh" or "Secure Shell".
  *
- * X.509 certificates support,
- * Copyright (c) 2002 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -39,6 +38,10 @@
 
 #ifndef SSHDIR
 #define SSHDIR				ETCDIR "/ssh"
+#endif
+
+#ifndef SSHLIBEXECDIR
+#define SSHLIBEXECDIR			"/usr/libexec"
 #endif
 
 #ifndef _PATH_SSH_PIDDIR
@@ -146,12 +149,8 @@
 #define _PATH_SSH_HOSTS_EQUIV		SSHDIR "/shosts.equiv"
 #define _PATH_RHOSTS_EQUIV		"/etc/hosts.equiv"
 
-/*
- * Default location of askpass
- */
-#ifndef _PATH_SSH_ASKPASS_DEFAULT
-#define _PATH_SSH_ASKPASS_DEFAULT	"/usr/X11R6/bin/ssh-askpass"
-#endif
+/* Location of askpass */
+#define _PATH_SSH_ASKPASS		SSHLIBEXECDIR "/ssh-askpass"
 
 /* Location of ssh-keysign for hostbased authentication */
 #ifndef _PATH_SSH_KEY_SIGN
@@ -196,11 +195,6 @@
 #ifndef _PATH_LS
 #define _PATH_LS			"ls"
 #endif
-
-/* Askpass program define */
-#ifndef ASKPASS_PROGRAM
-#define ASKPASS_PROGRAM         "/usr/lib/ssh/ssh-askpass"
-#endif /* ASKPASS_PROGRAM */
 
 
 #ifndef SSHCADIR

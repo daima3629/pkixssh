@@ -21,7 +21,6 @@ top_srcdir=@top_srcdir@
 DESTDIR=
 VPATH=@srcdir@
 SSH_PROGRAM=@bindir@/ssh
-ASKPASS_PROGRAM=$(libexecdir)/ssh-askpass
 SFTP_SERVER=$(libexecdir)/sftp-server
 SSH_KEYSIGN=$(libexecdir)/ssh-keysign
 SSH_PKCS11_HELPER=$(libexecdir)/ssh-pkcs11-helper
@@ -32,8 +31,8 @@ TEST_SHELL=@TEST_SHELL@
 
 PATHS= -DSSHDIR=\"$(sysconfdir)\" \
 	-DSSHCADIR=\"$(sshcadir)\" \
+	-DSSHLIBEXECDIR=\"$(libexecdir)\" \
 	-D_PATH_SSH_PROGRAM=\"$(SSH_PROGRAM)\" \
-	-D_PATH_SSH_ASKPASS_DEFAULT=\"$(ASKPASS_PROGRAM)\" \
 	-D_PATH_SFTP_SERVER=\"$(SFTP_SERVER)\" \
 	-D_PATH_SSH_KEY_SIGN=\"$(SSH_KEYSIGN)\" \
 	-D_PATH_SSH_PKCS11_HELPER=\"$(SSH_PKCS11_HELPER)\" \
