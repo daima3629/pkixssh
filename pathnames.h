@@ -114,7 +114,7 @@
  * Engine configuration file in user's home directory. Same rules as
  * for user config file.
  */
-#define _PATH_SSH_ENGINE_CONFFILE	".ssh/engine"
+#define _PATH_SSH_ENGINE_CONFFILE	_PATH_SSH_USER_DIR "/engine"
 #endif
 
 /*
