@@ -1521,6 +1521,22 @@ pkcs11_register_provider(char *provider_id, char *pin, struct sshkey ***keyp,
 	}
 		pkcs11_fetch_certs(p, i, keyp, &nkeys);
 		pkcs11_fetch_keys(p, i, keyp, &nkeys);
+
+		/*
+		 * Some tokens could mark public keys as private object.
+		 * Usually certificates are marked as public object.
+		 * So if no key are loaded above and if session is
+		 * interactive try to login and fetch "private" objects.
+		 */
+		if (nkeys != 0 || !pkcs11_interactive || p->slotinfo[i].logged_in)
+			continue;
+
+		if (!pkcs11_login(&p->slotinfo[i], f))
+			continue;
+
+		/*try to fetch certificate just in case*/
+		pkcs11_fetch_certs(p, i, keyp, &nkeys);
+		pkcs11_fetch_keys(p, i, keyp, &nkeys);
 	}
 
 	/* now owned by caller */
