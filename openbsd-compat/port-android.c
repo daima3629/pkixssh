@@ -200,16 +200,17 @@ relocate_path(const char *pathname, char *pathbuf, size_t pathlen) {
 	}
 
 	if (pathlen <= len) return pathname;
-
 	if (strncmp(pathname, _PATH_PREFIX, len) != 0) return pathname;
 
 {	const char *datadir = get_app_datadir();
-	/* TODO check path ...? */
 	if (datadir != NULL) {
+		/*relative to application directory*/
 		len = snprintf(pathbuf, pathlen, "%s%s", datadir, pathname + len);
 		free((void*)datadir);
-	} else
+	} else {
+		/*as failback relative to program parent directory*/
 		len = snprintf(pathbuf, pathlen, "%s/..%s", android_progpath, pathname + len);
+	}
 }
 	return (len <= pathlen) ? pathbuf: pathname;
 }
