@@ -343,7 +343,7 @@ Xstat(char *filename)
 }
 
 static struct sshkey *
-load_identity(char *filename, char **commentp)
+load_identity(const char *filename, char **commentp)
 {
 	char *pass;
 	struct sshkey *prv;
