@@ -35,8 +35,7 @@
 
 /* paths to application specific directories: */
 extern char *get_app_etcdir(void);
-extern char *get_app_bindir(void);
-extern char *get_app_libexecdir(void);
+extern char *get_app_libdir(void);
 extern char *get_app_datadir(void);
 
 
@@ -162,10 +161,15 @@ relocate_bindir(const char *pathname, char *pathbuf, size_t pathlen) {
 	if (pathlen <= len) return 0;
 	if (strncmp(pathname, SSHBINDIR, len) != 0) return 0;
 
-{	const char *appdir = get_app_bindir();
+{	const char *appdir = get_app_libdir();
 	if (appdir == NULL) return 0;
 
-	len = snprintf(pathbuf, pathlen, "%s%s", appdir, pathname + len);
+	/* in release build package manager extract only lib*.so
+	 * binaries. To distinguish executables let package them
+	 * in format "libcmd-{name}.so".
+	 */
+	len = snprintf(pathbuf, pathlen, "%s/libcmd-%s.so",
+	    appdir, pathname + len + 1/*exclude separator*/);
 	free((void*)appdir);
 }
 
@@ -179,10 +183,12 @@ relocate_libexecdir(const char *pathname, char *pathbuf, size_t pathlen) {
 	if (pathlen <= len) return 0;
 	if (strncmp(pathname, SSHLIBEXECDIR, len) != 0) return 0;
 
-{	const char *appdir = get_app_libexecdir();
+{	const char *appdir = get_app_libdir();
 	if (appdir == NULL) return 0;
 
-	len = snprintf(pathbuf, pathlen, "%s%s", appdir, pathname + len);
+	/* same as bindir */
+	len = snprintf(pathbuf, pathlen, "%s/libcmd-%s.so",
+	    appdir, pathname + len + 1/*exclude separator*/);
 	free((void*)appdir);
 }
 

@@ -27,14 +27,18 @@
 
 /* Android application must provide own implementation: */
 char *get_app_etcdir(void);
-char *get_app_bindir(void);
-char *get_app_libexecdir(void);
+/* For untrusted applications new Android SELinux rules (API 29)
+ * allows execution only from write protected directories.
+ * Only application library directory is write protected.
+ * So executable must be packaged into it with specific name.
+ */
+char *get_app_libdir(void);
+/* failback path */
 char *get_app_datadir(void);
 
 /*stubs*/
 char* get_app_etcdir()     { return NULL; }
-char* get_app_bindir()     { return NULL; }
-char* get_app_libexecdir() { return NULL; }
+char *get_app_libdir()     { return NULL; }
 char* get_app_datadir()    { return NULL; }
 
 #else
