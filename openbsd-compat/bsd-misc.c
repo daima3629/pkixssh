@@ -39,9 +39,8 @@ char *__progname;
 #endif
 
 #ifdef __ANDROID__
-void set_android_progpath(const char *argv0);
-#endif
-
+/* see port-android.c */
+#else
 /*
  * NB. duplicate __progname in case it is an alias for argv[0]
  * Otherwise it may get clobbered by setproctitle()
@@ -67,12 +66,9 @@ char *ssh_get_progname(char *argv0)
 		exit(1);
 	}
 
-#ifdef __ANDROID__
-	set_android_progpath(argv0);
-#endif /*def __ANDROID__*/
-
 	return q;
 }
+#endif /*ndef __ANDROID__*/
 
 #ifndef HAVE_SETLOGIN
 int setlogin(const char *name)

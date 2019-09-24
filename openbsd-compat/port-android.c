@@ -40,27 +40,57 @@ extern char *get_app_datadir(void);
 
 
 /* path to current program.
+ * Obsolete package rule:
  * Note it is expected binaries to be installed in $(prefix)/xbin.
  * In $(prefix)/bin is installed wrapper script that set custom configuration
  * like library patch and etc. and then execute real binary.
+ *
+ * API 29requirement: untrusted application could execute binary
+ * located only in write protected path (SELinux rule). Only
+ * application library directory is write protected, so executable
+ * has to be packages in this directory.
+ * Also we will rename to libcmd-{name}.so for various reasons.
  */
 static char *android_progpath = NULL;
 
-void set_android_progpath(const char *argv0);
+/* Note Android executable have __progname but unlike other
+ * implemenations it is absolute path, not just "filename".
+ */
+char*
+ssh_get_progname(char *argv0) {
+	char *p, *q;
+	extern char *__progname;
 
-void
-set_android_progpath(const char *argv0) {
-	char *p;
+	UNUSED(argv0);
 
-	android_progpath = strdup(argv0);
-
+	android_progpath = strdup(__progname);
 	p = strrchr(android_progpath, '/');
-	if (p != NULL) *p = '\0';
+	if (p != NULL) /*just in case*/
+		*p++ = '\0';
+	else
+		p = __progname;
 
-	p = android_progpath;
-	android_progpath = realpath(p, NULL);
+	/* strip prefix */
+	if (strncmp(p, "libcmd-", 7) == 0)
+		p += 7;
 
-	free(p);
+	q = strdup(p);
+	if (q == NULL) {
+		perror("strdup");
+		exit(1);
+	}
+	p = q;
+
+{	/* strip suffix */
+	size_t len = strlen(p);
+	if (len > 3) {
+		q = p + len - 3;
+		if (strcmp(q, ".so") == 0)
+			*q = '\0';
+	}
+}
+
+	return p;
 }
 
 
