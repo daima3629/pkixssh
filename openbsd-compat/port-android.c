@@ -35,7 +35,8 @@
 
 /* paths to application specific directories: */
 extern char *get_app_etcdir(void);
-extern char *get_app_libdir(void);
+extern char *get_app_bindir(void);
+extern char *get_app_libexecdir(void);
 extern char *get_app_datadir(void);
 
 
@@ -167,6 +168,16 @@ endpwent(void) {
 }
 
 
+/* For untrusted applications new Android SELinux rules (API 29)
+ * allows execution only from write protected directories.
+ * Only application library directory is write protected.
+ * In consequence executable must be packaged into it and with
+ * name is a specific pattern.
+ * On old versions for some reasons application could install
+ * executable outside libdir.
+ * So instead to relocate executable to "lib" directory let
+ * relocate "bin" and "libexec".
+ */
 static int/*bool*/
 relocate_etcdir(const char *pathname, char *pathbuf, size_t pathlen) {
 	size_t len = strlen(SSHDIR);
@@ -191,7 +202,7 @@ relocate_bindir(const char *pathname, char *pathbuf, size_t pathlen) {
 	if (pathlen <= len) return 0;
 	if (strncmp(pathname, SSHBINDIR, len) != 0) return 0;
 
-{	const char *appdir = get_app_libdir();
+{	const char *appdir = get_app_bindir();
 	if (appdir == NULL) return 0;
 
 	/* in release build package manager extract only lib*.so
@@ -213,7 +224,7 @@ relocate_libexecdir(const char *pathname, char *pathbuf, size_t pathlen) {
 	if (pathlen <= len) return 0;
 	if (strncmp(pathname, SSHLIBEXECDIR, len) != 0) return 0;
 
-{	const char *appdir = get_app_libdir();
+{	const char *appdir = get_app_libexecdir();
 	if (appdir == NULL) return 0;
 
 	/* same as bindir */
