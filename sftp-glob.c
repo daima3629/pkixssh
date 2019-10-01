@@ -25,7 +25,6 @@
 #include <dirent.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdlib.h>
 
 #include "xmalloc.h"
 #include "sftp.h"
