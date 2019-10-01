@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keygen.c,v 1.349 2019/09/06 07:53:40 djm Exp $ */
+/* $OpenBSD: ssh-keygen.c,v 1.351 2019/09/24 12:50:46 deraadt Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1994 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -122,7 +122,7 @@ static void fingerprint_one_key(const struct sshkey *public, const char *comment
 static int fingerprint_hash = SSH_FP_HASH_DEFAULT;
 
 /* The identity file name, given on the command line or entered by the user. */
-static char identity_file[1024];
+static char identity_file[PATH_MAX];
 static int have_identity = 0;
 
 /* This is set to the passphrase if given on the command line. */
