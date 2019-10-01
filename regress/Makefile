@@ -220,8 +220,16 @@ t12: $(OBJ)/t12.out
 t-exec:	${LTESTS:=.sh}
 	@if [ "x$?" = "x" ]; then exit 0; fi; \
 	for TEST in ""$?; do \
-		echo "=== run test $$TEST" ... >&2; \
-		(env SUDO="${SUDO}" TEST_ENV=${TEST_ENV} ${TEST_SHELL} ${.CURDIR}/test-exec.sh ${.OBJDIR} ${.CURDIR}/$${TEST}) || exit $$?; \
+		do_test=:; \
+		for t in ""$$SKIP_LTESTS; do \
+			if test "$$t.sh" = "$$TEST" ; then do_test=false; break; fi; \
+		done; \
+		if $$do_test ; then \
+			echo "=== run test $$TEST" ... >&2; \
+			(env SUDO="${SUDO}" TEST_ENV=${TEST_ENV} ${TEST_SHELL} ${.CURDIR}/test-exec.sh ${.OBJDIR} ${.CURDIR}/$${TEST}) || exit $$?; \
+		else \
+			echo "=== test $$TEST skipped!" >&2; \
+		fi; \
 	done
 
 f-exec:	${FIPS_LTESTS:=.sh}
