@@ -415,7 +415,11 @@ get_one_crypto_error(char *buf, size_t len) {
 	const char *err_data;
 	int err_flags;
 
+#ifdef HAVE_ERR_GET_ERROR_ALL
+	err_code = ERR_get_error_all(NULL, NULL, NULL, &err_data, &err_flags);
+#else
 	err_code = ERR_get_error_line_data(NULL, NULL, &err_data, &err_flags);
+#endif
 	if (err_code == 0) return NULL;
 
 	if (!(err_flags & ERR_TXT_STRING))
@@ -454,7 +458,11 @@ crypto_errormsg(char *buf, size_t len) {
 
 	if (buf == NULL) goto out;
 
+#ifdef HAVE_ERR_GET_ERROR_ALL
+	err_code = ERR_get_error_all(NULL, NULL, NULL, &err_data, &err_flags);
+#else
 	err_code = ERR_get_error_line_data(NULL, NULL, &err_data, &err_flags);
+#endif
 	if (err_code == 0) {
 		if (len > 0) *buf = '\0';
 		goto out;

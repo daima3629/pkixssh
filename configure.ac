@@ -5410,6 +5410,11 @@ if test "x$ac_cv_func_OSSL_STORE_open" = xyes ; then
     [1], [Use OpenSSL STORE functionality])
 fi
 
+# check for openssl 3.0+ functions ...
+AC_CHECK_FUNCS([ \
+  ERR_get_error_all \
+])
+
 # functions hidden in openssl compatible libraries
 AC_CHECK_DECLS([UTF8_getc],,,[
 #include <openssl/asn1.h>
