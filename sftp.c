@@ -2379,7 +2379,7 @@ main(int argc, char **argv)
 {
 	int in, out, ch, err, tmp, port = -1;
 	char *host = NULL, *user, *cp, *file2 = NULL;
-	int debug_level = 0, sshver = 2;
+	int debug_level = 0;
 	char *file1 = NULL, *sftp_server = NULL;
 	const char *ssh_program = _PATH_SSH_PROGRAM, *sftp_direct = NULL;
 	const char *errstr;
@@ -2450,13 +2450,8 @@ main(int argc, char **argv)
 			}
 			debug_level++;
 			break;
-		case '1':
-			sshver = 1;
-			if (sftp_server == NULL)
-				sftp_server = _PATH_SFTP_SERVER;
-			break;
-		case '2':
-			sshver = 2;
+		case '1': /* obsolete */
+		case '2': /* obsolete */
 			break;
 		case 'a':
 			global_aflag = 1;
