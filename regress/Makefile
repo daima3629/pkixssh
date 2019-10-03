@@ -28,6 +28,7 @@ LTESTS= 	connect \
 		transfer \
 		banner \
 		rekey \
+		dhgex \
 		stderr-data \
 		stderr-after-eof \
 		broken-pipe \
@@ -87,7 +88,6 @@ LTESTS= 	connect \
 		authinfo
 
 #		multiplex \
-#		dhgex \
 
 
 FIPS_LTESTS=\
