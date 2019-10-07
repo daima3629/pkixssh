@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keygen.c,v 1.352 2019/09/29 16:31:57 jmc Exp $ */
+/* $OpenBSD: ssh-keygen.c,v 1.355 2019/10/03 17:07:50 jmc Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1994 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -2529,14 +2529,14 @@ static void
 usage(void)
 {
 	fprintf(stderr,
-	    "usage: ssh-keygen [-q] [-b bits] [-t dsa | ecdsa | ed25519 | rsa] [-o] [-m format]\n"
-	    "                  [-N new_passphrase] [-C comment] [-f output_keyfile]\n"
-	    "       ssh-keygen -p [-P old_passphrase] [-N new_passphrase] [-o] [-m format]\n"
-	    "                   [-f keyfile]\n"
-	    "       ssh-keygen -i [-m format] [-f input_keyfile]\n"
-	    "       ssh-keygen -e [-m format] [-f input_keyfile]\n"
+	    "usage: ssh-keygen [-q] [-b bits] [-C comment] [-f output_keyfile] [-m format] [-o]\n"
+	    "                  [-N new_passphrase] [-t dsa | ecdsa | ed25519 | rsa]\n"
+	    "       ssh-keygen -p [-f keyfile] [-m format] [-o] [-N new_passphrase]\n"
+	    "                   [-P old_passphrase]\n"
+	    "       ssh-keygen -i [-f input_keyfile] [-m format]\n"
+	    "       ssh-keygen -e [-f input_keyfile] [-m format]\n"
 	    "       ssh-keygen -y [-f input_keyfile]\n"
-	    "       ssh-keygen -c [-P passphrase] [-C comment] [-f keyfile]\n"
+	    "       ssh-keygen -c [-C comment] [-f keyfile] [-P passphrase]\n"
 	    "       ssh-keygen -l [-v] [-E fingerprint_hash] [-f input_keyfile]\n"
 	    "       ssh-keygen -B [-f input_keyfile]\n");
 #ifdef ENABLE_PKCS11
@@ -2550,12 +2550,12 @@ usage(void)
 	    "       ssh-keygen -r hostname [-g] [-f input_keyfile]\n"
 #ifdef WITH_OPENSSL
 	    "       ssh-keygen -G output_file [-v] [-b bits] [-M memory] [-S start_point]\n"
-	    "       ssh-keygen -T output_file -f input_file [-v] [-a rounds] [-J num_lines]\n"
+	    "       ssh-keygen -f input_file -T output_file [-v] [-a rounds] [-J num_lines]\n"
 	    "                  [-j start_line] [-K checkpt] [-W generator]\n"
 #endif
-	    "       ssh-keygen -s ca_key -I certificate_identity [-hU]\n"
-	    "                  [-D pkcs11_provider] [-n principals] [-O option]\n"
-	    "                  [-V validity_interval] [-z serial_number] file ...\n"
+	    "       ssh-keygen -I certificate_identity -s ca_key [-hU] [-D pkcs11_provider]\n"
+	    "                  [-n principals] [-O option] [-V validity_interval]\n"
+	    "                  [-z serial_number] file ...\n"
 	    "       ssh-keygen -L [-f input_keyfile]\n"
 	    "       ssh-keygen -A [-f prefix_path]\n"
 	    "       ssh-keygen -k -f krl_file [-u] [-s ca_public] [-z version_number]\n"
