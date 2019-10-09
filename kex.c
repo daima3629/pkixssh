@@ -1,4 +1,4 @@
-/* $OpenBSD: kex.c,v 1.154 2019/09/06 14:45:34 naddy Exp $ */
+/* $OpenBSD: kex.c,v 1.155 2019/10/08 22:40:39 dtucker Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2014-2019 Roumen Petrov.  All rights reserved.
@@ -127,7 +127,7 @@ static const struct kexalg kexalgs[] = {
 	    KEX_KEM_SNTRUP4591761X25519_SHA512, 0, SSH_DIGEST_SHA512 },
 #endif
 #endif /* HAVE_EVP_SHA256 || !WITH_OPENSSL */
-	{ NULL, -1, -1, -1},
+	{ NULL, 0, -1, -1},
 };
 
 char *
