@@ -11,7 +11,7 @@ Public domain.
 
 #include <stdlib.h>
 #ifdef HAVE_STDINT_H
-#include <stdint.h>
+# include <stdint.h>
 #endif
 #endif
 void to_byte(unsigned char *output, unsigned long long in, uint32_t bytes);

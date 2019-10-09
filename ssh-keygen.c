@@ -50,7 +50,9 @@
 #endif
 #endif
 
-#include <stdint.h>
+#ifdef HAVE_STDINT_H
+# include <stdint.h>
+#endif
 #include <errno.h>
 #include <fcntl.h>
 #include <netdb.h>

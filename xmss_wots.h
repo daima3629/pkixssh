@@ -11,7 +11,7 @@ Public domain.
 #define WOTS_H
 
 #ifdef HAVE_STDINT_H
-#include "stdint.h"
+# include "stdint.h"
 #endif
 
 /**
