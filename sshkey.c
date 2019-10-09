@@ -1,4 +1,4 @@
-/* $OpenBSD: sshkey.c,v 1.83 2019/09/06 05:23:55 djm Exp $ */
+/* $OpenBSD: sshkey.c,v 1.84 2019/10/09 00:04:42 djm Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Alexander von Gernler.  All rights reserved.
@@ -3531,6 +3531,10 @@ sshkey_private_deserialize(struct sshbuf *buf, struct sshkey **kp)
 		if ((r = sshkey_froms(buf, &k)) != 0 ||
 		    (r = sshbuf_get_bignum2(buf, &priv_key)) != 0)
 			goto clear_dsacert;
+		if (k->type != type) {
+			r = SSH_ERR_INVALID_FORMAT;
+			goto clear_dsacert;
+		}
 		if (!DSA_set0_key(k->dsa, NULL, priv_key)) {
 			r = SSH_ERR_LIBCRYPTO_ERROR;
 			goto clear_dsacert;
@@ -3580,6 +3584,11 @@ sshkey_private_deserialize(struct sshbuf *buf, struct sshkey **kp)
 		if ((r = sshkey_froms(buf, &k)) != 0 ||
 		    (r = sshbuf_get_bignum2(buf, &exponent)) != 0)
 			goto out;
+		if (k->type != type ||
+		    k->ecdsa_nid != sshkey_ecdsa_nid_from_name(tname)) {
+			r = SSH_ERR_INVALID_FORMAT;
+			goto out;
+		}
 		if (EC_KEY_set_private_key(k->ecdsa, exponent) != 1) {
 			r = SSH_ERR_LIBCRYPTO_ERROR;
 			goto out;
@@ -3645,6 +3654,10 @@ sshkey_private_deserialize(struct sshbuf *buf, struct sshkey **kp)
 		    (r = sshbuf_get_bignum2(buf, &p)) != 0 ||
 		    (r = sshbuf_get_bignum2(buf, &q)) != 0)
 			goto clear_rsacert;
+		if (k->type != type) {
+			r = SSH_ERR_INVALID_FORMAT;
+			goto clear_rsacert;
+		}
 		if ((r = sshrsa_check_length(k->rsa)) != 0)
 			goto clear_rsacert;
 		if (!RSA_set0_key(k->rsa, NULL, NULL, d)) {
@@ -3694,13 +3707,17 @@ sshkey_private_deserialize(struct sshbuf *buf, struct sshkey **kp)
 		    (r = sshbuf_get_string(buf, &ed25519_pk, &pklen)) != 0 ||
 		    (r = sshbuf_get_string(buf, &ed25519_sk, &sklen)) != 0)
 			goto out;
+		if (k->type != type) {
+			r = SSH_ERR_INVALID_FORMAT;
+			goto out;
+		}
 		if (pklen != ED25519_PK_SZ || sklen != ED25519_SK_SZ) {
 			r = SSH_ERR_INVALID_FORMAT;
 			goto out;
 		}
 		k->ed25519_pk = ed25519_pk;
 		k->ed25519_sk = ed25519_sk;
-		ed25519_pk = ed25519_sk = NULL;
+		ed25519_pk = ed25519_sk = NULL; /* transferred */
 		break;
 #ifdef WITH_XMSS
 	case KEY_XMSS:
@@ -3731,7 +3748,7 @@ sshkey_private_deserialize(struct sshbuf *buf, struct sshkey **kp)
 		    (r = sshbuf_get_string(buf, &xmss_pk, &pklen)) != 0 ||
 		    (r = sshbuf_get_string(buf, &xmss_sk, &sklen)) != 0)
 			goto out;
-		if (strcmp(xmss_name, k->xmss_name)) {
+		if (k->type != type || strcmp(xmss_name, k->xmss_name) != 0) {
 			r = SSH_ERR_INVALID_FORMAT;
 			goto out;
 		}
