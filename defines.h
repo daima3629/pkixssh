@@ -846,9 +846,10 @@ struct winsize {
 /*
  * We want functions in openbsd-compat, if enabled, to override system ones.
  * We no-op out the weak symbol definition rather than remove it to reduce
- * future sync problems.
+ * future sync problems.  Some compilers (eg Unixware) do not allow an
+ * empty statement, so we use a bogus function declaration.
  */
-#define DEF_WEAK(x)
+#define DEF_WEAK(x)	void __ssh_compat_weak_##x(void)
 
 /* Write by owner (BSD compatible)  */
 #ifndef S_IWRITE
