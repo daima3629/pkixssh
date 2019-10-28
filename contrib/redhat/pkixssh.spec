@@ -178,9 +178,4 @@ install -m744 contrib/redhat/sshd.init %{buildroot}/etc/rc.d/init.d/sshd
 
 
 %changelog
-* Fri Oct 11 2019 Roumen Petrov <pkixssh@roumenpetrov.info>
-- Version 12.3
-* Sun Jun 16 2019 Roumen Petrov <pkixssh@roumenpetrov.info>
-- Version 12.1
-* Sun Apr 21 2019 Roumen Petrov <pkixssh@roumenpetrov.info>
-- Sample RPM build script
+# Not managed, please see source repository for changes.
