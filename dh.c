@@ -44,6 +44,12 @@
 #include "misc.h"
 #include "ssherr.h"
 
+#ifndef HAVE_BN_IS_NEGATIVE	/*macro before OpenSSL 1.1*/
+# ifndef BN_is_negative		/*not defined before OpenSSL 0.9.8*/
+#  define BN_is_negative(a) ((a)->neg != 0)
+# endif
+#endif
+
 static int
 parse_prime(int linenum, char *line, struct dhgroup *dhg)
 {

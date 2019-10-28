@@ -87,12 +87,6 @@ void ssh_aes_ctr_iv(EVP_CIPHER_CTX *, int, u_char *, size_t);
 #endif
 
 
-#ifndef HAVE_BN_IS_NEGATIVE	/*macro before OpenSSL 1.1*/
-# ifndef BN_is_negative		/*not defined before OpenSSL 0.9.8*/
-#  define BN_is_negative(a) ((a)->neg != 0)
-#endif
-#endif
-
 #ifndef HAVE_BN_IS_PRIME_EX
 int BN_is_prime_ex(const BIGNUM *, int, BN_CTX *, void *);
 #endif
