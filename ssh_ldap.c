@@ -194,6 +194,11 @@ SSHLDAP_PUT_error(int function, int reason, const char *file, int line, const ch
 	ERR_set_debug(file, line, funcname);
 	ERR_set_error(ERR_LIB_SSHLDAP, reason, NULL);
 #else
+# ifdef OPENSSL_NO_ERR
+	/* If ERR_PUT_error macro ignores file and line */
+	UNUSED(file);
+	UNUSED(line);
+# endif
 	UNUSED(funcname);
 	ERR_PUT_error(ERR_LIB_SSHLDAP, function, reason, file, line);
 #endif /*ndef ERR_raise_data*/
