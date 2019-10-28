@@ -5340,6 +5340,11 @@ AC_CHECK_FUNCS([ \
   EVP_PKEY_id \
 ])
 
+# check for openssl 3.0+ functions ...
+AC_CHECK_FUNCS([ \
+  BN_check_prime \
+])
+
 # check for some structures
 AC_CHECK_MEMBERS([ECDSA_METHOD.name], [], [],
 [#include <openssl/ecdsa.h>]

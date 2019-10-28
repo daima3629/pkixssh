@@ -60,7 +60,21 @@
 #include "log.h"
 #include "misc.h"
 
-#include "openbsd-compat/openssl-compat.h"
+
+static inline int
+SSH_check_prime(const BIGNUM *p, BN_CTX *ctx, int nchecks) {
+#if defined(HAVE_BN_CHECK_PRIME)
+	/* OpenSSL 3.0+ */
+	UNUSED(nchecks);
+	return BN_check_prime(p, ctx, NULL);
+#elif defined(HAVE_BN_IS_PRIME_EX)
+	/* OpenSSL 0.9.8+, deprecated in 3.0 */
+	return BN_is_prime_ex(p, nchecks, ctx, NULL);
+#else	/* OpenSSL <= 0.9.7* */
+	return BN_is_prime(p, nchecks, NULL, ctx, NULL);
+#endif
+}
+
 
 /*
  * File output defines
@@ -753,9 +767,9 @@ prime_test(FILE *in, FILE *out, u_int32_t trials, u_int32_t generator_wanted,
 		 * that p is also prime. A single pass will weed out the
 		 * vast majority of composite q's.
 		 */
-		is_prime = BN_is_prime_ex(q, 1, ctx, NULL);
+		is_prime = SSH_check_prime(q, ctx, 1);
 		if (is_prime < 0)
-			fatal("BN_is_prime_ex failed");
+			fatal("SSH_check_prime failed");
 		if (is_prime == 0) {
 			debug("%10u: q failed first possible prime test",
 			    count_in);
@@ -769,9 +783,9 @@ prime_test(FILE *in, FILE *out, u_int32_t trials, u_int32_t generator_wanted,
 		 * will show up on the first Rabin-Miller iteration so it
 		 * doesn't hurt to specify a high iteration count.
 		 */
-		is_prime = BN_is_prime_ex(p, trials, ctx, NULL);
+		is_prime = SSH_check_prime(p, ctx, trials);
 		if (is_prime < 0)
-			fatal("BN_is_prime_ex failed");
+			fatal("SSH_check_prime failed");
 		if (is_prime == 0) {
 			debug("%10u: p is not prime", count_in);
 			continue;
@@ -779,9 +793,9 @@ prime_test(FILE *in, FILE *out, u_int32_t trials, u_int32_t generator_wanted,
 		debug("%10u: p is almost certainly prime", count_in);
 
 		/* recheck q more rigorously */
-		is_prime = BN_is_prime_ex(q, trials - 1, ctx, NULL);
+		is_prime = SSH_check_prime(q, ctx, trials - 1);
 		if (is_prime < 0)
-			fatal("BN_is_prime_ex failed");
+			fatal("SSH_check_prime failed");
 		if (is_prime == 0) {
 			debug("%10u: q is not prime", count_in);
 			continue;

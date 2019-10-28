@@ -32,16 +32,6 @@
 
 #include "openssl-compat.h"
 
-#ifndef HAVE_BN_IS_PRIME_EX
-int
-BN_is_prime_ex(const BIGNUM *p, int nchecks, BN_CTX *ctx, void *cb)
-{
-	if (cb != NULL)
-		fatal("%s: callback args not supported", __func__);
-	return BN_is_prime(p, nchecks, NULL, ctx, NULL);
-}
-#endif
-
 #ifndef HAVE_RSA_GENERATE_KEY_EX
 int
 RSA_generate_key_ex(RSA *rsa, int bits, BIGNUM *bn_e, void *cb)

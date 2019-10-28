@@ -87,10 +87,6 @@ void ssh_aes_ctr_iv(EVP_CIPHER_CTX *, int, u_char *, size_t);
 #endif
 
 
-#ifndef HAVE_BN_IS_PRIME_EX
-int BN_is_prime_ex(const BIGNUM *, int, BN_CTX *, void *);
-#endif
-
 #ifndef HAVE_RSA_GENERATE_KEY_EX
 int RSA_generate_key_ex(RSA *, int, BIGNUM *, void *);
 #endif
