@@ -1206,8 +1206,10 @@ main(int ac, char **av)
 
 	__progname = ssh_get_progname(av[0]);
 
+#ifdef RLIMIT_NOFILE
 	if (getrlimit(RLIMIT_NOFILE, &rlim) == -1)
 		fatal("%s: getrlimit: %s", __progname, strerror(errno));
+#endif
 
 	ssh_OpenSSL_startup();
 #ifdef OPENSSL_FIPS
