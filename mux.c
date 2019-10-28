@@ -39,7 +39,7 @@
 #endif
 
 #ifdef HAVE_POLL_H
-#include <poll.h>
+# include <poll.h>
 #else
 # ifdef HAVE_SYS_POLL_H
 #  include <sys/poll.h>
