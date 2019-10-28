@@ -132,18 +132,26 @@ fi
 openssl=yes
 AC_DEFINE_UNQUOTED([WITH_OPENSSL], [1], [use libcrypto for cryptography])
 
-use_stack_protector=1
-use_toolchain_hardening=1
+use_stack_protector=:
+use_toolchain_hardening=:
 AC_ARG_WITH([stackprotect],
-    [  --without-stackprotect  Don't use compiler's stack protection], [
-    if test "x$withval" = "xno"; then
-	use_stack_protector=0
-    fi ])
+	[AS_HELP_STRING([--without-stackprotect],
+		[Don't use compiler's stack protection])],
+	[
+		if test "x$withval" = "xno"; then
+			use_stack_protector=false
+		fi
+	]
+)
 AC_ARG_WITH([hardening],
-    [  --without-hardening     Don't use toolchain hardening flags], [
-    if test "x$withval" = "xno"; then
-	use_toolchain_hardening=0
-    fi ])
+	[AS_HELP_STRING([--without-hardening],
+		[Don't use toolchain hardening flags])],
+	[
+		if test "x$withval" = "xno"; then
+			use_toolchain_hardening=false
+		fi
+	]
+)
 
 # We use -Werror for the tests only so that we catch warnings like "this is
 # on by default" for things like -fPIE.
@@ -173,7 +181,7 @@ if test "$GCC" = "yes" || test "$GCC" = "egcs"; then
 	OSSH_CHECK_CFLAG_COMPILE([-Wpointer-sign], [-Wno-pointer-sign])
 	OSSH_CHECK_CFLAG_COMPILE([-Wunused-result], [-Wno-unused-result])
 	OSSH_CHECK_CFLAG_COMPILE([-fno-strict-aliasing])
-    if test "x$use_toolchain_hardening" = "x1"; then
+    if $use_toolchain_hardening ; then
 	OSSH_CHECK_CFLAG_COMPILE([-mretpoline]) # clang
 	OSSH_CHECK_LDFLAG_LINK([-Wl,-z,retpolineplt])
 	OSSH_CHECK_CFLAG_COMPILE([-D_FORTIFY_SOURCE=2])
@@ -212,7 +220,7 @@ if test "$GCC" = "yes" || test "$GCC" = "egcs"; then
 	# -fstack-protector-all doesn't always work for some GCC versions
 	# and/or platforms, so we test if we can.  If it's not supported
 	# on a given platform gcc will emit a warning so we use -Werror.
-	if test "x$use_stack_protector" = "x1"; then
+	if $use_stack_protector ; then
 	    for t in -fstack-protector-strong -fstack-protector-all \
 		    -fstack-protector; do
 		AC_MSG_CHECKING([if $CC supports $t])
@@ -1807,7 +1815,7 @@ AC_ARG_WITH([pie],
 if test "x$use_pie" = "x"; then
 	use_pie=no
 fi
-if test "x$use_toolchain_hardening" != "x1" && test "x$use_pie" = "xauto"; then
+if $use_toolchain_hardening && test "x$use_pie" = "xauto"; then
 	# Turn off automatic PIE when toolchain hardening is off.
 	use_pie=no
 fi
