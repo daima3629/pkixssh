@@ -1924,6 +1924,7 @@ AC_CHECK_FUNCS([ \
 	inet_ntoa \
 	inet_ntop \
 	innetgr \
+	localtime_r \
 	login_getcapbool \
 	md5_crypt \
 	memmem \
