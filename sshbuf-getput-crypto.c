@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifdef WITH_OPENSSL
 #include <openssl/bn.h>
 #ifdef OPENSSL_HAS_ECC
 # include <openssl/ec.h>
@@ -175,4 +176,4 @@ sshbuf_put_eckey(struct sshbuf *buf, const EC_KEY *v)
 	    EC_KEY_get0_group(v));
 }
 #endif /* OPENSSL_HAS_ECC */
-
+#endif /* WITH_OPENSSL */
