@@ -745,8 +745,10 @@ main() { if (NSVersionOfRunTimeLibrary("System") >= (60 << 16))
 	;;
 *-*-haiku*)
 	LIBS="$LIBS -lbsd "
+	CFLAGS="$CFLAGS -D_BSD_SOURCE"
 	AC_CHECK_LIB([network], [socket])
 	AC_DEFINE([HAVE_U_INT64_T])
+	ssh_disable_utmpx=yes
 	MANTYPE=man
 	;;
 *-*-hpux*)
