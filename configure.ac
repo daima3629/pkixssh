@@ -418,6 +418,7 @@ AC_CHECK_HEADERS([ \
 	features.h \
 	fcntl.h \
 	floatingpoint.h \
+	fnmatch.h \
 	getopt.h \
 	glob.h \
 	ia.h \
@@ -1899,6 +1900,7 @@ AC_CHECK_FUNCS([ \
 	fchown \
 	fchownat \
 	flock \
+	fnmatch \
 	freeaddrinfo \
 	freezero \
 	fstatfs \
