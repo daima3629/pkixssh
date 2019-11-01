@@ -549,6 +549,8 @@ AC_CHECK_HEADERS([sys/un.h], [], [], [
 
 # templates for target-specific defines
 AH_TEMPLATE([BROKEN_TCGETATTR_ICANON], [Define to 1 if tcgetattr with ICANON may hang])
+AH_TEMPLATE([NEED_SETPGRP], [Need setpgrp to acquire controlling tty])
+AH_TEMPLATE([DISABLE_FD_PASSING], [Define if your platform needs to skip post auth file descriptor passing])
 
 # Messages for features tested for in target-specific section
 SIA_MSG="no"
@@ -671,9 +673,7 @@ case "$host" in
 		[Define if you want to disable shadow passwords])
 	AC_DEFINE([NO_X11_UNIX_SOCKETS], [1],
 		[Define if X11 doesn't support AF_UNIX sockets on that system])
-	AC_DEFINE([DISABLE_FD_PASSING], [1],
-		[Define if your platform needs to skip post auth
-		file descriptor passing])
+	AC_DEFINE([DISABLE_FD_PASSING])
 	AC_DEFINE([SSH_IOBUFSZ], [65535], [Windows is sensitive to read buffer size])
 	AC_DEFINE([FILESYSTEM_NO_BACKSLASH], [1], [File names may not contain backslash characters])
 	# Cygwin defines optargs, optargs as declspec(dllimport) for historical
@@ -984,7 +984,7 @@ main() { if (NSVersionOfRunTimeLibrary("System") >= (60 << 16))
 	fi
 	;;
 mips-sony-bsd|mips-sony-newsos4)
-	AC_DEFINE([NEED_SETPGRP], [1], [Need setpgrp to acquire controlling tty])
+	AC_DEFINE([NEED_SETPGRP])
 	SONY=1
 	;;
 *-*-netbsd*)
