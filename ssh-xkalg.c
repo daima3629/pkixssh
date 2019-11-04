@@ -823,7 +823,7 @@ ssh_xkalg_listall(struct sshbuf *b, const char *sep) {
 
 
 char*
-default_publickey_algorithms(void) {
+default_hostkey_algorithms(void) {
 	struct sshbuf *b;
 	char *p;
 	int r;

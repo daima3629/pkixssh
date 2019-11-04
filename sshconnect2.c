@@ -180,7 +180,7 @@ ssh_kex2(struct ssh *ssh, char *host, struct sockaddr *hostaddr, u_short port)
 	myproposal[PROPOSAL_MAC_ALGS_CTOS] =
 	    myproposal[PROPOSAL_MAC_ALGS_STOC] = options.macs;
 {	/* finalize set of client option HostKeyAlgorithms */
-	char *defalgs = default_publickey_algorithms();
+	char *defalgs = default_hostkey_algorithms();
 	if (options.hostkeyalgorithms != NULL) {
 		/* Assemble */
 		char *allalgs = sshkey_alg_list(0, 0, 1, ',');

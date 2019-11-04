@@ -68,7 +68,7 @@ int	ssh_xkalg_ind(const SSHX509KeyAlgs **q, int loc);
 
 void	ssh_xkalg_listall(struct sshbuf *b, const char *sep);
 
-char*	default_publickey_algorithms(void);
+char*	default_hostkey_algorithms(void);
 
 char*	ssh_get_allnames(char sep, int sigflag, const char* pattern);
 
