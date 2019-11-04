@@ -212,6 +212,7 @@ typedef enum {
 	oStreamLocalBindMask, oStreamLocalBindUnlink, oRevokedHostKeys,
 	oFingerprintHash, oUpdateHostkeys, oHostbasedKeyTypes,
 	oPubkeyAcceptedKeyTypes, oCASignatureAlgorithms, oProxyJump,
+	oSecurityKeyProvider,
 	oIgnore, oIgnoredUnknownOption, oDeprecated, oUnsupported
 } OpCodes;
 
@@ -252,6 +253,7 @@ static struct {
 	{ "smartcarddevice", oUnsupported },
 	{ "pkcs11provider", oUnsupported },
 #endif
+	{ "securitykeyprovider", oSecurityKeyProvider },
 	{ "rsaauthentication", oUnsupported },
 	{ "rhostsrsaauthentication", oUnsupported },
 	{ "compressionlevel", oUnsupported },
@@ -1331,6 +1333,12 @@ parse_char_array:
 		charptr = &options->pkcs11_provider;
 		goto parse_string;
 
+#ifdef ENABLE_SK
+	case oSecurityKeyProvider:
+		charptr = &options->sk_provider;
+		goto parse_string;
+#endif
+
 	case oProxyCommand:
 		charptr = &options->proxy_command;
 		/* Ignore ProxyCommand if ProxyJump already specified */
@@ -1950,6 +1958,9 @@ parse_keytypes:
 	case oVACertificateFile:
 	case oVAOCSPResponderURL:
 #endif /*ndef SSH_OCSP_ENABLED*/
+#ifndef ENABLE_SK
+	case oSecurityKeyProvider:
+#endif
 	case oUnsupported:
 		error("%s line %d: Unsupported option \"%s\"",
 		    filename, linenum, keyword);
@@ -2125,6 +2136,7 @@ initialize_options(Options * options)
 	options->bind_address = NULL;
 	options->bind_interface = NULL;
 	options->pkcs11_provider = NULL;
+	options->sk_provider = NULL;
 	options->enable_ssh_keysign = - 1;
 	options->no_host_authentication_for_localhost = - 1;
 	options->identities_only = - 1;
@@ -2348,6 +2360,8 @@ fill_default_options(Options * options)
 		options->fingerprint_hash = SSH_FP_HASH_DEFAULT;
 	if (options->update_hostkeys == -1)
 		options->update_hostkeys = 0;
+	if (options->sk_provider == NULL)
+		options->sk_provider = xstrdup("$SSH_SK_PROVIDER");
 
 	/* Expand KEX name lists */
 	all_cipher = cipher_alg_list(',', 0);
@@ -2383,6 +2397,7 @@ fill_default_options(Options * options)
 	CLEAR_ON_NONE(options->control_path);
 	CLEAR_ON_NONE(options->revoked_host_keys);
 	CLEAR_ON_NONE(options->pkcs11_provider);
+	CLEAR_ON_NONE(options->sk_provider);
 	if (options->jump_host != NULL &&
 	    strcmp(options->jump_host, "none") == 0 &&
 	    options->jump_port == 0 && options->jump_user == NULL) {
@@ -3001,6 +3016,9 @@ dump_client_config(Options *o, const char *host)
 	dump_cfg_string(oMacs, o->macs ? o->macs : KEX_CLIENT_MAC);
 #ifdef ENABLE_PKCS11
 	dump_cfg_string(oPKCS11Provider, o->pkcs11_provider);
+#endif
+#ifdef ENABLE_SK
+	dump_cfg_string(oSecurityKeyProvider, o->sk_provider);
 #endif
 	dump_cfg_string(oPreferredAuthentications, o->preferred_authentications);
 	dump_cfg_string(oRevokedHostKeys, o->revoked_host_keys);
