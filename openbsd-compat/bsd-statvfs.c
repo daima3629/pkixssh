@@ -41,6 +41,7 @@
 # define MNAMELEN 90
 #endif
 
+#ifdef USE_STRUCT_STATFS
 static void
 copy_statfs_to_statvfs(struct statvfs *to, struct statfs *from)
 {
@@ -60,11 +61,12 @@ copy_statfs_to_statvfs(struct statvfs *to, struct statfs *from)
 #endif
 	to->f_namemax = MNAMELEN;
 }
+#endif /*def USE_STRUCT_STATFS*/
 
 # ifndef HAVE_STATVFS
 int statvfs(const char *path, struct statvfs *buf)
 {
-#  ifdef HAVE_STATFS
+#  ifdef USE_STRUCT_STATFS
 	struct statfs fs;
 
 	memset(&fs, 0, sizeof(fs));
@@ -82,7 +84,7 @@ int statvfs(const char *path, struct statvfs *buf)
 # ifndef HAVE_FSTATVFS
 int fstatvfs(int fd, struct statvfs *buf)
 {
-#  ifdef HAVE_FSTATFS
+#  ifdef USE_STRUCT_STATFS
 	struct statfs fs;
 
 	memset(&fs, 0, sizeof(fs));

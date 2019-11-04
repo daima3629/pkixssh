@@ -3913,7 +3913,7 @@ AC_CHECK_TYPES([fsblkcnt_t, fsfilcnt_t], , , [
 #endif
 ])
 
-AC_CHECK_MEMBERS([struct statfs.f_flags], [], [], [[
+m4_define(statfs_includes,[[
 #include <sys/types.h>
 #ifdef HAVE_SYS_BITYPES_H
 #include <sys/bitypes.h>
@@ -3928,6 +3928,13 @@ AC_CHECK_MEMBERS([struct statfs.f_flags], [], [], [[
 #include <sys/vfs.h>
 #endif
 ]])
+AC_CHECK_MEMBER([struct statfs.f_files], [], [], [statfs_includes])
+if test "x$ac_cv_member_struct_statfs_f_files" = "xyes" ; then
+  AC_DEFINE([USE_STRUCT_STATFS], [1],
+    [Define to 1 if you have the `statfs' structure])
+fi
+ac_cv_member_struct_statfs_f_files=yes
+AC_CHECK_MEMBERS([struct statfs.f_flags], [], [], [statfs_includes])
 
 
 dnl on Android netinet/in.h define __in_addr_t and arpa/inet.h define in_addr_t
