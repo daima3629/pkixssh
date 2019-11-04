@@ -3,6 +3,7 @@
 
 tid="keyscan"
 
+algs=
 for i in $SSH_KEYTYPES; do
 	if [ -z "$algs" ]; then
 		algs="$i"
@@ -14,7 +15,7 @@ echo "HostKeyAlgorithms $algs" >> $OBJ/sshd_config
 
 start_sshd
 
-for t in $KEYTYPES; do
+for t in $SSH_KEYTYPES; do
 	trace "keyscan type $t"
 	${SSHKEYSCAN} -t $t -p $PORT 127.0.0.1 127.0.0.1 127.0.0.1 \
 		> /dev/null 2>&1
