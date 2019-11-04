@@ -13,6 +13,7 @@
  *
  * SSH2 implementation,
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
+ *
  * Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -404,7 +405,8 @@ Xssh_agent_sign(int sock, ssh_sign_ctx *ctx,
 
 
 static int
-encode_constraints(struct sshbuf *m, u_int life, u_int confirm, u_int maxsign)
+encode_constraints(struct sshbuf *m, u_int life, u_int confirm, u_int maxsign,
+    const char *provider)
 {
 	int r;
 
@@ -422,6 +424,12 @@ encode_constraints(struct sshbuf *m, u_int life, u_int confirm, u_int maxsign)
 		    (r = sshbuf_put_u32(m, maxsign)) != 0)
 			goto out;
 	}
+	if (provider != NULL) {
+		if ((r = sshbuf_put_u8(m, SSH_AGENT_CONSTRAIN_EXTENSION)) != 0 ||
+		    (r = sshbuf_put_cstring(m, "sk-provider@openssh.com")) != 0 ||
+		    (r = sshbuf_put_cstring(m, provider)) != 0)
+			goto out;
+	}
 	r = 0;
  out:
 	return r;
@@ -433,10 +441,11 @@ encode_constraints(struct sshbuf *m, u_int life, u_int confirm, u_int maxsign)
  */
 int
 ssh_add_identity_constrained(int sock, struct sshkey *key,
-    const char *comment, u_int life, u_int confirm, u_int maxsign)
+    const char *comment, u_int life, u_int confirm, u_int maxsign,
+    const char *provider)
 {
 	struct sshbuf *msg;
-	int r, constrained = (life || confirm || maxsign);
+	int r, constrained = (life || confirm || maxsign || provider);
 	u_char type;
 
 	if ((msg = sshbuf_new()) == NULL)
@@ -469,7 +478,8 @@ ssh_add_identity_constrained(int sock, struct sshkey *key,
 		goto out;
 	}
 	if (constrained &&
-	    (r = encode_constraints(msg, life, confirm, maxsign)) != 0)
+	    (r = encode_constraints(msg, life, confirm, maxsign,
+	    provider)) != 0)
 		goto out;
 	if ((r = ssh_request_reply(sock, msg, msg)) != 0)
 		goto out;
@@ -566,7 +576,7 @@ ssh_update_card(int sock, int add, const char *reader_id, const char *pin,
 	}
 }
 	if (constrained &&
-	    (r = encode_constraints(msg, life, confirm, 0)) != 0)
+	    (r = encode_constraints(msg, life, confirm, 0, NULL)) != 0)
 		goto out;
 	if ((r = ssh_request_reply(sock, msg, msg)) != 0)
 		goto out;

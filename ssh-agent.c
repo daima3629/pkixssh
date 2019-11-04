@@ -469,7 +469,7 @@ process_add_identity(SocketEntry *e)
 	Identity *id;
 	int success = 0, confirm = 0;
 	u_int seconds, maxsign;
-	char *comment = NULL;
+	char *comment = NULL, *ext_name = NULL, *sk_provider = NULL;
 	time_t death = 0;
 	struct sshkey *k = NULL;
 	u_char ctype;
@@ -514,9 +514,37 @@ process_add_identity(SocketEntry *e)
 				goto err;
 			}
 			break;
+		case SSH_AGENT_CONSTRAIN_EXTENSION:
+			if ((r = sshbuf_get_cstring(e->request,
+			    &ext_name, NULL)) != 0) {
+				error("%s: cannot parse extension: %s",
+				    __func__, ssh_err(r));
+				goto err;
+			}
+			debug("%s: constraint ext %s", __func__, ext_name);
+			if (strcmp(ext_name, "sk-provider@openssh.com") == 0) {
+				if (sk_provider != NULL) {
+					error("%s already set", ext_name);
+					goto err;
+				}
+				if ((r = sshbuf_get_cstring(e->request,
+				    &sk_provider, NULL)) != 0) {
+					error("%s: cannot parse %s: %s",
+					    __func__, ext_name, ssh_err(r));
+					goto err;
+				}
+			} else {
+				error("%s: unsupported constraint \"%s\"",
+				    __func__, ext_name);
+				goto err;
+			}
+			free(ext_name);
+			break;
 		default:
 			error("%s: Unknown constraint %d", __func__, ctype);
  err:
+			free(sk_provider);
+			free(ext_name);
 			sshbuf_reset(e->request);
 			free(comment);
 			sshkey_free(k);
@@ -541,6 +569,7 @@ process_add_identity(SocketEntry *e)
 	id->comment = comment;
 	id->death = death;
 	id->confirm = confirm;
+	free(sk_provider); /*TODO*/
 send:
 	send_status(e, success);
 }

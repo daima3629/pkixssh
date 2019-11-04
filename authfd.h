@@ -12,8 +12,7 @@
  * incompatible with the protocol description in the RFC file, it must be
  * called by a name other than "ssh" or "Secure Shell".
  *
- * X509 certificate support,
- * Copyright (c) 2002-2017 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -55,7 +54,8 @@ int	ssh_lock_agent(int sock, int lock, const char *password);
 int	ssh_fetch_identitylist(int sock, struct ssh_identitylist **idlp);
 void	ssh_free_identitylist(struct ssh_identitylist *idl);
 int	ssh_add_identity_constrained(int sock, struct sshkey *key,
-	    const char *comment, u_int life, u_int confirm, u_int maxsign);
+	    const char *comment, u_int life, u_int confirm, u_int maxsign,
+	    const char *provider);
 int	ssh_remove_identity(int sock, struct sshkey *key);
 int	ssh_update_card(int sock, int add, const char *reader_id,
 	    const char *pin, STACK_OF(SSHXSTOREPATH) *xstore,
@@ -101,6 +101,7 @@ int	Xssh_agent_sign(int sock, ssh_sign_ctx *ctx,
 #define	SSH_AGENT_CONSTRAIN_LIFETIME		1
 #define	SSH_AGENT_CONSTRAIN_CONFIRM		2
 #define	SSH_AGENT_CONSTRAIN_MAXSIGN		3
+#define	SSH_AGENT_CONSTRAIN_EXTENSION		255
 
 /* extended failure messages */
 #define SSH2_AGENT_FAILURE			30

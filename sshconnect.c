@@ -12,7 +12,6 @@
  * incompatible with the protocol description in the RFC file, it must be
  * called by a name other than "ssh" or "Secure Shell".
  *
- * X.509 certificates support,
  * Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -1500,6 +1499,7 @@ maybe_add_key_to_agent(char *authfile, struct sshkey *private,
     char *comment, char *passphrase)
 {
 	int auth_sock = -1, r;
+	const char *skprovider = NULL;
 
 	UNUSED(passphrase);
 	if (options.add_keys_to_agent == 0)
@@ -1518,7 +1518,7 @@ maybe_add_key_to_agent(char *authfile, struct sshkey *private,
 	}
 
 	if ((r = ssh_add_identity_constrained(auth_sock, private, comment, 0,
-	    (options.add_keys_to_agent == 3), 0)) == 0)
+	    (options.add_keys_to_agent == 3), 0, skprovider)) == 0)
 		debug("identity added to agent: %s", authfile);
 	else
 		debug("could not add identity to agent: %s (%d)", authfile, r);

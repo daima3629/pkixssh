@@ -13,7 +13,7 @@
  *
  * SSH2 implementation,
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
- * X.509 certificates support,
+ *
  * Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -222,7 +222,8 @@ delete_all(int agent_fd, int qflag)
 }
 
 static int
-add_file(int agent_fd, const char *filename, int key_only, int qflag)
+add_file(int agent_fd, const char *filename, int key_only, int qflag,
+    const char *skprovider)
 {
 	struct sshkey *private, *cert;
 	char *comment = NULL;
@@ -342,7 +343,7 @@ add_file(int agent_fd, const char *filename, int key_only, int qflag)
 	}
 
 	if ((r = ssh_add_identity_constrained(agent_fd, private, comment,
-	    lifetime, confirm, maxsign)) == 0) {
+	    lifetime, confirm, maxsign, skprovider)) == 0) {
 		ret = 0;
 		if (!qflag) {
 			fprintf(stderr, "Identity added: %s (%s)\n",
@@ -395,7 +396,7 @@ add_file(int agent_fd, const char *filename, int key_only, int qflag)
 	sshkey_free(cert);
 
 	if ((r = ssh_add_identity_constrained(agent_fd, private, comment,
-	    lifetime, confirm, maxsign)) != 0) {
+	    lifetime, confirm, maxsign, skprovider)) != 0) {
 		error("Certificate %s (%s) add failed: %s", certpath,
 		    private->cert->key_id, ssh_err(r));
 		goto out;
@@ -575,13 +576,14 @@ lock_agent(int agent_fd, int lock)
 }
 
 static int
-do_file(int agent_fd, int deleting, int key_only, char *file, int qflag)
+do_file(int agent_fd, int deleting, int key_only, char *file, int qflag,
+    const char *skprovider)
 {
 	if (deleting) {
 		if (delete_file(agent_fd, file, key_only, qflag) == -1)
 			return -1;
 	} else {
-		if (add_file(agent_fd, file, key_only, qflag) == -1)
+		if (add_file(agent_fd, file, key_only, qflag, skprovider) == -1)
 			return -1;
 	}
 	return 0;
@@ -619,7 +621,7 @@ main(int argc, char **argv)
 	extern char *optarg;
 	extern int optind;
 	int agent_fd;
-	char *pkcs11provider = NULL;
+	char *pkcs11provider = NULL, *skprovider = NULL;
 	STACK_OF(SSHXSTOREPATH) *xstore;
 	int r, i, ch, deleting = 0, ret = 0, key_only = 0;
 	int xflag = 0, lflag = 0, Dflag = 0, qflag = 0, Tflag = 0;
@@ -811,7 +813,7 @@ main(int argc, char **argv)
 			if (stat(buf, &st) == -1)
 				continue;
 			if (do_file(agent_fd, deleting, key_only, buf,
-			    qflag) == -1)
+			    qflag, skprovider) == -1)
 				ret = 1;
 			else
 				count++;
@@ -821,7 +823,7 @@ main(int argc, char **argv)
 	} else {
 		for (i = 0; i < argc; i++) {
 			if (do_file(agent_fd, deleting, key_only,
-			    argv[i], qflag) == -1)
+			    argv[i], qflag, skprovider) == -1)
 				ret = 1;
 		}
 	}
