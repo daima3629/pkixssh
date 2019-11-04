@@ -87,7 +87,8 @@ sig_fuzz(struct sshkey *k, const char *sig_alg)
 	if (test_is_slow())
 		fuzzers |= FUZZ_2_BIT_FLIP;
 
-	ASSERT_INT_EQ(sshkey_sign(k, &sig, &l, c, sizeof(c), sig_alg, 0), 0);
+	ASSERT_INT_EQ(sshkey_sign(k, &sig, &l, c, sizeof(c),
+	    sig_alg, NULL, 0), 0);
 	ASSERT_SIZE_T_GT(l, 0);
 	fuzz = fuzz_begin(fuzzers, sig, l);
 	ASSERT_INT_EQ(sshkey_verify(k, sig, l, c, sizeof(c), NULL, 0), 0);

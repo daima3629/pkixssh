@@ -365,7 +365,7 @@ process_sign_request2(SocketEntry *e)
 		goto send;
 	}
 {	const char *alg = agent_recode_alg(pkalg, flags);
-	ssh_sign_ctx ctx = { alg, id->key, &ctx_compat };
+	ssh_sign_ctx ctx = { alg, id->key, &ctx_compat, NULL };
 
 	r = Xkey_sign(&ctx, &signature, &slen, data, dlen);
 }

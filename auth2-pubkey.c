@@ -171,7 +171,7 @@ userauth_pubkey(struct ssh *ssh)
 		goto done;
 	}
 
-{	ssh_sign_ctx ctx = { pkalg, key, &ssh->compat };
+{	ssh_sign_ctx ctx = { pkalg, key, &ssh->compat, NULL };
 
 	key_s = format_key(key);
 	if (sshkey_is_cert(key))

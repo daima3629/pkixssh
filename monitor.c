@@ -687,13 +687,13 @@ mm_answer_sign(struct ssh *ssh, int sock, struct sshbuf *m)
 	}
 
 	if ((key = get_hostkey_by_index(keyid)) != NULL) {
-		ssh_sign_ctx ctx = { alg, key, &compat };
+		ssh_sign_ctx ctx = { alg, key, &compat, NULL };
 		if ((r = Xkey_sign(&ctx, &signature, &siglen, p, datlen)) != 0)
 			fatal("%s: Xkey_sign failed: %s",
 			    __func__, ssh_err(r));
 	} else if ((key = get_hostkey_public_by_index(keyid, ssh)) != NULL &&
 	    auth_sock > 0) {
-		ssh_sign_ctx ctx = { alg, key, &compat };
+		ssh_sign_ctx ctx = { alg, key, &compat, NULL };
 		if ((r = Xssh_agent_sign(auth_sock, &ctx, &signature, &siglen,
 		    p, datlen)) != 0) {
 			fatal("%s: ssh_agent_sign failed: %s",
@@ -1179,7 +1179,7 @@ mm_answer_keyallowed(struct ssh *ssh, int sock, struct sshbuf *m)
 	debug3("%s: xkey_from_blob: %s %p", __func__, pkalg, (void*)key);
 
 {	ssh_compat ctx_compat = { datafellows, xcompat };
-	ssh_sign_ctx ctx = { pkalg, key, &ctx_compat };
+	ssh_sign_ctx ctx = { pkalg, key, &ctx_compat, NULL };
 
 	if (key != NULL && authctxt->valid) {
 		/* These should not make it past the privsep child */
@@ -1440,7 +1440,7 @@ mm_answer_keyverify(struct ssh *ssh, int sock, struct sshbuf *m)
 		fatal("%s: bad signature data blob", __func__);
 
 {	ssh_compat ctx_compat = { datafellows, xcompat };
-	ssh_sign_ctx ctx = { pkalg, key, &ctx_compat };
+	ssh_sign_ctx ctx = { pkalg, key, &ctx_compat, NULL };
 
 	ret = Xkey_verify(&ctx, signature, signaturelen, data, datalen);
 }

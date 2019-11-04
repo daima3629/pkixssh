@@ -2400,7 +2400,7 @@ Xsshd_hostkey_sign(
 				fatal("%s: Xkey_sign failed: %s",
 				      __func__, ssh_err(r));
 		} else {
-			ssh_sign_ctx mm_ctx = { ctx->alg, pubkey, ctx->compat };
+			ssh_sign_ctx mm_ctx = { ctx->alg, pubkey, ctx->compat, ctx->provider };
 			r = mm_Xkey_sign(ssh, &mm_ctx, signature, slenp, data, dlen);
 			if (r != 0)
 				fatal("%s: pubkey Xkey_sign failed: %s",
@@ -2413,7 +2413,7 @@ Xsshd_hostkey_sign(
 				fatal("%s: Xkey_sign failed: %s",
 				      __func__, ssh_err(r));
 		} else {
-			ssh_sign_ctx a_ctx = { ctx->alg, pubkey, ctx->compat };
+			ssh_sign_ctx a_ctx = { ctx->alg, pubkey, ctx->compat, ctx->provider };
 			r = Xssh_agent_sign(auth_sock, &a_ctx, signature, slenp,
 			    data, dlen);
 			if (r != 0)

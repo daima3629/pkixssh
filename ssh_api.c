@@ -53,7 +53,7 @@ struct sshkey *_ssh_host_private_key(const char*, struct ssh *);
  */
 int	use_privsep = 0;
 int	mm_sshkey_sign(struct sshkey *, u_char **, u_int *,
-    u_char *, u_int, char *, u_int);
+    const u_char *, u_int, const char *, const char *, u_int);
 
 #ifdef WITH_OPENSSL
 DH	*mm_choose_dh(int, int, int);
@@ -65,12 +65,15 @@ u_int session_id2_len = 0;
 
 int
 mm_sshkey_sign(struct sshkey *key, u_char **sigp, u_int *lenp,
-    u_char *data, u_int datalen, char *alg, u_int compat)
+    const u_char *data, u_int datalen, const char *alg, const char *sk_provider,
+    u_int compat)
 {
 	UNUSED(key);
 	UNUSED(sigp); UNUSED(lenp);
 	UNUSED(data); UNUSED(datalen);
-	UNUSED(alg); UNUSED(compat);
+	UNUSED(alg);
+	UNUSED(sk_provider);
+	UNUSED(compat);
 	return (-1);
 }
 

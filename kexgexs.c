@@ -186,7 +186,7 @@ input_kex_dh_gex_init(int type, u_int32_t seq, struct ssh *ssh)
 		goto out;
 
 	/* sign H */
-{	ssh_sign_ctx ctx = { kex->hostkey_alg, server_host_private, &ssh->compat };
+{	ssh_sign_ctx ctx = { kex->hostkey_alg, server_host_private, &ssh->compat, NULL };
 
 	r = kex->xsign(ssh, &ctx, server_host_public, &signature, &slen, hash, hashlen);
 	if (r != 0)

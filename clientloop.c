@@ -2059,7 +2059,7 @@ client_global_hostkeys_private_confirm(struct ssh *ssh, int type,
 			    __func__, ssh_err(r));
 			goto out;
 		}
-	{	ssh_sign_ctx verify_ctx = { pkalg, ctx->keys[i], &ssh->compat };
+	{	ssh_sign_ctx verify_ctx = { pkalg, ctx->keys[i], &ssh->compat, NULL };
 
 		r = Xkey_verify(&verify_ctx, sig, siglen, sshbuf_ptr(signdata), sshbuf_len(signdata));
 		if (r != 0) {

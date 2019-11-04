@@ -1104,7 +1104,7 @@ identity_sign(struct identity *id, ssh_sign_ctx *id_ctx,
 {
 	struct sshkey *prv;
 	int r;
-	ssh_sign_ctx ctx = { id_ctx->alg, id->key, id_ctx->compat };
+	ssh_sign_ctx ctx = { id_ctx->alg, id->key, id_ctx->compat, id_ctx->provider };
 
 	/* The agent supports this key. */
 	if (id->key != NULL && id->agent_fd != -1)
@@ -1256,7 +1256,7 @@ sign_and_send_pubkey(struct ssh *ssh, Identity *id)
 		}
 
 		/* generate signature */
-	{	ssh_sign_ctx ctx = { pkalg, NULL, &ssh->compat };
+	{	ssh_sign_ctx ctx = { pkalg, NULL, &ssh->compat, NULL };
 
 		r = identity_sign(sign_id, &ctx, &signature, &slen, sshbuf_ptr(b), sshbuf_len(b));
 	}

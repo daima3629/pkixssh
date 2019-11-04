@@ -1,7 +1,7 @@
 #ifndef SSHXKEY_H
 #define SSHXKEY_H
 /*
- * Copyright (c) 2017-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2017-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -49,6 +49,7 @@ struct ssh_signature_context_st {
 	const char	*alg;		/* public key algorithm name (optional) */
 	struct sshkey	*key;		/* signing key */
 	ssh_compat	*compat;	/* ssh compatibilities */
+	const char	*provider;	/* reserved for security key provider */
 };
 
 int	Xkey_sign(ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp, const u_char *data, size_t datalen);

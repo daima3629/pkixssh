@@ -785,7 +785,7 @@ server_input_hostkeys_prove(struct ssh *ssh, struct sshbuf **respp)
 		sshbuf_reset(sigbuf);
 		free(sig);
 		sig = NULL;
-	{	ssh_sign_ctx ctx = { pkalg, key_prv, &ssh->compat };
+	{	ssh_sign_ctx ctx = { pkalg, key_prv, &ssh->compat, NULL };
 
 		if ((r = sshbuf_put_cstring(sigbuf,
 		    "hostkeys-prove-00@openssh.com")) != 0 ||

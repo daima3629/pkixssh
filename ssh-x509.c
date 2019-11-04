@@ -1995,7 +1995,9 @@ Xkey_sign(ssh_sign_ctx *ctx,
 	/* check if public algorithm is with X.509 certificates */
 	if (ssh_xkalg_nameind(ctx->alg, &xkalg, -1) < 0) {
 		int ret = sshkey_sign(key, sigp, lenp,
-		    data, datalen, ctx->alg, ctx->compat->datafellows);
+		    data, datalen,
+		    ctx->alg, ctx->provider,
+		    ctx->compat->datafellows);
 		if (ret == SSH_ERR_LIBCRYPTO_ERROR)
 			log_crypto_errors(SYSLOG_LEVEL_ERROR, __func__);
 		else

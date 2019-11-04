@@ -218,7 +218,7 @@ input_kex_gen_reply(int type, u_int32_t seq, struct ssh *ssh)
 	    hash, &hashlen)) != 0)
 		goto out;
 
-{	ssh_sign_ctx ctx = { kex->hostkey_alg, server_host_key, &ssh->compat };
+{	ssh_sign_ctx ctx = { kex->hostkey_alg, server_host_key, &ssh->compat, NULL };
 
 	r = Xkey_verify(&ctx, signature, slen, hash, hashlen);
 	if (r != 0) goto out;
@@ -328,7 +328,7 @@ input_kex_gen_init(int type, u_int32_t seq, struct ssh *ssh)
 		goto out;
 
 	/* sign H */
-{	ssh_sign_ctx ctx = { kex->hostkey_alg, server_host_private, &ssh->compat };
+{	ssh_sign_ctx ctx = { kex->hostkey_alg, server_host_private, &ssh->compat, NULL };
 
 	r = kex->xsign(ssh, &ctx, server_host_public, &signature, &slen, hash, hashlen);
 	if (r != 0) goto out;
