@@ -6,9 +6,7 @@ tid="change passphrase for key"
 S1="secret1"
 S2="2secret"
 
-KEYTYPES=`${SSH} -Q key-plain | grep -v "^x509v3-"`
-
-for t in $KEYTYPES; do
+for t in $SSH_KEYTYPES; do
 	# generate user key for agent
 	trace "generating $t key"
 	rm -f $OBJ/$t-key

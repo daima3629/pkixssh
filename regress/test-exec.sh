@@ -485,7 +485,7 @@ case $SCRIPT in
 */fips-*)
   OPENSSL_FIPS=1
   #do not export OPENSSL_FIPS here
-  SSH_KEYTYPES="rsa"
+  SSH_KEYTYPES="ssh-rsa"
   SSHKEYGEN="$SSHKEYGEN -m PEM"
   ;;
 esac
