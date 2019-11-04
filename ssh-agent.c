@@ -92,10 +92,7 @@
 #include "digest.h"
 #include "ssherr.h"
 #include "match.h"
-
-#ifdef ENABLE_PKCS11
 #include "ssh-pkcs11.h"
-#endif	/*def ENABLE_PKCS11*/
 
 #if 1 /* minimize dependencies */
 /* used in ssh-x509.c */
@@ -124,8 +121,8 @@ X509_LOOKUP_ldap(void) {
 }
 #endif	/* end of minimize dependencies */
 
-#ifndef DEFAULT_PKCS11_WHITELIST
-# define DEFAULT_PKCS11_WHITELIST "/usr/lib*/*,/usr/local/lib*/*"
+#ifndef DEFAULT_PROVIDER_WHITELIST
+# define DEFAULT_PROVIDER_WHITELIST "/usr/lib*/*,/usr/local/lib*/*"
 #endif
 
 /* Maximum accepted message length */
@@ -181,7 +178,7 @@ char socket_name[PATH_MAX];
 char socket_dir[PATH_MAX];
 
 /* PKCS#11 path whitelist */
-static char *pkcs11_whitelist;
+static char *provider_whitelist;
 
 /* locking */
 #define LOCK_SIZE	32
@@ -684,7 +681,7 @@ process_add_smartcard_key(SocketEntry *e)
 		    provider, strerror(errno));
 		goto send;
 	}
-	if (match_pattern_list(canonical_provider, pkcs11_whitelist, 0) != 1) {
+	if (match_pattern_list(canonical_provider, provider_whitelist, 0) != 1) {
 		verbose("refusing PKCS#11 add of \"%.100s\": "
 		    "provider not whitelisted", canonical_provider);
 		goto send;
@@ -1169,7 +1166,7 @@ usage(void)
 {
 	fprintf(stderr,
 	    "usage: ssh-agent [-c | -s] [-Dd] [-a bind_address] [-E fingerprint_hash]\n"
-	    "                 [-P pkcs11_whitelist] [-t life] [command [arg ...]]\n"
+	    "                 [-P provider_whitelist] [-t life] [command [arg ...]]\n"
 	    "       ssh-agent [-c | -s] -k\n");
 	exit(1);
 }
@@ -1260,9 +1257,9 @@ main(int ac, char **av)
 			k_flag++;
 			break;
 		case 'P':
-			if (pkcs11_whitelist != NULL)
+			if (provider_whitelist != NULL)
 				fatal("-P option already specified");
-			pkcs11_whitelist = xstrdup(optarg);
+			provider_whitelist = xstrdup(optarg);
 			break;
 		case 's':
 			if (c_flag)
@@ -1298,8 +1295,8 @@ main(int ac, char **av)
 	if (ac > 0 && (c_flag || k_flag || s_flag || d_flag || D_flag))
 		usage();
 
-	if (pkcs11_whitelist == NULL)
-		pkcs11_whitelist = xstrdup(DEFAULT_PKCS11_WHITELIST);
+	if (provider_whitelist == NULL)
+		provider_whitelist = xstrdup(DEFAULT_PROVIDER_WHITELIST);
 
 	if (ac == 0 && !c_flag && !s_flag) {
 		shell = getenv("SHELL");

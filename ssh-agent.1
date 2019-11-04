@@ -13,7 +13,7 @@
 .\" Copyright (c) 1999,2000 Markus Friedl.  All rights reserved.
 .\" Copyright (c) 1999 Aaron Campbell.  All rights reserved.
 .\" Copyright (c) 1999 Theo de Raadt.  All rights reserved.
-.\" Copyright (c) 2002-2018 Roumen Petrov.  All rights reserved.
+.\" Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
 .\"
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions
@@ -43,7 +43,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: April 15 2018 $
+.Dd $Mdocdate: November 1 2019 $
 .Dt SSH-AGENT 1
 .Os
 .Sh NAME
@@ -55,7 +55,7 @@
 .Op Fl \&Dd
 .Op Fl a Ar bind_address
 .Op Fl E Ar fingerprint_hash
-.Op Fl P Ar pkcs11_whitelist
+.Op Fl P Ar provider_whitelist
 .Op Fl t Ar life
 .Op Ar command Op Ar arg ...
 .Nm ssh-agent
@@ -135,15 +135,15 @@ The default is
 Kill the current agent (given by the
 .Ev SSH_AGENT_PID
 environment variable).
-.It Fl P Ar pkcs11_whitelist
-Specify a pattern-list of acceptable paths for PKCS#11 shared libraries
-that may be added using the
+.It Fl P Ar provider_whitelist
+Specify a pattern-list of acceptable paths for PKCS#11 shared
+libraries that may be used with the
 .Fl s
 option to
 .Xr ssh-add 1 .
-The default is to allow loading PKCS#11 libraries from
+The default is to allow loading libraries from
 .Dq /usr/lib/*,/usr/local/lib/* .
-PKCS#11 libraries that do not match the whitelist will be refused.
+Libraries that do not match the whitelist will be refused.
 See PATTERNS in
 .Xr ssh_config 5
 for a description of pattern-list syntax.
