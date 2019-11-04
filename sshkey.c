@@ -1998,13 +1998,13 @@ sshkey_from_private(const struct sshkey *k, struct sshkey **pkp)
 	int r = SSH_ERR_INTERNAL_ERROR;
 
 	*pkp = NULL;
+	if ((n = sshkey_new(k->type)) == NULL)
+		return SSH_ERR_ALLOC_FAIL;
+
 	switch(k->type) {
 #ifdef WITH_OPENSSL
 	case KEY_DSA:
 	case KEY_DSA_CERT:
-		if ((n = sshkey_new(k->type)) == NULL)
-			return SSH_ERR_ALLOC_FAIL;
-
 		{
 		const BIGNUM *k_p = NULL, *k_q = NULL, *k_g = NULL, *k_pub_key = NULL;
 		BIGNUM *n_p = NULL, *n_q = NULL, *n_g = NULL, *n_pub_key = NULL;
@@ -2043,9 +2043,6 @@ sshkey_from_private(const struct sshkey *k, struct sshkey **pkp)
 # ifdef OPENSSL_HAS_ECC
 	case KEY_ECDSA:
 	case KEY_ECDSA_CERT:
-		if ((n = sshkey_new(k->type)) == NULL)
-			return SSH_ERR_ALLOC_FAIL;
-
 		n->ecdsa_nid = k->ecdsa_nid;
 		n->ecdsa = EC_KEY_new_by_curve_name(k->ecdsa_nid);
 		if (n->ecdsa == NULL) {
@@ -2061,9 +2058,6 @@ sshkey_from_private(const struct sshkey *k, struct sshkey **pkp)
 # endif /* OPENSSL_HAS_ECC */
 	case KEY_RSA:
 	case KEY_RSA_CERT:
-		if ((n = sshkey_new(k->type)) == NULL)
-			return SSH_ERR_ALLOC_FAIL;
-
 		{
 		const BIGNUM *k_n = NULL, *k_e = NULL;
 		BIGNUM *n_n = NULL, *n_e = NULL;
@@ -2092,9 +2086,6 @@ sshkey_from_private(const struct sshkey *k, struct sshkey **pkp)
 #endif /* WITH_OPENSSL */
 	case KEY_ED25519:
 	case KEY_ED25519_CERT:
-		if ((n = sshkey_new(k->type)) == NULL)
-			return SSH_ERR_ALLOC_FAIL;
-
 		if (k->ed25519_pk != NULL) {
 			if ((n->ed25519_pk = malloc(ED25519_PK_SZ)) == NULL) {
 				r = SSH_ERR_ALLOC_FAIL;
@@ -2106,9 +2097,6 @@ sshkey_from_private(const struct sshkey *k, struct sshkey **pkp)
 #ifdef WITH_XMSS
 	case KEY_XMSS:
 	case KEY_XMSS_CERT:
-		if ((n = sshkey_new(k->type)) == NULL)
-			return SSH_ERR_ALLOC_FAIL;
-
 		if ((r = sshkey_xmss_init(n, k->xmss_name)) != 0)
 			goto out;
 		if (k->xmss_pk != NULL) {
@@ -2126,7 +2114,8 @@ sshkey_from_private(const struct sshkey *k, struct sshkey **pkp)
 		break;
 #endif /* WITH_XMSS */
 	default:
-		return SSH_ERR_KEY_TYPE_UNKNOWN;
+		r = SSH_ERR_KEY_TYPE_UNKNOWN;
+		goto out;
 	}
 	if (sshkey_is_cert(k) && (r = sshkey_cert_copy(k, n)) != 0)
 		goto out;
