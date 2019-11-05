@@ -3914,6 +3914,7 @@ AC_CHECK_TYPES([fsblkcnt_t, fsfilcnt_t], , , [
 ])
 
 m4_define(statfs_includes,[[
+#include <sys/param.h>
 #include <sys/types.h>
 #ifdef HAVE_SYS_BITYPES_H
 #include <sys/bitypes.h>
@@ -3926,6 +3927,9 @@ m4_define(statfs_includes,[[
 #endif
 #ifdef HAVE_SYS_VFS_H
 #include <sys/vfs.h>
+#endif
+#ifdef HAVE_SYS_MOUNT_H
+#include <sys/mount.h>
 #endif
 ]])
 AC_CHECK_MEMBER([struct statfs.f_files], [], [], [statfs_includes])
