@@ -5401,27 +5401,18 @@ AC_CHECK_FUNCS([ \
   RSA_generate_key_ex \
 ])
 
-# check for openssl 1.0+ functions ...
+# check for openssl 1.0.0+ functions ...
 AC_CHECK_FUNCS([ \
   ERR_remove_thread_state \
   EVP_MD_flags \
   EVP_PKEY_id \
-])
-
-# check for openssl 3.0+ functions ...
-AC_CHECK_FUNCS([ \
-  BN_check_prime \
+  X509_STORE_set_verify_cb \
 ])
 
 # check for some structures
 AC_CHECK_MEMBERS([ECDSA_METHOD.name], [], [],
 [#include <openssl/ecdsa.h>]
 )
-
-# check for openssl 1.0.0+ functions ...
-AC_CHECK_FUNCS([ \
-  X509_STORE_set_verify_cb \
-])
 
 # check for openssl 1.0.2+ functions ...
 AC_CHECK_FUNCS([ \
@@ -5493,6 +5484,7 @@ fi
 
 # check for openssl 3.0+ functions ...
 AC_CHECK_FUNCS([ \
+  BN_check_prime \
   ERR_get_error_all \
 ])
 
