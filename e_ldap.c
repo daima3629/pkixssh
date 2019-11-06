@@ -168,7 +168,10 @@ ldap_store_expect(OSSL_STORE_LOADER_CTX *ctx, int expected) {
 
 
 static int
-ldap_store_find(OSSL_STORE_LOADER_CTX *ctx, OSSL_STORE_SEARCH *criterion) {
+ldap_store_find(
+    OSSL_STORE_LOADER_CTX *ctx,
+    STORE_FIND_CRITERION_CONST OSSL_STORE_SEARCH *criterion
+) {
 	int type;
 
 	type = OSSL_STORE_SEARCH_get_type(criterion);

@@ -1,6 +1,6 @@
 #
 # Copyright (c) 1999-2004 Damien Miller
-# Copyright (c) 2002-2018 Roumen Petrov
+# Copyright (c) 2002-2019 Roumen Petrov
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -5545,6 +5545,24 @@ if test "x$ac_cv_func_sk_OPENSSL_STRING_new_null" = xyes; then
     [HAVE_SK_OPENSSL_STRING_NEW_NULL],
     [1], [Define to 1 if you have the 'sk_OPENSSL_STRING_new_null' function.])
 fi
+
+AC_MSG_CHECKING([whether store find method uses const criteria])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+#include <openssl/store.h>
+typedef int (*OSSL_STORE_find_fn)(OSSL_STORE_LOADER_CTX *ctx,
+    const OSSL_STORE_SEARCH *criteria);
+]],[[
+]])],
+[ AC_MSG_RESULT([yes])
+  store_find_criterion_const="const"
+],
+[ AC_MSG_RESULT([no])
+  store_find_criterion_const="/* not const */"
+]
+)
+AC_DEFINE_UNQUOTED([STORE_FIND_CRITERION_CONST], [$store_find_criterion_const],
+  [Define as const if store find method uses const criteria]
+)
 
 
 # test FIPS enabled openssl
