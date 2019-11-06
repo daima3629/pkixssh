@@ -223,7 +223,9 @@ ERR_load_SSHLDAP_strings(void) {
 	SSHLDAP_lib_name[0].error = ERR_PACK(ERR_LIB_SSHLDAP, 0, 0);
 	ERR_load_strings(0, SSHLDAP_lib_name);
 #endif /*ndef OPENSSL_NO_ERR*/
+#ifndef USE_X509_LOOKUP_STORE
 	ERR_load_X509byLDAP_strings();
+#endif
 }
 
 

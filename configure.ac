@@ -5486,6 +5486,7 @@ fi
 AC_CHECK_FUNCS([ \
   BN_check_prime \
   ERR_get_error_all \
+  X509_LOOKUP_store \
 ])
 
 # functions hidden in openssl compatible libraries

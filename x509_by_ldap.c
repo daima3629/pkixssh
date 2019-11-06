@@ -24,6 +24,10 @@
 
 #include "x509_by_ldap.h"
 #include "ssh_ldap.h"
+
+#ifndef USE_X509_LOOKUP_STORE
+/* custom X.509 look-up */
+
 #ifdef USE_LDAP_STORE
 #  include <openssl/store.h>
 #endif
@@ -743,3 +747,10 @@ done:
 #endif
 	return count > 0;
 }
+
+#else /*def USE_X509_LOOKUP_STORE*/
+
+/* use OpenSSL 3.0+ X.509 look-up "by_store" */
+typedef int x509_by_ldap_empty_translation_unit;
+
+#endif

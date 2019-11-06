@@ -94,6 +94,11 @@ ldapsearch_advance(ldapsearch_result* r);
 int/*bool*/	set_ldap_version(const char *ver);
 #endif
 
+#undef USE_X509_LOOKUP_STORE
+#if defined(USE_LDAP_STORE) && defined(HAVE_X509_LOOKUP_STORE)
+#  define USE_X509_LOOKUP_STORE	1
+#endif
+
 
 #undef TRACE_BY_LDAP_ENABLED
 #ifdef TRACE_BY_LDAP

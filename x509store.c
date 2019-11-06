@@ -709,7 +709,13 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 		X509_LOOKUP_METHOD* lookup_method;
 		X509_LOOKUP *lookup;
 
+#ifdef USE_X509_LOOKUP_STORE
+		#define SSH_X509_LOOKUP_ADD	X509_LOOKUP_add_store
+		lookup_method = X509_LOOKUP_store();
+#else
+		#define SSH_X509_LOOKUP_ADD	X509_LOOKUP_add_ldap
 		lookup_method = X509_LOOKUP_ldap();
+#endif
 
 #ifdef USE_LDAP_STORE
 		/* NOTE: All LDAP-connections will use one and the same protocol version */
@@ -725,7 +731,7 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 			fatal("ssh_x509store_addlocations: cannot add ldap lookup !");
 			return 0; /* ;-) */
 		}
-		if (X509_LOOKUP_add_ldap(lookup, _locations->ldap_url)) {
+		if (SSH_X509_LOOKUP_ADD(lookup, _locations->ldap_url)) {
 			debug2("ldap url '%.400s' added to x509 store", _locations->ldap_url);
 		}
 #ifndef USE_LDAP_STORE
@@ -744,7 +750,7 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 			fatal("ssh_x509store_addlocations: cannot add ldap lookup(revoked) !");
 			return 0; /* ;-) */
 		}
-		if (X509_LOOKUP_add_ldap(lookup, _locations->ldap_url)) {
+		if (SSH_X509_LOOKUP_ADD(lookup, _locations->ldap_url)) {
 			debug2("ldap url '%.400s' added to x509 store(revoked)", _locations->ldap_url);
 		}
 #ifndef USE_LDAP_STORE
