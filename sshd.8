@@ -43,7 +43,7 @@
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
 .\" $OpenBSD: sshd.8,v 1.304 2018/07/22 12:16:59 dtucker Exp $
-.Dd $Mdocdate: June 14 2019 $
+.Dd $Mdocdate: November 8 2019 $
 .Dt SSHD 8
 .Os
 .Sh NAME
@@ -446,27 +446,48 @@ comments).
 Public keys consist of the following space-separated fields:
 options, keytype, base64-encoded key, comment.
 The options field is optional.
-The keytype is
-.Dq ecdsa-sha2-nistp256 ,
-.Dq ecdsa-sha2-nistp384 ,
-.Dq ecdsa-sha2-nistp521 ,
-.Dq ssh-ed25519 ,
-.Dq ssh-dss
-or
-.Dq ssh-rsa ;
-the comment field is not used for anything (but may be convenient for the
+The supported key types are:
+.Pp
+.Bl -item -compact -offset indent
+.It
+ecdsa-sha2-nistp256
+.It
+ecdsa-sha2-nistp384
+.It
+ecdsa-sha2-nistp521
+.It
+ssh-ed25519
+.It
+ssh-dss
+.It
+ssh-rsa
+.El
+.Pp
+The comment field is not used for anything (but may be convenient for the
 user to identify the key).
 .Dq ssh-rsa .
-In addition, user can use X.509 certificates. In such case keytype is
-.Dq x509v3-sign-rsa ,
-.Dq x509v3-ssh-rsa ,
-.Dq x509v3-rsa2048-sha256 ,
-.Dq x509v3-ecdsa-sha2-nistp256 ,
-.Dq x509v3-ecdsa-sha2-nistp384 ,
-.Dq x509v3-ecdsa-sha2-nistp521 ,
-.Dq x509v3-sign-dss ,
-or
-.Dq x509v3-ssh-dss .
+In addition, user can use X.509 certificates.
+In such case keytype is one of:
+.Pp
+.Bl -item -compact -offset indent
+.It
+x509v3-sign-rsa
+.It
+x509v3-ssh-rsa
+.It
+x509v3-rsa2048-sha256
+.It
+x509v3-ecdsa-sha2-nistp256
+.It
+x509v3-ecdsa-sha2-nistp384
+.It
+x509v3-ecdsa-sha2-nistp521
+.It
+x509v3-sign-dss
+.It
+x509v3-ssh-dss
+.El
+.Pp
 Instead of
 .Dq "base64 encoded key"
 line must contain base64 encoded X.509 certificate (old style) or
