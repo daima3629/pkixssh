@@ -1102,7 +1102,7 @@ static int
 identity_sign(struct identity *id, ssh_sign_ctx *id_ctx,
     u_char **sigp, size_t *lenp, const u_char *data, size_t datalen)
 {
-	struct sshkey *prv;
+	struct sshkey *prv = NULL;
 	int r;
 	ssh_sign_ctx ctx = { id_ctx->alg, id->key, id_ctx->compat, id_ctx->provider };
 
@@ -1117,24 +1117,27 @@ identity_sign(struct identity *id, ssh_sign_ctx *id_ctx,
 	 */
 	if (id->key != NULL &&
 	    (id->isprivate || (id->key->flags & SSHKEY_FLAG_EXT))) {
-		r = Xkey_sign(&ctx, sigp, lenp, data, datalen);
-		if (r != 0) return r;
-
-		return Xkey_check_sigalg(&ctx, *sigp, *lenp);
+		/* use passed identity */
+	} else {
+		/* Load the private key from the file. */
+		if ((prv = load_identity_file(id)) == NULL)
+			return SSH_ERR_KEY_NOT_FOUND;
+		if (id->key != NULL && !sshkey_equal_public(prv, id->key)) {
+			error("%s: private key %s contents do not match public",
+			   __func__, id->filename);
+			r = SSH_ERR_KEY_NOT_FOUND;
+			goto out;
+		}
+		if (id->key != NULL)
+		    prv->type = id->key->type;
+		ctx.key = prv;
 	}
 
-	/* Load the private key from the file. */
-	if ((prv = load_identity_file(id)) == NULL)
-		return SSH_ERR_KEY_NOT_FOUND;
-	if (id->key != NULL && !sshkey_equal_public(prv, id->key)) {
-		error("%s: private key %s contents do not match public",
-		   __func__, id->filename);
-		return SSH_ERR_KEY_NOT_FOUND;
-	}
-	if (id->key != NULL)
-	    prv->type = id->key->type;
-	ctx.key = prv;
 	r = Xkey_sign(&ctx, sigp, lenp, data, datalen);
+	if (r == 0)
+		r = Xkey_check_sigalg(&ctx, *sigp, *lenp);
+
+out:
 	sshkey_free(prv);
 	return r;
 }
