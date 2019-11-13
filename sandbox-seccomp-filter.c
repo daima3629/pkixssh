@@ -242,6 +242,9 @@ static const struct sock_filter preauth_insns[] = {
 #ifdef __NR_nanosleep
 	SC_ALLOW(__NR_nanosleep),
 #endif
+#ifdef __NR_clock_nanosleep
+	SC_ALLOW(__NR_clock_nanosleep),
+#endif
 #ifdef __NR__newselect
 	SC_ALLOW(__NR__newselect),
 #endif
@@ -312,6 +315,7 @@ ssh_sandbox_init(struct monitor *monitor)
 {
 	struct ssh_sandbox *box;
 
+	UNUSED(monitor);
 	/*
 	 * Strictly, we don't need to maintain any state here but we need
 	 * to return non-NULL to satisfy the API.
@@ -366,6 +370,7 @@ ssh_sandbox_child(struct ssh_sandbox *box)
 	struct rlimit rl_zero;
 	int nnp_failed = 0;
 
+	UNUSED(box);
 	/* Set rlimits for completeness if possible. */
 	rl_zero.rlim_cur = rl_zero.rlim_max = 0;
 	if (setrlimit(RLIMIT_FSIZE, &rl_zero) == -1)
