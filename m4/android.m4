@@ -88,13 +88,13 @@ case "$host" in
   dnl Function "getrandom" is declared in API 28(unified headers).
   dnl Before API 28 it is defined in "C" static-library on some
   dnl platforms depending from NDK version!
-  dnl => do not use "nl_langinfo" for consistency
+  dnl => do not use "getrandom" for consistency
   ac_cv_func_getrandom=ignore
 
   dnl Function "glob" is declared in API 28(unified headers).
   dnl Before API 28 it is defined in "C" static-library on some
   dnl platforms depending from NDK version!
-  dnl => do not use "nl_langinfo" for consistency
+  dnl => do not use "glob" for consistency
   ac_cv_func_glob=ignore
   ;;
 esac
