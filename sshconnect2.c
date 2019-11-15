@@ -1,4 +1,4 @@
-/* $OpenBSD: sshconnect2.c,v 1.308 2019/08/05 11:50:33 dtucker Exp $ */
+/* $OpenBSD: sshconnect2.c,v 1.314 2019/11/15 02:37:24 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Damien Miller.  All rights reserved.
@@ -38,9 +38,9 @@
 #include <netdb.h>
 #include <pwd.h>
 #include <signal.h>
-#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
 #include <unistd.h>
 #if defined(HAVE_STRNVIS) && defined(HAVE_VIS_H) && !defined(BROKEN_STRNVIS)
 #include <vis.h>

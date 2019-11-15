@@ -58,9 +58,9 @@
 #endif
 #include <pwd.h>
 #include <signal.h>
-#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
 #include <unistd.h>
 #ifdef USE_SYSTEM_GLOB
 # include <glob.h>
