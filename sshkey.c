@@ -2579,6 +2579,7 @@ sshkey_from_blob_internal(struct sshbuf *b, struct sshkey **keyp,
 
 		goto out;
 		} break;
+# ifdef OPENSSL_HAS_ECC
 	case KEY_ECDSA_CERT:
 		/* Skip nonce */
 		if (sshbuf_get_string_direct(b, NULL, NULL) != 0) {
@@ -2586,7 +2587,6 @@ sshkey_from_blob_internal(struct sshbuf *b, struct sshkey **keyp,
 			goto out;
 		}
 		/* FALLTHROUGH */
-# ifdef OPENSSL_HAS_ECC
 	case KEY_ECDSA:
 		if ((key = sshkey_new(type)) == NULL) {
 			ret = SSH_ERR_ALLOC_FAIL;
