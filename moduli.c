@@ -1,4 +1,4 @@
-/* $OpenBSD: moduli.c,v 1.36 2019/10/04 03:26:58 dtucker Exp $ */
+/* $OpenBSD: moduli.c,v 1.37 2019/11/15 06:00:20 djm Exp $ */
 /*
  * Copyright 1994 Phil Karn <karn@qualcomm.com>
  * Copyright 1996-1998, 2003 William Allen Simpson <wsimpson@greendragon.com>
@@ -62,16 +62,16 @@
 
 
 static inline int
-SSH_check_prime(const BIGNUM *p, BN_CTX *ctx, int nchecks) {
+SSH_check_prime(const BIGNUM *p, int nchecks) {
 #if defined(HAVE_BN_CHECK_PRIME)
 	/* OpenSSL 3.0+ */
 	UNUSED(nchecks);
-	return BN_check_prime(p, ctx, NULL);
+	return BN_check_prime(p, NULL, NULL);
 #elif defined(HAVE_BN_IS_PRIME_EX)
 	/* OpenSSL 0.9.8+, deprecated in 3.0 */
-	return BN_is_prime_ex(p, nchecks, ctx, NULL);
+	return BN_is_prime_ex(p, nchecks, NULL, NULL);
 #else	/* OpenSSL <= 0.9.7* */
-	return BN_is_prime(p, nchecks, NULL, ctx, NULL);
+	return BN_is_prime(p, nchecks, NULL, NULL, NULL);
 #endif
 }
 
@@ -592,7 +592,6 @@ prime_test(FILE *in, FILE *out, u_int32_t trials, u_int32_t generator_wanted,
     char *checkpoint_file, unsigned long start_lineno, unsigned long num_lines)
 {
 	BIGNUM *q, *p, *a;
-	BN_CTX *ctx;
 	char *cp, *lp;
 	u_int32_t count_in = 0, count_out = 0, count_possible = 0;
 	u_int32_t generator_known, in_tests, in_tries, in_type, in_size;
@@ -616,8 +615,6 @@ prime_test(FILE *in, FILE *out, u_int32_t trials, u_int32_t generator_wanted,
 		fatal("BN_new failed");
 	if ((q = BN_new()) == NULL)
 		fatal("BN_new failed");
-	if ((ctx = BN_CTX_new()) == NULL)
-		fatal("BN_CTX_new failed");
 
 	debug2("%.24s Final %u Miller-Rabin trials (%x generator)",
 	    ctime(&time_start), trials, generator_wanted);
@@ -767,7 +764,7 @@ prime_test(FILE *in, FILE *out, u_int32_t trials, u_int32_t generator_wanted,
 		 * that p is also prime. A single pass will weed out the
 		 * vast majority of composite q's.
 		 */
-		is_prime = SSH_check_prime(q, ctx, 1);
+		is_prime = SSH_check_prime(q, 1);
 		if (is_prime < 0)
 			fatal("SSH_check_prime failed");
 		if (is_prime == 0) {
@@ -783,7 +780,7 @@ prime_test(FILE *in, FILE *out, u_int32_t trials, u_int32_t generator_wanted,
 		 * will show up on the first Rabin-Miller iteration so it
 		 * doesn't hurt to specify a high iteration count.
 		 */
-		is_prime = SSH_check_prime(p, ctx, trials);
+		is_prime = SSH_check_prime(p, trials);
 		if (is_prime < 0)
 			fatal("SSH_check_prime failed");
 		if (is_prime == 0) {
@@ -793,7 +790,7 @@ prime_test(FILE *in, FILE *out, u_int32_t trials, u_int32_t generator_wanted,
 		debug("%10u: p is almost certainly prime", count_in);
 
 		/* recheck q more rigorously */
-		is_prime = SSH_check_prime(q, ctx, trials - 1);
+		is_prime = SSH_check_prime(q, trials - 1);
 		if (is_prime < 0)
 			fatal("SSH_check_prime failed");
 		if (is_prime == 0) {
@@ -816,7 +813,6 @@ prime_test(FILE *in, FILE *out, u_int32_t trials, u_int32_t generator_wanted,
 	free(lp);
 	BN_free(p);
 	BN_free(q);
-	BN_CTX_free(ctx);
 
 	if (checkpoint_file != NULL)
 		unlink(checkpoint_file);
