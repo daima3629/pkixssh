@@ -1,4 +1,4 @@
-/* $OpenBSD: auth-options.c,v 1.89 2019/09/13 04:36:43 dtucker Exp $ */
+/* $OpenBSD: auth-options.c,v 1.90 2019/11/25 00:54:23 djm Exp $ */
 /*
  * Copyright (c) 2018 Damien Miller <djm@mindrot.org>
  *
@@ -567,14 +567,14 @@ sshauthopt_merge(const struct sshauthopt *primary,
 			goto alloc_fail;
 	}
 
-	/* Flags are logical-AND (i.e. must be set in both for permission) */
-#define OPTFLAG(x) ret->x = (primary->x == 1) && (additional->x == 1)
-	OPTFLAG(permit_port_forwarding_flag);
-	OPTFLAG(permit_agent_forwarding_flag);
-	OPTFLAG(permit_x11_forwarding_flag);
-	OPTFLAG(permit_pty_flag);
-	OPTFLAG(permit_user_rc);
-#undef OPTFLAG
+#define OPTFLAG_AND(x) ret->x = (primary->x == 1) && (additional->x == 1)
+	/* Permissive flags are logical-AND (i.e. must be set in both) */
+	OPTFLAG_AND(permit_port_forwarding_flag);
+	OPTFLAG_AND(permit_agent_forwarding_flag);
+	OPTFLAG_AND(permit_x11_forwarding_flag);
+	OPTFLAG_AND(permit_pty_flag);
+	OPTFLAG_AND(permit_user_rc);
+#undef OPTFLAG_AND
 
 	/* Earliest expiry time should win */
 	if (primary->valid_before != 0)
