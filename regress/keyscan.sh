@@ -1,10 +1,10 @@
-#	$OpenBSD: keyscan.sh,v 1.9 2019/01/28 03:50:39 dtucker Exp $
+#	$OpenBSD: keyscan.sh,v 1.11 2019/11/26 23:43:10 djm Exp $
 #	Placed in the Public Domain.
 
 tid="keyscan"
 
 algs=
-for i in $SSH_KEYTYPES; do
+for i in $SSH_HOSTKEY_TYPES ; do
 	if [ -z "$algs" ]; then
 		algs="$i"
 	else
@@ -15,7 +15,7 @@ echo "HostKeyAlgorithms $algs" >> $OBJ/sshd_config
 
 start_sshd
 
-for t in $SSH_KEYTYPES; do
+for t in $SSH_HOSTKEY_TYPES ; do
 	trace "keyscan type $t"
 	${SSHKEYSCAN} -t $t -p $PORT 127.0.0.1 127.0.0.1 127.0.0.1 \
 		> /dev/null 2>&1

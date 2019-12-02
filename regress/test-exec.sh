@@ -480,12 +480,14 @@ fi
 rm -f $OBJ/known_hosts $OBJ/authorized_keys_$USER
 
 SSH_KEYTYPES=`$SSH -Q key-plain | grep -v "^x509v3-"`
+SSH_HOSTKEY_TYPES=`$SSH -Q key-plain | grep -v "^x509v3-"`
 
 case $SCRIPT in
 */fips-*)
   OPENSSL_FIPS=1
   #do not export OPENSSL_FIPS here
   SSH_KEYTYPES="ssh-rsa"
+  SSH_HOSTKEY_TYPES="ssh-rsa"
   SSHKEYGEN="$SSHKEYGEN -m PEM"
   ;;
 esac
@@ -500,20 +502,24 @@ for t in ${SSH_KEYTYPES}; do
 		rm -f $OBJ/$t
 		${SSHKEYGEN} -q -N '' -t $t  -f $OBJ/$t ||\
 			fail "ssh-keygen for $t failed"
-		# use key as host key, too
-		cp $OBJ/$t $OBJ/host.$t
 	fi
 
+	# setup authorized keys
+	cat $OBJ/$t.pub >> $OBJ/authorized_keys_$USER
+	echo IdentityFile $OBJ/$t >> $OBJ/ssh_config
+done
+
+for t in ${SSH_HOSTKEY_TYPES}; do
 	# known hosts file for client
 	(
 		printf 'localhost-with-alias,127.0.0.1,::1 '
 		cat $OBJ/$t.pub
 	) >> $OBJ/known_hosts
 
-	# setup authorized keys
-	cat $OBJ/$t.pub >> $OBJ/authorized_keys_$USER
-	echo IdentityFile $OBJ/$t >> $OBJ/ssh_config
-
+	if test ! -f $OBJ/host.$t || test $OBJ/$t -nt $OBJ/host.$t ; then
+		# use key as host key, too
+		cp $OBJ/$t $OBJ/host.$t
+	fi
 	echo HostKey $OBJ/host.$t >> $OBJ/sshd_config
 
 	# don't use SUDO for proxy connect
