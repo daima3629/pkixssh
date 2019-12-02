@@ -326,14 +326,6 @@ process(void)
 	}
 }
 
-void
-cleanup_exit(int i)
-{
-	/* XXX */
-	_exit(i);
-}
-
-
 int
 main(int argc, char **argv)
 {
