@@ -40,8 +40,9 @@ for t in ${SSH_KEYTYPES}; do
 	cat $OBJ/$t-agent.pub >> $OBJ/authorized_keys_$USER
 	# add privat key to agent
 	${SSHADD} $OBJ/$t-agent > /dev/null 2>&1
-	if [ $? -ne 0 ]; then
-		fail "ssh-add did succeed exit code 0"
+	retval=$?
+	if test $retval -ne 0 ; then
+		fail "ssh-add failed exit code $retval"
 	fi
 	# Remove private key to ensure that we aren't accidentally using it.
 	rm -f $OBJ/$t-agent
