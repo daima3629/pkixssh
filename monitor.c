@@ -1,4 +1,4 @@
-/* $OpenBSD: monitor.c,v 1.199 2019/10/07 23:10:38 djm Exp $ */
+/* $OpenBSD: monitor.c,v 1.201 2019/11/19 22:21:15 djm Exp $ */
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * Copyright 2002 Markus Friedl <markus@openbsd.org>
@@ -1443,9 +1443,10 @@ mm_answer_keyverify(struct ssh *ssh, int sock, struct sshbuf *m)
 	ssh_sign_ctx ctx = { pkalg, key, &ctx_compat, NULL };
 
 	ret = Xkey_verify(&ctx, signature, signaturelen, data, datalen);
+	debug3("%s: %s %p signature %s%s%s", __func__, auth_method, (void*)key,
+	    (ret == 0) ? "verified" : "unverified",
+	    (ret != 0) ? ": " : "", (ret != 0) ? ssh_err(ret) : "");
 }
-	debug3("%s: %s %p signature %s", __func__, auth_method, (void*)key,
-	    (ret == 0) ? "verified" : "unverified");
 	auth2_record_key(authctxt, ret == 0, key);
 
 	free(pkalg);
