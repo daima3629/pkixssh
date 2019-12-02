@@ -1,34 +1,44 @@
-#include "includes.h"
-
-#ifdef HAVE_EVP_SHA256 /* OpenSSL 0.9.8+ */
-
-/* $OpenBSD: hash.c,v 1.5 2018/01/13 00:24:09 naddy Exp $ */
+/* $OpenBSD: hash.c,v 1.6 2019/11/29 00:11:21 djm Exp $ */
 /*
  * Public domain. Author: Christian Weisgerber <naddy@openbsd.org>
  * API compatible reimplementation of function from nacl
+ *
+ * Adapted for PKIX-SSH by Roumen Petrov.
  */
 
 #include "crypto_api.h"
 
-#include <stdarg.h>
-
-#include "digest.h"
-#include "log.h"
-#include "ssherr.h"
+#if defined(HAVE_EVP_SHA512) /* OpenSSL 0.9.8+ */
+# include <openssl/evp.h>
 
 int
 crypto_hash_sha512(unsigned char *out, const unsigned char *in,
     unsigned long long inlen)
 {
-	int r;
-
-	if ((r = ssh_digest_memory(SSH_DIGEST_SHA512, in, inlen, out,
-	    crypto_hash_sha512_BYTES)) != 0)
-		fatal("%s: %s", __func__, ssh_err(r));
+	if (!EVP_Digest(in, inlen, out, NULL, EVP_sha512(), NULL))
+		return -1;
 	return 0;
 }
 
-#else /*ndef HAVE_EVP_SHA256*/
+#elif defined(HAVE_SHA512UPDATE)
+# ifdef HAVE_SHA2_H
+#  include <sha2.h>
+# endif
+
+int
+crypto_hash_sha512(unsigned char *out, const unsigned char *in,
+    unsigned long long inlen)
+{
+
+	SHA2_CTX ctx;
+
+	SHA512Init(&ctx);
+	SHA512Update(&ctx, in, inlen);
+	SHA512Final(out, &ctx);
+	return 0;
+}
+
+#else
 
 /* Copied from nacl-20110221/crypto_hash/sha512/ref/hash.c */
 
@@ -37,8 +47,6 @@ crypto_hash_sha512(unsigned char *out, const unsigned char *in,
 D. J. Bernstein
 Public domain.
 */
-
-#include "crypto_api.h"
 
 int	crypto_hashblocks_sha512(unsigned char *, const unsigned char *,
      unsigned long long);
@@ -105,4 +113,5 @@ int crypto_hash_sha512(unsigned char *out,const unsigned char *in,unsigned long 
 
   return 0;
 }
-#endif /*ndef HAVE_EVP_SHA256*/
+
+#endif

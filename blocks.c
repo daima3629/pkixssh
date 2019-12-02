@@ -11,6 +11,9 @@
 
 typedef unsigned long long uint64;
 
+int	crypto_hashblocks_sha512(unsigned char *, const unsigned char *,
+     unsigned long long);
+
 static uint64 load_bigendian(const unsigned char *x)
 {
   return
