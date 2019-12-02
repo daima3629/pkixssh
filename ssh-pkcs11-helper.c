@@ -368,9 +368,7 @@ main(int argc, char **argv)
 		}
 	}
 
-#ifdef ENABLE_PKCS11
 	ERR_load_PKCS11_strings();
-#endif
 
 	log_init(__progname, log_level, log_facility, log_stderr);
 
