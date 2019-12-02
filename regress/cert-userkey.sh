@@ -19,8 +19,8 @@ if echo "$PLAIN_TYPES" | grep '^rsa$' >/dev/null 2>&1 ; then
 fi
 
 kname() {
-	case $ktype in
-	rsa-sha2-*) n="$ktype" ;;
+	case $1 in
+	rsa-sha2-*) n="$1" ;;
 	# subshell because some seds will add a newline
 	*) n=$(echo $1 | sed 's/^dsa/ssh-dss/;s/^rsa/ssh-rsa/;s/^ed/ssh-ed/') ;;
 	esac
