@@ -100,6 +100,6 @@ ERR_load_PKCS11_strings(void) {
 
 #else /*def ENABLE_PKCS11*/
 
-typedef int pkcs11_empty_translation_unit;
+typedef int ssh_pkcs11_err_empty_translation_unit;
 
 #endif

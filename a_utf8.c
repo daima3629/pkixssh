@@ -11,7 +11,7 @@
 
 #ifdef HAVE_UTF8_GETC
 
-typedef int empty_translation_unit__a_utf8;
+typedef int a_utf8_empty_translation_unit;
 
 #else
 /* UTF8 utilities */
