@@ -1,4 +1,4 @@
-/* $OpenBSD: clientloop.c,v 1.328 2019/11/13 04:47:52 deraadt Exp $ */
+/* $OpenBSD: clientloop.c,v 1.329 2019/11/25 00:51:37 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -2059,7 +2059,7 @@ client_global_hostkeys_private_confirm(struct ssh *ssh, int type,
 			    __func__, ssh_err(r));
 			goto out;
 		}
-	{	ssh_sign_ctx verify_ctx = { pkalg, ctx->keys[i], &ssh->compat, NULL };
+	{	ssh_verify_ctx verify_ctx = { pkalg, ctx->keys[i], &ssh->compat, NULL };
 
 		r = Xkey_verify(&verify_ctx, sig, siglen, sshbuf_ptr(signdata), sshbuf_len(signdata));
 		if (r != 0) {

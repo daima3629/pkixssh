@@ -132,9 +132,9 @@ auth_rhosts2(struct passwd *, const char *, const char *, const char *);
 
 int      auth_password(struct ssh *, const char *);
 
-int	 hostbased_xkey_allowed(struct ssh *, struct passwd *, ssh_sign_ctx *,
+int	 hostbased_xkey_allowed(struct ssh *, struct passwd *, ssh_verify_ctx *,
 	     const char *, char *);
-int	 user_xkey_allowed(struct ssh *, struct passwd *, ssh_sign_ctx *, int,
+int	 user_xkey_allowed(struct ssh *, struct passwd *, ssh_verify_ctx *, int,
 	     struct sshauthopt **);
 
 int	 auth2_key_already_used(Authctxt *, const struct sshkey *);

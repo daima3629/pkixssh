@@ -1,4 +1,4 @@
-/* $OpenBSD: kexgexc.c,v 1.34 2019/01/23 00:30:41 djm Exp $ */
+/* $OpenBSD: kexgexc.c,v 1.35 2019/11/25 00:51:37 djm Exp $ */
 /*
  * Copyright (c) 2000 Niels Provos.  All rights reserved.
  * Copyright (c) 2001 Markus Friedl.  All rights reserved.
@@ -207,7 +207,7 @@ input_kex_dh_gex_reply(int type, u_int32_t seq, struct ssh *ssh)
 	    hash, &hashlen)) != 0)
 		goto out;
 
-{	ssh_sign_ctx ctx = { kex->hostkey_alg, server_host_key, &ssh->compat, NULL };
+{	ssh_verify_ctx ctx = { kex->hostkey_alg, server_host_key, &ssh->compat, NULL };
 
 	r = Xkey_verify(&ctx, signature, slen, hash, hashlen);
 	if (r != 0) goto out;

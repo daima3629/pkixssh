@@ -1,4 +1,4 @@
-/* $OpenBSD: monitor_wrap.h,v 1.42 2019/09/06 05:23:55 djm Exp $ */
+/* $OpenBSD: monitor_wrap.h,v 1.44 2019/11/25 00:51:37 djm Exp $ */
 
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
@@ -54,11 +54,11 @@ void mm_inform_authserv(char *, char *);
 struct passwd *mm_getpwnamallow(struct ssh *, const char *);
 char *mm_auth2_read_banner(void);
 int mm_auth_password(struct ssh *, char *);
-int mm_user_xkey_allowed(struct ssh *, struct passwd *, ssh_sign_ctx *, int,
+int mm_user_xkey_allowed(struct ssh *, struct passwd *, ssh_verify_ctx *, int,
     struct sshauthopt **);
 int mm_hostbased_xkey_allowed(struct ssh *, struct passwd *,
-	ssh_sign_ctx *, const char *, const char *);
-int mm_Xkey_verify(ssh_sign_ctx *ctx,
+	ssh_verify_ctx *, const char *, const char *);
+int mm_Xkey_verify(ssh_verify_ctx *ctx,
 	const u_char *sig, size_t siglen,
 	const u_char *data, size_t datalen);
 

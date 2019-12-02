@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-add.c,v 1.141 2019/09/06 05:23:55 djm Exp $ */
+/* $OpenBSD: ssh-add.c,v 1.147 2019/11/25 00:51:37 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -459,6 +459,8 @@ test_key(int agent_fd, const char *filename)
 	size_t slen = 0;
 	int r, ret = -1;
 	char data[1024];
+	const char *alg = sshkey_ssh_name(key);
+	ssh_compat ctx_compat = { 0, 0 };
 
 	if ((r = sshkey_load_public(filename, &key, NULL)) != 0) {
 		error("Couldn't read public key %s: %s", filename, ssh_err(r));
@@ -466,9 +468,7 @@ test_key(int agent_fd, const char *filename)
 	}
 	arc4random_buf(data, sizeof(data));
 
-{	const char *alg = sshkey_ssh_name(key);
-	ssh_compat ctx_compat = { 0, 0 };
-	ssh_sign_ctx ctx = { alg, key, &ctx_compat, NULL };
+{	ssh_sign_ctx ctx = { alg, key, &ctx_compat, NULL };
 
 	r = Xssh_agent_sign(agent_fd, &ctx, &sig, &slen, data, sizeof(data));
 	if (r != 0) {
@@ -476,6 +476,9 @@ test_key(int agent_fd, const char *filename)
 		    filename, ssh_err(r));
 		goto done;
 	}
+}
+{	ssh_verify_ctx ctx = { alg, key, &ctx_compat, NULL };
+
 	r = Xkey_verify(&ctx, sig, slen, data, sizeof(data));
 	if (r != 0) {
 		error("Signature verification failed for %s: %s",

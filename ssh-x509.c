@@ -1860,7 +1860,7 @@ done:
 
 static int
 ssh_x509_verify(
-	ssh_sign_ctx *ctx,
+	ssh_verify_ctx *ctx,
 	const u_char *sig, size_t siglen,
 	const u_char *data, size_t dlen
 ) {
@@ -2056,7 +2056,7 @@ out:
 
 
 int
-Xkey_verify(ssh_sign_ctx *ctx,
+Xkey_verify(ssh_verify_ctx *ctx,
 	    const u_char *sig, size_t siglen,
 	    const u_char *data, size_t dlen
 ) {

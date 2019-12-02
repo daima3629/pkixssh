@@ -894,6 +894,7 @@ struct winsize {
 
 /* secure shell typedefs */
 typedef struct ssh_compat_st ssh_compat;
-typedef struct ssh_signature_context_st ssh_sign_ctx;
+typedef struct ssh_sign_context_st ssh_sign_ctx;
+typedef struct ssh_verify_context_st ssh_verify_ctx;
 
 #endif /* _DEFINES_H */

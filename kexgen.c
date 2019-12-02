@@ -1,4 +1,4 @@
-/* $OpenBSD: kexgen.c,v 1.3 2019/09/06 05:23:55 djm Exp $ */
+/* $OpenBSD: kexgen.c,v 1.4 2019/11/25 00:51:37 djm Exp $ */
 /*
  * Copyright (c) 2019 Markus Friedl.  All rights reserved.
  * Copyright (c) 2019 Roumen Petrov.  All rights reserved.
@@ -218,7 +218,7 @@ input_kex_gen_reply(int type, u_int32_t seq, struct ssh *ssh)
 	    hash, &hashlen)) != 0)
 		goto out;
 
-{	ssh_sign_ctx ctx = { kex->hostkey_alg, server_host_key, &ssh->compat, NULL };
+{	ssh_verify_ctx ctx = { kex->hostkey_alg, server_host_key, &ssh->compat, NULL };
 
 	r = Xkey_verify(&ctx, signature, slen, hash, hashlen);
 	if (r != 0) goto out;

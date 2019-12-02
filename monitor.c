@@ -1,4 +1,4 @@
-/* $OpenBSD: monitor.c,v 1.201 2019/11/19 22:21:15 djm Exp $ */
+/* $OpenBSD: monitor.c,v 1.202 2019/11/25 00:51:37 djm Exp $ */
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * Copyright 2002 Markus Friedl <markus@openbsd.org>
@@ -1179,7 +1179,7 @@ mm_answer_keyallowed(struct ssh *ssh, int sock, struct sshbuf *m)
 	debug3("%s: xkey_from_blob: %s %p", __func__, pkalg, (void*)key);
 
 {	ssh_compat ctx_compat = { datafellows, xcompat };
-	ssh_sign_ctx ctx = { pkalg, key, &ctx_compat, NULL };
+	ssh_verify_ctx ctx = { pkalg, key, &ctx_compat, NULL };
 
 	if (key != NULL && authctxt->valid) {
 		/* These should not make it past the privsep child */
@@ -1440,7 +1440,7 @@ mm_answer_keyverify(struct ssh *ssh, int sock, struct sshbuf *m)
 		fatal("%s: bad signature data blob", __func__);
 
 {	ssh_compat ctx_compat = { datafellows, xcompat };
-	ssh_sign_ctx ctx = { pkalg, key, &ctx_compat, NULL };
+	ssh_verify_ctx ctx = { pkalg, key, &ctx_compat, NULL };
 
 	ret = Xkey_verify(&ctx, signature, signaturelen, data, datalen);
 	debug3("%s: %s %p signature %s%s%s", __func__, auth_method, (void*)key,

@@ -1,4 +1,4 @@
-/* $OpenBSD: sshkey.h,v 1.39 2019/11/13 07:53:10 markus Exp $ */
+/* $OpenBSD: sshkey.h,v 1.40 2019/11/25 00:51:37 djm Exp $ */
 
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
@@ -149,6 +149,12 @@ struct sshkey {
 
 #define	ED25519_SK_SZ	crypto_sign_ed25519_SECRETKEYBYTES
 #define	ED25519_PK_SZ	crypto_sign_ed25519_PUBLICKEYBYTES
+
+/* Additional fields contained in signature */
+struct sshkey_sig_details {
+	uint32_t sk_counter;	/* U2F signature counter */
+	uint8_t sk_flags;	/* U2F signature flags; see ssh-sk.h */
+};
 
 struct sshkey	*sshkey_new(int);
 void		 sshkey_free(struct sshkey *);

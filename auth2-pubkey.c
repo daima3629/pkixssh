@@ -1,4 +1,4 @@
-/* $OpenBSD: auth2-pubkey.c,v 1.94 2019/09/06 04:53:27 djm Exp $ */
+/* $OpenBSD: auth2-pubkey.c,v 1.95 2019/11/25 00:51:37 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2003-2019 Roumen Petrov.  All rights reserved.
@@ -171,7 +171,7 @@ userauth_pubkey(struct ssh *ssh)
 		goto done;
 	}
 
-{	ssh_sign_ctx ctx = { pkalg, key, &ssh->compat, NULL };
+{	ssh_verify_ctx ctx = { pkalg, key, &ssh->compat, NULL };
 
 	key_s = format_key(key);
 	if (sshkey_is_cert(key))
@@ -1100,7 +1100,7 @@ user_key_command_allowed2(struct ssh *ssh, struct passwd *user_pw,
  * Check whether key authenticates and authorises the user.
  */
 int
-user_xkey_allowed(struct ssh *ssh, struct passwd *pw, ssh_sign_ctx *ctx,
+user_xkey_allowed(struct ssh *ssh, struct passwd *pw, ssh_verify_ctx *ctx,
     int auth_attempt, struct sshauthopt **authoptsp)
 {
 	struct sshkey *key = ctx->key;

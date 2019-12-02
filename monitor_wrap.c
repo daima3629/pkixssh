@@ -1,4 +1,4 @@
-/* $OpenBSD: monitor_wrap.c,v 1.113 2019/06/28 13:35:04 deraadt Exp $ */
+/* $OpenBSD: monitor_wrap.c,v 1.116 2019/11/25 00:51:37 djm Exp $ */
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * Copyright 2002 Markus Friedl <markus@openbsd.org>
@@ -452,7 +452,7 @@ mm_auth_password(struct ssh *ssh, char *password)
 
 static int
 mm_xkey_allowed(enum mm_keytype type, const char *user, const char *host,
-    ssh_sign_ctx *ctx, int pubkey_auth_attempt, struct sshauthopt **authoptp)
+    ssh_verify_ctx *ctx, int pubkey_auth_attempt, struct sshauthopt **authoptp)
 {
 	const char *pkalg = ctx->alg;
 	struct sshbuf *m;
@@ -504,7 +504,7 @@ mm_xkey_allowed(enum mm_keytype type, const char *user, const char *host,
 
 int
 mm_user_xkey_allowed(
-    struct ssh *ssh, struct passwd *pw, ssh_sign_ctx *ctx,
+    struct ssh *ssh, struct passwd *pw, ssh_verify_ctx *ctx,
     int pubkey_auth_attempt, struct sshauthopt **authoptp
 ) {
 	UNUSED(ssh);
@@ -515,7 +515,7 @@ mm_user_xkey_allowed(
 
 int
 mm_hostbased_xkey_allowed(
-    struct ssh *ssh, struct passwd *pw, ssh_sign_ctx *ctx,
+    struct ssh *ssh, struct passwd *pw, ssh_verify_ctx *ctx,
     const char *user, const char *host
 ) {
 	UNUSED(ssh);
@@ -531,7 +531,7 @@ mm_hostbased_xkey_allowed(
 
 int
 mm_Xkey_verify(
-    ssh_sign_ctx *ctx,
+    ssh_verify_ctx *ctx,
     const u_char *sig, size_t siglen,
     const u_char *data, size_t datalen
 ) {

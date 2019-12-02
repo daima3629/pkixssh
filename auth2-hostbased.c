@@ -1,4 +1,4 @@
-/* $OpenBSD: auth2-hostbased.c,v 1.41 2019/09/06 04:53:27 djm Exp $ */
+/* $OpenBSD: auth2-hostbased.c,v 1.42 2019/11/25 00:51:37 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  *
@@ -172,7 +172,7 @@ userauth_hostbased(struct ssh *ssh)
 
 	/* test for allowed key and correct signature */
 	authenticated = 0;
-{	ssh_sign_ctx ctx = { pkalg, key, &ssh->compat, NULL };
+{	ssh_verify_ctx ctx = { pkalg, key, &ssh->compat, NULL };
 
 	if (PRIVSEP(hostbased_xkey_allowed(ssh, authctxt->pw, &ctx,
 	    cuser, chost)) &&
@@ -197,7 +197,7 @@ done:
 /* return 1 if given hostkey is allowed */
 int
 hostbased_xkey_allowed(struct ssh *ssh, struct passwd *pw,
-    ssh_sign_ctx *ctx, const char *cuser, char *chost)
+    ssh_verify_ctx *ctx, const char *cuser, char *chost)
 {
 	struct sshkey *key = ctx->key;
 	const char *resolvedname, *ipaddr, *lookup, *reason;
