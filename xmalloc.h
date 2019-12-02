@@ -16,6 +16,8 @@
  * called by a name other than "ssh" or "Secure Shell".
  */
 
+#include <stdarg.h> /*for va_list*/
+
 void	 ssh_malloc_init(void);
 void	*xmalloc(size_t);
 void	*xcalloc(size_t, size_t);
