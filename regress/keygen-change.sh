@@ -7,7 +7,6 @@ S1="secret1"
 S2="2secret"
 
 for t in $SSH_KEYTYPES; do
-	# generate user key for agent
 	trace "generating $t key"
 	rm -f $OBJ/$t-key
 	${SSHKEYGEN} -q -N ${S1} -t $t -f $OBJ/$t-key

@@ -136,6 +136,9 @@ if [ "x$TEST_SSH_CONCH" != "x" ]; then
 	*) CONCH=`which ${TEST_SSH_CONCH} 2>/dev/null` ;;
 	esac
 fi
+if [ "x$TEST_SSH_SSHPKCS11HELPER" != "x" ]; then
+	SSH_PKCS11_HELPER="${TEST_SSH_SSHPKCS11HELPER}"
+fi
 
 # Path to sshd must be absolute for rexec
 case "$SSHD" in
@@ -262,6 +265,8 @@ increase_datafile_size()
 # these should be used in tests
 export SSH SSHD SSHAGENT SSHADD SSHKEYGEN SSHKEYSCAN SFTP SFTPSERVER SCP
 #echo $SSH $SSHD $SSHAGENT $SSHADD $SSHKEYGEN $SSHKEYSCAN $SFTP $SFTPSERVER $SCP
+# these should be used by executables
+export SSH_PKCS11_HELPER
 
 # NOTE: always unset OPENSSL_FIPS even for build with FIPS
 # capable OpenSSL library. It will be set latter only if

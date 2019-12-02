@@ -4,10 +4,6 @@
 tid="pkcs11 agent test"
 
 TEST_SSH_PIN=""
-if test "x$TEST_SSH_SSHPKCS11HELPER" != "x" ; then
-	SSH_PKCS11_HELPER="$TEST_SSH_SSHPKCS11HELPER"
-	export SSH_PKCS11_HELPER
-fi
 TEST_SSH_PKCS11=/usr/local/lib/soft-pkcs11.so.0.0
 
 test -f "$TEST_SSH_PKCS11" || fatal "$TEST_SSH_PKCS11 does not exist"
