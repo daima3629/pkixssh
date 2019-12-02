@@ -1162,13 +1162,16 @@ void
 cleanup_exit(int i)
 {
 	cleanup_socket();
+#ifdef ENABLE_PKCS11
+	pkcs11_terminate();
+#endif
 	_exit(i);
 }
 
-/*ARGSUSED*/
 static void
 cleanup_handler(int sig)
 {
+	UNUSED(sig);
 	cleanup_socket();
 #ifdef ENABLE_PKCS11
 	pkcs11_terminate();
