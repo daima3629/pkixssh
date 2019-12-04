@@ -34,7 +34,7 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: ssh.1,v 1.403 2019/06/12 11:31:50 jmc Exp $
+.\" $OpenBSD: ssh.1,v 1.407 2019/11/28 12:24:31 jmc Exp $
 .\" Implement .Dd with the Mdocdate RCS keyword
 .rn Dd xD
 .de Dd
@@ -43,7 +43,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: June 12 2019 $
+.Dd $Mdocdate: November 28 2019 $
 .Dt SSH 1
 .Os
 .Sh NAME
@@ -120,7 +120,8 @@ Forces
 to use IPv6 addresses only.
 .Pp
 .It Fl A
-Enables forwarding of the authentication agent connection.
+Enables forwarding of connections from an authentication agent such as
+.Xr ssh-agent 1 .
 This can also be specified on a per-host basis in a configuration file.
 .Pp
 Agent forwarding should be enabled with caution.
@@ -136,6 +137,9 @@ Using the
 flag of
 .Xr ssh-add 1
 can reduce (but not eliminate) the risk.
+A safer alternative may be to use a jump host
+(see
+.Fl J ) .
 .Pp
 .It Fl a
 Disables forwarding of the authentication agent connection.
