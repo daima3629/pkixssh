@@ -632,19 +632,19 @@ tests: check
 
 check-core unit file-tests t-exec f-exec interop-tests: regress-binaries $(TARGETS)
 	BUILDDIR=`pwd`; \
-	TEST_SSH_SCP="$${BUILDDIR}/scp"; \
-	TEST_SSH_SSH="$${BUILDDIR}/ssh"; \
-	TEST_SSH_SSHD="$${BUILDDIR}/sshd"; \
-	TEST_SSH_SSHAGENT="$${BUILDDIR}/ssh-agent"; \
-	TEST_SSH_SSHADD="$${BUILDDIR}/ssh-add"; \
-	TEST_SSH_SSHKEYGEN="$${BUILDDIR}/ssh-keygen"; \
-	TEST_SSH_SSHPKCS11HELPER="$${BUILDDIR}/ssh-pkcs11-helper"; \
-	TEST_SSH_SSHKEYSCAN="$${BUILDDIR}/ssh-keyscan"; \
-	TEST_SSH_SFTP="$${BUILDDIR}/sftp"; \
-	TEST_SSH_SFTPSERVER="$${BUILDDIR}/sftp-server"; \
-	TEST_SSH_PLINK="plink"; \
-	TEST_SSH_PUTTYGEN="puttygen"; \
-	TEST_SSH_CONCH="conch"; \
+	TEST_SSH_SCP="$${TEST_SSH_SCP-$${BUILDDIR}/scp}"; \
+	TEST_SSH_SSH="$${TEST_SSH_SSH-$${BUILDDIR}/ssh}"; \
+	TEST_SSH_SSHD="$${TEST_SSH_SSHD-$${BUILDDIR}/sshd}"; \
+	TEST_SSH_SSHAGENT="$${TEST_SSH_SSHAGENT-$${BUILDDIR}/ssh-agent}"; \
+	TEST_SSH_SSHADD="$${TEST_SSH_SSHADD-$${BUILDDIR}/ssh-add}"; \
+	TEST_SSH_SSHKEYGEN="$${TEST_SSH_SSHKEYGEN-$${BUILDDIR}/ssh-keygen}"; \
+	TEST_SSH_SSHPKCS11HELPER="$${TEST_SSH_SSHPKCS11HELPER-$${BUILDDIR}/ssh-pkcs11-helper}"; \
+	TEST_SSH_SSHKEYSCAN="$${TEST_SSH_SSHKEYSCAN-$${BUILDDIR}/ssh-keyscan}"; \
+	TEST_SSH_SFTP="$${TEST_SSH_SFTP-$${BUILDDIR}/sftp}"; \
+	TEST_SSH_SFTPSERVER="$${TEST_SSH_SFTPSERVER-$${BUILDDIR}/sftp-server}"; \
+	TEST_SSH_PLINK="$${TEST_SSH_PLINK-plink}"; \
+	TEST_SSH_PUTTYGEN="$${TEST_SSH_PUTTYGEN-puttygen}"; \
+	TEST_SSH_CONCH="$${TEST_SSH_CONCH-conch}"; \
 	TEST_SSH_IPV6="@TEST_SSH_IPV6@" ; \
 	TEST_SSH_UTF8="@TEST_SSH_UTF8@" ; \
 	TEST_SSH_ECC="@TEST_SSH_ECC@" ; \
@@ -673,7 +673,7 @@ check-core unit file-tests t-exec f-exec interop-tests: regress-binaries $(TARGE
 		TEST_SSH_IPV6="$${TEST_SSH_IPV6}" \
 		TEST_SSH_UTF8="$${TEST_SSH_UTF8}" \
 		TEST_SSH_ECC="$${TEST_SSH_ECC}" \
-		TEST_SHELL="${TEST_SHELL}" \
+		TEST_SHELL="$(TEST_SHELL)" \
 		EXEEXT="$(EXEEXT)" \
 		$@ && echo 'regress test "$@" pass'
 
