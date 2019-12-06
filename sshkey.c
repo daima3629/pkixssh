@@ -249,6 +249,17 @@ sshkey_type_from_name(const char *name)
 	return KEY_UNSPEC;
 }
 
+static int
+key_type_is_ecdsa_variant(int type)
+{
+	switch (type) {
+	case KEY_ECDSA:
+	case KEY_ECDSA_CERT:
+		return 1;
+	}
+	return 0;
+}
+
 void
 sshkey_types_from_name(const char *name, int *type, int *subtype) {
 
@@ -259,7 +270,7 @@ sshkey_types_from_name(const char *name, int *type, int *subtype) {
 
 	*type = sshkey_type_from_name((char*)name);
 
-	if (*type == KEY_ECDSA || *type == KEY_ECDSA_CERT)
+	if (key_type_is_ecdsa_variant(*type))
 		*subtype = sshkey_ecdsa_nid_from_name(name);
 	else
 		*subtype = -1;
@@ -275,7 +286,7 @@ sshkey_ecdsa_nid_from_name(const char *name)
 	}
 
 	for (kt = keytypes; kt->type != -1; kt++) {
-		if (kt->type != KEY_ECDSA && kt->type != KEY_ECDSA_CERT)
+		if (!key_type_is_ecdsa_variant(kt->type))
 			continue;
 		if (kt->name != NULL && strcmp(name, kt->name) == 0)
 			return kt->nid;
@@ -1426,7 +1437,7 @@ peek_type_nid(const char *s, size_t l, int *nid)
 			continue;
 		if (memcmp(s, kt->name, l) == 0) {
 			*nid = -1;
-			if (kt->type == KEY_ECDSA || kt->type == KEY_ECDSA_CERT)
+			if (key_type_is_ecdsa_variant(kt->type))
 				*nid = kt->nid;
 			return kt->type;
 		}
