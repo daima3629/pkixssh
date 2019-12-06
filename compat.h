@@ -76,7 +76,7 @@ extern int xcompat; /* extra compatibility */
 
 #define SSHX_RFC6187_MISSING_KEY_IDENTIFIER		0x00000001U
 #define SSHX_RFC6187_ASN1_OPAQUE_ECDSA_SIGNATURE	0x00000002U
-#define SSHX_OPENSSH_BROKEN_ALGO_INFO			0x00000003U
+#define SSHX_OPENSSH_BROKEN_ALGO_INFO			0x00000004U
 
 
 /* enhanced secure shell compatibility */
