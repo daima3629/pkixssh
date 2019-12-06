@@ -8,8 +8,8 @@ if [ $? -ne 2 ]; then
 	fail "ssh-add -l did not fail with exit code 2"
 fi
 
-trace "start agent"
-eval `${SSHAGENT} -s` > /dev/null
+trace "start agent, args ${EXTRA_AGENT_ARGS} -s"
+eval `${SSHAGENT} ${EXTRA_AGENT_ARGS} -s` > /dev/null
 r=$?
 if [ $r -ne 0 ]; then
 	fatal "could not start ssh-agent: exit code $r"

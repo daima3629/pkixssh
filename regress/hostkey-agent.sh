@@ -6,7 +6,7 @@ tid="hostkey agent"
 rm -f $OBJ/agent-key.* $OBJ/ssh_proxy.orig $OBJ/known_hosts.orig
 
 trace "start agent"
-eval `${SSHAGENT} -s` > /dev/null
+eval `${SSHAGENT} ${EXTRA_AGENT_ARGS} -s` > /dev/null
 r=$?
 [ $r -ne 0 ] && fatal "could not start ssh-agent: exit code $r"
 

@@ -26,7 +26,7 @@ case "x$SUDO" in
 esac
 
 trace "start agent"
-eval `${SSHAGENT} -s -a ${ASOCK}` > /dev/null
+eval `${SSHAGENT} ${EXTRA_AGENT_ARGS} -s -a ${ASOCK}` > /dev/null
 r=$?
 if [ $r -ne 0 ]; then
 	fail "could not start ssh-agent: exit code $r"

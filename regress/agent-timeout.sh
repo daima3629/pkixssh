@@ -6,7 +6,7 @@ tid="agent timeout test"
 SSHAGENT_TIMEOUT=10
 
 trace "start agent"
-eval `${SSHAGENT} -s` > /dev/null
+eval `${SSHAGENT} -s ${EXTRA_AGENT_ARGS}` > /dev/null
 r=$?
 if [ $r -ne 0 ]; then
 	fail "could not start ssh-agent: exit code $r"
