@@ -2854,34 +2854,6 @@ if test "x$openssl" = "xyes" ; then
 		]
 	)
 
-	# PKCS#11 depends on OpenSSL requires dlopen() and co.
-	use_dl=false
-	if test $PKCS11_MSG = yes ; then
-		use_dl=:
-	fi
-	if $use_dl ; then
-		AC_SEARCH_LIBS([dlopen], [dl], [], [use_dl=false])
-	fi
-	if $use_dl ; then
-		# LAZY mode is preferred
-		AC_CHECK_DECL([RTLD_LAZY], [], [
-			AC_CHECK_DECL([RTLD_NOW], [], [use_dl=false],
-				[#include <dlfcn.h>])
-		], [#include <dlfcn.h>])
-	fi
-	if $use_dl ; then
-		if test $PKCS11_MSG = yes; then
-			AC_DEFINE([ENABLE_PKCS11], [1],
-				[Define if you want to enable PKCS#11 support])
-		fi
-	else
-		if test $PKCS11_MSG = yes; then
-			AC_MSG_ERROR([
-	PKCS#11 support was requested, but dynamic loading is not detected!
-])
-		fi
-	fi
-
 	if test "x$with_ssl_engine" != "xno" ; then
 		AC_CHECK_HEADERS([openssl/engine.h])
 		AC_MSG_CHECKING([for OpenSSL ENGINE support])
@@ -3153,6 +3125,38 @@ if test "x$openssl" = "xyes" ; then
 else
 	AC_CHECK_LIB([crypt], [crypt], [LIBS="$LIBS -lcrypt"])
 	AC_CHECK_FUNCS([crypt])
+fi
+
+use_dl=false
+# PKCS#11 depends on OpenSSL and requires dlopen() and co.
+if test $PKCS11_MSG = yes ; then
+dnl	build with OpenSSL is required - no check
+dnl	if test "x$openssl" = "xyes" ; then
+dnl	....
+dnl	fi
+	use_dl=:
+fi
+if $use_dl ; then
+	AC_SEARCH_LIBS([dlopen], [dl], [], [use_dl=false])
+fi
+if $use_dl ; then
+	# LAZY mode is preferred
+	AC_CHECK_DECL([RTLD_LAZY], [], [
+		AC_CHECK_DECL([RTLD_NOW], [], [use_dl=false],
+			[#include <dlfcn.h>])
+	], [#include <dlfcn.h>])
+fi
+if $use_dl ; then
+	if test $PKCS11_MSG = yes; then
+		AC_DEFINE([ENABLE_PKCS11], [1],
+			[Define if you want to enable PKCS#11 support])
+	fi
+else
+	if test $PKCS11_MSG = yes; then
+		AC_MSG_ERROR([
+	PKCS#11 support was requested, but dynamic loading is not detected!
+])
+	fi
 fi
 
 AC_CHECK_DECLS([arc4random])
