@@ -2019,7 +2019,12 @@ AC_CHECK_FUNCS([ \
 	warn \
 ])
 
-AC_CHECK_DECLS([bzero])
+dnl Note in GNU C-library memmem requires definition of _GNU_SOURCE.
+dnl It is not defined yet by configuration, but is defined in common
+dnl header "includes.h".
+saved_CPPFLAGS="$CPPFLAGS"
+CPPFLAGS="$CPPFLAGS -D_GNU_SOURCE"
+AC_CHECK_DECLS([bzero, memmem])
 AS_IF([test $ac_cv_func_endgrent != no], [
   AC_CHECK_DECLS([endgrent], [], [], [
 #include <sys/types.h>
@@ -2030,6 +2035,7 @@ AC_CHECK_DECLS([endpwent], [], [], [
 #include <sys/types.h>
 #include <pwd.h>
 ])
+CPPFLAGS="$saved_CPPFLAGS"
 
 dnl Wide character support.
 AC_CHECK_FUNCS([mblen mbtowc nl_langinfo wcwidth])

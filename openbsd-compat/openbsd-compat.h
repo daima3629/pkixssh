@@ -76,7 +76,7 @@ int getpagesize(void);
 char *getcwd(char *pt, size_t size);
 #endif
 
-#ifndef HAVE_MEMMEM
+#if !HAVE_DECL_MEMMEM
 void *memmem(const void *, size_t, const void *, size_t);
 #endif
 
