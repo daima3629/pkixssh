@@ -459,7 +459,7 @@ test_key(int agent_fd, const char *filename)
 	size_t slen = 0;
 	int r, ret = -1;
 	char data[1024];
-	const char *alg = sshkey_ssh_name(key);
+	const char *alg;
 	ssh_compat ctx_compat = { 0, 0 };
 
 	if ((r = sshkey_load_public(filename, &key, NULL)) != 0) {
@@ -467,6 +467,8 @@ test_key(int agent_fd, const char *filename)
 		return -1;
 	}
 	arc4random_buf(data, sizeof(data));
+
+	alg = sshkey_ssh_name(key);
 
 {	ssh_sign_ctx ctx = { alg, key, &ctx_compat, NULL };
 
