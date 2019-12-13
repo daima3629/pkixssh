@@ -1,4 +1,4 @@
-/* $OpenBSD: readpass.c,v 1.54 2019/06/28 13:35:04 deraadt Exp $ */
+/* $OpenBSD: readpass.c,v 1.60 2019/12/06 03:06:08 djm Exp $ */
 /*
  * Copyright (c) 2001 Markus Friedl.  All rights reserved.
  *
@@ -47,7 +47,7 @@
 #include "ssh.h"
 
 static char *
-ssh_askpass(char *askpass, const char *msg)
+ssh_askpass(const char *askpass, const char *msg, const char *env_hint)
 {
 	pid_t pid, ret;
 	size_t len;
@@ -57,25 +57,27 @@ ssh_askpass(char *askpass, const char *msg)
 	void (*osigchld)(int);
 
 	if (fflush(stdout) != 0)
-		error("ssh_askpass: fflush: %s", strerror(errno));
+		error("%s: fflush: %s", __func__, strerror(errno));
 	if (askpass == NULL)
 		fatal("internal error: askpass undefined");
 	if (pipe(p) == -1) {
-		error("ssh_askpass: pipe: %s", strerror(errno));
+		error("%s: pipe: %s", __func__, strerror(errno));
 		return NULL;
 	}
 	osigchld = signal(SIGCHLD, SIG_DFL);
 	if ((pid = fork()) == -1) {
-		error("ssh_askpass: fork: %s", strerror(errno));
+		error("%s: fork: %s", __func__, strerror(errno));
 		signal(SIGCHLD, osigchld);
 		return NULL;
 	}
 	if (pid == 0) {
 		close(p[0]);
 		if (dup2(p[1], STDOUT_FILENO) == -1)
-			fatal("ssh_askpass: dup2: %s", strerror(errno));
+			fatal("%s: dup2: %s", __func__, strerror(errno));
+		if (env_hint != NULL)
+			setenv("SSH_ASKPASS_PROMPT", env_hint, 1);
 		execlp(askpass, askpass, msg, (char *)NULL);
-		fatal("ssh_askpass: exec(%s): %s", askpass, strerror(errno));
+		fatal("%s: exec(%s): %s", __func__, askpass, strerror(errno));
 	}
 	close(p[1]);
 
@@ -107,6 +109,9 @@ ssh_askpass(char *askpass, const char *msg)
 	return pass;
 }
 
+/* private/internal read_passphrase flags */
+#define RP_ASK_PERMISSION	0x8000 /* pass hint to askpass for confirm UI */
+
 /*
  * Reads a passphrase from /dev/tty with echo turned off/on.  Returns the
  * passphrase (allocated with xmalloc).  Exits if EOF is encountered. If
@@ -116,7 +121,7 @@ ssh_askpass(char *askpass, const char *msg)
 char *
 read_passphrase(const char *prompt, int flags)
 {
-	char cr = '\r', *askpass = NULL, *ret, buf[1024];
+	char cr = '\r', *ret, buf[1024];
 	int rppflags, use_askpass = 0, ttyfd;
 
 	rppflags = (flags & RP_ECHO) ? RPP_ECHO_ON : RPP_ECHO_OFF;
@@ -150,11 +155,14 @@ read_passphrase(const char *prompt, int flags)
 		return (flags & RP_ALLOW_EOF) ? NULL : xstrdup("");
 
 	if (use_askpass && getenv("DISPLAY")) {
-		if (getenv(SSH_ASKPASS_ENV))
-			askpass = getenv(SSH_ASKPASS_ENV);
-		else
+		const char *askpass = getenv(SSH_ASKPASS_ENV);
+		const char *askpass_hint = NULL;
+		
+		if (askpass == NULL)
 			askpass = _PATH_SSH_ASKPASS;
-		if ((ret = ssh_askpass(askpass, prompt)) == NULL)
+		if ((flags & RP_ASK_PERMISSION) != 0)
+			askpass_hint = "confirm";
+		if ((ret = ssh_askpass(askpass, prompt, askpass_hint)) == NULL)
 			if (!(flags & RP_ALLOW_EOF))
 				return xstrdup("");
 		return ret;
@@ -182,7 +190,8 @@ ask_permission(const char *fmt, ...)
 	vsnprintf(prompt, sizeof(prompt), fmt, args);
 	va_end(args);
 
-	p = read_passphrase(prompt, RP_USE_ASKPASS|RP_ALLOW_EOF);
+	p = read_passphrase(prompt,
+	    RP_USE_ASKPASS|RP_ALLOW_EOF|RP_ASK_PERMISSION);
 	if (p != NULL) {
 		/*
 		 * Accept empty responses and responses consisting
