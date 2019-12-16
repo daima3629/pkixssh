@@ -210,11 +210,11 @@ sshd$(EXEEXT): $(DEPLIBS) $(SSHDOBJS)
 scp$(EXEEXT): $(DEPLIBS) scp.o progressmeter.o
 	$(LD) -o $@ scp.o progressmeter.o $(LDFLAGS) -lssh -lopenbsd-compat $(LIBS)
 
-ssh-add$(EXEEXT): $(DEPLIBS) ssh-add.o x509store.o
-	$(LD) -o $@ ssh-add.o x509store.o $(LDFLAGS) -lssh -lopenbsd-compat $(LIBS)
+ssh-add$(EXEEXT): $(DEPLIBS) ssh-add.o
+	$(LD) -o $@ ssh-add.o $(LDFLAGS) -lssh -lopenbsd-compat $(LIBS)
 
-ssh-agent$(EXEEXT): $(DEPLIBS) ssh-agent.o ssh-pkcs11-client.o x509store.o
-	$(LD) -o $@ ssh-agent.o ssh-pkcs11-client.o x509store.o $(LDFLAGS) -lssh -lopenbsd-compat $(FIPS_LIBS) $(LIBS)
+ssh-agent$(EXEEXT): $(DEPLIBS) ssh-agent.o ssh-pkcs11-client.o
+	$(LD) -o $@ ssh-agent.o ssh-pkcs11-client.o $(LDFLAGS) -lssh -lopenbsd-compat $(FIPS_LIBS) $(LIBS)
 	@@FIPSHMAC@ $@
 
 ssh-keygen$(EXEEXT): $(DEPLIBS) ssh-keygen.o ssh-pkcs11.o

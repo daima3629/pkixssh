@@ -38,8 +38,6 @@
 #ifndef AUTHFD_H
 #define AUTHFD_H
 
-#include "x509store.h"
-
 /* List of identities returned by ssh_fetch_identitylist() */
 struct ssh_identitylist {
 	size_t nkeys;
@@ -58,8 +56,7 @@ int	ssh_add_identity_constrained(int sock, struct sshkey *key,
 	    const char *provider);
 int	ssh_remove_identity(int sock, struct sshkey *key);
 int	ssh_update_card(int sock, int add, const char *reader_id,
-	    const char *pin, STACK_OF(SSHXSTOREPATH) *xstore,
-	    u_int life, u_int confirm);
+	    const char *pin, u_int life, u_int confirm);
 int	ssh_remove_all_identities(int sock, int version);
 
 int	Xssh_agent_sign(int sock, ssh_sign_ctx *ctx,

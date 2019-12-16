@@ -13,7 +13,6 @@
  *
  * SSH2 implementation,
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
- *
  * Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -51,7 +50,6 @@
 #include <unistd.h>
 #include <errno.h>
 
-#include "evp-compat.h"
 #include "xmalloc.h"
 #include "ssh.h"
 #include "sshxkey.h"
@@ -537,7 +535,6 @@ ssh_remove_identity(int sock, struct sshkey *key)
  */
 int
 ssh_update_card(int sock, int add, const char *reader_id, const char *pin,
-    STACK_OF(SSHXSTOREPATH) *xstore,
     u_int life, u_int confirm)
 {
 	struct sshbuf *msg;
@@ -557,24 +554,6 @@ ssh_update_card(int sock, int add, const char *reader_id, const char *pin,
 	    (r = sshbuf_put_cstring(msg, reader_id)) != 0 ||
 	    (r = sshbuf_put_cstring(msg, pin)) != 0)
 		goto out;
-{	u_int32_t n;
-	int k;
-
-	n = k = sk_SSHXSTOREPATH_num(xstore);
-	if (k != (int)n) {
-		r = SSH_ERR_INVALID_ARGUMENT;
-		goto out;
-	}
-	r = sshbuf_put_u32(msg, n);
-	if (r != 0) goto out;
-
-	for (k = 0; k < (int)n; k++) {
-		const char *xitem;
-		xitem = sk_SSHXSTOREPATH_value(xstore, k);
-		r = sshbuf_put_cstring(msg, xitem);
-		if (r != 0) goto out;
-	}
-}
 	if (constrained &&
 	    (r = encode_constraints(msg, life, confirm, 0, NULL)) != 0)
 		goto out;

@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-agent.c,v 1.242 2019/11/13 07:53:10 markus Exp $ */
+/* $OpenBSD: ssh-agent.c,v 1.250 2019/11/19 16:02:32 jmc Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -53,7 +53,6 @@
 #ifdef WITH_OPENSSL
 #include <openssl/evp.h>
 #include "evp-compat.h"
-#include "openbsd-compat/openssl-compat.h"
 #ifdef HAVE_FIPSCHECK_H
 #  include <fipscheck.h>
 #endif
@@ -84,7 +83,6 @@
 #include "sshbuf.h"
 #include "ssh-x509.h"
 #include "ssh-xkalg.h"
-#include "x509store.h"
 #include "authfd.h"
 #include "compat.h"
 #include "log.h"
@@ -93,33 +91,6 @@
 #include "ssherr.h"
 #include "match.h"
 #include "ssh-pkcs11.h"
-
-#if 1 /* minimize dependencies */
-/* used in ssh-x509.c */
-extern STACK_OF(X509)*
-(*pssh_x509store_build_certchain)(X509 *cert, STACK_OF(X509) *untrusted);
-
-/* used in x509store.c */
-int
-ssh_ocsp_validate(X509 *cert, X509_STORE *x509store) {
-	UNUSED(cert);
-	UNUSED(x509store);
-	return -1;
-}
-
-int/*bool*/ set_ldap_version(const char *ver);
-int/*bool*/
-set_ldap_version(const char *ver) {
-	UNUSED(ver);
-	return 0;
-}
-
-X509_LOOKUP_METHOD* X509_LOOKUP_ldap(void);
-X509_LOOKUP_METHOD*
-X509_LOOKUP_ldap(void) {
-	return NULL;
-}
-#endif	/* end of minimize dependencies */
 
 #ifndef DEFAULT_PROVIDER_WHITELIST
 # define DEFAULT_PROVIDER_WHITELIST "/usr/lib*/*,/usr/local/lib*/*"
@@ -647,7 +618,6 @@ static void
 process_add_smartcard_key(SocketEntry *e)
 {
 	char *provider = NULL, *pin = NULL, canonical_provider[PATH_MAX];
-	STACK_OF(SSHXSTOREPATH) *xstore = NULL;
 	int r, i, count = 0, success = 0, confirm = 0;
 	u_int seconds;
 	time_t death = 0;
@@ -660,28 +630,6 @@ process_add_smartcard_key(SocketEntry *e)
 		error("%s: buffer error: %s", __func__, ssh_err(r));
 		goto send;
 	}
-
-{	u_int32_t n = 0;
-
-	r = sshbuf_get_u32(e->request, &n);
-	if (r != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
-
-	if (n > 0) {
-		xstore = sk_SSHXSTOREPATH_new_null();
-		if (xstore == NULL) {
-			r = SSH_ERR_ALLOC_FAIL;
-			fatal("%s: allocation error: %s", __func__, ssh_err(r));
-		}
-	}
-	for(; n > 0; n--) {
-		char *xitem;
-		r = sshbuf_get_cstring(e->request, &xitem, NULL);
-		if (r != 0)
-			fatal("%s: buffer error: %s", __func__, ssh_err(r));
-		sk_SSHXSTOREPATH_push(xstore, xitem);
-	}
-}
 
 	while (sshbuf_len(e->request)) {
 		if ((r = sshbuf_get_u8(e->request, &type)) != 0) {
@@ -719,14 +667,11 @@ process_add_smartcard_key(SocketEntry *e)
 	if (lifetime && !death)
 		death = monotime() + lifetime;
 
-	(void)ssh_x509store_addpaths(xstore);
-
 	count = pkcs11_add_provider(canonical_provider, pin, &keys);
 	for (i = 0; i < count; i++) {
 		k = keys[i];
 		if (lookup_identity(k) == NULL) {
 			id = xcalloc(1, sizeof(Identity));
-			x509key_build_chain(k);
 			id->key = k;
 			id->provider = xstrdup(canonical_provider);
 			id->comment = xstrdup(canonical_provider); /* XXX */
@@ -1254,22 +1199,6 @@ main(int ac, char **av)
 	ERR_load_PKCS11_strings();
 #endif
 	fill_default_xkalg();
-{	/* add default system and user X.509 store paths */
-	X509StoreOptions ca;
-
-	X509StoreOptions_init(&ca);
-
-	X509StoreOptions_system_defaults(&ca);
-	ssh_x509store_addlocations(&ca);
-
-	X509StoreOptions_reset(&ca);
-
-	X509StoreOptions_user_defaults(&ca, getuid());
-	ssh_x509store_addlocations(&ca);
-
-	X509StoreOptions_reset(&ca);
-}
-	pssh_x509store_build_certchain = ssh_x509store_build_certchain;
 
 	seed_rng();
 

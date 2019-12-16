@@ -58,7 +58,6 @@
 .Op Ar
 .Nm ssh-add
 .Fl s Ar pkcs11
-.Op Fl S Ar xstore
 .Nm ssh-add
 .Fl e Ar pkcs11
 .Nm ssh-add
@@ -68,12 +67,14 @@
 .Nm
 adds private key identities to the authentication agent,
 .Xr ssh-agent 1 .
-In addition identity may contain X.509 certificate that
-match private key.
-For RSA, ECDSA or DSA identity may contain extra X.509 certificates.
-Agent uses extra certificates along with certificates from
-system default X.509 store to build chain of certificates
+.Pp
+For RSA, ECDSA or DSA identity may contain X.509 certificate that
+match private key. This certificate will be loaded as well.
+Also identity may contain extra X.509 certificates.
+Agent client uses those extra certificates along with certificates
+from system default X.509 store to build chain of certificates
 leading to a trusted certificate authority.
+.Pp
 When run without arguments, it adds the files
 .Pa ~/.ssh/id_rsa ,
 .Pa ~/.ssh/id_dsa ,
@@ -82,7 +83,7 @@ and
 .Pa ~/.ssh/id_ed25519 .
 After loading a private key,
 .Nm
-will try to load corresponding certificate information from the
+will try to load corresponding custom certificate information from the
 filename obtained by appending
 .Pa -cert.pub
 to the name of the private key file.
@@ -118,7 +119,7 @@ Instead of adding identities, removes identities from the agent.
 If
 .Nm
 has been run without arguments, the keys for the default identities and
-their corresponding certificates will be removed.
+their corresponding certificates (X.509 or custom) will be removed.
 Otherwise, the argument list will be interpreted as a list of paths to
 public key files to specify keys and certificates to be removed from the agent.
 If no public key is found at a given path,
@@ -150,12 +151,6 @@ X.509 certificates are displayed with their
 Lists fingerprints of all identities currently represented by the agent.
 .It Fl q
 Be quiet after a successful operation.
-.It Fl S Ar xstore
-File with extra X.509 certificates in PEM format concatenated together.
-Certificates are added to X.509 store and together with those from
-system default store are used in public key algorithms in RFC 6187
-format if applicable.
-Note that currently only EC keys support such format.
 .It Fl s Ar pkcs11
 Add keys provided by the PKCS#11 shared library
 .Ar pkcs11 .
@@ -233,10 +228,7 @@ Contains the RSA authentication identity of the user.
 .El
 .Pp
 For RSA, ECDSA or DSA identity file may contain X.509 certificate that
-match it. In addition file may contain extra X.509 certificates.
-Extra certificates along with certificates from X.509 store are used
-to build chain of certificates leading to a trusted certificate
-authority if required by public key algorithm format.
+match private key and extra X.509 certificates.
 .Pp
 Identity files should not be readable by anyone but the user.
 Note that

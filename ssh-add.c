@@ -13,7 +13,6 @@
  *
  * SSH2 implementation,
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
- *
  * Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -59,10 +58,8 @@
 #include "xmalloc.h"
 #include "ssh.h"
 #include "log.h"
-#include "sshkey.h"
 #include "ssh-x509.h"
 #include "ssh-xkalg.h"
-#include "x509store.h"
 #include "compat.h"
 #include "sshbuf.h"
 #include "authfd.h"
@@ -71,30 +68,6 @@
 #include "misc.h"
 #include "ssherr.h"
 #include "digest.h"
-
-/* minimize dependencies */
-#if 1	/* used in x509store.c */
-
-int
-ssh_ocsp_validate(X509 *cert, X509_STORE *x509store) {
-	UNUSED(cert);
-	UNUSED(x509store);
-	return -1;
-}
-
-int/*bool*/ set_ldap_version(const char *ver);
-int/*bool*/
-set_ldap_version(const char *ver) {
-	UNUSED(ver);
-	return 0;
-}
-
-X509_LOOKUP_METHOD* X509_LOOKUP_ldap(void);
-X509_LOOKUP_METHOD*
-X509_LOOKUP_ldap(void) {
-	return NULL;
-}
-#endif	/* end of used in x509store.c */
 
 /* argv0 */
 extern char *__progname;
@@ -424,7 +397,7 @@ add_file(int agent_fd, const char *filename, int key_only, int qflag,
 }
 
 static int
-update_card(int agent_fd, int add, const char *id, STACK_OF(SSHXSTOREPATH) *xstore, int qflag)
+update_card(int agent_fd, int add, const char *id, int qflag)
 {
 	char *pin = NULL;
 	int r, ret = -1;
@@ -436,7 +409,7 @@ update_card(int agent_fd, int add, const char *id, STACK_OF(SSHXSTOREPATH) *xsto
 	}
 
 	if ((r = ssh_update_card(agent_fd, add, id, pin == NULL ? "" : pin,
-	    xstore, lifetime, confirm)) == 0) {
+	    lifetime, confirm)) == 0) {
 		ret = 0;
 		if (!qflag) {
 			fprintf(stderr, "Card %s: %s\n",
@@ -612,8 +585,6 @@ usage(void)
 	fprintf(stderr, "  -x          Lock agent.\n");
 	fprintf(stderr, "  -X          Unlock agent.\n");
 	fprintf(stderr, "  -s pkcs11   Add keys from PKCS#11 provider.\n");
-	fprintf(stderr, "  -S xstore   File with extra X.509 certificates in PEM format\n");
-	fprintf(stderr, "              concatenated together.\n");
 	fprintf(stderr, "  -e pkcs11   Remove keys provided by PKCS#11 provider.\n");
 	fprintf(stderr, "  -T pubkey   Test if ssh-agent can access matching private key.\n");
 	fprintf(stderr, "  -q          Be quiet after a successful operation.\n");
@@ -627,7 +598,6 @@ main(int argc, char **argv)
 	extern int optind;
 	int agent_fd;
 	char *pkcs11provider = NULL, *skprovider = NULL;
-	STACK_OF(SSHXSTOREPATH) *xstore;
 	int r, i, ch, deleting = 0, ret = 0, key_only = 0;
 	int xflag = 0, lflag = 0, Dflag = 0, qflag = 0, Tflag = 0;
 	SyslogFacility log_facility = SYSLOG_FACILITY_AUTH;
@@ -642,9 +612,6 @@ main(int argc, char **argv)
 	fill_default_xkalg();
 
 	log_init(__progname, SYSLOG_LEVEL_INFO, SYSLOG_FACILITY_USER, 1);
-
-	xstore = sk_SSHXSTOREPATH_new_null();
-	if (xstore == NULL) exit(1);
 
 	seed_rng();
 
@@ -721,9 +688,6 @@ main(int argc, char **argv)
 		case 's':
 			pkcs11provider = optarg;
 			break;
-		case 'S':
-			sk_SSHXSTOREPATH_push(xstore, (char*)optarg);
-			break;
 		case 'e':
 			deleting = 1;
 			pkcs11provider = optarg;
@@ -777,28 +741,10 @@ main(int argc, char **argv)
 	}
 	if (pkcs11provider != NULL) {
 		if (update_card(agent_fd, !deleting, pkcs11provider,
-		    xstore, qflag) == -1)
+		    qflag) == -1)
 			ret = 1;
 		goto done;
 	}
-
-{	/* add default system and user X.509 store paths */
-	X509StoreOptions ca;
-
-	X509StoreOptions_init(&ca);
-
-	X509StoreOptions_system_defaults(&ca);
-	ssh_x509store_addlocations(&ca);
-
-	X509StoreOptions_reset(&ca);
-
-	X509StoreOptions_user_defaults(&ca, getuid());
-	ssh_x509store_addlocations(&ca);
-
-	X509StoreOptions_reset(&ca);
-}
-	(void)ssh_x509store_addpaths(xstore);
-
 	if (argc == 0) {
 		char buf[PATH_MAX];
 		struct passwd *pw;
