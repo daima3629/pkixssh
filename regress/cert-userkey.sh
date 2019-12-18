@@ -1,4 +1,4 @@
-#	$OpenBSD: cert-userkey.sh,v 1.21 2019/07/25 08:28:15 dtucker Exp $
+#	$OpenBSD: cert-userkey.sh,v 1.24 2019/12/11 18:47:14 djm Exp $
 #	Placed in the Public Domain.
 
 tid="certified user keys"
@@ -197,7 +197,7 @@ basic_tests() {
 
 	for ktype in $PLAIN_TYPES ; do
 		t=$(kname $ktype)
-		for privsep in yes no ; do
+		for privsep in $SSHD_PRIVSEP ; do
 			_prefix="${ktype} privsep $privsep $auth"
 			# Simple connect
 			verbose "$tid: ${_prefix} connect"
