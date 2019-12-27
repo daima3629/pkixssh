@@ -31,6 +31,11 @@
 # include <openssl/ecdsa.h>
 #endif
 #include <string.h>	/*for memset*/
+/* Unlike OPENSSL_strdup (0.8.k+), BUF_strdup is defined in
+ * all OpenSSL versions (SSLeay 0.8.1) until 1.1.0.
+ * As is always available at run-time in compatible
+ * functions below it is preferred function.
+ */
 #include <openssl/buffer.h>	/*for BUF_strdup*/
 
 
@@ -218,8 +223,6 @@ RSA_meth_new(const char *name, int flags) {
 	if (meth == NULL) return NULL;
 
 	memset(meth, 0, sizeof(*meth));
-	/* unlike OPENSSL_strdup (0.8.k+), BUF_strdup is defined in
-	 * all OpenSSL versions (SSLeay 0.8.1) */
 	meth->name = BUF_strdup(name);
 	meth->flags = flags;
 
@@ -452,8 +455,6 @@ DSA_meth_new(const char *name, int flags) {
 	if (meth == NULL) return NULL;
 
 	memset(meth, 0, sizeof(*meth));
-	/* unlike OPENSSL_strdup (0.8.k+), BUF_strdup is defined in
-	 * all OpenSSL versions (SSLeay 0.8.1) */
 	meth->name = BUF_strdup(name);
 	meth->flags = flags;
 
