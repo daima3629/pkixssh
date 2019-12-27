@@ -10,7 +10,7 @@ mv $OBJ/sshd_proxy $OBJ/sshd_proxy.orig
 mv $OBJ/ssh_proxy $OBJ/ssh_proxy.orig
 
 ktype1=ed25519; ktype2=$ktype1; ktype3=$ktype1; ktype4=$ktype1
-for t in `${SSH} -Q key-plain`; do
+for t in $SSH_KEYTYPES ; do
 	case "$t" in
 		ssh-rsa)	ktype2=rsa ;;
 		ecdsa*)		ktype3=ecdsa ;;  # unused
