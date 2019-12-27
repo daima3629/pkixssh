@@ -19,9 +19,15 @@
 
 #include "includes.h"
 
+#ifdef ENABLE_PKCS11 /* implies WITH_OPENSSL */
+
 #include <sys/types.h>
 #ifdef HAVE_SYS_TIME_H
 # include <sys/time.h>
+#endif
+
+#ifdef OPENSSL_HAS_ECC
+# include <openssl/ecdsa.h>
 #endif
 
 #include "openbsd-compat/sys-queue.h"
@@ -43,8 +49,6 @@
 #include "authfd.h"
 #include "ssh-pkcs11.h"
 #include "ssherr.h"
-
-#ifdef ENABLE_PKCS11
 
 /* borrows code from sftp-server and ssh-agent */
 
@@ -243,11 +247,9 @@ process_sign(void)
 		error("%s: sshkey_from_blob: %s", __func__, ssh_err(r));
 	else {
 		if ((found = lookup_key(key)) != NULL) {
-#ifdef WITH_OPENSSL
 			ok = process_key_sign(dlen, data, found, &signature, &slen);
 			if (ok != 0)
 				log_crypto_errors(SYSLOG_LEVEL_ERROR, __func__);
-#endif /* WITH_OPENSSL */
 		}
 		sshkey_free(key);
 	}
