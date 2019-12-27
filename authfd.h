@@ -1,4 +1,4 @@
-/* $OpenBSD: authfd.h,v 1.45 2019/06/21 04:21:04 djm Exp $ */
+/* $OpenBSD: authfd.h,v 1.48 2019/12/21 02:19:13 djm Exp $ */
 
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
@@ -46,6 +46,7 @@ struct ssh_identitylist {
 };
 
 int	ssh_get_authentication_socket(int *fdp);
+int	ssh_get_authentication_socket_path(const char *authsocket, int *fdp);
 void	ssh_close_authentication_socket(int sock);
 
 int	ssh_lock_agent(int sock, int lock, const char *password);

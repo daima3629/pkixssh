@@ -1,4 +1,4 @@
-/* $OpenBSD: readconf.c,v 1.318 2019/12/20 02:42:42 dtucker Exp $ */
+/* $OpenBSD: readconf.c,v 1.319 2019/12/21 02:19:13 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -1104,7 +1104,31 @@ parse_time:
 
 	case oForwardAgent:
 		intptr = &options->forward_agent;
-		goto parse_flag;
+
+		arg = strdelim(&s);
+		if (!arg || *arg == '\0')
+			fatal("%s line %d: missing argument.",
+			    filename, linenum);
+
+		value = -1;
+		multistate_ptr = multistate_flag;
+		for (i = 0; multistate_ptr[i].key != NULL; i++) {
+			if (strcasecmp(arg, multistate_ptr[i].key) == 0) {
+				value = multistate_ptr[i].value;
+				break;
+			}
+		}
+		if (value != -1) {
+			if (*activep && *intptr == -1)
+				*intptr = value;
+			break;
+		}
+		/* ForwardAgent wasn't 'yes' or 'no', assume a path */
+		if (*activep && *intptr == -1)
+			*intptr = 1;
+
+		charptr = &options->forward_agent_sock_path;
+		goto parse_agent_path;
 
 	case oForwardX11:
 		intptr = &options->forward_x11;
@@ -1931,6 +1955,7 @@ parse_keytypes:
 		if (!arg || *arg == '\0')
 			fatal("%.200s line %d: Missing argument.",
 			    filename, linenum);
+  parse_agent_path:
 		/* Extra validation if the string represents an env var. */
 		if (arg[0] == '$' && !valid_env_name(arg + 1)) {
 			fatal("%.200s line %d: Invalid environment name %s.",
@@ -2077,6 +2102,7 @@ initialize_options(Options * options)
 #endif /*def SSH_OCSP_ENABLED*/
 	/* Standard Options */
 	options->forward_agent = -1;
+	options->forward_agent_sock_path = NULL;
 	options->forward_x11 = -1;
 	options->forward_x11_trusted = -1;
 	options->forward_x11_timeout = -1;
@@ -2962,7 +2988,6 @@ dump_client_config(Options *o, const char *host)
 	dump_cfg_fmtint(oClearAllForwardings, o->clear_forwardings);
 	dump_cfg_fmtint(oExitOnForwardFailure, o->exit_on_forward_failure);
 	dump_cfg_fmtint(oFingerprintHash, o->fingerprint_hash);
-	dump_cfg_fmtint(oForwardAgent, o->forward_agent);
 	dump_cfg_fmtint(oForwardX11, o->forward_x11);
 	dump_cfg_fmtint(oForwardX11Trusted, o->forward_x11_trusted);
 	dump_cfg_fmtint(oGatewayPorts, o->fwd_opts.gateway_ports);
@@ -3037,6 +3062,12 @@ dump_client_config(Options *o, const char *host)
 	dump_cfg_strarray(oSetEnv, o->num_setenv, o->setenv);
 
 	/* Special cases */
+
+	/* oForwardAgent */
+	if (o->forward_agent_sock_path == NULL)
+		dump_cfg_fmtint(oForwardAgent, o->forward_agent);
+	else
+		dump_cfg_string(oForwardAgent, o->forward_agent_sock_path);
 
 	/* oConnectTimeout */
 	if (o->connection_timeout == -1)
