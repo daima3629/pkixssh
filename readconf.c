@@ -1104,6 +1104,10 @@ parse_time:
 
 	case oForwardAgent:
 		intptr = &options->forward_agent;
+		goto parse_flag;
+
+	case oForwardX11:
+		intptr = &options->forward_x11;
  parse_flag:
 		multistate_ptr = multistate_flag;
  parse_multistate:
@@ -1124,10 +1128,6 @@ parse_time:
 		if (*activep && *intptr == -1)
 			*intptr = value;
 		break;
-
-	case oForwardX11:
-		intptr = &options->forward_x11;
-		goto parse_flag;
 
 	case oForwardX11Trusted:
 		intptr = &options->forward_x11_trusted;
