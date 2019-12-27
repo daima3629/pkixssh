@@ -206,4 +206,8 @@ parse_out:
 	return ret;
 }
 
+#else
+
+typedef int ssh_ecdsa_empty_translation_unit;
+
 #endif /* WITH_OPENSSL && OPENSSL_HAS_ECC */
