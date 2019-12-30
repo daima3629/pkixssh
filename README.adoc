@@ -1,6 +1,7 @@
-This is PKIX-SSH - an advanced secure shell implementation.
+PKIX-SSH - an advanced secure shell implementation
+==================================================
 
-  https://roumenpetrov.info/secsh
+  https://roumenpetrov.info/secsh[Project page]
 
 
 Implementation includes some of functionality provided by OpenSSH.
@@ -35,5 +36,5 @@ Please see INSTALL document for hints how to install PKIX-SSH on you
 platform.
 
 For information how to contribute to project please refer to the
-[Support section](https://roumenpetrov.info/secsh/#support)
+https://roumenpetrov.info/secsh/#support[Support section]
 of the project page.
