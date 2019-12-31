@@ -1,4 +1,4 @@
-.\"	$OpenBSD: ssh-add.1,v 1.69 2019/01/21 12:53:35 djm Exp $
+.\"	$OpenBSD: ssh-add.1,v 1.77 2019/12/21 20:22:34 naddy Exp $
 .\"
 .\" Author: Tatu Ylonen <ylo@cs.hut.fi>
 .\" Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -44,7 +44,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: January 21 2019 $
+.Dd $Mdocdate: December 21 2019 $
 .Dt SSH-ADD 1
 .Os
 .Sh NAME
@@ -216,15 +216,12 @@ Identifies the path of a
 socket used to communicate with the agent.
 .El
 .Sh FILES
-.Bl -tag -width Ds
+.Bl -tag -width Ds -compact
 .It Pa ~/.ssh/id_dsa
-Contains the DSA authentication identity of the user.
 .It Pa ~/.ssh/id_ecdsa
-Contains the ECDSA authentication identity of the user.
 .It Pa ~/.ssh/id_ed25519
-Contains the Ed25519 authentication identity of the user.
 .It Pa ~/.ssh/id_rsa
-Contains the RSA authentication identity of the user.
+Contains the DSA, ECDSA, Ed25519 or RSA authentication identity of the user.
 .El
 .Pp
 For RSA, ECDSA or DSA identity file may contain X.509 certificate that
