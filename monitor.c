@@ -159,7 +159,7 @@ int mm_answer_audit_command(struct ssh *, int, struct sshbuf *);
 static Authctxt *authctxt;
 
 /* local state for key verify */
-static u_char *key_blob = NULL;
+static const u_char *key_blob = NULL;
 static size_t key_bloblen = 0;
 static int key_blobtype = MM_NOKEY;
 static struct sshauthopt *key_opts = NULL;
@@ -548,7 +548,7 @@ monitor_read(struct ssh *ssh, struct monitor *pmonitor, struct mon_table *ent,
 
 /* allowed key state */
 static int
-monitor_allowed_key(u_char *blob, u_int bloblen)
+monitor_allowed_key(const u_char *blob, size_t bloblen)
 {
 	/* make sure key is allowed */
 	if (key_blob == NULL || key_bloblen != bloblen ||
@@ -561,7 +561,7 @@ static void
 monitor_reset_key_state(void)
 {
 	/* reset state */
-	free(key_blob);
+	free((void*)key_blob);
 	free(hostbased_cuser);
 	free(hostbased_chost);
 	sshauthopt_free(key_opts);
@@ -1263,7 +1263,7 @@ mm_answer_keyallowed(struct ssh *ssh, int sock, struct sshbuf *m)
 }
 
 static int
-monitor_valid_userblob(u_char *data, u_int datalen)
+monitor_valid_userblob(const u_char *data, size_t datalen)
 {
 	struct sshbuf *b;
 	const u_char *p;
@@ -1272,10 +1272,8 @@ monitor_valid_userblob(u_char *data, u_int datalen)
 	u_char type;
 	int r, fail = 0;
 
-	if ((b = sshbuf_new()) == NULL)
-		fatal("%s: sshbuf_new", __func__);
-	if ((r = sshbuf_put(b, data, datalen)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+	if ((b = sshbuf_from(data, datalen)) == NULL)
+		fatal("%s: sshbuf_from", __func__);
 
 	if (datafellows & SSH_OLD_SESSIONID) {
 		p = sshbuf_ptr(b);
@@ -1330,8 +1328,8 @@ monitor_valid_userblob(u_char *data, u_int datalen)
 }
 
 static int
-monitor_valid_hostbasedblob(u_char *data, u_int datalen, char *cuser,
-    char *chost)
+monitor_valid_hostbasedblob(const u_char *data, size_t datalen,
+    const char *cuser, const char *chost)
 {
 	struct sshbuf *b;
 	const u_char *p;
@@ -1340,10 +1338,9 @@ monitor_valid_hostbasedblob(u_char *data, u_int datalen, char *cuser,
 	int r, fail = 0;
 	u_char type;
 
-	if ((b = sshbuf_new()) == NULL)
-		fatal("%s: sshbuf_new", __func__);
-	if ((r = sshbuf_put(b, data, datalen)) != 0 ||
-	    (r = sshbuf_get_string_direct(b, &p, &len)) != 0)
+	if ((b = sshbuf_from(data, datalen)) == NULL)
+		fatal("%s: sshbuf_from", __func__);
+	if ((r = sshbuf_get_string_direct(b, &p, &len)) != 0)
 		fatal("%s: buffer error: %s", __func__, ssh_err(r));
 
 	if ((session_id2 == NULL) ||
@@ -1406,7 +1403,7 @@ mm_answer_keyverify(struct ssh *ssh, int sock, struct sshbuf *m)
 	struct sshkey *key;
 	u_char *signature, *data, *blob;
 	size_t signaturelen, datalen, bloblen;
-	int r, ret, valid_data = 0, encoded_ret;
+	int r, ret, valid_data = 0;
 
 	if ((r = sshbuf_get_string(m, &pkalg, NULL)) != 0 ||
 	    (r = sshbuf_get_string(m, &blob, &bloblen)) != 0 ||
@@ -1449,23 +1446,24 @@ mm_answer_keyverify(struct ssh *ssh, int sock, struct sshbuf *m)
 }
 	auth2_record_key(authctxt, ret == 0, key);
 
-	free(pkalg);
-	free(blob);
-	free(signature);
-	free(data);
-
 	if (key_blobtype == MM_USERKEY)
 		auth_activate_options(ssh, key_opts);
 	monitor_reset_key_state();
 
-	sshkey_free(key);
 	sshbuf_reset(m);
 
-	/* encode ret != 0 as positive integer, since we're sending u32 */
-	encoded_ret = (ret != 0);
+{	/* encode ret != 0 as positive integer, since we're sending u32 */
+	int encoded_ret = (ret != 0);
 	if ((r = sshbuf_put_u32(m, encoded_ret)) != 0)
 		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+}
 	mm_request_send(sock, MONITOR_ANS_KEYVERIFY, m);
+
+	free(pkalg);
+	free(blob);
+	free(signature);
+	free(data);
+	sshkey_free(key);
 
 	return ret == 0;
 }
