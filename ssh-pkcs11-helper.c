@@ -446,6 +446,8 @@ main(int argc, char **argv)
 	}
 }
 #else /* ENABLE_PKCS11 */
+#include "log.h"
+
 int
 main(int argc, char **argv)
 {
