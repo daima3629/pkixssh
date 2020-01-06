@@ -377,8 +377,7 @@ load_identity(const char *filename, char **commentp)
 	else
 		pass = read_passphrase("Enter passphrase: ", RP_ALLOW_STDIN);
 	r = sshkey_load_private(filename, pass, &prv, commentp);
-	explicit_bzero(pass, strlen(pass));
-	free(pass);
+	freezero(pass, strlen(pass));
 	if (r != 0)
 		fatal("Load key \"%s\": %s", filename, ssh_err(r));
 	return prv;
@@ -1477,8 +1476,7 @@ do_change_passphrase(struct passwd *pw)
 			    RP_ALLOW_STDIN);
 		r = sshkey_load_private(identity_file, old_passphrase,
 		    &private, &comment);
-		explicit_bzero(old_passphrase, strlen(old_passphrase));
-		free(old_passphrase);
+		freezero(old_passphrase, strlen(old_passphrase));
 		if (r != 0)
 			goto badkey;
 	} else if (r != 0) {
@@ -1501,16 +1499,13 @@ do_change_passphrase(struct passwd *pw)
 
 		/* Verify that they are the same. */
 		if (strcmp(passphrase1, passphrase2) != 0) {
-			explicit_bzero(passphrase1, strlen(passphrase1));
-			explicit_bzero(passphrase2, strlen(passphrase2));
-			free(passphrase1);
-			free(passphrase2);
+			freezero(passphrase1, strlen(passphrase1));
+			freezero(passphrase2, strlen(passphrase2));
 			printf("Pass phrases do not match.  Try again.\n");
 			exit(1);
 		}
 		/* Destroy the other copy. */
-		explicit_bzero(passphrase2, strlen(passphrase2));
-		free(passphrase2);
+		freezero(passphrase2, strlen(passphrase2));
 	}
 
 	/* Save the file using the new passphrase. */
@@ -1518,15 +1513,13 @@ do_change_passphrase(struct passwd *pw)
 	    comment, use_new_format, new_format_cipher, rounds)) != 0) {
 		error("Saving key \"%s\" failed: %s.",
 		    identity_file, ssh_err(r));
-		explicit_bzero(passphrase1, strlen(passphrase1));
-		free(passphrase1);
+		freezero(passphrase1, strlen(passphrase1));
 		sshkey_free(private);
 		free(comment);
 		exit(1);
 	}
 	/* Destroy the passphrase and the copy of the key in memory. */
-	explicit_bzero(passphrase1, strlen(passphrase1));
-	free(passphrase1);
+	freezero(passphrase1, strlen(passphrase1));
 	sshkey_free(private);		 /* Destroys contents */
 	free(comment);
 
@@ -1597,8 +1590,7 @@ do_change_comment(struct passwd *pw, const char *identity_comment)
 		/* Try to load using the passphrase. */
 		if ((r = sshkey_load_private(identity_file, passphrase,
 		    &private, &comment)) != 0) {
-			explicit_bzero(passphrase, strlen(passphrase));
-			free(passphrase);
+			freezero(passphrase, strlen(passphrase));
 			fatal("Cannot load private key \"%s\": %s.",
 			    identity_file, ssh_err(r));
 		}
@@ -1608,7 +1600,7 @@ do_change_comment(struct passwd *pw, const char *identity_comment)
 	    !use_new_format) {
 		error("Comments are only supported for keys stored in "
 		    "the new format (-o).");
-		explicit_bzero(passphrase, strlen(passphrase));
+		freezero(passphrase, strlen(passphrase));
 		sshkey_free(private);
 		exit(1);
 	}
@@ -1623,7 +1615,7 @@ do_change_comment(struct passwd *pw, const char *identity_comment)
 		printf("New comment: ");
 		fflush(stdout);
 		if (!fgets(new_comment, sizeof(new_comment), stdin)) {
-			explicit_bzero(passphrase, strlen(passphrase));
+			freezero(passphrase, strlen(passphrase));
 			sshkey_free(private);
 			exit(1);
 		}
@@ -1642,14 +1634,12 @@ do_change_comment(struct passwd *pw, const char *identity_comment)
 	    new_comment, use_new_format, new_format_cipher, rounds)) != 0) {
 		error("Saving key \"%s\" failed: %s",
 		    identity_file, ssh_err(r));
-		explicit_bzero(passphrase, strlen(passphrase));
-		free(passphrase);
+		freezero(passphrase, strlen(passphrase));
 		sshkey_free(private);
 		free(comment);
 		exit(1);
 	}
-	explicit_bzero(passphrase, strlen(passphrase));
-	free(passphrase);
+	freezero(passphrase, strlen(passphrase));
 	if ((r = sshkey_from_private(private, &public)) != 0)
 		fatal("sshkey_from_private failed: %s", ssh_err(r));
 	sshkey_free(private);
@@ -3108,16 +3098,13 @@ passphrase_again:
 			 * The passphrases do not match.  Clear them and
 			 * retry.
 			 */
-			explicit_bzero(passphrase1, strlen(passphrase1));
-			explicit_bzero(passphrase2, strlen(passphrase2));
-			free(passphrase1);
-			free(passphrase2);
+			freezero(passphrase1, strlen(passphrase1));
+			freezero(passphrase2, strlen(passphrase2));
 			printf("Passphrases do not match.  Try again.\n");
 			goto passphrase_again;
 		}
 		/* Clear the other copy of the passphrase. */
-		explicit_bzero(passphrase2, strlen(passphrase2));
-		free(passphrase2);
+		freezero(passphrase2, strlen(passphrase2));
 	}
 
 	if (identity_comment) {
@@ -3132,15 +3119,11 @@ passphrase_again:
 	    comment, use_new_format, new_format_cipher, rounds)) != 0) {
 		error("Saving key \"%s\" failed: %s",
 		    identity_file, ssh_err(r));
-		explicit_bzero(passphrase1, strlen(passphrase1));
-		free(passphrase1);
+		freezero(passphrase1, strlen(passphrase1));
 		exit(1);
 	}
-	/* Clear the passphrase. */
-	explicit_bzero(passphrase1, strlen(passphrase1));
-	free(passphrase1);
 
-	/* Clear the private key and the random number generator. */
+	freezero(passphrase1, strlen(passphrase1));
 	sshkey_free(private);
 
 	if (!quiet)
