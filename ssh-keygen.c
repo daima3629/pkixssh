@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keygen.c,v 1.376 2019/12/30 03:30:09 djm Exp $ */
+/* $OpenBSD: ssh-keygen.c,v 1.381 2020/01/02 22:40:09 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1994 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -11,7 +11,7 @@
  * incompatible with the protocol description in the RFC file, it must be
  * called by a name other than "ssh" or "Secure Shell".
  *
- * Copyright (c) 2005-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2005-2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -1566,8 +1566,7 @@ do_change_comment(struct passwd *pw, const char *identity_comment)
 	struct sshkey *private;
 	struct sshkey *public;
 	struct stat st;
-	FILE *f;
-	int r, fd;
+	int r;
 
 	if (!have_identity)
 		ask_filename(pw, "Enter file in which the key is");
@@ -1645,17 +1644,9 @@ do_change_comment(struct passwd *pw, const char *identity_comment)
 	sshkey_free(private);
 
 	strlcat(identity_file, ".pub", sizeof(identity_file));
-	fd = open(identity_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-	if (fd == -1)
+	if ((r = sshkey_save_public(public, identity_file, new_comment)) != 0)
 		fatal("Could not save your public key in %s", identity_file);
-	f = fdopen(fd, "w");
-	if (f == NULL)
-		fatal("fdopen %s failed: %s", identity_file, strerror(errno));
-	if ((r = sshkey_write(public, f)) != 0)
-		fatal("write key failed: %s", ssh_err(r));
 	sshkey_free(public);
-	fprintf(f, " %s\n", new_comment);
-	fclose(f);
 
 	free(comment);
 
@@ -2682,7 +2673,7 @@ main(int argc, char **argv)
 	struct sshkey *private, *public;
 	struct passwd *pw;
 	struct stat st;
-	int r, opt, type, fd;
+	int r, opt, type;
 	int change_passphrase = 0, change_comment = 0, show_cert = 0;
 	int find_host = 0, delete_host = 0, hash_hosts = 0;
 	int gen_all_hostkeys = 0, gen_krl = 0, update_krl = 0, check_krl = 0;
@@ -2693,7 +2684,6 @@ main(int argc, char **argv)
 	char *identity_comment = NULL, *ca_key_path = NULL, **opts = NULL;
 	size_t nopts = 0;
 	u_int32_t bits = 0;
-	FILE *f;
 	const char *errstr;
 	int log_level = SYSLOG_LEVEL_INFO;
 
@@ -3130,16 +3120,9 @@ passphrase_again:
 		printf("Your identification has been saved in %s.\n", identity_file);
 
 	strlcat(identity_file, ".pub", sizeof(identity_file));
-	if ((fd = open(identity_file, O_WRONLY|O_CREAT|O_TRUNC, 0644)) == -1)
+	if ((r = sshkey_save_public(public, identity_file, comment)) != 0)
 		fatal("Unable to save public key to %s: %s",
 		    identity_file, strerror(errno));
-	if ((f = fdopen(fd, "w")) == NULL)
-		fatal("fdopen %s failed: %s", identity_file, strerror(errno));
-	if ((r = sshkey_write(public, f)) != 0)
-		error("write key failed: %s", ssh_err(r));
-	fprintf(f, " %s\n", comment);
-	if (ferror(f) || fclose(f) != 0)
-		fatal("write public failed: %s", strerror(errno));
 
 	if (!quiet) {
 		fp = sshkey_fingerprint(public, fingerprint_hash,

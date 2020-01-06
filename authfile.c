@@ -1,8 +1,7 @@
-/* $OpenBSD: authfile.c,v 1.135 2019/09/03 08:30:47 djm Exp $ */
+/* $OpenBSD: authfile.c,v 1.136 2020/01/02 22:38:33 djm Exp $ */
 /*
  * Copyright (c) 2000, 2013 Markus Friedl.  All rights reserved.
- * X509 certificate support,
- * Copyright (c) 2002-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -602,4 +601,42 @@ sshkey_advance_past_options(char **cpp)
 	*cpp = cp;
 	/* return failure for unterminated quotes */
 	return (*cp == '\0' && quoted) ? -1 : 0;
+}
+
+/* Save a public key */
+int
+sshkey_save_public(const struct sshkey *key, const char *path,
+    const char *comment)
+{
+	int fd;
+	FILE *f = NULL;
+	int r = SSH_ERR_INTERNAL_ERROR;
+
+	if ((fd = open(path, O_WRONLY|O_CREAT|O_TRUNC, 0644)) == -1)
+		return SSH_ERR_SYSTEM_ERROR;
+	if ((f = fdopen(fd, "w")) == NULL) {
+		r = SSH_ERR_SYSTEM_ERROR;
+		goto fail;
+	}
+
+	if ((r = sshkey_write(key, f)) != 0)
+		goto fail;
+	fprintf(f, " %s\n", comment);
+
+	if (ferror(f)) {
+		r = SSH_ERR_SYSTEM_ERROR;
+		goto fail;
+	}
+	(void)fclose(f);
+
+	return 0;
+fail:
+{	int oerrno = errno;
+	if (f != NULL)
+		fclose(f);
+	else
+		close(fd);
+	errno = oerrno;
+}
+	return r;
 }
