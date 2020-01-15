@@ -2970,14 +2970,6 @@ if test "x$openssl" = "xyes" ; then
 		hmac-sha2-512-etm@openssh.com"
 	     ]
 	)
-	# Search for RIPE-MD support in OpenSSL
-	AC_CHECK_FUNCS([EVP_ripemd160], ,
-	    [unsupported_algorithms="$unsupported_algorithms \
-		hmac-ripemd160 \
-		hmac-ripemd160@openssh.com \
-		hmac-ripemd160-etm@openssh.com"
-	     ]
-	)
 
 	# Check complete ECC support in OpenSSL
 	AC_MSG_CHECKING([whether OpenSSL has NID_X9_62_prime256v1])

@@ -80,12 +80,6 @@ void ssh_aes_ctr_iv(EVP_CIPHER_CTX *, int, u_char *, size_t);
 # define EVP_CTRL_GCM_GET_TAG -1
 #endif
 
-#if defined(HAVE_EVP_RIPEMD160)
-# if defined(OPENSSL_NO_RIPEMD) || defined(OPENSSL_NO_RMD160)
-#  undef HAVE_EVP_RIPEMD160
-# endif
-#endif
-
 
 #ifndef HAVE_RSA_GENERATE_KEY_EX
 int RSA_generate_key_ex(RSA *, int, BIGNUM *, void *);

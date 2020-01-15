@@ -52,7 +52,6 @@ OPENBSD=base64.o \
 	reallocarray.o \
 	realpath.o \
 	recallocarray.o \
-	rmd160.o \
 	rresvport.o \
 	setenv.o \
 	setproctitle.o \

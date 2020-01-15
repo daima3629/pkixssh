@@ -27,7 +27,6 @@
 
 #if 0
 #include <md5.h>
-#include <rmd160.h>
 #endif
 #ifdef HAVE_SHA1_H
 #include <sha1.h>
