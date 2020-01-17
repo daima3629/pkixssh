@@ -157,7 +157,7 @@ read_passphrase(const char *prompt, int flags)
 	if (use_askpass && getenv("DISPLAY")) {
 		const char *askpass = getenv(SSH_ASKPASS_ENV);
 		const char *askpass_hint = NULL;
-		
+
 		if (askpass == NULL)
 			askpass = _PATH_SSH_ASKPASS;
 		if ((flags & RP_ASK_PERMISSION) != 0)

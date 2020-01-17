@@ -190,7 +190,7 @@ auth_krb5_password(Authctxt *authctxt, const char *password)
 
  out:
 	restore_uid();
-	
+
 	free(platform_client);
 
 	if (problem) {

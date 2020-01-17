@@ -116,7 +116,7 @@ sshbuf_get_eckey(struct sshbuf *buf, EC_KEY *v)
 		SSHBUF_ABORT();
 		return SSH_ERR_INTERNAL_ERROR;
 	}
-	return 0;	
+	return 0;
 }
 #endif /* OPENSSL_HAS_ECC */
 

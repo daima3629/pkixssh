@@ -1122,7 +1122,7 @@ check_host_key(char *hostname, struct sockaddr *hostaddr, u_short port,
 		if (options.exit_on_forward_failure && cancelled_forwarding)
 			fatal("Error: forwarding disabled due to host key "
 			    "check failure");
-		
+
 		/*
 		 * XXX Should permit the user to change to use the new id.
 		 * This could be done by converting the host key to an

@@ -4075,7 +4075,7 @@ channel_request_rforward_cancel_streamlocal(struct ssh *ssh, const char *path)
 
 	return 0;
 }
- 
+
 /*
  * Request cancellation of remote forwarding of a connection from local side.
  */
@@ -4636,7 +4636,7 @@ x11_create_display_inet(struct ssh *ssh, int x11_display_offset,
 				if ((errno != EINVAL) && (errno != EAFNOSUPPORT)
 #ifdef EPFNOSUPPORT
 				    && (errno != EPFNOSUPPORT)
-#endif 
+#endif
 				    ) {
 					error("socket: %.100s", strerror(errno));
 					freeaddrinfo(aitop);

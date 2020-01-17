@@ -1379,7 +1379,7 @@ safely_chroot(const char *path, uid_t uid)
 			memcpy(component, path, cp - path);
 			component[cp - path] = '\0';
 		}
-	
+
 		debug3("%s: checking '%s'", __func__, component);
 
 		if (stat(component, &st) == -1)
@@ -1460,7 +1460,7 @@ do_setusercontext(struct passwd *pw)
 			perror("unable to set user context (setuser)");
 			exit(1);
 		}
-		/* 
+		/*
 		 * FreeBSD's setusercontext() will not apply the user's
 		 * own umask setting unless running with the user's UID.
 		 */
