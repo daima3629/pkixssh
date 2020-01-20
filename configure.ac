@@ -5281,10 +5281,6 @@ if test "x$ssh_ocsp" = "xyes"; then
 	])
 fi
 if test "x$ssh_ocsp" = "xyes"; then
-	AC_DEFINE(
-		[SSH_OCSP_ENABLED], [1],
-		[Define if you don't want to validate X.509 certificates with OCSP])
-
 	save_LIBS="$LIBS"
 	AC_MSG_CHECKING([how to link programs using OpenSSL OCSP functions])
 	link_SSL=false
@@ -5313,6 +5309,9 @@ if test "x$ssh_ocsp" = "xyes"; then
 	fi
 	LIBS="$save_LIBS"
 
+	AC_DEFINE(
+		[SSH_OCSP_ENABLED], [1],
+		[Define if you want to validate X.509 certificates with OCSP])
 	OCSP_ON=''
 	OCSP_OFF='#'
 else
