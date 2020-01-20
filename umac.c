@@ -154,18 +154,29 @@ typedef unsigned int	UWORD;  /* Register */
 /* UMAC uses AES with 16 byte block and key lengths */
 #define AES_BLOCK_LEN  16
 
-/* OpenSSL's AES */
-#ifdef WITH_OPENSSL
-#include "openbsd-compat/openssl-compat.h"
-#ifndef USE_BUILTIN_RIJNDAEL
-# include <openssl/aes.h>
+#if defined(WITH_OPENSSL) && defined(HAVE_AES_ENCRYPT)
+/* Note low level AES API is deprecated in OpenSSL 3.0.
+ * If is available we will use it unless is requested globaly
+ * build-in rijndael.
+ */
+#else
+/* Force build-in rijndael */
+#  ifndef USE_BUILTIN_RIJNDAEL
+#    define USE_BUILTIN_RIJNDAEL
+#  endif
 #endif
+
+#ifndef USE_BUILTIN_RIJNDAEL
+/* OpenSSL's AES */
+#include "openbsd-compat/openssl-compat.h"
+#include <openssl/aes.h>
 typedef AES_KEY aes_int_key[1];
 #define aes_encryption(in,out,int_key)                  \
   AES_encrypt((u_char *)(in),(u_char *)(out),(AES_KEY *)int_key)
 #define aes_key_setup(key,int_key)                      \
   AES_set_encrypt_key((const u_char *)(key),UMAC_KEY_LEN*8,int_key)
 #else
+/* build-in rijndael */
 #include "rijndael.h"
 #define AES_ROUNDS ((UMAC_KEY_LEN / 4) + 6)
 typedef UINT8 aes_int_key[AES_ROUNDS+1][4][4];	/* AES internal */

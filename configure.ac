@@ -5493,6 +5493,11 @@ AC_CHECK_FUNCS([ \
   X509_LOOKUP_store \
 ])
 
+# check for deprecated 3.0+ functions ...
+AC_CHECK_FUNCS([ \
+  AES_encrypt \
+])
+
 # functions hidden in openssl compatible libraries
 AC_CHECK_DECLS([UTF8_getc],,,[
 #include <openssl/asn1.h>
