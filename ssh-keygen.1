@@ -1,4 +1,4 @@
-.\"	$OpenBSD: ssh-keygen.1,v 1.188 2020/01/03 07:33:33 jmc Exp $
+.\"	$OpenBSD: ssh-keygen.1,v 1.191 2020/01/14 15:07:30 naddy Exp $
 .\"
 .\" Author: Tatu Ylonen <ylo@cs.hut.fi>
 .\" Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -112,12 +112,12 @@
 .Nm ssh-keygen
 .Fl M Cm generate
 .Op Fl O Ar option
-.Ar
+.Ar output_file
 .Nm ssh-keygen
 .Fl M Cm screen
-.Fl f Ar input_file
+.Op Fl f Ar input_file
 .Op Fl O Ar option
-.Ar
+.Ar output_file
 .Nm ssh-keygen
 .Fl I Ar certificate_identity
 .Fl s Ar ca_key

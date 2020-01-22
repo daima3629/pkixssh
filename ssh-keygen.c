@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keygen.c,v 1.381 2020/01/02 22:40:09 djm Exp $ */
+/* $OpenBSD: ssh-keygen.c,v 1.383 2020/01/14 15:07:30 naddy Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1994 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -2681,8 +2681,8 @@ usage(void)
 	    "       ssh-keygen -R hostname [-f known_hosts_file]\n"
 	    "       ssh-keygen -r hostname [-g] [-f input_keyfile]\n"
 #ifdef WITH_OPENSSL
-	    "       ssh-keygen -M generate [-O option] output\n"
-	    "       ssh-keygen -M screen [-f input_file] [-O option] [-a rounds] output_file\n"
+	    "       ssh-keygen -M generate [-O option] output_file\n"
+	    "       ssh-keygen -M screen [-f input_file] [-O option] output_file\n"
 #endif
 	    "       ssh-keygen -I certificate_identity -s ca_key [-hU] [-D pkcs11_provider]\n"
 	    "                  [-n principals] [-O option] [-V validity_interval]\n"
