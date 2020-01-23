@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keygen.c,v 1.384 2020/01/21 11:06:09 djm Exp $ */
+/* $OpenBSD: ssh-keygen.c,v 1.385 2020/01/22 04:51:51 claudio Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1994 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -1292,8 +1292,8 @@ print_fingerprint_known_hosts(
 {
 	char *host;
 	host = va_arg(ap, char*);
-	mprintf("%s %s %s %s\n", host,
-	    sshkey_type(public), fp, comment);
+	mprintf("%s %s %s%s%s\n", host,
+	    sshkey_type(public), fp, *comment ? " ": "", comment);
 }
 
 static int
