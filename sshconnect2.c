@@ -1,4 +1,4 @@
-/* $OpenBSD: sshconnect2.c,v 1.314 2019/11/15 02:37:24 djm Exp $ */
+/* $OpenBSD: sshconnect2.c,v 1.315 2020/01/21 05:56:27 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Damien Miller.  All rights reserved.
@@ -1177,7 +1177,7 @@ sign_and_send_pubkey(struct ssh *ssh, Identity *id)
 	    SSH_FP_DEFAULT)) == NULL)
 		return 0;
 
-	debug3("%s: %s %s", __func__, sshkey_type(id->key), fp);
+	debug3("%s: %s %s", __func__, pkalg, fp);
 
 	/*
 	 * If the key is an certificate, try to find a matching private key
@@ -1267,7 +1267,9 @@ sign_and_send_pubkey(struct ssh *ssh, Identity *id)
 			break;
 		if (r == SSH_ERR_KEY_NOT_FOUND)
 			goto out; /* soft failure */
-		error("%s: signing failed: %s", __func__, ssh_err(r));
+		error("%s: signing failed for %s \"%s\"%s: %s", __func__,
+		      pkalg, sign_id->filename,
+		      id->agent_fd != -1 ? " from agent" : "", ssh_err(r));
 		goto out;
 	}
 	if (slen == 0 || signature == NULL) /* shouldn't happen */
