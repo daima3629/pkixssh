@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-add.c,v 1.147 2019/11/25 00:51:37 djm Exp $ */
+/* $OpenBSD: ssh-add.c,v 1.150 2020/01/17 20:13:47 naddy Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -570,25 +570,16 @@ do_file(int agent_fd, int deleting, int key_only, char *file, int qflag,
 static void
 usage(void)
 {
-	fprintf(stderr, "usage: %s [options] [file ...]\n", __progname);
-	fprintf(stderr, "Options:\n");
-	fprintf(stderr, "  -l          List fingerprints of all identities.\n");
-	fprintf(stderr, "  -E hash     Specify hash algorithm used for fingerprints.\n");
-	fprintf(stderr, "  -L          List public key parameters of all identities.\n");
-	fprintf(stderr, "  -k          Load only keys and not certificates.\n");
-	fprintf(stderr, "  -c          Require confirmation to sign using identities\n");
-	fprintf(stderr, "  -m minleft  Maxsign is only changed if less than minleft are left (for XMSS)\n");
-	fprintf(stderr, "  -M maxsign  Maximum number of signatures allowed (for XMSS)\n");
-	fprintf(stderr, "  -t life     Set lifetime (in seconds) when adding identities.\n");
-	fprintf(stderr, "  -d          Delete identity.\n");
-	fprintf(stderr, "  -D          Delete all identities.\n");
-	fprintf(stderr, "  -x          Lock agent.\n");
-	fprintf(stderr, "  -X          Unlock agent.\n");
-	fprintf(stderr, "  -s pkcs11   Add keys from PKCS#11 provider.\n");
-	fprintf(stderr, "  -e pkcs11   Remove keys provided by PKCS#11 provider.\n");
-	fprintf(stderr, "  -T pubkey   Test if ssh-agent can access matching private key.\n");
-	fprintf(stderr, "  -q          Be quiet after a successful operation.\n");
-	fprintf(stderr, "  -v          Be more verbose.\n");
+	fprintf(stderr,
+"usage: ssh-add [-cDdkLlqvXx] [-E fingerprint_hash] [-t life]\n"
+#ifdef WITH_XMSS
+"               [-M maxsign] [-m minleft]\n"
+#endif
+"               [file ...]\n"
+"       ssh-add -s pkcs11\n"
+"       ssh-add -e pkcs11\n"
+"       ssh-add -T pubkey ...\n"
+	);
 }
 
 int
