@@ -1,4 +1,4 @@
-/* $OpenBSD: sshd.c,v 1.540 2019/11/13 11:25:11 dtucker Exp $ */
+/* $OpenBSD: sshd.c,v 1.543 2020/01/21 22:39:57 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -1190,7 +1190,7 @@ server_accept_loop(int *sock_in, int *sock_out, int *newsock, int *config_s)
 {
 	fd_set *fdset;
 	int i, j, ret, maxfd;
-	int startups = 0, listening = 0, lameduck = 0;
+	int ostartups = -1, startups = 0, listening = 0, lameduck = 0;
 	int startup_p[2] = { -1 , -1 };
 	struct sockaddr_storage from;
 	socklen_t fromlen;
@@ -1214,6 +1214,12 @@ server_accept_loop(int *sock_in, int *sock_out, int *newsock, int *config_s)
 	 * the daemon is killed with a signal.
 	 */
 	for (;;) {
+		if (ostartups != startups) {
+			setproctitle("[listener] %d of %d-%d startups",
+			    startups, options.max_startups_begin,
+			    options.max_startups);
+			ostartups = startups;
+		}
 		if (received_sighup) {
 			if (!lameduck) {
 				debug("Received SIGHUP; waiting for children");
