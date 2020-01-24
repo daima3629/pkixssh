@@ -1,4 +1,4 @@
-/* $OpenBSD: servconf.c,v 1.357 2019/12/15 20:59:23 djm Exp $ */
+/* $OpenBSD: servconf.c,v 1.358 2020/01/23 02:46:49 dtucker Exp $ */
 /*
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
@@ -9,8 +9,7 @@
  * incompatible with the protocol description in the RFC file, it must be
  * called by a name other than "ssh" or "Secure Shell".
  *
- * X509 certificate support,
- * Copyright (c) 2002-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -230,27 +229,32 @@ option_clear_or_none(const char *o)
 static void
 assemble_algorithms(ServerOptions *o)
 {
-	char *all_cipher, *all_mac, *all_kex, *all_sig;
+	char *all;
 	int r;
-
-	all_cipher = cipher_alg_list(',', 0);
-	all_mac = mac_alg_list(',');
-	all_kex = kex_alg_list(',');
-	all_sig = sshkey_alg_list(0, 1, 1, ',');
 #define ASSEMBLE(what, defaults, all) \
 	do { \
+		char *def = match_filter_whitelist(defaults, all); \
 		if ((r = kex_assemble_names(&o->what, defaults, all)) != 0) \
 			fatal("%s: %s: %s", __func__, #what, ssh_err(r)); \
+		free(def); \
 	} while (0)
-	ASSEMBLE(ciphers, KEX_SERVER_ENCRYPT, all_cipher);
-	ASSEMBLE(macs, KEX_SERVER_MAC, all_mac);
-	ASSEMBLE(kex_algorithms, KEX_SERVER_KEX, all_kex);
-	ASSEMBLE(ca_sign_algorithms, SSH_ALLOWED_CA_SIGALGS, all_sig);
+
+	all = cipher_alg_list(',', 0);
+	ASSEMBLE(ciphers, KEX_SERVER_ENCRYPT, all);
+	free(all);
+
+	all = mac_alg_list(',');
+	ASSEMBLE(macs, KEX_SERVER_MAC, all);
+	free(all);
+
+	all = kex_alg_list(',');
+	ASSEMBLE(kex_algorithms, KEX_SERVER_KEX, all);
+	free(all);
+
+	all = sshkey_alg_list(0, 1, 1, ',');
+	ASSEMBLE(ca_sign_algorithms, SSH_ALLOWED_CA_SIGALGS, all);
+	free(all);
 #undef ASSEMBLE
-	free(all_cipher);
-	free(all_mac);
-	free(all_kex);
-	free(all_sig);
 }
 
 static void
@@ -312,14 +316,6 @@ fill_default_server_options(ServerOptions *options)
 		options->use_pam = 0;
 
 	/* X.509 Standard Options */
-#ifdef OPENSSL_FIPS
-	if (FIPS_mode()) {
-		if (options->ciphers == NULL)
-			options->ciphers = only_fips_valid_ciphers(KEX_SERVER_ENCRYPT);
-		if (options->macs == NULL)
-			options->macs = only_fips_valid_macs(KEX_SERVER_MAC);
-	}
-#endif
 	/* options->hostbased_algorithms */
 	/* options->pubkey_algorithms */
 	/* options->accepted_algorithms */

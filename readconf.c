@@ -1,4 +1,4 @@
-/* $OpenBSD: readconf.c,v 1.319 2019/12/21 02:19:13 djm Exp $ */
+/* $OpenBSD: readconf.c,v 1.320 2020/01/23 02:46:49 dtucker Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -11,8 +11,7 @@
  * incompatible with the protocol description in the RFC file, it must be
  * called by a name other than "ssh" or "Secure Shell".
  *
- * X509 certificate support,
- * Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -2226,7 +2225,6 @@ fill_default_options_for_canonicalization(Options *options)
 void
 fill_default_options(Options * options)
 {
-	char *all_cipher, *all_mac, *all_kex, *all_sig;
 	int r;
 
 	if (options->forward_agent == -1)
@@ -2292,14 +2290,6 @@ fill_default_options(Options * options)
 		options->number_of_password_prompts = 3;
 	/* options->hostkeyalgorithms, default set in myproposals.h */
 	/* HostKeyAlgorithms depend from X509KeyAlgorithm options */
-#ifdef OPENSSL_FIPS
-	if (FIPS_mode()) {
-		if (options->ciphers == NULL)
-			options->ciphers = only_fips_valid_ciphers(KEX_CLIENT_ENCRYPT);
-		if (options->macs == NULL)
-			options->macs = only_fips_valid_macs(KEX_CLIENT_MAC);
-	}
-#endif
 	if (options->add_keys_to_agent == -1)
 		options->add_keys_to_agent = 0;
 	if (options->num_identity_files == 0) {
@@ -2387,26 +2377,33 @@ fill_default_options(Options * options)
 	if (options->sk_provider == NULL)
 		options->sk_provider = xstrdup("$SSH_SK_PROVIDER");
 
-	/* Expand KEX name lists */
-	all_cipher = cipher_alg_list(',', 0);
-	all_mac = mac_alg_list(',');
-	all_kex = kex_alg_list(',');
-	all_sig = sshkey_alg_list(0, 1, 1, ',');
+	/* expand KEX and etc. name lists */
+{	char *all;
 #define ASSEMBLE(what, defaults, all) \
 	do { \
-		if ((r = kex_assemble_names(&options->what, \
-		    defaults, all)) != 0) \
+		char *def = match_filter_whitelist(defaults, all); \
+		if ((r = kex_assemble_names(&options->what, def, all)) != 0) \
 			fatal("%s: %s: %s", __func__, #what, ssh_err(r)); \
+		free(def); \
 	} while (0)
-	ASSEMBLE(ciphers, KEX_CLIENT_ENCRYPT, all_cipher);
-	ASSEMBLE(macs, KEX_CLIENT_MAC, all_mac);
-	ASSEMBLE(kex_algorithms, KEX_CLIENT_KEX, all_kex);
-	ASSEMBLE(ca_sign_algorithms, SSH_ALLOWED_CA_SIGALGS, all_sig);
+
+	all = cipher_alg_list(',', 0);
+	ASSEMBLE(ciphers, KEX_CLIENT_ENCRYPT, all);
+	free(all);
+
+	all = mac_alg_list(',');
+	ASSEMBLE(macs, KEX_CLIENT_MAC, all);
+	free(all);
+
+	all = kex_alg_list(',');
+	ASSEMBLE(kex_algorithms, KEX_CLIENT_KEX, all);
+	free(all);
+
+	all = sshkey_alg_list(0, 1, 1, ',');
+	ASSEMBLE(ca_sign_algorithms, SSH_ALLOWED_CA_SIGALGS, all);
+	free(all);
 #undef ASSEMBLE
-	free(all_cipher);
-	free(all_mac);
-	free(all_kex);
-	free(all_sig);
+}
 
 #define CLEAR_ON_NONE(v) \
 	do { \
