@@ -3024,19 +3024,19 @@ dump_client_config(Options *o, const char *host)
 	/* String options */
 	dump_cfg_string(oBindAddress, o->bind_address);
 	dump_cfg_string(oBindInterface, o->bind_interface);
-	dump_cfg_string(oCiphers, o->ciphers ? o->ciphers : KEX_CLIENT_ENCRYPT);
+	dump_cfg_string(oCiphers, o->ciphers);
 	dump_cfg_string(oControlPath, o->control_path);
 	dump_cfg_string(oHostKeyAlgorithms, o->hostkeyalgorithms);
 	dump_cfg_string(oHostKeyAlias, o->host_key_alias);
 	dump_cfg_string(oIdentityAgent, o->identity_agent);
 	dump_cfg_string(oIgnoreUnknown, o->ignored_unknown);
 	dump_cfg_string(oKbdInteractiveDevices, o->kbd_interactive_devices);
-	dump_cfg_string(oKexAlgorithms, o->kex_algorithms ? o->kex_algorithms : KEX_CLIENT_KEX);
-	dump_cfg_string(oCASignatureAlgorithms, o->ca_sign_algorithms ? o->ca_sign_algorithms : SSH_ALLOWED_CA_SIGALGS);
+	dump_cfg_string(oKexAlgorithms, o->kex_algorithms);
+	dump_cfg_string(oCASignatureAlgorithms, o->ca_sign_algorithms);
 	dump_cfg_string(oLocalCommand, o->local_command);
 	dump_cfg_string(oRemoteCommand, o->remote_command);
 	dump_cfg_string(oLogLevel, log_level_name(o->log_level));
-	dump_cfg_string(oMacs, o->macs ? o->macs : KEX_CLIENT_MAC);
+	dump_cfg_string(oMacs, o->macs);
 #ifdef ENABLE_PKCS11
 	dump_cfg_string(oPKCS11Provider, o->pkcs11_provider);
 #endif
