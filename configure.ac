@@ -1715,7 +1715,9 @@ if test "x$LDNS_MSG" = "xyes" ; then
 	AC_LINK_IFELSE([AC_LANG_SOURCE([[
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
+#ifdef HAVE_STDINT_H
+# include <stdint.h>
+#endif
 #include <ldns/ldns.h>
 int main() {
   ldns_status status = ldns_verify_trusted(NULL, NULL, NULL, NULL);
@@ -3899,7 +3901,9 @@ fi
 
 AC_CHECK_TYPES([intmax_t, uintmax_t], , , [
 #include <sys/types.h>
-#include <stdint.h>
+#ifdef HAVE_STDINT_H
+# include <stdint.h>
+#endif
 ])
 
 TYPE_SOCKLEN_T
