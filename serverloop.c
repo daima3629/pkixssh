@@ -1,4 +1,4 @@
-/* $OpenBSD: serverloop.c,v 1.216 2019/06/28 13:35:04 deraadt Exp $ */
+/* $OpenBSD: serverloop.c,v 1.220 2020/01/25 04:48:26 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -692,9 +692,7 @@ server_input_channel_open(int type, u_int32_t seq, struct ssh *ssh)
 	debug("%s: ctype %s rchan %u win %u max %u", __func__,
 	    ctype, (unsigned)rchan, (unsigned)rwindow, (unsigned)rmaxpack);
 
-	if (rchan > INT_MAX) {
-		error("%s: invalid remote channel ID", __func__);
-	} else if (strcmp(ctype, "session") == 0) {
+	if (strcmp(ctype, "session") == 0) {
 		c = server_request_session(ssh);
 	} else if (strcmp(ctype, "direct-tcpip") == 0) {
 		c = server_request_direct_tcpip(ssh, &reason, &errmsg);
@@ -705,7 +703,7 @@ server_input_channel_open(int type, u_int32_t seq, struct ssh *ssh)
 	}
 	if (c != NULL) {
 		debug("%s: confirm %s", __func__, ctype);
-		c->remote_id = (int)rchan;
+		c->remote_id = rchan;
 		c->have_remote_id = 1;
 		c->remote_window = rwindow;
 		c->remote_maxpacket = rmaxpack;
