@@ -1,4 +1,4 @@
-/* $OpenBSD: myproposal.h,v 1.58 2019/02/23 08:20:43 djm Exp $ */
+/* $OpenBSD: myproposal.h,v 1.67 2020/01/24 00:28:57 djm Exp $ */
 
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
@@ -24,63 +24,6 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <openssl/opensslv.h>
-
-/* conditional algorithm support */
-
-#ifdef OPENSSL_HAS_ECC
-# ifdef OPENSSL_HAS_NISTP521
-#  define HOSTKEY_ECDSA_CERT_METHODS \
-	"ecdsa-sha2-nistp256-cert-v01@openssh.com," \
-	"ecdsa-sha2-nistp384-cert-v01@openssh.com," \
-	"ecdsa-sha2-nistp521-cert-v01@openssh.com,"
-#  define HOSTKEY_ECDSA_METHODS \
-	"ecdsa-sha2-nistp256," \
-	"ecdsa-sha2-nistp384," \
-	"ecdsa-sha2-nistp521,"
-# else /* OPENSSL_HAS_NISTP521 */
-#  define HOSTKEY_ECDSA_CERT_METHODS \
-	"ecdsa-sha2-nistp256-cert-v01@openssh.com," \
-	"ecdsa-sha2-nistp384-cert-v01@openssh.com,"
-#  define HOSTKEY_ECDSA_METHODS \
-	"ecdsa-sha2-nistp256," \
-	"ecdsa-sha2-nistp384,"
-# endif /* OPENSSL_HAS_NISTP521 */
-#else /* OPENSSL_HAS_ECC */
-# define HOSTKEY_ECDSA_CERT_METHODS
-# define HOSTKEY_ECDSA_METHODS
-#endif /* OPENSSL_HAS_ECC */
-
-#ifdef HAVE_EVP_SHA256
-# define RSA_SHA2_PK_ALG \
-	"rsa-sha2-256," \
-	"rsa-sha2-512,"
-# define RSA_SHA2_CERT_ALG \
-	"rsa-sha2-256-cert-v01@openssh.com," \
-	"rsa-sha2-512-cert-v01@openssh.com,"
-#else
-# define RSA_SHA2_PK_ALG
-# define RSA_SHA2_CERT_ALG
-#endif
-
-#ifdef WITH_OPENSSL
-#define	KEX_DEFAULT_PK_ALG	\
-	HOSTKEY_ECDSA_CERT_METHODS \
-	"ssh-ed25519-cert-v01@openssh.com," \
-	RSA_SHA2_CERT_ALG \
-	"ssh-rsa-cert-v01@openssh.com," \
-	HOSTKEY_ECDSA_METHODS \
-	"ssh-ed25519," \
-	RSA_SHA2_PK_ALG \
-	"ssh-rsa"
-#else /* WITH_OPENSSL */
-#define	KEX_DEFAULT_PK_ALG	\
-	"ssh-ed25519-cert-v01@openssh.com," \
-	"ssh-ed25519"
-#endif /* WITH_OPENSSL */
-
-/* the actual algorithms */
-
 #define KEX_SERVER_KEX \
 	"curve25519-sha256," \
 	"curve25519-sha256@libssh.org," \
@@ -94,6 +37,22 @@
 	"diffie-hellman-group14-sha1"
 
 #define KEX_CLIENT_KEX KEX_SERVER_KEX
+
+#define	KEX_DEFAULT_PK_ALG	\
+	"ecdsa-sha2-nistp256-cert-v01@openssh.com," \
+	"ecdsa-sha2-nistp384-cert-v01@openssh.com," \
+	"ecdsa-sha2-nistp521-cert-v01@openssh.com," \
+	"ssh-ed25519-cert-v01@openssh.com," \
+	"rsa-sha2-256-cert-v01@openssh.com," \
+	"rsa-sha2-512-cert-v01@openssh.com," \
+	"ssh-rsa-cert-v01@openssh.com," \
+	"ecdsa-sha2-nistp256," \
+	"ecdsa-sha2-nistp384," \
+	"ecdsa-sha2-nistp521," \
+	"ssh-ed25519," \
+	"rsa-sha2-256," \
+	"rsa-sha2-512," \
+	"ssh-rsa"
 
 #define	KEX_SERVER_ENCRYPT \
 	"chacha20-poly1305@openssh.com," \

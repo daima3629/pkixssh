@@ -823,38 +823,6 @@ ssh_xkalg_listall(struct sshbuf *b, const char *sep) {
 
 
 char*
-default_hostkey_algorithms(void) {
-	struct sshbuf *b;
-	char *p;
-	int r;
-
-	b = sshbuf_new();
-	if (b == NULL)
-		fatal("%s: sshbuf_new failed", __func__);
-
-	ssh_xkalg_listall(b, ",");
-
-	p = KEX_DEFAULT_PK_ALG;
-	if ((r = sshbuf_put(b, ",", 1)) != 0 ||
-	    (r = sshbuf_put(b, p, strlen(p))) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
-
-	/* Since PKIX-SSH 8.5 ssh-dss is not listed in KEX_DEFAULT_PK_ALG */
-	p = "ssh-dss";
-	if ((r = sshbuf_put(b, ",", 1)) != 0 ||
-	    (r = sshbuf_put(b, p, strlen(p))) != 0 ||
-	    (r = sshbuf_put(b, "\0", 1)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
-
-	p = xstrdup(sshbuf_ptr(b));
-
-	sshbuf_free(b);
-
-	return p;
-}
-
-
-char*
 ssh_get_allnames(char sep, int sigflag, const char* pattern) {
 	const char **list = NULL;;
 	int loc;
