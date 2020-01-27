@@ -76,6 +76,10 @@
 #include "ssh_api.h"
 #include "dns.h"
 
+static char *def_kex = NULL;
+static char *def_cipher = NULL;
+static char *def_mac = NULL;
+
 /* Flag indicating whether IPv4 or IPv6.  This can be set on the command line.
    Default value is AF_UNSPEC means both IPv4 and IPv6. */
 int IPv4or6 = AF_UNSPEC;
@@ -243,6 +247,12 @@ keygrab_ssh2(con *c)
 {
 	char *myproposal[PROPOSAL_MAX] = { KEX_CLIENT };
 	int r;
+
+	myproposal[PROPOSAL_KEX_ALGS] = def_kex;
+	myproposal[PROPOSAL_ENC_ALGS_CTOS] =
+	myproposal[PROPOSAL_ENC_ALGS_STOC] = def_cipher;
+	myproposal[PROPOSAL_MAC_ALGS_CTOS] =
+	myproposal[PROPOSAL_MAC_ALGS_STOC] = def_mac;
 
 	myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS] = (char*)c->c_keyname;
 	if ((r = kex_setup(c->c_ssh, myproposal)) != 0) {
@@ -738,6 +748,22 @@ main(int argc, char **argv)
 
 	read_wait_nfdset = howmany(maxfd, NFDBITS);
 	read_wait = xcalloc(read_wait_nfdset, sizeof(fd_mask));
+
+	/* default KEX and etc. name lists */
+{	char *all;
+
+	all = kex_alg_list(',');
+	def_kex = match_filter_whitelist(KEX_CLIENT_KEX, all);
+	free(all);
+
+	all = cipher_alg_list(',', 0);
+	def_cipher = match_filter_whitelist(KEX_CLIENT_ENCRYPT, all);
+	free(all);
+
+	all = mac_alg_list(',');
+	def_mac = match_filter_whitelist(KEX_CLIENT_MAC, all);
+	free(all);
+}
 
 	for (j = 0; j < fopt_count; j++) {
 		if (argv[j] == NULL)

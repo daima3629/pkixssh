@@ -30,10 +30,6 @@
 
 #ifdef OPENSSL_HAS_ECC
 # ifdef OPENSSL_HAS_NISTP521
-#  define KEX_ECDH_METHODS \
-	"ecdh-sha2-nistp256," \
-	"ecdh-sha2-nistp384," \
-	"ecdh-sha2-nistp521,"
 #  define HOSTKEY_ECDSA_CERT_METHODS \
 	"ecdsa-sha2-nistp256-cert-v01@openssh.com," \
 	"ecdsa-sha2-nistp384-cert-v01@openssh.com," \
@@ -43,9 +39,6 @@
 	"ecdsa-sha2-nistp384," \
 	"ecdsa-sha2-nistp521,"
 # else /* OPENSSL_HAS_NISTP521 */
-#  define KEX_ECDH_METHODS \
-	"ecdh-sha2-nistp256," \
-	"ecdh-sha2-nistp384,"
 #  define HOSTKEY_ECDSA_CERT_METHODS \
 	"ecdsa-sha2-nistp256-cert-v01@openssh.com," \
 	"ecdsa-sha2-nistp384-cert-v01@openssh.com,"
@@ -54,31 +47,11 @@
 	"ecdsa-sha2-nistp384,"
 # endif /* OPENSSL_HAS_NISTP521 */
 #else /* OPENSSL_HAS_ECC */
-# define KEX_ECDH_METHODS
 # define HOSTKEY_ECDSA_CERT_METHODS
 # define HOSTKEY_ECDSA_METHODS
 #endif /* OPENSSL_HAS_ECC */
 
-#ifdef OPENSSL_HAVE_EVPGCM
-# define AESGCM_CIPHER_MODES \
-	",aes128-gcm@openssh.com,aes256-gcm@openssh.com"
-#else
-# define AESGCM_CIPHER_MODES
-#endif
-
 #ifdef HAVE_EVP_SHA256
-# define KEX_SHA2_METHODS \
-	"diffie-hellman-group-exchange-sha256," \
-	"diffie-hellman-group16-sha512," \
-	"diffie-hellman-group18-sha512,"
-# define KEX_SHA2_GROUP14 \
-	"diffie-hellman-group14-sha256,"
-# define SHA2_HMAC_ETM_MODES \
-	"hmac-sha2-256-etm@openssh.com," \
-	"hmac-sha2-512-etm@openssh.com,"
-# define SHA2_HMAC_MODES \
-	"hmac-sha2-256," \
-	"hmac-sha2-512,"
 # define RSA_SHA2_PK_ALG \
 	"rsa-sha2-256," \
 	"rsa-sha2-512,"
@@ -86,31 +59,11 @@
 	"rsa-sha2-256-cert-v01@openssh.com," \
 	"rsa-sha2-512-cert-v01@openssh.com,"
 #else
-# define KEX_SHA2_METHODS
-# define KEX_SHA2_GROUP14
-# define SHA2_HMAC_ETM_MODES
-# define SHA2_HMAC_MODES
 # define RSA_SHA2_PK_ALG
 # define RSA_SHA2_CERT_ALG
 #endif
 
 #ifdef WITH_OPENSSL
-# ifdef HAVE_EVP_SHA256
-#  define KEX_CURVE25519_METHODS \
-	"curve25519-sha256," \
-	"curve25519-sha256@libssh.org,"
-# else
-#  define KEX_CURVE25519_METHODS ""
-# endif
-#define KEX_SERVER_KEX \
-	KEX_CURVE25519_METHODS \
-	KEX_ECDH_METHODS \
-	KEX_SHA2_METHODS \
-	KEX_SHA2_GROUP14 \
-	"diffie-hellman-group14-sha1"
-
-#define KEX_CLIENT_KEX KEX_SERVER_KEX
-
 #define	KEX_DEFAULT_PK_ALG	\
 	HOSTKEY_ECDSA_CERT_METHODS \
 	"ssh-ed25519-cert-v01@openssh.com," \
@@ -120,63 +73,58 @@
 	"ssh-ed25519," \
 	RSA_SHA2_PK_ALG \
 	"ssh-rsa"
+#else /* WITH_OPENSSL */
+#define	KEX_DEFAULT_PK_ALG	\
+	"ssh-ed25519-cert-v01@openssh.com," \
+	"ssh-ed25519"
+#endif /* WITH_OPENSSL */
 
 /* the actual algorithms */
 
-#define KEX_SERVER_ENCRYPT \
+#define KEX_SERVER_KEX \
+	"curve25519-sha256," \
+	"curve25519-sha256@libssh.org," \
+	"ecdh-sha2-nistp256," \
+	"ecdh-sha2-nistp384," \
+	"ecdh-sha2-nistp521," \
+	"diffie-hellman-group-exchange-sha256," \
+	"diffie-hellman-group16-sha512," \
+	"diffie-hellman-group18-sha512," \
+	"diffie-hellman-group14-sha256," \
+	"diffie-hellman-group14-sha1"
+
+#define KEX_CLIENT_KEX KEX_SERVER_KEX
+
+#define	KEX_SERVER_ENCRYPT \
 	"chacha20-poly1305@openssh.com," \
-	"aes128-ctr,aes192-ctr,aes256-ctr" \
-	AESGCM_CIPHER_MODES
+	"aes128-ctr,aes192-ctr,aes256-ctr," \
+	"aes128-gcm@openssh.com,aes256-gcm@openssh.com"
 
 #define KEX_CLIENT_ENCRYPT KEX_SERVER_ENCRYPT
 
-#define KEX_SERVER_MAC \
+#define	KEX_SERVER_MAC \
 	"umac-64-etm@openssh.com," \
 	"umac-128-etm@openssh.com," \
-	SHA2_HMAC_ETM_MODES \
+	"hmac-sha2-256-etm@openssh.com," \
+	"hmac-sha2-512-etm@openssh.com," \
 	"hmac-sha1-etm@openssh.com," \
 	"umac-64@openssh.com," \
 	"umac-128@openssh.com," \
-	SHA2_HMAC_MODES \
+	"hmac-sha2-256," \
+	"hmac-sha2-512," \
 	"hmac-sha1"
 
 #define KEX_CLIENT_MAC KEX_SERVER_MAC
 
 /* Not a KEX value, but here so all the algorithm defaults are together */
 #define	SSH_ALLOWED_CA_SIGALGS	\
-	HOSTKEY_ECDSA_METHODS \
+	"ecdsa-sha2-nistp256," \
+	"ecdsa-sha2-nistp384," \
+	"ecdsa-sha2-nistp521," \
 	"ssh-ed25519," \
-	RSA_SHA2_PK_ALG \
+	"rsa-sha2-256," \
+	"rsa-sha2-512," \
 	"ssh-rsa"
-
-#else /* WITH_OPENSSL */
-
-#define KEX_SERVER_KEX		\
-	"curve25519-sha256," \
-	"curve25519-sha256@libssh.org"
-#define	KEX_DEFAULT_PK_ALG	\
-	"ssh-ed25519-cert-v01@openssh.com," \
-	"ssh-ed25519"
-#define	KEX_SERVER_ENCRYPT \
-	"chacha20-poly1305@openssh.com," \
-	"aes128-ctr,aes192-ctr,aes256-ctr"
-#define	KEX_SERVER_MAC \
-	"umac-64-etm@openssh.com," \
-	"umac-128-etm@openssh.com," \
-	SHA2_HMAC_ETM_MODES \
-	"hmac-sha1-etm@openssh.com," \
-	"umac-64@openssh.com," \
-	"umac-128@openssh.com," \
-	SHA2_HMAC_MODES \
-	"hmac-sha1"
-
-#define KEX_CLIENT_KEX KEX_SERVER_KEX
-#define	KEX_CLIENT_ENCRYPT KEX_SERVER_ENCRYPT
-#define KEX_CLIENT_MAC KEX_SERVER_MAC
-
-#define	SSH_ALLOWED_CA_SIGALGS	"ssh-ed25519"
-
-#endif /* WITH_OPENSSL */
 
 #define	KEX_DEFAULT_COMP	"none,zlib@openssh.com"
 #define	KEX_DEFAULT_LANG	""
@@ -204,4 +152,3 @@
 	KEX_DEFAULT_COMP, \
 	KEX_DEFAULT_LANG, \
 	KEX_DEFAULT_LANG
-
