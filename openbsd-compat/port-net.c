@@ -139,6 +139,11 @@ sys_set_process_rdomain(const char *name)
 
 #if defined(SSH_TUN_LINUX)
 #include <linux/if_tun.h>
+#ifdef __ANDROID__
+#define TUN_CTRL_DEV "/dev/tun"
+#else
+#define TUN_CTRL_DEV "/dev/net/tun"
+#endif
 
 int
 sys_tun_open(int tun, int mode, char **ifname)
@@ -149,15 +154,9 @@ sys_tun_open(int tun, int mode, char **ifname)
 
 	if (ifname != NULL)
 		*ifname = NULL;
-
-#ifdef __ANDROID__
-	fd = open("/dev/tun", O_RDWR);
-#else
-	fd = open("/dev/net/tun", O_RDWR);
-#endif
-	if (fd == -1) {
-		debug("%s: failed to open tunnel control interface: %s",
-		    __func__, strerror(errno));
+	if ((fd = open(TUN_CTRL_DEV, O_RDWR)) == -1) {
+		debug("%s: failed to open tunnel control device \"%s\": %s",
+		    __func__, TUN_CTRL_DEV, strerror(errno));
 		return (-1);
 	}
 
@@ -390,6 +389,7 @@ sys_tun_infilter(struct ssh *ssh, struct Channel *c, char *buf, int _len)
 	u_int32_t af;
 #endif
 
+	UNUSED(ssh);
 	/* XXX update channel input filter API to use unsigned length */
 	if (_len < 0)
 		return -1;
@@ -428,6 +428,7 @@ sys_tun_outfilter(struct ssh *ssh, struct Channel *c,
 	u_int32_t af;
 	int r;
 
+	UNUSED(ssh);
 	/* XXX new API is incompatible with this signature. */
 	if ((r = sshbuf_get_string(c->output, data, dlen)) != 0)
 		fatal("%s: buffer error: %s", __func__, ssh_err(r));
