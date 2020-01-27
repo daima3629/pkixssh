@@ -1,4 +1,4 @@
-/* $OpenBSD: sshd.c,v 1.543 2020/01/21 22:39:57 djm Exp $ */
+/* $OpenBSD: sshd.c,v 1.545 2020/01/24 23:56:01 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -280,6 +280,8 @@ struct passwd *privsep_pw = NULL;
 void destroy_sensitive_data(void);
 void demote_sensitive_data(void);
 static void do_ssh2_kex(struct ssh *);
+
+static char *listener_proctitle;
 
 static inline struct ssh*
 create_session(int fd_in, int fd_out)
@@ -1215,9 +1217,9 @@ server_accept_loop(int *sock_in, int *sock_out, int *newsock, int *config_s)
 	 */
 	for (;;) {
 		if (ostartups != startups) {
-			setproctitle("[listener] %d of %d-%d startups",
-			    startups, options.max_startups_begin,
-			    options.max_startups);
+			setproctitle("%s [listener] %d of %d-%d startups",
+			    listener_proctitle, startups,
+			    options.max_startups_begin, options.max_startups);
 			ostartups = startups;
 		}
 		if (received_sighup) {
@@ -1570,6 +1572,17 @@ accumulate_host_timing_secret(struct sshbuf *server_cfg,
 		fatal("%s: ssh_digest_update", __func__);
 	sshbuf_reset(buf);
 	sshbuf_free(buf);
+}
+
+static char *
+prepare_proctitle(int ac, char **av)
+{
+	char *ret = NULL;
+	int i;
+
+	for (i = 0; i < ac; i++)
+		xextendf(&ret, " ", "%s", av[i]);
+	return ret;
 }
 
 /*
@@ -2050,6 +2063,7 @@ main(int ac, char **av)
 		rexec_argv[rexec_argc] = "-R";
 		rexec_argv[rexec_argc + 1] = NULL;
 	}
+	listener_proctitle = prepare_proctitle(ac, av);
 
 	/* Ensure that umask disallows at least group and world write */
 	new_umask = umask(0077) | 0022;
