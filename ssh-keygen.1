@@ -1,4 +1,4 @@
-.\"	$OpenBSD: ssh-keygen.1,v 1.191 2020/01/14 15:07:30 naddy Exp $
+.\"	$OpenBSD: ssh-keygen.1,v 1.196 2020/01/23 23:31:52 djm Exp $
 .\"
 .\" Author: Tatu Ylonen <ylo@cs.hut.fi>
 .\" Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -283,7 +283,7 @@ proprietary OpenSSH format.
 The program will prompt for the file containing the private keys, for
 the passphrase if the key has one, and for the new comment.
 .It Fl D Ar pkcs11
-Download the X.509 certificate provided by the PKCS#11 shared library
+Download the X.509 certificates or public keys provided by the PKCS#11 shared library
 .Ar pkcs11 .
 .It Fl E Ar fingerprint_hash
 Specifies the hash algorithm used when displaying key fingerprints.

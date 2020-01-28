@@ -1,9 +1,9 @@
 #ifndef SSH_PKCS11_H
 #define SSH_PKCS11_H
-/* $OpenBSD: ssh-pkcs11.h,v 1.5 2019/01/20 22:51:37 djm Exp $ */
+/* $OpenBSD: ssh-pkcs11.h,v 1.6 2020/01/25 00:03:36 djm Exp $ */
 /*
  * Copyright (c) 2010 Markus Friedl.  All rights reserved.
- * Copyright (c) 2018-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2018-2020 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -31,7 +31,7 @@ void	pkcs11_terminate(void);
 #define	SSH_PKCS11_ERR_PIN_REQUIRED		-4
 #define	SSH_PKCS11_ERR_PIN_LOCKED		-5
 
-int	pkcs11_add_provider(char *, char *, struct sshkey ***);
+int	pkcs11_add_provider(char *, char *, struct sshkey ***, char ***);
 int	pkcs11_del_provider(char *);
 
 /* crypto library errors */

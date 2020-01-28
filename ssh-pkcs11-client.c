@@ -1,7 +1,7 @@
-/* $OpenBSD: ssh-pkcs11-client.c,v 1.15 2019/01/21 12:53:35 djm Exp $ */
+/* $OpenBSD: ssh-pkcs11-client.c,v 1.16 2020/01/25 00:03:36 djm Exp $ */
 /*
  * Copyright (c) 2010 Markus Friedl.  All rights reserved.
- * Copyright (c) 2016-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2016-2020 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -384,17 +384,21 @@ pkcs11_start_helper(void)
 }
 
 int
-pkcs11_add_provider(char *name, char *pin, struct sshkey ***keysp)
+pkcs11_add_provider(char *name, char *pin,
+    struct sshkey ***keysp, char ***labelsp)
 {
-	struct sshkey *k;
 	int ret = -1, r, type;
-	u_char *blob;
-	size_t blen;
 	u_int32_t nkeys, i;
 	struct sshbuf *msg;
 
 	if (fd < 0 && pkcs11_start_helper() < 0)
 		return (-1);
+	if (keysp == NULL)
+		return -1;
+
+	*keysp = NULL;
+	if (labelsp != NULL)
+		*labelsp = NULL;
 
 	if ((msg = sshbuf_new()) == NULL)
 		fatal("%s: sshbuf_new failed", __func__);
@@ -413,9 +417,16 @@ pkcs11_add_provider(char *name, char *pin, struct sshkey ***keysp)
 			goto done;
 		}
 		*keysp = xcalloc(nkeys, sizeof(struct sshkey *));
+		if (labelsp)
+			*labelsp = xcalloc(nkeys, sizeof(char *));
 		for (i = 0; i < nkeys; i++) {
+			u_char *blob;
+			size_t blen;
+			char *label;
+			struct sshkey *k;
+
 			if ((r = sshbuf_get_string(msg, &blob, &blen)) != 0 ||
-			    (r = sshbuf_skip_string(msg)) != 0) {
+			    (r = sshbuf_get_cstring(msg, &label, NULL)) != 0) {
 				error("%s: buffer error: %s",
 				    __func__, ssh_err(r));
 				k = NULL;
@@ -431,6 +442,14 @@ pkcs11_add_provider(char *name, char *pin, struct sshkey ***keysp)
 				k = NULL;
 			}
 set_key:
+			if (*label == '\0') {
+				free(label);
+				label = NULL;
+			}
+			if (labelsp)
+				(*labelsp)[i] = label;
+			else
+				free(label);
 			(*keysp)[i] = k;
 			free(blob);
 		}

@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-agent.c,v 1.250 2019/11/19 16:02:32 jmc Exp $ */
+/* $OpenBSD: ssh-agent.c,v 1.254 2020/01/25 00:06:48 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -12,7 +12,7 @@
  * called by a name other than "ssh" or "Secure Shell".
  *
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -618,12 +618,10 @@ static void
 process_add_smartcard_key(SocketEntry *e)
 {
 	char *provider = NULL, *pin = NULL, canonical_provider[PATH_MAX];
-	int r, i, count = 0, success = 0, confirm = 0;
+	int r, success = 0, confirm = 0;
 	u_int seconds;
 	time_t death = 0;
 	u_char type;
-	struct sshkey **keys = NULL, *k;
-	Identity *id;
 
 	if ((r = sshbuf_get_cstring(e->request, &provider, NULL)) != 0 ||
 	    (r = sshbuf_get_cstring(e->request, &pin, NULL)) != 0) {
@@ -667,31 +665,41 @@ process_add_smartcard_key(SocketEntry *e)
 	if (lifetime && !death)
 		death = monotime() + lifetime;
 
-	count = pkcs11_add_provider(canonical_provider, pin, &keys);
+{
+	int i, count;
+	struct sshkey **keys;
+	char **comments;
+
+	count = pkcs11_add_provider(canonical_provider, pin, &keys, &comments);
 	for (i = 0; i < count; i++) {
-		k = keys[i];
-		if (lookup_identity(k) == NULL) {
-			id = xcalloc(1, sizeof(Identity));
-			id->key = k;
-			id->provider = xstrdup(canonical_provider);
-			id->comment = xstrdup(canonical_provider); /* XXX */
-			id->death = death;
-			id->confirm = confirm;
-			TAILQ_INSERT_TAIL(&idtab->idlist, id, next);
-			idtab->nentries++;
-			success = 1;
-		} else {
-			sshkey_free(k);
+		struct sshkey *k = keys[i];
+		Identity *id;
+
+		if (lookup_identity(k) != NULL) {
+			sshkey_free(keys[i]);
+			free(comments[i]);
+			continue;
 		}
-		keys[i] = NULL;
+
+		id = xcalloc(1, sizeof(Identity));
+		id->key = k;
+		id->provider = xstrdup(canonical_provider);
+		id->comment = comments[i];
+		id->death = death;
+		id->confirm = confirm;
+		TAILQ_INSERT_TAIL(&idtab->idlist, id, next);
+		idtab->nentries++;
+		success = 1;
 	}
+	free(keys);
+	free(comments);
+}
 send:
 	if (pin != NULL) {
 		explicit_bzero(pin, strlen(pin));
 		free(pin);
 	}
 	free(provider);
-	free(keys);
 	send_status(e, success);
 }
 

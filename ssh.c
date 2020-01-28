@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh.c,v 1.510 2019/12/21 02:19:13 djm Exp $ */
+/* $OpenBSD: ssh.c,v 1.514 2020/01/25 00:03:36 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -19,7 +19,7 @@
  * Modified to work with SSL by Niels Provos <provos@citi.umich.edu>
  * in Canada (German citizen).
  *
- * Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -2155,6 +2155,7 @@ load_public_identity_files(struct passwd *pw)
 	int certificate_file_userprovided[SSH_MAX_CERTIFICATE_FILES];
 #ifdef ENABLE_PKCS11
 	struct sshkey **keys;
+	char **comments;
 	int nkeys;
 #endif /* PKCS11 */
 
@@ -2173,19 +2174,20 @@ load_public_identity_files(struct passwd *pw)
 	    options.num_identity_files < SSH_MAX_IDENTITY_FILES &&
 	    (pkcs11_init(!options.batch_mode) == 0) &&
 	    (nkeys = pkcs11_add_provider(options.pkcs11_provider, NULL,
-	    &keys)) > 0) {
+	    &keys, &comments)) > 0) {
 		for (i = 0; i < nkeys; i++) {
 			if (n_ids >= SSH_MAX_IDENTITY_FILES) {
 				sshkey_free(keys[i]);
+				free(comments[i]);
 				continue;
 			}
 			x509key_build_chain(keys[i]);
 			identity_keys[n_ids] = keys[i];
-			identity_files[n_ids] =
-			    xstrdup(options.pkcs11_provider); /* XXX */
+			identity_files[n_ids] = comments[i]; /* transferred */
 			n_ids++;
 		}
 		free(keys);
+		free(comments);
 	}
 #endif /* ENABLE_PKCS11 */
 	for (i = 0; i < options.num_identity_files; i++) {

@@ -1,9 +1,9 @@
-/* $OpenBSD: ssh-pkcs11.c,v 1.46 2019/10/01 10:22:53 djm Exp $ */
+/* $OpenBSD: ssh-pkcs11.c,v 1.47 2020/01/25 00:03:36 djm Exp $ */
 /*
  * Copyright (c) 2010 Markus Friedl.  All rights reserved.
  * Copyright (c) 2011 Kenneth Robinette.  All rights reserved.
  * Copyright (c) 2013 Andrew Cooke.  All rights reserved.
- * Copyright (c) 2016-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2016-2020 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -1020,8 +1020,8 @@ done:
 }
 
 static void
-pkcs11_push_key(struct sshkey *key,
-    struct sshkey ***keysp, int *nkeys)
+pkcs11_push_key(struct sshkey *key, char *label,
+    struct sshkey ***keysp, char ***labelsp, int *nkeys)
 {
 	if (key == NULL) return;
 
@@ -1035,6 +1035,12 @@ pkcs11_push_key(struct sshkey *key,
 	/* expand key array and add key */
 	*keysp = xreallocarray(*keysp, *nkeys + 1, sizeof(struct sshkey *));
 	(*keysp)[*nkeys] = key;
+
+	if (labelsp != NULL) {
+		*labelsp = xreallocarray(*labelsp, *nkeys + 1, sizeof(char *));
+		(*labelsp)[*nkeys] = xstrdup(label);
+	}
+
 	*nkeys = *nkeys + 1;
 	debug("have %d keys", *nkeys);
 }
@@ -1046,7 +1052,7 @@ pkcs11_push_key(struct sshkey *key,
  */
 static int
 pkcs11_fetch_certs(struct pkcs11_provider *p, CK_ULONG slotidx,
-    struct sshkey ***keysp, int *nkeys)
+    struct sshkey ***keysp, char ***labelsp, int *nkeys)
 {
 	CK_FUNCTION_LIST *f = p->function_list;
 	CK_SESSION_HANDLE session = p->slotinfo[slotidx].session;
@@ -1076,6 +1082,7 @@ pkcs11_fetch_certs(struct pkcs11_provider *p, CK_ULONG slotidx,
 		CK_OBJECT_HANDLE obj;
 		CK_ULONG nfound;
 		struct sshkey *key;
+		char *label = NULL;
 
 		rv = f->C_FindObjects(session, &obj, 1, &nfound);
 		if (rv != CKR_OK) {
@@ -1086,7 +1093,12 @@ pkcs11_fetch_certs(struct pkcs11_provider *p, CK_ULONG slotidx,
 			break;
 
 		key = pkcs11_get_x509key(p, slotidx, obj);
-		pkcs11_push_key(key, keysp, nkeys);
+		if (key == NULL) {
+			error("%s: pkcs11_get_x509key failed", __func__);
+			continue;
+		}
+		label = x509key_subject(key);
+		pkcs11_push_key(key, label, keysp, labelsp, nkeys);
 	}
 
 	rv = f->C_FindObjectsFinal(session);
@@ -1297,24 +1309,35 @@ done:
 static struct sshkey*
 pkcs11_get_pubkey(
     struct pkcs11_provider *p, CK_ULONG slotidx,
-    CK_OBJECT_HANDLE obj)
+    CK_OBJECT_HANDLE obj, char **labelp)
 {
 	CK_FUNCTION_LIST *f = p->function_list;
 	CK_SESSION_HANDLE session = p->slotinfo[slotidx].session;
 	CK_RV rv;
 	CK_KEY_TYPE type;
+	CK_UTF8CHAR label[4096];
 	CK_ATTRIBUTE attribs[] = {
-		{ CKA_KEY_TYPE, NULL, sizeof(type) }
+		{ CKA_KEY_TYPE, NULL, sizeof(type) },
+		{ CKA_LABEL, NULL, sizeof(label) }
 	};
 
 	/* some compilers complain about non-constant initializer so we
 	   use NULL in CK_ATTRIBUTE above and set the value here */
 	attribs[0].pValue = &type;
+	attribs[1].pValue = &label;
 
-	rv = f->C_GetAttributeValue(session, obj, attribs, 1);
+	rv = f->C_GetAttributeValue(session, obj, attribs, 2);
 	if (rv != CKR_OK) {
 		error("%s: C_GetAttributeValue failed: %lu", __func__, rv);
 		return NULL;
+	}
+
+	if (labelp != NULL) {
+		if (attribs[1].ulValueLen > 0) {
+			label[attribs[1].ulValueLen] = '\0';
+			*labelp = xstrdup(label);
+		} else
+			xasprintf(labelp, "pub[%s]", p->name);
 	}
 
 	switch (type) {
@@ -1338,7 +1361,7 @@ pkcs11_get_pubkey(
  */
 static int
 pkcs11_fetch_keys(struct pkcs11_provider *p, CK_ULONG slotidx,
-    struct sshkey ***keysp, int *nkeys)
+    struct sshkey ***keysp, char ***labelsp, int *nkeys)
 {
 	CK_FUNCTION_LIST *f = p->function_list;
 	CK_SESSION_HANDLE session = p->slotinfo[slotidx].session;
@@ -1365,6 +1388,7 @@ pkcs11_fetch_keys(struct pkcs11_provider *p, CK_ULONG slotidx,
 		CK_OBJECT_HANDLE obj;
 		CK_ULONG nfound;
 		struct sshkey *key;
+		char *label;
 
 		rv = f->C_FindObjects(session, &obj, 1, &nfound);
 		if (rv != CKR_OK) {
@@ -1374,8 +1398,8 @@ pkcs11_fetch_keys(struct pkcs11_provider *p, CK_ULONG slotidx,
 		if (nfound == 0)
 			break;
 
-		key = pkcs11_get_pubkey(p, slotidx, obj);
-		pkcs11_push_key(key, keysp, nkeys);
+		key = pkcs11_get_pubkey(p, slotidx, obj, &label);
+		pkcs11_push_key(key, label, keysp, labelsp, nkeys);
 	}
 
 	rv = f->C_FindObjectsFinal(session);
@@ -1390,7 +1414,8 @@ pkcs11_fetch_keys(struct pkcs11_provider *p, CK_ULONG slotidx,
  * keyp is provided, fetch keys.
  */
 static int
-pkcs11_register_provider(char *provider_id, char *pin, struct sshkey ***keyp,
+pkcs11_register_provider(char *provider_id, char *pin,
+    struct sshkey ***keyp, char ***labelsp,
     struct pkcs11_provider **providerp, CK_ULONG user)
 {
 	int nkeys, need_finalize = 0;
@@ -1519,8 +1544,8 @@ pkcs11_register_provider(char *provider_id, char *pin, struct sshkey ***keyp,
 			continue;
 		}
 	}
-		pkcs11_fetch_certs(p, i, keyp, &nkeys);
-		pkcs11_fetch_keys(p, i, keyp, &nkeys);
+		pkcs11_fetch_certs(p, i, keyp, labelsp, &nkeys);
+		pkcs11_fetch_keys(p, i, keyp, labelsp, &nkeys);
 
 		/*
 		 * Some tokens could mark public keys as private object.
@@ -1535,8 +1560,8 @@ pkcs11_register_provider(char *provider_id, char *pin, struct sshkey ***keyp,
 			continue;
 
 		/*try to fetch certificate just in case*/
-		pkcs11_fetch_certs(p, i, keyp, &nkeys);
-		pkcs11_fetch_keys(p, i, keyp, &nkeys);
+		pkcs11_fetch_certs(p, i, keyp, labelsp, &nkeys);
+		pkcs11_fetch_keys(p, i, keyp, labelsp, &nkeys);
 	}
 
 	/* now owned by caller */
@@ -1561,16 +1586,20 @@ fail:
  * fails if provider already exists
  */
 int
-pkcs11_add_provider(char *provider_id, char *pin, struct sshkey ***keyp)
+pkcs11_add_provider(char *provider_id, char *pin, struct sshkey ***keyp,
+    char ***labelsp)
 {
 	struct pkcs11_provider *p = NULL;
 	int nkeys;
 
 	if (keyp == NULL)
 		return -1;
-	*keyp = NULL;
 
-	nkeys = pkcs11_register_provider(provider_id, pin, keyp, &p, CKU_USER);
+	*keyp = NULL;
+	if (labelsp != NULL)
+		*labelsp = NULL;
+
+	nkeys = pkcs11_register_provider(provider_id, pin, keyp, labelsp, &p, CKU_USER);
 
 	/* no keys found or some other error, de-register provider */
 	if (nkeys <= 0 && p != NULL) {

@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keygen.c,v 1.391 2020/01/24 05:33:01 djm Exp $ */
+/* $OpenBSD: ssh-keygen.c,v 1.392 2020/01/25 00:03:36 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1994 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -875,13 +875,14 @@ static void
 do_download(struct passwd *pw)
 {
 #ifdef ENABLE_PKCS11
-	struct sshkey **keys = NULL;
+	struct sshkey **keys;
+	char **comments;
 	int i, nkeys;
 
 	UNUSED(pw);
 
 	pkcs11_init(1);
-	nkeys = pkcs11_add_provider(pkcs11provider, NULL, &keys);
+	nkeys = pkcs11_add_provider(pkcs11provider, NULL, &keys, &comments);
 	if (nkeys <= 0)
 		fatal("cannot read public key from pkcs11");
 	for (i = 0; i < nkeys; i++) {
@@ -889,10 +890,17 @@ do_download(struct passwd *pw)
 			fingerprint_one_key(keys[i], "PKCS11 key");
 		} else {
 			(void) sshkey_write(keys[i], stdout); /* XXX check */
+			/* let exclude "comment" for X.509 certificate
+			 * as this is doubling information
+			 */
+			if (!sshkey_is_x509(keys[i]) && *(comments[i]) != '\0')
+				fprintf(stdout, " %s", comments[i]);
 			fprintf(stdout, "\n");
 		}
+		free(comments[i]);
 		sshkey_free(keys[i]);
 	}
+	free(comments);
 	free(keys);
 	pkcs11_terminate();
 	exit(0);
@@ -1749,7 +1757,8 @@ load_pkcs11_key(char *path)
 		fatal("Couldn't load CA public key \"%s\": %s",
 		    path, ssh_err(r));
 
-	nkeys = pkcs11_add_provider(pkcs11provider, identity_passphrase, &keys);
+	nkeys = pkcs11_add_provider(pkcs11provider, identity_passphrase,
+	    &keys, NULL);
 	debug3("%s: %d keys", __func__, nkeys);
 	if (nkeys <= 0)
 		fatal("cannot read public key from pkcs11");
