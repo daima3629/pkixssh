@@ -1,4 +1,4 @@
-/* $OpenBSD: clientloop.c,v 1.330 2019/12/21 02:19:13 djm Exp $ */
+/* $OpenBSD: clientloop.c,v 1.335 2020/01/26 00:14:45 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -1941,6 +1941,7 @@ update_known_hosts(struct hostkeys_update_ctx *ctx)
 	    SYSLOG_LEVEL_INFO : SYSLOG_LEVEL_VERBOSE;
 	char *fp, *response;
 	size_t i;
+	struct stat sb;
 
 	for (i = 0; i < ctx->nkeys; i++) {
 		if (ctx->keys_seen[i] != 2)
@@ -2003,19 +2004,37 @@ update_known_hosts(struct hostkeys_update_ctx *ctx)
 		if (was_raw)
 			enter_raw_mode(1);
 	}
-
+	if (options.update_hostkeys == 0)
+		return;
 	/*
 	 * Now that all the keys are verified, we can go ahead and replace
 	 * them in known_hosts (assuming SSH_UPDATE_HOSTKEYS_ASK didn't
 	 * cancel the operation).
 	 */
-	if (options.update_hostkeys != 0 &&
-	    (r = hostfile_replace_entries(options.user_hostfiles[0],
-	    ctx->host_str, ctx->ip_str, ctx->keys, ctx->nkeys,
-	    options.hash_known_hosts, 0,
-	    options.fingerprint_hash)) != 0)
-		error("%s: hostfile_replace_entries failed: %s",
-		    __func__, ssh_err(r));
+	for (i = 0; i < options.num_user_hostfiles; i++) {
+		/*
+		 * NB. keys are only added to hostfiles[0], for the rest we
+		 * just delete the hostname entries.
+		 */
+		if (stat(options.user_hostfiles[i], &sb) == -1) {
+			if (errno == ENOENT) {
+				debug("%s: known hosts file %s does not exist",
+				    __func__, strerror(errno));
+			} else {
+				error("%s: known hosts file %s inaccessible",
+				    __func__, strerror(errno));
+			}
+			continue;
+		}
+		if ((r = hostfile_replace_entries(options.user_hostfiles[i],
+		    ctx->host_str, ctx->ip_str,
+		    i == 0 ? ctx->keys : NULL, i == 0 ? ctx->nkeys : 0,
+		    options.hash_known_hosts, 0,
+		    options.fingerprint_hash)) != 0) {
+			error("%s: hostfile_replace_entries failed for %s: %s",
+			    __func__, options.user_hostfiles[i], ssh_err(r));
+		}
+	}
 }
 
 static void
@@ -2136,8 +2155,10 @@ client_input_hostkeys(struct ssh *ssh)
 			goto out;
 		}
 		if ((r = parse_key_from_blob(blob, len, &key, &pkalg)) != 0) {
-			error("%s: parse key: %s", __func__, ssh_err(r));
-			goto out;
+			do_log2(r == SSH_ERR_KEY_TYPE_UNKNOWN ?
+			    SYSLOG_LEVEL_DEBUG1 : SYSLOG_LEVEL_ERROR,
+			    "%s: parse key: %s", __func__, ssh_err(r));
+			continue;
 		}
 		fp = sshkey_fingerprint(key, options.fingerprint_hash,
 		    SSH_FP_DEFAULT);
@@ -2203,11 +2224,21 @@ client_input_hostkeys(struct ssh *ssh)
 	    options.check_host_ip ? &ctx->ip_str : NULL);
 
 	/* Find which keys we already know about. */
-	if ((r = hostkeys_foreach(options.user_hostfiles[0], hostkeys_find,
-	    ctx, ctx->host_str, ctx->ip_str,
-	    HKF_WANT_PARSE_KEY|HKF_WANT_MATCH)) != 0) {
-		error("%s: hostkeys_foreach failed: %s", __func__, ssh_err(r));
-		goto out;
+	for (i = 0; i < options.num_user_hostfiles; i++) {
+		debug("%s: searching %s for %s / %s", __func__,
+		    options.user_hostfiles[i], ctx->host_str, ctx->ip_str);
+		if ((r = hostkeys_foreach(options.user_hostfiles[i],
+		    hostkeys_find, ctx, ctx->host_str, ctx->ip_str,
+		    HKF_WANT_PARSE_KEY|HKF_WANT_MATCH)) != 0) {
+			if (r == SSH_ERR_SYSTEM_ERROR && errno == ENOENT) {
+				debug("%s: hostkeys file %s does not exist",
+				    __func__, options.user_hostfiles[i]);
+				continue;
+			}
+			error("%s: hostkeys_foreach failed for %s: %s",
+			    __func__, options.user_hostfiles[i], ssh_err(r));
+			goto out;
+		}
 	}
 
 	/* Figure out if we have any new keys to add */
