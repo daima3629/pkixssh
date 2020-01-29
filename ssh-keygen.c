@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keygen.c,v 1.392 2020/01/25 00:03:36 djm Exp $ */
+/* $OpenBSD: ssh-keygen.c,v 1.393 2020/01/25 23:02:13 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1994 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -2225,15 +2225,10 @@ static void
 load_krl(const char *path, struct ssh_krl **krlp)
 {
 	struct sshbuf *krlbuf;
-	int r, fd;
+	int r;
 
-	if ((krlbuf = sshbuf_new()) == NULL)
-		fatal("sshbuf_new failed");
-	if ((fd = open(path, O_RDONLY)) == -1)
-		fatal("open %s: %s", path, strerror(errno));
-	if ((r = sshkey_load_file(fd, krlbuf)) != 0)
+	if ((r = sshbuf_load_file(path, &krlbuf)) != 0)
 		fatal("Unable to load KRL: %s", ssh_err(r));
-	close(fd);
 	/* XXX check sigs */
 	if ((r = ssh_krl_from_blob(krlbuf, krlp, NULL, 0)) != 0 ||
 	    *krlp == NULL)
@@ -2445,7 +2440,7 @@ do_gen_krl(struct passwd *pw, int updating, const char *ca_key_path,
 	struct ssh_krl *krl;
 	struct stat sb;
 	struct sshkey *ca = NULL;
-	int fd, i, r, wild_ca = 0;
+	int i, r, wild_ca = 0;
 	char *tmp;
 	struct sshbuf *kbuf;
 
@@ -2487,12 +2482,8 @@ do_gen_krl(struct passwd *pw, int updating, const char *ca_key_path,
 		fatal("sshbuf_new failed");
 	if (ssh_krl_to_blob(krl, kbuf, NULL, 0) != 0)
 		fatal("Couldn't generate KRL");
-	if ((fd = open(identity_file, O_WRONLY|O_CREAT|O_TRUNC, 0644)) == -1)
-		fatal("open %s: %s", identity_file, strerror(errno));
-	if (atomicio(vwrite, fd, sshbuf_mutable_ptr(kbuf), sshbuf_len(kbuf)) !=
-	    sshbuf_len(kbuf))
+	if ((r = sshbuf_write_file(identity_file, kbuf)) != 0)
 		fatal("write %s: %s", identity_file, strerror(errno));
-	close(fd);
 	sshbuf_free(kbuf);
 	ssh_krl_free(krl);
 	sshkey_free(ca);
