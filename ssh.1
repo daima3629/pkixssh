@@ -12,7 +12,7 @@
 .\" Copyright (c) 1999,2000 Markus Friedl.  All rights reserved.
 .\" Copyright (c) 1999 Aaron Campbell.  All rights reserved.
 .\" Copyright (c) 1999 Theo de Raadt.  All rights reserved.
-.\" Copyright (c) 2002-2018 Roumen Petrov.  All rights reserved.
+.\" Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
 .\"
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions
@@ -34,7 +34,7 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: ssh.1,v 1.407 2019/11/28 12:24:31 jmc Exp $
+.\" $OpenBSD: ssh.1,v 1.409 2019/12/21 20:22:34 naddy Exp $
 .\" Implement .Dd with the Mdocdate RCS keyword
 .rn Dd xD
 .de Dd
@@ -43,7 +43,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: November 28 2019 $
+.Dd $Mdocdate: January 29 2019 $
 .Dt SSH 1
 .Os
 .Sh NAME
@@ -529,6 +529,8 @@ The available features are:
 flag),
 .Ar mac
 (supported message integrity codes),
+.Ar compression
+(compression algorithms),
 .Ar kex
 (key exchange algorithms),
 .Ar key

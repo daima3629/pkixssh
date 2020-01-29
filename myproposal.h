@@ -24,6 +24,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "includes.h"
+
 #define KEX_SERVER_KEX \
 	"curve25519-sha256," \
 	"curve25519-sha256@libssh.org," \
@@ -85,7 +87,11 @@
 	"rsa-sha2-512," \
 	"ssh-rsa"
 
+#ifdef WITH_ZLIB
 #define	KEX_DEFAULT_COMP	"none,zlib@openssh.com"
+#else
+#define	KEX_DEFAULT_COMP	"none"
+#endif
 #define	KEX_DEFAULT_LANG	""
 
 #define KEX_CLIENT \

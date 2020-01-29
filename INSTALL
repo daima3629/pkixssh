@@ -7,11 +7,8 @@ options.  Some notes about specific compilers:
  - clang: -ftrapv and -sanitize=integer require the compiler-rt runtime
   (CC=clang LDFLAGS=--rtlib=compiler-rt ./configure)
 
-You will need working installations of Zlib and libcrypto (OpenSSL
+You will need working installations of libcrypto (OpenSSL
 or compatible)
-
-Zlib 1.1.4 or 1.2.1.2 or greater (earlier 1.2.x versions have problems):
-https://zlib.net/
 
 libcrypto (OpenSSL or compatible)
 OpenSSL https://www.openssl.org/ ; or
@@ -22,11 +19,17 @@ libcrypto should be compiled as a position-independent library
 If you must use a non-position-independent libcrypto, then you may need
 to configure PKIX-SSH --without-pie.
 
-The remaining items are optional.
-
 NB. If you operating system supports /dev/*random, you should configure
 libcrypto to use it. PKIX-SSH relies on libcrypto's
 direct support of /dev/*random, or failing that, either prngd or egd
+
+The remaining items are optional.
+
+ZLIB:
+
+A working installation of zlib:
+Zlib 1.1.4 or 1.2.1.2 or greater (earlier 1.2.x versions have problems):
+https://zlib.net/
 
 PRNGD:
 
