@@ -1938,11 +1938,19 @@ hostkeys_find(struct hostkey_foreach_line *l, void *_ctx)
 }
 
 static void
+hostkey_change_preamble(LogLevel loglevel)
+{
+	do_log2(loglevel, "The server has updated its host keys.");
+	do_log2(loglevel, "These changes were verified by the server's "
+	    "existing trusted key.");
+}
+
+static void
 update_known_hosts(struct hostkeys_update_ctx *ctx)
 {
-	int r, was_raw = 0;
-	LogLevel loglevel = options.update_hostkeys == SSH_UPDATE_HOSTKEYS_ASK ?
-	    SYSLOG_LEVEL_INFO : SYSLOG_LEVEL_VERBOSE;
+	int r, was_raw = 0, first = 1;
+	int asking = options.update_hostkeys == SSH_UPDATE_HOSTKEYS_ASK;
+	LogLevel loglevel = asking ?  SYSLOG_LEVEL_INFO : SYSLOG_LEVEL_VERBOSE;
 	struct sshkey *key;
 	int is_x509;
 	char *fp, *response;
@@ -1966,11 +1974,14 @@ update_known_hosts(struct hostkeys_update_ctx *ctx)
 			if (fp == NULL)
 				fatal("%s: sshkey_fingerprint failed", __func__);
 		}
+		if (first && asking)
+			hostkey_change_preamble(loglevel);
 		if (is_x509)
 			do_log2(loglevel, "Learned new hostkey: %s", fp);
 		else
 			do_log2(loglevel, "Learned new hostkey: %s %s",
 			    sshkey_type(key), fp);
+		first = 0;
 		free(fp);
 	}
 	for (i = 0; i < ctx->nold; i++) {
@@ -1986,11 +1997,14 @@ update_known_hosts(struct hostkeys_update_ctx *ctx)
 			if (fp == NULL)
 				fatal("%s: sshkey_fingerprint failed", __func__);
 		}
+		if (first && asking)
+			hostkey_change_preamble(loglevel);
 		if (is_x509)
 			do_log2(loglevel, "Deprecating obsolete hostkey: %s", fp);
 		else
 			do_log2(loglevel, "Deprecating obsolete hostkey: %s %s",
 			    sshkey_type(key), fp);
+		first = 0;
 		free(fp);
 	}
 	if (options.update_hostkeys == SSH_UPDATE_HOSTKEYS_ASK) {
