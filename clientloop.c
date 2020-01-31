@@ -1,4 +1,4 @@
-/* $OpenBSD: clientloop.c,v 1.335 2020/01/26 00:14:45 djm Exp $ */
+/* $OpenBSD: clientloop.c,v 1.338 2020/01/30 07:20:57 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -1394,8 +1394,12 @@ client_loop(struct ssh *ssh, int have_pty, int escape_char_arg,
 		 * Send as much buffered packet data as possible to the
 		 * sender.
 		 */
-		if (FD_ISSET(connection_out, writeset))
-			ssh_packet_write_poll(ssh);
+		if (FD_ISSET(connection_out, writeset)) {
+			if ((r = ssh_packet_write_poll(ssh)) != 0) {
+				sshpkt_fatal(ssh, r,
+				    "%s: ssh_packet_write_poll", __func__);
+			}
+		}
 
 		/*
 		 * If we are a backgrounded control master, and the
