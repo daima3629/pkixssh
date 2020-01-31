@@ -192,4 +192,6 @@ int	 ask_permission(const char *, ...) __attribute__((format(printf, 1, 2)));
 #define MAXIMUM(a, b)	(((a) > (b)) ? (a) : (b))
 #define ROUNDUP(x, y)   ((((x)+((y)-1))/(y))*(y))
 
+typedef void (*sshsig_t)(int);
+sshsig_t ssh_signal(int, sshsig_t);
 #endif /* _MISC_H */

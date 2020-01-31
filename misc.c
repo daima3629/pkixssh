@@ -2341,3 +2341,27 @@ opt_match(const char **opts, const char *term)
 	}
 	return 0;
 }
+
+sshsig_t
+ssh_signal(int signum, sshsig_t handler)
+{
+#ifdef HAVE_SIGACTION
+	struct sigaction sa, osa;
+
+	/* mask all other signals while in handler */
+	bzero(&sa, sizeof(sa));
+	sa.sa_handler = handler;
+	sigfillset(&sa.sa_mask);
+#ifdef SA_RESTART
+	if (signum != SIGALRM)
+		sa.sa_flags = SA_RESTART;
+#endif
+	if (sigaction(signum, &sa, &osa) == -1) {
+		debug3("sigaction(%s): %s", strsignal(signum), strerror(errno));
+		return SIG_ERR;
+	}
+	return osa.sa_handler;
+#else
+	return (signal(sig, handler));
+#endif
+}

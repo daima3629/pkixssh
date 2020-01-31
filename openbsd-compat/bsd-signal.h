@@ -19,11 +19,6 @@
 
 #include "includes.h"
 
-/* wrapper for signal interface */
-typedef void (*mysig_t)(int);
-mysig_t mysignal(int sig, mysig_t act);
-#define signal(a,b) mysignal(a,b)
-
 #if !defined(HAVE_STRSIGNAL)
 char *strsignal(int);
 #endif

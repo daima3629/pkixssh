@@ -407,15 +407,15 @@ server_loop2(struct ssh *ssh, Authctxt *authctxt)
 	UNUSED(authctxt);
 	debug("Entering interactive session for SSH2.");
 
-	signal(SIGCHLD, sigchld_handler);
+	ssh_signal(SIGCHLD, sigchld_handler);
 	child_terminated = 0;
 	connection_in = ssh_packet_get_connection_in(ssh);
 	connection_out = ssh_packet_get_connection_out(ssh);
 
 	if (!use_privsep) {
-		signal(SIGTERM, sigterm_handler);
-		signal(SIGINT, sigterm_handler);
-		signal(SIGQUIT, sigterm_handler);
+		ssh_signal(SIGTERM, sigterm_handler);
+		ssh_signal(SIGINT, sigterm_handler);
+		ssh_signal(SIGQUIT, sigterm_handler);
 	}
 
 	notify_setup();

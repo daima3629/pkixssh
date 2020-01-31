@@ -233,9 +233,9 @@ fuzz_begin(u_int strategies, const void *p, size_t l)
 
 	last_fuzz = ret;
 #ifdef SIGINFO
-	signal(SIGINFO, siginfo);
+	ssh_signal(SIGINFO, siginfo);
 #endif
-	signal(SIGUSR1, siginfo);
+	ssh_signal(SIGUSR1, siginfo);
 
 	return ret;
 }
@@ -246,9 +246,9 @@ fuzz_cleanup(struct fuzz *fuzz)
 	FUZZ_DBG(("cleanup, fuzz = %p", fuzz));
 	last_fuzz = NULL;
 #ifdef SIGINFO
-	signal(SIGINFO, SIG_DFL);
+	ssh_signal(SIGINFO, SIG_DFL);
 #endif
-	signal(SIGUSR1, SIG_DFL);
+	ssh_signal(SIGUSR1, SIG_DFL);
 	assert(fuzz != NULL);
 	assert(fuzz->seed != NULL);
 	assert(fuzz->fuzzed != NULL);

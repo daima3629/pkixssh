@@ -577,7 +577,7 @@ execute_in_shell(const char *cmd)
 		execv(argv[0], argv);
 		error("Unable to execute '%.100s': %s", cmd, strerror(errno));
 		/* Die with signal to make this error apparent to parent. */
-		signal(SIGTERM, SIG_DFL);
+		ssh_signal(SIGTERM, SIG_DFL);
 		kill(getpid(), SIGTERM);
 		_exit(1);
 	}

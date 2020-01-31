@@ -1,4 +1,4 @@
-/* $OpenBSD: progressmeter.c,v 1.48 2019/05/03 06:06:30 dtucker Exp $ */
+/* $OpenBSD: progressmeter.c,v 1.50 2020/01/23 07:10:22 dtucker Exp $ */
 /*
  * Copyright (c) 2003 Nils Nordman.  All rights reserved.
  * Copyright (c) 2019 Roumen Petrov.  All rights reserved.
@@ -263,8 +263,8 @@ start_progress_meter(const char *f, off_t filesize, off_t *ctr)
 	setscreensize();
 	refresh_progress_meter(1);
 
-	signal(SIGALRM, sig_alarm);
-	signal(SIGWINCH, sig_winch);
+	ssh_signal(SIGALRM, sig_alarm);
+	ssh_signal(SIGWINCH, sig_winch);
 	alarm(UPDATE_INTERVAL);
 }
 
@@ -272,7 +272,7 @@ void
 stop_progress_meter(void)
 {
 	/* stop watching for window change */
-	signal(SIGWINCH, SIG_DFL);
+	ssh_signal(SIGWINCH, SIG_DFL);
 	alarm(0);
 
 	if (!can_output())

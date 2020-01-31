@@ -1,4 +1,4 @@
-/* $OpenBSD: auth2-pubkey.c,v 1.95 2019/11/25 00:51:37 djm Exp $ */
+/* $OpenBSD: auth2-pubkey.c,v 1.98 2020/01/23 07:10:22 dtucker Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2003-2019 Roumen Petrov.  All rights reserved.
@@ -532,7 +532,7 @@ match_principals_command(struct ssh *ssh, struct passwd *user_pw,
 	 * NB. all returns later this function should go via "out" to
 	 * ensure the original SIGCHLD handler is restored properly.
 	 */
-	osigchld = signal(SIGCHLD, SIG_DFL);
+	osigchld = ssh_signal(SIGCHLD, SIG_DFL);
 
 	/* Prepare and verify the user for the command */
 	username = percent_expand(options.authorized_principals_command_user,
@@ -620,7 +620,7 @@ match_principals_command(struct ssh *ssh, struct passwd *user_pw,
  out:
 	if (f != NULL)
 		fclose(f);
-	signal(SIGCHLD, osigchld);
+	ssh_signal(SIGCHLD, osigchld);
 	for (i = 0; i < ac; i++)
 		free(av[i]);
 	free(av);
@@ -994,7 +994,7 @@ user_key_command_allowed2(struct ssh *ssh, struct passwd *user_pw,
 	 * NB. all returns later this function should go via "out" to
 	 * ensure the original SIGCHLD handler is restored properly.
 	 */
-	osigchld = signal(SIGCHLD, SIG_DFL);
+	osigchld = ssh_signal(SIGCHLD, SIG_DFL);
 
 	/* Prepare and verify the user for the command */
 	username = percent_expand(options.authorized_keys_command_user,
@@ -1083,7 +1083,7 @@ user_key_command_allowed2(struct ssh *ssh, struct passwd *user_pw,
  out:
 	if (f != NULL)
 		fclose(f);
-	signal(SIGCHLD, osigchld);
+	ssh_signal(SIGCHLD, osigchld);
 	for (i = 0; i < ac; i++)
 		free(av[i]);
 	free(av);

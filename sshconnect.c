@@ -278,7 +278,7 @@ ssh_proxy_connect(struct ssh *ssh, const char *host, const char *host_arg,
 
 		/* Execute the proxy command.  Note that we gave up any
 		   extra privileges above. */
-		signal(SIGPIPE, SIG_DFL);
+		ssh_signal(SIGPIPE, SIG_DFL);
 		execv(argv[0], argv);
 		perror(argv[0]);
 		exit(1);
@@ -1473,10 +1473,10 @@ ssh_local_cmd(const char *args)
 	if ((shell = getenv("SHELL")) == NULL || *shell == '\0')
 		shell = _PATH_BSHELL;
 
-	osighand = signal(SIGCHLD, SIG_DFL);
+	osighand = ssh_signal(SIGCHLD, SIG_DFL);
 	pid = fork();
 	if (pid == 0) {
-		signal(SIGPIPE, SIG_DFL);
+		ssh_signal(SIGPIPE, SIG_DFL);
 		debug3("Executing %s -c \"%s\"", shell, args);
 		execl(shell, shell, "-c", args, (char *)NULL);
 		error("Couldn't execute %s -c \"%s\": %s",
@@ -1487,7 +1487,7 @@ ssh_local_cmd(const char *args)
 	while (waitpid(pid, &status, 0) == -1)
 		if (errno != EINTR)
 			fatal("Couldn't wait for child: %s", strerror(errno));
-	signal(SIGCHLD, osighand);
+	ssh_signal(SIGCHLD, osighand);
 
 	if (!WIFEXITED(status))
 		return (1);
