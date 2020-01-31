@@ -16,7 +16,7 @@ P=${TEST_MULTIPLEX_PORT-3301}
 
 wait_for_mux_master_ready()
 {
-	for i in 1 2 3 4 5; do
+	for i in 1 2 3 4 5 6 7 8 9; do
 		${SSH} -F $OBJ/ssh_config -S $CTL -Ocheck otherhost \
 		    >/dev/null 2>&1 && return 0
 		sleep $i
