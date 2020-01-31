@@ -1943,6 +1943,8 @@ update_known_hosts(struct hostkeys_update_ctx *ctx)
 	int r, was_raw = 0;
 	LogLevel loglevel = options.update_hostkeys == SSH_UPDATE_HOSTKEYS_ASK ?
 	    SYSLOG_LEVEL_INFO : SYSLOG_LEVEL_VERBOSE;
+	struct sshkey *key;
+	int is_x509;
 	char *fp, *response;
 	size_t i;
 	struct stat sb;
@@ -1950,35 +1952,45 @@ update_known_hosts(struct hostkeys_update_ctx *ctx)
 	for (i = 0; i < ctx->nkeys; i++) {
 		if (ctx->keys_seen[i] != 2)
 			continue;
-		if (sshkey_is_x509(ctx->keys[i])) {
-			fp = x509key_subject(ctx->keys[i]);
+		key = ctx->keys[i];
+		is_x509 = sshkey_is_x509(key);
+		if (is_x509) {
+			fp = x509key_subject(key);
 			if (fp == NULL)
 				fatal("%s: x509key_subject failed", __func__);
-			do_log2(loglevel, "Learned new hostkey: %s", fp);
 			free(fp);
 			continue;
+		} else {
+			fp = sshkey_fingerprint(key,
+			    options.fingerprint_hash, SSH_FP_DEFAULT);
+			if (fp == NULL)
+				fatal("%s: sshkey_fingerprint failed", __func__);
 		}
-		if ((fp = sshkey_fingerprint(ctx->keys[i],
-		    options.fingerprint_hash, SSH_FP_DEFAULT)) == NULL)
-			fatal("%s: sshkey_fingerprint failed", __func__);
-		do_log2(loglevel, "Learned new hostkey: %s %s",
-		    sshkey_type(ctx->keys[i]), fp);
+		if (is_x509)
+			do_log2(loglevel, "Learned new hostkey: %s", fp);
+		else
+			do_log2(loglevel, "Learned new hostkey: %s %s",
+			    sshkey_type(key), fp);
 		free(fp);
 	}
 	for (i = 0; i < ctx->nold; i++) {
-		if (sshkey_is_x509(ctx->old_keys[i])) {
-			fp = x509key_subject(ctx->old_keys[i]);
+		key = ctx->old_keys[i];
+		is_x509 = sshkey_is_x509(key);
+		if (is_x509) {
+			fp = x509key_subject(key);
 			if (fp == NULL)
 				fatal("%s: x509key_subject failed", __func__);
-			do_log2(loglevel, "Deprecating obsolete hostkey: %s", fp);
-			free(fp);
-			continue;
+		} else {
+			fp = sshkey_fingerprint(key,
+			    options.fingerprint_hash, SSH_FP_DEFAULT);
+			if (fp == NULL)
+				fatal("%s: sshkey_fingerprint failed", __func__);
 		}
-		if ((fp = sshkey_fingerprint(ctx->old_keys[i],
-		    options.fingerprint_hash, SSH_FP_DEFAULT)) == NULL)
-			fatal("%s: sshkey_fingerprint failed", __func__);
-		do_log2(loglevel, "Deprecating obsolete hostkey: %s %s",
-		    sshkey_type(ctx->old_keys[i]), fp);
+		if (is_x509)
+			do_log2(loglevel, "Deprecating obsolete hostkey: %s", fp);
+		else
+			do_log2(loglevel, "Deprecating obsolete hostkey: %s %s",
+			    sshkey_type(key), fp);
 		free(fp);
 	}
 	if (options.update_hostkeys == SSH_UPDATE_HOSTKEYS_ASK) {
