@@ -781,38 +781,39 @@ struct multistate {
 	char *key;
 	int value;
 };
+/* use true and false at end for compatibility */
 static const struct multistate multistate_flag[] = {
-	{ "true",			1 },
-	{ "false",			0 },
 	{ "yes",			1 },
 	{ "no",				0 },
+	{ "true",			1 },
+	{ "false",			0 },
 	{ NULL, -1 }
 };
 static const struct multistate multistate_yesnoask[] = {
-	{ "true",			1 },
-	{ "false",			0 },
 	{ "yes",			1 },
 	{ "no",				0 },
 	{ "ask",			2 },
+	{ "true",			1 },
+	{ "false",			0 },
 	{ NULL, -1 }
 };
 static const struct multistate multistate_strict_hostkey[] = {
-	{ "true",			SSH_STRICT_HOSTKEY_YES },
-	{ "false",			SSH_STRICT_HOSTKEY_OFF },
 	{ "yes",			SSH_STRICT_HOSTKEY_YES },
 	{ "no",				SSH_STRICT_HOSTKEY_OFF },
 	{ "ask",			SSH_STRICT_HOSTKEY_ASK },
 	{ "off",			SSH_STRICT_HOSTKEY_OFF },
 	{ "accept-new",			SSH_STRICT_HOSTKEY_NEW },
+	{ "true",			SSH_STRICT_HOSTKEY_YES },
+	{ "false",			SSH_STRICT_HOSTKEY_OFF },
 	{ NULL, -1 }
 };
 static const struct multistate multistate_yesnoaskconfirm[] = {
-	{ "true",			1 },
-	{ "false",			0 },
 	{ "yes",			1 },
 	{ "no",				0 },
 	{ "ask",			2 },
 	{ "confirm",			3 },
+	{ "true",			1 },
+	{ "false",			0 },
 	{ NULL, -1 }
 };
 static const struct multistate multistate_addressfamily[] = {
@@ -822,39 +823,39 @@ static const struct multistate multistate_addressfamily[] = {
 	{ NULL, -1 }
 };
 static const struct multistate multistate_controlmaster[] = {
-	{ "true",			SSHCTL_MASTER_YES },
 	{ "yes",			SSHCTL_MASTER_YES },
-	{ "false",			SSHCTL_MASTER_NO },
 	{ "no",				SSHCTL_MASTER_NO },
 	{ "auto",			SSHCTL_MASTER_AUTO },
 	{ "ask",			SSHCTL_MASTER_ASK },
 	{ "autoask",			SSHCTL_MASTER_AUTO_ASK },
+	{ "true",			SSHCTL_MASTER_YES },
+	{ "false",			SSHCTL_MASTER_NO },
 	{ NULL, -1 }
 };
 static const struct multistate multistate_tunnel[] = {
 	{ "ethernet",			SSH_TUNMODE_ETHERNET },
 	{ "point-to-point",		SSH_TUNMODE_POINTOPOINT },
-	{ "true",			SSH_TUNMODE_DEFAULT },
 	{ "yes",			SSH_TUNMODE_DEFAULT },
-	{ "false",			SSH_TUNMODE_NO },
 	{ "no",				SSH_TUNMODE_NO },
+	{ "true",			SSH_TUNMODE_DEFAULT },
+	{ "false",			SSH_TUNMODE_NO },
 	{ NULL, -1 }
 };
 static const struct multistate multistate_requesttty[] = {
-	{ "true",			REQUEST_TTY_YES },
 	{ "yes",			REQUEST_TTY_YES },
-	{ "false",			REQUEST_TTY_NO },
 	{ "no",				REQUEST_TTY_NO },
 	{ "force",			REQUEST_TTY_FORCE },
 	{ "auto",			REQUEST_TTY_AUTO },
+	{ "true",			REQUEST_TTY_YES },
+	{ "false",			REQUEST_TTY_NO },
 	{ NULL, -1 }
 };
 static const struct multistate multistate_canonicalizehostname[] = {
-	{ "true",			SSH_CANONICALISE_YES },
-	{ "false",			SSH_CANONICALISE_NO },
 	{ "yes",			SSH_CANONICALISE_YES },
 	{ "no",				SSH_CANONICALISE_NO },
 	{ "always",			SSH_CANONICALISE_ALWAYS },
+	{ "true",			SSH_CANONICALISE_YES },
+	{ "false",			SSH_CANONICALISE_NO },
 	{ NULL, -1 }
 };
 
