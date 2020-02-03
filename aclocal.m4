@@ -26,7 +26,7 @@ main(int argc, char *argv[]) {
 return 0; }
 	]])],
 		[
-if $ac_cv_path_EGREP -i "unrecognized option|warning.*ignored" conftest.err >/dev/null
+if $EGREP -i "unrecognized option|warning.*ignored" conftest.err >/dev/null
 then
 		AC_MSG_RESULT([no])
 		CFLAGS="$saved_CFLAGS"
@@ -65,7 +65,7 @@ main(int argc, char *argv[]) {
 return 0; }
 	]])],
 		[
-if $ac_cv_path_EGREP -i "unrecognized option|warning.*ignored" conftest.err >/dev/null
+if $EGREP -i "unrecognized option|warning.*ignored" conftest.err >/dev/null
 then
 		AC_MSG_RESULT([no])
 		CFLAGS="$saved_CFLAGS"
@@ -104,7 +104,7 @@ main(int argc, char *argv[]) {
 return 0; }
 		]])],
 		[
-if $ac_cv_path_EGREP -i "unrecognized option|warning.*ignored" conftest.err >/dev/null
+if $EGREP -i "unrecognized option|warning.*ignored" conftest.err >/dev/null
 then
 		  AC_MSG_RESULT([no])
 		  LDFLAGS="$saved_LDFLAGS"
