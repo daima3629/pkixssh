@@ -766,7 +766,6 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 	}
 #endif /*def LDAP_ENABLED*/
 
-done:
 	return 1;
 }
 

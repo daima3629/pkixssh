@@ -86,7 +86,7 @@ sshbuf_load_file(const char *path, struct sshbuf **bufp)
 	if ((fd = open(path, O_RDONLY)) == -1)
 		return SSH_ERR_SYSTEM_ERROR;
 	r = sshbuf_load_fd(fd, bufp);
- out:
+
 {	int oerrno = errno;
 	close(fd);
 	errno = oerrno;
