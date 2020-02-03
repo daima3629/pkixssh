@@ -179,7 +179,6 @@ do_authentication2(struct ssh *ssh)
 	ssh->authctxt = NULL;
 }
 
-/*ARGSUSED*/
 static int
 input_service_request(int type, u_int32_t seq, struct ssh *ssh)
 {
@@ -187,6 +186,8 @@ input_service_request(int type, u_int32_t seq, struct ssh *ssh)
 	char *service = NULL;
 	int r, acceptit = 0;
 
+	UNUSED(type);
+	UNUSED(seq);
 	if ((r = sshpkt_get_cstring(ssh, &service, NULL)) != 0 ||
 	    (r = sshpkt_get_end(ssh)) != 0)
 		goto out;
@@ -262,7 +263,6 @@ ensure_minimum_time_since(double start, double seconds)
 	nanosleep(&ts, NULL);
 }
 
-/*ARGSUSED*/
 static int
 input_userauth_request(int type, u_int32_t seq, struct ssh *ssh)
 {
@@ -272,6 +272,8 @@ input_userauth_request(int type, u_int32_t seq, struct ssh *ssh)
 	int r, authenticated = 0;
 	double tstart = monotime_double();
 
+	UNUSED(type);
+	UNUSED(seq);
 	if (authctxt == NULL)
 		fatal("input_userauth_request: no authctxt");
 

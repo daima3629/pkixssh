@@ -63,6 +63,8 @@ platform_post_fork_parent(pid_t child_pid)
 {
 #ifdef USE_SOLARIS_PROCESS_CONTRACTS
 	solaris_contract_post_fork_parent(child_pid);
+#else
+	UNUSED(child_pid);
 #endif
 }
 
@@ -101,6 +103,7 @@ platform_setusercontext(struct passwd *pw)
 	(void)ssh_selinux_enabled();
 #endif
 
+	UNUSED(pw);
 #ifdef USE_SOLARIS_PROJECTS
 	/*
 	 * If solaris projects were detected, set the default now, unless
@@ -144,6 +147,7 @@ platform_setusercontext(struct passwd *pw)
 void
 platform_setusercontext_post_groups(struct passwd *pw)
 {
+	UNUSED(pw);
 #if !defined(HAVE_LOGIN_CAP) && defined(USE_PAM)
 	/*
 	 * PAM credentials may take the form of supplementary groups.
@@ -193,6 +197,7 @@ platform_krb5_get_principal_name(const char *pw_name)
 #ifdef USE_AIX_KRB_NAME
 	return aix_krb5_get_principal_name(pw_name);
 #else
+	UNUSED(pw_name);
 	return NULL;
 #endif
 }

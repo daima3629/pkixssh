@@ -324,6 +324,7 @@ chan_write_failed(struct ssh *ssh, Channel *c)
 void
 chan_mark_dead(struct ssh *ssh, Channel *c)
 {
+	UNUSED(ssh);
 	c->type = SSH_CHANNEL_ZOMBIE;
 }
 

@@ -419,6 +419,7 @@ mm_auth_password(struct ssh *ssh, char *password)
 #endif
 	u_int32_t val;
 
+	UNUSED(ssh);
 	debug3("%s entering", __func__);
 
 	if ((m = sshbuf_new()) == NULL)
@@ -854,6 +855,7 @@ mm_bsdauth_query(void *ctx, char **name, char **infotxt,
 	char *challenge;
 	int r;
 
+	UNUSED(ctx);
 	debug3("%s: entering", __func__);
 
 	if ((m = sshbuf_new()) == NULL)
@@ -890,6 +892,7 @@ mm_bsdauth_respond(void *ctx, u_int numresponses, char **responses)
 	u_int32_t authok;
 	int r;
 
+	UNUSED(ctx);
 	debug3("%s: entering", __func__);
 	if (numresponses != 1)
 		return (-1);
@@ -981,6 +984,7 @@ mm_ssh_gssapi_accept_ctx(Gssctxt *ctx, gss_buffer_desc *in,
 	u_int32_t major, flags;
 	int r;
 
+	UNUSED(ctx);
 	if ((m = sshbuf_new()) == NULL)
 		fatal("%s: sshbuf_new failed", __func__);
 	if ((r = sshbuf_put_string(m, in->value, in->length)) != 0)
@@ -1010,6 +1014,7 @@ mm_ssh_gssapi_checkmic(Gssctxt *ctx, gss_buffer_t gssbuf, gss_buffer_t gssmic)
 	u_int32_t major;
 	int r;
 
+	UNUSED(ctx);
 	if ((m = sshbuf_new()) == NULL)
 		fatal("%s: sshbuf_new failed", __func__);
 	if ((r = sshbuf_put_string(m, gssbuf->value, gssbuf->length)) != 0 ||
@@ -1033,6 +1038,7 @@ mm_ssh_gssapi_userok(char *user)
 	u_int32_t authenticated = 0;
 	int r;
 
+	UNUSED(user);
 	if ((m = sshbuf_new()) == NULL)
 		fatal("%s: sshbuf_new failed", __func__);
 

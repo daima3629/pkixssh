@@ -148,6 +148,7 @@ ssh_dss_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 	struct sshbuf *b = NULL;
 	int ret = SSH_ERR_INVALID_ARGUMENT;
 
+	UNUSED(compat);
 	if (lenp != NULL)
 		*lenp = 0;
 	if (sigp != NULL)
@@ -214,7 +215,6 @@ ssh_DSA_verify(DSA *dsa, DSA_SIG *sig, const u_char *data, u_int datalen)
 	EVP_PKEY *pkey = NULL;
 
 	/* Sig is in DSA_SIG structure, convert to encoded buffer */
-
 	len = i2d_DSA_SIG(sig, NULL);
 	tsig = xmalloc(len);	/*fatal on error*/
 
@@ -303,6 +303,7 @@ ssh_dss_verify(const struct sshkey *key,
 	struct sshbuf *b = NULL;
 	char *ktype = NULL;
 
+	UNUSED(compat);
 	if (key == NULL || key->dsa == NULL ||
 	    sshkey_type_plain(key->type) != KEY_DSA ||
 	    signature == NULL || signaturelen == 0)

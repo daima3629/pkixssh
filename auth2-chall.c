@@ -298,6 +298,8 @@ input_userauth_info_response(int type, u_int32_t seq, struct ssh *ssh)
 	const char *devicename = NULL;
 	char **response = NULL;
 
+	UNUSED(type);
+	UNUSED(seq);
 	if (authctxt == NULL)
 		fatal("input_userauth_info_response: no authctxt");
 	kbdintctxt = authctxt->kbdintctxt;

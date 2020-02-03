@@ -95,6 +95,8 @@ macalg_allowed(const struct macalg *m) {
 		if (ssh_digest_bytes(m->alg) == 0)
 			return(0);
 	}
+#else
+	UNUSED(m);
 #endif
 	return(1);
 }

@@ -826,24 +826,33 @@ uncompress_buffer(struct ssh *ssh, struct sshbuf *in, struct sshbuf *out)
 static int
 start_compression_out(struct ssh *ssh, int level)
 {
+	UNUSED(ssh);
+	UNUSED(level);
 	return SSH_ERR_INTERNAL_ERROR;
 }
 
 static int
 start_compression_in(struct ssh *ssh)
 {
+	UNUSED(ssh);
 	return SSH_ERR_INTERNAL_ERROR;
 }
 
 static int
 compress_buffer(struct ssh *ssh, struct sshbuf *in, struct sshbuf *out)
 {
+	UNUSED(ssh);
+	UNUSED(in);
+	UNUSED(out);
 	return SSH_ERR_INTERNAL_ERROR;
 }
 
 static int
 uncompress_buffer(struct ssh *ssh, struct sshbuf *in, struct sshbuf *out)
 {
+	UNUSED(ssh);
+	UNUSED(in);
+	UNUSED(out);
 	return SSH_ERR_INTERNAL_ERROR;
 }
 #endif	/* WITH_ZLIB */

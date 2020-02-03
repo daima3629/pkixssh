@@ -145,6 +145,7 @@ kex_ecdh_dec_key_group(struct kex *kex, const struct sshbuf *ec_blob,
 	size_t klen = 0;
 	int r;
 
+	UNUSED(kex);
 	*shared_secretp = NULL;
 
 	if ((buf = sshbuf_new()) == NULL) {

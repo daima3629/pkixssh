@@ -51,6 +51,7 @@ char *ssh_get_progname(char *argv0)
 #ifdef HAVE___PROGNAME
 	extern char *__progname;
 
+	UNUSED(argv0);
 	p = __progname;
 #else
 	if (argv0 == NULL)

@@ -54,6 +54,7 @@ dispatch_protocol_error(int type, u_int32_t seq, struct ssh *ssh)
 int
 dispatch_protocol_ignore(int type, u_int32_t seq, struct ssh *ssh)
 {
+	UNUSED(ssh);
 	logit("dispatch_protocol_ignore: type %d seq %u", type, seq);
 	return 0;
 }

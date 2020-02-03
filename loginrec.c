@@ -1687,6 +1687,7 @@ record_failed_login(struct ssh *ssh, const char *username, const char *hostname,
 	time_t t;
 	struct stat fst;
 
+	UNUSED(ttyn);
 	if (geteuid() != 0)
 		return;
 	if ((fd = open(_PATH_BTMP, O_WRONLY | O_APPEND)) == -1) {

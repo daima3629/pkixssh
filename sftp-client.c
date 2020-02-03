@@ -118,7 +118,6 @@ static u_char *
 get_handle(struct sftp_conn *conn, u_int expected_id, size_t *len,
     const char *errfmt, ...) __attribute__((format(printf, 4, 5)));
 
-/* ARGSUSED */
 static int
 sftpio(void *_bwlimit, size_t amount)
 {

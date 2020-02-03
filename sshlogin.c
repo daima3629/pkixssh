@@ -77,6 +77,7 @@ get_last_login_time(uid_t uid, const char *logname,
 {
 	struct logininfo li;
 
+	UNUSED(logname);
 	login_get_lastlog(&li, uid);
 	strlcpy(buf, li.hostname, bufsize);
 	return (time_t)li.tv_sec;

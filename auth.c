@@ -864,6 +864,7 @@ subprocess(const char *tag, struct passwd *pw, const char *command,
 	u_int envsize;
 	char **child_env;
 
+	UNUSED(ac);
 	if (child != NULL)
 		*child = NULL;
 
@@ -1072,6 +1073,7 @@ auth_activate_options(struct ssh *ssh, struct sshauthopt *opts)
 	struct sshauthopt *old = auth_opts;
 	const char *emsg = NULL;
 
+	UNUSED(ssh);
 	debug("%s: setting new authentication options", __func__);
 	if ((auth_opts = sshauthopt_merge(old, opts, &emsg)) == NULL) {
 		error("Inconsistent authentication options: %s", emsg);

@@ -44,7 +44,6 @@
 #define SSHKEY_INTERNAL
 #include "sshkey.h"
 
-/* ARGSUSED */
 int
 ssh_ecdsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
     const u_char *data, size_t datalen, u_int compat)
@@ -56,6 +55,7 @@ ssh_ecdsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 	struct sshbuf *b = NULL, *bb = NULL;
 	int ret = SSH_ERR_INTERNAL_ERROR;
 
+	UNUSED(compat);
 	if (lenp != NULL)
 		*lenp = 0;
 	if (sigp != NULL)
@@ -110,7 +110,6 @@ ssh_ecdsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 	return ret;
 }
 
-/* ARGSUSED */
 int
 ssh_ecdsa_verify(const struct sshkey *key,
     const u_char *signature, size_t signaturelen,
@@ -124,6 +123,7 @@ ssh_ecdsa_verify(const struct sshkey *key,
 	struct sshbuf *b = NULL, *sigbuf = NULL;
 	char *ktype = NULL;
 
+	UNUSED(compat);
 	if (key == NULL || key->ecdsa == NULL ||
 	    sshkey_type_plain(key->type) != KEY_ECDSA ||
 	    signature == NULL || signaturelen == 0)

@@ -417,7 +417,6 @@ kex_prop_free(char **proposal)
 	free(proposal);
 }
 
-/* ARGSUSED */
 static int
 kex_protocol_error(int type, u_int32_t seq, struct ssh *ssh)
 {
@@ -652,7 +651,6 @@ kex_send_kexinit(struct ssh *ssh)
 	return 0;
 }
 
-/* ARGSUSED */
 int
 kex_input_kexinit(int type, u_int32_t seq, struct ssh *ssh)
 {

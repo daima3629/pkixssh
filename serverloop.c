@@ -161,18 +161,17 @@ notify_done(fd_set *readset)
 			debug2("%s: reading", __func__);
 }
 
-/*ARGSUSED*/
 static void
 sigchld_handler(int sig)
 {
 	int save_errno = errno;
+
 	UNUSED(sig);
 	child_terminated = 1;
 	notify_parent();
 	errno = save_errno;
 }
 
-/*ARGSUSED*/
 static void
 sigterm_handler(int sig)
 {

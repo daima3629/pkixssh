@@ -90,6 +90,8 @@ pty_release(const char *tty)
 		error("chown %.100s 0 0 failed: %.100s", tty, strerror(errno));
 	if (chmod(tty, (mode_t) 0666) == -1)
 		error("chmod %.100s 0666 failed: %.100s", tty, strerror(errno));
+#else
+	UNUSED(tty);
 #endif /* !__APPLE_PRIVPTY__ && !HAVE_OPENPTY */
 }
 
