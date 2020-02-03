@@ -16,6 +16,9 @@
 #   undef _FORTIFY_SOURCE
 #   undef __USE_FORTIFY_LEVEL
 #   include <sys/socket.h>
+void kludge_FD_SET(int, fd_set *);
+int kludge_FD_ISSET(int, fd_set *);
+
 void kludge_FD_SET(int n, fd_set *set) {
 	FD_SET(n, set);
 }
