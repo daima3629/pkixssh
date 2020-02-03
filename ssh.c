@@ -1338,7 +1338,14 @@ main(int ac, char **av)
 	    options.proxy_use_fdpass)
 		fatal("ProxyCommand=- and ProxyUseFDPass are incompatible");
 	if (options.update_hostkeys == SSH_UPDATE_HOSTKEYS_ASK) {
-		if (options.control_persist && options.control_path != NULL) {
+		if (options.log_level < SYSLOG_LEVEL_INFO) {
+			/* no point logging anything; user won't see it */
+			options.update_hostkeys = 0;
+		} else if (options.batch_mode) {
+			debug("UpdateHostKeys=ask is incompatible with "
+			    "batch mode; disabling");
+			options.update_hostkeys = 0;
+		} else if (options.control_persist && options.control_path != NULL) {
 			debug("UpdateHostKeys=ask is incompatible with "
 			    "ControlPersist; disabling");
 			options.update_hostkeys = 0;
