@@ -85,6 +85,7 @@ LTESTS= 	connect \
 		principals-command \
 		cert-file \
 		cfginclude \
+		servcfginclude \
 		allow-deny-users \
 		authinfo
 
@@ -126,7 +127,7 @@ CLEANFILES=	*.core actual agent-key.* authkeys_orig \
 		ssh-rsa_oldfmt \
 		ssh_config ssh_config.* ssh_proxy ssh_proxy_bak \
 		ssh_proxy_envpass sshd.log sshd_config sshd_config_minimal \
-		sshd_config.orig sshd_proxy sshd_proxy.* sshd_proxy_bak \
+		sshd_config.* sshd_proxy sshd_proxy.* sshd_proxy_bak \
 		sshd_proxy_orig t10.out t10.out.pub t12.out t12.out.pub \
 		t2.out t3.out t6.out1 t6.out2 t7.out t7.out.pub \
 		t8.out t8.out.pub t9.out t9.out.pub testdata \

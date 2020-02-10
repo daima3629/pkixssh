@@ -84,8 +84,8 @@ ssh_proxy_bak
 ssh_proxy_envpass
 sshd.log
 sshd_config
+sshd_config.*
 sshd_config_minimal
-sshd_config.orig
 sshd_proxy
 sshd_proxy.*
 sshd_proxy_bak
