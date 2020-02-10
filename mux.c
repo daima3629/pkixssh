@@ -1349,9 +1349,7 @@ muxserver_listen(struct ssh *ssh)
 			cleanup_exit(255);
 		}
 	}
-
-	/* Now atomically "move" the mux socket into position */
-	if (link(options.control_path, orig_control_path) != 0) {
+	if (xrename(options.control_path, orig_control_path) == -1) {
 		if (errno != EEXIST) {
 			fatal("%s: link mux listener %s => %s: %s", __func__,
 			    options.control_path, orig_control_path,
@@ -1362,7 +1360,6 @@ muxserver_listen(struct ssh *ssh)
 		unlink(options.control_path);
 		goto disable_mux_master;
 	}
-	unlink(options.control_path);
 	free(options.control_path);
 	options.control_path = orig_control_path;
 

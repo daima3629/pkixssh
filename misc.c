@@ -2,9 +2,7 @@
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2005,2006 Damien Miller.  All rights reserved.
- * X.509 certificates support,
- * Copyright (c) 2012-2017 Roumen Petrov.  All rights reserved.
- *
+ * Copyright (c) 2012-2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -1966,6 +1964,41 @@ ssh_signame2code(char *name)
 		return SIGINFO;
 #endif
 	return -1;
+}
+
+int
+xrename(const char *oldpath, const char *newpath) {
+	if (link(oldpath, newpath) == -1) {
+		if (errno == EOPNOTSUPP || errno == ENOSYS
+#ifdef EXDEV
+		    || errno == EXDEV
+#endif
+#ifdef LINK_OPNOTSUPP_ERRNO
+		    || errno == LINK_OPNOTSUPP_ERRNO
+#endif
+		) {
+			struct stat st;
+			/*
+			 * If file-system does not support links or
+			 * hard links are disabled or etc.
+			 * So fall back to stat+rename (race).
+			 */
+			if (stat(newpath, &st) == -1)
+				return rename(oldpath, newpath);
+
+			/* simplified error reason */
+			errno = EEXIST;
+		}
+		return -1;
+	}
+	if (unlink(oldpath) == -1) {
+		int oerrno = errno;
+		/* clean spare link */
+		(void)unlink(newpath);
+		errno = oerrno;
+		return -1;
+	}
+	return 0;
 }
 
 /*

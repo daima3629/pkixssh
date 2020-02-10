@@ -167,6 +167,9 @@ char	*argv_assemble(int, char **argv);
 int	 exited_cleanly(pid_t, const char *, const char *, int);
 int	 ssh_signame2code(char *name);
 
+/* atomic rename of regular files */
+int	xrename(const char *oldpath, const char *newpath);
+
 struct stat;
 int	 safe_path(const char *, struct stat *, const char *, uid_t,
 	     char *, size_t);

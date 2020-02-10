@@ -1442,8 +1442,8 @@ do_known_hosts(struct passwd *pw, const char *name, int find_host,
 		/* Backup existing file */
 		if (unlink(old) == -1 && errno != ENOENT)
 			fatal("unlink %.100s: %s", old, strerror(errno));
-		if (link(identity_file, old) == -1)
-			fatal("link %.100s to %.100s: %s", identity_file, old,
+		if (xrename(identity_file, old) == -1)
+			fatal("xrename %.100s to %.100s: %s", identity_file, old,
 			    strerror(errno));
 		/* Move new one into place */
 		if (rename(tmp, identity_file) == -1) {

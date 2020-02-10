@@ -633,9 +633,9 @@ hostfile_replace_entries(const char *filename, const char *host, const char *ip,
 			r = SSH_ERR_SYSTEM_ERROR;
 			goto fail;
 		}
-		if (link(filename, back) == -1) {
+		if (xrename(filename, back) == -1) {
 			oerrno = errno;
-			error("%s: link %.100s to %.100s: %s", __func__,
+			error("%s: xrename %.100s to %.100s: %s", __func__,
 			    filename, back, strerror(errno));
 			r = SSH_ERR_SYSTEM_ERROR;
 			goto fail;

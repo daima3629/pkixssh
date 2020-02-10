@@ -1201,37 +1201,9 @@ process_rename(u_int32_t id)
 	if (lstat(oldpath, &sb) == -1)
 		status = errno_to_portable(errno);
 	else if (S_ISREG(sb.st_mode)) {
-		/* Race-free rename of regular files */
-		if (link(oldpath, newpath) == -1) {
-			if (errno == EOPNOTSUPP || errno == ENOSYS
-#ifdef EXDEV
-			    || errno == EXDEV
-#endif
-#ifdef LINK_OPNOTSUPP_ERRNO
-			    || errno == LINK_OPNOTSUPP_ERRNO
-#endif
-			    ) {
-				struct stat st;
-
-				/*
-				 * fs doesn't support links, so fall back to
-				 * stat+rename.  This is racy.
-				 */
-				if (stat(newpath, &st) == -1) {
-					if (rename(oldpath, newpath) == -1)
-						status =
-						    errno_to_portable(errno);
-					else
-						status = SSH2_FX_OK;
-				}
-			} else {
-				status = errno_to_portable(errno);
-			}
-		} else if (unlink(oldpath) == -1) {
+		if (xrename(oldpath, newpath) == -1)
 			status = errno_to_portable(errno);
-			/* clean spare link */
-			unlink(newpath);
-		} else
+		else
 			status = SSH2_FX_OK;
 	} else if (stat(newpath, &sb) == -1) {
 		if (rename(oldpath, newpath) == -1)
