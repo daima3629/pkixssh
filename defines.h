@@ -261,9 +261,13 @@ typedef unsigned int u_int32_t;
 #define __BIT_TYPES_DEFINED__
 #endif
 
-#if !HAVE_DECL_UINT32_MAX
-# if (SIZEOF_INT == 4)
+#ifndef UINT32_MAX
+# if !HAVE_DECL_UINT32_MAX
+#  if (SIZEOF_INT == 4)
 #   define UINT32_MAX	UINT_MAX
+#  elif (SIZEOF_LONG == 4)
+#   define UINT32_MAX	ULONG_MAX
+#  endif
 # endif
 #endif
 
