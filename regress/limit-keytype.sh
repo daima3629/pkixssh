@@ -1,4 +1,4 @@
-#	$OpenBSD: limit-keytype.sh,v 1.6 2019/07/26 04:22:21 dtucker Exp $
+#	$OpenBSD: limit-keytype.sh,v 1.9 2019/12/16 02:39:05 djm Exp $
 #	Placed in the Public Domain.
 
 tid="restrict pubkey type"

@@ -1,4 +1,4 @@
-/*	$OpenBSD: ssherr.c,v 1.8 2018/07/03 11:39:54 djm Exp $	*/
+/*	$OpenBSD: ssherr.c,v 1.10 2020/01/25 23:13:09 djm Exp $	*/
 /*
  * Copyright (c) 2011 Damien Miller
  *

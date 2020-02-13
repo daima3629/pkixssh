@@ -304,4 +304,4 @@ permit-user-rc          empty         Flag indicating that execution of
                                       of this script will not be permitted if
                                       this option is not present.
 
-$OpenBSD: PROTOCOL.certkeys,v 1.16 2018/10/26 01:23:03 djm Exp $
+$OpenBSD: PROTOCOL.certkeys,v 1.17 2019/11/25 00:57:51 djm Exp $

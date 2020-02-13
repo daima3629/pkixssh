@@ -1,4 +1,4 @@
-#	$OpenBSD: hostkey-agent.sh,v 1.10 2019/12/11 18:47:14 djm Exp $
+#	$OpenBSD: hostkey-agent.sh,v 1.11 2019/12/16 02:39:05 djm Exp $
 #	Placed in the Public Domain.
 
 tid="hostkey agent"

@@ -1,4 +1,4 @@
-#	$OpenBSD: Makefile,v 1.103 2019/07/16 03:21:54 dtucker Exp $
+#	$OpenBSD: Makefile,v 1.106 2020/01/31 23:25:08 djm Exp $
 
 tests: unit file-tests t-exec
 check-core: tests

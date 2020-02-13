@@ -1,4 +1,4 @@
-#	$OpenBSD: integrity.sh,v 1.23 2017/04/30 23:34:55 djm Exp $
+#	$OpenBSD: integrity.sh,v 1.24 2020/01/21 08:06:27 djm Exp $
 #	Placed in the Public Domain.
 
 tid="integrity"

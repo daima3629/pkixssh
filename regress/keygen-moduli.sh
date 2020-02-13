@@ -1,4 +1,4 @@
-#	$OpenBSD: keygen-moduli.sh,v 1.3 2019/07/23 08:19:29 dtucker Exp $
+#	$OpenBSD: keygen-moduli.sh,v 1.4 2020/01/02 13:25:38 dtucker Exp $
 #	Placed in the Public Domain.
 
 tid="keygen moduli"

@@ -1,4 +1,4 @@
-/* $OpenBSD: sshconnect2.c,v 1.318 2020/01/23 10:24:30 dtucker Exp $ */
+/* $OpenBSD: sshconnect2.c,v 1.320 2020/02/06 22:48:23 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Damien Miller.  All rights reserved.

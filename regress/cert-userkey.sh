@@ -1,4 +1,4 @@
-#	$OpenBSD: cert-userkey.sh,v 1.24 2019/12/11 18:47:14 djm Exp $
+#	$OpenBSD: cert-userkey.sh,v 1.25 2020/01/03 03:02:26 djm Exp $
 #	Placed in the Public Domain.
 
 tid="certified user keys"

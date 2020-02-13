@@ -1,4 +1,4 @@
-#	$OpenBSD: multipubkey.sh,v 1.2 2018/10/31 11:09:27 dtucker Exp $
+#	$OpenBSD: multipubkey.sh,v 1.3 2019/12/11 18:47:14 djm Exp $
 #	Placed in the Public Domain.
 
 tid="multiple pubkey"

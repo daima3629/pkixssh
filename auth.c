@@ -1,4 +1,4 @@
-/* $OpenBSD: auth.c,v 1.145 2020/01/23 07:10:22 dtucker Exp $ */
+/* $OpenBSD: auth.c,v 1.146 2020/01/31 22:42:45 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  *

@@ -1,4 +1,4 @@
-#	$OpenBSD: keytype.sh,v 1.9 2019/11/26 23:43:10 djm Exp $
+#	$OpenBSD: keytype.sh,v 1.10 2019/12/16 02:39:05 djm Exp $
 #	Placed in the Public Domain.
 
 tid="login with different key types"

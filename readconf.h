@@ -1,4 +1,4 @@
-/* $OpenBSD: readconf.h,v 1.131 2019/12/21 02:19:13 djm Exp $ */
+/* $OpenBSD: readconf.h,v 1.132 2020/01/23 02:46:49 dtucker Exp $ */
 
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>

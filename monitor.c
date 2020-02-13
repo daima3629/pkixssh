@@ -1,4 +1,4 @@
-/* $OpenBSD: monitor.c,v 1.207 2020/01/23 07:10:22 dtucker Exp $ */
+/* $OpenBSD: monitor.c,v 1.208 2020/02/06 22:30:54 naddy Exp $ */
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * Copyright 2002 Markus Friedl <markus@openbsd.org>

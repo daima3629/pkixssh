@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-add.c,v 1.151 2020/01/25 23:02:13 djm Exp $ */
+/* $OpenBSD: ssh-add.c,v 1.152 2020/02/06 22:30:54 naddy Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland

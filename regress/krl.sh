@@ -1,4 +1,4 @@
-#	$OpenBSD: krl.sh,v 1.8 2019/07/25 09:17:35 dtucker Exp $
+#	$OpenBSD: krl.sh,v 1.11 2019/12/16 02:39:05 djm Exp $
 #	Placed in the Public Domain.
 
 tid="key revocation lists"

@@ -1,4 +1,4 @@
-#	$OpenBSD: keygen-change.sh,v 1.6 2017/04/30 23:34:55 djm Exp $
+#	$OpenBSD: keygen-change.sh,v 1.9 2019/12/16 02:39:05 djm Exp $
 #	Placed in the Public Domain.
 
 tid="change passphrase for key"
