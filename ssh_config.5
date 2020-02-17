@@ -20,7 +20,7 @@
 .\" Copyright (c) 1999,2000 Markus Friedl.  All rights reserved.
 .\" Copyright (c) 1999 Aaron Campbell.  All rights reserved.
 .\" Copyright (c) 1999 Theo de Raadt.  All rights reserved.
-.\" Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
+.\" Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
 .\"
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions
@@ -43,7 +43,7 @@
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
 .\" $OpenBSD: ssh_config.5,v 1.321 2020/01/31 22:25:59 jmc Exp $
-.Dd $Mdocdate: January 28 2020 $
+.Dd $Mdocdate: February 17 2020 $
 .Dt SSH_CONFIG 5
 .Os
 .Sh NAME
@@ -1836,10 +1836,6 @@ In use when
 .Cm VAType
 is set to
 .Cm ocspspec .
-The default value is
-.Sq
-..
-(empty).
 Certificates from that file explicitly trust
 .Sq "OCSP Responder"
 public key.
@@ -1852,6 +1848,7 @@ They are used as trusted certificates in addition to certificates from
 and
 .Cm UserCACertificatePath
 to verify responder certificate.
+The default is not set.
 .It Cm VAType
 Specifies whether
 .Sq "Online Certificate Status Protocol"
