@@ -8,10 +8,10 @@
 #
 
 # Do we want to enable building with ldap? (1=yes 0=no)
-%global enable_ldap 1
+%global enable_ldap 0
 
 # Do we use FIPS capable OpenSSL library ? (1=yes 0=no)
-%global enable_openssl_fips 1
+%global enable_openssl_fips 0
 
 
 # norootforbuild
