@@ -71,7 +71,6 @@ two untrusted hosts over an insecure network.
 
 %prep
 %setup -q
-%patch0 -p1
 
 
 %build
