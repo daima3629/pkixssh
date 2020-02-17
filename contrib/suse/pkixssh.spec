@@ -4,7 +4,7 @@
 # This is free software; see Copyright file in the source
 # distribution for precise wording.
 #
-# Copyright (c) 2019 Roumen Petrov
+# Copyright (c) 2019-2020 Roumen Petrov
 #
 
 # Do we want to enable building with ldap? (1=yes 0=no)
@@ -22,7 +22,7 @@ Name:		pkixssh
 Summary:	PKIX-SSH, Advanced secure shell implementation
 Version:	12.4
 Release:	1
-License:	BSD
+License:	BSD-2-Clause
 Group:		Productivity/Networking/SSH
 
 PreReq:		permissions
