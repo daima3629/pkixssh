@@ -291,6 +291,7 @@ xkey_compatibility(const char *remote_version) {
 
 {	static sshx_compatibility info[] = {
 		{ 0, "OpenSSH*PKIX*" /* all correct */ },
+		{ 1, "OpenSSH_7.2*" /* list only rsa-sha2-256 and rsa-sha2-512 */ },
 		{ 1, "OpenSSH_7.3*" /* list only rsa-sha2-256 and rsa-sha2-512 */ },
 		{ 1, "OpenSSH_7.4*" /* list without rsa-sha2-256 and rsa-sha2-512 */ },
 		{ 0, NULL } };
