@@ -90,8 +90,7 @@ get_last_login_time(uid_t uid, const char *logname,
 static void
 store_lastlog_message(const char *user, uid_t uid)
 {
-	char *time_string, hostname[HOST_NAME_MAX+1] = "";
-	time_t last_login_time;
+	char *time_string;
 	int r;
 
 	if (!options.print_lastlog)
@@ -106,6 +105,10 @@ store_lastlog_message(const char *user, uid_t uid)
 		free(time_string);
 	}
 #else
+{
+	char hostname[HOST_NAME_MAX+1] = "";
+	time_t last_login_time;
+
 	last_login_time = get_last_login_time(uid, user, hostname,
 	    sizeof(hostname));
 
@@ -121,6 +124,7 @@ store_lastlog_message(const char *user, uid_t uid)
 		if (r != 0)
 			fatal("%s: buffer error: %s", __func__, ssh_err(r));
 	}
+}
 #endif /* CUSTOM_SYS_AUTH_GET_LASTLOGIN_MSG */
 }
 
