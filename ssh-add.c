@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-add.c,v 1.152 2020/02/06 22:30:54 naddy Exp $ */
+/* $OpenBSD: ssh-add.c,v 1.153 2020/02/18 08:58:33 dtucker Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -13,7 +13,7 @@
  *
  * SSH2 implementation,
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -91,7 +91,7 @@ static char *default_files[] = {
 static int fingerprint_hash = SSH_FP_HASH_DEFAULT;
 
 /* Default lifetime (0 == forever) */
-static int lifetime = 0;
+static u_int lifetime = 0;
 
 /* User has to confirm key use */
 static int confirm = 0;
@@ -321,7 +321,7 @@ add_file(int agent_fd, const char *filename, int key_only, int qflag,
 			    filename, comment);
 			if (lifetime != 0) {
 				fprintf(stderr,
-				    "Lifetime set to %d seconds\n", lifetime);
+				    "Lifetime set to %u seconds\n", lifetime);
 			}
 			if (confirm != 0) {
 				fprintf(stderr, "The user must confirm "
@@ -377,7 +377,7 @@ add_file(int agent_fd, const char *filename, int key_only, int qflag,
 		fprintf(stderr, "Certificate added: %s (%s)\n", certpath,
 		    private->cert->key_id);
 		if (lifetime != 0) {
-			fprintf(stderr, "Lifetime set to %d seconds\n",
+			fprintf(stderr, "Lifetime set to %u seconds\n",
 			    lifetime);
 		}
 		if (confirm != 0) {
@@ -682,11 +682,15 @@ main(int argc, char **argv)
 			pkcs11provider = optarg;
 			break;
 		case 't':
-			if ((lifetime = convtime(optarg)) == -1) {
+		{	long v;
+			if ((v = convtime(optarg)) == -1 ||
+			    v < 0 || v > UINT32_MAX) {
 				fprintf(stderr, "Invalid lifetime\n");
 				ret = 1;
 				goto done;
 			}
+			lifetime = (u_int)v; /*save cast*/
+		}
 			break;
 		case 'T':
 			Tflag = 1;
