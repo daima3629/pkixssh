@@ -34,7 +34,7 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: ssh.1,v 1.409 2019/12/21 20:22:34 naddy Exp $
+.\" $OpenBSD: ssh.1,v 1.411 2020/02/16 21:15:43 naddy Exp $
 .\" Implement .Dd with the Mdocdate RCS keyword
 .rn Dd xD
 .de Dd
@@ -43,7 +43,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: January 29 2019 $
+.Dd $Mdocdate: February 16 2020 $
 .Dt SSH 1
 .Os
 .Sh NAME
@@ -257,6 +257,9 @@ the system-wide configuration file
 will be ignored.
 The default for the per-user configuration file is
 .Pa ~/.ssh/config .
+If set to
+.Dq none ,
+no configuration files will be read.
 .Pp
 .It Fl f
 Requests
