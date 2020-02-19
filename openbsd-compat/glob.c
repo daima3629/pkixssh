@@ -83,6 +83,8 @@
 
 #include "charclass.h"
 
+#undef TILDE
+
 #define	DOLLAR		'$'
 #define	DOT		'.'
 #define	EOS		'\0'
