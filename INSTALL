@@ -40,7 +40,7 @@ http://prngd.sourceforge.net/
 
 EGD:
 
-The Entropy Gathering Daemon (EGD) suppports the same interface as prngd.
+The Entropy Gathering Daemon (EGD) supports the same interface as prngd.
 
 http://egd.sourceforge.net/
 
