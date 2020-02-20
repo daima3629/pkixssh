@@ -180,25 +180,22 @@ ssh_kex2(struct ssh *ssh, char *host, struct sockaddr *hostaddr, u_short port)
 	    myproposal[PROPOSAL_MAC_ALGS_STOC] = options.macs;
 {	/* finalize set of client option HostKeyAlgorithms */
 	int user_prefered;
-	char *defalgs, *allalgs = sshkey_alg_list(0, 0, 1, ',');
+	char *defalgs = default_hostkey_algorithms();
 
 	user_prefered =
 	    options.hostkeyalgorithms != NULL &&
 	    options.hostkeyalgorithms[0] == '^';
 
-	/* Since PKIX-SSH 8.5 ssh-dss is not listed in KEX_DEFAULT_PK_ALG */
-	defalgs = match_filter_whitelist(KEX_DEFAULT_PK_ALG",ssh-dss", allalgs);
 	if (options.hostkeyalgorithms != NULL) {
 		/* Assemble */
 		if (kex_assemble_names(&options.hostkeyalgorithms,
-		    defalgs, allalgs) != 0)
+		    defalgs, defalgs) != 0)
 			fatal("%s: kex_assemble_names failed", __func__);
 		free(defalgs);
 	} else {
 		/* Enforce default */
 		options.hostkeyalgorithms = defalgs;
 	}
-	free(allalgs);
 	if (user_prefered)
 		myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS] =
 		    compat_pkalg_proposal(options.hostkeyalgorithms);
