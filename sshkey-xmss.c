@@ -774,7 +774,7 @@ sshkey_xmss_deserialize_state(struct sshkey *k, struct sshbuf *b)
 	treehash_inst *th;
 	u_int32_t i, lh, node;
 	size_t ls, lsl, la, lk, ln, lr;
-	char *magic == NULL;
+	char *magic = NULL;
 	int r = SSH_ERR_INTERNAL_ERROR;
 
 	if (state == NULL)
