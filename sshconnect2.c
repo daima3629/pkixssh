@@ -93,8 +93,9 @@ struct sockaddr *xxx_hostaddr;
 static int
 verify_host_key_callback(struct sshkey *hostkey, struct ssh *ssh)
 {
-	UNUSED(ssh);
-	if (verify_host_key(xxx_host, xxx_hostaddr, hostkey) == -1)
+	struct kex *kex = ssh->kex;
+
+	if (verify_host_key(xxx_host, xxx_hostaddr, kex->hostkey_alg, hostkey) == -1)
 		fatal("Host key verification failed.");
 	return 0;
 }

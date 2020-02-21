@@ -41,7 +41,8 @@ void	 ssh_kill_proxy_command(void);
 void	 ssh_login(struct ssh *, Sensitive *, const char *,
     struct sockaddr *, u_short, struct passwd *, int);
 
-int	 verify_host_key(char *, struct sockaddr *, struct sshkey *);
+int	 verify_host_key(char *host, struct sockaddr *hostaddr,
+    char *hostkey_alg, struct sshkey *host_key);
 
 void	 get_hostfile_hostname_ipaddr(char *, struct sockaddr *, u_short,
     char **, char **);

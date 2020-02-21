@@ -1207,7 +1207,8 @@ fail:
 
 /* returns 0 if key verifies or -1 if key does NOT verify */
 int
-verify_host_key(char *host, struct sockaddr *hostaddr, struct sshkey *host_key)
+verify_host_key(char *host, struct sockaddr *hostaddr,
+    char *hostkey_alg, struct sshkey *host_key)
 {
 	u_int i;
 	int r = -1, flags = 0;
@@ -1233,7 +1234,7 @@ verify_host_key(char *host, struct sockaddr *hostaddr, struct sshkey *host_key)
 		    valid, sizeof(valid));
 		debug("Server host certificate: %s %s, serial %llu "
 		    "ID \"%s\" CA %s %s valid %s",
-		    sshkey_ssh_name(host_key), fp,
+		    hostkey_alg, fp,
 		    (unsigned long long)host_key->cert->serial,
 		    host_key->cert->key_id,
 		    sshkey_ssh_name(host_key->cert->signature_key), cafp,
@@ -1243,7 +1244,7 @@ verify_host_key(char *host, struct sockaddr *hostaddr, struct sshkey *host_key)
 			    host_key->cert->principals[i]);
 		}
 	} else {
-		debug("Server host key: %s %s", sshkey_ssh_name(host_key), fp);
+		debug("Server host key: %s %s", hostkey_alg, fp);
 	}
 
 	if (sshkey_equal(previous_host_key, host_key)) {
