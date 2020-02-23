@@ -189,9 +189,11 @@ ssh_kex2(struct ssh *ssh, char *host, struct sockaddr *hostaddr, u_short port)
 
 	if (options.hostkeyalgorithms != NULL) {
 		/* Assemble */
+		char *allalgs = sshkey_alg_list(0, 0, 1, ',');
 		if (kex_assemble_names(&options.hostkeyalgorithms,
-		    defalgs, defalgs) != 0)
+		    defalgs, allalgs) != 0)
 			fatal("%s: kex_assemble_names failed", __func__);
+		free(allalgs);
 		free(defalgs);
 	} else {
 		/* Enforce default */
