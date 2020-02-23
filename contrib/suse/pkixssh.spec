@@ -44,7 +44,11 @@ BuildRequires:	fipscheck-devel fipscheck
 BuildRequires:	groff
 BuildRoot:	%{_tmppath}/%{name}-%{version}-build
 
+%if 0%{?sle_version} >= 120000
 Source0:	https://roumenpetrov.info/secsh/src/%{name}-%{version}.tar.xz
+%else
+Source0:	https://roumenpetrov.info/secsh/src/%{name}-%{version}.tar.gz
+%endif
 
 
 # Default values for additional components
