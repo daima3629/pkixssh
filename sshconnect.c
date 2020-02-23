@@ -1215,6 +1215,11 @@ verify_host_key(char *host, struct sockaddr *hostaddr,
 	char valid[64], *fp = NULL, *cafp = NULL;
 	struct sshkey *plain = NULL;
 
+	if (sshkey_is_x509(host_key)) {
+		r = xkey_validate_cert(host_key);
+		if (r != 0) goto out;
+	}
+
 	if ((fp = sshkey_fingerprint(host_key,
 	    options.fingerprint_hash, SSH_FP_DEFAULT)) == NULL) {
 		error("%s: fingerprint host key: %s", __func__, ssh_err(r));
