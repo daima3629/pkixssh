@@ -84,6 +84,7 @@ two untrusted hosts over an insecure network.
 %else
   --disable-openssl-fips \
 %endif
+  --with-pie \
   --with-pam \
   --with-privsep-path=%{_var}/empty/sshd
 make

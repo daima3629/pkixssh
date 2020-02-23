@@ -88,6 +88,7 @@ two untrusted hosts over an insecure network.
 %else
   --disable-ldap \
 %endif
+  --with-pie \
   --with-pam \
   --with-privsep-path=%{ssh_privsep_path}
 make
