@@ -96,14 +96,12 @@ done:
 
 static int
 DSS1RAW_VerifyFinal(EVP_MD_CTX *ctx, const unsigned char *sigbuf, unsigned int siglen, EVP_PKEY *pkey) {
-	int ret = -1;
-	unsigned char *buf = NULL;
-	int len;
-
-	if (siglen != SHARAW_DIGEST_LENGTH) return(ret);
-
-{	BIGNUM *ps, *pr;
 	DSA_SIG *sig;
+
+	if (siglen != SHARAW_DIGEST_LENGTH) return -1;
+
+/* decode DSA r&s from SecSH signature blob */
+{	BIGNUM *ps, *pr;
 
 	pr = BN_bin2bn(sigbuf                  , SHA_DIGEST_LENGTH, NULL);
 	ps = BN_bin2bn(sigbuf+SHA_DIGEST_LENGTH, SHA_DIGEST_LENGTH, NULL);
@@ -113,39 +111,43 @@ DSS1RAW_VerifyFinal(EVP_MD_CTX *ctx, const unsigned char *sigbuf, unsigned int s
 	if (sig == NULL) goto parse_err;
 
 	if (DSA_SIG_set0(sig, pr, ps))
-		goto encode;
+		goto process;
 
 	DSA_SIG_free(sig);
+
 parse_err:
 	BN_free(pr);
 	BN_free(ps);
-	return(ret);
+	return -1;
+}
 
+process:
+{	int len, slen;
+	unsigned char *buf;
+	int ret;
 
-encode:
 	len = i2d_DSA_SIG(sig, NULL);
-	if (len <= 0) goto done;
+	if (len <= 0) {
+		DSA_SIG_free(sig);
+		return -1;
+	}
 
 	buf = xmalloc(len);  /*fatal on error*/
 
 {	/* encode DSA signature */
 	unsigned char *pbuf = buf;
-	len = i2d_DSA_SIG(sig, &pbuf);
+	slen = i2d_DSA_SIG(sig, &pbuf);
 }
 
+	ret = (len == slen)
+		? EVP_VerifyFinal(ctx, buf, len, pkey)
+		: -1;
+
+	freezero(buf, len);
 	DSA_SIG_free(sig);
 
-	if (len <= 0) goto done;
+	return ret;
 }
-
-	ret = EVP_VerifyFinal(ctx, buf, len, pkey);
-
-done:
-	if (buf != NULL) {
-		explicit_bzero(buf, len);
-		free(buf);
-	}
-	return(ret);
 }
 
 
