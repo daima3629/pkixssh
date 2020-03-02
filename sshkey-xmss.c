@@ -139,10 +139,8 @@ sshkey_xmss_free_state(struct sshkey *key)
 
 	sshkey_xmss_free_bds(key);
 	if (state) {
-		if (state->enc_keyiv) {
-			explicit_bzero(state->enc_keyiv, state->enc_keyiv_len);
-			free(state->enc_keyiv);
-		}
+		if (state->enc_keyiv)
+			freezero(state->enc_keyiv, state->enc_keyiv_len);
 		free(state->enc_ciphername);
 		free(state);
 	}

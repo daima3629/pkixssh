@@ -227,10 +227,8 @@ pkcs11_login(
 	CK_ULONG lpin = (pin != NULL) ? strlen(pin) : 0;
 
 	rv = f->C_Login(si->session, CKU_USER, (CK_UTF8CHAR_PTR)pin, lpin);
-	if (pin != NULL) {
-		explicit_bzero(pin, strlen(pin));
-		free(pin);
-	}
+	if (pin != NULL)
+		freezero(pin, strlen(pin));
 	if (rv != CKR_OK && rv != CKR_USER_ALREADY_LOGGED_IN) {
 		error("C_Login failed: %lu", rv);
 		PKCS11err(PKCS11_LOGIN, PKCS11_C_LOGIN_FAIL);
@@ -298,10 +296,8 @@ pkcs11_reauthenticate(
 	lpin = (pin != NULL) ? strlen(pin) : 0;
 
 	rv = f->C_Login(si->session, CKU_CONTEXT_SPECIFIC, (CK_UTF8CHAR_PTR)pin, lpin);
-	if (pin != NULL) {
-		explicit_bzero(pin, strlen(pin));
-		free(pin);
-	}
+	if (pin != NULL)
+		freezero(pin, strlen(pin));
 	if (rv != CKR_OK) {
 		PKCS11err(PKCS11_REAUTHENTICATE, PKCS11_C_LOGIN_FAIL);
 		crypto_pkcs11_error(rv);

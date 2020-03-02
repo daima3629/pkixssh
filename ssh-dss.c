@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-dss.c,v 1.37 2018/02/07 02:06:51 jsing Exp $ */
+/* $OpenBSD: ssh-dss.c,v 1.39 2020/02/26 13:40:09 jsg Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2011 Dr. Stephen Henson.  All rights reserved.
@@ -367,10 +367,8 @@ parse_out:
 	DSA_SIG_free(sig);
 	sshbuf_free(b);
 	free(ktype);
-	if (sigblob != NULL) {
-		explicit_bzero(sigblob, len);
-		free(sigblob);
-	}
+	if (sigblob != NULL)
+		freezero(sigblob, len);
 	return ret;
 }
 #endif /* WITH_OPENSSL */

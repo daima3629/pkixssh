@@ -1,4 +1,4 @@
-/* $OpenBSD: kex.c,v 1.156 2020/01/23 10:24:29 dtucker Exp $ */
+/* $OpenBSD: kex.c,v 1.157 2020/02/26 13:40:09 jsg Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2014-2019 Roumen Petrov.  All rights reserved.
@@ -735,13 +735,11 @@ kex_free_newkeys(struct newkeys *newkeys)
 	if (newkeys == NULL)
 		return;
 	if (newkeys->enc.key) {
-		explicit_bzero(newkeys->enc.key, newkeys->enc.key_len);
-		free(newkeys->enc.key);
+		freezero(newkeys->enc.key, newkeys->enc.key_len);
 		newkeys->enc.key = NULL;
 	}
 	if (newkeys->enc.iv) {
-		explicit_bzero(newkeys->enc.iv, newkeys->enc.iv_len);
-		free(newkeys->enc.iv);
+		freezero(newkeys->enc.iv, newkeys->enc.iv_len);
 		newkeys->enc.iv = NULL;
 	}
 	free(newkeys->enc.name);
@@ -750,14 +748,12 @@ kex_free_newkeys(struct newkeys *newkeys)
 	explicit_bzero(&newkeys->comp, sizeof(newkeys->comp));
 	mac_clear(&newkeys->mac);
 	if (newkeys->mac.key) {
-		explicit_bzero(newkeys->mac.key, newkeys->mac.key_len);
-		free(newkeys->mac.key);
+		freezero(newkeys->mac.key, newkeys->mac.key_len);
 		newkeys->mac.key = NULL;
 	}
 	free(newkeys->mac.name);
 	explicit_bzero(&newkeys->mac, sizeof(newkeys->mac));
-	explicit_bzero(newkeys, sizeof(*newkeys));
-	free(newkeys);
+	freezero(newkeys, sizeof(*newkeys));
 }
 
 void
