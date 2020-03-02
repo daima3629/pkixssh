@@ -217,7 +217,7 @@ SSH_ECDSA_VerifyFinal(EVP_MD_CTX *ctx, const unsigned char *sigblob, unsigned in
 	BIGNUM *pr = NULL, *ps = NULL;
 
 	buf = sshbuf_from(sigblob, (size_t) siglen);
-	if (buf == NULL) return(-1);
+	if (buf == NULL) return -1;
 
 	/* extract mpint r */
 	r = sshbuf_get_bignum2_bytes_direct(buf, &bnbuf, &bnlen);
@@ -245,38 +245,35 @@ parse_err:
 	BN_free(ps);
 	BN_free(pr);
 	sshbuf_free(buf);
-	return(-1);
+	return -1;
 }
 
 process:
-{	int len;
+{	int len, slen;
 	unsigned char *buf;
-	int ret = -1;
+	int ret;
 
 	len = i2d_ECDSA_SIG(sig, NULL);
 	if (len <= 0) {
 		ECDSA_SIG_free(sig);
-		return(-1);
+		return -1;
 	}
 
 	buf = xmalloc(len);  /*fatal on error*/
 
 {	/* encode ECDSA signature */
 	unsigned char *pbuf = buf;
-	len = i2d_ECDSA_SIG(sig, &pbuf);
+	slen = i2d_ECDSA_SIG(sig, &pbuf);
 }
 
-	if (len > 0)
-		ret = EVP_VerifyFinal(ctx, buf, len, pkey);
+	ret = (len == slen)
+		? EVP_VerifyFinal(ctx, buf, slen, pkey)
+		: -1;
 
-	if (buf != NULL) {
-		explicit_bzero(buf, len);
-		free(buf);
-	}
-
+	freezero(buf, len);
 	ECDSA_SIG_free(sig);
 
-	return(ret);
+	return ret;
 }
 }
 #endif /*def OPENSSL_HAS_ECC*/
