@@ -138,15 +138,8 @@ closefrom(int lowfd)
     /* keep android property workspace open */
     char *pws_env = getenv("ANDROID_PROPERTY_WORKSPACE");
     if (pws_env) {
-	char *s, *q;
-	s = strdup(pws_env);
 	/* format "int,int" */
-	q = strchr(s, ',');
-	if (q) {
-	    q = '\0';
-	    pws_fd = atoi(s);
-	}
-	free(s);
+	pws_fd = atoi(pws_env);
     }
 }
 #endif
