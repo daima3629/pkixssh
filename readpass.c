@@ -121,7 +121,7 @@ ssh_askpass(const char *askpass, const char *msg, const char *env_hint)
 char *
 read_passphrase(const char *prompt, int flags)
 {
-	char cr = '\r', *ret, buf[1024];
+	char *ret, buf[1024];
 	int rppflags, use_askpass = 0, ttyfd;
 
 	rppflags = (flags & RP_ECHO) ? RPP_ECHO_ON : RPP_ECHO_OFF;
@@ -142,7 +142,7 @@ read_passphrase(const char *prompt, int flags)
 			 * clobber any password characters the user has
 			 * optimistically typed before echo is disabled.
 			 */
-			(void)write(ttyfd, &cr, 1);
+			(void)write(ttyfd, "\r", 1);
 			close(ttyfd);
 		} else {
 			debug("read_passphrase: can't open %s: %s", _PATH_TTY,
