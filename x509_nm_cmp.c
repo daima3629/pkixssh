@@ -125,8 +125,10 @@ ssh_printable_casecmp(const u_char *pa, int la, const u_char *pb, int lb)
  * case insensitive compare in this method.
  */
 	/* skip leading spaces */
-	for (; la > 0 && isspace((int)*pa); la--, pa++);
-	for (; lb > 0 && isspace((int)*pb); lb--, pb++);
+	for (; la > 0 && isspace((int)*pa); la--, pa++)
+		/*nop*/;
+	for (; lb > 0 && isspace((int)*pb); lb--, pb++)
+		/*nop*/;
 
 	/* skip trailing spaces */
 	{
