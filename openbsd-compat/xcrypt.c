@@ -79,10 +79,12 @@
 static const char *
 pick_salt(void)
 {
+#ifdef HAVE_SETPWENT
 	struct passwd *pw;
 	char *passwd, *p;
 	size_t typelen;
-	static char salt[32];
+#endif /*def HAVE_SETPWENT*/
+	static char salt[32] = {'\0'};
 
 	if (salt[0] != '\0')
 		return salt;
