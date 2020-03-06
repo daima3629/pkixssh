@@ -307,7 +307,7 @@ process_sign_request2(SocketEntry *e)
 	if ((r = sshbuf_get_string(e->request, &blob, &blen)) != 0 ||
 	    (r = parse_key_from_blob(blob, blen, &key, &pkalg)) != 0) {
 		free(blob);
-		if ((r == SSH_ERR_KEY_TYPE_UNKNOWN))
+		if (r == SSH_ERR_KEY_TYPE_UNKNOWN)
 			verbose("%s: could not parse key: %s", __func__, ssh_err(r));
 		else
 			error("%s: couldn't parse request: %s", __func__, ssh_err(r));
