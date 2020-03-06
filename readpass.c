@@ -151,7 +151,12 @@ read_passphrase(const char *prompt, int flags)
 		}
 	}
 
-	if (use_askpass && getenv("DISPLAY")) {
+#ifdef __ANDROID__
+	use_askpass = (getenv(SSH_ASKPASS_ENV) != NULL);
+#else
+	use_askpass = use_askpass && (getenv("DISPLAY") != NULL);
+#endif
+	if (use_askpass) {
 		const char *askpass = getenv(SSH_ASKPASS_ENV);
 		const char *askpass_hint = NULL;
 

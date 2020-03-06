@@ -1360,9 +1360,7 @@ terminal if it was run from a terminal.
 If
 .Nm
 does not have a terminal associated with it but
-.Ev DISPLAY
-and
-.Ev SSH_ASKPASS
+.Ev "DISPLAY" and "SSH_ASKPASS"
 are set, it will execute the program specified by
 .Ev SSH_ASKPASS
 that may open a X11 window to read the passphrase.
@@ -1378,6 +1376,12 @@ This is particularly useful when calling
 from a
 .Pa .xsession
 or related script.
+.Pp
+Remark: On Android
+.Ev DISPLAY
+is ignored and
+.Ev SSH_ASKPASS
+is preferred over associated terminal.
 .It Ev SSH_AUTH_SOCK
 Identifies the path of a
 .Ux Ns -domain

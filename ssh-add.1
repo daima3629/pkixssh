@@ -180,7 +180,7 @@ Lock the agent with a password.
 .El
 .Sh ENVIRONMENT
 .Bl -tag -width Ds
-.It Ev "DISPLAY" and "SSH_ASKPASS"
+.It SSH_ASKPASS
 If
 .Nm
 needs a passphrase, it will read the passphrase from the current
@@ -189,9 +189,7 @@ If
 .Nm
 does not have a terminal associated with it but
 .Ev DISPLAY
-and
-.Ev SSH_ASKPASS
-are set, it will execute the program specified by
+is set, it will execute the program specified by
 .Ev SSH_ASKPASS
 that may open a X11 window to read the passphrase.
 Note if
@@ -210,6 +208,12 @@ or related script.
 may be necessary to redirect the input from
 .Pa /dev/null
 to make this work.)
+.Pp
+Remark: On Android
+.Ev DISPLAY
+is ignored and
+.Ev SSH_ASKPASS
+is preferred over associated terminal.
 .It Ev SSH_AUTH_SOCK
 Identifies the path of a
 .Ux Ns -domain

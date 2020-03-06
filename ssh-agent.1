@@ -220,6 +220,12 @@ directory but if
 is set, will be executed program specified by
 .Ev SSH_ASKPASS .
 Program may open a X11 window to ask user for confirmation or passphrase.
+.Pp
+Remark: On Android
+.Ev DISPLAY
+is ignored and
+.Ev SSH_ASKPASS
+is preferred over associated terminal.
 .It Ev SSH_AUTH_SOCK
 When
 .Nm
