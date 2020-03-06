@@ -422,7 +422,7 @@ pkcs11_add_provider(char *name, char *pin,
 		for (i = 0; i < nkeys; i++) {
 			u_char *blob;
 			size_t blen;
-			char *label;
+			char *label = NULL;
 			struct sshkey *k;
 
 			if ((r = sshbuf_get_string(msg, &blob, &blen)) != 0 ||
@@ -442,7 +442,7 @@ pkcs11_add_provider(char *name, char *pin,
 				k = NULL;
 			}
 set_key:
-			if (*label == '\0') {
+			if (label && (*label == '\0')) {
 				free(label);
 				label = NULL;
 			}
