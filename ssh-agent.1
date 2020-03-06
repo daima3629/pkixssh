@@ -198,31 +198,12 @@ and the result is returned to the requester,
 allowing the user access to their identities anywhere in the network
 in a secure fashion.
 .Sh ENVIRONMENT
-.Bl -tag -width "SSH_AGENT_PID"
+.Bl -tag -width Ds
 .It Ev SSH_AGENT_PID
 When
 .Nm
 starts, it stores the name of the agent's process ID (PID) in this variable.
-.It Ev SSH_AUTH_SOCK
-When
-.Nm
-starts, it creates a
-.Ux Ns -domain
-socket and stores its pathname in this variable.
-It is accessible only to the current user,
-but is easily abused by root or another instance of the same user.
-.El
-.Sh FILES
-.Bl -tag -width Ds
-.It Pa $TMPDIR/ssh-XXXXXXXXXX/agent.<ppid>
-.Ux Ns -domain
-sockets used to contain the connection to the authentication agent.
-These sockets should only be readable by the owner.
-The sockets should get automatically removed when the agent exits.
-.El
-.Sh ENVIRONMENT
-.Bl -tag -width Ds
-.It Ev "DISPLAY" and "SSH_ASKPASS"
+.It SSH_ASKPASS
 If key operation needs a confirmation or passphrase, and
 .Ev DISPLAY
 is set
@@ -239,6 +220,22 @@ directory but if
 is set, will be executed program specified by
 .Ev SSH_ASKPASS .
 Program may open a X11 window to ask user for confirmation or passphrase.
+.It Ev SSH_AUTH_SOCK
+When
+.Nm
+starts, it creates a
+.Ux Ns -domain
+socket and stores its pathname in this variable.
+It is accessible only to the current user,
+but is easily abused by root or another instance of the same user.
+.El
+.Sh FILES
+.Bl -tag -width Ds
+.It Pa $TMPDIR/ssh-XXXXXXXXXX/agent.<ppid>
+.Ux Ns -domain
+sockets used to contain the connection to the authentication agent.
+These sockets should only be readable by the owner.
+The sockets should get automatically removed when the agent exits.
 .El
 .Sh SEE ALSO
 .Xr ssh 1 ,
