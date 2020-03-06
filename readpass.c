@@ -151,9 +151,6 @@ read_passphrase(const char *prompt, int flags)
 		}
 	}
 
-	if ((flags & RP_USE_ASKPASS) && getenv("DISPLAY") == NULL)
-		return (flags & RP_ALLOW_EOF) ? NULL : xstrdup("");
-
 	if (use_askpass && getenv("DISPLAY")) {
 		const char *askpass = getenv(SSH_ASKPASS_ENV);
 		const char *askpass_hint = NULL;
