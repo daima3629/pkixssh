@@ -183,6 +183,7 @@ compression_alg_list(int compression)
 	return compression ? "zlib@openssh.com,zlib,none" :
 	    "none,zlib@openssh.com,zlib";
 #else
+	UNUSED(compression);
 	return "none";
 #endif
 }
