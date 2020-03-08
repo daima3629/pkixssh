@@ -344,7 +344,7 @@ check_key_not_revoked(struct hostkeys *hostkeys, struct sshkey *k)
 	return 0;
 }
 
-static int/*bool*/
+int/*bool*/
 hostkey_match(const struct sshkey *key, const struct sshkey *found) {
 	if (sshkey_is_x509(key) || sshkey_is_x509(found))
 		return(sshkey_equal_public(key, found));

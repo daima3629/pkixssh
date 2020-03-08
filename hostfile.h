@@ -38,6 +38,9 @@ void	 load_hostkeys_file(struct hostkeys *, const char *,
     const char *, FILE *);
 void	 free_hostkeys(struct hostkeys *);
 
+int/*bool*/
+hostkey_match(const struct sshkey *key, const struct sshkey *found);
+
 HostStatus check_key_in_hostkeys(struct hostkeys *, struct sshkey *,
     const struct hostkey_entry **);
 int	 lookup_key_in_hostkeys_by_types(struct hostkeys *, int /*keytype*/, int /*subtype*/,

@@ -1,4 +1,4 @@
-/* $OpenBSD: sshconnect.c,v 1.350 2021/01/26 00:49:30 djm Exp $ */
+/* $OpenBSD: sshconnect.c,v 1.351 2021/03/03 21:40:16 sthen Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -717,6 +717,168 @@ path_in_hostfiles(const char *path, char **hostfiles, u_int num_hostfiles)
 	return 0;
 }
 
+struct find_by_key_ctx {
+	const char *host, *ip;
+	const struct sshkey *key;
+	char **names;
+	u_int nnames;
+};
+
+/* Try to replace home directory prefix (per $HOME) with a ~/ sequence */
+static char *
+try_tilde_unexpand(const char *path)
+{
+	char *home, *ret = NULL;
+	size_t l;
+
+	if (*path != '/')
+		return xstrdup(path);
+	if ((home = getenv("HOME")) == NULL || (l = strlen(home)) == 0)
+		return xstrdup(path);
+	if (strncmp(path, home, l) != 0)
+		return xstrdup(path);
+	/*
+	 * ensure we have matched on a path boundary: either the $HOME that
+	 * we just compared ends with a '/' or the next character of the path
+	 * must be a '/'.
+	 */
+	if (home[l - 1] != '/' && path[l] != '/')
+		return xstrdup(path);
+	if (path[l] == '/')
+		l++;
+	xasprintf(&ret, "~/%s", path + l);
+	return ret;
+}
+
+static int
+hostkeys_find_by_key_cb(struct hostkey_foreach_line *l, void *_ctx)
+{
+	struct find_by_key_ctx *ctx = (struct find_by_key_ctx *)_ctx;
+	char *path;
+
+	/* we are looking for keys with names that *do not* match */
+	if ((l->match & HKF_MATCH_HOST) != 0)
+		return 0;
+	/* not interested in marker lines */
+	if (l->marker != MRK_NONE)
+		return 0;
+	/* we are only interested in exact key matches */
+	if (l->key == NULL || !hostkey_match(ctx->key, l->key))
+		return 0;
+	path = try_tilde_unexpand(l->path);
+	debug_f("found matching key in %s:%lu", path, l->linenum);
+	ctx->names = xrecallocarray(ctx->names,
+	    ctx->nnames, ctx->nnames + 1, sizeof(*ctx->names));
+	xasprintf(&ctx->names[ctx->nnames], "%s:%lu: %s", path, l->linenum,
+	    strncmp(l->hosts, HASH_MAGIC, strlen(HASH_MAGIC)) == 0 ?
+	    "[hashed name]" : l->hosts);
+	ctx->nnames++;
+	free(path);
+	return 0;
+}
+
+static int
+hostkeys_find_by_key_hostfile(const char *file, const char *which,
+    struct find_by_key_ctx *ctx)
+{
+	int r;
+
+	debug3_f("trying %s hostfile \"%s\"", which, file);
+
+	r = hostkeys_foreach(file, hostkeys_find_by_key_cb,
+	    ctx, ctx->host, ctx->ip,
+	    HKF_WANT_PARSE_KEY);
+	if (r == 0) return 0;
+
+	if (r == SSH_ERR_SYSTEM_ERROR && errno == ENOENT) {
+		debug3_f("hostkeys file %s does not exist", file);
+		return 0;
+	}
+	error_fr(r, "hostkeys_foreach failed for \"%s\"", file);
+	return r;
+}
+
+/*
+ * Find 'key' in known hosts file(s) that do not match host/ip.
+ * Used to display also-known-as information for previously-unseen hostkeys.
+ */
+static void
+hostkeys_find_by_key(const char *host, const char *ip, const struct sshkey *key,
+    char **user_hostfiles, u_int num_user_hostfiles,
+    char **system_hostfiles, u_int num_system_hostfiles,
+    char ***names, u_int *nnames)
+{
+	struct find_by_key_ctx ctx = {0, 0, 0, 0, 0};
+	u_int i;
+
+	*names = NULL;
+	*nnames = 0;
+
+	if (key == NULL || sshkey_is_cert(key))
+		return;
+
+	ctx.host = host;
+	ctx.ip = ip;
+	ctx.key = key;
+
+	for (i = 0; i < num_user_hostfiles; i++) {
+		if (hostkeys_find_by_key_hostfile(user_hostfiles[i],
+		    "user", &ctx) != 0)
+			goto fail;
+	}
+	for (i = 0; i < num_system_hostfiles; i++) {
+		if (hostkeys_find_by_key_hostfile(system_hostfiles[i],
+		    "system", &ctx) != 0)
+			goto fail;
+	}
+	/* success */
+	*names = ctx.names;
+	*nnames = ctx.nnames;
+	ctx.names = NULL;
+	ctx.nnames = 0;
+	return;
+ fail:
+	for (i = 0; i < ctx.nnames; i++)
+		free(ctx.names[i]);
+	free(ctx.names);
+}
+
+#define MAX_OTHER_NAMES	8 /* Maximum number of names to list */
+static char *
+other_hostkeys_message(const char *host, const char *ip,
+    const struct sshkey *key,
+    char **user_hostfiles, u_int num_user_hostfiles,
+    char **system_hostfiles, u_int num_system_hostfiles)
+{
+	char *ret = NULL, **othernames = NULL;
+	u_int i, n, num_othernames = 0;
+
+	hostkeys_find_by_key(host, ip, key,
+	    user_hostfiles, num_user_hostfiles,
+	    system_hostfiles, num_system_hostfiles,
+	    &othernames, &num_othernames);
+	if (num_othernames == 0)
+		return xstrdup("This key is not known by any other names.");
+
+	xasprintf(&ret, "This host key is known by the following other "
+	    "names/addresses:");
+
+	n = num_othernames;
+	if (n > MAX_OTHER_NAMES)
+		n = MAX_OTHER_NAMES;
+	for (i = 0; i < n; i++) {
+		xextendf(&ret, "\n", "    %s", othernames[i]);
+	}
+	if (n < num_othernames) {
+		xextendf(&ret, "\n", "    (%d additional names omitted)",
+		    num_othernames - n);
+	}
+	for (i = 0; i < num_othernames; i++)
+		free(othernames[i]);
+	free(othernames);
+	return ret;
+}
+
 /*
  * check whether the supplied host key is valid, return -1 if the key
  * is not valid. user_hostfile[0] will not be updated if 'readonly' is true.
@@ -949,9 +1111,19 @@ check_host_key(char *hostname, const struct ssh_conn_info *cinfo,
 				    "%s host key RR found in DNS.",
 				    matching_host_key_dns
 				    ? "Matching" : "No matching");
+		{	char *msg2 = NULL;
+			/* msg2 informs for other names matching this key */
+			if ((msg2 = other_hostkeys_message(host, ip, host_key,
+			    user_hostfiles, num_user_hostfiles,
+			    system_hostfiles, num_system_hostfiles)) != NULL)
+				xextendf(&msg1, "\n", "%s", msg2);
+			free(msg2);
+		}
+
 			xextendf(&msg1, "\n",
 			    "Are you sure you want to continue connecting "
 			    "(yes/no/[fingerprint])? ");
+
 			confirmed = confirm(msg1, fp);
 			free(ra);
 			free(fp);
