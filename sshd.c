@@ -487,7 +487,7 @@ reseed_prngs(void)
 #ifdef WITH_OPENSSL
 	RAND_seed(rnd, sizeof(rnd));
 	/* give libcrypto a chance to notice the PID change */
-	if ((RAND_bytes((u_char *)rnd, 1)) != 1)
+	if ((RAND_bytes((u_char *)rnd, 1)) <= 0)
 		fatal("%s: RAND_bytes failed", __func__);
 #endif
 
@@ -1477,7 +1477,7 @@ server_accept_loop(int *sock_in, int *sock_out, int *newsock, int *config_s)
 			arc4random_buf(rnd, sizeof(rnd));
 #ifdef WITH_OPENSSL
 			RAND_seed(rnd, sizeof(rnd));
-			if ((RAND_bytes((u_char *)rnd, 1)) != 1)
+			if ((RAND_bytes((u_char *)rnd, 1)) <= 0)
 				fatal("%s: RAND_bytes failed", __func__);
 #endif
 			explicit_bzero(rnd, sizeof(rnd));
