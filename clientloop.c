@@ -1949,7 +1949,7 @@ update_known_hosts(struct hostkeys_update_ctx *ctx)
 	LogLevel loglevel = asking ?  SYSLOG_LEVEL_INFO : SYSLOG_LEVEL_VERBOSE;
 	struct sshkey *key;
 	int is_x509;
-	char *fp, *response;
+	char *fp;
 	size_t i;
 	struct stat sb;
 
@@ -2008,25 +2008,8 @@ update_known_hosts(struct hostkeys_update_ctx *ctx)
 			leave_raw_mode(1);
 			was_raw = 1;
 		}
-		response = NULL;
-		for (i = 0; !quit_pending && i < 3; i++) {
-			free(response);
-			response = read_passphrase("Accept updated hostkeys? "
-			    "(yes/no): ", RP_ECHO);
-			if (strcasecmp(response, "yes") == 0)
-				break;
-			else if (quit_pending || response == NULL ||
-			    strcasecmp(response, "no") == 0) {
-				options.update_hostkeys = 0;
-				break;
-			} else {
-				do_log2(loglevel, "Please enter "
-				    "\"yes\" or \"no\"");
-			}
-		}
-		if (quit_pending || i >= 3 || response == NULL)
+		if (!ask_permission("Accept updated hostkeys?"))
 			options.update_hostkeys = 0;
-		free(response);
 		if (was_raw)
 			enter_raw_mode(1);
 	}
