@@ -351,9 +351,8 @@ ssh_packet_set_log_preamble(struct ssh *ssh, const char *fmt, ...)
 	int r;
 
 	free(ssh->log_preamble);
-	if (fmt == NULL)
-		ssh->log_preamble = NULL;
-	else {
+	ssh->log_preamble = NULL;
+	if (fmt != NULL) {
 		va_start(args, fmt);
 		r = vasprintf(&ssh->log_preamble, fmt, args);
 		va_end(args);
