@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-pkcs11.c,v 1.47 2020/01/25 00:03:36 djm Exp $ */
+/* $OpenBSD: ssh-pkcs11.c,v 1.49 2020/03/13 04:16:27 djm Exp $ */
 /*
  * Copyright (c) 2010 Markus Friedl.  All rights reserved.
  * Copyright (c) 2011 Kenneth Robinette.  All rights reserved.
@@ -88,7 +88,19 @@ TAILQ_HEAD(, pkcs11_provider) pkcs11_providers;
 static inline void
 crypto_pkcs11_error(CK_RV err) {
 	char buf[64];
-	snprintf(buf, sizeof(buf), "pkcs#11 result 0x%lx", (unsigned long)err);
+	switch (err) {
+	case CKR_PIN_LEN_RANGE:
+		snprintf(buf, sizeof(buf), "PIN length out of range");
+		break;
+	case CKR_PIN_INCORRECT:
+		snprintf(buf, sizeof(buf), "PIN incorrect");
+		break;
+	case CKR_PIN_LOCKED:
+		snprintf(buf, sizeof(buf), "PIN locked");
+		break;
+	default:
+		snprintf(buf, sizeof(buf), "pkcs#11 error 0x%lx", (unsigned long)err);
+	}
 	ERR_add_error_data(1, buf);
 }
 
