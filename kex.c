@@ -1,7 +1,7 @@
-/* $OpenBSD: kex.c,v 1.157 2020/02/26 13:40:09 jsg Exp $ */
+/* $OpenBSD: kex.c,v 1.158 2020/03/13 04:01:56 djm Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2014-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2014-2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -1266,7 +1266,7 @@ int
 kex_exchange_identification(struct ssh *ssh, int timeout_ms)
 {
 	int is_server = ssh->kex->server;
-	int remote_major, remote_minor, mismatch;
+	int remote_major, remote_minor, mismatch, oerrno = 0;
 	size_t len;
 	int n, found_cr;
 	int r, expect_nl;
@@ -1288,11 +1288,13 @@ kex_exchange_identification(struct ssh *ssh, int timeout_ms)
 	if (atomicio(vwrite, ssh_packet_get_connection_out(ssh),
 	    sshbuf_mutable_ptr(our_version),
 	    sshbuf_len(our_version)) != sshbuf_len(our_version)) {
-		error("%s: write: %.100s", __func__, strerror(errno));
+		oerrno = errno;
+		debug("%s: write: %.100s", __func__, strerror(errno));
 		r = SSH_ERR_SYSTEM_ERROR;
 		goto out;
 	}
 	if ((r = sshbuf_consume_end(our_version, 2)) != 0) { /* trim \r\n */
+		oerrno = errno;
 		error("%s: sshbuf_consume_end: %s", __func__, ssh_err(r));
 		goto out;
 	}
@@ -1329,6 +1331,7 @@ kex_exchange_identification(struct ssh *ssh, int timeout_ms)
 					r = SSH_ERR_CONN_TIMEOUT;
 					goto out;
 				} else if (r == -1) {
+					oerrno = errno;
 					error("%s: %s",
 					    __func__, strerror(errno));
 					r = SSH_ERR_SYSTEM_ERROR;
@@ -1344,6 +1347,7 @@ kex_exchange_identification(struct ssh *ssh, int timeout_ms)
 				r = SSH_ERR_CONN_CLOSED;
 				goto out;
 			} else if (len != 1) {
+				oerrno = errno;
 				error("%s: read: %.100s",
 				    __func__, strerror(errno));
 				r = SSH_ERR_SYSTEM_ERROR;
@@ -1366,6 +1370,7 @@ kex_exchange_identification(struct ssh *ssh, int timeout_ms)
 				goto invalid;
 			}
 			if ((r = sshbuf_put_u8(peer_version, c)) != 0) {
+				oerrno = errno;
 				error("%s: sshbuf_put: %s",
 				    __func__, ssh_err(r));
 				goto out;
@@ -1467,5 +1472,7 @@ kex_exchange_identification(struct ssh *ssh, int timeout_ms)
 	free(our_version_string);
 	free(peer_version_string);
 	free(remote_version);
+	if (r == SSH_ERR_SYSTEM_ERROR)
+		errno = oerrno;
 	return r;
 }

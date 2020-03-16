@@ -1,4 +1,4 @@
-/* $OpenBSD: sshd.c,v 1.551 2020/03/13 03:24:49 dtucker Exp $ */
+/* $OpenBSD: sshd.c,v 1.552 2020/03/13 04:01:57 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -20,7 +20,7 @@
  *
  * Copyright (c) 2000, 2001, 2002 Markus Friedl.  All rights reserved.
  * Copyright (c) 2002 Niels Provos.  All rights reserved.
- * Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -427,8 +427,6 @@ prepare_server_banner(struct ssh *ssh)
 	    PROTOCOL_MAJOR_2, PROTOCOL_MINOR_2, SSH_VERSION, fips,
 	    *options.version_addendum == '\0' ? "" : " ",
 	    options.version_addendum);
-	if (r != 0)
-		error("cannot prepare server banner: %s", ssh_err(r));
 	return r;
 }
 
@@ -2310,11 +2308,11 @@ main(int ac, char **av)
 	if (!debug_flag)
 		alarm(options.login_grace_time);
 
-	if (prepare_server_banner(ssh) != 0)
-		cleanup_exit(255);
+	if ((r = prepare_server_banner(ssh)) != 0)
+		sshpkt_fatal(ssh, r, "prepare server banner");
 
-	if (kex_exchange_identification(ssh, -1) != 0)
-		cleanup_exit(255);
+	if ((r = kex_exchange_identification(ssh, -1)) != 0)
+		sshpkt_fatal(ssh, r, "banner exchange");
 
 	ssh_packet_set_nonblocking(ssh);
 
