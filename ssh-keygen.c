@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keygen.c,v 1.398 2020/02/07 03:27:54 djm Exp $ */
+/* $OpenBSD: ssh-keygen.c,v 1.404 2020/03/13 03:17:07 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1994 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -2372,6 +2372,9 @@ update_krl_from_file(struct passwd *pw, const char *file, int wild_ca,
 #endif /*def HAVE_EVP_SHA256*/
 			} else
 				fatal("%s:%lu: unsupported hash algorithm", file, lnum);
+			if (r != 0)
+				fatal("%s: revoke key failed: %s",
+				    __func__, ssh_err(r));
 		} else {
 			if (strncasecmp(cp, "key:", 4) == 0) {
 				cp += 4;
