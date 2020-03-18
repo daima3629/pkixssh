@@ -2,6 +2,7 @@
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2010 Damien Miller.  All rights reserved.
+ * Copyright (c) 2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -44,14 +45,111 @@
 #define SSHKEY_INTERNAL
 #include "sshkey.h"
 
+#if 1
+# define USE_EC_PKEY_SIGN
+#endif
+#if 1
+# define USE_EC_PKEY_VERIFY
+#endif
+
+#if defined(USE_EC_PKEY_SIGN) || defined(USE_EC_PKEY_VERIFY)
+# include "log.h"
+# include "xmalloc.h"
+#endif
+
+#ifdef USE_EC_PKEY_SIGN
+/* caller must free result */
+static ECDSA_SIG*
+ssh_ecdsa_pkey_sign(EC_KEY *ec, const EVP_MD *type, const u_char *data, u_int datalen) {
+	ECDSA_SIG *sig = NULL;
+
+	EVP_PKEY *pkey = NULL;
+	u_char *tsig = NULL;
+	u_int slen, len;
+	int ret;
+
+	pkey = EVP_PKEY_new();
+	if (pkey == NULL) {
+		error("%s: out of memory", __func__);
+		return NULL;
+	}
+
+	EVP_PKEY_set1_EC_KEY(pkey, ec);
+
+	slen = EVP_PKEY_size(pkey);
+	tsig = xmalloc(slen);	/*fatal on error*/
+
+{
+	EVP_MD_CTX *md;
+
+	md = EVP_MD_CTX_new();
+	if (md == NULL) {
+		ret = -1;
+		error("%s: out of memory", __func__);
+		goto clean;
+	}
+
+	ret = EVP_SignInit_ex(md, type, NULL);
+	if (ret <= 0) {
+#ifdef TRACE_EVP_ERROR
+		char ebuf[1024];
+		crypto_errormsg(ebuf, sizeof(ebuf));
+		error("%s: EVP_SignInit_ex fail with errormsg: '%s'"
+		    , __func__, ebuf);
+#endif
+		goto clean;
+	}
+
+	ret = EVP_SignUpdate(md, data, datalen);
+	if (ret <= 0) {
+#ifdef TRACE_EVP_ERROR
+		char ebuf[1024];
+		crypto_errormsg(ebuf, sizeof(ebuf));
+		error("%s: EVP_SignUpdate fail with errormsg: '%s'"
+		    , __func__, ebuf);
+#endif
+		goto clean;
+	}
+
+	ret = EVP_SignFinal(md, tsig, &len, pkey);
+	if (ret <= 0) {
+#ifdef TRACE_EVP_ERROR
+		char ebuf[1024];
+		crypto_errormsg(ebuf, sizeof(ebuf));
+		error("%s: sign failed: %s", __func__, ebuf);
+#endif
+		goto clean;
+	}
+
+clean:
+	EVP_MD_CTX_free(md);
+}
+
+	if (ret > 0) {
+		/* decode DSA signature */
+		const u_char *psig = tsig;
+		sig = d2i_ECDSA_SIG(NULL, &psig, (long)len);
+	}
+
+	if (tsig != NULL) {
+		/* clean up */
+		memset(tsig, 'd', slen);
+		free(tsig);
+	}
+
+	if (pkey != NULL) EVP_PKEY_free(pkey);
+
+	return sig;
+}
+#endif /*def USE_EC_PKEY_SIGN*/
+
 int
 ssh_ecdsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
     const u_char *data, size_t datalen, u_int compat)
 {
 	ECDSA_SIG *sig = NULL;
 	int hash_alg;
-	u_char digest[SSH_DIGEST_MAX_LENGTH];
-	size_t len, dlen;
+	size_t len;
 	struct sshbuf *b = NULL, *bb = NULL;
 	int ret = SSH_ERR_INTERNAL_ERROR;
 
@@ -65,6 +163,11 @@ ssh_ecdsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 	    sshkey_type_plain(key->type) != KEY_ECDSA)
 		return SSH_ERR_INVALID_ARGUMENT;
 
+#ifndef USE_EC_PKEY_SIGN
+{
+	u_char digest[SSH_DIGEST_MAX_LENGTH];
+	size_t dlen;
+
 	if ((hash_alg = sshkey_ec_nid_to_hash_alg(key->ecdsa_nid)) == -1 ||
 	    (dlen = ssh_digest_bytes(hash_alg)) == 0)
 		return SSH_ERR_INTERNAL_ERROR;
@@ -74,8 +177,29 @@ ssh_ecdsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 
 	if ((sig = ECDSA_do_sign(digest, dlen, key->ecdsa)) == NULL) {
 		ret = SSH_ERR_LIBCRYPTO_ERROR;
+		explicit_bzero(digest, sizeof(digest));
 		goto out;
 	}
+	explicit_bzero(digest, sizeof(digest));
+}
+#else
+{
+	const EVP_MD *md;
+
+	hash_alg = sshkey_ec_nid_to_hash_alg(key->ecdsa_nid);
+	switch (hash_alg) {
+	case SSH_DIGEST_SHA256: md = ssh_ecdsa_EVP_sha256(); break;
+	case SSH_DIGEST_SHA384: md = ssh_ecdsa_EVP_sha384(); break;
+	case SSH_DIGEST_SHA512: md = ssh_ecdsa_EVP_sha512(); break;
+	default:
+		return SSH_ERR_INTERNAL_ERROR;
+	}
+	if ((sig = ssh_ecdsa_pkey_sign(key->ecdsa, md, data, datalen)) == NULL) {
+		ret = SSH_ERR_LIBCRYPTO_ERROR;
+		goto out;
+	}
+}
+#endif
 
 	if ((bb = sshbuf_new()) == NULL || (b = sshbuf_new()) == NULL) {
 		ret = SSH_ERR_ALLOC_FAIL;
@@ -103,12 +227,105 @@ ssh_ecdsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 		*lenp = len;
 	ret = 0;
  out:
-	explicit_bzero(digest, sizeof(digest));
 	sshbuf_free(b);
 	sshbuf_free(bb);
 	ECDSA_SIG_free(sig);
 	return ret;
 }
+
+#ifdef USE_EC_PKEY_VERIFY
+static int
+ssh_ecdsa_pkey_verify(EC_KEY *ec, const EVP_MD *type,
+    ECDSA_SIG *sig, const u_char *data, u_int datalen)
+{
+	int ret;
+	u_char *tsig = NULL;
+	u_int len;
+	EVP_PKEY *pkey = NULL;
+
+	/* Sig is in ECDSA_SIG structure, convert to encoded buffer */
+	len = i2d_ECDSA_SIG(sig, NULL);
+	tsig = xmalloc(len);	/*fatal on error*/
+
+	{ /* encode a DSA signature */
+		u_char *psig = tsig;
+		i2d_ECDSA_SIG(sig, &psig);
+	}
+
+	pkey = EVP_PKEY_new();
+	if (pkey == NULL) {
+		error("%s: out of memory", __func__);
+		ret = SSH_ERR_ALLOC_FAIL;
+		goto done;
+	}
+	EVP_PKEY_set1_EC_KEY(pkey, ec);
+
+{ /* now verify signature */
+	int ok;
+	EVP_MD_CTX *md;
+
+	md = EVP_MD_CTX_new();
+	if (md == NULL) {
+		error("%s: out of memory", __func__);
+		ret = SSH_ERR_ALLOC_FAIL;
+		goto clean;
+	}
+
+	ok = EVP_VerifyInit(md, type);
+	if (ok <= 0) {
+#ifdef TRACE_EVP_ERROR
+		char ebuf[1024];
+		crypto_errormsg(ebuf, sizeof(ebuf));
+		error("%s: EVP_VerifyInit fail with errormsg: '%s'"
+		    , __func__, ebuf);
+#endif
+		ret = SSH_ERR_LIBCRYPTO_ERROR;
+		goto clean;
+	}
+
+	ok = EVP_VerifyUpdate(md, data, datalen);
+	if (ok <= 0) {
+#ifdef TRACE_EVP_ERROR
+		char ebuf[1024];
+		crypto_errormsg(ebuf, sizeof(ebuf));
+		error("%s: EVP_VerifyUpdate fail with errormsg: '%s'"
+		    , __func__, ebuf);
+#endif
+		ret = SSH_ERR_LIBCRYPTO_ERROR;
+		goto clean;
+	}
+
+	ok = EVP_VerifyFinal(md, tsig, len, pkey);
+	if (ok < 0) {
+#ifdef TRACE_EVP_ERROR
+		char ebuf[1024];
+		crypto_errormsg(ebuf, sizeof(ebuf));
+		error("%s: EVP_VerifyFinal fail with errormsg: '%s'"
+		    , __func__, ebuf);
+#endif
+		ret = SSH_ERR_LIBCRYPTO_ERROR;
+		goto clean;
+	}
+	ret = (ok == 0)
+		? SSH_ERR_SIGNATURE_INVALID
+		: SSH_ERR_SUCCESS;
+
+clean:
+	EVP_MD_CTX_free(md);
+}
+
+done:
+	if (pkey != NULL) EVP_PKEY_free(pkey);
+
+	if (tsig != NULL) {
+		/* clean up */
+		memset(tsig, 'd', len);
+		free(tsig);
+	}
+
+	return ret;
+}
+#endif
 
 int
 ssh_ecdsa_verify(const struct sshkey *key,
@@ -117,7 +334,6 @@ ssh_ecdsa_verify(const struct sshkey *key,
 {
 	ECDSA_SIG *sig = NULL;
 	int hash_alg;
-	u_char digest[SSH_DIGEST_MAX_LENGTH];
 	size_t dlen;
 	int ret = SSH_ERR_INTERNAL_ERROR;
 	struct sshbuf *b = NULL, *sigbuf = NULL;
@@ -181,6 +397,10 @@ parse_out:
 		ret = SSH_ERR_UNEXPECTED_TRAILING_DATA;
 		goto out;
 	}
+#ifndef USE_EC_PKEY_VERIFY
+{
+	u_char digest[SSH_DIGEST_MAX_LENGTH];
+
 	if ((ret = ssh_digest_memory(hash_alg, data, datalen,
 	    digest, sizeof(digest))) != 0)
 		goto out;
@@ -191,14 +411,31 @@ parse_out:
 		break;
 	case 0:
 		ret = SSH_ERR_SIGNATURE_INVALID;
-		goto out;
+		break;
 	default:
 		ret = SSH_ERR_LIBCRYPTO_ERROR;
-		goto out;
+		break;
 	}
+	explicit_bzero(digest, sizeof(digest));
+}
+#else
+{
+	const EVP_MD *md;
+
+	switch (hash_alg) {
+	case SSH_DIGEST_SHA256: md = ssh_ecdsa_EVP_sha256(); break;
+	case SSH_DIGEST_SHA384: md = ssh_ecdsa_EVP_sha384(); break;
+	case SSH_DIGEST_SHA512: md = ssh_ecdsa_EVP_sha512(); break;
+	default: {
+		ret = SSH_ERR_INTERNAL_ERROR;
+		goto out;
+		}
+	}
+	ret = ssh_ecdsa_pkey_verify(key->ecdsa, md, sig, data, datalen);
+}
+#endif
 
  out:
-	explicit_bzero(digest, sizeof(digest));
 	sshbuf_free(sigbuf);
 	sshbuf_free(b);
 	ECDSA_SIG_free(sig);
