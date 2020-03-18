@@ -39,6 +39,36 @@
 #include <openssl/buffer.h>	/*for BUF_strdup*/
 
 
+#if defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x10000000L)
+/* work-arounds for limited EVP digests in OpenSSL 0.9.8* ...
+ * (missing ecdsa support)
+ */
+
+#ifdef OPENSSL_HAS_NISTP256
+const EVP_MD* ssh_ecdsa_EVP_sha256(void);
+#endif
+#ifdef OPENSSL_HAS_NISTP384
+const EVP_MD* ssh_ecdsa_EVP_sha384(void);
+#endif
+#ifdef OPENSSL_HAS_NISTP521
+const EVP_MD* ssh_ecdsa_EVP_sha512(void);
+#endif
+
+#else
+
+#ifdef OPENSSL_HAS_NISTP256
+static inline const EVP_MD* ssh_ecdsa_EVP_sha256(void) { return EVP_sha256(); }
+#endif
+#ifdef OPENSSL_HAS_NISTP384
+static inline const EVP_MD* ssh_ecdsa_EVP_sha384(void) { return EVP_sha384(); }
+#endif
+#ifdef OPENSSL_HAS_NISTP521
+static inline const EVP_MD* ssh_ecdsa_EVP_sha512(void) { return EVP_sha512(); }
+#endif
+
+#endif /*defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x10000000L)*/
+
+
 #ifndef HAVE_EVP_MD_CTX_NEW		/* OpenSSL < 1.1 */
 static inline EVP_MD_CTX*
 EVP_MD_CTX_new(void) {

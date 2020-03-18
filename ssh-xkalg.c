@@ -423,9 +423,9 @@ ssh_EVP_MD_ecdsa_init(EVP_MD *t, const EVP_MD *s) {
 
 #ifdef OPENSSL_HAS_NISTP256
 /* Test for NID_X9_62_prime256v1(nistp256) includes test for EVP_sha256 */
-EVP_MD ecdsa_sha256_md = { NID_undef };
+static EVP_MD ecdsa_sha256_md = { NID_undef };
 
-static const EVP_MD*
+const EVP_MD*
 ssh_ecdsa_EVP_sha256(void) {
     if (ecdsa_sha256_md.type == NID_undef)
 	ssh_EVP_MD_ecdsa_init(&ecdsa_sha256_md, EVP_sha256());
@@ -435,9 +435,9 @@ ssh_ecdsa_EVP_sha256(void) {
 
 #ifdef OPENSSL_HAS_NISTP384
 /* Test for NID_secp384r1(nistp384) includes test for EVP_sha384 */
-EVP_MD ecdsa_sha384_md = { NID_undef };
+static EVP_MD ecdsa_sha384_md = { NID_undef };
 
-static const EVP_MD*
+const EVP_MD*
 ssh_ecdsa_EVP_sha384(void) {
     if (ecdsa_sha384_md.type == NID_undef)
 	ssh_EVP_MD_ecdsa_init(&ecdsa_sha384_md, EVP_sha384());
@@ -447,26 +447,14 @@ ssh_ecdsa_EVP_sha384(void) {
 
 #ifdef OPENSSL_HAS_NISTP521
 /* Test for NID_secp521r1(nistp521) includes test for EVP_sha512 */
-EVP_MD ecdsa_sha512_md = { NID_undef };
+static EVP_MD ecdsa_sha512_md = { NID_undef };
 
-static const EVP_MD*
+const EVP_MD*
 ssh_ecdsa_EVP_sha512(void) {
     if (ecdsa_sha512_md.type == NID_undef)
 	ssh_EVP_MD_ecdsa_init(&ecdsa_sha512_md, EVP_sha512());
     return &ecdsa_sha512_md;
 }
-#endif
-
-#else
-
-#ifdef OPENSSL_HAS_NISTP256
-static inline const EVP_MD* ssh_ecdsa_EVP_sha256(void) { return EVP_sha256(); }
-#endif
-#ifdef OPENSSL_HAS_NISTP384
-static inline const EVP_MD* ssh_ecdsa_EVP_sha384(void) { return EVP_sha384(); }
-#endif
-#ifdef OPENSSL_HAS_NISTP521
-static inline const EVP_MD* ssh_ecdsa_EVP_sha512(void) { return EVP_sha512(); }
 #endif
 
 #endif /*defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x10000000L)*/
