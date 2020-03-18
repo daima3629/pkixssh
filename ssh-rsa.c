@@ -2,7 +2,7 @@
 /*
  * Copyright (c) 2000, 2003 Markus Friedl <markus@openbsd.org>
  * Copyright (c) 2011 Dr. Stephen Henson.  All rights reserved.
- * Copyright (c) 2011-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2020 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -404,26 +404,30 @@ ssh_rsa_verify(const struct sshkey *key,
 	int nid;
 	const EVP_MD *evp_md;
 	EVP_PKEY *pkey;
-	int ok = -1;
 
 	nid = rsa_hash_alg_nid(hash_alg);
 	if ((evp_md = EVP_get_digestbynid(nid)) == NULL) {
 		error("%s: EVP_get_digestbynid %d failed", __func__, nid);
-		ret = SSH_ERR_ALLOC_FAIL;
+		ret = SSH_ERR_INTERNAL_ERROR;
 		goto out;
 	}
 
 	pkey = EVP_PKEY_new();
 	if (pkey == NULL) {
 		error("%s: out of memory", __func__);
+		ret = SSH_ERR_ALLOC_FAIL;
 		goto evp_end;
 	}
 
 	EVP_PKEY_set1_RSA(pkey, key->rsa);
 
-{	EVP_MD_CTX *md = EVP_MD_CTX_new();
+{ /* now verify signature */
+	int ok;
+
+	EVP_MD_CTX *md = EVP_MD_CTX_new();
 	if (md == NULL) {
 		error("%s: out of memory", __func__);
+		ret = SSH_ERR_ALLOC_FAIL;
 		goto evp_end;
 	}
 
@@ -435,6 +439,7 @@ ssh_rsa_verify(const struct sshkey *key,
 		error("%s: EVP_VerifyInit fail with errormsg='%s'"
 		    , __func__, ebuf);
 #endif
+		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto evp_md_end;
 	}
 
@@ -446,33 +451,32 @@ ssh_rsa_verify(const struct sshkey *key,
 		error("%s: EVP_VerifyUpdate fail with errormsg='%s'"
 		    , __func__, ebuf);
 #endif
+		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto evp_md_end;
 	}
 
 	ok = EVP_VerifyFinal(md, sigblob, len, pkey);
-	if (ok <= 0) {
+	if (ok < 0) {
 #ifdef TRACE_EVP_ERROR
 		char ebuf[1024];
 		crypto_errormsg(ebuf, sizeof(ebuf));
 		error("%s: EVP_VerifyFinal fail with errormsg='%s'"
 		    , __func__, ebuf);
 #endif
+		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto evp_md_end;
 	}
+	ret = (ok == 0)
+		? SSH_ERR_SIGNATURE_INVALID
+		: SSH_ERR_SUCCESS;
 
 evp_md_end:
 	EVP_MD_CTX_free(md);
 }
 evp_end:
 	EVP_PKEY_free(pkey);
-
-	if (ok <= 0) {
-		ret = SSH_ERR_SIGNATURE_INVALID;
-		goto out;
-	}
 }
 
-	ret = SSH_ERR_SUCCESS;
  out:
 	freezero(sigblob, len);
 	free(sigtype);

@@ -2,7 +2,7 @@
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2011 Dr. Stephen Henson.  All rights reserved.
- * Copyright (c) 2011 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -53,7 +53,7 @@
 
 /* caller must free result */
 static DSA_SIG*
-ssh_DSA_sign(DSA *dsa, const u_char *data, u_int datalen)
+ssh_dss_pkey_sign(DSA *dsa, const u_char *data, u_int datalen)
 {
 	DSA_SIG *sig = NULL;
 
@@ -65,7 +65,7 @@ ssh_DSA_sign(DSA *dsa, const u_char *data, u_int datalen)
 	pkey = EVP_PKEY_new();
 	if (pkey == NULL) {
 		error("%s: out of memory", __func__);
-		goto done;
+		return NULL;
 	}
 
 	EVP_PKEY_set1_DSA(pkey, dsa);
@@ -125,7 +125,6 @@ clean:
 		sig = d2i_DSA_SIG(NULL, &psig, len);
 	}
 
-done:
 	if (tsig != NULL) {
 		/* clean up */
 		memset(tsig, 'd', slen);
@@ -160,7 +159,7 @@ ssh_dss_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 	if (dlen == 0)
 		return SSH_ERR_INTERNAL_ERROR;
 
-	sig = ssh_DSA_sign(key->dsa, data, datalen);
+	sig = ssh_dss_pkey_sign(key->dsa, data, datalen);
 	if (sig == NULL) {
 		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto out;
@@ -207,9 +206,9 @@ ssh_dss_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 
 
 static int
-ssh_DSA_verify(DSA *dsa, DSA_SIG *sig, const u_char *data, u_int datalen)
+ssh_dss_pkey_verify(DSA *dsa, DSA_SIG *sig, const u_char *data, u_int datalen)
 {
-	int ret = -1;
+	int ret;
 	u_char *tsig = NULL;
 	u_int len;
 	EVP_PKEY *pkey = NULL;
@@ -226,52 +225,61 @@ ssh_DSA_verify(DSA *dsa, DSA_SIG *sig, const u_char *data, u_int datalen)
 	pkey = EVP_PKEY_new();
 	if (pkey == NULL) {
 		error("%s: out of memory", __func__);
+		ret = SSH_ERR_ALLOC_FAIL;
 		goto done;
 	}
 	EVP_PKEY_set1_DSA(pkey, dsa);
 
 { /* now verify signature */
+	int ok;
 	EVP_MD_CTX *md;
 
 	md = EVP_MD_CTX_new();
 	if (md == NULL) {
-		ret = -1;
 		error("%s: out of memory", __func__);
+		ret = SSH_ERR_ALLOC_FAIL;
 		goto clean;
 	}
 
-	ret = EVP_VerifyInit(md, EVP_dss1());
-	if (ret <= 0) {
+	ok = EVP_VerifyInit(md, EVP_dss1());
+	if (ok <= 0) {
 #ifdef TRACE_EVP_ERROR
 		char ebuf[1024];
 		crypto_errormsg(ebuf, sizeof(ebuf));
 		error("%s: EVP_VerifyInit fail with errormsg: '%s'"
 		    , __func__, ebuf);
 #endif
+		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto clean;
 	}
 
-	ret = EVP_VerifyUpdate(md, data, datalen);
-	if (ret <= 0) {
+	ok = EVP_VerifyUpdate(md, data, datalen);
+	if (ok <= 0) {
 #ifdef TRACE_EVP_ERROR
 		char ebuf[1024];
 		crypto_errormsg(ebuf, sizeof(ebuf));
 		error("%s: EVP_VerifyUpdate fail with errormsg: '%s'"
 		    , __func__, ebuf);
 #endif
+		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto clean;
 	}
 
-	ret = EVP_VerifyFinal(md, tsig, len, pkey);
-	if (ret <= 0) {
+	ok = EVP_VerifyFinal(md, tsig, len, pkey);
+	if (ok < 0) {
 #ifdef TRACE_EVP_ERROR
 		char ebuf[1024];
 		crypto_errormsg(ebuf, sizeof(ebuf));
 		error("%s: EVP_VerifyFinal fail with errormsg: '%s'"
 		    , __func__, ebuf);
 #endif
+		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto clean;
 	}
+	ret = (ok == 0)
+		? SSH_ERR_SIGNATURE_INVALID
+		: SSH_ERR_SUCCESS;
+
 clean:
 	EVP_MD_CTX_free(md);
 }
@@ -285,9 +293,7 @@ done:
 		free(tsig);
 	}
 
-	return ret <= 0
-		? SSH_ERR_LIBCRYPTO_ERROR
-		: SSH_ERR_SUCCESS;
+	return ret;
 }
 
 
@@ -361,7 +367,7 @@ parse_out:
 	}
 }
 
-	ret = ssh_DSA_verify(key->dsa, sig, data, datalen);
+	ret = ssh_dss_pkey_verify(key->dsa, sig, data, datalen);
 
  out:
 	DSA_SIG_free(sig);
