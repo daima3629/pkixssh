@@ -1021,7 +1021,7 @@ fdpass(int nfd)
 	cmsg->cmsg_len = CMSG_LEN(sizeof(int));
 	cmsg->cmsg_level = SOL_SOCKET;
 	cmsg->cmsg_type = SCM_RIGHTS;
-	*(int *)CMSG_DATA(cmsg) = nfd;
+	memmove(CMSG_DATA(cmsg), &nfd, sizeof(nfd));
 #endif
 
 	vec.iov_base = &ch;
