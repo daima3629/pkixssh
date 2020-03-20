@@ -156,11 +156,14 @@ typedef unsigned int	UWORD;  /* Register */
 
 #if defined(WITH_OPENSSL) && defined(HAVE_AES_ENCRYPT)
 /* Note low level AES API is deprecated in OpenSSL 3.0.
- * If is available we will use it unless is requested globaly
- * build-in rijndael.
+ * We will use it for builds with OpenSSL < 3.0
+ * unless globaly is requested build-in rijndael.
  */
+#  if !defined(USE_BUILTIN_RIJNDAEL) && \
+      defined(HAVE_ERR_GET_ERROR_ALL)	/* new is OpenSSL 3.0 */
+#    define USE_BUILTIN_RIJNDAEL	/* force build-in rijndael */
+#  endif
 #else
-/* Force build-in rijndael */
 #  ifndef USE_BUILTIN_RIJNDAEL
 #    define USE_BUILTIN_RIJNDAEL
 #  endif
