@@ -1214,8 +1214,10 @@ verify_host_key(char *host, struct sockaddr *hostaddr,
 	struct sshkey *plain = NULL;
 
 	if (sshkey_is_x509(host_key)) {
-		r = xkey_validate_cert(host_key);
-		if (r != 0) goto out;
+		if (xkey_validate_cert(host_key) != 0) {
+			r = -1;
+			goto out;
+		}
 	}
 
 	if ((fp = sshkey_fingerprint(host_key,
