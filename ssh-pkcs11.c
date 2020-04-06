@@ -1417,6 +1417,22 @@ pkcs11_fetch_keys(struct pkcs11_provider *p, CK_ULONG slotidx,
 	return 0;
 }
 
+static int/*boolean*/
+dlsym_getfunctionlist(void *handle,
+    CK_RV (**getfunctionlist)(CK_FUNCTION_LIST **))
+{
+	union {
+		CK_RV (*dlfun)(CK_FUNCTION_LIST **);
+		void *dlret;
+	} u;
+
+	u.dlret = dlsym(handle, "C_GetFunctionList");
+	if (u.dlret == NULL) return 0;
+
+	*getfunctionlist = u.dlfun;
+	return 1;
+}
+
 /*
  * register a new provider, fails if provider already exists. if
  * keyp is provided, fetch keys.
@@ -1459,7 +1475,7 @@ pkcs11_register_provider(char *provider_id, char *pin,
 		error("dlopen %s failed: %s", provider_id, dlerror());
 		goto fail;
 	}
-	if ((getfunctionlist = dlsym(handle, "C_GetFunctionList")) == NULL) {
+	if (!dlsym_getfunctionlist(handle, &getfunctionlist)) {
 		error("dlsym(C_GetFunctionList) failed: %s", dlerror());
 		goto fail;
 	}
