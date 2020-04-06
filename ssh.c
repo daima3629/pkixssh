@@ -195,6 +195,13 @@ char *forward_agent_sock_path = NULL;
 /* Various strings used to to percent_expand() arguments */
 static char thishost[NI_MAXHOST], shorthost[NI_MAXHOST], portstr[NI_MAXSERV];
 static char uidstr[32], *host_arg, *conn_hash_hex;
+#define DEFAULT_CLIENT_PERCENT_EXPAND_ARGS \
+    "C", conn_hash_hex, \
+    "L", shorthost, \
+    "i", uidstr, \
+    "l", thishost, \
+    "n", host_arg, \
+    "p", portstr
 
 /* socket address the host resolves to */
 struct sockaddr_storage hostaddr;
@@ -1209,7 +1216,8 @@ main(int ac, char **av)
 	if (options.hostname != NULL) {
 		/* NB. Please keep in sync with readconf.c:match_cfg_line() */
 		cp = percent_expand(options.hostname,
-		    "h", host, (char *)NULL);
+		    "h", host,
+		    (char *)NULL);
 		free(host);
 		host = cp;
 		free(options.hostname);
@@ -1423,14 +1431,9 @@ main(int ac, char **av)
 		debug3("expanding RemoteCommand: %s", options.remote_command);
 		cp = options.remote_command;
 		options.remote_command = percent_expand(cp,
-		    "C", conn_hash_hex,
-		    "L", shorthost,
+		    DEFAULT_CLIENT_PERCENT_EXPAND_ARGS,
 		    "d", pw->pw_dir,
 		    "h", host,
-		    "i", uidstr,
-		    "l", thishost,
-		    "n", host_arg,
-		    "p", portstr,
 		    "r", options.user,
 		    "u", pw->pw_name,
 		    (char *)NULL);
@@ -1445,16 +1448,10 @@ main(int ac, char **av)
 		cp = tilde_expand_filename(options.control_path, getuid());
 		free(options.control_path);
 		options.control_path = percent_expand(cp,
-		    "C", conn_hash_hex,
-		    "L", shorthost,
+		    DEFAULT_CLIENT_PERCENT_EXPAND_ARGS,
 		    "h", host,
-		    "i", uidstr,
-		    "l", thishost,
-		    "n", host_arg,
-		    "p", portstr,
 		    "r", options.user,
 		    "u", pw->pw_name,
-		    "i", uidstr,
 		    (char *)NULL);
 		free(cp);
 	}
@@ -2055,14 +2052,9 @@ ssh_session2(struct ssh *ssh, struct passwd *pw)
 		debug3("expanding LocalCommand: %s", options.local_command);
 		cp = options.local_command;
 		options.local_command = percent_expand(cp,
-		    "C", conn_hash_hex,
-		    "L", shorthost,
+		    DEFAULT_CLIENT_PERCENT_EXPAND_ARGS,
 		    "d", pw->pw_dir,
 		    "h", host,
-		    "i", uidstr,
-		    "l", thishost,
-		    "n", host_arg,
-		    "p", portstr,
 		    "r", options.user,
 		    "u", pw->pw_name,
 		    "T", tun_fwd_ifname == NULL ? "NONE" : tun_fwd_ifname,
@@ -2220,9 +2212,13 @@ load_public_identity_files(struct passwd *pw)
 			continue;
 		}
 		cp = tilde_expand_filename(options.identity_files[i], getuid());
-		filename = percent_expand(cp, "d", pw->pw_dir,
-		    "u", pw->pw_name, "l", thishost, "h", host,
-		    "r", options.user, (char *)NULL);
+		filename = percent_expand(cp,
+		    "d", pw->pw_dir,
+		    "u", pw->pw_name,
+		    "l", thishost,
+		    "h", host,
+		    "r", options.user,
+		    (char *)NULL);
 		free(cp);
 		check_load(sshkey_load_public(filename, &public, NULL),
 		    filename, "pubkey");
