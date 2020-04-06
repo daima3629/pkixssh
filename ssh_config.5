@@ -755,6 +755,11 @@ an explicit path to an agent socket or the name of an environment variable
 (beginning with
 .Sq $ )
 in which to find the path.
+Arguments to
+.Cm ForwardAgent
+with explicit path accept the tokens described in the
+.Sx TOKENS
+section.
 .Pp
 Agent forwarding should be enabled with caution.
 Users with the ability to bypass file permissions on the remote host
@@ -2088,6 +2093,9 @@ accepts the tokens %%, %d, %h, %i, %l, %r, and %u.
 .Pp
 .Cm ControlPath
 accepts the tokens %%, %C, %h, %i, %L, %l, %n, %p, %r, and %u.
+.Pp
+.Cm ForwardAgent
+accepts the tokens %%, %d, %h, %i, %l, %r, and %u.
 .Pp
 .Cm Hostname
 accepts the tokens %% and %h.

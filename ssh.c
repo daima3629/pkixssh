@@ -1456,6 +1456,38 @@ main(int ac, char **av)
 		free(cp);
 	}
 
+	if (options.identity_agent != NULL &&
+	    strcmp(options.identity_agent, SSH_AUTHSOCKET_ENV_NAME) != 0 &&
+	    strcmp(options.identity_agent, "none") != 0) {
+		cp = tilde_expand_filename(options.identity_agent, getuid());
+		free(options.identity_agent);
+		options.identity_agent = percent_expand(cp,
+		    "d", pw->pw_dir,
+		    "h", host,
+		    "i", uidstr,
+		    "l", thishost,
+		    "r", options.user,
+		    "u", pw->pw_name,
+		    (char *)NULL);
+		free(cp);
+	}
+
+	if (options.forward_agent &&
+	    options.forward_agent_sock_path != NULL) {
+		cp = tilde_expand_filename(options.forward_agent_sock_path,
+		    getuid());
+		free(options.forward_agent_sock_path);
+		options.forward_agent_sock_path = percent_expand(cp,
+		    "d", pw->pw_dir,
+		    "h", host,
+		    "i", uidstr,
+		    "l", thishost,
+		    "r", options.user,
+		    "u", pw->pw_name,
+		    (char *)NULL);
+		free(cp);
+	}
+
 	if (config_test) {
 		dump_client_config(&options, host);
 		exit(0);
@@ -1570,22 +1602,11 @@ main(int ac, char **av)
 		if (strcmp(options.identity_agent, "none") == 0) {
 			unsetenv(SSH_AUTHSOCKET_ENV_NAME);
 		} else {
-			p = tilde_expand_filename(options.identity_agent,
-			    getuid());
-			cp = percent_expand(p,
-			    "d", pw->pw_dir,
-			    "h", host,
-			    "i", uidstr,
-			    "l", thishost,
-			    "r", options.user,
-			    "u", pw->pw_name,
-			    (char *)NULL);
-			free(p);
+			cp = options.identity_agent;
 			/*
 			 * If identity_agent represents an environment variable
-			 * then recheck that it is valid (since processing with
-			 * percent_expand() may have changed it) and substitute
-			 * its value.
+			 * then recheck that it is valid since token expand
+			 * may have changed it and substitute its value.
 			 */
 			if (cp[0] == '$') {
 				if (!valid_env_name(cp + 1)) {
@@ -1600,22 +1621,11 @@ main(int ac, char **av)
 				/* identity_agent specifies a path directly */
 				setenv(SSH_AUTHSOCKET_ENV_NAME, cp, 1);
 			}
-			free(cp);
 		}
 	}
 
-	if (options.forward_agent && (options.forward_agent_sock_path != NULL)) {
-		p = tilde_expand_filename(options.forward_agent_sock_path, getuid());
-		cp = percent_expand(p,
-		    "d", pw->pw_dir,
-		    "h", host,
-		    "i", uidstr,
-		    "l", thishost,
-		    "r", options.user,
-		    "u", pw->pw_name,
-		    (char *)NULL);
-		free(p);
-
+	if (options.forward_agent && options.forward_agent_sock_path != NULL) {
+		cp = options.forward_agent_sock_path;
 		if (cp[0] == '$') {
 			if (!valid_env_name(cp + 1)) {
 				fatal("Invalid ForwardAgent environment variable name %s", cp);
@@ -1624,7 +1634,6 @@ main(int ac, char **av)
 				forward_agent_sock_path = p;
 			else
 				options.forward_agent = 0;
-			free(cp);
 		} else {
 			forward_agent_sock_path = cp;
 		}
