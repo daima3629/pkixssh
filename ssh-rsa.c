@@ -201,21 +201,20 @@ ssh_rsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 	if (sigp != NULL)
 		*sigp = NULL;
 
+	if (key == NULL || key->rsa == NULL ||
+	    sshkey_type_plain(key->type) != KEY_RSA)
+		return SSH_ERR_INVALID_ARGUMENT;
+
 	if (alg_ident == NULL || strlen(alg_ident) == 0)
 		hash_alg = SSH_DIGEST_SHA1;
 	else
 		hash_alg = rsa_hash_id_from_keyname(alg_ident);
 	debug3("%s  hash_alg=%d/%s", __func__, hash_alg, rsa_hash_alg_ident(hash_alg));
-	if (key == NULL || key->rsa == NULL || hash_alg == -1 ||
-	    sshkey_type_plain(key->type) != KEY_RSA)
+	if (hash_alg == -1)
 		return SSH_ERR_INVALID_ARGUMENT;
 
 	ret = sshrsa_check_length(key->rsa);
 	if (ret != 0) return ret;
-
-	slen = RSA_size(key->rsa);
-	if (slen <= 0 || slen > SSHBUF_MAX_BIGNUM)
-		return SSH_ERR_INVALID_ARGUMENT;
 
 	/* hash the data */
 	nid = rsa_hash_alg_nid(hash_alg);
@@ -229,24 +228,27 @@ ssh_rsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 
 	if ((evp_md = EVP_get_digestbynid(nid)) == NULL) {
 		error("%s: EVP_get_digestbynid %d failed", __func__, nid);
-		ret = SSH_ERR_LIBCRYPTO_ERROR;
+		ret = SSH_ERR_INTERNAL_ERROR;
 		goto out;
 	}
 
 	pkey = EVP_PKEY_new();
 	if (pkey == NULL) {
 		error("%s: out of memory", __func__);
+		ret = SSH_ERR_ALLOC_FAIL;
 		goto evp_end;
 	}
 
 	EVP_PKEY_set1_RSA(pkey, key->rsa);
 
 	slen = EVP_PKEY_size(pkey);
+	debug3("%s  slen=%ld", __func__, (long)slen);
 	sig = xmalloc(slen);	/*fatal on error*/
 
 {	EVP_MD_CTX *md = EVP_MD_CTX_new();
 	if (md == NULL) {
 		error("%s: out of memory", __func__);
+		ret = SSH_ERR_ALLOC_FAIL;
 		goto evp_end;
 	}
 
@@ -258,6 +260,7 @@ ssh_rsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 		error("%s: EVP_SignInit_ex fail with errormsg='%s'"
 		    , __func__, ebuf);
 #endif
+		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto evp_md_end;
 	}
 
@@ -269,6 +272,7 @@ ssh_rsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 		error("%s: EVP_SignUpdate fail with errormsg='%s'"
 		    , __func__, ebuf);
 #endif
+		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto evp_md_end;
 	}
 
@@ -280,19 +284,16 @@ ssh_rsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 		error("%s: SignFinal fail with errormsg='%s'"
 		    , __func__, ebuf);
 #endif
+		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto evp_md_end;
 	}
+	ret = SSH_ERR_SUCCESS;
 
 evp_md_end:
 	EVP_MD_CTX_free(md);
 }
 evp_end:
 	EVP_PKEY_free(pkey);
-
-	if (ok <= 0) {
-		ret = SSH_ERR_LIBCRYPTO_ERROR;
-		goto out;
-	}
 }
 
 	if (len < slen) {
@@ -322,7 +323,6 @@ evp_end:
 	if (lenp != NULL)
 		*lenp = len;
 
-	ret = SSH_ERR_SUCCESS;
  out:
 	freezero(sig, slen);
 	sshbuf_free(b);
@@ -336,6 +336,7 @@ ssh_rsa_verify(const struct sshkey *key,
 {
 	char *sigtype = NULL;
 	int hash_alg, ret;
+	EVP_PKEY *pkey = NULL;
 	size_t len = 0, diff, modlen;
 	struct sshbuf *b = NULL;
 	u_char *osigblob, *sigblob = NULL;
@@ -382,8 +383,13 @@ ssh_rsa_verify(const struct sshkey *key,
 		ret = SSH_ERR_UNEXPECTED_TRAILING_DATA;
 		goto out;
 	}
-	/* RSA_verify expects a signature of RSA_size */
-	modlen = RSA_size(key->rsa);
+	pkey = EVP_PKEY_new();
+	if (pkey == NULL) {
+		ret = SSH_ERR_ALLOC_FAIL;
+		goto out;
+	}
+	EVP_PKEY_set1_RSA(pkey, key->rsa);
+	modlen = EVP_PKEY_size(pkey);
 	if (len > modlen) {
 		ret = SSH_ERR_KEY_BITS_MISMATCH;
 		goto out;
@@ -402,8 +408,8 @@ ssh_rsa_verify(const struct sshkey *key,
 
 {	/* EVP_Verify... */
 	int nid;
+	int ok;
 	const EVP_MD *evp_md;
-	EVP_PKEY *pkey;
 
 	nid = rsa_hash_alg_nid(hash_alg);
 	if ((evp_md = EVP_get_digestbynid(nid)) == NULL) {
@@ -412,23 +418,11 @@ ssh_rsa_verify(const struct sshkey *key,
 		goto out;
 	}
 
-	pkey = EVP_PKEY_new();
-	if (pkey == NULL) {
-		error("%s: out of memory", __func__);
-		ret = SSH_ERR_ALLOC_FAIL;
-		goto evp_end;
-	}
-
-	EVP_PKEY_set1_RSA(pkey, key->rsa);
-
-{ /* now verify signature */
-	int ok;
-
+	/* now verify signature */
 	EVP_MD_CTX *md = EVP_MD_CTX_new();
 	if (md == NULL) {
-		error("%s: out of memory", __func__);
 		ret = SSH_ERR_ALLOC_FAIL;
-		goto evp_end;
+		goto out;
 	}
 
 	ok = EVP_VerifyInit(md, evp_md);
@@ -473,11 +467,9 @@ ssh_rsa_verify(const struct sshkey *key,
 evp_md_end:
 	EVP_MD_CTX_free(md);
 }
-evp_end:
-	EVP_PKEY_free(pkey);
-}
 
  out:
+	EVP_PKEY_free(pkey);
 	freezero(sigblob, len);
 	free(sigtype);
 	sshbuf_free(b);
