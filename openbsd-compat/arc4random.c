@@ -260,7 +260,7 @@ _rs_random_buf(void *_buf, size_t n)
 }
 
 # ifndef HAVE_ARC4RANDOM
-static inline void
+static void
 _rs_random_u32(u_int32_t *val)
 {
 	_rs_stir_if_needed(sizeof(*val));
