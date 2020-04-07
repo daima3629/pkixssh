@@ -45,6 +45,8 @@
 
 #include "test_helper.h"
 #include "atomicio.h"
+typedef void (*sshsig_t)(int);
+sshsig_t ssh_signal(int, sshsig_t);
 
 #define TEST_CHECK_INT(r, pred) do {		\
 		switch (pred) {			\
