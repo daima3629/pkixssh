@@ -54,9 +54,6 @@ known_hosts-cert
 known_hosts.*
 krl-*
 ls.copy
-mkdtemp
-modpipe
-netcat
 no_identity_config
 pidfile
 putty.rsa2
@@ -71,7 +68,6 @@ rsa_ssh2_cr.prv
 rsa_ssh2_crnl.prv
 scp-ssh-wrapper.exe
 scp-ssh-wrapper.scp
-setuid-allowed
 sftp-server.log
 sftp-server.sh
 sftp.log
@@ -108,9 +104,16 @@ user_*key*
 user_ca*
 user_key*
 
+# regression test helpers
+*.o
+check-perm
+mkdtemp
+modpipe
+netcat
+setuid-allowed
+
 # TODO
 authkeys_orig
-check-perm
 copy
 misc/kexfuzz/kexfuzz
 unittests/bitmap/test_bitmap

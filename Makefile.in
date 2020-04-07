@@ -280,11 +280,14 @@ $(CONFIGFILES): $(CONFIGFILES_IN)
 moduli:
 	echo
 
-clean:	regressclean
+localclean:
 	rm -f *.o *.a $(TARGETS) logintest config.cache config.log
 	rm -f *.out core survey
-	rm -f regress/check-perm$(EXEEXT)
-	rm -f regress/mkdtemp$(EXEEXT)
+	rm -f regress/check-perm$(EXEEXT) regress/check-perm.o
+	rm -f regress/mkdtemp$(EXEEXT) regress/mkdtemp.o
+	rm -f regress/modpipe$(EXEEXT) regress/modpipe.o
+	rm -f regress/netcat$(EXEEXT) regress/netcat.o
+	rm -f regress/setuid-allowed$(EXEEXT) regress/setuid-allowed.o
 	rm -f regress/unittests/test_helper/*.a
 	rm -f regress/unittests/test_helper/*.o
 	rm -f regress/unittests/sshbuf/*.o
@@ -305,37 +308,15 @@ clean:	regressclean
 	rm -f regress/unittests/utf8/test_utf8$(EXEEXT)
 	rm -f regress/misc/kexfuzz/*.o
 	rm -f regress/misc/kexfuzz/kexfuzz$(EXEEXT)
+
+clean:	regressclean localclean
 	(cd openbsd-compat && $(MAKE) clean)
 
-distclean:	regressclean
-	rm -f *.o *.a $(TARGETS) logintest config.cache config.log
-	rm -f *.out core survey
+distclean:	regressclean localclean
 	rm -f opensshd.init openssh.xml
 	rm -f Makefile buildpkg.sh config.h config.status
 	rm -f survey.sh openbsd-compat/regress/Makefile *~ 
 	rm -rf autom4te.cache
-	rm -f regress/check-perm$(EXEEXT)
-	rm -f regress/mkdtemp$(EXEEXT)
-	rm -f regress/unittests/test_helper/*.a
-	rm -f regress/unittests/test_helper/*.o
-	rm -f regress/unittests/sshbuf/*.o
-	rm -f regress/unittests/sshbuf/test_sshbuf$(EXEEXT)
-	rm -f regress/unittests/sshkey/*.o
-	rm -f regress/unittests/sshkey/test_sshkey$(EXEEXT)
-	rm -f regress/unittests/bitmap/*.o
-	rm -f regress/unittests/bitmap/test_bitmap$(EXEEXT)
-	rm -f regress/unittests/conversion/*.o
-	rm -f regress/unittests/conversion/test_conversion$(EXEEXT)
-	rm -f regress/unittests/hostkeys/*.o
-	rm -f regress/unittests/hostkeys/test_hostkeys$(EXEEXT)
-	rm -f regress/unittests/kex/*.o
-	rm -f regress/unittests/kex/test_kex$(EXEEXT)
-	rm -f regress/unittests/match/*.o
-	rm -f regress/unittests/match/test_match$(EXEEXT)
-	rm -f regress/unittests/utf8/*.o
-	rm -f regress/unittests/utf8/test_utf8$(EXEEXT)
-	rm -f regress/misc/kexfuzz/*.o
-	rm -f regress/misc/kexfuzz/kexfuzz$(EXEEXT)
 	(cd openbsd-compat && $(MAKE) distclean)
 	(cd tests/CA && $(MAKE) distclean)
 	if test -d pkg ; then \
@@ -501,24 +482,24 @@ regress-prep:
 
 REGRESSLIBS = $(LIBCOMPAT) libssh.a
 
-regress/modpipe$(EXEEXT): $(srcdir)/regress/modpipe.c $(REGRESSLIBS)
-	$(CC) $(CFLAGS) $(CPPFLAGS) -o $@ $(srcdir)/regress/modpipe.c \
+regress/modpipe$(EXEEXT): regress/modpipe.o $(REGRESSLIBS)
+	$(LD) -o $@ regress/modpipe.o \
 	$(LDFLAGS) -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(LIBS)
 
-regress/setuid-allowed$(EXEEXT): $(srcdir)/regress/setuid-allowed.c $(REGRESSLIBS)
-	$(CC) $(CFLAGS) $(CPPFLAGS) -o $@ $(srcdir)/regress/setuid-allowed.c \
+regress/setuid-allowed$(EXEEXT): regress/setuid-allowed.o $(REGRESSLIBS)
+	$(LD) -o $@ regress/setuid-allowed.o \
 	$(LDFLAGS) -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(LIBS)
 
-regress/netcat$(EXEEXT): $(srcdir)/regress/netcat.c $(REGRESSLIBS)
-	$(CC) $(CFLAGS) $(CPPFLAGS) -o $@ $(srcdir)/regress/netcat.c \
+regress/netcat$(EXEEXT): regress/netcat.o $(REGRESSLIBS)
+	$(LD) -o $@ regress/netcat.o \
 	$(LDFLAGS) -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(LIBS)
 
-regress/check-perm$(EXEEXT): $(srcdir)/regress/check-perm.c $(REGRESSLIBS)
-	$(CC) $(CFLAGS) $(CPPFLAGS) -o $@ $(srcdir)/regress/check-perm.c \
+regress/check-perm$(EXEEXT): regress/check-perm.o $(REGRESSLIBS)
+	$(LD) -o $@ regress/check-perm.o \
 	$(LDFLAGS) -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(LIBS)
 
-regress/mkdtemp$(EXEEXT): $(srcdir)/regress/mkdtemp.c $(REGRESSLIBS)
-	$(CC) $(CFLAGS) $(CPPFLAGS) -o $@ $(srcdir)/regress/mkdtemp.c \
+regress/mkdtemp$(EXEEXT): regress/mkdtemp.o $(REGRESSLIBS)
+	$(LD) -o $@ regress/mkdtemp.o \
 	$(LDFLAGS) -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(LIBS)
 
 UNITTESTS_TEST_HELPER_OBJS=\

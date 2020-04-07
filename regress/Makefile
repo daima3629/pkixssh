@@ -118,11 +118,11 @@ CLEANFILES=	*.core actual agent-key.* authkeys_orig \
 		key.dsa-* key.ecdsa-* key.ed25519-512 \
 		key.ed25519-512.pub key.rsa-* keys-command-args kh.* \
 		known_hosts known_hosts-cert known_hosts.* krl-* ls.copy \
-		modpipe netcat no_identity_config \
+		no_identity_config \
 		pidfile putty.rsa2 ready regress.log remote_pid \
 		revoked-* ssh-rsa-agent* ssh-rsa ssh-rsa.pub rsa_ssh2_cr.prv \
 		rsa_ssh2_crnl.prv scp-ssh-wrapper.exe \
-		scp-ssh-wrapper.scp setuid-allowed sftp-server.log \
+		scp-ssh-wrapper.scp sftp-server.log \
 		sftp-server.sh sftp.log ssh-log-wrapper.sh ssh.log \
 		ssh-rsa_oldfmt \
 		ssh_config ssh_config.* ssh_proxy ssh_proxy_bak \
