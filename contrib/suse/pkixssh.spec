@@ -8,10 +8,33 @@
 #
 
 # Do we want to enable building with ldap? (1=yes 0=no)
-%global enable_ldap 0
+%global enable_ldap 1
+
+# Do we want to enable test with ldap? (1=yes 0=no)
+%global enable_ldap_test 1
 
 # Do we use FIPS capable OpenSSL library ? (1=yes 0=no)
+%global enable_openssl_fips 1
+
+
+# Disable non-working configurations
+%if 0%{?sle_version} < 120200 && !0%{?is_opensuse}
+# No FIPS on SLE before 12 SP2
+%undefine enable_openssl_fips
 %global enable_openssl_fips 0
+%endif
+
+
+# Conditional configurations
+# Note openSUSE Tumbleweed:
+#  {?suse_version} > 1500 - current upcoming release (changing)
+%if 0%{?sle_version} >= 150000 || 0%{?suse_version} > 1500
+%define ldap_libexecdir		/usr/sbin
+%define ldap_moduledir		%{_libdir}/openldap
+%else
+%define ldap_libexecdir		/usr/lib/openldap
+%define ldap_moduledir		/usr/lib/openldap/modules
+%endif
 
 
 # norootforbuild
@@ -33,7 +56,10 @@ BuildRequires:	zlib-devel
 BuildRequires:	pam-devel
 BuildRequires:	libopenssl-devel openssl
 %if %{enable_ldap}
-BuildRequires:	openldap2-devel openldap2 openldap2-client
+BuildRequires:	openldap2-devel openldap2-client
+%endif
+%if %{enable_ldap_test}
+BuildRequires:	openldap2
 %endif
 %if %{enable_openssl_fips}
 BuildRequires:	fipscheck-devel fipscheck
@@ -84,7 +110,7 @@ two untrusted hosts over an insecure network.
   --sysconfdir=%{ssh_sysconfdir} \
   --mandir=%{_mandir} \
 %if %{enable_ldap}
-  --enable-ldap --with-ldap-libexecdir=/usr/sbin \
+  --enable-ldap --with-ldap-libexecdir=%{ldap_libexecdir} \
 %else
   --disable-ldap \
 %endif
@@ -95,12 +121,15 @@ make
 
 
 %check
-%if %{enable_ldap}
-LDAP_MODULEDIR=%{_libdir}/openldap
-export LDAP_MODULEDIR
-%endif
 TERM=dumb \
+SSH_X509TESTS="blob_auth dn_auth_file dn_auth_path agent crl self alg hostalg algfmt ocsp" \
 make check
+%if %{enable_ldap_test}
+LDAP_MODULEDIR=%{ldap_moduledir} \
+TERM=dumb \
+SSH_X509TESTS="by_ldap" \
+make check-certs
+%endif
 
 
 %install
@@ -126,10 +155,17 @@ install -m744 contrib/suse/sysconfig.ssh %{buildroot}%{_fillupdir}
 
 %post
 /usr/bin/ssh-keygen -A
+%if 0%{?sles_version} == 11
+%run_permissions %{ssh_sysconfdir}/ssh_config
+%run_permissions %{ssh_sysconfdir}/sshd_config
+%run_permissions %{ssh_sysconfdir}/moduli
+%run_permissions %{ssh_libexecdir}/ssh-keysign
+%else
 %set_permissions %{ssh_sysconfdir}/ssh_config
 %set_permissions %{ssh_sysconfdir}/sshd_config
 %set_permissions %{ssh_sysconfdir}/moduli
 %set_permissions %{ssh_libexecdir}/ssh-keysign
+%endif
 %{fillup_and_insserv -n -y ssh sshd}
 
 
@@ -158,7 +194,11 @@ install -m744 contrib/suse/sysconfig.ssh %{buildroot}%{_fillupdir}
 %doc TODO
 %attr(0755,root,root) %dir %{ssh_sysconfdir}
 %attr(0644,root,root) %verify(not mode) %config(noreplace) %{ssh_sysconfdir}/ssh_config
+%if 0%{?sles_version} == 11
+%attr(0640,root,root) %verify(not mode) %config(noreplace) %{ssh_sysconfdir}/sshd_config
+%else
 %attr(0600,root,root) %verify(not mode) %config(noreplace) %{ssh_sysconfdir}/sshd_config
+%endif
 %attr(0600,root,root) %verify(not mode) %config(noreplace) %{ssh_sysconfdir}/moduli
 %attr(0644,root,root) %config(noreplace) /etc/pam.d/sshd
 %attr(0755,root,root) %config /etc/init.d/sshd
@@ -172,9 +212,12 @@ install -m744 contrib/suse/sysconfig.ssh %{buildroot}%{_fillupdir}
 %attr(0755,root,root) %{_sbindir}/sshd
 %attr(0755,root,root) %dir %{ssh_libexecdir}
 %attr(0755,root,root) %{ssh_libexecdir}/sftp-server
+%if 0
 #TODO setuid
-#%attr(4711,root,root) %verify(not mode) %{ssh_libexecdir}/ssh-keysign
+%attr(4711,root,root) %verify(not mode) %{ssh_libexecdir}/ssh-keysign
+%else
 %attr(0755,root,root) %verify(not mode) %{ssh_libexecdir}/ssh-keysign
+%endif
 %attr(0755,root,root) %{ssh_libexecdir}/ssh-pkcs11-helper
 %attr(0644,root,root) %doc %{_mandir}/man1/scp.1*
 %attr(0644,root,root) %doc %{_mandir}/man1/sftp.1*
@@ -191,5 +234,7 @@ install -m744 contrib/suse/sysconfig.ssh %{buildroot}%{_fillupdir}
 %attr(0644,root,root) %doc %{_mandir}/man8/ssh-keysign.8*
 %attr(0644,root,root) %doc %{_mandir}/man8/ssh-pkcs11-helper.8*
 %attr(0644,root,root) %doc %{_mandir}/man8/sshd.8*
+%if 0%{?sles_version} != 11
 %attr(0755,root,root) %dir %{_fillupdir}
+%endif
 %attr(0644,root,root) %{_fillupdir}/sysconfig.ssh

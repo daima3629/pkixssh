@@ -4,17 +4,34 @@
 # This is free software; see Copyright file in the source
 # distribution for precise wording.
 #
-# Copyright (c) 2019 Roumen Petrov
+# Copyright (c) 2019-2020 Roumen Petrov
 #
 
 # Do we want to enable building with ldap? (1=yes 0=no)
-%global enable_ldap 0
+%global enable_ldap 1
+
+# Do we want to enable test with ldap? (1=yes 0=no)
+%global enable_ldap_test 1
 
 # Do we use FIPS capable OpenSSL library ? (1=yes 0=no)
-%global enable_openssl_fips 0
+%global enable_openssl_fips 1
 
 # TODO: do not produce debug package(temporary)
 %global debug_package %{nil}
+
+
+# Disable non-working configurations
+%if 0%{?centos_version} >= 800
+# No more openldap server package on CentOS 8
+%undefine enable_ldap_test
+%global enable_ldap_test 0
+%endif
+
+%if 0%{?rhel_version} > 0
+#TODO 0%{?rhel_version} > 700 ?
+%undefine enable_openssl_fips
+%global enable_openssl_fips 0
+%endif
 
 
 # norootforbuild
@@ -32,7 +49,10 @@ BuildRequires:	zlib-devel
 BuildRequires:	pam-devel
 BuildRequires:	openssl-devel openssl
 %if %{enable_ldap}
-BuildRequires:	openldap-devel openldap openldap-servers openldap-clients
+BuildRequires:	openldap-devel openldap openldap-clients
+%endif
+%if %{enable_ldap_test}
+BuildRequires: openldap-servers
 %endif
 %if %{enable_openssl_fips}
 BuildRequires:	fipscheck-devel fipscheck
@@ -92,7 +112,13 @@ make
 
 %check
 TERM=dumb \
+SSH_X509TESTS="blob_auth dn_auth_file dn_auth_path agent crl self alg hostalg algfmt ocsp" \
 make check
+%if %{enable_ldap_test}
+TERM=dumb \
+SSH_X509TESTS="by_ldap" \
+make check-certs
+%endif
 
 
 %install
