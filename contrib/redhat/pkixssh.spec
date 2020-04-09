@@ -112,7 +112,6 @@ make
 
 %check
 TERM=dumb \
-SSH_X509TESTS="blob_auth dn_auth_file dn_auth_path agent crl self alg hostalg algfmt ocsp" \
 make check
 %if %{enable_ldap_test}
 TERM=dumb \

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2004-2018 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2004-2020 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -25,6 +25,10 @@
 #  - authorization against:
 #    - LDAP, without CRL file and hash-dir
 #
+# Remark: tests require LDAP server from OpenLDAP project.
+# Unfortunately most of enterprise Linux distribution
+# stop to provide server package (releases since 2019).
+# So the test is excluded from default list.
 
 
 LDAP_SETUP_LOG="${CWD}/ldap_setup.log"

@@ -1,4 +1,4 @@
-# Copyright (c) 2002-2018 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2002-2020 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -74,8 +74,10 @@ SSH_X509TESTS="\
  hostalg
  algfmt
  ocsp
- by_ldap
 "
+# uncomment next line if your system provides OpenLDAP server
+# (requires LDAP enabled build)
+#SSH_X509TESTS="$SSH_X509TESTS by_ldap"
 fi
 
 
