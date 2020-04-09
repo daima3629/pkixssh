@@ -1,4 +1,4 @@
-#	$OpenBSD: test-exec.sh,v 1.75 2020/01/31 23:25:08 djm Exp $
+#	$OpenBSD: test-exec.sh,v 1.76 2020/04/04 23:04:41 dtucker Exp $
 #	Placed in the Public Domain.
 
 #SUDO=sudo
@@ -503,14 +503,16 @@ esac
 
 for t in ${SSH_KEYTYPES}; do
 	# generate user key
-	trace "generating key type $t"
 	if test -n "$OPENSSL_FIPS" ; then
 		rm -f $OBJ/$t
 	fi
 	if [ ! -f $OBJ/$t ] || [ ${SSHKEYGEN_BIN} -nt $OBJ/$t ]; then
+		trace "generating key type $t"
 		rm -f $OBJ/$t
 		${SSHKEYGEN} -q -N '' -t $t  -f $OBJ/$t ||\
 			fail "ssh-keygen for $t failed"
+	else
+		trace "using cached key type $t"
 	fi
 
 	# setup authorized keys
