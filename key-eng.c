@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -496,17 +496,19 @@ done:
 
 
 int
-engine_try_load_public(struct sshkey *k, const char *filename, char **commentp) {
+engine_try_load_public(const char *filename, struct sshkey **keyp, char **commentp) {
 	int ret = SSH_ERR_INTERNAL_ERROR;
 	char *keyid = NULL;
 	char *engkeyid = NULL;
 	ENGINE *e = NULL;
 	EVP_PKEY *pk = NULL;
-
-	if (k->type != KEY_UNSPEC)
-		return SSH_ERR_INVALID_ARGUMENT;
+	struct sshkey *k = NULL;
 
 	debug3("%s filename=%s", __func__, filename);
+	if (keyp != NULL)
+		*keyp = NULL;
+	if (commentp != NULL)
+		*commentp = NULL;
 
 	keyid = ignore_suffixes(filename);
 /* NOTE: For external keys simulate "missing" file.
@@ -540,9 +542,7 @@ engine_try_load_public(struct sshkey *k, const char *filename, char **commentp) 
 		goto done;
 	}
 
-{	struct sshkey *tmp = k;
-	ret = sshkey_from_EVP_PKEY(k->type, pk, &tmp);
-}
+	ret = sshkey_from_EVP_PKEY(KEY_UNSPEC, pk, &k);
 	if (ret != SSH_ERR_SUCCESS) goto done;
 
 	eng_try_load_cert(e, engkeyid, pk, k);
@@ -550,7 +550,11 @@ engine_try_load_public(struct sshkey *k, const char *filename, char **commentp) 
 
 	if (commentp != NULL) *commentp = xstrdup(engkeyid);
 
+	*keyp = k;
+	k = NULL;
+
 done:
+	sshkey_free(k);
 	EVP_PKEY_free(pk);
 	free(engkeyid);
 	free(keyid);
@@ -909,15 +913,17 @@ done:
 
 
 int
-store_try_load_public(struct sshkey *k, const char *filename, char **commentp) {
+store_try_load_public(const char *filename, struct sshkey **keyp, char **commentp) {
 	int ret;
 	const char *url = NULL;
 	STORE_KEY_DATA *kd = NULL;
-
-	if (k->type != KEY_UNSPEC)
-		return SSH_ERR_INVALID_ARGUMENT;
+	struct sshkey *k = NULL;
 
 	debug3("%s filename=%s", __func__, filename);
+	if (keyp != NULL)
+		*keyp = NULL;
+	if (commentp != NULL)
+		*commentp = NULL;
 
 	url = ignore_suffixes(filename);
 /* NOTE: For external keys simulate "missing" file.
@@ -936,16 +942,18 @@ store_try_load_public(struct sshkey *k, const char *filename, char **commentp) {
 		goto done;
 	}
 
-{	struct sshkey *tmp = k;
-	ret = sshkey_from_EVP_PKEY(k->type, kd->pk, &tmp);
-}
+	ret = sshkey_from_EVP_PKEY(KEY_UNSPEC, kd->pk, &k);
 	if (ret != SSH_ERR_SUCCESS) goto done;
 
 	store_set_key_certs(kd, k);
 
 	if (commentp != NULL) *commentp = xstrdup(url);
 
+	*keyp = k;
+	k = NULL;
+
 done:
+	sshkey_free(k);
 	STORE_KEY_DATA_free(kd);
 	free((void*)url);
 	return ret;

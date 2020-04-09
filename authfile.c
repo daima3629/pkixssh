@@ -293,19 +293,20 @@ sshkey_load_public(const char *filename, struct sshkey **keyp, char **commentp)
 	if (commentp != NULL)
 		*commentp = NULL;
 
-	if ((pub = sshkey_new(KEY_UNSPEC)) == NULL)
-		return SSH_ERR_ALLOC_FAIL;
 	debug3("%s() filename=%s", __func__, (filename ? filename : "?!?"));
 #ifdef USE_OPENSSL_STORE2
 	if (strncmp(filename, "store:", 6) == 0) {
-		return store_try_load_public(pub, filename + 6, commentp);
+		return store_try_load_public(filename + 6, keyp, commentp);
 	}
 #endif
 #ifdef USE_OPENSSL_ENGINE
 	if (strncmp(filename, "engine:", 7) == 0) {
-		return engine_try_load_public(pub, filename + 7, commentp);
+		return engine_try_load_public(filename + 7, keyp, commentp);
 	}
 #endif
+
+	if ((pub = sshkey_new(KEY_UNSPEC)) == NULL)
+		return SSH_ERR_ALLOC_FAIL;
 	if ((r = sshkey_try_load_public(pub, filename, commentp)) == 0) {
 		if (keyp != NULL) {
 			*keyp = pub;

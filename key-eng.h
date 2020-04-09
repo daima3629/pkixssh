@@ -1,7 +1,7 @@
 #ifndef KEY_ENG_H
 #define KEY_ENG_H
 /*
- * Copyright (c) 2011-2017 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -40,12 +40,12 @@ process_engconfig_line(char *line, const char *filename, int linenum);
 extern void ssh_load_engines(void);
 
 extern int engine_load_private_type(int type, const char *filename, const char *passphrase, struct sshkey **keyp, char **commentp);
-extern int engine_try_load_public(struct sshkey *k, const char *filename, char **commentp);
+extern int engine_try_load_public(const char *filename, struct sshkey **keyp, char **commentp);
 #endif /*ndef USE_OPENSSL_ENGINE*/
 
 #ifdef USE_OPENSSL_STORE2
 extern int store_load_private_type(int type, const char *filename, const char *passphrase, struct sshkey **keyp, char **commentp);
-extern int store_try_load_public(struct sshkey *k, const char *filename, char **commentp);
+extern int store_try_load_public(const char *filename, struct sshkey **keyp, char **commentp);
 #endif /*USE_OPENSSL_STORE2*/
 
 #endif /*ndef KEY_ENG_H*/
