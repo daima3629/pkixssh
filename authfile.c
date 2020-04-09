@@ -1,4 +1,4 @@
-/* $OpenBSD: authfile.c,v 1.137 2020/01/25 23:02:13 djm Exp $ */
+/* $OpenBSD: authfile.c,v 1.138 2020/04/08 00:09:24 djm Exp $ */
 /*
  * Copyright (c) 2000, 2013 Markus Friedl.  All rights reserved.
  * Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
@@ -211,13 +211,17 @@ sshkey_load_private(const char *filename, const char *passphrase,
 }
 
 static int
-sshkey_try_load_public(struct sshkey *k, const char *filename, char **commentp)
+sshkey_try_load_public(const char *filename, struct sshkey **keyp,
+    char **commentp)
 {
 	FILE *f;
 	char *line = NULL, *cp;
 	size_t linesize = 0;
 	int r;
+	struct sshkey *k = NULL;
 
+	if (keyp != NULL)
+		*keyp = NULL;
 	if (commentp != NULL)
 		*commentp = NULL;
 
@@ -239,6 +243,10 @@ sshkey_try_load_public(struct sshkey *k, const char *filename, char **commentp)
 
 	if ((f = fopen(filename, "r")) == NULL)
 		return SSH_ERR_SYSTEM_ERROR;
+	if ((k = sshkey_new(KEY_UNSPEC)) == NULL) {
+		fclose(f);
+		return SSH_ERR_ALLOC_FAIL;
+	}
 	while (getline(&line, &linesize, f) != -1) {
 		cp = line;
 		switch (*cp) {
@@ -271,10 +279,14 @@ sshkey_try_load_public(struct sshkey *k, const char *filename, char **commentp)
 					x509key_load_certs(pkalg, k, filename);
 					free(pkalg);
 				}
+				/* success */
+				if (keyp != NULL)
+					*keyp = k;
 				return r;
 			}
 		}
 	}
+	sshkey_free(k);
 	free(line);
 	fclose(f);
 	return SSH_ERR_INVALID_FORMAT;
@@ -284,14 +296,7 @@ sshkey_try_load_public(struct sshkey *k, const char *filename, char **commentp)
 int
 sshkey_load_public(const char *filename, struct sshkey **keyp, char **commentp)
 {
-	struct sshkey *pub = NULL;
-	char *file = NULL;
 	int r;
-
-	if (keyp != NULL)
-		*keyp = NULL;
-	if (commentp != NULL)
-		*commentp = NULL;
 
 	debug3("%s() filename=%s", __func__, (filename ? filename : "?!?"));
 #ifdef USE_OPENSSL_STORE2
@@ -305,36 +310,19 @@ sshkey_load_public(const char *filename, struct sshkey **keyp, char **commentp)
 	}
 #endif
 
-	if ((pub = sshkey_new(KEY_UNSPEC)) == NULL)
-		return SSH_ERR_ALLOC_FAIL;
-	if ((r = sshkey_try_load_public(pub, filename, commentp)) == 0) {
-		if (keyp != NULL) {
-			*keyp = pub;
-			pub = NULL;
-		}
-		r = 0;
-		goto out;
-	}
-	sshkey_free(pub);
+	r = sshkey_try_load_public(filename, keyp, commentp);
+	if (r == 0) return 0;
 
 	/* try .pub suffix */
-	if (asprintf(&file, "%s.pub", filename) < 0)
+{	char *pubfile = NULL;
+	if (asprintf(&pubfile, "%s.pub", filename) < 0)
 		return SSH_ERR_ALLOC_FAIL;
-	if ((pub = sshkey_new(KEY_UNSPEC)) == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto out;
-	}
-	debug3("%s() filename/2=%s", __func__, (file ? file : "?!?"));
-	if ((r = sshkey_try_load_public(pub, file, commentp)) == 0) {
-		if (keyp != NULL) {
-			*keyp = pub;
-			pub = NULL;
-		}
-		r = 0;
-	}
- out:
-	free(file);
-	sshkey_free(pub);
+	debug3("%s() pubfile=%s", __func__, pubfile);
+
+	r = sshkey_try_load_public(pubfile, keyp, commentp);
+
+	free(pubfile);
+}
 	return r;
 }
 
@@ -342,9 +330,8 @@ sshkey_load_public(const char *filename, struct sshkey **keyp, char **commentp)
 int
 sshkey_load_cert(const char *filename, struct sshkey **keyp)
 {
-	struct sshkey *pub = NULL;
 	char *file = NULL;
-	int r = SSH_ERR_INTERNAL_ERROR;
+	int r;
 
 	debug3("%s() filename=%s", __func__, (filename ? filename : "?!?"));
 	if (keyp != NULL)
@@ -353,20 +340,9 @@ sshkey_load_cert(const char *filename, struct sshkey **keyp)
 	if (asprintf(&file, "%s-cert.pub", filename) < 0)
 		return SSH_ERR_ALLOC_FAIL;
 
-	if ((pub = sshkey_new(KEY_UNSPEC)) == NULL) {
-		goto out;
-	}
-	if ((r = sshkey_try_load_public(pub, file, NULL)) != 0)
-		goto out;
-	/* success */
-	if (keyp != NULL) {
-		*keyp = pub;
-		pub = NULL;
-	}
-	r = 0;
- out:
+	r = sshkey_try_load_public(file, keyp, NULL);
+
 	free(file);
-	sshkey_free(pub);
 	return r;
 }
 
