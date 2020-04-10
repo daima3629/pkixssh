@@ -1,4 +1,4 @@
-.\"	$OpenBSD: ssh-keygen.1,v 1.202 2020/02/24 04:27:58 dtucker Exp $
+.\"	$OpenBSD: ssh-keygen.1,v 1.203 2020/04/03 02:26:56 djm Exp $
 .\"
 .\" Author: Tatu Ylonen <ylo@cs.hut.fi>
 .\" Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -44,7 +44,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: February 24 2020 $
+.Dd $Mdocdate: April 3 2020 $
 .Dt SSH-KEYGEN 1
 .Os
 .Sh NAME
@@ -143,6 +143,7 @@
 .Ar
 .Nm ssh-keygen
 .Fl Q
+.Op Fl l
 .Fl f Ar krl_file
 .Ar
 .Sh DESCRIPTION
@@ -492,6 +493,9 @@ either compatible PKCS#8 PEM format
 or proprietary OpenSSH format.
 .It Fl Q
 Test whether keys have been revoked in a KRL.
+If the
+.Fl l
+option is also specified then the contents of the KRL will be printed.
 .It Fl q
 Silence
 .Nm ssh-keygen .
