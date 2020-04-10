@@ -4305,16 +4305,39 @@ private2_decrypt(struct sshbuf *decoded, struct sshbuf **decryptedp,
 	return r;
 }
 
+/* Check deterministic padding after private key */
+static int
+private2_check_padding(struct sshbuf *decrypted)
+{
+	u_char pad;
+	size_t i;
+	int r = SSH_ERR_INTERNAL_ERROR;
+
+	i = 0;
+	while (sshbuf_len(decrypted)) {
+		if ((r = sshbuf_get_u8(decrypted, &pad)) != 0)
+			goto out;
+		if (pad != (++i & 0xff)) {
+			r = SSH_ERR_INVALID_FORMAT;
+			goto out;
+		}
+	}
+	/* success */
+	r = 0;
+ out:
+	explicit_bzero(&pad, sizeof(pad));
+	explicit_bzero(&i, sizeof(i));
+	return r;
+}
+
 static int
 sshkey_parse_private2(struct sshbuf *blob, int type, const char *passphrase,
     struct sshkey **keyp, char **commentp)
 {
 	char *comment = NULL;
 	int r = SSH_ERR_INTERNAL_ERROR;
-	size_t i;
 	struct sshbuf *decoded = NULL, *decrypted = NULL;
 	struct sshkey *k = NULL;
-	u_char pad;
 
 	UNUSED(type);
 	if (keyp != NULL)
@@ -4332,16 +4355,9 @@ sshkey_parse_private2(struct sshbuf *blob, int type, const char *passphrase,
 	    (r = sshbuf_get_cstring(decrypted, &comment, NULL)) != 0)
 		goto out;
 
-	/* Check deterministic padding */
-	i = 0;
-	while (sshbuf_len(decrypted)) {
-		if ((r = sshbuf_get_u8(decrypted, &pad)) != 0)
-			goto out;
-		if (pad != (++i & 0xff)) {
-			r = SSH_ERR_INVALID_FORMAT;
-			goto out;
-		}
-	}
+	/* Check deterministic padding after private section */
+	if ((r = private2_check_padding(decrypted)) != 0)
+		goto out;
 
 	/* XXX decode pubkey and check against private */
 
@@ -4356,7 +4372,6 @@ sshkey_parse_private2(struct sshbuf *blob, int type, const char *passphrase,
 		comment = NULL;
 	}
  out:
-	pad = 0;
 	free(comment);
 	sshbuf_free(decoded);
 	sshbuf_free(decrypted);
