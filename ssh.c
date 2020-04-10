@@ -1449,6 +1449,7 @@ main(int ac, char **av)
 		free(options.control_path);
 		options.control_path = percent_expand(cp,
 		    DEFAULT_CLIENT_PERCENT_EXPAND_ARGS,
+		    "d", pw->pw_dir,
 		    "h", host,
 		    "r", options.user,
 		    "u", pw->pw_name,
