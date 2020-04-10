@@ -4093,31 +4093,21 @@ sshkey_private_to_blob2(struct sshkey *prv, struct sshbuf *blob,
 }
 
 static int
-sshkey_parse_private2(struct sshbuf *blob, int type, const char *passphrase,
-    struct sshkey **keyp, char **commentp)
+private2_uudecode(struct sshbuf *blob, struct sshbuf **decodedp)
 {
-	char *comment = NULL, *ciphername = NULL, *kdfname = NULL;
-	const struct sshcipher *cipher = NULL;
 	const u_char *cp;
-	int r = SSH_ERR_INTERNAL_ERROR;
 	size_t encoded_len;
-	size_t i, keylen = 0, ivlen = 0, authlen = 0, slen = 0;
+	int r;
+	u_char last;
 	struct sshbuf *encoded = NULL, *decoded = NULL;
-	struct sshbuf *kdf = NULL, *decrypted = NULL;
-	struct sshcipher_ctx *ciphercontext = NULL;
-	struct sshkey *k = NULL;
-	u_char *key = NULL, *salt = NULL, *dp, pad, last;
-	u_int blocksize, rounds, nkeys, encrypted_len, check1, check2;
 
-	UNUSED(type);
-	if (keyp != NULL)
-		*keyp = NULL;
-	if (commentp != NULL)
-		*commentp = NULL;
+	if (blob == NULL || decodedp == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+
+	*decodedp = NULL;
 
 	if ((encoded = sshbuf_new()) == NULL ||
-	    (decoded = sshbuf_new()) == NULL ||
-	    (decrypted = sshbuf_new()) == NULL) {
+	    (decoded = sshbuf_new()) == NULL) {
 		r = SSH_ERR_ALLOC_FAIL;
 		goto out;
 	}
@@ -4167,6 +4157,46 @@ sshkey_parse_private2(struct sshbuf *blob, int type, const char *passphrase,
 		r = SSH_ERR_INVALID_FORMAT;
 		goto out;
 	}
+	/* success */
+	*decodedp = decoded;
+	decoded = NULL;
+	r = 0;
+ out:
+	sshbuf_free(encoded);
+	sshbuf_free(decoded);
+	return r;
+}
+
+static int
+sshkey_parse_private2(struct sshbuf *blob, int type, const char *passphrase,
+    struct sshkey **keyp, char **commentp)
+{
+	char *comment = NULL, *ciphername = NULL, *kdfname = NULL;
+	const struct sshcipher *cipher = NULL;
+	int r = SSH_ERR_INTERNAL_ERROR;
+	size_t i, keylen = 0, ivlen = 0, authlen = 0, slen = 0;
+	struct sshbuf *decoded = NULL;
+	struct sshbuf *kdf = NULL, *decrypted = NULL;
+	struct sshcipher_ctx *ciphercontext = NULL;
+	struct sshkey *k = NULL;
+	u_char *key = NULL, *salt = NULL, *dp, pad;
+	u_int blocksize, rounds, nkeys, encrypted_len, check1, check2;
+
+	UNUSED(type);
+	if (keyp != NULL)
+		*keyp = NULL;
+	if (commentp != NULL)
+		*commentp = NULL;
+
+	if ((decrypted = sshbuf_new()) == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto out;
+	}
+
+	/* Undo base64 encoding */
+	if ((r = private2_uudecode(blob, &decoded)) != 0)
+		goto out;
+
 	/* parse public portion of key */
 	if ((r = sshbuf_consume(decoded, sizeof(AUTH_MAGIC))) != 0 ||
 	    (r = sshbuf_get_cstring(decoded, &ciphername, NULL)) != 0 ||
@@ -4301,7 +4331,6 @@ sshkey_parse_private2(struct sshbuf *blob, int type, const char *passphrase,
 		freezero(salt, slen);
 	if (key != NULL)
 		freezero(key, keylen + ivlen);
-	sshbuf_free(encoded);
 	sshbuf_free(decoded);
 	sshbuf_free(kdf);
 	sshbuf_free(decrypted);
