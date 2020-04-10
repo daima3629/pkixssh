@@ -294,6 +294,8 @@ evp_md_end:
 }
 evp_end:
 	EVP_PKEY_free(pkey);
+
+	if (ret != SSH_ERR_SUCCESS) goto out;
 }
 
 	if (len < slen) {
