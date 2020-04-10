@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh.c,v 1.521 2020/03/06 18:20:02 markus Exp $ */
+/* $OpenBSD: ssh.c,v 1.526 2020/04/03 06:07:57 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -1463,10 +1463,9 @@ main(int ac, char **av)
 		cp = tilde_expand_filename(options.identity_agent, getuid());
 		free(options.identity_agent);
 		options.identity_agent = percent_expand(cp,
+		    DEFAULT_CLIENT_PERCENT_EXPAND_ARGS,
 		    "d", pw->pw_dir,
 		    "h", host,
-		    "i", uidstr,
-		    "l", thishost,
 		    "r", options.user,
 		    "u", pw->pw_name,
 		    (char *)NULL);
@@ -1479,10 +1478,9 @@ main(int ac, char **av)
 		    getuid());
 		free(options.forward_agent_sock_path);
 		options.forward_agent_sock_path = percent_expand(cp,
+		    DEFAULT_CLIENT_PERCENT_EXPAND_ARGS,
 		    "d", pw->pw_dir,
 		    "h", host,
-		    "i", uidstr,
-		    "l", thishost,
 		    "r", options.user,
 		    "u", pw->pw_name,
 		    (char *)NULL);
@@ -2223,11 +2221,11 @@ load_public_identity_files(struct passwd *pw)
 		}
 		cp = tilde_expand_filename(options.identity_files[i], getuid());
 		filename = percent_expand(cp,
+		    DEFAULT_CLIENT_PERCENT_EXPAND_ARGS,
 		    "d", pw->pw_dir,
-		    "u", pw->pw_name,
-		    "l", thishost,
 		    "h", host,
 		    "r", options.user,
+		    "u", pw->pw_name,
 		    (char *)NULL);
 		free(cp);
 		check_load(sshkey_load_public(filename, &public, NULL),
@@ -2278,10 +2276,9 @@ load_public_identity_files(struct passwd *pw)
 		cp = tilde_expand_filename(options.certificate_files[i],
 		    getuid());
 		filename = percent_expand(cp,
+		    DEFAULT_CLIENT_PERCENT_EXPAND_ARGS,
 		    "d", pw->pw_dir,
 		    "h", host,
-		    "i", uidstr,
-		    "l", thishost,
 		    "r", options.user,
 		    "u", pw->pw_name,
 		    (char *)NULL);
