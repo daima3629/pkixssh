@@ -4168,42 +4168,43 @@ private2_uudecode(struct sshbuf *blob, struct sshbuf **decodedp)
 }
 
 static int
-sshkey_parse_private2(struct sshbuf *blob, int type, const char *passphrase,
-    struct sshkey **keyp, char **commentp)
+private2_decrypt(struct sshbuf *decoded, struct sshbuf **decryptedp,
+    const char *passphrase)
 {
-	char *comment = NULL, *ciphername = NULL, *kdfname = NULL;
+	char *ciphername = NULL, *kdfname = NULL;
 	const struct sshcipher *cipher = NULL;
 	int r = SSH_ERR_INTERNAL_ERROR;
-	size_t i, keylen = 0, ivlen = 0, authlen = 0, slen = 0;
-	struct sshbuf *decoded = NULL;
+	size_t keylen = 0, ivlen = 0, authlen = 0, slen = 0;
 	struct sshbuf *kdf = NULL, *decrypted = NULL;
 	struct sshcipher_ctx *ciphercontext = NULL;
-	struct sshkey *k = NULL;
-	u_char *key = NULL, *salt = NULL, *dp, pad;
+	u_char *key = NULL, *salt = NULL, *dp;
 	u_int blocksize, rounds, nkeys, encrypted_len, check1, check2;
 
-	UNUSED(type);
-	if (keyp != NULL)
-		*keyp = NULL;
-	if (commentp != NULL)
-		*commentp = NULL;
+	if (decoded == NULL || decryptedp == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+
+	*decryptedp = NULL;
 
 	if ((decrypted = sshbuf_new()) == NULL) {
 		r = SSH_ERR_ALLOC_FAIL;
 		goto out;
 	}
 
-	/* Undo base64 encoding */
-	if ((r = private2_uudecode(blob, &decoded)) != 0)
-		goto out;
-
 	/* parse public portion of key */
 	if ((r = sshbuf_consume(decoded, sizeof(AUTH_MAGIC))) != 0 ||
 	    (r = sshbuf_get_cstring(decoded, &ciphername, NULL)) != 0 ||
 	    (r = sshbuf_get_cstring(decoded, &kdfname, NULL)) != 0 ||
 	    (r = sshbuf_froms(decoded, &kdf)) != 0 ||
-	    (r = sshbuf_get_u32(decoded, &nkeys)) != 0 ||
-	    (r = sshbuf_skip_string(decoded)) != 0 || /* pubkey */
+	    (r = sshbuf_get_u32(decoded, &nkeys)) != 0)
+		goto out;
+
+	if (nkeys != 1) {
+		/* XXX only one key supported at present */
+		r = SSH_ERR_INVALID_FORMAT;
+		goto out;
+	}
+
+	if ((r = sshbuf_skip_string(decoded)) != 0 || /* pubkey */
 	    (r = sshbuf_get_u32(decoded, &encrypted_len)) != 0)
 		goto out;
 
@@ -4223,11 +4224,6 @@ sshkey_parse_private2(struct sshbuf *blob, int type, const char *passphrase,
 	    strcmp(kdfname, "none") != 0) {
 		/* passphrase required */
 		r = SSH_ERR_KEY_WRONG_PASSPHRASE;
-		goto out;
-	}
-	if (nkeys != 1) {
-		/* XXX only one key supported */
-		r = SSH_ERR_INVALID_FORMAT;
 		goto out;
 	}
 
@@ -4292,6 +4288,44 @@ sshkey_parse_private2(struct sshbuf *blob, int type, const char *passphrase,
 		r = SSH_ERR_KEY_WRONG_PASSPHRASE;
 		goto out;
 	}
+	/* success */
+	*decryptedp = decrypted;
+	decrypted = NULL;
+	r = 0;
+ out:
+	cipher_free(ciphercontext);
+	free(ciphername);
+	free(kdfname);
+	if (salt != NULL)
+		freezero(salt, slen);
+	if (key != NULL)
+		freezero(key, keylen + ivlen);
+	sshbuf_free(kdf);
+	sshbuf_free(decrypted);
+	return r;
+}
+
+static int
+sshkey_parse_private2(struct sshbuf *blob, int type, const char *passphrase,
+    struct sshkey **keyp, char **commentp)
+{
+	char *comment = NULL;
+	int r = SSH_ERR_INTERNAL_ERROR;
+	size_t i;
+	struct sshbuf *decoded = NULL, *decrypted = NULL;
+	struct sshkey *k = NULL;
+	u_char pad;
+
+	UNUSED(type);
+	if (keyp != NULL)
+		*keyp = NULL;
+	if (commentp != NULL)
+		*commentp = NULL;
+
+	/* Undo base64 encoding and decrypt the private section */
+	if ((r = private2_uudecode(blob, &decoded)) != 0 ||
+	    (r = private2_decrypt(decoded, &decrypted, passphrase)) != 0)
+		goto out;
 
 	/* Load the private key and comment */
 	if ((r = sshkey_private_deserialize(decrypted, &k)) != 0 ||
@@ -4323,16 +4357,8 @@ sshkey_parse_private2(struct sshbuf *blob, int type, const char *passphrase,
 	}
  out:
 	pad = 0;
-	cipher_free(ciphercontext);
-	free(ciphername);
-	free(kdfname);
 	free(comment);
-	if (salt != NULL)
-		freezero(salt, slen);
-	if (key != NULL)
-		freezero(key, keylen + ivlen);
 	sshbuf_free(decoded);
-	sshbuf_free(kdf);
 	sshbuf_free(decrypted);
 	sshkey_free(k);
 	return r;
