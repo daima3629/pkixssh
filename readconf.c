@@ -713,6 +713,8 @@ match_cfg_line(Options *options, char **condition, struct passwd *pw,
 			if (r == (negate ? 1 : 0))
 				this_result = result = 0;
 		} else if (strcasecmp(attrib, "exec") == 0) {
+			char *conn_hash_hex;
+
 			if (gethostname(thishost, sizeof(thishost)) == -1)
 				fatal("gethostname: %s", strerror(errno));
 			strlcpy(shorthost, thishost, sizeof(shorthost));
@@ -720,8 +722,11 @@ match_cfg_line(Options *options, char **condition, struct passwd *pw,
 			snprintf(portstr, sizeof(portstr), "%d", port);
 			snprintf(uidstr, sizeof(uidstr), "%llu",
 			    (unsigned long long)pw->pw_uid);
+			conn_hash_hex = ssh_connection_hash(thishost, host,
+			   portstr, ruser);
 
 			cmd = percent_expand(arg,
+			    "C", conn_hash_hex,
 			    "L", shorthost,
 			    "d", pw->pw_dir,
 			    "h", host,
@@ -732,6 +737,7 @@ match_cfg_line(Options *options, char **condition, struct passwd *pw,
 			    "u", pw->pw_name,
 			    "i", uidstr,
 			    (char *)NULL);
+			free(conn_hash_hex);
 			if (result != 1) {
 				/* skip execution if prior predicate failed */
 				debug3("%.200s line %d: skipped exec "
