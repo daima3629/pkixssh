@@ -1,4 +1,4 @@
-#	$OpenBSD: Makefile,v 1.7 2020/01/26 00:09:50 djm Exp $
+#	$OpenBSD: Makefile,v 1.8 2020/04/06 09:43:56 dtucker Exp $
 
 PROG=test_hostkeys
 SRCS=tests.c test_iterate.c
@@ -14,6 +14,7 @@ SRCS+=cipher-chachapoly.c chacha.c poly1305.c
 
 SRCS+=digest-openssl.c
 #SRCS+=digest-libc.c
+SRCS+=utf8.c
 
 REGRESS_TARGETS=run-regress-${PROG}
 
