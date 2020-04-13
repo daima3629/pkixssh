@@ -3534,15 +3534,72 @@ out:
 }
 #endif /*def OPENSSL_HAS_ECC*/
 
+static int
+sshkey_private_deserialize_ed25519(struct sshbuf *buf, struct sshkey *key)
+{
+	int r;
+	u_char *ed25519_pk = NULL, *ed25519_sk = NULL;
+	size_t pklen = 0, sklen = 0;
+
+	if ((r = sshbuf_get_string(buf, &ed25519_pk, &pklen)) != 0 ||
+	    (r = sshbuf_get_string(buf, &ed25519_sk, &sklen)) != 0)
+		goto out;
+	if (pklen != ED25519_PK_SZ || sklen != ED25519_SK_SZ) {
+		r = SSH_ERR_INVALID_FORMAT;
+		goto out;
+	}
+	key->ed25519_pk = ed25519_pk;
+	key->ed25519_sk = ed25519_sk;
+	ed25519_pk = ed25519_sk = NULL; /* transferred */
+
+out:
+	freezero(ed25519_pk, pklen);
+	freezero(ed25519_sk, sklen);
+
+	return r;
+}
+
+#ifdef WITH_XMSS
+static int
+sshkey_private_deserialize_xmss(struct sshbuf *buf, struct sshkey *key)
+{
+	int r;
+	char *xmss_name = NULL;
+	u_char *xmss_pk = NULL, *xmss_sk = NULL;
+	size_t pklen = 0, sklen = 0;
+
+	if ((r = sshbuf_get_cstring(buf, &xmss_name, NULL)) != 0 ||
+	    (r = sshkey_xmss_init(key, xmss_name)) != 0 ||
+	    (r = sshbuf_get_string(buf, &xmss_pk, &pklen)) != 0 ||
+	    (r = sshbuf_get_string(buf, &xmss_sk, &sklen)) != 0)
+		goto out;
+	if (pklen != sshkey_xmss_pklen(key) ||
+	    sklen != sshkey_xmss_sklen(key)) {
+		r = SSH_ERR_INVALID_FORMAT;
+		goto out;
+	}
+	key->xmss_pk = xmss_pk;
+	key->xmss_sk = xmss_sk;
+	xmss_pk = xmss_sk = NULL; /* transferred */
+
+	/* optional internal state */
+	r = sshkey_xmss_deserialize_state_opt(key, buf);
+
+out:
+	free(xmss_name);
+	freezero(xmss_pk, pklen);
+	freezero(xmss_sk, sklen);
+
+	return r;
+}
+#endif /*WITH_XMSS*/
+
 int
 sshkey_private_deserialize(struct sshbuf *buf, struct sshkey **kp)
 {
-	char *tname = NULL, *xmss_name = NULL;
+	char *tname = NULL;
 	struct sshkey *k = NULL;
-	size_t pklen = 0, sklen = 0;
 	int type, r = SSH_ERR_INTERNAL_ERROR;
-	u_char *ed25519_pk = NULL, *ed25519_sk = NULL;
-	u_char *xmss_pk = NULL, *xmss_sk = NULL;
 
 	if (kp != NULL)
 		*kp = NULL;
@@ -3683,68 +3740,15 @@ sshkey_private_deserialize(struct sshbuf *buf, struct sshkey **kp)
 		break;
 #endif /* WITH_OPENSSL */
 	case KEY_ED25519:
-		if ((r = sshbuf_get_string(buf, &ed25519_pk, &pklen)) != 0 ||
-		    (r = sshbuf_get_string(buf, &ed25519_sk, &sklen)) != 0)
-			goto out;
-		if (pklen != ED25519_PK_SZ || sklen != ED25519_SK_SZ) {
-			r = SSH_ERR_INVALID_FORMAT;
-			goto out;
-		}
-		k->ed25519_pk = ed25519_pk;
-		k->ed25519_sk = ed25519_sk;
-		ed25519_pk = ed25519_sk = NULL;
-		break;
 	case KEY_ED25519_CERT:
-		if ((r = sshbuf_get_string(buf, &ed25519_pk, &pklen)) != 0 ||
-		    (r = sshbuf_get_string(buf, &ed25519_sk, &sklen)) != 0)
-			goto out;
-		if (pklen != ED25519_PK_SZ || sklen != ED25519_SK_SZ) {
-			r = SSH_ERR_INVALID_FORMAT;
-			goto out;
-		}
-		k->ed25519_pk = ed25519_pk;
-		k->ed25519_sk = ed25519_sk;
-		ed25519_pk = ed25519_sk = NULL; /* transferred */
+		r = sshkey_private_deserialize_ed25519(buf, k);
+		if (r != 0) goto out;
 		break;
 #ifdef WITH_XMSS
 	case KEY_XMSS:
-		if ((r = sshbuf_get_cstring(buf, &xmss_name, NULL)) != 0 ||
-		    (r = sshkey_xmss_init(k, xmss_name)) != 0 ||
-		    (r = sshbuf_get_string(buf, &xmss_pk, &pklen)) != 0 ||
-		    (r = sshbuf_get_string(buf, &xmss_sk, &sklen)) != 0)
-			goto out;
-		if (pklen != sshkey_xmss_pklen(k) ||
-		    sklen != sshkey_xmss_sklen(k)) {
-			r = SSH_ERR_INVALID_FORMAT;
-			goto out;
-		}
-		k->xmss_pk = xmss_pk;
-		k->xmss_sk = xmss_sk;
-		xmss_pk = xmss_sk = NULL;
-		/* optional internal state */
-		if ((r = sshkey_xmss_deserialize_state_opt(k, buf)) != 0)
-			goto out;
-		break;
 	case KEY_XMSS_CERT:
-		if ((r = sshbuf_get_cstring(buf, &xmss_name, NULL)) != 0 ||
-		    (r = sshbuf_get_string(buf, &xmss_pk, &pklen)) != 0 ||
-		    (r = sshbuf_get_string(buf, &xmss_sk, &sklen)) != 0)
-			goto out;
-		if (strcmp(xmss_name, k->xmss_name) != 0) {
-			r = SSH_ERR_INVALID_FORMAT;
-			goto out;
-		}
-		if (pklen != sshkey_xmss_pklen(k) ||
-		    sklen != sshkey_xmss_sklen(k)) {
-			r = SSH_ERR_INVALID_FORMAT;
-			goto out;
-		}
-		k->xmss_pk = xmss_pk;
-		k->xmss_sk = xmss_sk;
-		xmss_pk = xmss_sk = NULL;
-		/* optional internal state */
-		if ((r = sshkey_xmss_deserialize_state_opt(k, buf)) != 0)
-			goto out;
+		r = sshkey_private_deserialize_xmss(buf, k);
+		if (r != 0) goto out;
 		break;
 #endif /* WITH_XMSS */
 	default:
@@ -3774,11 +3778,6 @@ sshkey_private_deserialize(struct sshbuf *buf, struct sshkey **kp)
  out:
 	free(tname);
 	sshkey_free(k);
-	freezero(ed25519_pk, pklen);
-	freezero(ed25519_sk, sklen);
-	free(xmss_name);
-	freezero(xmss_pk, pklen);
-	freezero(xmss_sk, sklen);
 	return r;
 }
 
