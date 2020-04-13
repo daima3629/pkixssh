@@ -3,7 +3,7 @@
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Alexander von Gernler.  All rights reserved.
  * Copyright (c) 2010,2011 Damien Miller.  All rights reserved.
- * Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -3460,6 +3460,28 @@ sshkey_private_serialize(struct sshkey *key, struct sshbuf *b)
 	    SSHKEY_SERIALIZE_DEFAULT);
 }
 
+#ifdef WITH_OPENSSL
+static int
+sshkey_private_deserialize_dsa_priv_key(struct sshbuf *buf, struct sshkey *key)
+{
+	int r;
+	BIGNUM *priv_key = NULL;
+
+	if ((r = sshbuf_get_bignum2(buf, &priv_key)) != 0)
+		goto out;
+	if (!DSA_set0_key(key->dsa, NULL, priv_key)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto out;
+	}
+	priv_key = NULL; /* transferred */
+
+out:
+	BN_clear_free(priv_key);
+
+	return r;
+}
+#endif /*def WITH_OPENSSL*/
+
 int
 sshkey_private_deserialize(struct sshbuf *buf, struct sshkey **kp)
 {
@@ -3507,53 +3529,37 @@ sshkey_private_deserialize(struct sshbuf *buf, struct sshkey **kp)
 	case KEY_DSA:
 		{
 		BIGNUM *p = NULL, *q = NULL, *g = NULL;
-		BIGNUM *pub_key = NULL, *priv_key = NULL;
+		BIGNUM *pub_key = NULL;
 
 		if ((r = sshbuf_get_bignum2(buf, &p)) != 0 ||
 		    (r = sshbuf_get_bignum2(buf, &q)) != 0 ||
 		    (r = sshbuf_get_bignum2(buf, &g)) != 0 ||
-		    (r = sshbuf_get_bignum2(buf, &pub_key)) != 0 ||
-		    (r = sshbuf_get_bignum2(buf, &priv_key)) != 0)
+		    (r = sshbuf_get_bignum2(buf, &pub_key)) != 0)
 			goto clear_dsa;
 		if (!DSA_set0_pqg(k->dsa, p, q, g)) {
 			r = SSH_ERR_LIBCRYPTO_ERROR;
 			goto clear_dsa;
 		}
 		p = q = g = NULL; /* transferred */
-		if (!DSA_set0_key(k->dsa, pub_key, priv_key)) {
+		if (!DSA_set0_key(k->dsa, pub_key, NULL)) {
 			r = SSH_ERR_LIBCRYPTO_ERROR;
 			goto clear_dsa;
 		}
-		/* pub_key = priv_key = NULL; transferred */
-		break;
+		pub_key = NULL; /* transferred */
 
 		clear_dsa:
 			BN_clear_free(p);
 			BN_clear_free(q);
 			BN_clear_free(g);
 			BN_clear_free(pub_key);
-			BN_clear_free(priv_key);
 
-		goto out;
-		} break;
-	case KEY_DSA_CERT:
-		{
-		BIGNUM *priv_key = NULL;
-
-		if ((r = sshbuf_get_bignum2(buf, &priv_key)) != 0)
-			goto clear_dsacert;
-		if (!DSA_set0_key(k->dsa, NULL, priv_key)) {
-			r = SSH_ERR_LIBCRYPTO_ERROR;
-			goto clear_dsacert;
+		if (r != 0) goto out;
 		}
-		/* priv_key = NULL; transferred */
+		/* FALLTHROUGH */
+	case KEY_DSA_CERT:
+		r = sshkey_private_deserialize_dsa_priv_key(buf, k);
+		if (r != 0) goto out;
 		break;
-
-		clear_dsacert:
-			BN_clear_free(priv_key);
-
-		goto out;
-		} break;
 # ifdef OPENSSL_HAS_ECC
 	case KEY_ECDSA:
 		if ((k->ecdsa_nid = sshkey_ecdsa_nid_from_name(tname)) == -1) {
