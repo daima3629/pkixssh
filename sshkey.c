@@ -3482,18 +3482,67 @@ out:
 }
 #endif /*def WITH_OPENSSL*/
 
+#ifdef OPENSSL_HAS_ECC
+static int
+sshkey_private_deserialize_ecdsa_curve(struct sshbuf *buf, struct sshkey *key)
+{
+	int r;
+	char *curve = NULL;
+
+	if ((r = sshbuf_get_cstring(buf, &curve, NULL)) != 0)
+		goto out;
+	if (key->ecdsa_nid != sshkey_curve_name_to_nid(curve)) {
+		r = SSH_ERR_EC_CURVE_MISMATCH;
+		goto out;
+	}
+	key->ecdsa = EC_KEY_new_by_curve_name(key->ecdsa_nid);
+	if (key->ecdsa  == NULL) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto out;
+	}
+	r = sshbuf_get_eckey(buf, key->ecdsa);
+
+out:
+	free(curve);
+
+	return r;
+}
+
+static int
+sshkey_private_deserialize_ecdsa_exponent(struct sshbuf *buf, struct sshkey *key)
+{
+	int r;
+	BIGNUM *exponent = NULL;
+
+	if ((r = sshbuf_get_bignum2(buf, &exponent)) != 0)
+		goto out;
+	if (EC_KEY_set_private_key(key->ecdsa, exponent) != 1) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto out;
+	}
+	exponent = NULL; /* transferred */
+
+	if ((r = sshkey_ec_validate_public(EC_KEY_get0_group(key->ecdsa),
+	    EC_KEY_get0_public_key(key->ecdsa))) != 0)
+		goto out;
+	r = sshkey_ec_validate_private(key->ecdsa);
+
+out:
+	BN_clear_free(exponent);
+
+	return r;
+}
+#endif /*def OPENSSL_HAS_ECC*/
+
 int
 sshkey_private_deserialize(struct sshbuf *buf, struct sshkey **kp)
 {
-	char *tname = NULL, *curve = NULL, *xmss_name = NULL;
+	char *tname = NULL, *xmss_name = NULL;
 	struct sshkey *k = NULL;
 	size_t pklen = 0, sklen = 0;
 	int type, r = SSH_ERR_INTERNAL_ERROR;
 	u_char *ed25519_pk = NULL, *ed25519_sk = NULL;
 	u_char *xmss_pk = NULL, *xmss_sk = NULL;
-#ifdef WITH_OPENSSL
-	BIGNUM *exponent = NULL;
-#endif /* WITH_OPENSSL */
 
 	if (kp != NULL)
 		*kp = NULL;
@@ -3562,44 +3611,18 @@ sshkey_private_deserialize(struct sshbuf *buf, struct sshkey **kp)
 		break;
 # ifdef OPENSSL_HAS_ECC
 	case KEY_ECDSA:
+		{
 		if ((k->ecdsa_nid = sshkey_ecdsa_nid_from_name(tname)) == -1) {
 			r = SSH_ERR_INVALID_ARGUMENT;
 			goto out;
 		}
-		if ((r = sshbuf_get_cstring(buf, &curve, NULL)) != 0)
-			goto out;
-		if (k->ecdsa_nid != sshkey_curve_name_to_nid(curve)) {
-			r = SSH_ERR_EC_CURVE_MISMATCH;
-			goto out;
+		r = sshkey_private_deserialize_ecdsa_curve(buf, k);
+		if (r != 0) goto out;
 		}
-		k->ecdsa = EC_KEY_new_by_curve_name(k->ecdsa_nid);
-		if (k->ecdsa  == NULL) {
-			r = SSH_ERR_LIBCRYPTO_ERROR;
-			goto out;
-		}
-		if ((r = sshbuf_get_eckey(buf, k->ecdsa)) != 0 ||
-		    (r = sshbuf_get_bignum2(buf, &exponent)))
-			goto out;
-		if (EC_KEY_set_private_key(k->ecdsa, exponent) != 1) {
-			r = SSH_ERR_LIBCRYPTO_ERROR;
-			goto out;
-		}
-		if ((r = sshkey_ec_validate_public(EC_KEY_get0_group(k->ecdsa),
-		    EC_KEY_get0_public_key(k->ecdsa))) != 0 ||
-		    (r = sshkey_ec_validate_private(k->ecdsa)) != 0)
-			goto out;
-		break;
+		/* FALLTHROUGH */
 	case KEY_ECDSA_CERT:
-		if ((r = sshbuf_get_bignum2(buf, &exponent)) != 0)
-			goto out;
-		if (EC_KEY_set_private_key(k->ecdsa, exponent) != 1) {
-			r = SSH_ERR_LIBCRYPTO_ERROR;
-			goto out;
-		}
-		if ((r = sshkey_ec_validate_public(EC_KEY_get0_group(k->ecdsa),
-		    EC_KEY_get0_public_key(k->ecdsa))) != 0 ||
-		    (r = sshkey_ec_validate_private(k->ecdsa)) != 0)
-			goto out;
+		r = sshkey_private_deserialize_ecdsa_exponent(buf, k);
+		if (r != 0) goto out;
 		break;
 # endif /* OPENSSL_HAS_ECC */
 	case KEY_RSA:
@@ -3750,10 +3773,6 @@ sshkey_private_deserialize(struct sshbuf *buf, struct sshkey **kp)
 	}
  out:
 	free(tname);
-	free(curve);
-#ifdef WITH_OPENSSL
-	BN_clear_free(exponent);
-#endif /* WITH_OPENSSL */
 	sshkey_free(k);
 	freezero(ed25519_pk, pklen);
 	freezero(ed25519_sk, sklen);
