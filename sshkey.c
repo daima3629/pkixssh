@@ -3598,45 +3598,24 @@ sshkey_private_deserialize(struct sshbuf *buf, struct sshkey **kp)
 # endif /* OPENSSL_HAS_ECC */
 	case KEY_RSA:
 		{
-		BIGNUM *n = NULL, *e = NULL, *d = NULL;
-		BIGNUM *iqmp = NULL, *p = NULL, *q = NULL;
+		BIGNUM *n = NULL, *e = NULL;
 
 		if ((r = sshbuf_get_bignum2(buf, &n)) != 0 ||
-		    (r = sshbuf_get_bignum2(buf, &e)) != 0 ||
-		    (r = sshbuf_get_bignum2(buf, &d)) != 0 ||
-		    (r = sshbuf_get_bignum2(buf, &iqmp)) != 0 ||
-		    (r = sshbuf_get_bignum2(buf, &p)) != 0 ||
-		    (r = sshbuf_get_bignum2(buf, &q)) != 0)
+		    (r = sshbuf_get_bignum2(buf, &e)) != 0)
 			goto clear_rsa;
-		if (!RSA_set0_key(k->rsa, n, e, d)) {
+		if (!RSA_set0_key(k->rsa, n, e, NULL)) {
 			r = SSH_ERR_LIBCRYPTO_ERROR;
 			goto clear_rsa;
 		}
-		n = e = d = NULL; /* transferred */
-		if ((r = sshrsa_check_length(k->rsa)) != 0)
-			goto clear_rsa;
-		if (!RSA_set0_factors(k->rsa, p, q)) {
-			r = SSH_ERR_LIBCRYPTO_ERROR;
-			goto clear_rsa;
-		}
-		p = q = NULL; /* transferred */
-		if ((r = sshrsa_complete_crt_parameters(k, iqmp)) != 0)
-			goto clear_rsa;
-
-		BN_clear_free(iqmp);
-		break;
+		n = e = NULL; /* transferred */
 
 		clear_rsa:
 			BN_clear_free(n);
 			BN_clear_free(e);
-			BN_clear_free(d);
-			BN_clear_free(p);
-			BN_clear_free(q);
-			BN_clear_free(iqmp);
 
-		goto out;
+		if (r != 0) goto out;
 		}
-		break;
+		/* FALLTHROUGH */
 	case KEY_RSA_CERT:
 		{
 		BIGNUM *d = NULL, *iqmp = NULL, *p = NULL, *q = NULL;
@@ -3646,23 +3625,23 @@ sshkey_private_deserialize(struct sshbuf *buf, struct sshkey **kp)
 		    (r = sshbuf_get_bignum2(buf, &p)) != 0 ||
 		    (r = sshbuf_get_bignum2(buf, &q)) != 0)
 			goto clear_rsacert;
+
 		if ((r = sshrsa_check_length(k->rsa)) != 0)
 			goto clear_rsacert;
+
 		if (!RSA_set0_key(k->rsa, NULL, NULL, d)) {
 			r = SSH_ERR_LIBCRYPTO_ERROR;
 			goto clear_rsacert;
 		}
 		d = NULL; /* transferred */
+
 		if (!RSA_set0_factors(k->rsa, p, q)) {
 			r = SSH_ERR_LIBCRYPTO_ERROR;
 			goto clear_rsacert;
 		}
 		p = q = NULL; /* transferred */
-		if ((r = sshrsa_complete_crt_parameters(k, iqmp)) != 0)
-			goto clear_rsacert;
 
-		BN_clear_free(iqmp);
-		break;
+		r = sshrsa_complete_crt_parameters(k, iqmp);
 
 		clear_rsacert:
 			BN_clear_free(d);
@@ -3670,7 +3649,7 @@ sshkey_private_deserialize(struct sshbuf *buf, struct sshkey **kp)
 			BN_clear_free(q);
 			BN_clear_free(iqmp);
 
-		goto out;
+		if (r != 0) goto out;
 		}
 		break;
 #endif /* WITH_OPENSSL */
