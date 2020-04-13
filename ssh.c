@@ -220,13 +220,18 @@ extern u_int muxclient_command;
 static void
 usage(void)
 {
+#undef USAGE_OPENSSL_ENGINE
+#ifndef USE_OPENSSL_ENGINE
+# define USAGE_OPENSSL_ENGINE
+#else
+# define USAGE_OPENSSL_ENGINE \
+"           [-G engineconfigfile]\n"
+#endif
 	fprintf(stderr,
 "usage: ssh [-46AaCdfgKkMNnqsTtVvXxYy] [-B bind_interface]\n"
 "           [-b bind_address] [-c cipher_spec] [-D [bind_address:]port]\n"
 "           [-E log_file] [-e escape_char] [-F configfile]\n"
-#ifdef USE_OPENSSL_ENGINE
-"           [-G engineconfigfile]\n"
-#endif
+USAGE_OPENSSL_ENGINE
 "           [-I pkcs11]\n"
 "           [-i identity_file] [-J [user@]host[:port]] [-L address]\n"
 "           [-l login_name] [-m mac_spec] [-O ctl_cmd] [-o option] [-p port]\n"
