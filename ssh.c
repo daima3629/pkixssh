@@ -209,7 +209,7 @@ struct sshbuf *command;
 int subsystem_flag = 0;
 
 /* # of replies received for global requests */
-static int remote_forward_confirms_received = 0;
+static int forward_confirms_pending = -1;
 
 /* mux.c */
 extern int muxserver_sock;
@@ -1764,6 +1764,21 @@ fork_postauth(void)
 		fatal("daemon() failed: %.200s", strerror(errno));
 }
 
+static void
+forwarding_success(void)
+{
+	if (forward_confirms_pending < 0)
+		return;
+	if (--forward_confirms_pending == 0) {
+		debug("%s: all expected forwarding replies received", __func__);
+		if (fork_after_authentication_flag)
+			fork_postauth();
+	} else {
+		debug2("%s: %d expected forwarding replies remaining",
+		    __func__, forward_confirms_pending);
+	}
+}
+
 /* Callback for remote forward global requests */
 static void
 ssh_confirm_remote_forward(struct ssh *ssh, int type, u_int32_t seq, void *ctxt)
@@ -1824,11 +1839,7 @@ ssh_confirm_remote_forward(struct ssh *ssh, int type, u_int32_t seq, void *ctxt)
 				    "for listen port %d", rfwd->listen_port);
 		}
 	}
-	if (++remote_forward_confirms_received == options.num_remote_forwards) {
-		debug("All remote forwarding requests processed");
-		if (fork_after_authentication_flag)
-			fork_postauth();
-	}
+	forwarding_success();
 }
 
 static void
@@ -1849,6 +1860,21 @@ ssh_stdio_confirm(struct ssh *ssh, int id, int success, void *arg)
 	UNUSED(arg);
 	if (!success)
 		fatal("stdio forwarding failed");
+}
+
+static void
+ssh_tun_confirm(struct ssh *ssh, int id, int success, void *arg)
+{
+	UNUSED(ssh);
+	UNUSED(arg);
+	if (!success) {
+		error("Tunnel forwarding failed");
+		if (options.exit_on_forward_failure)
+			cleanup_exit(255);
+	}
+
+	debug("%s: tunnel forward established, id=%d", __func__, id);
+	forwarding_success();
 }
 
 static void
@@ -1878,6 +1904,8 @@ ssh_init_forwarding(struct ssh *ssh, char **ifname)
 {
 	int success = 0;
 	int i;
+
+	forward_confirms_pending = 0; /* track pending requests */
 
 	/* Initiate local TCP/IP port forwardings. */
 	for (i = 0; i < options.num_local_forwards; i++) {
@@ -1927,6 +1955,7 @@ ssh_init_forwarding(struct ssh *ssh, char **ifname)
 			client_register_global_confirm(
 			    ssh_confirm_remote_forward,
 			    &options.remote_forwards[i]);
+			forward_confirms_pending++;
 		}
 	}
 
@@ -1934,13 +1963,19 @@ ssh_init_forwarding(struct ssh *ssh, char **ifname)
 	if (options.tun_open != SSH_TUNMODE_NO) {
 		if ((*ifname = client_request_tun_fwd(ssh,
 		    options.tun_open, options.tun_local,
-		    options.tun_remote)) == NULL) {
+		    options.tun_remote, ssh_tun_confirm, NULL)) == NULL) {
 			if (options.exit_on_forward_failure)
 				fatal("Could not request tunnel forwarding.");
 			else
 				error("Could not request tunnel forwarding.");
-		}
+		} else
+			forward_confirms_pending++;
 	}
+	if (forward_confirms_pending > 0) {
+		debug("%s: expecting replies for %d forwards", __func__,
+		    forward_confirms_pending);
+	} else
+		forward_confirms_pending = -1;
 }
 
 static void
@@ -2155,8 +2190,7 @@ ssh_session2(struct ssh *ssh, struct passwd *pw)
 	 * forwarding requests, then let ssh continue in the background.
 	 */
 	if (fork_after_authentication_flag) {
-		if (options.exit_on_forward_failure &&
-		    options.num_remote_forwards > 0) {
+		if (forward_confirms_pending > 0) {
 			debug("deferring postauth fork until remote forward "
 			    "confirmation received");
 		} else
