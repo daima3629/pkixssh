@@ -344,42 +344,30 @@ Xstat(char *filename)
 static struct sshkey *
 load_identity(const char *filename, char **commentp)
 {
-	char *pass;
 	struct sshkey *prv;
 	int r;
 
-	if (commentp != NULL)
-		*commentp = NULL;
-#ifdef USE_OPENSSL_STORE2
-	if (strncmp(filename, "store:", 6) == 0) {
-		r = store_load_private_type(KEY_UNSPEC,
-			filename + 6, NULL, &prv, NULL);
-		if (r != SSH_ERR_SUCCESS)
-			fatal("Load key \"%s\": %s", filename, ssh_err(r));
-		return prv;
-	} else
-#endif
-#ifdef USE_OPENSSL_ENGINE
-	if (strncmp(filename, "engine:", 7) == 0) {
-		r = engine_load_private_type(KEY_UNSPEC,
-			filename + 7, NULL, &prv, NULL);
-		if (r != SSH_ERR_SUCCESS)
-			fatal("Load key \"%s\": %s", filename, ssh_err(r));
-		return prv;
-	} else
-#endif
-	if ((r = sshkey_load_private(filename, "", &prv, commentp)) == 0)
-		return prv;
+	/* NOTE: engine or store based keys use method provided
+	 * by crypto-library to get passphrase if needed.
+	 */
+	r = sshkey_load_private_type(KEY_UNSPEC, filename, "", &prv, commentp);
+	if (r == 0) return prv;
+
 	if (r != SSH_ERR_KEY_WRONG_PASSPHRASE)
 		fatal("Load key \"%s\": %s", filename, ssh_err(r));
+
+{	/* try passphrase only for file based keys */
+	char *pass;
 	if (identity_passphrase)
 		pass = xstrdup(identity_passphrase);
 	else
 		pass = read_passphrase("Enter passphrase: ", RP_ALLOW_STDIN);
 	r = sshkey_load_private(filename, pass, &prv, commentp);
 	freezero(pass, strlen(pass));
+}
 	if (r != 0)
 		fatal("Load key \"%s\": %s", filename, ssh_err(r));
+
 	return prv;
 }
 
