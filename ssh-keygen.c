@@ -2694,11 +2694,13 @@ usage(void)
 	    "       ssh-keygen -F hostname [-lv] [-f known_hosts_file]\n"
 	    "       ssh-keygen -H [-f known_hosts_file]\n"
 	    "       ssh-keygen -R hostname [-f known_hosts_file]\n"
-	    "       ssh-keygen -r hostname [-g] [-f input_keyfile]\n"
+	    "       ssh-keygen -r hostname [-g] [-f input_keyfile]\n");
 #ifdef WITH_OPENSSL
+	fprintf(stderr,
 	    "       ssh-keygen -M generate [-O option] output_file\n"
-	    "       ssh-keygen -M screen [-f input_file] [-O option] output_file\n"
+	    "       ssh-keygen -M screen [-f input_file] [-O option] output_file\n");
 #endif
+	fprintf(stderr,
 	    "       ssh-keygen -I certificate_identity -s ca_key [-hU] [-D pkcs11_provider]\n"
 	    "                  [-n principals] [-O option] [-V validity_interval]\n"
 	    "                  [-z serial_number] file ...\n"
