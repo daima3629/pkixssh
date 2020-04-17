@@ -1,4 +1,4 @@
-/* $OpenBSD: authfile.c,v 1.138 2020/04/08 00:09:24 djm Exp $ */
+/* $OpenBSD: authfile.c,v 1.140 2020/04/17 07:15:11 djm Exp $ */
 /*
  * Copyright (c) 2000, 2013 Markus Friedl.  All rights reserved.
  * Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
@@ -185,39 +185,14 @@ sshkey_load_private_type_fd(int fd, int type, const char *passphrase,
 	return r;
 }
 
-/* XXX this is almost identical to sshkey_load_private_type() */
 int
 sshkey_load_private(const char *filename, const char *passphrase,
     struct sshkey **keyp, char **commentp)
 {
-	struct sshbuf *buffer = NULL;
-	int r, fd;
-
 	debug3("%s() filename=%s", __func__, (filename ? filename : "?!?"));
-
-	if (keyp != NULL)
-		*keyp = NULL;
-	if (commentp != NULL)
-		*commentp = NULL;
-
-	if ((fd = open(filename, O_RDONLY)) == -1)
-		return SSH_ERR_SYSTEM_ERROR;
-	if (sshkey_perm_ok(fd, filename) != 0) {
-		r = SSH_ERR_KEY_BAD_PERMISSIONS;
-		goto out;
-	}
-	if ((r = sshbuf_load_fd(fd, &buffer)) != 0 ||
-	    (r = sshkey_parse_private_fileblob(buffer, passphrase, keyp,
-	    commentp)) != 0)
-		goto out;
-	if (keyp && *keyp &&
-	    (r = sshkey_set_filename(*keyp, filename)) != 0)
-		goto out;
-	r = 0;
- out:
-	close(fd);
-	sshbuf_free(buffer);
-	return r;
+	
+	return sshkey_load_private_type_file(KEY_UNSPEC, filename, passphrase, 
+	    keyp, commentp);
 }
 
 static int
