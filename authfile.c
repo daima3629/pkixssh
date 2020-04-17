@@ -116,17 +116,38 @@ sshkey_perm_ok(int fd, const char *filename)
 	return 0;
 }
 
+
+static int
+sshkey_load_private_type_file(int type, const char *filename,
+    const char *passphrase, struct sshkey **keyp, char **commentp)
+{
+	int fd, r;
+
+	if (keyp != NULL) *keyp = NULL;
+	if (commentp != NULL) *commentp = NULL;
+
+	if ((fd = open(filename, O_RDONLY)) == -1)
+		return SSH_ERR_SYSTEM_ERROR;
+
+	r = sshkey_perm_ok(fd, filename);
+	if (r != 0) goto out;
+
+	r = sshkey_load_private_type_fd(fd, type, passphrase, keyp, commentp);
+	if (r != 0) goto out;
+
+	if (keyp && *keyp)
+		r = sshkey_set_filename(*keyp, filename);
+
+out:
+	close(fd);
+	return r;
+}
+
 int
 sshkey_load_private_type(int type, const char *filename, const char *passphrase,
     struct sshkey **keyp, char **commentp)
 {
-	int fd, r;
-
 	debug3("%s() type=%d, filename=%s", __func__, type, (filename ? filename : "?!?"));
-	if (keyp != NULL)
-		*keyp = NULL;
-	if (commentp != NULL)
-		*commentp = NULL;
 
 #ifdef USE_OPENSSL_STORE2
 	if (strncmp(filename, "store:", 6) == 0)
@@ -139,19 +160,8 @@ sshkey_load_private_type(int type, const char *filename, const char *passphrase,
 			passphrase, keyp, commentp);
 #endif
 
-	if ((fd = open(filename, O_RDONLY)) == -1)
-		return SSH_ERR_SYSTEM_ERROR;
-
-	r = sshkey_perm_ok(fd, filename);
-	if (r != 0)
-		goto out;
-
-	r = sshkey_load_private_type_fd(fd, type, passphrase, keyp, commentp);
-	if (r == 0 && keyp && *keyp)
-		r = sshkey_set_filename(*keyp, filename);
- out:
-	close(fd);
-	return r;
+	return sshkey_load_private_type_file(type, filename, passphrase,
+	    keyp, commentp);
 }
 
 int

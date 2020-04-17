@@ -451,13 +451,16 @@ engine_load_private_type(int type, const char *filename,
 	EVP_PKEY *pk = NULL;
 	struct sshkey *prv = NULL;
 
+	UNUSED(passphrase);
+	if (keyp != NULL) *keyp = NULL;
+	if (commentp != NULL) *commentp = NULL;
+
 	e = split_eng_keyid(filename, &engkeyid);
 	if (e == NULL) {
 		ret = SSH_ERR_INVALID_ARGUMENT;
 		goto done;
 	}
 
-	(void)passphrase;
 	pk = ENGINE_load_private_key(e, engkeyid, ssh_ui_method, NULL);
 	if (pk == NULL) {
 		char ebuf[1024];
@@ -881,7 +884,9 @@ store_load_private_type(int type, const char *filename,
 	STORE_KEY_DATA *kd = NULL;
 	struct sshkey *prv = NULL;
 
-	(void)passphrase;
+	UNUSED(passphrase);
+	if (keyp != NULL) *keyp = NULL;
+	if (commentp != NULL) *commentp = NULL;
 
 	kd = store_load_key(url);
 	if (kd == NULL) {
