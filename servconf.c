@@ -34,9 +34,15 @@
 
 #include "includes.h"
 
+#if !defined(HAVE_SYS_VALID_RDOMAIN) && defined(HAVE_SYS_SYSCTL_H)
+# if defined(__OpenBSD__)
+#  define USE_SYSCTL_NET
+# endif
+#endif
+
 #include <sys/types.h>
 #include <sys/socket.h>
-#ifdef HAVE_SYS_SYSCTL_H
+#ifdef USE_SYSCTL_NET
 #include <sys/sysctl.h>
 #endif
 
@@ -924,7 +930,7 @@ valid_rdomain(const char *name)
 {
 #if defined(HAVE_SYS_VALID_RDOMAIN)
 	return sys_valid_rdomain(name);
-#elif defined(__OpenBSD__)
+#elif defined(USE_SYSCTL_NET)
 	const char *errstr;
 	long long num;
 	struct rt_tableinfo info;
@@ -948,7 +954,7 @@ valid_rdomain(const char *name)
 		return 0;
 
 	return 1;
-#else /* defined(__OpenBSD__) */
+#else /* defined(USE_SYSCTL_NET) */
 	error("Routing domains are not supported on this platform");
 	return 0;
 #endif
