@@ -77,12 +77,6 @@
 #include "compat.h"
 #include "channels.h"
 
-#ifdef __ANDROID__
-# define SECURE_MASK_DIR 002
-#else
-# define SECURE_MASK_DIR 022
-#endif
-
 /* import */
 extern ServerOptions options;
 extern struct include_list includes;
