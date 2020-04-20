@@ -1328,6 +1328,12 @@ does not have a terminal associated with it but
 are set, it will execute the program specified by
 .Ev SSH_ASKPASS
 that may open a X11 window to read the passphrase.
+For keys from
+.Dq engine
+or
+.Dq store
+.Ev SSH_ASKPASS
+is preferred over associated terminal.
 Note if
 .Ev SSH_ASKPASS
 is not set will be executed program
