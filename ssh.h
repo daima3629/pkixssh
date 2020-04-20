@@ -68,6 +68,12 @@
 #define SSH_ASKPASS_ENV		"SSH_ASKPASS"
 
 /*
+ * Environment variable for overwriting the default location of engine
+ * configuration file
+ */
+#define SSH_ENGINE_CONF_ENV	"SSH_ENGINE_CONF"
+
+/*
  * Force host key length and server key length to differ by at least this
  * many bits.  This is to make double encryption with rsaref work.
  */

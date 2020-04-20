@@ -1213,6 +1213,8 @@ main(int ac, char **av)
 {	char *filename = NULL;
 
 	if (engconfig == NULL)
+		engconfig = getenv(SSH_ENGINE_CONF_ENV);
+	if (engconfig == NULL)
 		xasprintf(&filename, "%s/%s", pw->pw_dir,
 		    _PATH_SSH_ENGINE_CONFFILE); /*fatal on error*/
 	else

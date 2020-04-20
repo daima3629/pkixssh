@@ -43,7 +43,7 @@
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
 .\" $OpenBSD: ssh.1,v 1.412 2020/04/17 03:34:42 djm Exp $
-.Dd $Mdocdate: April 17 2020 $
+.Dd $Mdocdate: April 20 2020 $
 .Dt SSH 1
 .Os
 .Sh NAME
@@ -1350,6 +1350,8 @@ is preferred over associated terminal.
 Identifies the path of a
 .Ux Ns -domain
 socket used to communicate with the agent.
+.It Ev SSH_ENGINE_CONF
+Overrides default location of engine configuration file.
 .El
 .Pp
 .Xr sshd 8

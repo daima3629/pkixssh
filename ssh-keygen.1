@@ -44,7 +44,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: April 3 2020 $
+.Dd $Mdocdate: April 10 2020 $
 .Dt SSH-KEYGEN 1
 .Os
 .Sh NAME
@@ -946,6 +946,11 @@ then
 .Nm
 will exit with a non-zero exit status.
 A zero exit status will only be returned if no key was revoked.
+.Sh ENVIRONMENT
+.Bl -tag -width Ds
+.It Ev SSH_ENGINE_CONF
+Overrides default location of engine configuration file.
+.El
 .Sh FILES
 .Bl -tag -width Ds -compact
 .It Pa ~/.ssh/id_dsa

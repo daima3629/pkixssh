@@ -2948,6 +2948,22 @@ main(int argc, char **argv)
 	/* reinit */
 	log_init(__progname, log_level, SYSLOG_FACILITY_USER, 1);
 
+#ifdef USE_OPENSSL_ENGINE
+{	char *filename = NULL, *engconfig;
+
+	engconfig = getenv(SSH_ENGINE_CONF_ENV);
+	if (engconfig == NULL)
+		xasprintf(&filename, "%s/%s", pw->pw_dir,
+		    _PATH_SSH_ENGINE_CONFFILE); /*fatal on error*/
+	else
+		filename = engconfig;
+
+	(void)process_engconfig_file(filename);
+	if (filename != engconfig)
+		free(filename);
+}
+#endif
+
 	argv += optind;
 	argc -= optind;
 
