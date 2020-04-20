@@ -34,8 +34,7 @@ extern void ssh_engines_shutdown(void);
 
 #include <openssl/engine.h>
 
-extern int/*bool*/
-process_engconfig_line(char *line, const char *filename, int linenum);
+extern int/*bool*/ process_engconfig_file(const char *engconfig);
 
 extern void ssh_load_engines(void);
 

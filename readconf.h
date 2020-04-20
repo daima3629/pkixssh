@@ -12,8 +12,7 @@
  * incompatible with the protocol description in the RFC file, it must be
  * called by a name other than "ssh" or "Secure Shell".
  *
- * X509 certificate support,
- * Copyright (c) 2002-2017 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -260,10 +259,5 @@ void	 add_local_forward(Options *, const struct Forward *);
 void	 add_remote_forward(Options *, const struct Forward *);
 void	 add_identity_file(Options *, const char *, const char *, int);
 void	 add_certificate_file(Options *, const char *, int);
-
-#ifdef USE_OPENSSL_ENGINE
-int/*bool*/ process_engconfig_file(const char *filename);
-int/*bool*/ process_engconfig_line(char *line, const char *filename, int linenum);
-#endif
 
 #endif				/* READCONF_H */

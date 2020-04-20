@@ -680,7 +680,7 @@ static struct sshbuf *eng_list = NULL;
 static char *eng_name = NULL;
 
 
-int/*bool*/
+static int/*bool*/
 process_engconfig_line(char *line, const char *filename, int linenum) {
 	int ret = 1;
 	size_t len;
@@ -769,6 +769,46 @@ done:
 	}
 
 	return(ret);
+}
+
+
+/*
+ * Reads the engine config file and execute commands accordingly.
+ * If the file does not exist, just exit.
+ */
+int/*bool*/ 
+process_engconfig_file(const char *filename) {
+	FILE *f;
+	char line[1024];
+	int linenum;
+	int flag = 1;
+
+	f = fopen(filename, "r");
+	if (f == NULL) return 0;
+
+	{/*always check permissions on user engine file*/
+		char errmsg[1024];
+		if (safe_usr_fileno(fileno(f), filename,
+		    errmsg, sizeof(errmsg)) == -1)
+			fatal("%s", errmsg);
+	}
+
+	debug("reading engine configuration options '%s'",
+	    filename);
+
+	linenum = 0;
+	while (fgets(line, sizeof(line), f)) {
+		linenum++;
+		flag = process_engconfig_line(line, filename, linenum);
+		if (!flag) break;
+	}
+
+	fclose(f);
+	if (!flag)
+		fatal("%s: terminating, bad engine option on line %d",
+		    filename, linenum);
+
+	return 1;
 }
 #endif /*def USE_OPENSSL_ENGINE*/
 

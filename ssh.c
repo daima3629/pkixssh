@@ -176,9 +176,6 @@ Options options;
 /* optional user configfile */
 char *config = NULL;
 
-/* user engine configfile */
-char *engconfig = NULL;
-
 /*
  * Name of the host we are connecting to.  This is the name given on the
  * command line, or the Hostname specified for the user-supplied name in a
@@ -649,6 +646,9 @@ main(int ac, char **av)
 	int i, r, opt, exit_status, use_syslog, direct, timeout_ms;
 	int was_addr, config_test = 0, opt_terminated = 0, want_final_pass = 0;
 	char *p, *cp, *line, *argv0, buf[PATH_MAX], *logfile;
+#ifdef USE_OPENSSL_ENGINE
+	char *engconfig = NULL;
+#endif
 	char cname[NI_MAXHOST];
 	struct stat st;
 	struct passwd *pw;
@@ -1210,24 +1210,26 @@ main(int ac, char **av)
 
 #ifdef USE_OPENSSL_ENGINE
 	/* process per-user engine configuration file */
-	if (engconfig != NULL) {
-		r = process_engconfig_file(engconfig);
-	} else {
-		r = snprintf(buf, sizeof(buf), "%s/%s", pw->pw_dir,
-		    _PATH_SSH_ENGINE_CONFFILE);
-		if (r > 0 && (size_t)r < sizeof(buf))
-			r = process_engconfig_file(buf);
-		else
-			r = 0;
-	}
+{	char *filename = NULL;
+
+	if (engconfig == NULL)
+		xasprintf(&filename, "%s/%s", pw->pw_dir,
+		    _PATH_SSH_ENGINE_CONFFILE); /*fatal on error*/
+	else
+		filename = engconfig;
+
+	r = process_engconfig_file(filename);
 	if (!r) {
 		if (engconfig != NULL)
-			debug("Can't process engine config file %.100s:"
-			    " %.100s", engconfig, strerror(errno));
+			debug("cannot process engine config file %s:"
+			    " %s", engconfig, strerror(errno));
 		else
-			debug("Can't process default engine config file:"
-			    " %.100s", strerror(errno));
+			debug("cannot process default engine config file:"
+			    " %s", strerror(errno));
 	}
+	if (filename != engconfig)
+		free(filename);
+}
 #endif
 
 	/* Parse the configuration files */

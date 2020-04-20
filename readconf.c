@@ -2703,47 +2703,6 @@ parse_forward(struct Forward *fwd, const char *fwdspec, int dynamicfwd, int remo
 	return (0);
 }
 
-#ifdef USE_OPENSSL_ENGINE
-/*
- * Reads the endgine config file and execute commands accordingly.
- * If the file does not exist, this returns 0.
- */
-int/*bool*/
-process_engconfig_file(const char *filename) {
-	FILE *f;
-	char line[1024];
-	int linenum;
-	int flag = 1;
-
-	f = fopen(filename, "r");
-	if (f == NULL)
-		return(0);
-
-	{/*always check permitions of user engine file*/
-		char errmsg[1024];
-		if (safe_usr_fileno(fileno(f), filename,
-		    errmsg, sizeof(errmsg)) == -1)
-			fatal("%s", errmsg);
-	}
-
-	debug("Reading engines configuration options %.200s", filename);
-
-	linenum = 0;
-	while (fgets(line, sizeof(line), f)) {
-		linenum++;
-		flag = process_engconfig_line(line, filename, linenum);
-		if (!flag)
-			break;
-	}
-
-	fclose(f);
-	if (!flag)
-		fatal("%s: terminating, bad engine option on line %d",
-		    filename, linenum);
-	return(flag);
-}
-#endif /*def USE_OPENSSL_ENGINE*/
-
 int
 parse_jump(const char *s, Options *o, int active)
 {
