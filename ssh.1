@@ -1315,43 +1315,7 @@ More permanent VPNs are better provided by tools such as
 and
 .Xr isakmpd 8 .
 .Sh ENVIRONMENT
-.Nm
-will normally set the following environment variables:
-.Bl -tag -width "SSH_ORIGINAL_COMMAND"
-.It Ev DISPLAY
-The
-.Ev DISPLAY
-variable indicates the location of the X11 server.
-It is automatically set by
-.Nm
-to point to a value of the form
-.Dq hostname:n ,
-where
-.Dq hostname
-indicates the host where the shell runs, and
-.Sq n
-is an integer \*(Ge 1.
-.Nm
-uses this special value to forward X11 connections over the secure
-channel.
-The user should normally not set
-.Ev DISPLAY
-explicitly, as that
-will render the X11 connection insecure (and will require the user to
-manually copy any required authorization cookies).
-.It Ev HOME
-Set to the path of the user's home directory.
-.It Ev LOGNAME
-Synonym for
-.Ev USER ;
-set for compatibility with systems that use this variable.
-.It Ev MAIL
-Set to the path of the user's mailbox.
-.It Ev PATH
-Set to the default
-.Ev PATH ,
-as specified when compiling
-.Nm .
+.Bl -tag -width Ds
 .It Ev SSH_ASKPASS
 If
 .Nm
@@ -1386,6 +1350,49 @@ is preferred over associated terminal.
 Identifies the path of a
 .Ux Ns -domain
 socket used to communicate with the agent.
+.El
+.Pp
+.Xr sshd 8
+will normally set the following environment variables:
+.Bl -tag -width Ds
+.It Ev DISPLAY
+The
+.Ev DISPLAY
+variable indicates the location of the X11 server.
+It is automatically set by
+.Nm
+to point to a value of the form
+.Dq hostname:n ,
+where
+.Dq hostname
+indicates the host where the shell runs, and
+.Sq n
+is an integer \*(Ge 1.
+.Nm
+uses this special value to forward X11 connections over the secure
+channel.
+The user should normally not set
+.Ev DISPLAY
+explicitly, as that
+will render the X11 connection insecure (and will require the user to
+manually copy any required authorization cookies).
+.It Ev HOME
+Set to the path of the user's home directory.
+.It Ev LOGNAME
+Synonym for
+.Ev USER ;
+set for compatibility with systems that use this variable.
+.It Ev MAIL
+Set to the path of the user's mailbox.
+.It Ev PATH
+Set to the default
+.Ev PATH ,
+as specified when compiling
+.Nm .
+.It Ev SSH_AUTH_SOCK
+Identifies the path of a
+.Ux Ns -domain
+socket used to communicate with the forwarded agent.
 .It Ev SSH_CONNECTION
 Identifies the client and server ends of the connection.
 The variable contains
@@ -1420,7 +1427,7 @@ Set to the name of the user logging in.
 .El
 .Pp
 Additionally,
-.Nm
+.Xr sshd 8
 reads
 .Pa ~/.ssh/environment ,
 and adds lines of the format
