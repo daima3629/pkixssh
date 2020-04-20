@@ -2060,13 +2060,10 @@ read_config_file_depth(const char *filename, struct passwd *pw,
 		return 0;
 
 	if (flags & SSHCONF_CHECKPERM) {
-		struct stat sb;
-
-		if (fstat(fileno(f), &sb) == -1)
-			fatal("fstat %s: %s", filename, strerror(errno));
-		if (((sb.st_uid != 0 && sb.st_uid != getuid()) ||
-		    (sb.st_mode & 022) != 0))
-			fatal("Bad owner or permissions on %s", filename);
+		char errmsg[1024];
+		if (safe_usr_fileno(fileno(f), filename,
+		    errmsg, sizeof(errmsg)) == -1)
+			fatal("%s", errmsg);
 	}
 
 	debug("Reading configuration data %.200s", filename);
@@ -2723,13 +2720,10 @@ process_engconfig_file(const char *filename) {
 		return(0);
 
 	{/*always check permitions of user engine file*/
-		struct stat sb;
-
-		if (fstat(fileno(f), &sb) == -1)
-			fatal("fstat %s: %s", filename, strerror(errno));
-		if (((sb.st_uid != 0 && sb.st_uid != getuid()) ||
-		    (sb.st_mode & 022) != 0))
-			fatal("Bad owner or permissions on %s", filename);
+		char errmsg[1024];
+		if (safe_usr_fileno(fileno(f), filename,
+		    errmsg, sizeof(errmsg)) == -1)
+			fatal("%s", errmsg);
 	}
 
 	debug("Reading engines configuration options %.200s", filename);

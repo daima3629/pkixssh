@@ -2001,6 +2001,18 @@ xrename(const char *oldpath, const char *newpath) {
 	return 0;
 }
 
+static inline int
+check_file_mode(struct stat *st, uid_t uid, const char *filename,
+    char *err, size_t errlen) {
+	if ((!platform_sys_dir_uid(st->st_uid) && st->st_uid != uid) ||
+	    (st->st_mode & 022) != 0) {
+		snprintf(err, errlen, "bad ownership or modes for file %s",
+		    filename);
+		return -1;
+	}
+	return 0;
+}
+
 /*
  * Check a given path for security. This is defined as all components
  * of the path to the file must be owned by either the owner of
@@ -2035,12 +2047,8 @@ safe_path(const char *name, struct stat *stp, const char *pw_dir,
 		snprintf(err, errlen, "%s is not a regular file", buf);
 		return -1;
 	}
-	if ((!platform_sys_dir_uid(stp->st_uid) && stp->st_uid != uid) ||
-	    (stp->st_mode & 022) != 0) {
-		snprintf(err, errlen, "bad ownership or modes for file %s",
-		    buf);
+	if (check_file_mode(stp, uid, buf, err, errlen) == -1)
 		return -1;
-	}
 
 	/* for each component of the canonical path, walking upwards */
 	for (;;) {
@@ -2091,6 +2099,21 @@ safe_path_fd(int fd, const char *file, struct passwd *pw,
 		return -1;
 	}
 	return safe_path(file, &st, pw->pw_dir, pw->pw_uid, err, errlen);
+}
+
+/*
+ * Returns 0 on success and -1 on failure
+ */
+int
+safe_usr_fileno(int fd, const char *filename, char *err, size_t errlen) {
+	struct stat st;
+
+	if (fstat(fd, &st) == -1) {
+		snprintf(err, errlen, "cannot stat file %s: %s",
+		    filename, strerror(errno));
+		return -1;
+	}
+	return check_file_mode(&st, getuid(), filename, err, errlen);
 }
 
 /*
