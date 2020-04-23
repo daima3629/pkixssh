@@ -318,6 +318,7 @@ distclean:	regressclean localclean
 	rm -f survey.sh openbsd-compat/regress/Makefile *~ 
 	rm -rf autom4te.cache
 	(cd openbsd-compat && $(MAKE) distclean)
+	rm -f tests/regress-env
 	(cd tests/CA && $(MAKE) distclean)
 	if test -d pkg ; then \
 		rm -fr pkg ; \

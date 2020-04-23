@@ -9,6 +9,7 @@ export _POSIX2_VERSION
 TEST_SHELL=${TEST_SHELL-sh}
 
 . ../tests/CA/shell.rc
+. $OBJ/../tests/regress-env
 
 case `uname -s 2>/dev/null` in
 OSF1*)
@@ -21,6 +22,11 @@ CYGWIN*)
 esac
 
 PORT=${TEST_SSH_PORT-4242}
+
+# wrapper to egrep program found by configure script
+egrep() {
+  $EGREP ${1+"$@"}
+}
 
 if [ -x /usr/ucb/whoami ]; then
 	USER=`/usr/ucb/whoami`

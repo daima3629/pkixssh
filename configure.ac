@@ -5972,7 +5972,7 @@ LDFLAGS="${LDFLAGS} ${LDFLAGS_AFTER}"
 AC_EXEEXT
 AC_CONFIG_FILES([Makefile buildpkg.sh opensshd.init openssh.xml \
 	openbsd-compat/Makefile openbsd-compat/regress/Makefile \
-	tests/CA/Makefile tests/CA/env \
+	tests/regress-env tests/CA/Makefile tests/CA/env \
 	survey.sh])
 if test yes = $OPENSSL_FIPS_MODE; then
   if test -n "$FIPSLD_CC"; then
