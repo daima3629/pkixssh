@@ -1,4 +1,4 @@
-#	$OpenBSD: Makefile,v 1.106 2020/01/31 23:25:08 djm Exp $
+#	$OpenBSD: Makefile,v 1.108 2020/04/20 04:44:47 djm Exp $
 
 tests: unit file-tests t-exec
 check-core: tests
@@ -86,7 +86,8 @@ LTESTS= 	connect \
 		cfginclude \
 		servcfginclude \
 		allow-deny-users \
-		authinfo
+		authinfo \
+		keygen-comment
 
 #		multiplex \
 
