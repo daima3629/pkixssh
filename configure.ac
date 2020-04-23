@@ -5449,6 +5449,7 @@ AC_CHECK_FUNCS([ \
   EC_KEY_METHOD_new \
   ECDSA_SIG_get0 \
   ECDSA_SIG_set0 \
+  EVP_chacha20 \
   EVP_CIPHER_CTX_iv \
   EVP_CIPHER_meth_new \
   EVP_MD_CTX_new \

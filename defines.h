@@ -1,8 +1,6 @@
 /*
  * Copyright (c) 1999-2003 Damien Miller.  All rights reserved.
- *
- * X.509 certificates support,
- * Copyright (c) 2011-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -896,6 +894,18 @@ struct winsize {
     defined(HAVE_DECL_GLOB_NOMATCH) &&  HAVE_DECL_GLOB_NOMATCH != 0 && \
     !defined(BROKEN_GLOB)
 # define USE_SYSTEM_GLOB
+#endif
+
+#undef USE_BUILTIN_CHACHAPOLY
+#ifndef HAVE_EVP_CHACHA20
+# define USE_BUILTIN_CHACHAPOLY
+#endif
+#ifdef LIBRESSL_VERSION_NUMBER
+# if LIBRESSL_VERSION_NUMBER < 0x3010000fL
+/* broken EVP_chacha20 */
+#  undef USE_BUILTIN_CHACHAPOLY
+#  define USE_BUILTIN_CHACHAPOLY
+# endif
 #endif
 
 #ifndef UNUSED
