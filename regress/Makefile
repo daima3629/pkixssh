@@ -90,6 +90,7 @@ LTESTS= 	connect \
 		keygen-comment
 
 #		multiplex \
+#		percent \
 
 FIPS_LTESTS=\
 	fips-connect-privsep \
