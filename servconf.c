@@ -794,7 +794,11 @@ static struct {
 	{ "fingerprinthash", sFingerprintHash, SSHCFG_GLOBAL },
 	{ "disableforwarding", sDisableForwarding, SSHCFG_ALL },
 	{ "exposeauthinfo", sExposeAuthInfo, SSHCFG_ALL },
+#ifdef ENABLE_ROUTING_DOMAIN
 	{ "rdomain", sRDomain, SSHCFG_ALL },
+#else
+	{ "rdomain", sUnsupported, SSHCFG_ALL },
+#endif
 	{ "casignaturealgorithms", sCASignatureAlgorithms, SSHCFG_ALL },
 	{ NULL, sBadOption, 0 }
 };
@@ -2560,6 +2564,7 @@ parse_string:
 		intptr = &options->expose_userauth_info;
 		goto parse_flag;
 
+#ifdef ENABLE_ROUTING_DOMAIN
 	case sRDomain:
 		charptr = &options->routing_domain;
 		arg = strdelim(&cp);
@@ -2573,6 +2578,7 @@ parse_string:
 		if (*activep && *charptr == NULL)
 			*charptr = xstrdup(arg);
 		break;
+#endif
 
 	case sDeprecated:
 	case sIgnore:

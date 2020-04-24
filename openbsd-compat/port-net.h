@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2005 Reyk Floeter <reyk@openbsd.org>
+ * Copyright (c) 2020 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -44,6 +45,16 @@ int sys_valid_rdomain(const char *name);
 #if defined(SYS_RDOMAIN_XXX)
 # define HAVE_SYS_SET_PROCESS_RDOMAIN
 void sys_set_process_rdomain(const char *name);
+#endif
+
+#ifndef HAVE_SYS_SET_PROCESS_RDOMAIN
+# ifdef __OpenBSD__
+#  define HAVE_SETRTABLE
+# endif
+#endif
+
+#if defined(HAVE_SYS_SET_PROCESS_RDOMAIN) || defined(HAVE_SETRTABLE)
+# defined ENABLE_ROUTING_DOMAIN
 #endif
 
 #endif

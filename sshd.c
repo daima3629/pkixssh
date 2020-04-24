@@ -1524,6 +1524,7 @@ check_ip_options(struct ssh *ssh)
 #endif /* IP_OPTIONS */
 }
 
+#ifdef ENABLE_ROUTING_DOMAIN
 /* Set the routing domain for this process */
 static void
 set_process_rdomain(struct ssh *ssh, const char *name)
@@ -1539,7 +1540,7 @@ set_process_rdomain(struct ssh *ssh, const char *name)
 	}
 	/* NB. We don't pass 'ssh' to sys_set_process_rdomain() */
 	return sys_set_process_rdomain(name);
-#elif defined(__OpenBSD__)
+#elif defined(HAVE_SETRTABLE)
 	int rtable, ortable = getrtable();
 	const char *errstr;
 
@@ -1559,12 +1560,14 @@ set_process_rdomain(struct ssh *ssh, const char *name)
 		fatal("Unable to set routing domain %d: %s",
 		    rtable, strerror(errno));
 	debug("%s: set routing domain %d (was %d)", __func__, rtable, ortable);
-#else /* defined(__OpenBSD__) */
+#else /* defined(HAVE_SETRTABLE) */
+	/*unreachable*/
 	UNUSED(ssh);
 	UNUSED(name);
 	fatal("Unable to set routing domain: not supported in this platform");
 #endif
 }
+#endif /*def ENABLE_ROUTING_DOMAIN*/
 
 static void
 accumulate_host_timing_secret(struct sshbuf *server_cfg,
@@ -2253,8 +2256,10 @@ main(int ac, char **av)
 		cleanup_exit(255);
 	}
 
+#ifdef ENABLE_ROUTING_DOMAIN
 	if (options.routing_domain != NULL)
 		set_process_rdomain(ssh, options.routing_domain);
+#endif
 
 	/*
 	 * The rest of the code depends on the fact that
