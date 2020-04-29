@@ -566,10 +566,12 @@ static void
 usage(void)
 {
 	fprintf(stderr,
-"usage: ssh-add [-cDdkLlqvXx] [-E fingerprint_hash] [-t life]\n"
+"usage: ssh-add [-cDdkLlqvXx] [-E fingerprint_hash] [-t life]\n");
 #ifdef WITH_XMSS
-"               [-M maxsign] [-m minleft]\n"
+	fprintf(stderr,
+"               [-M maxsign] [-m minleft]\n");
 #endif
+	fprintf(stderr,
 "               [file ...]\n"
 "       ssh-add -s pkcs11\n"
 "       ssh-add -e pkcs11\n"
