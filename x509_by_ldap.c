@@ -368,7 +368,7 @@ TRACE_BY_LDAP(__func__, "ctx=%p", ctx);
 
 	if (ctx == NULL) return;
 
-	p = (lookup_item*) ctx->method_data;
+	p = (lookup_item*)(void*) ctx->method_data;
 	while (p != NULL) {
 		lookup_item *q = p;
 		p = p->next;
@@ -403,7 +403,7 @@ ldaplookup_add_search(X509_LOOKUP *ctx, const char *url) {
 	q = lookup_item_new(url);
 	if (q == NULL) return 0;
 
-	p = (lookup_item*) ctx->method_data;
+	p = (lookup_item*)(void*) ctx->method_data;
 	if (p == NULL) {
 		ctx->method_data = (void*) q;
 		return 1;
@@ -428,7 +428,7 @@ TRACE_BY_LDAP(__func__, "ver: '%s'  ...", ver);
 	if (ctx == NULL) return 0;
 	if (ver == NULL) return 0;
 
-	p = (lookup_item*) ctx->method_data;
+	p = (lookup_item*)(void*) ctx->method_data;
 TRACE_BY_LDAP(__func__, "p=%p", (void*)p);
 	if (p == NULL) return 0;
 
@@ -573,7 +573,7 @@ TRACE_BY_LDAP(__func__, "ctx=%p, type: %d", ctx, type);
 	if (ctx == NULL) return 0;
 	if (name == NULL) return 0;
 
-	p = (lookup_item*) ctx->method_data;
+	p = (lookup_item*)(void*) ctx->method_data;
 	if (p == NULL) return 0;
 
 #ifndef USE_LDAP_STORE
