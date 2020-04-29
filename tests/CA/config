@@ -116,11 +116,21 @@ if test -n "$OPENSSL_FIPS"; then
   # => do conversion only for 1.0.1*
   # Remark used in 2-cre_cakeys.sh.
   case $openssl_version in
-    1.0.1*)
-      openssl_nopkcs8_keys=:
-      ;;
+  *"OpenSSL 1.0.1"*)
+    openssl_nopkcs8_keys=:
+    ;;
   esac
 fi
+
+# Starting from 1.1+ we will use pkey utilities.
+# Remark: genpkey is available in OpenSSL 1.0.0.
+openssl_use_pkey=${openssl_use_pkey-:}
+case $openssl_version in
+*"OpenSSL 0.9"*|\
+*"OpenSSL 1.0"*)
+  openssl_use_pkey=false
+  ;;
+esac
 
 
 # These are the known patent issues with OpenSSL:

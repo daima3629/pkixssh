@@ -117,7 +117,7 @@ gen_pkey () {
 
   rm -f "$1" 2>/dev/null
 
-  if $openssl_nopkcs8_keys; then
+  if $openssl_nopkcs8_keys ; then
     rm -f "$1"-trad 2>/dev/null
     $OPENSSL genpkey -algorithm $2 \
       -out "$1"-trad &&
@@ -126,7 +126,7 @@ gen_pkey () {
     rm "$1"-trad
   else
     $OPENSSL genpkey -algorithm $2 \
-      -out "$1" -pass pass:$KEY_PASS
+      -out "$1" -pass pass:$KEY_PASS -aes-128-cbc
   fi
 ) 2>> "$CA_LOG"
 }
@@ -140,7 +140,14 @@ gen_rsa_key () {
 
   rm -f "$1" 2>/dev/null
 
-  if $openssl_nopkcs8_keys; then
+  if $openssl_use_pkey ; then
+    $OPENSSL genpkey -algorithm RSA \
+	  -out "$1" -pass pass:$KEY_PASS -aes-128-cbc \
+	  -pkeyopt rsa_keygen_bits:1024
+    return $?
+  fi
+
+  if $openssl_nopkcs8_keys ; then
     rm -f "$1"-trad 2>/dev/null
     $OPENSSL genrsa \
       -out "$1"-trad 1024 &&
@@ -196,6 +203,24 @@ gen_rsa () {
 
 # ===
 #args:
+#  $1 - dsa parameter file
+get_dsa_prm () {
+( umask 077
+
+  rm -f "$1" 2>/dev/null
+
+  if $openssl_use_pkey ; then
+    $OPENSSL genpkey -genparam -algorithm DSA \
+	  -out "$1" -pkeyopt dsa_paramgen_bits:1024
+  else
+    $OPENSSL dsaparam $DSA_OPT \
+      -out "$1" 1024
+  fi
+) 2>> "$CA_LOG"
+}
+
+# ===
+#args:
 #  $1 - dsa keyfile
 #  $2 - dsa parameter file
 gen_dsa_key () {
@@ -203,7 +228,13 @@ gen_dsa_key () {
 
   rm -f "$1" 2>/dev/null
 
-  if $openssl_nopkcs8_keys; then
+  if $openssl_use_pkey ; then
+    $OPENSSL genpkey -paramfile "$2" \
+	  -out "$1" -pass pass:$KEY_PASS -aes-128-cbc
+    return $?
+  fi
+
+  if $openssl_nopkcs8_keys ; then
     rm -f "$1"-trad 2>/dev/null
     $OPENSSL gendsa \
       -out "$1"-trad "$2" &&
@@ -223,13 +254,9 @@ gen_dsa_key () {
 
 # ===
 gen_dsa () {
-( umask 077
-  rm -f "$TMPDIR/$CAKEY_PREFIX-dsa.prm" 2>/dev/null
-  $OPENSSL dsaparam \
-    -out "$TMPDIR/$CAKEY_PREFIX"-dsa.prm 1024\
-    2>> "$CA_LOG";\
-  show_status $? "generating ${extd}DSA parameter file${norm}"
-) || return $?
+  get_dsa_prm \
+    "$TMPDIR/$CAKEY_PREFIX-dsa.prm" \
+  ; show_status $? "generating ${extd}DSA parameter file${norm}"
 
   gen_dsa_key \
     "$TMPDIR/$CAKEY_PREFIX"-dsa.key \
