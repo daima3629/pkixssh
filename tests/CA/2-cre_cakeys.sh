@@ -1,5 +1,5 @@
 #! /bin/sh
-# Copyright (c) 2002-2018 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2002-2020 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -114,23 +114,18 @@ move_as_trusted_x509() {
 # NOTE: available in OpenSSL >= 1.0.0
 gen_pkey () {
 ( umask 077
-  GEN_OPT=
-  # genpkey does not support rand option
-  #if test -n "$random_seed_files" ; then
-  #  GEN_OPT="$GEN_OPT -rand $random_seed_files"
-  #fi
 
   rm -f "$1" 2>/dev/null
 
   if $openssl_nopkcs8_keys; then
     rm -f "$1"-trad 2>/dev/null
-    $OPENSSL genpkey $GEN_OPT -algorithm $2 \
+    $OPENSSL genpkey -algorithm $2 \
       -out "$1"-trad &&
     $OPENSSL pkcs8 -topk8 -v2 aes256 -in "$1"-trad \
-      -out "$1" -passout pass:$KEY_PASS
+      -out "$1" -passout pass:$KEY_PASS &&
     rm "$1"-trad
   else
-    $OPENSSL genpkey $GEN_OPT -algorithm $2 \
+    $OPENSSL genpkey -algorithm $2 \
       -out "$1" -pass pass:$KEY_PASS
   fi
 ) 2>> "$CA_LOG"
@@ -142,32 +137,24 @@ gen_pkey () {
 #  $1 - rsa keyfile
 gen_rsa_key () {
 ( umask 077
-  RSA_OPT=
-  if test -n "$random_seed_files" ; then
-    RSA_OPT="$RSA_OPT -rand $random_seed_files"
-  fi
 
   rm -f "$1" 2>/dev/null
 
   if $openssl_nopkcs8_keys; then
     rm -f "$1"-trad 2>/dev/null
-    $OPENSSL genrsa $RSA_OPT \
-      -out "$1"-trad 1024 \
-      2>> "$CA_LOG" &&
+    $OPENSSL genrsa \
+      -out "$1"-trad 1024 &&
     $OPENSSL pkcs8 -topk8 \
       -in "$1"-trad \
       -out "$1" -passout pass:$KEY_PASS \
-      -v1 PBE-SHA1-3DES \
-      2>> "$CA_LOG" &&
+      -v1 PBE-SHA1-3DES &&
     rm "$1"-trad
   else
-    RSA_OPT="$RSA_OPT -des3"
-    $OPENSSL genrsa $RSA_OPT \
+    $OPENSSL genrsa -des3 \
       -passout pass:$KEY_PASS \
-      -out "$1" 1024 \
-      2>> "$CA_LOG"
+      -out "$1" 1024
   fi
-)
+) 2>> "$CA_LOG"
 }
 
 
@@ -213,47 +200,32 @@ gen_rsa () {
 #  $2 - dsa parameter file
 gen_dsa_key () {
 ( umask 077
-  DSA_OPT=
-  if test -n "$random_seed_files"; then
-    DSA_OPT="$DSA_OPT -rand $random_seed_files"
-  fi
 
   rm -f "$1" 2>/dev/null
 
   if $openssl_nopkcs8_keys; then
-    rm -f "$1"-trad 2>/dev/null &&
-    $OPENSSL gendsa $DSA_OPT \
-      -out "$1"-trad \
-      "$2" \
-      2>> "$CA_LOG" &&
+    rm -f "$1"-trad 2>/dev/null
+    $OPENSSL gendsa \
+      -out "$1"-trad "$2" &&
     $OPENSSL pkcs8 -topk8 \
       -in "$1"-trad \
       -out "$1" -passout pass:$KEY_PASS \
-      -v1 PBE-SHA1-3DES \
-      2>> "$CA_LOG" &&
+      -v1 PBE-SHA1-3DES &&
     rm "$1"-trad
   else
-    DSA_OPT="$DSA_OPT -des3"
-    $OPENSSL gendsa $DSA_OPT \
+    $OPENSSL gendsa -des3 \
       -passout pass:$KEY_PASS \
-      -out "$1" \
-      "$2" \
-      2>> "$CA_LOG"
+      -out "$1" "$2"
   fi
-)
+) 2>> "$CA_LOG"
 }
 
 
 # ===
 gen_dsa () {
-  DSA_OPT=
-  if test -n "$random_seed_files" ; then
-    DSA_OPT="$DSA_OPT -rand $random_seed_files"
-  fi
-
 ( umask 077
   rm -f "$TMPDIR/$CAKEY_PREFIX-dsa.prm" 2>/dev/null
-  $OPENSSL dsaparam $DSA_OPT \
+  $OPENSSL dsaparam \
     -out "$TMPDIR/$CAKEY_PREFIX"-dsa.prm 1024\
     2>> "$CA_LOG";\
   show_status $? "generating ${extd}DSA parameter file${norm}"

@@ -122,11 +122,6 @@ if test -n "$OPENSSL_FIPS"; then
   esac
 fi
 
-# Uncomment and modify next if you would like to load(seed) file(s)
-# into the random number generator.
-# Note that some openssl forks fail to process -rand option!
-#random_seed_files=/etc/random-seed
-
 
 # These are the known patent issues with OpenSSL:
 # name   #         expires
