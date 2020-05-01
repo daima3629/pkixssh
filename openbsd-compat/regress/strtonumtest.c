@@ -1,6 +1,7 @@
 /*	$OpenBSD: strtonumtest.c,v 1.1 2004/08/03 20:38:36 otto Exp $	*/
 /*
  * Copyright (c) 2004 Otto Moerbeek <otto@drijf.net>
+ * Copyright (c) 2020 Roumen Petrov
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -17,27 +18,17 @@
 
 /* OPENBSD ORIGINAL: regress/lib/libc/strtonum/strtonumtest.c */
 
+#include <includes.h>
+
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-/* LLONG_MAX is known as LONGLONG_MAX on AIX */
-#if defined(LONGLONG_MAX) && !defined(LLONG_MAX)
-# define LLONG_MAX LONGLONG_MAX
-# define LLONG_MIN LONGLONG_MIN
-#endif
-
-/* LLONG_MAX is known as LONG_LONG_MAX on HP-UX */
-#if defined(LONG_LONG_MAX) && !defined(LLONG_MAX)
-# define LLONG_MAX LONG_LONG_MAX
-# define LLONG_MIN LONG_LONG_MIN
-#endif
 
 long long strtonum(const char *, long long, long long, const char **);
 
 int fail;
 
-void
+static void
 test(const char *p, long long lb, long long ub, int ok)
 {
 	long long val;
@@ -57,6 +48,9 @@ test(const char *p, long long lb, long long ub, int ok)
 
 int main(int argc, char *argv[])
 {
+	UNUSED(argc);
+	UNUSED(argv);
+
 	test("1", 0, 10, 1);
 	test("0", -2, 5, 1);
 	test("0", 2, 5, 0);

@@ -26,6 +26,8 @@
 #ifndef _DEFINES_H
 #define _DEFINES_H
 
+#include "config.h"
+
 /* Constants */
 
 #if defined(HAVE_DECL_SHUT_RD) && HAVE_DECL_SHUT_RD == 0
@@ -309,10 +311,6 @@ typedef unsigned char u_char;
 # define HAVE_U_CHAR
 #endif /* HAVE_U_CHAR */
 
-#ifndef ULLONG_MAX
-# define ULLONG_MAX ((unsigned long long)-1)
-#endif
-
 #ifndef SIZE_T_MAX
 #define SIZE_T_MAX ULONG_MAX
 #endif /* SIZE_T_MAX */
@@ -325,6 +323,34 @@ typedef unsigned int size_t;
 
 #ifndef SIZE_MAX
 #define SIZE_MAX SIZE_T_MAX
+#endif
+
+#ifndef LLONG_MIN
+/* LLONG_MIN is known as LONGLONG_MIN on AIX */
+# ifdef LONGLONG_MIN
+#  define LLONG_MIN LONGLONG_MIN
+# endif
+
+/* LLONG_MIN is known as LONG_LONG_MIN on HP-UX */
+# ifdef LONG_LONG_MIN
+#  define LLONG_MIN LONG_LONG_MIN
+# endif
+#endif /*ndef LLONG_MIN*/
+
+#ifndef LLONG_MAX
+/* LLONG_MAX is known as LONGLONG_MAX on AIX */
+# ifdef LONGLONG_MAX
+#  define LLONG_MAX LONGLONG_MAX
+# endif
+
+/* LLONG_MAX is known as LONG_LONG_MAX on HP-UX */
+# ifdef LONG_LONG_MAX
+#  define LLONG_MAX LONG_LONG_MAX
+# endif
+#endif /*ndef LLONG_MAX*/
+
+#ifndef ULLONG_MAX
+# define ULLONG_MAX ((unsigned long long)-1)
 #endif
 
 #ifndef INT32_MAX
