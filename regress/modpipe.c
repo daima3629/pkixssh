@@ -53,7 +53,7 @@ parse_modification(const char *s, struct modification *m)
 	char what[16+1];
 	int n, m1, m2;
 
-	bzero(m, sizeof(*m));
+	memset(m, 0, sizeof(*m));
 	if ((n = sscanf(s, "%16[^:]%*[:]%llu%*[:]%i%*[:]%i",
 	    what, &m->offset, &m1, &m2)) < 3)
 		errx(1, "Invalid modification spec \"%s\"", s);

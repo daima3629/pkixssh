@@ -160,7 +160,7 @@ sys_tun_open(int tun, int mode, char **ifname)
 		return (-1);
 	}
 
-	bzero(&ifr, sizeof(ifr));
+	memset(&ifr, 0, sizeof(ifr));
 
 	if (mode == SSH_TUNMODE_ETHERNET) {
 		ifr.ifr_flags = IFF_TAP;
@@ -327,7 +327,7 @@ sys_tun_open(int tun, int mode, char **ifname)
 		return (-1);
 	}
 
-	bzero(&info, sizeof(info));
+	memset(&info, 0, sizeof(info));
 	strlcpy(info.ctl_name, UTUN_CONTROL_NAME, sizeof(info.ctl_name));
 	if (ioctl(fd, CTLIOCGINFO, &info) == -1) {
 		debug("%s: failed to lookup utun control id: %s",
@@ -335,7 +335,7 @@ sys_tun_open(int tun, int mode, char **ifname)
 		goto failed;
 	}
 
-	bzero(&addr, sizeof(addr));
+	memset(&addr, 0, sizeof(addr));
 	addr.sc_id = info.ctl_id;
 	addr.sc_len = sizeof(addr);
 	addr.sc_family = AF_SYSTEM;

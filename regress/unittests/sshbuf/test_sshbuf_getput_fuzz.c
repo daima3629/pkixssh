@@ -53,7 +53,7 @@ attempt_parse_blob(u_char *blob, size_t len)
 	sshbuf_get_u32(p1, &u32);
 	sshbuf_get_u64(p1, &u64);
 	if (sshbuf_get_string(p1, &s, &l) == 0) {
-		bzero(s, l);
+		memset(s, 0, l);
 		free(s);
 	}
 #ifdef WITH_OPENSSL

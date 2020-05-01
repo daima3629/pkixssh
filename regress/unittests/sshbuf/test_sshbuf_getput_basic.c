@@ -57,19 +57,19 @@ sshbuf_getput_basic_tests(void)
 	TEST_DONE();
 
 	TEST_START("POKE_U64");
-	bzero(d2, sizeof(d2));
+	memset(d2, 0, sizeof(d2));
 	POKE_U64(d2, 0x1122334455667788ULL);
 	ASSERT_MEM_EQ(d2, x, 8);
 	TEST_DONE();
 	
 	TEST_START("POKE_U32");
-	bzero(d2, sizeof(d2));
+	memset(d2, 0, sizeof(d2));
 	POKE_U32(d2, 0x11223344);
 	ASSERT_MEM_EQ(d2, x, 4);
 	TEST_DONE();
 	
 	TEST_START("POKE_U16");
-	bzero(d2, sizeof(d2));
+	memset(d2, 0, sizeof(d2));
 	POKE_U16(d2, 0x1122);
 	ASSERT_MEM_EQ(d2, x, 2);
 	TEST_DONE();

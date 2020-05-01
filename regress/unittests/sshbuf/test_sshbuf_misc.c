@@ -101,7 +101,7 @@ sshbuf_misc_tests(void)
 	p1 = sshbuf_new();
 	ASSERT_PTR_NE(p1, NULL);
 	ASSERT_INT_EQ(sshbuf_reserve(p1, 8192, NULL), 0);
-	bzero(sshbuf_mutable_ptr(p1), 8192);
+	memset(sshbuf_mutable_ptr(p1), 0, 8192);
 	p = sshbuf_dtob64_string(p1, 0);
 	ASSERT_PTR_NE(p, NULL);
 	ASSERT_SIZE_T_EQ(strlen(p), ((8191 + 2) / 3) * 4);
