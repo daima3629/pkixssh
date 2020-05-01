@@ -208,6 +208,7 @@ get_rdomain(int fd)
 	xasprintf(&ret, "%d", rtable);
 	return ret;
 #else /* defined(__OpenBSD__) */
+	UNUSED(fd);
 	return NULL;
 #endif
 }
@@ -238,6 +239,8 @@ set_rdomain(int fd, const char *name)
 	}
 	return 0;
 #else /* defined(__OpenBSD__) */
+	UNUSED(fd);
+	UNUSED(name);
 	error("Setting routing domain is not supported on this platform");
 	return -1;
 #endif
@@ -1224,6 +1227,9 @@ tun_open(int tun, int mode, char **ifname)
 		close(sock);
 	return -1;
 #else
+	UNUSED(tun);
+	UNUSED(mode);
+	UNUSED(ifname);
 	error("Tunnel interfaces are not supported on this platform");
 	return (-1);
 #endif

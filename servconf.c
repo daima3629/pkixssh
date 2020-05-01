@@ -959,6 +959,7 @@ valid_rdomain(const char *name)
 
 	return 1;
 #else /* defined(USE_SYSCTL_NET) */
+	UNUSED(name);
 	error("Routing domains are not supported on this platform");
 	return 0;
 #endif
