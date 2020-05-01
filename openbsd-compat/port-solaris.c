@@ -200,6 +200,8 @@ solaris_contract_post_fork_parent(pid_t pid)
 #include <sys/task.h>
 #include <project.h>
 
+#include "log.h"
+
 /*
  * Get/set solaris default project.
  * If we fail, just run along gracefully.
@@ -230,6 +232,8 @@ solaris_set_default_project(struct passwd *pw)
 # ifdef HAVE_PRIV_H
 #  include <priv.h>
 # endif
+
+#include "log.h"
 
 priv_set_t *
 solaris_basic_privset(void)
