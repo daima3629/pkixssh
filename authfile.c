@@ -515,9 +515,12 @@ sshkey_save_public(const struct sshkey *key, const char *path,
 	FILE *f = NULL;
 	int r = SSH_ERR_INTERNAL_ERROR;
 
-	if ((fd = open(path, O_WRONLY|O_CREAT|O_TRUNC, 0644)) == -1)
+	if ((fd = open(path, O_WRONLY|O_CREAT|O_TRUNC, 0644)) == -1) {
+		debug3("%s: open: %s", __func__, strerror(errno));
 		return SSH_ERR_SYSTEM_ERROR;
+	}
 	if ((f = fdopen(fd, "w")) == NULL) {
+		debug3("%s: fdopen: %s", __func__, strerror(errno));
 		r = SSH_ERR_SYSTEM_ERROR;
 		goto fail;
 	}
@@ -527,6 +530,7 @@ sshkey_save_public(const struct sshkey *key, const char *path,
 	fprintf(f, " %s\n", comment);
 
 	if (ferror(f)) {
+		debug3("write key failed: %s", strerror(errno));
 		r = SSH_ERR_SYSTEM_ERROR;
 		goto fail;
 	}
