@@ -1155,11 +1155,11 @@ do_gen_all_hostkeys(struct passwd *pw)
 		fflush(stdout);
 		type = sshkey_type_from_name(key_types[i].key_type);
 		if ((fd = mkstemp(prv_tmp)) == -1) {
-			error("Could not save your public key in %s: %s",
+			error("Could not save your private key in %s: %s",
 			    prv_tmp, strerror(errno));
 			goto failnext;
 		}
-		close(fd); /* just using mkstemp() to generate/reserve a name */
+		(void)close(fd); /* just using mkstemp() to reserve a name */
 	{	u_int32_t bits = 0;
 		type_bits_valid(type, NULL, &bits);
 		if ((r = sshkey_generate(type, bits, &private)) != 0) {
@@ -1652,7 +1652,8 @@ do_change_comment(struct passwd *pw, const char *identity_comment)
 
 	strlcat(identity_file, ".pub", sizeof(identity_file));
 	if ((r = sshkey_save_public(public, identity_file, new_comment)) != 0)
-		fatal("Could not save your public key in %s", identity_file);
+		fatal("Unable to save public key to %s: %s",
+		    identity_file, ssh_err(r));
 	sshkey_free(public);
 
 	free(comment);
@@ -3148,7 +3149,7 @@ main(int argc, char **argv)
 	strlcat(identity_file, ".pub", sizeof(identity_file));
 	if ((r = sshkey_save_public(public, identity_file, comment)) != 0)
 		fatal("Unable to save public key to %s: %s",
-		    identity_file, strerror(errno));
+		    identity_file, ssh_err(r));
 
 	if (!quiet) {
 		fp = sshkey_fingerprint(public, fingerprint_hash,
