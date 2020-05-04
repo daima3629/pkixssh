@@ -1998,7 +1998,7 @@ mux_client_request_session(int fd)
 	case MUX_S_SESSION_OPENED:
 		if ((r = sshbuf_get_u32(m, &sid)) != 0)
 			fatal("%s: decode ID: %s", __func__, ssh_err(r));
-		debug("%s: master session id: %u", __func__, sid);
+		debug("%s: master session id: %u", __func__, (unsigned)sid);
 		break;
 	case MUX_S_PERMISSION_DENIED:
 		if ((r = sshbuf_get_cstring(m, &e, NULL)) != 0)
