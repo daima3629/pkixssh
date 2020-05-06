@@ -20,7 +20,7 @@
 .\" Copyright (c) 1999,2000 Markus Friedl.  All rights reserved.
 .\" Copyright (c) 1999 Aaron Campbell.  All rights reserved.
 .\" Copyright (c) 1999 Theo de Raadt.  All rights reserved.
-.\" Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
+.\" Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
 .\"
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions
@@ -42,7 +42,7 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: sshd_config.5,v 1.310 2020/04/17 04:27:03 djm Exp $
+.\" $OpenBSD: sshd_config.5,v 1.311 2020/04/17 06:12:41 jmc Exp $
 .Dd $Mdocdate: April 17 2020 $
 .Dt SSHD_CONFIG 5
 .Os
@@ -871,8 +871,21 @@ The system-wide
 and
 .Pa /etc/shosts.equiv
 are still used regardless of this setting.
-The default is
-.Cm yes .
+.Pp
+Accepted values are
+.Cm yes
+(the default) to ignore all per-user files,
+.Cm rhosts-only
+to allow the use of
+.Pa .shosts
+but to ignore
+.Pa .rhosts
+or
+.Cm no
+to allow both
+.Pa .rhosts
+and
+.Pa .shosts .
 .It Cm IgnoreUserKnownHosts
 Specifies whether
 .Xr sshd 8
