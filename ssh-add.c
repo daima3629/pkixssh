@@ -469,7 +469,7 @@ test_key(int agent_fd, const char *filename)
 }
 
 static int
-list_identities(int agent_fd, int do_fp)
+list_identities(int agent_fd, int do_fp, int key_only)
 {
 	char *fp;
 	int r;
@@ -494,8 +494,8 @@ list_identities(int agent_fd, int do_fp)
 			    sshkey_type(idlist->keys[i]));
 			free(fp);
 		} else {
-			/* key_write prints X.509 certificate in blob format :-( */
-			if (sshkey_is_x509(idlist->keys[i])) {
+			int print_dn = !key_only && sshkey_is_x509(idlist->keys[i]);
+			if (print_dn) {
 				if(!Xkey_write_subject(NULL,
 				    idlist->keys[i], stdout)) {
 					fprintf(stderr,
@@ -508,7 +508,8 @@ list_identities(int agent_fd, int do_fp)
 				    ssh_err(r));
 				continue;
 			}
-			fprintf(stdout, " %s", idlist->comments[i]);
+			if (!print_dn)
+				fprintf(stdout, " %s", idlist->comments[i]);
 			left = sshkey_signatures_left(idlist->keys[i]);
 			if (left > 0)
 				fprintf(stdout,
@@ -714,7 +715,7 @@ main(int argc, char **argv)
 			ret = 1;
 		goto done;
 	} else if (lflag) {
-		if (list_identities(agent_fd, lflag == 'l' ? 1 : 0) == -1)
+		if (list_identities(agent_fd, lflag == 'l' ? 1 : 0, key_only) == -1)
 			ret = 1;
 		goto done;
 	} else if (Dflag) {
