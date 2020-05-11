@@ -560,8 +560,12 @@ do_log(LogLevel level, const char *fmt, va_list args)
 	} else {
 		vsnprintf(msgbuf, sizeof(msgbuf), fmt, args);
 	}
+#if 0 /*TODO: vis result is completely broken on UTF-8 */
 	strnvis(fmtbuf, msgbuf, sizeof(fmtbuf),
 	    log_on_stderr ? LOG_STDERR_VIS : LOG_SYSLOG_VIS);
+#else
+	snprintf(fmtbuf, sizeof(fmtbuf), "%s", msgbuf);
+#endif
 	if (log_handler != NULL) {
 		/* Avoid recursion */
 		tmp_handler = log_handler;
