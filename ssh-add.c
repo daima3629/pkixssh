@@ -76,12 +76,14 @@ extern char *__progname;
 static char *default_files[] = {
 #ifdef WITH_OPENSSL
 	_PATH_SSH_CLIENT_ID_RSA,
-	_PATH_SSH_CLIENT_ID_DSA,
 #ifdef OPENSSL_HAS_ECC
 	_PATH_SSH_CLIENT_ID_ECDSA,
 #endif
 #endif /* WITH_OPENSSL */
 	_PATH_SSH_CLIENT_ID_ED25519,
+#ifdef WITH_OPENSSL
+	_PATH_SSH_CLIENT_ID_DSA,
+#endif /* WITH_OPENSSL */
 #ifdef WITH_XMSS
 	_PATH_SSH_CLIENT_ID_XMSS,
 #endif

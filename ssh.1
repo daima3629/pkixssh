@@ -43,7 +43,7 @@
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
 .\" $OpenBSD: ssh.1,v 1.412 2020/04/17 03:34:42 djm Exp $
-.Dd $Mdocdate: April 20 2020 $
+.Dd $Mdocdate: May 11 2020 $
 .Dt SSH 1
 .Os
 .Sh NAME
@@ -306,11 +306,11 @@ private EC or RSA key and X.509 certificate.
 Selects a file from which the identity (private key) for
 public key authentication is read.
 The default is
-.Pa ~/.ssh/id_dsa ,
+.Pa ~/.ssh/id_rsa ,
 .Pa ~/.ssh/id_ecdsa ,
 .Pa ~/.ssh/id_ed25519
 and
-.Pa ~/.ssh/id_rsa .
+.Pa ~/.ssh/id_dsa .
 Identity files may also be specified on
 a per-host basis in the configuration file.
 It is possible to have multiple

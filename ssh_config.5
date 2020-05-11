@@ -1000,14 +1000,14 @@ or the tokens described in the
 .Sx TOKENS
 section.
 .It Cm IdentityFile
-Specifies a file from which the user's DSA, ECDSA, Ed25519 or RSA authentication
+Specifies a file from which the user's RSA, ECDSA, Ed25519 or DSA authentication
 identity is read.
 The default is
-.Pa ~/.ssh/id_dsa ,
+.Pa ~/.ssh/id_rsa ,
 .Pa ~/.ssh/id_ecdsa ,
 .Pa ~/.ssh/id_ed25519
 and
-.Pa ~/.ssh/id_rsa .
+.Pa ~/.ssh/id_dsa .
 .Pp
 For RSA, ECDSA or DSA identity file may contain X.509 certificate that
 match key. In addition file may contain extra X.509 certificates.

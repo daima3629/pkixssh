@@ -2316,12 +2316,12 @@ fill_default_options(Options * options)
 		options->add_keys_to_agent = 0;
 	if (options->num_identity_files == 0) {
 		add_identity_file(options, "~/", _PATH_SSH_CLIENT_ID_RSA, 0);
-		add_identity_file(options, "~/", _PATH_SSH_CLIENT_ID_DSA, 0);
 #ifdef OPENSSL_HAS_ECC
 		add_identity_file(options, "~/", _PATH_SSH_CLIENT_ID_ECDSA, 0);
 #endif
 		add_identity_file(options, "~/",
 		    _PATH_SSH_CLIENT_ID_ED25519, 0);
+		add_identity_file(options, "~/", _PATH_SSH_CLIENT_ID_DSA, 0);
 #ifdef WITH_XMSS
 		add_identity_file(options, "~/", _PATH_SSH_CLIENT_ID_XMSS, 0);
 #endif
