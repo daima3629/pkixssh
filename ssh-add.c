@@ -686,7 +686,11 @@ main(int argc, char **argv)
 		case 't':
 		{	long v;
 			if ((v = convtime(optarg)) == -1 ||
-			    v < 0 || v > UINT32_MAX) {
+			    v < 0
+			#if SIZEOF_LONG > SIZEOF_INT
+			    || v > UINT32_MAX
+			#endif
+			) {
 				fprintf(stderr, "Invalid lifetime\n");
 				ret = 1;
 				goto done;
