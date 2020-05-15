@@ -43,6 +43,7 @@ ssh_sandbox_init(struct monitor *monitor)
 {
 	struct ssh_sandbox *box;
 
+	UNUSED(monitor);
 	/*
 	 * Strictly, we don't need to maintain any state here but we need
 	 * to return non-NULL to satisfy the API.
@@ -54,6 +55,7 @@ ssh_sandbox_init(struct monitor *monitor)
 void
 ssh_sandbox_child(struct ssh_sandbox *box)
 {
+	UNUSED(box);
 	/* Nothing to do here */
 }
 
@@ -66,6 +68,8 @@ ssh_sandbox_parent_finish(struct ssh_sandbox *box)
 void
 ssh_sandbox_parent_preauth(struct ssh_sandbox *box, pid_t child_pid)
 {
+	UNUSED(box);
+	UNUSED(child_pid);
 	/* Nothing to do here */
 }
 
