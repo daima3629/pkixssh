@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -632,8 +632,10 @@ x509_to_key(X509 *x509) {
 		    , __func__, ebuf);
 		return NULL;
 	}
+#if 0
 	/*else*/
 	debug3("x509_to_key: X509_get_pubkey done!");
+#endif
 
 	switch (EVP_PKEY_id(env_pkey)) {
 	case EVP_PKEY_RSA:
@@ -1383,6 +1385,7 @@ void
 x509key_load_certs(const char *pkalg, struct sshkey *key, const char *filename) {
 	size_t len;
 
+	debug3("%s() pkalg=%s, filename=%s", __func__, pkalg, (filename ? filename : "?!?"));
 {	/* check if public algorithm is with X.509 certificates */
 	const SSHX509KeyAlgs *p;
 
@@ -1448,6 +1451,37 @@ x509key_build_chain(struct sshkey *key) {
 	x509_data->chain = chain;
 
 	debug3("%s length=%d", __func__, sk_X509_num(chain));
+}
+
+
+void
+x509key_prepare_chain(const char *pkalg, struct sshkey *key) {
+
+	if (pssh_x509store_build_certchain == NULL) return;
+
+{
+	const SSHX509KeyAlgs *xkalg = NULL;
+	if (ssh_xkalg_nameind(pkalg, &xkalg, -1) < 0) return;
+	if (!xkalg->chain) return;
+}
+	/* Key will be used with RFC6187 algorithm */
+{
+	SSH_X509 *x509_data;
+	STACK_OF(X509)* chain;
+
+	x509_data = key->x509_data;
+	if (x509_data == NULL) return;
+
+	if (x509_data->chain != NULL) return;
+
+	chain = (*pssh_x509store_build_certchain)(x509_data->cert, x509_data->chain);
+	if (chain == NULL) return;
+
+	sk_X509_pop_free(x509_data->chain, X509_free);
+	x509_data->chain = chain;
+
+	debug3("%s length=%d", __func__, sk_X509_num(chain));
+}
 }
 
 
@@ -2400,8 +2434,17 @@ Akey_from_blob(const u_char *blob, size_t blen, struct sshkey **keyp) {
 	/* for X.509 certificate encoded in DER: 0x30 - SEQUENCE */
 	if ((blen > 1) && (blob[0] == 0x30)) {
 		r = X509key_from_blob(blob, blen, keyp);
+#if 0
+	/* We will postpone build of chain here.
+	 * If configuration is with IdentityFile it will be tested first
+	 * and corresponding agent key is ignored. If IdentityFile has
+	 * private and public files chain is already build on load.
+	 * Note IdentityFile may point to public file if identity is
+	 * stored into PKCS#11 device - see x509key_prepare_chain use.
+	 */
 		if (r == 0)
 			x509key_build_chain(*keyp);
+#endif
 		return r;
 	}
 

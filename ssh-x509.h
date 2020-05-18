@@ -66,6 +66,7 @@ int	Xkey_write_subject(const char *pkalg, const struct sshkey *key, FILE *f);
 void	x509key_parse_cert(struct sshkey *key, EVP_PKEY *pk, BIO *bio);
 void	x509key_load_certs(const char *pkalg, struct sshkey *key, const char *filename);
 void	x509key_build_chain(struct sshkey *key);
+void	x509key_prepare_chain(const char *pkalg, struct sshkey *key);
 
 int/*bool*/	x509key_write_identity_bio_pem(BIO *bio, const struct sshkey *key);
 

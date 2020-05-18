@@ -1322,6 +1322,13 @@ send_pubkey_test(struct ssh *ssh, Identity *id)
 
 	debug3("send_pubkey_test: %s", pkalg);
 
+	/* Keys stored in secure token does not have chain if is used
+	 * configuration with IdentityFile pointing to public part.
+	 * Usually such configuration is used with IdentitiesOnly set
+	 * to yes to restrict list of keys that client will try.
+	 */
+	x509key_prepare_chain(pkalg, id->key);
+
 	if ((r = Xkey_to_blob(pkalg, id->key, &blob, &bloblen)) != 0) {
 		/* we cannot handle this key */
 		debug3("%s: cannot handle key", __func__);
