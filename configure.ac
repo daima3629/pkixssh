@@ -4477,7 +4477,9 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 	AC_MSG_CHECKING([if fsid_t has member val])
 	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 #include <sys/types.h>
+#ifdef HAVE_SYS_STATVFS_H
 #include <sys/statvfs.h>
+#endif
 	]], [[ fsid_t t; t.val[0] = 0; ]])],
 	[ AC_MSG_RESULT([yes])
 	  AC_DEFINE([FSID_HAS_VAL], [1], [fsid_t has member val]) ],
@@ -4486,7 +4488,9 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 	AC_MSG_CHECKING([if f_fsid has member __val])
 	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 #include <sys/types.h>
+#ifdef HAVE_SYS_STATVFS_H
 #include <sys/statvfs.h>
+#endif
 	]], [[ fsid_t t; t.__val[0] = 0; ]])],
 	[ AC_MSG_RESULT([yes])
 	  AC_DEFINE([FSID_HAS___VAL], [1], [fsid_t has member __val]) ],
