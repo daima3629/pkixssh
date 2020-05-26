@@ -746,6 +746,7 @@ mm_sshpam_query(void *ctx, char **name, char **info,
 	u_int32_t ret, i, n, val;
 	int r;
 
+	UNUSED(ctx);
 	debug3("%s", __func__);
 	if ((m = sshbuf_new()) == NULL)
 		fatal("%s: sshbuf_new failed", __func__);
@@ -784,6 +785,7 @@ mm_sshpam_respond(void *ctx, u_int num, char **resp)
 	u_int32_t n;
 	int r, ret;
 
+	UNUSED(ctx);
 	debug3("%s", __func__);
 	if ((m = sshbuf_new()) == NULL)
 		fatal("%s: sshbuf_new failed", __func__);
@@ -810,6 +812,7 @@ mm_sshpam_free_ctx(void *ctxtp)
 {
 	struct sshbuf *m;
 
+	UNUSED(ctxtp);
 	debug3("%s", __func__);
 	if ((m = sshbuf_new()) == NULL)
 		fatal("%s: sshbuf_new failed", __func__);

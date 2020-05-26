@@ -985,6 +985,7 @@ mm_answer_pam_start(struct ssh *ssh, int sock, struct sshbuf *m)
 {
 	UNUSED(ssh);
 	UNUSED(sock);
+	UNUSED(m);
 	if (!options.use_pam)
 		fatal("UsePAM not set, but ended up in %s anyway", __func__);
 

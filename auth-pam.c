@@ -157,6 +157,7 @@ static sshsig_t sshpam_oldsig;
 static void
 sshpam_sigchld_handler(int sig)
 {
+	UNUSED(sig);
 	ssh_signal(SIGCHLD, SIG_DFL);
 	if (cleanup_ctxt == NULL)
 		return;	/* handler called after PAM cleanup, shouldn't happen */
@@ -606,6 +607,9 @@ static int
 sshpam_null_conv(int n, sshpam_const struct pam_message **msg,
     struct pam_response **resp, void *data)
 {
+	UNUSED(msg);
+	UNUSED(resp);
+	UNUSED(data);
 	debug3("PAM: %s entering, %d messages", __func__, n);
 	return (PAM_CONV_ERR);
 }
@@ -619,6 +623,7 @@ sshpam_store_conv(int n, sshpam_const struct pam_message **msg,
 	struct pam_response *reply;
 	int r, i;
 
+	UNUSED(data);
 	debug3("PAM: %s called with %d messages", __func__, n);
 	*resp = NULL;
 
@@ -1109,6 +1114,7 @@ sshpam_tty_conv(int n, sshpam_const struct pam_message **msg,
 	struct pam_response *reply;
 	int i;
 
+	UNUSED(data);
 	debug3("PAM: %s called with %d messages", __func__, n);
 
 	*resp = NULL;
@@ -1268,6 +1274,7 @@ sshpam_passwd_conv(int n, sshpam_const struct pam_message **msg,
 	int r, i;
 	size_t len;
 
+	UNUSED(data);
 	debug3("PAM: %s called with %d messages", __func__, n);
 
 	*resp = NULL;
