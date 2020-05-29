@@ -3281,9 +3281,24 @@ sshkey_private_serialize_opt(struct sshkey *key, struct sshbuf *buf,
 	int was_shielded = sshkey_is_shielded(key);
 	struct sshbuf *b = NULL;
 
-	UNUSED(opts);
+	if (sshkey_type_is_cert(key->type)) {
+		if (key->cert == NULL || sshbuf_len(key->cert->certblob) == 0) {
+			r = SSH_ERR_INVALID_ARGUMENT;
+			goto out;
+		}
+	}
 	if ((r = sshkey_unshield_private(key)) != 0)
 		return r;
+#ifdef WITH_XMSS
+	if (sshkey_type_plain() == KEY_XMSS) {
+		if (key->xmss_name == NULL) {
+			r = SSH_ERR_INVALID_ARGUMENT;
+			goto out;
+		}
+	}
+#else
+	UNUSED(opts);
+#endif /* WITH_XMSS */
 	if ((b = sshbuf_new()) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
 	pkalg = sshkey_ssh_name(key);
@@ -3312,10 +3327,6 @@ sshkey_private_serialize_opt(struct sshkey *key, struct sshbuf *buf,
 		{
 		const BIGNUM *d = NULL, *iqmp = NULL, *p = NULL, *q = NULL;
 
-		if (key->cert == NULL || sshbuf_len(key->cert->certblob) == 0) {
-			r = SSH_ERR_INVALID_ARGUMENT;
-			goto out;
-		}
 		RSA_get0_key(key->rsa, NULL, NULL, &d);
 		RSA_get0_crt_params(key->rsa, NULL, NULL, &iqmp);
 		RSA_get0_factors(key->rsa, &p, &q);
@@ -3347,10 +3358,6 @@ sshkey_private_serialize_opt(struct sshkey *key, struct sshbuf *buf,
 		{
 		const BIGNUM *priv_key = NULL;
 
-		if (key->cert == NULL || sshbuf_len(key->cert->certblob) == 0) {
-			r = SSH_ERR_INVALID_ARGUMENT;
-			goto out;
-		}
 		DSA_get0_key(key->dsa, NULL, &priv_key);
 		if ((r = sshbuf_put_stringb(b, key->cert->certblob)) != 0 ||
 		    (r = sshbuf_put_bignum2(b, priv_key)) != 0)
@@ -3367,10 +3374,6 @@ sshkey_private_serialize_opt(struct sshkey *key, struct sshbuf *buf,
 			goto out;
 		break;
 	case KEY_ECDSA_CERT:
-		if (key->cert == NULL || sshbuf_len(key->cert->certblob) == 0) {
-			r = SSH_ERR_INVALID_ARGUMENT;
-			goto out;
-		}
 		if ((r = sshbuf_put_stringb(b, key->cert->certblob)) != 0 ||
 		    (r = sshbuf_put_bignum2(b,
 		    EC_KEY_get0_private_key(key->ecdsa))) != 0)
@@ -3386,10 +3389,6 @@ sshkey_private_serialize_opt(struct sshkey *key, struct sshbuf *buf,
 			goto out;
 		break;
 	case KEY_ED25519_CERT:
-		if (key->cert == NULL || sshbuf_len(key->cert->certblob) == 0) {
-			r = SSH_ERR_INVALID_ARGUMENT;
-			goto out;
-		}
 		if ((r = sshbuf_put_stringb(b, key->cert->certblob)) != 0 ||
 		    (r = sshbuf_put_string(b, key->ed25519_pk,
 		    ED25519_PK_SZ)) != 0 ||
@@ -3399,10 +3398,6 @@ sshkey_private_serialize_opt(struct sshkey *key, struct sshbuf *buf,
 		break;
 #ifdef WITH_XMSS
 	case KEY_XMSS:
-		if (key->xmss_name == NULL) {
-			r = SSH_ERR_INVALID_ARGUMENT;
-			goto out;
-		}
 		if ((r = sshbuf_put_cstring(b, key->xmss_name)) != 0 ||
 		    (r = sshbuf_put_string(b, key->xmss_pk,
 		    sshkey_xmss_pklen(key))) != 0 ||
@@ -3412,11 +3407,6 @@ sshkey_private_serialize_opt(struct sshkey *key, struct sshbuf *buf,
 			goto out;
 		break;
 	case KEY_XMSS_CERT:
-		if (key->cert == NULL || sshbuf_len(key->cert->certblob) == 0 ||
-		    key->xmss_name == NULL) {
-			r = SSH_ERR_INVALID_ARGUMENT;
-			goto out;
-		}
 		if ((r = sshbuf_put_stringb(b, key->cert->certblob)) != 0 ||
 		    (r = sshbuf_put_cstring(b, key->xmss_name)) != 0 ||
 		    (r = sshbuf_put_string(b, key->xmss_pk,
