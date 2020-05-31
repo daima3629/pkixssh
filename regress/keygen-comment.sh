@@ -4,14 +4,22 @@ tid="Comment extraction from private key"
 
 S1="secret1"
 
+if config_defined HAVE_EVP_SHA256 ; then
+keygen_hash_opt=sha256
+keygen_hash_res="SHA256:(.){43}"
+else
+keygen_hash_opt=md5
+keygen_hash_res="MD5:(.){47}"
+fi
+
 check_fingerprint () {
 	file="$1"
 	comment="$2"
 	trace "fingerprinting $file"
-	if ! $SSHKEYGEN -l -E sha256 -f $file > $OBJ/$t-fgp ; then
+	if ! $SSHKEYGEN -l -E $keygen_hash_opt -f $file > $OBJ/$t-fgp ; then
 		fail "ssh-keygen -l failed for $t-key"
 	fi
-	if ! egrep "^([0-9]+) SHA256:(.){43} $comment \(.*\)\$" \
+	if ! egrep "^([0-9]+) "$keygen_hash_res" $comment \(.*\)\$" \
 	    $OBJ/$t-fgp >/dev/null 2>&1 ; then
 		fail "comment is not correctly recovered for $t-key"
 	fi
