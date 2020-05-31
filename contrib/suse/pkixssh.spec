@@ -43,7 +43,7 @@ Url:		https://roumenpetrov.info/secsh/
 
 Name:		pkixssh
 Summary:	PKIX-SSH, Advanced secure shell implementation
-Version:	12.4.2
+Version:	12.5
 Release:	1
 License:	BSD-2-Clause
 Group:		Productivity/Networking/SSH

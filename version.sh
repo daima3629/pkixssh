@@ -18,7 +18,7 @@ upd_file() {
 
 F=version.m4
 sed \
-  -e "s|\[[0-9].*\]|[$VERSION_PACKAGE]|g" \
+  -e "s|SSH_VERSION\],.*|SSH_VERSION], [$VERSION_PACKAGE])|g" \
   $F > $F.tmp
 upd_file $F
 
