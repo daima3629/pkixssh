@@ -3290,7 +3290,7 @@ sshkey_private_serialize_opt(struct sshkey *key, struct sshbuf *buf,
 	if ((r = sshkey_unshield_private(key)) != 0)
 		return r;
 #ifdef WITH_XMSS
-	if (sshkey_type_plain() == KEY_XMSS) {
+	if (sshkey_type_plain(key->type) == KEY_XMSS) {
 		if (key->xmss_name == NULL) {
 			r = SSH_ERR_INVALID_ARGUMENT;
 			goto out;
