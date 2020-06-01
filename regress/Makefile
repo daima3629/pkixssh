@@ -280,6 +280,8 @@ unit:
 			-d ${.CURDIR}/unittests/hostkeys/testdata ; \
 	test "x$$UNITTEST_MATCH" = "xskip" || \
 		$$V ${.OBJDIR}/unittests/match/test_match ; \
+	test "x$$UNITTEST_MISC" = "xskip" || \
+		$$V ${.OBJDIR}/unittests/misc/test_misc ; \
 	test "x$$UNITTEST_UTF8" = "xskip" || \
 		if test "x${TEST_SSH_UTF8}" = "xyes"  ; then \
 			$$V ${.OBJDIR}/unittests/utf8/test_utf8 ; \

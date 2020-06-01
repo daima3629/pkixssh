@@ -304,6 +304,8 @@ localclean:
 	rm -f regress/unittests/kex/test_kex$(EXEEXT)
 	rm -f regress/unittests/match/*.o
 	rm -f regress/unittests/match/test_match$(EXEEXT)
+	rm -f regress/unittests/misc/*.o
+	rm -f regress/unittests/misc/test_misc$(EXEEXT)
 	rm -f regress/unittests/utf8/*.o
 	rm -f regress/unittests/utf8/test_utf8$(EXEEXT)
 	rm -f regress/misc/kexfuzz/*.o
@@ -475,6 +477,7 @@ regress-prep:
 	$(MKDIR_P) `pwd`/regress/unittests/hostkeys
 	$(MKDIR_P) `pwd`/regress/unittests/kex
 	$(MKDIR_P) `pwd`/regress/unittests/match
+	$(MKDIR_P) `pwd`/regress/unittests/misc
 	$(MKDIR_P) `pwd`/regress/unittests/utf8
 	$(MKDIR_P) `pwd`/regress/misc/kexfuzz
 	[ -f `pwd`/regress/Makefile ] || \
@@ -590,6 +593,16 @@ regress/unittests/match/test_match$(EXEEXT): \
 	    regress/unittests/test_helper/libtest_helper.a \
 	    -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(LIBS)
 
+UNITTESTS_TEST_MISC_OBJS=\
+	regress/unittests/misc/tests.o
+
+regress/unittests/misc/test_misc$(EXEEXT): \
+    ${UNITTESTS_TEST_MISC_OBJS} \
+    regress/unittests/test_helper/libtest_helper.a libssh.a
+	$(LD) -o $@ $(LDFLAGS) $(UNITTESTS_TEST_MISC_OBJS) \
+	    regress/unittests/test_helper/libtest_helper.a \
+	    -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(LIBS)
+
 UNITTESTS_TEST_UTF8_OBJS=\
 	regress/unittests/utf8/tests.o
 
@@ -620,6 +633,7 @@ regress-binaries: regress-prep \
 	regress/unittests/hostkeys/test_hostkeys$(EXEEXT) \
 	regress/unittests/kex/test_kex$(EXEEXT) \
 	regress/unittests/match/test_match$(EXEEXT) \
+	regress/unittests/misc/test_misc$(EXEEXT) \
 	regress/unittests/utf8/test_utf8$(EXEEXT) \
 	regress/misc/kexfuzz/kexfuzz$(EXEEXT)
 

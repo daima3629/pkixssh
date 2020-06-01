@@ -121,6 +121,7 @@ unittests/conversion/test_conversion
 unittests/hostkeys/test_hostkeys
 unittests/kex/test_kex
 unittests/match/test_match
+unittests/misc/test_misc
 unittests/sshbuf/test_sshbuf
 unittests/sshkey/test_sshkey
 unittests/utf8/test_utf8
