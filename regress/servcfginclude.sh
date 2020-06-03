@@ -146,9 +146,27 @@ Include
 _EOF
 
 trace "disallow invalid with no argument"
-${SUDO} ${REAL_SSHD} -f $OBJ/sshd_config.i.x \
+${SUDO} ${REAL_SSHD} -f $OBJ/sshd_config.i.x -T \
     -C "host=x,user=test,addr=127.0.0.1" 2>/dev/null && \
 	fail "sshd allowed Include with no argument"
+
+# test if port in included file is correctly interpreted
+cat > $OBJ/sshd_config.i << _EOF
+Include $OBJ/sshd_config.i.2
+Port 7722
+_EOF
+cat > $OBJ/sshd_config.i.2 << _EOF
+HostKey $OBJ/host.ssh-ed25519
+_EOF
+
+trace "Port after included files"
+${SUDO} ${REAL_SSHD} -f $OBJ/sshd_config.i -T \
+    -C "host=x,user=test,addr=127.0.0.1" > $OBJ/sshd_config.out || \
+	fail "failed to parse Port after included files"
+_port=`grep -i '^port ' $OBJ/sshd_config.out | awk '{print $2}'`
+if test "x7722" != "x$_port" ; then
+	fail "The Port in included file was intertepretted wrongly. Expected 7722, got $_port"
+fi
 
 # cleanup
 rm -f $OBJ/sshd_config.i $OBJ/sshd_config.i.* $OBJ/sshd_config.out
