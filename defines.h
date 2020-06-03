@@ -922,6 +922,21 @@ struct winsize {
 # define USE_SYSTEM_GLOB
 #endif
 
+
+/* NOTE:
+ * OpenSSL 1.1.* resets EVP_CIPHER_CTX on each call of EVP_CipherInit()!
+ * Remark: Pre 1.1.0 behaviour is restored in 1.1.0g (issue #4613).
+ * Let mark EVP_CipherInit as broken for all OpenSSL 1.1.* releases:
+ * - LibreSSL not impacted
+ * - OPENSSL_init_crypto: OpenSSL 1.1 function
+ * - EC_POINT_get_affine_coordinates: OpenSSL 1.1.1 function
+ */
+#if !defined(LIBRESSL_VERSION_NUMBER) && \
+    defined(HAVE_OPENSSL_INIT_CRYPTO) && \
+    !defined(HAVE_EC_POINT_GET_AFFINE_COORDINATES)
+# define BROKEN_EVP_CIPHERINIT
+#endif
+
 #undef USE_BUILTIN_CHACHAPOLY
 #ifndef HAVE_EVP_CHACHA20
 # define USE_BUILTIN_CHACHAPOLY
@@ -929,6 +944,14 @@ struct winsize {
 #ifdef LIBRESSL_VERSION_NUMBER
 # if LIBRESSL_VERSION_NUMBER < 0x3010000fL
 /* broken EVP_chacha20 */
+#  undef USE_BUILTIN_CHACHAPOLY
+#  define USE_BUILTIN_CHACHAPOLY
+# endif
+#else
+# ifdef BROKEN_EVP_CIPHERINIT
+/* crypto-based chachapoly is not usable with OpenSSL 1.1.0-1.1.0f
+ * (extended to all 1.1.0* releases to avoid run-time test)
+ */
 #  undef USE_BUILTIN_CHACHAPOLY
 #  define USE_BUILTIN_CHACHAPOLY
 # endif

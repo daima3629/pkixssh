@@ -58,16 +58,6 @@
 # define EVP_CIPHER_CTX void
 #endif
 
-#if defined(HAVE_OPENSSL_INIT_CRYPTO) && !defined(LIBRESSL_VERSION_NUMBER)
-/* NOTE: OpenSSL 1.1.* resets EVP_CIPHER_CTX on each call of
- * EVP_CipherInit()! It is init function. ;)
- * Remark: Pre 1.1.0 behaviour is restored in 1.1.0g (issue #4613).
- * We will use single init for OpenSSL 1.1+. This includes 1.1.1+.
- */
-#  define SINGLE_EVP_CIPHERINIT_CALL
-#endif
-
-
 
 struct sshcipher_ctx {
 	int	plaintext;
@@ -349,11 +339,11 @@ cipher_init(struct sshcipher_ctx **ccp, const struct sshcipher *cipher,
 		ret = SSH_ERR_ALLOC_FAIL;
 		goto out;
 	}
-#ifndef SINGLE_EVP_CIPHERINIT_CALL
+#ifndef BROKEN_EVP_CIPHERINIT
 	if (EVP_CipherInit(cc->evp, type, NULL, (u_char *)iv,
 #else
 	if (EVP_CipherInit(cc->evp, type, key, (u_char *)iv,
-#endif /*ndef SINGLE_EVP_CIPHERINIT_CALL*/
+#endif /*ndef BROKEN_EVP_CIPHERINIT*/
 	    (do_encrypt == CIPHER_ENCRYPT)) == 0) {
 		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto out;
@@ -371,12 +361,12 @@ cipher_init(struct sshcipher_ctx **ccp, const struct sshcipher *cipher,
 			goto out;
 		}
 	}
-#ifndef SINGLE_EVP_CIPHERINIT_CALL
+#ifndef BROKEN_EVP_CIPHERINIT
 	if (EVP_CipherInit(cc->evp, NULL, (u_char *)key, NULL, -1) == 0) {
 		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto out;
 	}
-#endif /*ndef SINGLE_EVP_CIPHERINIT_CALL*/
+#endif /*ndef BROKEN_EVP_CIPHERINIT*/
 
 	ret = 0;
 #endif /* WITH_OPENSSL */
