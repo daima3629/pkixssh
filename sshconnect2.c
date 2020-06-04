@@ -135,11 +135,14 @@ order_hostkeyalgs(char *host, struct sockaddr *hostaddr, u_short port)
 		sshkey_types_from_name(alg, &ktype, &subtype);
 		if (ktype == KEY_UNSPEC)
 			fatal("%s: unknown alg %s", __func__, alg);
+		/* If the key appears in known_hosts then prefer it */
 		if (lookup_key_in_hostkeys_by_types(hostkeys,
-		    sshkey_type_plain(ktype), subtype, NULL))
+		    sshkey_type_plain(ktype), subtype, NULL)) {
 			ALG_APPEND(first, alg);
-		else
-			ALG_APPEND(last, alg);
+			continue;
+		}
+		/* Otherwise, put it last */
+		ALG_APPEND(last, alg);
 	}
 #undef ALG_APPEND
 	xasprintf(&ret, "%s%s%s", first,
