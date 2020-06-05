@@ -150,6 +150,22 @@ ${SUDO} ${REAL_SSHD} -f $OBJ/sshd_config.i.x -T \
     -C "host=x,user=test,addr=127.0.0.1" 2>/dev/null && \
 	fail "sshd allowed Include with no argument"
 
+# ensure the Include before any Match block works as expected
+cat > $OBJ/sshd_config.i << _EOF
+Banner /xx
+HostKey $OBJ/host.ssh-ed25519
+Include $OBJ/sshd_config.i.2
+Match host a
+	Banner /aaaa
+_EOF
+cat > $OBJ/sshd_config.i.2 << _EOF
+Match host a
+	Banner /aa
+_EOF
+
+trace "Include before match blocks"
+trial a /aa "included file before match blocks is properly evaluated"
+
 # test if port in included file is correctly interpreted
 cat > $OBJ/sshd_config.i << _EOF
 Include $OBJ/sshd_config.i.2
