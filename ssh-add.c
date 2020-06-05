@@ -687,7 +687,7 @@ main(int argc, char **argv)
 		{	long v;
 			if ((v = convtime(optarg)) == -1 ||
 			    v < 0
-			#if SIZEOF_LONG > SIZEOF_INT
+			#if SIZEOF_LONG_INT > SIZEOF_INT
 			    || v > UINT32_MAX
 			#endif
 			) {
