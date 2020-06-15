@@ -201,7 +201,9 @@ if test "$GCC" = "yes" || test "$GCC" = "egcs"; then
 	# that can overflow. We must check that the result of enabling it
 	# actually links. The test program compiled/linked includes a number
 	# of integer operations that should exercise this.
-	OSSH_CHECK_CFLAG_LINK([-ftrapv])
+	#
+	# Remark: -ftrapv creates more troubles so exclude!
+	#-#OSSH_CHECK_CFLAG_LINK([-ftrapv])
     fi
 	AC_MSG_CHECKING([gcc version])
 	GCC_VER=`$CC -v 2>&1 | $AWK '/gcc version /{print $3}'`
