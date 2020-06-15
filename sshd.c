@@ -964,7 +964,7 @@ notify_hostkeys(struct ssh *ssh)
  * all connections are dropped for startups > max_startups
  */
 static int
-drop_connection(int startups)
+should_drop_connection(int startups)
 {
 	int p, r;
 
@@ -981,8 +981,33 @@ drop_connection(int startups)
 	p += options.max_startups_rate;
 	r = arc4random_uniform(100);
 
-	debug("drop_connection: p %d, r %d", p, r);
+	debug("%s: p %d, r %d", __func__, p, r);
 	return (r < p) ? 1 : 0;
+}
+
+static int
+drop_connection(int sock, int startups)
+{
+	if (!should_drop_connection(startups)) {
+		return 0;
+	}
+
+{
+	char *laddr = get_local_ipaddr(sock);
+	char *raddr = get_peer_ipaddr(sock);
+	const char msg[] = "Exceeded MaxStartups\r\n";
+
+	verbose("drop connection #%d "
+	    "from [%s]:%d on [%s]:%d past MaxStartups",
+	    startups,
+	    raddr, get_peer_port(sock),
+	    laddr, get_local_port(sock));
+	free(laddr);
+	free(raddr);
+	/* best-effort notification to client */
+	(void)write(sock, msg, sizeof(msg) - 1);
+}
+	return 1;
 }
 
 static void
@@ -1338,27 +1363,9 @@ server_accept_loop(int *sock_in, int *sock_out, int *newsock, int *config_s)
 					usleep(100 * 1000);
 				continue;
 			}
-			if (unset_nonblock(*newsock) == -1) {
-				close(*newsock);
-				continue;
-			}
-			if (drop_connection(startups) == 1) {
-				char *laddr = get_local_ipaddr(*newsock);
-				char *raddr = get_peer_ipaddr(*newsock);
-				char msg[] = "Exceeded MaxStartups\r\n";
-
-				verbose("drop connection #%d from [%s]:%d "
-				    "on [%s]:%d past MaxStartups", startups,
-				    raddr, get_peer_port(*newsock),
-				    laddr, get_local_port(*newsock));
-				free(laddr);
-				free(raddr);
-				/* best-effort notification to client */
-				(void)write(*newsock, msg, strlen(msg));
-				close(*newsock);
-				continue;
-			}
-			if (pipe(startup_p) == -1) {
+			if (unset_nonblock(*newsock) == -1 ||
+			    drop_connection(*newsock, startups) ||
+			    pipe(startup_p) == -1) {
 				close(*newsock);
 				continue;
 			}
