@@ -985,13 +985,48 @@ should_drop_connection(int startups)
 	return (r < p) ? 1 : 0;
 }
 
+/*
+ * Check whether connection should be accepted by MaxStartups.
+ * Returns 0 if the connection is accepted. If the connection is refused,
+ * returns 1 and attempts to send notification to client.
+ * Logs when the MaxStartups condition is entered or exited, and periodically
+ * while in that state.
+ */
 static int
 drop_connection(int sock, int startups)
 {
+	static u_int ndropped = 0;
+	static time_t first_drop, last_drop;
+
 	if (!should_drop_connection(startups)) {
+		if (ndropped == 0) return 0;
+
+		if (startups < options.max_startups_begin - 1) {
+			char *t = fmttime(monotime() - first_drop);
+			/* XXX maybe need better hysteresis here */
+			logit("exited MaxStartups throttling after %s, "
+			    "%u connections dropped", t, ndropped);
+			free(t);
+		}
+		ndropped = 0;
 		return 0;
 	}
 
+#define SSHD_MAXSTARTUPS_LOG_INTERVAL	(5 * 60)
+{	time_t now = monotime();
+
+	if (ndropped++ == 0) {
+		error("beginning MaxStartups throttling");
+		first_drop = now;
+	} else if (last_drop + SSHD_MAXSTARTUPS_LOG_INTERVAL < now) {
+		/* Periodic logs */
+		char *t = fmttime(now - first_drop);
+		error("in MaxStartups throttling for %s, "
+		    "%u connections dropped", t, ndropped);
+		free(t);
+	}
+	last_drop = now;
+}
 {
 	char *laddr = get_local_ipaddr(sock);
 	char *raddr = get_peer_ipaddr(sock);
