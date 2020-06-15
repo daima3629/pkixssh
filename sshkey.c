@@ -3791,7 +3791,7 @@ sshkey_ec_validate_public(const EC_GROUP *group, const EC_POINT *public)
 	 * We shouldn't ever hit this case because bignum_get_ecpoint()
 	 * refuses to load GF2m points.
 	 */
-	if (EC_METHOD_get_field_type(EC_GROUP_method_of(group)) !=
+	if (EC_GROUP_get_field_type(group) !=
 	    NID_X9_62_prime_field)
 		goto out;
 
@@ -3894,7 +3894,7 @@ sshkey_dump_ec_point(const EC_GROUP *group, const EC_POINT *point)
 		fprintf(stderr, "%s: BN_new failed\n", __func__);
 		goto out;
 	}
-	if (EC_METHOD_get_field_type(EC_GROUP_method_of(group)) !=
+	if (EC_GROUP_get_field_type(group) !=
 	    NID_X9_62_prime_field) {
 		fprintf(stderr, "%s: group is not a prime field\n", __func__);
 		goto out;

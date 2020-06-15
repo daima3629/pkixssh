@@ -5577,6 +5577,7 @@ fi
 # check for openssl 3.0+ functions ...
 AC_CHECK_FUNCS([ \
   BN_check_prime \
+  EC_GROUP_get_field_type \
   ERR_get_error_all \
   X509_LOOKUP_store \
 ])
