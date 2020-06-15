@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh.c,v 1.527 2020/04/10 00:52:07 dtucker Exp $ */
+/* $OpenBSD: ssh.c,v 1.528 2020/05/29 04:25:40 dtucker Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -282,6 +282,31 @@ default_client_percent_expand(const char *str, const char *homedir,
 	    "r", remuser,
 	    "u", locuser,
 	    (char *)NULL);
+}
+
+/*
+ * Expands the set of percent_expand options used by the majority of keywords
+ * AND perform environment variable substitution.
+ * Caller must free returned string.
+ */
+static char *
+default_client_percent_dollar_expand(const char *str, const char *homedir,
+    const char *remhost, const char *remuser, const char *locuser)
+{
+	char *ret;
+
+	ret = percent_dollar_expand(str,
+	    /* values from statics above */
+	    DEFAULT_CLIENT_PERCENT_EXPAND_ARGS,
+	    /* values from arguments */
+	    "d", homedir,
+	    "h", remhost,
+	    "r", remuser,
+	    "u", locuser,
+	    (char *)NULL);
+	if (ret == NULL)
+		fatal("invalid environment variable expansion");
+	return ret;
 }
 
 /*
@@ -1472,7 +1497,7 @@ main(int ac, char **av)
 	if (options.control_path != NULL) {
 		cp = tilde_expand_filename(options.control_path, getuid());
 		free(options.control_path);
-		options.control_path = default_client_percent_expand(cp,
+		options.control_path = default_client_percent_dollar_expand(cp,
 		    pw->pw_dir, host, options.user, pw->pw_name);
 		free(cp);
 	}
@@ -1482,7 +1507,7 @@ main(int ac, char **av)
 	    strcmp(options.identity_agent, "none") != 0) {
 		cp = tilde_expand_filename(options.identity_agent, getuid());
 		free(options.identity_agent);
-		options.identity_agent = default_client_percent_expand(cp,
+		options.identity_agent = default_client_percent_dollar_expand(cp,
 		    pw->pw_dir, host, options.user, pw->pw_name);
 		free(cp);
 	}
@@ -1492,7 +1517,7 @@ main(int ac, char **av)
 		cp = tilde_expand_filename(options.forward_agent_sock_path,
 		    getuid());
 		free(options.forward_agent_sock_path);
-		options.forward_agent_sock_path = default_client_percent_expand(cp,
+		options.forward_agent_sock_path = default_client_percent_dollar_expand(cp,
 		    pw->pw_dir, host, options.user, pw->pw_name);
 		free(cp);
 	}
@@ -1663,7 +1688,8 @@ main(int ac, char **av)
 			 * then recheck that it is valid since token expand
 			 * may have changed it and substitute its value.
 			 */
-			if (cp[0] == '$') {
+			/* legacy (limited) format */
+			if (cp[0] == '$' && cp[1] != '{') {
 				if (!valid_env_name(cp + 1)) {
 					fatal("Invalid IdentityAgent "
 					    "environment variable name %s", cp);
@@ -2310,7 +2336,7 @@ load_public_identity_files(struct passwd *pw)
 			continue;
 		}
 		cp = tilde_expand_filename(options.identity_files[i], getuid());
-		filename = default_client_percent_expand(cp,
+		filename = default_client_percent_dollar_expand(cp,
 		    pw->pw_dir, host, options.user, pw->pw_name);
 		free(cp);
 		check_load(sshkey_load_public(filename, &public, NULL),
@@ -2360,7 +2386,7 @@ load_public_identity_files(struct passwd *pw)
 	for (i = 0; i < options.num_certificate_files; i++) {
 		cp = tilde_expand_filename(options.certificate_files[i],
 		    getuid());
-		filename = default_client_percent_expand(cp,
+		filename = default_client_percent_dollar_expand(cp,
 		    pw->pw_dir, host, options.user, pw->pw_name);
 		free(cp);
 

@@ -464,9 +464,11 @@ or via a
 .Pp
 Arguments to
 .Cm CertificateFile
-may use the tilde syntax to refer to a user's home directory
-or the tokens described in the
+may use the tilde syntax to refer to a user's home directory,
+the tokens described in the
 .Sx TOKENS
+section and environment variables as described in the
+.Sx ENVIRONMENT VARIABLES
 section.
 .Pp
 It is possible to have multiple certificate files specified in
@@ -626,9 +628,11 @@ section above or the string
 to disable connection sharing.
 Arguments to
 .Cm ControlPath
-may use the tilde syntax to refer to a user's home directory
-or the tokens described in the
+may use the tilde syntax to refer to a user's home directory,
+the tokens described in the
 .Sx TOKENS
+section and environment variables as described in the
+.Sx ENVIRONMENT VARIABLES
 section.
 It is recommended that any
 .Cm ControlPath
@@ -995,9 +999,11 @@ the location of the socket.
 .Pp
 Arguments to
 .Cm IdentityAgent
-may use the tilde syntax to refer to a user's home directory
-or the tokens described in the
+may use the tilde syntax to refer to a user's home directory,
+the tokens described in the
 .Sx TOKENS
+section and environment variables as described in the
+.Sx ENVIRONMENT VARIABLES
 section.
 .It Cm IdentityFile
 Specifies a file from which the user's RSA, ECDSA, Ed25519 or DSA authentication
@@ -1243,8 +1249,10 @@ empty address or
 .Sq *
 indicates that the port should be available from all interfaces.
 .Pp
-Unix domain socket paths accept the tokens described in the
+Unix domain socket paths may use the tokens described in the
 .Sx TOKENS
+section and environment variables as described in the
+.Sx ENVIRONMENT VARIABLES
 section.
 .It Cm LogLevel
 Gives the verbosity level that is used when logging messages from
@@ -1551,8 +1559,10 @@ will only succeed if the server's
 option is enabled (see
 .Xr sshd_config 5 ) .
 .Pp
-Unix domain socket paths accept the tokens described in the
+Unix domain socket paths may use the tokens described in the
 .Sx TOKENS
+section and environment variables as described in the
+.Sx ENVIRONMENT VARIABLES
 section.
 .It Cm RequestTTY
 Specifies whether to request a pseudo-tty for the session.
@@ -2119,6 +2129,28 @@ accepts all tokens.
 .Pp
 .Cm ProxyCommand
 accepts the tokens %%, %h, %n, %p, and %r.
+.Sh ENVIRONMENT VARIABLES
+Arguments to some keywords can be expanded at runtime from environment
+variables on the client by enclosing them in
+.Ic ${} ,
+for example
+.Ic ${HOME}/.ssh
+would refer to the user's .ssh directory.
+If a specified environment variable does not exist then an error will be
+returned and the setting for that keyword will be ignored.
+.Pp
+The keywords
+.Cm CertificateFile ,
+.Cm ControlPath ,
+.Cm IdentityAgent
+and
+.Cm IdentityFile
+support environment variables.
+The keywords
+.Cm LocalForward
+and
+.Cm RemoteForward
+support environment variables only for Unix domain socket paths.
 .Sh FILES
 .Bl -tag -width Ds
 .It Pa ~/.ssh/config

@@ -1,4 +1,4 @@
-/* $OpenBSD: misc.h,v 1.84 2020/01/24 23:54:40 djm Exp $ */
+/* $OpenBSD: misc.h,v 1.87 2020/05/29 11:17:56 dtucker Exp $ */
 
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
@@ -71,7 +71,10 @@ int	 parse_uri(const char *, const char *, char **, char **, int *, char **);
 long	 convtime(const char *);
 char	*fmttime(time_t t);
 char	*tilde_expand_filename(const char *, uid_t);
+
+char	*dollar_expand(int *, const char *string, ...);
 char	*percent_expand(const char *, ...) __attribute__((__sentinel__));
+char	*percent_dollar_expand(const char *, ...) __attribute__((__sentinel__));
 char	*tohex(const void *, size_t);
 void	 xextendf(char **s, const char *sep, const char *fmt, ...)
     __attribute__((__format__ (printf, 3, 4))) __attribute__((__nonnull__ (3)));
