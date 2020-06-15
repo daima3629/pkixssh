@@ -38,7 +38,12 @@ tests(void)
 	/* negative time is not allowed */
 	ASSERT_LONG_EQ(convtime("-7"), -1);
 	ASSERT_LONG_EQ(convtime("-9d"), -1);
-	
+
+	/* reverse description / based on misc */
+	ASSERT_LONG_EQ(convtime("1s1h"), 3601);
+	ASSERT_LONG_EQ(convtime("4m3h2d1w5"), 788645);
+	ASSERT_LONG_EQ(convtime("5s4m3h2d1w"), 788645);
+
 	/* overflow */
 	snprintf(buf, sizeof buf, "%llu", (unsigned long long)LONG_MAX);
 	ASSERT_LONG_EQ(convtime(buf), -1);
@@ -49,6 +54,25 @@ tests(void)
 	snprintf(buf, sizeof buf, "%lluM", (unsigned long long)LONG_MAX/60 + 1);
 	ASSERT_LONG_EQ(convtime(buf), -1);
 	ASSERT_LONG_EQ(convtime("1000000000000000000000w"), -1);
+	TEST_DONE();
+
+	TEST_START("misc_convtime"); /* moved here;) */
+	ASSERT_LONG_EQ(convtime("1"), 1);
+	ASSERT_LONG_EQ(convtime("2s"), 2);
+	ASSERT_LONG_EQ(convtime("3m"), 180);
+	ASSERT_LONG_EQ(convtime("1m30"), 90);
+	ASSERT_LONG_EQ(convtime("1m30s"), 90);
+	ASSERT_LONG_EQ(convtime("1h1s"), 3601);
+	ASSERT_LONG_EQ(convtime("1h30m"), 90 * 60);
+	ASSERT_LONG_EQ(convtime("1d"), 24 * 60 * 60);
+	ASSERT_LONG_EQ(convtime("1w"), 7 * 24 * 60 * 60);
+	ASSERT_LONG_EQ(convtime("1w2d3h4m5"), 788645);
+	ASSERT_LONG_EQ(convtime("1w2d3h4m5s"), 788645);
+	/* any negative number or error returns -1 */
+	ASSERT_LONG_EQ(convtime("-1"),  -1);
+	ASSERT_LONG_EQ(convtime(""),  -1);
+	ASSERT_LONG_EQ(convtime("trout"),  -1);
+	ASSERT_LONG_EQ(convtime("-77"),  -1);
 	TEST_DONE();
 
 	TEST_START("conversion_fmttime");
