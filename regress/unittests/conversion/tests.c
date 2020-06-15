@@ -50,4 +50,24 @@ tests(void)
 	ASSERT_LONG_EQ(convtime(buf), -1);
 	ASSERT_LONG_EQ(convtime("1000000000000000000000w"), -1);
 	TEST_DONE();
+
+	TEST_START("conversion_fmttime");
+{	char *res;
+	res = fmttime(13);
+	ASSERT_STRING_EQ(res, "13s");
+	free(res);
+	res = fmttime((12)*60+13);
+	ASSERT_STRING_EQ(res, "12m13s");
+	free(res);
+	res = fmttime(((11)*60+12)*60+13);
+	ASSERT_STRING_EQ(res, "11h12m13s");
+	free(res);
+	res = fmttime((((5)*24+11)*60+12)*60+13);
+	ASSERT_STRING_EQ(res, "5d11h12m");
+	free(res);
+	res = fmttime(((((4)*7+5)*24+11)*60+12)*60+13);
+	ASSERT_STRING_EQ(res, "4w5d11h");
+	free(res);
+}
+	TEST_DONE();
 }

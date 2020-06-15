@@ -69,6 +69,7 @@ int	 parse_user_host_path(const char *, char **, char **, char **);
 int	 parse_user_host_port(const char *, char **, char **, int *);
 int	 parse_uri(const char *, const char *, char **, char **, int *, char **);
 long	 convtime(const char *);
+char	*fmttime(time_t t);
 char	*tilde_expand_filename(const char *, uid_t);
 char	*percent_expand(const char *, ...) __attribute__((__sentinel__));
 char	*tohex(const void *, size_t);

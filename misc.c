@@ -580,6 +580,42 @@ convtime(const char *s)
 	return total;
 }
 
+char *
+fmttime(time_t t)
+{
+	u_int s, m, h, d;
+
+	/*seconds*/
+	s = t % 60;
+	t /= 60;
+	/*minutes*/
+	m = t % 60;
+	t /= 60;
+	/*hours*/
+	h = t % 24;
+	t /= 24;
+	/*days*/
+	d = t % 7;
+	t /= 7;
+	/*weeks*/
+
+{	char *ret;
+
+	if (t > 0)
+		xasprintf(&ret, "%dw%dd%dh", (u_int)t, d, h);
+	else if (d > 0)
+		xasprintf(&ret, "%dd%dh%dm", d, h, m);
+	else if (h > 0)
+		xasprintf(&ret, "%dh%dm%ds", h, m, s);
+	else if (m > 0)
+		xasprintf(&ret, "%dm%ds", m, s);
+	else
+		xasprintf(&ret, "%ds", s);
+
+	return ret;
+}
+}
+
 /*
  * Returns a standardized host+port identifier string.
  * Caller must free returned string.
