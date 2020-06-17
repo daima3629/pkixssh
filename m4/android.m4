@@ -96,6 +96,12 @@ case "$host" in
   dnl platforms depending from NDK version!
   dnl => do not use "glob" for consistency
   ac_cv_func_glob=ignore
+
+  dnl Function "reallocarray" is declared in API 29(unified headers).
+  dnl Before API 29 it is defined in "C" static-library on some
+  dnl platforms depending from NDK version!
+  dnl => do not use "reallocarray" for consistency
+  ac_cv_func_reallocarray=ignore
   ;;
 esac
 ])
