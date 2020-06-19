@@ -90,8 +90,14 @@ bcrypt_hash(u_int8_t *sha2pass, u_int8_t *sha2salt, u_int8_t *out)
 	for (i = 0; i < BCRYPT_WORDS; i++)
 		cdata[i] = Blowfish_stream2word(ciphertext, sizeof(ciphertext),
 		    &j);
+/* NOTE
+bcrypt_pbkdf.c:94:40: error: expression does not compute the number of
+  elements in this array; element type is 'uint32_t'...
+  place parentheses around the 'sizeof(uint64_t)' expression to
+  silence this warning
+*/
 	for (i = 0; i < 64; i++)
-		blf_enc(&state, cdata, sizeof(cdata) / sizeof(uint64_t));
+		blf_enc(&state, cdata, sizeof(cdata) / (sizeof(uint64_t)));
 
 	/* copy out */
 	for (i = 0; i < BCRYPT_WORDS; i++) {
