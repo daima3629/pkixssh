@@ -1,4 +1,4 @@
-#	$OpenBSD: Makefile,v 1.108 2020/04/20 04:44:47 djm Exp $
+#	$OpenBSD: Makefile,v 1.109 2020/06/19 05:07:09 dtucker Exp $
 
 tests: unit file-tests t-exec
 check-core: tests
@@ -39,6 +39,7 @@ LTESTS= 	connect \
 		agent-getpeereid \
 		agent-timeout \
 		agent-ptrace \
+		agent-subprocess \
 		keyscan \
 		keygen-change \
 		keygen-convert \
@@ -89,7 +90,9 @@ LTESTS= 	connect \
 		authinfo \
 		keygen-comment
 
+# in some environments fail regularly:
 #		multiplex \
+# portability:
 #		percent \
 
 FIPS_LTESTS=\
