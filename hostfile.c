@@ -1,4 +1,4 @@
-/* $OpenBSD: hostfile.c,v 1.78 2020/02/26 13:40:09 jsg Exp $ */
+/* $OpenBSD: hostfile.c,v 1.80 2020/05/13 09:52:41 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -425,6 +425,18 @@ lookup_key_in_hostkeys_by_types(struct hostkeys *hostkeys, int keytype, int subt
 {
 	return (check_hostkeys_by_key_or_types(hostkeys, NULL, keytype, subtype,
 	    found) == HOST_FOUND);
+}
+
+int
+lookup_marker_in_hostkeys(struct hostkeys *hostkeys, int want_marker)
+{
+	u_int i;
+
+	for (i = 0; i < hostkeys->num_entries; i++) {
+		if (hostkeys->entries[i].marker == (HostkeyMarker)want_marker)
+			return 1;
+	}
+	return 0;
 }
 
 static int
