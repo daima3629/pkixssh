@@ -179,8 +179,8 @@ static char *key_type_name = NULL;
 /* Load key from this PKCS#11 provider */
 static char *pkcs11provider = NULL;
 
-/* Use new OpenSSH private key format when writing SSH2 keys instead of PEM */
-static int use_new_format = 0;
+/* Format for writing private keys */
+static int private_key_format = SSHKEY_PRIVATE_PKCS8;
 
 /* Cipher for private keys in OpenSSH proprietary format */
 static char *openssh_format_cipher = NULL;
@@ -1171,7 +1171,7 @@ do_gen_all_hostkeys(struct passwd *pw)
 		snprintf(comment, sizeof comment, "%s@%s", pw->pw_name,
 		    hostname);
 		if ((r = sshkey_save_private(private, prv_tmp, "",
-		    comment, use_new_format, openssh_format_cipher,
+		    comment, private_key_format, openssh_format_cipher,
 		    rounds)) != 0) {
 			error("Saving key \"%s\" failed: %s",
 			    prv_tmp, ssh_err(r));
@@ -1505,7 +1505,7 @@ do_change_passphrase(struct passwd *pw)
 
 	/* Save the file using the new passphrase. */
 	if ((r = sshkey_save_private(private, identity_file, passphrase1,
-	    comment, use_new_format, openssh_format_cipher, rounds)) != 0) {
+	    comment, private_key_format, openssh_format_cipher, rounds)) != 0) {
 		error("Saving key \"%s\" failed: %s.",
 		    identity_file, ssh_err(r));
 		freezero(passphrase1, strlen(passphrase1));
@@ -1591,7 +1591,7 @@ do_change_comment(struct passwd *pw, const char *identity_comment)
 	}
 
 	if (private->type != KEY_ED25519 && private->type != KEY_XMSS &&
-	    !use_new_format) {
+	    private_key_format != SSHKEY_PRIVATE_OPENSSH) {
 		error("Comments are only supported for keys stored in "
 		    "the new format (-o).");
 		freezero(passphrase, strlen(passphrase));
@@ -1625,7 +1625,7 @@ do_change_comment(struct passwd *pw, const char *identity_comment)
 
 	/* Save the file using the new passphrase. */
 	if ((r = sshkey_save_private(private, identity_file, passphrase,
-	    new_comment, use_new_format, openssh_format_cipher,
+	    new_comment, private_key_format, openssh_format_cipher,
 	    rounds)) != 0) {
 		error("Saving key \"%s\" failed: %s",
 		    identity_file, ssh_err(r));
@@ -2726,7 +2726,7 @@ main(int argc, char **argv)
 			fatal("FIPS integrity verification test failed.");
 	#endif
 		fprintf(stderr, "%s runs in FIPS mode\n", __progname);
-		use_new_format = 0;
+		private_key_format = SSHKEY_PRIVATE_PKCS8;
 	}
 #endif /*def OPENSSL_FIPS*/
 	ssh_engines_startup();
@@ -2807,7 +2807,7 @@ main(int argc, char **argv)
 			cert_principals = optarg;
 			break;
 		case 'o':
-			use_new_format = 1;
+			private_key_format = SSHKEY_PRIVATE_OPENSSH;
 			break;
 		case 'p':
 			change_passphrase = 1;
@@ -2924,7 +2924,7 @@ main(int argc, char **argv)
 	}
 
 #ifdef OPENSSL_FIPS
-	if (FIPS_mode() && use_new_format) {
+	if (FIPS_mode() && private_key_format == SSHKEY_PRIVATE_OPENSSH) {
 		fatal("OpenSSH proprietary key format is not allowed in FIPS mode");
 	}
 #endif
@@ -3114,7 +3114,7 @@ main(int argc, char **argv)
 
 	/* Save the key with the given passphrase and comment. */
 	if ((r = sshkey_save_private(private, identity_file, passphrase,
-	    comment, use_new_format, openssh_format_cipher, rounds)) != 0) {
+	    comment, private_key_format, openssh_format_cipher, rounds)) != 0) {
 		error("Saving key \"%s\" failed: %s",
 		    identity_file, ssh_err(r));
 		freezero(passphrase, strlen(passphrase));

@@ -4465,17 +4465,18 @@ sshkey_private_pem_to_blob(struct sshkey *key, struct sshbuf *buf,
 int
 sshkey_private_to_fileblob(struct sshkey *key, struct sshbuf *blob,
     const char *passphrase, const char *comment,
-    int force_new_format, const char *openssh_format_cipher, int new_format_rounds)
+    int format, const char *openssh_format_cipher, int new_format_rounds)
 {
 	/* never use proprietary format for X.509 keys */
-	if (sshkey_is_x509(key)) force_new_format = 0;
+	if (sshkey_is_x509(key))
+		format = SSHKEY_PRIVATE_PKCS8;
 
 	switch (key->type) {
 #ifdef WITH_OPENSSL
 	case KEY_DSA:
 	case KEY_ECDSA:
 	case KEY_RSA:
-		if (force_new_format) {
+		if (format == SSHKEY_PRIVATE_OPENSSH) {
 			return sshkey_private_to_blob2(key, blob, passphrase,
 			    comment, openssh_format_cipher, new_format_rounds);
 		}
