@@ -764,10 +764,18 @@ DH_set0_pqg(DH *dh, BIGNUM *p, BIGNUM *q, BIGNUM *g) {
 #endif /*ndef HAVE_DH_GET0_KEY*/
 
 
-#ifndef HAVE_EVP_PKEY_ID
+#ifndef HAVE_EVP_PKEY_BASE_ID
 /* OpenSSL >= 1.0 */
-static inline int EVP_PKEY_id(const EVP_PKEY *pkey) { return pkey->type; }
-#endif /*ndef HAVE_EVP_PKEY_ID */
+static inline int
+EVP_PKEY_id(const EVP_PKEY *pkey) {
+	return pkey->type;
+}
+
+static inline int
+EVP_PKEY_base_id(const EVP_PKEY *pkey) {
+	return(EVP_PKEY_type(EVP_PKEY_id(pkey)));
+}
+#endif /*ndef HAVE_EVP_PKEY_BASE_ID */
 
 
 #ifndef HAVE_EVP_PKEY_GET0_EC_KEY

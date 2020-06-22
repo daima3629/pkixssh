@@ -5501,7 +5501,7 @@ AC_CHECK_FUNCS([ \
 AC_CHECK_FUNCS([ \
   ERR_remove_thread_state \
   EVP_MD_flags \
-  EVP_PKEY_id \
+  EVP_PKEY_base_id \
   X509_STORE_set_verify_cb \
 ])
 

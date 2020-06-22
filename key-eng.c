@@ -295,8 +295,7 @@ sshkey_from_EVP_PKEY(int type, EVP_PKEY *pk, struct sshkey **keyp) {
 	int evp_id;
 	struct sshkey *ret;
 
-	/* correct is EVP_PKEY_base_id but EVP_PKEY_id is fine here */
-	evp_id = EVP_PKEY_id(pk);
+	evp_id = EVP_PKEY_base_id(pk);
 	ret = *keyp;
 
 	/* NOTE do not set flags |= SSHKEY_FLAG_EXT !!! */

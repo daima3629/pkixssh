@@ -4521,7 +4521,7 @@ sshkey_parse_private_pem_fileblob(struct sshbuf *blob, int type,
 		r = SSH_ERR_KEY_WRONG_PASSPHRASE;
 		goto out;
 	}
-	if (EVP_PKEY_id(pk) == EVP_PKEY_RSA &&
+	if (EVP_PKEY_base_id(pk) == EVP_PKEY_RSA &&
 	    (type == KEY_UNSPEC || type == KEY_RSA)) {
 		if ((prv = sshkey_new(KEY_UNSPEC)) == NULL) {
 			r = SSH_ERR_ALLOC_FAIL;
@@ -4538,7 +4538,7 @@ sshkey_parse_private_pem_fileblob(struct sshbuf *blob, int type,
 		}
 		if ((r = sshrsa_check_length(prv->rsa)) != 0)
 			goto out;
-	} else if (EVP_PKEY_id(pk) == EVP_PKEY_DSA &&
+	} else if (EVP_PKEY_base_id(pk) == EVP_PKEY_DSA &&
 	    (type == KEY_UNSPEC || type == KEY_DSA)) {
 		if ((prv = sshkey_new(KEY_UNSPEC)) == NULL) {
 			r = SSH_ERR_ALLOC_FAIL;
@@ -4550,7 +4550,7 @@ sshkey_parse_private_pem_fileblob(struct sshbuf *blob, int type,
 		DSA_print_fp(stderr, prv->dsa, 8);
 #endif
 #ifdef OPENSSL_HAS_ECC
-	} else if (EVP_PKEY_id(pk) == EVP_PKEY_EC &&
+	} else if (EVP_PKEY_base_id(pk) == EVP_PKEY_EC &&
 	    (type == KEY_UNSPEC || type == KEY_ECDSA)) {
 		if ((prv = sshkey_new(KEY_UNSPEC)) == NULL) {
 			r = SSH_ERR_ALLOC_FAIL;

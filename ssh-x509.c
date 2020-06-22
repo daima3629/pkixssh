@@ -637,7 +637,7 @@ x509_to_key(X509 *x509) {
 	debug3("x509_to_key: X509_get_pubkey done!");
 #endif
 
-	switch (EVP_PKEY_id(env_pkey)) {
+	switch (EVP_PKEY_base_id(env_pkey)) {
 	case EVP_PKEY_RSA:
 		key = sshkey_new(KEY_UNSPEC);
 		key->rsa = EVP_PKEY_get1_RSA(env_pkey);
@@ -687,7 +687,8 @@ x509_to_key(X509 *x509) {
 #endif /*def OPENSSL_HAS_ECC*/
 
 	default:
-		error("%s: unsupported EVP_PKEY type %d", __func__, EVP_PKEY_id(env_pkey));
+		error("%s: unsupported EVP_PKEY type %d", __func__,
+		    EVP_PKEY_base_id(env_pkey));
 	}
 
 	EVP_PKEY_free(env_pkey);
@@ -2143,7 +2144,7 @@ ssh_x509_key_size(const struct sshkey *key) {
 	if (pkey == NULL) goto done;
 
 	/* NOTE BN_num_bits returns int! */
-	switch(EVP_PKEY_id(pkey)) {
+	switch(EVP_PKEY_base_id(pkey)) {
 	case EVP_PKEY_RSA: {
 		RSA *rsa;
 		const BIGNUM *n;
@@ -2171,7 +2172,8 @@ ssh_x509_key_size(const struct sshkey *key) {
 		} break;
 #endif
 	default:
-		fatal("ssh_x509_key_size: unknown EVP_PKEY type %d", EVP_PKEY_id(pkey));
+		fatal("ssh_x509_key_size: unknown EVP_PKEY type %d",
+		    EVP_PKEY_base_id(pkey));
 		/*unreachable code*/
 	}
 	EVP_PKEY_free(pkey);
