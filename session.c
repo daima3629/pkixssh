@@ -2206,7 +2206,7 @@ allowed_signal(int code)
 	SSH_SIG(USR1);
 	SSH_SIG(USR2);
 #ifdef SIGINFO
-	SSH_SIG(SIGINFO);
+	SSH_SIG(INFO);
 #endif
 #undef	SSH_SIG
 	return 0;
