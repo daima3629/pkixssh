@@ -1,5 +1,5 @@
 #!/bin/sh
-# $OpenBSD: mktestdata.sh,v 1.8 2020/05/01 03:58:02 djm Exp $
+# $OpenBSD: mktestdata.sh,v 1.11 2020/06/19 03:48:49 djm Exp $
 
 PW=mekmitasdigoat
 
@@ -77,19 +77,23 @@ rm -f rsa_1_pw dsa_1_pw ecdsa_1_pw ed25519_1_pw
 rm -f rsa_n_pw dsa_n_pw ecdsa_n_pw
 rm -f pw *.pub *.bn.* *.param.* *.fp *.fp.bb
 
-ssh-keygen -t rsa -b 1024 -C "RSA test key #1" -N "" -f rsa_1
-ssh-keygen -t dsa -b 1024 -C "DSA test key #1" -N "" -f dsa_1
-ssh-keygen -t ecdsa -b 256 -C "ECDSA test key #1" -N "" -f ecdsa_1
+ssh-keygen -t rsa -b 1024 -C "RSA test key #1" -N "" -f rsa_1 -m PEM
+ssh-keygen -t dsa -b 1024 -C "DSA test key #1" -N "" -f dsa_1 -m PEM
+ssh-keygen -t ecdsa -b 256 -C "ECDSA test key #1" -N "" -f ecdsa_1 -m PEM
 ssh-keygen -t ed25519 -C "ED25519 test key #1" -N "" -f ed25519_1
 
-ssh-keygen -t rsa -b 2048 -C "RSA test key #2" -N "" -f rsa_2
-ssh-keygen -t dsa -b 1024 -C "DSA test key #2" -N "" -f dsa_2
-ssh-keygen -t ecdsa -b 521 -C "ECDSA test key #2" -N "" -f ecdsa_2
-ssh-keygen -t ed25519 -C "ED25519 test key #1" -N "" -f ed25519_2
+ssh-keygen -t rsa -b 2048 -C "RSA test key #2" -N "" -f rsa_2 -m PEM
+ssh-keygen -t dsa -b 1024 -C "DSA test key #2" -N "" -f dsa_2 -m PEM
+ssh-keygen -t ecdsa -b 521 -C "ECDSA test key #2" -N "" -f ecdsa_2 -m PEM
+ssh-keygen -t ed25519 -C "ED25519 test key #2" -N "" -f ed25519_2
 
 cp rsa_1 rsa_n
 cp dsa_1 dsa_n
 cp ecdsa_1 ecdsa_n
+
+ssh-keygen -opf rsa_n -N ""
+ssh-keygen -opf dsa_n -N ""
+ssh-keygen -opf ecdsa_n -N ""
 
 cp rsa_1 rsa_1_pw
 cp dsa_1 dsa_1_pw
@@ -99,9 +103,9 @@ cp rsa_1 rsa_n_pw
 cp dsa_1 dsa_n_pw
 cp ecdsa_1 ecdsa_n_pw
 
-ssh-keygen -pf rsa_1_pw -N "$PW"
-ssh-keygen -pf dsa_1_pw -N "$PW"
-ssh-keygen -pf ecdsa_1_pw -N "$PW"
+ssh-keygen -pf rsa_1_pw -m PEM -N "$PW"
+ssh-keygen -pf dsa_1_pw -m PEM -N "$PW"
+ssh-keygen -pf ecdsa_1_pw -m PEM -N "$PW"
 ssh-keygen -pf ed25519_1_pw -N "$PW"
 ssh-keygen -opf rsa_n_pw -N "$PW"
 ssh-keygen -opf dsa_n_pw -N "$PW"
@@ -158,10 +162,10 @@ ssh-keygen -lf dsa_2 | awk '{print $2}' > dsa_2.fp
 ssh-keygen -lf ecdsa_2 | awk '{print $2}' > ecdsa_2.fp
 ssh-keygen -lf ed25519_2 | awk '{print $2}' > ed25519_2.fp
 
+ssh-keygen -lf rsa_1-cert.pub  | awk '{print $2}' > rsa_1-cert.fp
 ssh-keygen -lf dsa_1-cert.pub  | awk '{print $2}' > dsa_1-cert.fp
 ssh-keygen -lf ecdsa_1-cert.pub  | awk '{print $2}' > ecdsa_1-cert.fp
 ssh-keygen -lf ed25519_1-cert.pub  | awk '{print $2}' > ed25519_1-cert.fp
-ssh-keygen -lf rsa_1-cert.pub  | awk '{print $2}' > rsa_1-cert.fp
 
 ssh-keygen -Bf rsa_1 | awk '{print $2}' > rsa_1.fp.bb
 ssh-keygen -Bf dsa_1 | awk '{print $2}' > dsa_1.fp.bb
@@ -171,7 +175,5 @@ ssh-keygen -Bf rsa_2 | awk '{print $2}' > rsa_2.fp.bb
 ssh-keygen -Bf dsa_2 | awk '{print $2}' > dsa_2.fp.bb
 ssh-keygen -Bf ecdsa_2 | awk '{print $2}' > ecdsa_2.fp.bb
 ssh-keygen -Bf ed25519_2 | awk '{print $2}' > ed25519_2.fp.bb
-
-# XXX Extend ssh-keygen to do detached signatures (better to test/fuzz against)
 
 echo "$PW" > pw
