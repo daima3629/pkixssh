@@ -4465,7 +4465,7 @@ sshkey_private_pem_to_blob(struct sshkey *key, struct sshbuf *buf,
 int
 sshkey_private_to_fileblob(struct sshkey *key, struct sshbuf *blob,
     const char *passphrase, const char *comment,
-    int force_new_format, const char *new_format_cipher, int new_format_rounds)
+    int force_new_format, const char *openssh_format_cipher, int new_format_rounds)
 {
 	/* never use proprietary format for X.509 keys */
 	if (sshkey_is_x509(key)) force_new_format = 0;
@@ -4477,7 +4477,7 @@ sshkey_private_to_fileblob(struct sshkey *key, struct sshbuf *blob,
 	case KEY_RSA:
 		if (force_new_format) {
 			return sshkey_private_to_blob2(key, blob, passphrase,
-			    comment, new_format_cipher, new_format_rounds);
+			    comment, openssh_format_cipher, new_format_rounds);
 		}
 		return sshkey_private_pem_to_blob(key, blob, passphrase);
 #endif /* WITH_OPENSSL */
@@ -4486,7 +4486,7 @@ sshkey_private_to_fileblob(struct sshkey *key, struct sshbuf *blob,
 	case KEY_XMSS:
 #endif /* WITH_XMSS */
 		return sshkey_private_to_blob2(key, blob, passphrase,
-		    comment, new_format_cipher, new_format_rounds);
+		    comment, openssh_format_cipher, new_format_rounds);
 	default:
 		return SSH_ERR_KEY_TYPE_UNKNOWN;
 	}

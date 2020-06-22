@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keygen.c,v 1.411 2020/05/18 04:29:35 djm Exp $ */
+/* $OpenBSD: ssh-keygen.c,v 1.412 2020/05/29 03:11:54 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1994 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -182,8 +182,8 @@ static char *pkcs11provider = NULL;
 /* Use new OpenSSH private key format when writing SSH2 keys instead of PEM */
 static int use_new_format = 0;
 
-/* Cipher for new-format private keys */
-static char *new_format_cipher = NULL;
+/* Cipher for private keys in OpenSSH proprietary format */
+static char *openssh_format_cipher = NULL;
 
 /* Number of KDF rounds to derive new format keys. */
 static int rounds = 0;
@@ -1171,7 +1171,8 @@ do_gen_all_hostkeys(struct passwd *pw)
 		snprintf(comment, sizeof comment, "%s@%s", pw->pw_name,
 		    hostname);
 		if ((r = sshkey_save_private(private, prv_tmp, "",
-		    comment, use_new_format, new_format_cipher, rounds)) != 0) {
+		    comment, use_new_format, openssh_format_cipher,
+		    rounds)) != 0) {
 			error("Saving key \"%s\" failed: %s",
 			    prv_tmp, ssh_err(r));
 			goto failnext;
@@ -1504,7 +1505,7 @@ do_change_passphrase(struct passwd *pw)
 
 	/* Save the file using the new passphrase. */
 	if ((r = sshkey_save_private(private, identity_file, passphrase1,
-	    comment, use_new_format, new_format_cipher, rounds)) != 0) {
+	    comment, use_new_format, openssh_format_cipher, rounds)) != 0) {
 		error("Saving key \"%s\" failed: %s.",
 		    identity_file, ssh_err(r));
 		freezero(passphrase1, strlen(passphrase1));
@@ -1624,7 +1625,8 @@ do_change_comment(struct passwd *pw, const char *identity_comment)
 
 	/* Save the file using the new passphrase. */
 	if ((r = sshkey_save_private(private, identity_file, passphrase,
-	    new_comment, use_new_format, new_format_cipher, rounds)) != 0) {
+	    new_comment, use_new_format, openssh_format_cipher,
+	    rounds)) != 0) {
 		error("Saving key \"%s\" failed: %s",
 		    identity_file, ssh_err(r));
 		freezero(passphrase, strlen(passphrase));
@@ -1638,11 +1640,11 @@ do_change_comment(struct passwd *pw, const char *identity_comment)
 	sshkey_free(private);
 
 	strlcat(identity_file, ".pub", sizeof(identity_file));
-	if ((r = sshkey_save_public(public, identity_file, new_comment)) != 0)
+	if ((r = sshkey_save_public(public, identity_file, new_comment)) != 0) {
 		fatal("Unable to save public key to %s: %s",
 		    identity_file, ssh_err(r));
+	}
 	sshkey_free(public);
-
 	free(comment);
 
 	if (strlen(new_comment) > 0)
@@ -2837,7 +2839,7 @@ main(int argc, char **argv)
 			opts[nopts++] = xstrdup(optarg);
 			break;
 		case 'Z':
-			new_format_cipher = optarg;
+			openssh_format_cipher = optarg;
 			break;
 		case 'C':
 			identity_comment = optarg;
@@ -3112,7 +3114,7 @@ main(int argc, char **argv)
 
 	/* Save the key with the given passphrase and comment. */
 	if ((r = sshkey_save_private(private, identity_file, passphrase,
-	    comment, use_new_format, new_format_cipher, rounds)) != 0) {
+	    comment, use_new_format, openssh_format_cipher, rounds)) != 0) {
 		error("Saving key \"%s\" failed: %s",
 		    identity_file, ssh_err(r));
 		freezero(passphrase, strlen(passphrase));

@@ -1,4 +1,4 @@
-/* $OpenBSD: authfile.c,v 1.140 2020/04/17 07:15:11 djm Exp $ */
+/* $OpenBSD: authfile.c,v 1.141 2020/06/18 23:33:38 djm Exp $ */
 /*
  * Copyright (c) 2000, 2013 Markus Friedl.  All rights reserved.
  * Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
@@ -69,7 +69,7 @@ sshkey_save_private_blob(struct sshbuf *keybuf, const char *filename)
 int
 sshkey_save_private(struct sshkey *key, const char *filename,
     const char *passphrase, const char *comment,
-    int force_new_format, const char *new_format_cipher, int new_format_rounds)
+    int force_new_format, const char *openssh_format_cipher, int new_format_rounds)
 {
 	struct sshbuf *keyblob = NULL;
 	int r;
@@ -77,7 +77,7 @@ sshkey_save_private(struct sshkey *key, const char *filename,
 	if ((keyblob = sshbuf_new()) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
 	if ((r = sshkey_private_to_fileblob(key, keyblob, passphrase, comment,
-	    force_new_format, new_format_cipher, new_format_rounds)) != 0)
+	    force_new_format, openssh_format_cipher, new_format_rounds)) != 0)
 		goto out;
 	if ((r = sshkey_save_private_blob(keyblob, filename)) != 0)
 		goto out;

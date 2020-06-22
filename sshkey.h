@@ -2,7 +2,7 @@
 
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -277,7 +277,7 @@ int	sshkey_private_deserialize(struct sshbuf *buf,  struct sshkey **keyp);
 /* private key file format parsing and serialisation */
 int	sshkey_private_to_fileblob(struct sshkey *key, struct sshbuf *blob,
     const char *passphrase, const char *comment,
-    int force_new_format, const char *new_format_cipher, int new_format_rounds);
+    int force_new_format, const char *openssh_format_cipher, int new_format_rounds);
 int	sshkey_parse_private_fileblob(struct sshbuf *buffer,
     const char *passphrase, struct sshkey **keyp, char **commentp);
 int	sshkey_parse_private_fileblob_type(struct sshbuf *blob, int type,
