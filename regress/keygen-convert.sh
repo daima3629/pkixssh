@@ -3,19 +3,21 @@
 
 tid="convert keys"
 
-types=""
 for i in ${SSH_KEYTYPES}; do
 	case "$i" in
-		ssh-dss)	types="$types dsa" ;;
-		ssh-rsa)	types="$types rsa" ;;
+	ssh-rsa)		t=rsa;     type="-t rsa" ;;
+	ecdsa-sha2-nistp256)	t=ec_p256; type="-t ecdsa -b 256" ;;
+	ecdsa-sha2-nistp384)	t=ec_p384; type="-t ecdsa -b 384" ;;
+	ecdsa-sha2-nistp521)	t=ec_p521; type="-t ecdsa -b 521" ;;
+	ssh-ed25519)		t=ed25519; type="-t ed25519" ;;
+	ssh-dss)		t=dsa;     type="-t dsa" ;;
+	*) continue ;;
 	esac
-done
 
-for t in $types; do
-	# generate user key for agent
+	# generate user key for import/export
 	trace "generating $t key"
 	rm -f $OBJ/$t-key
-	${SSHKEYGEN} -q -N "" -t $t -f $OBJ/$t-key
+	${SSHKEYGEN} -q -N "" $type -f $OBJ/$t-key
 
 	trace "export $t private to rfc4716 public"
 	${SSHKEYGEN} -q -e -f $OBJ/$t-key >$OBJ/$t-key-rfc || \
