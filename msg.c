@@ -1,4 +1,4 @@
-/* $OpenBSD: msg.c,v 1.18 2020/01/22 04:49:16 djm Exp $ */
+/* $OpenBSD: msg.c,v 1.19 2020/06/24 15:08:53 markus Exp $ */
 /*
  * Copyright (c) 2002 Markus Friedl.  All rights reserved.
  *
@@ -66,7 +66,7 @@ int
 ssh_msg_recv(int fd, struct sshbuf *m)
 {
 	u_char buf[4], *p;
-	u_int msg_len;
+	size_t msg_len;
 	int r;
 
 	debug3("%s entering", __func__);
@@ -77,8 +77,8 @@ ssh_msg_recv(int fd, struct sshbuf *m)
 		return (-1);
 	}
 	msg_len = get_u32(buf);
-	if (msg_len > 256 * 1024) {
-		error("%s: read: bad msg_len %u", __func__, msg_len);
+	if (msg_len > sshbuf_max_size(m)) {
+		error("%s: read: bad msg_len %zu", __func__, msg_len);
 		return (-1);
 	}
 	sshbuf_reset(m);
