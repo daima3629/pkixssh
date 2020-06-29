@@ -11,7 +11,7 @@
  *
  * SSH2 support by Markus Friedl.
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2012-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2012-2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -1259,7 +1259,7 @@ static void
 do_rc_files(struct ssh *ssh, Session *s, const char *shell)
 {
 	FILE *f = NULL;
-	char cmd[1024];
+	char *cmd = NULL;
 	int do_xauth;
 	struct stat st;
 
@@ -1271,7 +1271,7 @@ do_rc_files(struct ssh *ssh, Session *s, const char *shell)
 	if (!s->is_subsystem && options.adm_forced_command == NULL &&
 	    auth_opts->permit_user_rc && options.permit_user_rc &&
 	    stat(_PATH_SSH_USER_RC, &st) != -1) {
-		snprintf(cmd, sizeof cmd, "%s -c '%s %s'",
+		xasprintf(&cmd, "%s -c '%s %s'",
 		    shell, _PATH_BSHELL, _PATH_SSH_USER_RC);
 		if (debug_flag)
 			fprintf(stderr, "Running %s\n", cmd);
@@ -1308,8 +1308,7 @@ do_rc_files(struct ssh *ssh, Session *s, const char *shell)
 			    options.xauth_location, s->auth_display,
 			    s->auth_proto, s->auth_data);
 		}
-		snprintf(cmd, sizeof cmd, "%s -q -",
-		    options.xauth_location);
+		xasprintf(&cmd, "%s -q -", options.xauth_location);
 		f = popen(cmd, "w");
 		if (f) {
 			fprintf(f, "remove %s\n",
@@ -1323,6 +1322,7 @@ do_rc_files(struct ssh *ssh, Session *s, const char *shell)
 			    cmd);
 		}
 	}
+	free(cmd);
 }
 
 static void
