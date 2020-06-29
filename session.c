@@ -1,4 +1,4 @@
-/* $OpenBSD: session.c,v 1.319 2020/03/13 03:17:07 djm Exp $ */
+/* $OpenBSD: session.c,v 1.320 2020/06/26 04:45:11 dtucker Exp $ */
 /*
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
@@ -1259,20 +1259,21 @@ static void
 do_rc_files(struct ssh *ssh, Session *s, const char *shell)
 {
 	FILE *f = NULL;
-	char *cmd = NULL;
+	char *cmd = NULL, *user_rc = NULL;
 	int do_xauth;
 	struct stat st;
 
 	UNUSED(ssh);
 	do_xauth =
 	    s->display != NULL && s->auth_proto != NULL && s->auth_data != NULL;
+	user_rc = tilde_expand_filename(_PATH_SSH_USER_RC, getuid());
 
-	/* ignore _PATH_SSH_USER_RC for subsystems and admin forced commands */
+	/* ignore "user ssh rc" for subsystems and admin forced commands */
 	if (!s->is_subsystem && options.adm_forced_command == NULL &&
 	    auth_opts->permit_user_rc && options.permit_user_rc &&
-	    stat(_PATH_SSH_USER_RC, &st) != -1) {
+	    stat(user_rc, &st) != -1) {
 		xasprintf(&cmd, "%s -c '%s %s'",
-		    shell, _PATH_BSHELL, _PATH_SSH_USER_RC);
+		    shell, _PATH_BSHELL, user_rc);
 		if (debug_flag)
 			fprintf(stderr, "Running %s\n", cmd);
 		f = popen(cmd, "w");
@@ -1283,7 +1284,7 @@ do_rc_files(struct ssh *ssh, Session *s, const char *shell)
 			pclose(f);
 		} else
 			fprintf(stderr, "Could not run %s\n",
-			    _PATH_SSH_USER_RC);
+			    user_rc);
 	} else if (stat(_PATH_SSH_SYSTEM_RC, &st) != -1) {
 		if (debug_flag)
 			fprintf(stderr, "Running %s %s\n", _PATH_BSHELL,
@@ -1323,6 +1324,7 @@ do_rc_files(struct ssh *ssh, Session *s, const char *shell)
 		}
 	}
 	free(cmd);
+	free(user_rc);
 }
 
 static void

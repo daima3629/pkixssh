@@ -11,7 +11,7 @@
  * incompatible with the protocol description in the RFC file, it must be
  * called by a name other than "ssh" or "Secure Shell".
  *
- * Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -141,7 +141,7 @@
  * passed "proto cookie" as arguments if X11 forwarding with spoofing is in
  * use.  xauth will be run if neither of these exists.
  */
-#define _PATH_SSH_USER_RC		_PATH_SSH_USER_DIR "/rc"
+#define _PATH_SSH_USER_RC		"~/" _PATH_SSH_USER_DIR "/rc"
 #define _PATH_SSH_SYSTEM_RC		SSHDIR "/sshrc"
 
 /*
