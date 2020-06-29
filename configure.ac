@@ -4708,13 +4708,10 @@ AC_ARG_WITH([selinux],
 			  LIBS="$LIBS -lselinux"
 			],
 			AC_MSG_ERROR([SELinux support requires libselinux library]))
-		SSHLIBS="$SSHLIBS $LIBSELINUX"
-		SSHDLIBS="$SSHDLIBS $LIBSELINUX"
 		AC_CHECK_FUNCS([getseuserbyname get_default_context_with_level])
-		LIBS="$save_LIBS"
+		LIBS="$save_LIBS $LIBSELINUX"
 	fi ]
 )
-AC_SUBST([SSHLIBS])
 AC_SUBST([SSHDLIBS])
 
 # Check whether user wants Kerberos 5 support
@@ -6138,9 +6135,6 @@ echo "    OCSP libraries: $LIBOCSP"
 fi
 if test ! -z "${SSHDLIBS}"; then
 echo "         +for sshd: ${SSHDLIBS}"
-fi
-if test ! -z "${SSHLIBS}"; then
-echo "          +for ssh: ${SSHLIBS}"
 fi
 
 echo ""
