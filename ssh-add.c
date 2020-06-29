@@ -114,6 +114,24 @@ clear_pass(void)
 }
 
 static int
+delete_one(int agent_fd, const struct sshkey *key, const char *comment,
+    const char *path, int qflag)
+{
+	int r;
+
+	if ((r = ssh_remove_identity(agent_fd, key)) != 0) {
+		fprintf(stderr, "Could not remove identity \"%s\": %s\n",
+		    path, ssh_err(r));
+		return r;
+	}
+	if (!qflag) {
+		fprintf(stderr, "Identity removed: %s %s (%s)\n", path,
+		    sshkey_type(key), comment);
+	}
+	return 0;
+}
+
+static int
 delete_file(int agent_fd, const char *filename, int key_only, int qflag)
 {
 	struct sshkey *public, *cert = NULL;
@@ -124,15 +142,9 @@ delete_file(int agent_fd, const char *filename, int key_only, int qflag)
 		printf("Bad key file %s: %s\n", filename, ssh_err(r));
 		return -1;
 	}
-	if ((r = ssh_remove_identity(agent_fd, public)) == 0) {
-		if (!qflag) {
-			fprintf(stderr, "Identity removed: %s (%s)\n",
-			    filename, comment);
-		}
+
+	if (delete_one(agent_fd, public, comment, filename, qflag) == 0)
 		ret = 0;
-	} else
-		fprintf(stderr, "Could not remove identity \"%s\": %s\n",
-		    filename, ssh_err(r));
 
 	if (key_only)
 		goto out;
@@ -152,15 +164,8 @@ delete_file(int agent_fd, const char *filename, int key_only, int qflag)
 		fatal("Certificate %s does not match private key %s",
 		    certpath, filename);
 
-	if ((r = ssh_remove_identity(agent_fd, cert)) == 0) {
-		if (!qflag) {
-			fprintf(stderr, "Identity removed: %s (%s)\n",
-			    certpath, comment);
-		}
+	if (delete_one(agent_fd, cert, comment, certpath, qflag) == 0)
 		ret = 0;
-	} else
-		fprintf(stderr, "Could not remove identity \"%s\": %s\n",
-		    certpath, ssh_err(r));
 
  out:
 	sshkey_free(cert);
