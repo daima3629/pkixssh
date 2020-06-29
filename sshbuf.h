@@ -1,6 +1,7 @@
 /*	$OpenBSD: sshbuf.h,v 1.22 2020/06/05 03:24:36 djm Exp $	*/
 /*
  * Copyright (c) 2011 Damien Miller
+ * Copyright (c) 2020 Roumen Petrov
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -291,6 +292,7 @@ sshbuf_find(const struct sshbuf *b, size_t start_offset,
  */
 char *sshbuf_dup_string(struct sshbuf *buf);
 
+int sshbuf_allocate_fd(int fd, struct sshbuf *b);
 /*
  * Fill a buffer from a file descriptor or filename. Both allocate the
  * buffer for the caller.

@@ -1,4 +1,4 @@
-/* $OpenBSD: servconf.c,v 1.365 2020/05/27 22:37:53 djm Exp $ */
+/* $OpenBSD: servconf.c,v 1.366 2020/06/24 15:09:53 markus Exp $ */
 /*
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
@@ -2656,6 +2656,9 @@ load_server_config(const char *filename, struct sshbuf *conf)
 		exit(1);
 	}
 	sshbuf_reset(conf);
+	/* allocate buffer for large config files */
+	if ((r = sshbuf_allocate_fd(fileno(f), conf)) != 0)
+		fatal("%s: allocate failed: %s", __func__, ssh_err(r));
 	while (getline(&line, &linesize, f) != -1) {
 		lineno++;
 		/*

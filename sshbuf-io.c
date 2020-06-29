@@ -1,6 +1,7 @@
 /*	$OpenBSD: sshbuf-io.c,v 1.2 2020/01/25 23:28:06 djm Exp $ */
 /*
  * Copyright (c) 2011 Damien Miller
+ * Copyright (c) 2020 Roumen Petrov
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -28,6 +29,16 @@
 #include "ssherr.h"
 #include "sshbuf.h"
 #include "atomicio.h"
+
+/* grow buffer to avoid reallocation for large files */
+int
+sshbuf_allocate_fd(int fd, struct sshbuf *b)
+{
+	struct stat st;
+	return fstat(fd, &st) != -1 && st.st_size > 0
+	    ? sshbuf_allocate(b, st.st_size)
+	    : 0;
+}
 
 /* Load a file from a fd into a buffer */
 int
