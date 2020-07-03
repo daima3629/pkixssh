@@ -5532,6 +5532,7 @@ AC_CHECK_FUNCS([ \
   RSA_PKCS1_OpenSSL \
   X509_CRL_get0_lastUpdate \
   X509_get0_tbs_sigalg \
+  X509_get_extension_flags \
   X509_get_key_usage \
   X509_OBJECT_new \
   X509_STORE_CTX_get_by_subject \

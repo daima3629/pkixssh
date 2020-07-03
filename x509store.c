@@ -188,6 +188,14 @@ X509_VERIFY_PARAM_get_time(const X509_VERIFY_PARAM *param) {
 }
 #endif /*ndef HAVE_X509_VERIFY_PARAM_GET_TIME*/
 
+#ifndef HAVE_X509_GET_EXTENSION_FLAGS
+static inline uint32_t
+X509_get_extension_flags(X509 *x) {
+    X509_check_purpose(x, -1, -1);  /* set flags */
+    return x->ex_flags;
+}
+#endif /*ndef HAVE_X509_GET_EXTENSION_FLAGS*/
+
 
 #if 1
 #  define SSH_CHECK_REVOKED
@@ -1104,8 +1112,8 @@ ssh_X509_get_key_usage(X509 *x) {
 	/* defined in openssl 1.1+ */
 	return X509_get_key_usage(x);
 #else
-	X509_check_purpose(x, -1, -1);
-	return x->ex_flags & EXFLAG_KUSAGE ? x->ex_kusage : UINT32_MAX;
+	uint32_t flags = X509_get_extension_flags(x);
+	return (flags & EXFLAG_KUSAGE) ? x->ex_kusage : UINT32_MAX;
 #endif
 }
 
