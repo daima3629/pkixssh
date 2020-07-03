@@ -126,17 +126,22 @@ tests(void)
 	TEST_DONE();
 
 	TEST_START("percent_expand");
-	ASSERT_STRING_EQ(percent_expand("%%", "%h", "foo", NULL), "%");
-	ASSERT_STRING_EQ(percent_expand("%h", "h", "foo", NULL), "foo");
-	ASSERT_STRING_EQ(percent_expand("%h ", "h", "foo", NULL), "foo ");
-	ASSERT_STRING_EQ(percent_expand(" %h", "h", "foo", NULL), " foo");
-	ASSERT_STRING_EQ(percent_expand(" %h ", "h", "foo", NULL), " foo ");
-	ASSERT_STRING_EQ(percent_expand(" %a%b ", "a", "foo", "b", "bar", NULL),
-	    " foobar ");
+	ret = percent_expand("%%", "%h", "foo", NULL);
+	ASSERT_STRING_EQ(ret, "%"); free(ret);
+	ret = percent_expand("%h", "h", "foo", NULL);
+	ASSERT_STRING_EQ(ret, "foo"); free(ret);
+	ret = percent_expand("%h ", "h", "foo", NULL);
+	ASSERT_STRING_EQ(ret, "foo "); free(ret);
+	ret = percent_expand(" %h", "h", "foo", NULL);
+	ASSERT_STRING_EQ(ret, " foo"); free(ret);
+	ret = percent_expand(" %h ", "h", "foo", NULL);
+	ASSERT_STRING_EQ(ret, " foo "); free(ret);
+	ret = percent_expand(" %a%b ", "a", "foo", "b", "bar", NULL);
+	ASSERT_STRING_EQ(ret, " foobar "); free(ret);
 	TEST_DONE();
 
 	TEST_START("percent_dollar_expand");
-	ASSERT_STRING_EQ(percent_dollar_expand("%h${FOO}", "h", "foo", NULL),
-	    "foobar");
+	ret = percent_dollar_expand("%h${FOO}", "h", "foo", NULL);
+	ASSERT_STRING_EQ(ret, "foobar"); free(ret);
 	TEST_DONE();
 }
