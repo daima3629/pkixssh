@@ -5,6 +5,7 @@ shift
 UNIT_ARGS="$@"
 
 test "x$OBJ" = "x" && OBJ=$PWD
+mkdir $OBJ/valgrind-out 2>/dev/null || :
 
 # This mostly replicates the logic in test-exec.sh for running the
 # regress tests under valgrind, except that we unconditionally enable
