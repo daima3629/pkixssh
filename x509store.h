@@ -1,7 +1,7 @@
 #ifndef X509STORE_H
 #define X509STORE_H
 /*
- * Copyright (c) 2002-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -80,7 +80,7 @@ char* format_x509_purpose(int purpose_index);
 
 
 int	ssh_X509_NAME_cmp(X509_NAME *_a, X509_NAME *_b);
-int/*bool*/	ssh_X509_is_selfsigned(X509 *_cert);
+int/*bool*/	ssh_X509_is_selfissued(X509 *_cert);
 
 typedef struct {
 	/* ssh PKI(X509) store */

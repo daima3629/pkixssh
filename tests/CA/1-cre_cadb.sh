@@ -1,5 +1,5 @@
 #! /bin/sh
-# Copyright (c) 2002-2018 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2002-2020 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -323,7 +323,7 @@ EOF
 echo_CA_ocsp_options >> "$1"
 
 
-# X.509 extensions: SSH self-signed certificates
+# X.509 extensions: SSH self-issued certificates
 cat << EOF >> "$1"
 
 

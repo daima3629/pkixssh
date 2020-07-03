@@ -1,7 +1,7 @@
 /* $OpenBSD: auth2-pubkey.c,v 1.99 2020/02/06 22:30:54 naddy Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
- * Copyright (c) 2003-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2003-2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -434,22 +434,22 @@ x509_match(const struct sshkey *key, const struct sshkey *found) {
 			return 0;
 
 		debug3("%s: found matching certificate", __func__);
-		/* If self-signed is not enabled only verification
+		/* If self-issued is not enabled only verification
 		   process can allow received certificate. */
 		if (!ssh_x509flags.key_allow_selfissued) return 1;
 
 	{	/* The public key or X.509 certificate found in
-		   authorized keys file can allow self-signed. */
+		   authorized keys file can allow self-issued. */
 		X509 *x = SSH_X509_get_cert(key->x509_data);
-		if (!ssh_X509_is_selfsigned(x)) return 1;
+		if (!ssh_X509_is_selfissued(x)) return 1;
 	}
 
-		/* If self-signed can be authorized (and allowed)
+		/* If self-issued can be authorized (and allowed)
 		   by public key-material */
 	}
 
 	/* Note a X.509 certificate can be allowed by public key.
-	 * Also manage case for self-signed.
+	 * Also manage case for self-issued.
 	 * Code is same as sshkey_equal_public but without
 	 * compare by distinguished name.
 	 */

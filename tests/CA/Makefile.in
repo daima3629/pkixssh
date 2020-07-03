@@ -168,22 +168,22 @@ selfidentities: selfid_rsa.certstamp selfid_dsa.certstamp
 
 selfid_rsa.certstamp: selfid_rsa
 	@echo
-	@echo "generating RSA client self-signed certificates, keys, etc."
-	$(SHELL) $(srcdir)/3-cre_certs.sh -f selfid_rsa -t self -n "SSH RSA test self-signed certificate"
+	@echo "generating RSA client self-issued certificates, keys, etc."
+	$(SHELL) $(srcdir)/3-cre_certs.sh -f selfid_rsa -t self -n "SSH RSA test self-issued certificate"
 
 selfid_rsa:
 	@echo
-	@echo "generating RSA 'Identity' for self-signed"
+	@echo "generating RSA 'Identity' for self-issued"
 	$(SHELL) $(srcdir)/2-cre_key.sh -t rsa -b $(RSAKEYBITS) -N "" -f $@
 
 selfid_dsa.certstamp: selfid_dsa
 	@echo
-	@echo "generating DSA client self-signed certificates, keys, etc."
-	$(SHELL) $(srcdir)/3-cre_certs.sh -f selfid_dsa -t self -n "SSH DSA test self-signed certificate"
+	@echo "generating DSA client self-issued certificates, keys, etc."
+	$(SHELL) $(srcdir)/3-cre_certs.sh -f selfid_dsa -t self -n "SSH DSA test self-issued certificate"
 
 selfid_dsa:
 	@echo
-	@echo "generating DSA 'Identity' for self-signed"
+	@echo "generating DSA 'Identity' for self-issued"
 	$(SHELL) $(srcdir)/2-cre_key.sh -t dsa -N "" -f $@
 
 

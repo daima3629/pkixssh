@@ -1,6 +1,6 @@
                                                           Roumen Petrov
                                                         Sofia, Bulgaria
-                                                        Sun Jun 16 2019
+                                                         Fri Jul 3 2020
 
 How to use X.509 certificates with SSH?
 
@@ -104,9 +104,9 @@ NOTES:
   for allowed values and other VA* options.
 
 1.1.6.) KeyAllowSelfIssued no
-  Specifies whether self-issued(self-signed) X.509 certificate can be
-  allowed only by entry in AutorizedKeysFile that contain matching
-  public key or certificate blob.
+  Specifies whether self-issued X.509 certificate can be allowed only
+  by entry in AutorizedKeysFile that contain matching public key or
+  certificate blob.
 
 1.2.) user files on the server
   Append in USER_HOME/.ssh/authorized_keys a record with following

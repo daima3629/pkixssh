@@ -322,7 +322,7 @@ ssh_x509store_cb(int ok, X509_STORE_CTX *ctx) {
 	    (ctx_error == X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT)
 	) {
 		if (ssh_x509flags.key_allow_selfissued) {
-			ok = ssh_X509_is_selfsigned(ctx_cert);
+			ok = ssh_X509_is_selfissued(ctx_cert);
 			if (ok)
 				self_signed = 1;
 		}
@@ -472,16 +472,29 @@ format_x509_purpose(int purpose_index) {
 
 
 int/*bool*/
-ssh_X509_is_selfsigned(X509 *_cert) {
-#ifdef EXFLAG_SS
-  /* OpenSSL 0.9.7+ */
-  #if 0
-    #define USE_EXFLAG_SS
-  #endif
+ssh_X509_is_selfissued(X509 *_cert) {
+#if 0
+/* If issuer distinguished name match certificate
+ * distinguished name it is self-issued.
+ * OpenSSL uses flag to indicate this but flag is changed
+ * between releases.
+ * a) Flag EXFLAG_SS is historic, i.e. used initially.
+ * b) Version 0.9.8i change it to EXFLAG_SI but for compatibility
+ * keep EXFLAG_SS defined with the same value.
+ * Note that "i" is patch release!
+ * c) OpenSSL release 1.0.2 breaks compatibility and
+ * now EXFLAG_SS means that SKID matches AKID, is self-signed.
+ *
+ * As result we will do compare instead to rely on OpenSSL flag.
+ */
+# define USE_EXFLAG_SI
+# ifndef EXFLAG_SI
+#  define EXFLAG_SI EXFLAG_SS /*OpenSSL < 0.9.8i*/
+# endif
 #endif
-#ifdef USE_EXFLAG_SS
-	X509_check_purpose(_cert, -1, 0); /* set flags */
-	return (_cert->ex_flags & EXFLAG_SS) != 0;
+#ifdef USE_EXFLAG_SI
+	uint32_t flags = X509_get_extension_flags(_cert);
+	return (flags & EXFLAG_SI) != 0;
 #else
 	X509_NAME *issuer, *subject;
 

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2006-2018 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2006-2020 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -177,7 +177,7 @@ EOF
 
 test_pkey () {
   retval=0
-  echo "  - ${attn}with${norm} self-signed allowed by encoded ${extd}public identity${norm}:"
+  echo "  - ${attn}with${norm} self-issued allowed by encoded ${extd}public identity${norm}:"
   printSeparator
 
   creTestSSHDcfgFile
@@ -212,7 +212,7 @@ trap SELFtestBREAK HUP INT QUIT ABRT TERM || exit 1
 # ===
 
 do_test () {
-  echo "* ${extd}self-signed${norm}:"
+  echo "* ${extd}self-issued${norm}:"
 
   test_store &&
   test_pkey_no &&
