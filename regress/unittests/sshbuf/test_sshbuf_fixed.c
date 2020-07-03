@@ -123,4 +123,5 @@ sshbuf_fixed(void)
 	ASSERT_PTR_EQ(p3, NULL);
 	sshbuf_free(p2);
 	sshbuf_free(p1);
+	TEST_DONE();
 }
