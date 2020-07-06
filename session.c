@@ -1694,7 +1694,9 @@ do_child(struct ssh *ssh, Session *s, const char *command)
 			exit(1);
 	}
 
+#if 0	/* done in child_close_fds() above */
 	closefrom(STDERR_FILENO + 1);
+#endif
 
 	do_rc_files(ssh, s, shell);
 
