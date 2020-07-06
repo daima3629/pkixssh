@@ -1,4 +1,4 @@
-/* $OpenBSD: channels.c,v 1.398 2020/04/25 06:59:36 dtucker Exp $ */
+/* $OpenBSD: channels.c,v 1.401 2020/07/03 07:25:18 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -17,6 +17,7 @@
  * Copyright (c) 1999, 2000, 2001, 2002 Markus Friedl.  All rights reserved.
  * Copyright (c) 1999 Dug Song.  All rights reserved.
  * Copyright (c) 1999 Theo de Raadt.  All rights reserved.
+ * Copyright (c) 2015-2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -600,8 +601,15 @@ channel_free(struct ssh *ssh, Channel *c)
 	debug("channel %d: free: %s, nchannels %u", c->self,
 	    c->remote_name ? c->remote_name : "???", n);
 
-	if (c->type == SSH_CHANNEL_MUX_CLIENT)
+	if (c->type == SSH_CHANNEL_MUX_CLIENT) {
 		mux_remove_remote_forwardings(ssh, c);
+		/* context point to master state */
+		free(c->mux_ctx);
+		c->mux_ctx = NULL;
+	} else if (c->type == SSH_CHANNEL_MUX_PROXY) {
+		/* context point to client channel */
+		c->mux_ctx = NULL;
+	}
 
 	if (get_log_level() >= SYSLOG_LEVEL_DEBUG3) {
 		s = channel_open_message(ssh);
