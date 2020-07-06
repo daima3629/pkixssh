@@ -2010,7 +2010,6 @@ static int
 channel_handle_wfd(struct ssh *ssh, Channel *c,
    fd_set *readset, fd_set *writeset)
 {
-	struct termios tio;
 	u_char *data = NULL, *buf; /* XXX const; need filter API change */
 	size_t dlen, olen = 0;
 	int r, len;
@@ -2075,6 +2074,8 @@ channel_handle_wfd(struct ssh *ssh, Channel *c,
 		return -1;
 	}
 #ifndef BROKEN_TCGETATTR_ICANON
+{	struct termios tio;
+
 	if (c->isatty && dlen >= 1 && buf[0] != '\r') {
 		if (tcgetattr(c->wfd, &tio) != -1 &&
 		    !(tio.c_lflag & ECHO) && (tio.c_lflag & ICANON)) {
@@ -2090,6 +2091,7 @@ channel_handle_wfd(struct ssh *ssh, Channel *c,
 				    __func__, c->self, ssh_err(r));
 		}
 	}
+}
 #endif /* BROKEN_TCGETATTR_ICANON */
 	if ((r = sshbuf_consume(c->output, len)) != 0) {
 		fatal("%s: channel %d: consume: %s",
