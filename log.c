@@ -12,7 +12,7 @@
  */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
- * Copyright (c) 2004-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2004-2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -507,9 +507,6 @@ do_log2(LogLevel level, const char *fmt,...)
 void
 do_log(LogLevel level, const char *fmt, va_list args)
 {
-#if defined(HAVE_OPENLOG_R) && defined(SYSLOG_DATA_INIT)
-	struct syslog_data sdata = SYSLOG_DATA_INIT;
-#endif
 	char msgbuf[MSGBUFSIZ];
 	char fmtbuf[MSGBUFSIZ];
 	char *txt = NULL;
@@ -578,6 +575,8 @@ do_log(LogLevel level, const char *fmt, va_list args)
 		(void)write(log_stderr_fd, msgbuf, strlen(msgbuf));
 	} else {
 #if defined(HAVE_OPENLOG_R) && defined(SYSLOG_DATA_INIT)
+		struct syslog_data sdata = SYSLOG_DATA_INIT;
+
 		openlog_r(argv0 ? argv0 : __progname, LOG_PID, log_facility, &sdata);
 		syslog_r(pri, &sdata, "%.1000s", fmtbuf);
 		closelog_r(&sdata);
