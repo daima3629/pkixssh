@@ -141,7 +141,7 @@
  * passed "proto cookie" as arguments if X11 forwarding with spoofing is in
  * use.  xauth will be run if neither of these exists.
  */
-#define _PATH_SSH_USER_RC		"~/" _PATH_SSH_USER_DIR "/rc"
+#define _PATH_SSH_USER_RC		_PATH_SSH_USER_DIR "/rc"
 #define _PATH_SSH_SYSTEM_RC		SSHDIR "/sshrc"
 
 /*
