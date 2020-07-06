@@ -1554,6 +1554,9 @@ child_close_fds(struct ssh *ssh)
 	 */
 	endpwent();
 
+	/* Stop directing logs to a high-numbered fd before we close it */
+	log_redirect_stderr_to(NULL);
+
 	/*
 	 * Close any extra open file descriptors so that we don't have them
 	 * hanging around in clients.  Note that we want to do this after
