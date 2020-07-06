@@ -1,8 +1,8 @@
-/* $OpenBSD: sshconnect2.c,v 1.322 2020/05/13 09:52:41 djm Exp $ */
+/* $OpenBSD: sshconnect2.c,v 1.324 2020/06/27 13:39:09 bket Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Damien Miller.  All rights reserved.
- * Copyright (c) 2006-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2006-2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -1530,10 +1530,7 @@ pubkey_prepare(Authctxt *authctxt)
 		}
 		ssh_free_identitylist(idlist);
 		/* append remaining agent keys */
-		for (id = TAILQ_FIRST(&agent); id; id = TAILQ_FIRST(&agent)) {
-			TAILQ_REMOVE(&agent, id, next);
-			TAILQ_INSERT_TAIL(preferred, id, next);
-		}
+		TAILQ_CONCAT(preferred, &agent, next);
 		authctxt->agent_fd = agent_fd;
 	}
 	/* Prefer PKCS11 keys that are explicitly listed */
@@ -1559,10 +1556,7 @@ pubkey_prepare(Authctxt *authctxt)
 		}
 	}
 	/* append remaining keys from the config file */
-	for (id = TAILQ_FIRST(&files); id; id = TAILQ_FIRST(&files)) {
-		TAILQ_REMOVE(&files, id, next);
-		TAILQ_INSERT_TAIL(preferred, id, next);
-	}
+	TAILQ_CONCAT(preferred, &files, next);
 	TAILQ_FOREACH(id, preferred, next) {
 		const char *ident = format_identity(id);
 		debug("Will attempt key: %s", ident);
