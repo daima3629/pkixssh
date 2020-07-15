@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-agent.c,v 1.260 2020/06/22 05:52:05 djm Exp $ */
+/* $OpenBSD: ssh-agent.c,v 1.262 2020/07/05 23:59:45 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -92,8 +92,8 @@
 #include "match.h"
 #include "ssh-pkcs11.h"
 
-#ifndef DEFAULT_PROVIDER_WHITELIST
-# define DEFAULT_PROVIDER_WHITELIST "/usr/lib*/*,/usr/local/lib*/*"
+#ifndef DEFAULT_ALLOWED_PROVIDERS
+# define DEFAULT_ALLOWED_PROVIDERS "/usr/lib*/*,/usr/local/lib*/*"
 #endif
 
 /* Maximum accepted message length */
@@ -1264,7 +1264,7 @@ main(int ac, char **av)
 		usage();
 
 	if (allowed_providers == NULL)
-		allowed_providers = xstrdup(DEFAULT_PROVIDER_WHITELIST);
+		allowed_providers = xstrdup(DEFAULT_ALLOWED_PROVIDERS);
 
 	if (ac == 0 && !c_flag && !s_flag) {
 		shell = getenv("SHELL");
