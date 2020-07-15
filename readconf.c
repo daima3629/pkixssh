@@ -1,4 +1,4 @@
-/* $OpenBSD: readconf.c,v 1.331 2020/05/29 04:25:40 dtucker Exp $ */
+/* $OpenBSD: readconf.c,v 1.332 2020/07/05 23:59:45 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -2408,7 +2408,7 @@ fill_default_options(Options * options)
 {	char *all;
 #define ASSEMBLE(what, defaults, all) \
 	do { \
-		char *def = match_filter_whitelist(defaults, all); \
+		char *def = match_filter_allowlist(defaults, all); \
 		if ((r = kex_assemble_names(&options->what, def, all)) != 0) \
 			fatal("%s: %s: %s", __func__, #what, ssh_err(r)); \
 		free(def); \

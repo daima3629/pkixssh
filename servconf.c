@@ -247,7 +247,7 @@ assemble_algorithms(ServerOptions *o)
 	int r;
 #define ASSEMBLE(what, defaults, all) \
 	do { \
-		char *def = match_filter_whitelist(defaults, all); \
+		char *def = match_filter_allowlist(defaults, all); \
 		if ((r = kex_assemble_names(&o->what, def, all)) != 0) \
 			fatal("%s: %s: %s", __func__, #what, ssh_err(r)); \
 		free(def); \

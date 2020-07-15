@@ -6,8 +6,7 @@
  * permitted provided that due credit is given to the author and the
  * OpenBSD project by leaving this copyright notice intact.
  *
- * X.509 certificates support,
- * Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -753,15 +752,15 @@ main(int argc, char **argv)
 {	char *all;
 
 	all = kex_alg_list(',');
-	def_kex = match_filter_whitelist(KEX_CLIENT_KEX, all);
+	def_kex = match_filter_allowlist(KEX_CLIENT_KEX, all);
 	free(all);
 
 	all = cipher_alg_list(',', 0);
-	def_cipher = match_filter_whitelist(KEX_CLIENT_ENCRYPT, all);
+	def_cipher = match_filter_allowlist(KEX_CLIENT_ENCRYPT, all);
 	free(all);
 
 	all = mac_alg_list(',');
-	def_mac = match_filter_whitelist(KEX_CLIENT_MAC, all);
+	def_mac = match_filter_allowlist(KEX_CLIENT_MAC, all);
 	free(all);
 }
 

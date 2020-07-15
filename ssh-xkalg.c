@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2005-2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -831,7 +831,7 @@ default_hostkey_algorithms(void) {
 	 * - Since PKIX-SSH 8.5 ssh-dss is not listed by default.
 	 */
 	/* filter unsupported by build */
-	p = match_filter_whitelist(KEX_DEFAULT_PK_ALG",ssh-dss", allalgs);
+	p = match_filter_allowlist(KEX_DEFAULT_PK_ALG",ssh-dss", allalgs);
 	free(allalgs);
 }
 
