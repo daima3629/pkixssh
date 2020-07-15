@@ -1,4 +1,4 @@
-/* $OpenBSD: servconf.c,v 1.366 2020/06/24 15:09:53 markus Exp $ */
+/* $OpenBSD: servconf.c,v 1.367 2020/07/05 23:59:45 djm Exp $ */
 /*
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
@@ -182,7 +182,7 @@ initialize_server_options(ServerOptions *options)
 	options->challenge_response_authentication = -1;
 	options->permit_empty_passwd = -1;
 	options->permit_user_env = -1;
-	options->permit_user_env_whitelist = NULL;
+	options->permit_user_env_allowlist = NULL;
 	options->compression = -1;
 	options->rekey_limit = -1;
 	options->rekey_interval = -1;
@@ -431,7 +431,7 @@ fill_default_server_options(ServerOptions *options)
 		options->permit_empty_passwd = 0;
 	if (options->permit_user_env == -1) {
 		options->permit_user_env = 0;
-		options->permit_user_env_whitelist = NULL;
+		options->permit_user_env_allowlist = NULL;
 	}
 	if (options->compression == -1)
 #ifdef WITH_ZLIB
@@ -1882,7 +1882,7 @@ parse_string:
 
 	case sPermitUserEnvironment:
 		intptr = &options->permit_user_env;
-		charptr = &options->permit_user_env_whitelist;
+		charptr = &options->permit_user_env_allowlist;
 		arg = strdelim(&cp);
 		if (!arg || *arg == '\0')
 			fatal("%s line %d: missing argument.",
@@ -3211,11 +3211,11 @@ dump_config(ServerOptions *o)
 	}
 	printf("\n");
 
-	if (o->permit_user_env_whitelist == NULL) {
+	if (o->permit_user_env_allowlist == NULL) {
 		dump_cfg_fmtint(sPermitUserEnvironment, o->permit_user_env);
 	} else {
 		printf("permituserenvironment %s\n",
-		    o->permit_user_env_whitelist);
+		    o->permit_user_env_allowlist);
 	}
 
 }
