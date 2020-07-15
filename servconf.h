@@ -284,7 +284,7 @@ TAILQ_HEAD(include_list, include_item);
 /*
  * These are string config options that must be copied between the
  * Match sub-config and the main config, and must be sent from the
- * privsep slave to the privsep master. We use a macro to ensure all
+ * privsep child to the privsep master. We use a macro to ensure all
  * the options are copied and the copies are done in the correct order.
  *
  * NB. an option must appear in servconf.c:copy_set_server_options() or
