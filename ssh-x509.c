@@ -2375,10 +2375,10 @@ int
 Akey_gets(struct sshbuf *b, struct sshkey **keyp) {
 	int r;
 
-{	u_char *blob;
+{	const u_char *blob;
 	size_t blen;
 
-	r = sshbuf_get_string(b, &blob, &blen);
+	r = sshbuf_peek_string_direct(b, &blob, &blen);
 	if (r != 0) return r;
 
 	r = X509key_from_blob(blob, blen, keyp);
