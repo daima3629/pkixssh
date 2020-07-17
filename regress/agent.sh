@@ -209,6 +209,14 @@ check_key_absent ssh-ed25519-cert-v01@openssh.com
 ${SSHADD} $OBJ/ssh-ed25519-agent-private >/dev/null 2>&1 || \
 	fail "ssh-add failed exit code $?"
 check_key_present ssh-ed25519
+# Delete certificate via stdin
+${SSHADD} -qd - < $OBJ/ssh-ed25519-agent-cert.pub || fail "ssh-add -d - failed"
+check_key_present ssh-ed25519
+check_key_absent ssh-ed25519-cert-v01@openssh.com
+# Delete key via stdin
+${SSHADD} -qd - < $OBJ/ssh-ed25519-agent.pub || fail "ssh-add -d - failed"
+check_key_absent ssh-ed25519
+check_key_absent ssh-ed25519-cert-v01@openssh.com
 
 trace "kill agent"
 ${SSHAGENT} -k > /dev/null

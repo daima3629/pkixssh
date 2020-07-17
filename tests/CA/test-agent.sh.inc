@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2002-2017 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2002-2020 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -115,6 +115,20 @@ showAgentMsg() {
   showAgentMsg $? "  remove identity ${extd}${SSH_CLIENTKEY}-${attn}${type}${norm} from agent ..."
 
   "${TEST_SSH_SSHADD}" -L > /dev/null; checkEmptyListResponse $?
+
+  "$TEST_SSH_SSHADD" "$identity_file" 2> "$SSH_ERRLOG" > "$SSH_REPLY"; \
+  showAgentMsg $? "  add identity ${extd}${SSH_CLIENTKEY}-${attn}${type}${norm} again to agent ..."
+  (
+  echo "# some extra comments"
+  echo "	# more comments"
+  echo "	garbage data	"
+  cat "$identity_file".pub
+  echo "	more garbage data $identity_file	"
+  ) | \
+  "$TEST_SSH_SSHADD" -d - 2> "$SSH_ERRLOG" > "$SSH_REPLY"; \
+  showAgentMsg $? "  remove identity ${extd}${SSH_CLIENTKEY}-${attn}${type}${norm} (stdin) from agent ..."
+  "$TEST_SSH_SSHADD" -L > /dev/null; checkEmptyListResponse $?
+
 
   killAgent 0
 )
