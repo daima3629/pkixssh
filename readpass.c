@@ -1,6 +1,7 @@
-/* $OpenBSD: readpass.c,v 1.61 2020/01/23 07:10:22 dtucker Exp $ */
+/* $OpenBSD: readpass.c,v 1.62 2020/07/14 23:57:01 djm Exp $ */
 /*
  * Copyright (c) 2001 Markus Friedl.  All rights reserved.
+ * Copyright (c) 2019-2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -121,11 +122,31 @@ ssh_askpass(const char *askpass, const char *msg, const char *env_hint)
 char *
 read_passphrase(const char *prompt, int flags)
 {
-	char *ret, buf[1024];
-	int rppflags, use_askpass = 0, ttyfd;
+	char *ret;
+	int rppflags, use_askpass = 0, allow_askpass;
+	const char *s;
+
+#ifdef __ANDROID__
+	allow_askpass = 1;
+#else
+	s = getenv("DISPLAY");
+	allow_askpass = (s != NULL) && (*s != '\0');
+#endif
+	s = getenv(SSH_ASKPASS_REQUIRE_ENV);
+	if (s != NULL) {
+		if (strcasecmp(s, "force") == 0) {
+			use_askpass = 1;
+			allow_askpass = 1;
+		} else if (strcasecmp(s, "prefer") == 0)
+			use_askpass = allow_askpass;
+		else if (strcasecmp(s, "never") == 0)
+			allow_askpass = 0;
+	}
 
 	rppflags = (flags & RP_ECHO) ? RPP_ECHO_ON : RPP_ECHO_OFF;
-	if (flags & RP_USE_ASKPASS)
+	if (use_askpass)
+		debug("%s: requested to askpass", __func__);
+	else if (flags & RP_USE_ASKPASS)
 		use_askpass = 1;
 	else if (flags & RP_ALLOW_STDIN) {
 		if (!isatty(STDIN_FILENO)) {
@@ -133,6 +154,7 @@ read_passphrase(const char *prompt, int flags)
 			use_askpass = 1;
 		}
 	} else {
+		int ttyfd;
 		rppflags |= RPP_REQUIRE_TTY;
 		ttyfd = open(_PATH_TTY, O_RDWR);
 		if (ttyfd != -1) {
@@ -151,16 +173,16 @@ read_passphrase(const char *prompt, int flags)
 		}
 	}
 
-#ifdef __ANDROID__
-	use_askpass = (getenv(SSH_ASKPASS_ENV) != NULL);
-#else
-	use_askpass = use_askpass && (getenv("DISPLAY") != NULL);
+#if 0	/* pointless in context of environment managed askpass */
+	if ((flags & RP_USE_ASKPASS) && !allow_askpass)
+		return (flags & RP_ALLOW_EOF) ? NULL : xstrdup("");
 #endif
-	if (use_askpass) {
+
+	if (use_askpass && allow_askpass) {
 		const char *askpass = getenv(SSH_ASKPASS_ENV);
 		const char *askpass_hint = NULL;
 
-		if (askpass == NULL)
+		if (askpass == NULL || *askpass == '\0')
 			askpass = _PATH_SSH_ASKPASS;
 		if ((flags & RP_ASK_PERMISSION) != 0)
 			askpass_hint = "confirm";
@@ -170,6 +192,7 @@ read_passphrase(const char *prompt, int flags)
 		return ret;
 	}
 
+{	char buf[1024];
 	if (readpassphrase(prompt, buf, sizeof buf, rppflags) == NULL) {
 		if (flags & RP_ALLOW_EOF)
 			return NULL;
@@ -178,6 +201,7 @@ read_passphrase(const char *prompt, int flags)
 
 	ret = xstrdup(buf);
 	explicit_bzero(buf, sizeof(buf));
+}
 	return ret;
 }
 

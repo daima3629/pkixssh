@@ -1,4 +1,4 @@
-.\"	$OpenBSD: ssh-add.1,v 1.80 2020/06/26 05:04:07 djm Exp $
+.\"	$OpenBSD: ssh-add.1,v 1.81 2020/07/14 23:57:01 djm Exp $
 .\"
 .\" Author: Tatu Ylonen <ylo@cs.hut.fi>
 .\" Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -44,7 +44,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: June 26 2020 $
+.Dd $Mdocdate: July 20 2020 $
 .Dt SSH-ADD 1
 .Os
 .Sh NAME
@@ -219,9 +219,26 @@ to make this work.)
 .Pp
 Remark: On Android
 .Ev DISPLAY
-is ignored and
-.Ev SSH_ASKPASS
-is preferred over associated terminal.
+is ignored.
+.It SSH_ASKPASS_REQUIRE
+Allows further control over the use of an askpass program.
+If this variable is set to
+.Dq never
+then
+.Nm
+will never attempt to use one.
+If it is set to
+.Dq prefer ,
+then
+.Nm
+will prefer to use the askpass program instead of the TTY when requesting
+passwords.
+Finally, if the variable is set to
+.Dq force ,
+then the askpass program will be used for all passphrase input regardless
+of whether
+.Ev DISPLAY
+is set.
 .It Ev SSH_AUTH_SOCK
 Identifies the path of a
 .Ux Ns -domain
