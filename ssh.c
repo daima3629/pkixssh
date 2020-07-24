@@ -777,7 +777,7 @@ main(int ac, char **av)
 #endif
 
 	while ((opt = getopt(ac, av, "1246ab:c:de:fgi:kl:m:no:p:qstvx"
-	    "ACD:E:F:" ENGCONFIG "I:J:KL:MNO:PQ:R:S:TVw:W:XYy")) != -1) {
+	    "AB:CD:E:F:" ENGCONFIG "I:J:KL:MNO:PQ:R:S:TVw:W:XYy")) != -1) {
 		switch (opt) {
 		case '1':
 			fatal("SSH protocol v.1 is no longer supported");
