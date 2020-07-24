@@ -42,8 +42,8 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: ssh_config.5,v 1.328 2020/05/29 05:48:39 jmc Exp $
-.Dd $Mdocdate: May 29 2020 $
+.\" $OpenBSD: ssh_config.5,v 1.331 2020/07/17 05:59:05 jmc Exp $
+.Dd $Mdocdate: July 17 2020 $
 .Dt SSH_CONFIG 5
 .Os
 .Sh NAME
@@ -1858,6 +1858,12 @@ User
 .It Cm UserKnownHostsFile
 Specifies one or more files to use for the user
 host key database, separated by whitespace.
+Each file may use tilde notation to refer to the user's home directory,
+the tokens described in the
+.Sx TOKENS
+section and environment variables as described in the
+.Sx ENVIRONMENT VARIABLES
+section.
 The default is
 .Pa ~/.ssh/known_hosts ,
 .Pa ~/.ssh/known_hosts2 .
@@ -2117,8 +2123,9 @@ The local username.
 .Cm LocalForward ,
 .Cm Match exec ,
 .Cm RemoteCommand ,
+.Cm RemoteForward ,
 and
-.Cm RemoteForward
+.Cm UserKnownHostsFile
 accept the tokens %%, %C, %d, %h, %i, %L, %l, %n, %p, %r, and %u.
 .Pp
 .Cm Hostname
@@ -2142,9 +2149,10 @@ returned and the setting for that keyword will be ignored.
 The keywords
 .Cm CertificateFile ,
 .Cm ControlPath ,
-.Cm IdentityAgent
+.Cm IdentityAgent ,
+.Cm IdentityFile ,
 and
-.Cm IdentityFile
+.Cm UserKnownHostsFile
 support environment variables.
 The keywords
 .Cm LocalForward

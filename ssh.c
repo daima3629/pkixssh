@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh.c,v 1.531 2020/07/05 23:59:45 djm Exp $ */
+/* $OpenBSD: ssh.c,v 1.533 2020/07/17 03:43:42 dtucker Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -1520,6 +1520,21 @@ main(int ac, char **av)
 		options.forward_agent_sock_path = default_client_percent_dollar_expand(cp,
 		    pw->pw_dir, host, options.user, pw->pw_name);
 		free(cp);
+	}
+
+	for (i = 0; (u_int)i < options.num_user_hostfiles; i++) {
+		if (options.user_hostfiles[i] != NULL) {
+			p = options.user_hostfiles[i];
+			cp = tilde_expand_filename(p, getuid());
+			options.user_hostfiles[i] =
+			    default_client_percent_dollar_expand(cp,
+			    pw->pw_dir, host, options.user, pw->pw_name);
+			if (strcmp(options.user_hostfiles[i], p) != 0)
+				debug3("expanded UserKnownHostsFile path "
+				    "'%s' -> '%s'", p, options.user_hostfiles[i]);
+			free(cp);
+			free(p);
+		}
 	}
 
 	for (i = 0; i < options.num_local_forwards; i++) {
