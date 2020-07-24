@@ -87,6 +87,7 @@ for i in matchexec localcommand remotecommand controlpath identityagent \
 	trial $i '%L' $HOST
 	trial $i '%l' $HOSTNAME
 	trial $i '%n' somehost
+	trial $i '%k' localhost-with-alias
 	trial $i '%p' $PORT
 	trial $i '%r' $REMUSER
 	trial $i '%u' $USER
