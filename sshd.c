@@ -1,4 +1,4 @@
-/* $OpenBSD: sshd.c,v 1.557 2020/06/18 23:34:19 djm Exp $ */
+/* $OpenBSD: sshd.c,v 1.560 2020/07/03 10:12:26 markus Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -1095,7 +1095,7 @@ send_rexec_state(int fd, struct sshbuf *conf)
 	rexec_send_rng_seed(m);
 #endif
 	if (ssh_msg_send(fd, 0, m) == -1)
-		fatal("%s: ssh_msg_send failed", __func__);
+		error("%s: ssh_msg_send failed", __func__);
 
 	sshbuf_free(m);
 	sshbuf_free(inc);
@@ -1881,6 +1881,7 @@ main(int ac, char **av)
 	if ((cfg = sshbuf_new()) == NULL)
 		fatal("%s: sshbuf_new failed", __func__);
 	if (rexeced_flag) {
+		setproctitle("%s", "[rexeced]");
 		recv_rexec_state(REEXEC_CONFIG_PASS_FD, cfg);
 		if (!debug_flag) {
 			startup_pipe = dup(REEXEC_STARTUP_PIPE_FD);
@@ -2251,6 +2252,7 @@ main(int ac, char **av)
 		dup2(config_s[1], REEXEC_CONFIG_PASS_FD);
 		close(config_s[1]);
 
+		ssh_signal(SIGHUP, SIG_IGN); /* avoid reset to SIG_DFL */
 		execv(rexec_argv[0], rexec_argv);
 
 		/* Reexec has failed, fall back and continue */
