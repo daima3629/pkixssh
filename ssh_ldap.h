@@ -1,7 +1,7 @@
 #ifndef SSH_LDAP_H
 #define SSH_LDAP_H
 /*
- * Copyright (c) 2004-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2004-2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -87,16 +87,8 @@ int/*bool*/
 ldapsearch_advance(ldapsearch_result* r);
 
 
-#undef USE_LDAP_STORE
-#if defined(USE_OPENSSL_ENGINE) && defined(HAVE_OSSL_STORE_OPEN)
-#  define USE_LDAP_STORE	1
-
+#ifdef USE_LDAP_STORE
 int/*bool*/	set_ldap_version(const char *ver);
-#endif
-
-#undef USE_X509_LOOKUP_STORE
-#if defined(USE_LDAP_STORE) && defined(HAVE_X509_LOOKUP_STORE)
-#  define USE_X509_LOOKUP_STORE	1
 #endif
 
 

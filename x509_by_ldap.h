@@ -1,7 +1,7 @@
 #ifndef X509_BY_LDAP_H
 #define X509_BY_LDAP_H
 /*
- * Copyright (c) 2004-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2004-2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -28,12 +28,9 @@
 #ifndef LDAP_ENABLED
 #  include "error: LDAP is disabled"
 #endif
+#ifndef USE_X509_LOOKUP_STORE
 
-/* required includes */
 #include <openssl/x509_vfy.h>
-#include <openssl/err.h>
-
-#include "ssh_ldap.h" /*for build defines*/
 
 #ifdef	__cplusplus
 extern "C" {
@@ -56,6 +53,5 @@ X509_LOOKUP_METHOD* X509_LOOKUP_ldap(void);
 #ifdef	__cplusplus
 }
 #endif
-
-
+#endif /*ndef USE_X509_LOOKUP_STORE*/
 #endif /*ndef X509_BY_LDAP_H*/

@@ -1,7 +1,7 @@
 /* $OpenBSD: ssh-keysign.c,v 1.63 2019/11/18 16:10:05 naddy Exp $ */
 /*
  * Copyright (c) 2002 Markus Friedl.  All rights reserved.
- * Copyright (c) 2011-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -107,18 +107,24 @@ ssh_ocsp_validate(X509 *cert, X509_STORE *x509store) {
 	return -1;
 }
 
+#ifdef LDAP_ENABLED
+#ifdef USE_LDAP_STORE	 /* OpenSSL >= 1.1.1 */
 int/*bool*/ set_ldap_version(const char *ver);
 int/*bool*/
 set_ldap_version(const char *ver) {
 	UNUSED(ver);
 	return 0;
 }
+#endif /*def USE_LDAP_STORE*/
 
+#ifndef USE_X509_LOOKUP_STORE /* OpenSSL < 3.0 */
 X509_LOOKUP_METHOD* X509_LOOKUP_ldap(void);
 X509_LOOKUP_METHOD*
 X509_LOOKUP_ldap(void) {
 	return NULL;
 }
+#endif /*ndef USE_X509_LOOKUP_STORE*/
+#endif /*def LDAP_ENABLED*/
 #endif	/* end of used in x509store.c */
 
 

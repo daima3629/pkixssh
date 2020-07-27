@@ -923,6 +923,20 @@ struct winsize {
 #endif
 
 
+/* LDAP use conditions */
+#undef USE_LDAP_STORE
+#if defined(USE_OPENSSL_ENGINE) && defined(HAVE_OSSL_STORE_OPEN)
+   /* OpenSSL >= 1.1.1 */
+#  define USE_LDAP_STORE	1
+#endif
+
+#undef USE_X509_LOOKUP_STORE
+#if defined(USE_LDAP_STORE) && defined(HAVE_X509_LOOKUP_STORE)
+   /* OpenSSL >= 3.0 */
+#  define USE_X509_LOOKUP_STORE	1
+#endif
+
+
 /* NOTE:
  * OpenSSL 1.1.* resets EVP_CIPHER_CTX on each call of EVP_CipherInit()!
  * Remark: Pre 1.1.0 behaviour is restored in 1.1.0g (issue #4613).

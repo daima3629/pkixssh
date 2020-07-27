@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2004-2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,6 +31,7 @@
 #ifdef USE_LDAP_STORE
 #  include <openssl/store.h>
 #endif
+#include <openssl/err.h>
 
 /* prefer X509_NAME_cmp method from ssh-x509.c */
 extern int     ssh_X509_NAME_cmp(X509_NAME *a, X509_NAME *b);
