@@ -353,7 +353,11 @@ install-nokeys: $(CONFIGFILES) $(MANPAGES) $(TARGETS) install-files install-sysc
 install-nosysconf: $(CONFIGFILES) $(MANPAGES) $(TARGETS) install-files
 
 check-config:
-	-$(DESTDIR)$(sbindir)/sshd -t -f $(DESTDIR)$(sysconfdir)/sshd_config
+	-@if test -z "$(DESTDIR)" ; then \
+		$(sbindir)/sshd -t -f $(sysconfdir)/sshd_config; \
+	else \
+		echo "skip $@ - no host-keys in staged installs"; \
+	fi
 
 install-files:
 	$(MKDIR_P) $(DESTDIR)$(bindir)
