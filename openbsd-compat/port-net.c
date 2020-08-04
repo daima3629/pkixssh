@@ -215,7 +215,7 @@ sys_tun_open(int tun, int mode, char **ifname)
 {
 	struct ifreq ifr;
 	char name[100];
-	int fd = -1, sock, flag;
+	int fd = -1, sock;
 	const char *tunbase = "tun";
 
 	if (ifname != NULL)
@@ -253,14 +253,15 @@ sys_tun_open(int tun, int mode, char **ifname)
 	}
 
 	/* Turn on tunnel headers */
-	flag = 1;
 #if defined(TUNSIFHEAD) && !defined(SSH_TUN_PREPEND_AF)
+{	int flag = 1;
 	if (mode != SSH_TUNMODE_ETHERNET &&
 	    ioctl(fd, TUNSIFHEAD, &flag) == -1) {
 		debug("%s: ioctl(%d, TUNSIFHEAD, 1): %s", __func__, fd,
 		    strerror(errno));
 		close(fd);
 	}
+}
 #endif
 
 	debug("%s: %s mode %d fd %d", __func__, name, mode, fd);
