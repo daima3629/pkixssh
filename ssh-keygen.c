@@ -159,13 +159,13 @@ static char *certflags_command = NULL;
 static char *certflags_src_addr = NULL;
 
 /* Arbitrary extensions specified by user */
-struct cert_userext {
+struct cert_ext {
 	char *key;
 	char *val;
 	int crit;
 };
-static struct cert_userext *cert_userext;
-static size_t ncert_userext;
+static struct cert_ext *cert_ext;
+static size_t ncert_ext;
 
 /* Conversion to/from various formats */
 enum {
@@ -1656,6 +1656,16 @@ do_change_comment(struct passwd *pw, const char *identity_comment)
 }
 
 static void
+cert_ext_add(const char *key, const char *value, int iscrit)
+{
+	cert_ext = xreallocarray(cert_ext, ncert_ext + 1, sizeof(*cert_ext));
+	cert_ext[ncert_ext].key = xstrdup(key);
+	cert_ext[ncert_ext].val = value == NULL ? NULL : xstrdup(value);
+	cert_ext[ncert_ext].crit = iscrit;
+	ncert_ext++;
+}
+
+static void
 add_flag_option(struct sshbuf *c, const char *name)
 {
 	int r;
@@ -1712,15 +1722,15 @@ prepare_options_buf(struct sshbuf *c, int which)
 	if ((which & OPTIONS_CRITICAL) != 0 &&
 	    certflags_src_addr != NULL)
 		add_string_option(c, "source-address", certflags_src_addr);
-	for (i = 0; i < ncert_userext; i++) {
-		if ((cert_userext[i].crit && (which & OPTIONS_EXTENSIONS)) ||
-		    (!cert_userext[i].crit && (which & OPTIONS_CRITICAL)))
+	for (i = 0; i < ncert_ext; i++) {
+		if ((cert_ext[i].crit && (which & OPTIONS_EXTENSIONS)) ||
+		    (!cert_ext[i].crit && (which & OPTIONS_CRITICAL)))
 			continue;
-		if (cert_userext[i].val == NULL)
-			add_flag_option(c, cert_userext[i].key);
+		if (cert_ext[i].val == NULL)
+			add_flag_option(c, cert_ext[i].key);
 		else {
-			add_string_option(c, cert_userext[i].key,
-			    cert_userext[i].val);
+			add_string_option(c, cert_ext[i].key,
+			    cert_ext[i].val);
 		}
 	}
 }
@@ -2034,13 +2044,8 @@ add_cert_option(char *opt)
 		val = xstrdup(strchr(opt, ':') + 1);
 		if ((cp = strchr(val, '=')) != NULL)
 			*cp++ = '\0';
-		cert_userext = xreallocarray(cert_userext, ncert_userext + 1,
-		    sizeof(*cert_userext));
-		cert_userext[ncert_userext].key = val;
-		cert_userext[ncert_userext].val = cp == NULL ?
-		    NULL : xstrdup(cp);
-		cert_userext[ncert_userext].crit = iscrit;
-		ncert_userext++;
+		cert_ext_add(val, cp, iscrit);
+		free(val);
 	} else
 		fatal("Unsupported certificate option \"%s\"", opt);
 }
