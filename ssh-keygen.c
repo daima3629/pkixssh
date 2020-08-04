@@ -2076,11 +2076,14 @@ show_options(struct sshbuf *optbuf, int in_critical)
 				    __func__, ssh_err(r));
 			printf(" %s\n", arg);
 			free(arg);
-		} else {
-			printf(" UNKNOWN OPTION (len %zu)\n",
-			    sshbuf_len(option));
+		} else if (sshbuf_len(option) > 0) {
+			char *hex = sshbuf_dtob16(option);
+			printf(" UNKNOWN OPTION: %s (len %zu)\n",
+			    hex, sshbuf_len(option));
 			sshbuf_reset(option);
-		}
+			free(hex);
+		} else
+			printf(" UNKNOWN FLAG OPTION\n");
 		free(name);
 		if (sshbuf_len(option) != 0)
 			fatal("Option corrupt: extra data at end");
