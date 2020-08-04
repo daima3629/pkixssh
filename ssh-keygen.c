@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keygen.c,v 1.413 2020/06/26 05:02:03 dtucker Exp $ */
+/* $OpenBSD: ssh-keygen.c,v 1.415 2020/08/03 02:53:51 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1994 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -1665,32 +1665,21 @@ cert_ext_add(const char *key, const char *value, int iscrit)
 	ncert_ext++;
 }
 
-static void
-add_flag_option(struct sshbuf *c, const char *name)
+/* qsort(3) comparison function for certificate extensions */
+static int
+cert_ext_cmp(const void *_a, const void *_b)
 {
+	const struct cert_ext *a = (const struct cert_ext *)_a;
+	const struct cert_ext *b = (const struct cert_ext *)_b;
 	int r;
 
-	debug3("%s: %s", __func__, name);
-	if ((r = sshbuf_put_cstring(c, name)) != 0 ||
-	    (r = sshbuf_put_string(c, NULL, 0)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
-}
-
-static void
-add_string_option(struct sshbuf *c, const char *name, const char *value)
-{
-	struct sshbuf *b;
-	int r;
-
-	debug3("%s: %s=%s", __func__, name, value);
-	if ((b = sshbuf_new()) == NULL)
-		fatal("%s: sshbuf_new failed", __func__);
-	if ((r = sshbuf_put_cstring(b, value)) != 0 ||
-	    (r = sshbuf_put_cstring(c, name)) != 0 ||
-	    (r = sshbuf_put_stringb(c, b)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
-
-	sshbuf_free(b);
+	if (a->crit != b->crit)
+		return (a->crit < b->crit) ? -1 : 1;
+	if ((r = strcmp(a->key, b->key)) != 0)
+		return r;
+	if (a->val == NULL) return -1;
+	if (b->val == NULL) return 1;
+	return strcmp(a->val, b->val);
 }
 
 #define OPTIONS_CRITICAL	1
@@ -1698,41 +1687,60 @@ add_string_option(struct sshbuf *c, const char *name, const char *value)
 static void
 prepare_options_buf(struct sshbuf *c, int which)
 {
+	struct sshbuf *b;
 	size_t i;
 
+	if ((b = sshbuf_new()) == NULL)
+		fatal("%s: sshbuf_new failed", __func__);
 	sshbuf_reset(c);
-	if ((which & OPTIONS_CRITICAL) != 0 &&
-	    certflags_command != NULL)
-		add_string_option(c, "force-command", certflags_command);
-	if ((which & OPTIONS_EXTENSIONS) != 0 &&
-	    (certflags_flags & CERTOPT_X_FWD) != 0)
-		add_flag_option(c, "permit-X11-forwarding");
-	if ((which & OPTIONS_EXTENSIONS) != 0 &&
-	    (certflags_flags & CERTOPT_AGENT_FWD) != 0)
-		add_flag_option(c, "permit-agent-forwarding");
-	if ((which & OPTIONS_EXTENSIONS) != 0 &&
-	    (certflags_flags & CERTOPT_PORT_FWD) != 0)
-		add_flag_option(c, "permit-port-forwarding");
-	if ((which & OPTIONS_EXTENSIONS) != 0 &&
-	    (certflags_flags & CERTOPT_PTY) != 0)
-		add_flag_option(c, "permit-pty");
-	if ((which & OPTIONS_EXTENSIONS) != 0 &&
-	    (certflags_flags & CERTOPT_USER_RC) != 0)
-		add_flag_option(c, "permit-user-rc");
-	if ((which & OPTIONS_CRITICAL) != 0 &&
-	    certflags_src_addr != NULL)
-		add_string_option(c, "source-address", certflags_src_addr);
 	for (i = 0; i < ncert_ext; i++) {
-		if ((cert_ext[i].crit && (which & OPTIONS_EXTENSIONS)) ||
-		    (!cert_ext[i].crit && (which & OPTIONS_CRITICAL)))
+		const struct cert_ext *ext = &cert_ext[i];
+		int r;
+
+		if ((ext->crit && (which & OPTIONS_EXTENSIONS)) ||
+		    (!ext->crit && (which & OPTIONS_CRITICAL)))
 			continue;
-		if (cert_ext[i].val == NULL)
-			add_flag_option(c, cert_ext[i].key);
-		else {
-			add_string_option(c, cert_ext[i].key,
-			    cert_ext[i].val);
+		if (ext->val == NULL) {
+			/* flag option */
+			debug3("%s: %s", __func__, ext->key);
+			if ((r = sshbuf_put_cstring(c, ext->key)) != 0 ||
+			    (r = sshbuf_put_string(c, NULL, 0)) != 0)
+				fatal("%s: buffer: %s", __func__, ssh_err(r));
+		} else {
+			/* key/value option */
+			debug3("%s: %s=%s", __func__, ext->key, ext->val);
+			sshbuf_reset(b);
+			if ((r = sshbuf_put_cstring(c, ext->key)) != 0 ||
+			    (r = sshbuf_put_cstring(b, ext->val)) != 0 ||
+			    (r = sshbuf_put_stringb(c, b)) != 0)
+				fatal("%s: buffer: %s", __func__, ssh_err(r));
 		}
 	}
+	sshbuf_free(b);
+}
+
+static void
+finalise_cert_exts(void)
+{
+	/* critical options */
+	if (certflags_command != NULL)
+		cert_ext_add("force-command", certflags_command, 1);
+	if (certflags_src_addr != NULL)
+		cert_ext_add("source-address", certflags_src_addr, 1);
+	/* extensions */
+	if ((certflags_flags & CERTOPT_X_FWD) != 0)
+		cert_ext_add("permit-X11-forwarding", NULL, 0);
+	if ((certflags_flags & CERTOPT_AGENT_FWD) != 0)
+		cert_ext_add("permit-agent-forwarding", NULL, 0);
+	if ((certflags_flags & CERTOPT_PORT_FWD) != 0)
+		cert_ext_add("permit-port-forwarding", NULL, 0);
+	if ((certflags_flags & CERTOPT_PTY) != 0)
+		cert_ext_add("permit-pty", NULL, 0);
+	if ((certflags_flags & CERTOPT_USER_RC) != 0)
+		cert_ext_add("permit-user-rc", NULL, 0);
+	/* order lexically by key */
+	if (ncert_ext > 0)
+		qsort(cert_ext, ncert_ext, sizeof(*cert_ext), cert_ext_cmp);
 }
 
 static struct sshkey *
@@ -1843,6 +1851,7 @@ do_ca_sign(struct passwd *pw, const char *ca_key_path, int prefer_agent,
 		    sshkey_ssh_name(ca), key_type_name);
 	}
 
+	finalise_cert_exts();
 	for (i = 0; i < argc; i++) {
 		/* Split list of principals */
 		n = 0;
