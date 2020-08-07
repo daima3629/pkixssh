@@ -210,10 +210,15 @@ created.
 
 --with-xauth=PATH specifies the location of the xauth binary
 
+--without-openssl compatibility option. OpenSSL cryptographic
+library is required.
+
 --with-ssl-dir=DIR allows you to specify where your OpenSSL
 libraries are installed.
 
 --with-ssl-engine enables OpenSSL's (hardware) ENGINE support
+
+--without-zlib builds without zlib.  This disables the Compression option.
 
 --with-4in6 Check for IPv4 in IPv6 mapped addresses and convert them to
 real (AF_INET) IPv4 addresses. Works around some quirks on Linux.
