@@ -52,8 +52,8 @@ HP-UX 11, AIX >= 5.2, FreeBSD, NetBSD and Mac OS X.
 
 Information about the various PAM implementations are available:
 
-Solaris PAM:	http://www.sun.com/software/solaris/pam/
-Linux PAM:	http://www.kernel.org/pub/linux/libs/pam/
+Solaris PAM:	https://web.archive.org/web/20061230054046/http://www.sun.com:80/software/solaris/pam/
+Linux PAM:	https://www.kernel.org/pub/linux/libs/pam/
 OpenPAM:	https://www.openpam.org/
 
 ASKPASS:
@@ -93,7 +93,7 @@ has it available natively you can use that, alternatively you might try
 these multi-platform ports:
 
 http://www.thrysoee.dk/editline/
-http://sourceforge.net/projects/libedit/
+https://sourceforge.net/projects/libedit/
 
 LDNS:
 
