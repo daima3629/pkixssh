@@ -209,7 +209,9 @@ ssh_rsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 		hash_alg = SSH_DIGEST_SHA1;
 	else
 		hash_alg = rsa_hash_id_from_keyname(alg_ident);
-	debug3("%s  hash_alg=%d/%s", __func__, hash_alg, rsa_hash_alg_ident(hash_alg));
+{	const char *s = rsa_hash_alg_ident(hash_alg);
+	debug3("%s  hash_alg=%d/%s", __func__, hash_alg, s != NULL ? s: "");
+}
 	if (hash_alg == -1)
 		return SSH_ERR_INVALID_ARGUMENT;
 
