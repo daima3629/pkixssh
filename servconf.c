@@ -1343,8 +1343,8 @@ static const struct multistate multistate_addressfamily[] = {
 	{ NULL, -1 }
 };
 static const struct multistate multistate_permitrootlogin[] = {
-	{ "without-password",		PERMIT_NO_PASSWD },
 	{ "prohibit-password",		PERMIT_NO_PASSWD },
+	{ "without-password",		PERMIT_NO_PASSWD },
 	{ "forced-commands-only",	PERMIT_FORCED_ONLY },
 	{ "yes",			PERMIT_YES },
 	{ "no",				PERMIT_NO },
