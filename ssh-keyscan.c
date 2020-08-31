@@ -682,12 +682,19 @@ main(int argc, char **argv)
 			}
 			break;
 		case 'T':
-			timeout = convtime(optarg);
-			if (timeout == -1 || timeout == 0) {
+		{	long t = convtime(optarg);
+			if ((t == -1) || (t == 0)) {
 				fprintf(stderr, "Bad timeout '%s'\n", optarg);
 				usage();
 			}
-			break;
+		#if SIZEOF_LONG_INT > SIZEOF_INT
+			if (t > INT_MAX) {
+				fprintf(stderr, "Timeout too high '%s'\n", optarg);
+				exit(1);
+			}
+		#endif
+			timeout = (int)t; /*save cast*/
+		}	break;
 		case 'v':
 			if (!debug_flag) {
 				debug_flag = 1;

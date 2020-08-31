@@ -1793,11 +1793,19 @@ main(int ac, char **av)
 			}
 			break;
 		case 'g':
-			if ((options.login_grace_time = convtime(optarg)) == -1) {
+		{	long t = convtime(optarg);
+			if (t == -1) {
 				fprintf(stderr, "Invalid login grace time.\n");
 				exit(1);
 			}
-			break;
+		#if SIZEOF_LONG_INT > SIZEOF_INT
+			if (t > INT_MAX) {
+				fprintf(stderr, "Login grace time too high.\n");
+				exit(1);
+			}
+		#endif
+			options.login_grace_time = (int)t; /*save cast*/
+		}	break;
 		case 'k':
 			/* protocol 1, ignored */
 			break;

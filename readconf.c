@@ -1137,9 +1137,18 @@ parse_time:
 			    filename, linenum);
 		if (strcmp(arg, "none") == 0)
 			value = -1;
-		else if ((value = convtime(arg)) == -1)
-			fatal("%s line %d: invalid time value.",
-			    filename, linenum);
+		else {
+			long t = convtime(arg);
+			if (t == -1)
+				fatal("%s line %d: invalid time value.",
+				    filename, linenum);
+		#if SIZEOF_LONG_INT > SIZEOF_INT
+			if (t > INT_MAX)
+				fatal("%s line %d: too high time value.",
+				    filename, linenum);
+		#endif
+			value = (int)t;  /*save cast*/
+		}
 		if (*activep && *intptr == -1)
 			*intptr = value;
 		break;
@@ -1713,11 +1722,17 @@ parse_keytypes:
 		     multistate_flag);
 		value2 = 0;	/* timeout */
 		if (value == -1) {
-			if ((value2 = convtime(arg)) >= 0)
-				value = 1;
-			else
-				fatal("%.200s line %d: Bad ControlPersist argument.",
+			long t = convtime(arg);
+			if (t == -1)
+				fatal("%s line %d: bad ControlPersist time value.",
 				    filename, linenum);
+		#if SIZEOF_LONG_INT > SIZEOF_INT
+			if (t > INT_MAX)
+				fatal("%s line %d: too high ControlPersist time value.",
+				    filename, linenum);
+		#endif
+			value = 1;
+			value2 = (int)t; /*save cast*/
 		}
 		if (*activep && *intptr == -1) {
 			*intptr = value;

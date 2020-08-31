@@ -1612,9 +1612,17 @@ parse_string:
 		if (!arg || *arg == '\0')
 			fatal("%s line %d: missing time value.",
 			    filename, linenum);
-		if ((value = convtime(arg)) == -1)
+	{	long t = convtime(arg);
+		if (t == -1)
 			fatal("%s line %d: invalid time value.",
 			    filename, linenum);
+	#if SIZEOF_LONG_INT > SIZEOF_INT
+		if (t > INT_MAX)
+			fatal("%s line %d: time value too high.",
+			    filename, linenum);
+	#endif
+		value = (int)t; /*save cast*/
+	}
 		if (*activep && *intptr == -1)
 			*intptr = value;
 		break;

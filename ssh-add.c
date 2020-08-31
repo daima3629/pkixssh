@@ -720,18 +720,20 @@ main(int argc, char **argv)
 			pkcs11provider = optarg;
 			break;
 		case 't':
-		{	long v;
-			if ((v = convtime(optarg)) == -1 ||
-			    v < 0
-			#if SIZEOF_LONG_INT > SIZEOF_INT
-			    || v > UINT32_MAX
-			#endif
-			) {
+		{	long t = convtime(optarg);
+			if (t == -1) {
 				fprintf(stderr, "Invalid lifetime\n");
 				ret = 1;
 				goto done;
 			}
-			lifetime = (u_int)v; /*save cast*/
+		#if SIZEOF_LONG_INT > SIZEOF_INT
+			if (t > UINT32_MAX) {
+				fprintf(stderr, "Lifetime too high\n");
+				ret = 1;
+				goto done;
+			}
+		#endif
+			lifetime = (u_int)t; /*save cast*/
 		}
 			break;
 		case 'T':
