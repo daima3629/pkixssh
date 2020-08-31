@@ -886,6 +886,21 @@ static const struct multistate multistate_canonicalizehostname[] = {
 	{ NULL, -1 }
 };
 
+static int
+parse_multistate_value(const char *arg, const char *filename, int linenum,
+    const struct multistate *multistate_ptr)
+{
+	int i;
+
+	if (!arg || *arg == '\0')
+		fatal("%s line %d: missing argument.", filename, linenum);
+	for (i = 0; multistate_ptr[i].key != NULL; i++) {
+		if (strcasecmp(arg, multistate_ptr[i].key) == 0)
+			return multistate_ptr[i].value;
+	}
+	return -1;
+}
+
 /*
  * Processes a single option line as used in the configuration files. This
  * only sets those values that have not already been set.
@@ -1133,18 +1148,8 @@ parse_time:
 		intptr = &options->forward_agent;
 
 		arg = strdelim(&s);
-		if (!arg || *arg == '\0')
-			fatal("%s line %d: missing argument.",
-			    filename, linenum);
-
-		value = -1;
-		multistate_ptr = multistate_flag;
-		for (i = 0; multistate_ptr[i].key != NULL; i++) {
-			if (strcasecmp(arg, multistate_ptr[i].key) == 0) {
-				value = multistate_ptr[i].value;
-				break;
-			}
-		}
+		value = parse_multistate_value(arg, filename, linenum,
+		     multistate_flag);
 		if (value != -1) {
 			if (*activep && *intptr == -1)
 				*intptr = value;
@@ -1163,16 +1168,8 @@ parse_time:
 		multistate_ptr = multistate_flag;
  parse_multistate:
 		arg = strdelim(&s);
-		if (!arg || *arg == '\0')
-			fatal("%s line %d: missing argument.",
-			    filename, linenum);
-		value = -1;
-		for (i = 0; multistate_ptr[i].key != NULL; i++) {
-			if (strcasecmp(arg, multistate_ptr[i].key) == 0) {
-				value = multistate_ptr[i].value;
-				break;
-			}
-		}
+		value = parse_multistate_value(arg, filename, linenum,
+		     multistate_ptr);
 		if (value == -1)
 			fatal("%s line %d: unsupported option \"%s\".",
 			    filename, linenum, arg);
@@ -1712,20 +1709,16 @@ parse_keytypes:
 		/* no/false/yes/true, or a time spec */
 		intptr = &options->control_persist;
 		arg = strdelim(&s);
-		if (!arg || *arg == '\0')
-			fatal("%.200s line %d: Missing ControlPersist"
-			    " argument.", filename, linenum);
-		value = 0;
+		value = parse_multistate_value(arg, filename, linenum,
+		     multistate_flag);
 		value2 = 0;	/* timeout */
-		if (strcmp(arg, "no") == 0 || strcmp(arg, "false") == 0)
-			value = 0;
-		else if (strcmp(arg, "yes") == 0 || strcmp(arg, "true") == 0)
-			value = 1;
-		else if ((value2 = convtime(arg)) >= 0)
-			value = 1;
-		else
-			fatal("%.200s line %d: Bad ControlPersist argument.",
-			    filename, linenum);
+		if (value == -1) {
+			if ((value2 = convtime(arg)) >= 0)
+				value = 1;
+			else
+				fatal("%.200s line %d: Bad ControlPersist argument.",
+				    filename, linenum);
+		}
 		if (*activep && *intptr == -1) {
 			*intptr = value;
 			options->control_persist_timeout = value2;
