@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-agent.c,v 1.262 2020/07/05 23:59:45 djm Exp $ */
+/* $OpenBSD: ssh-agent.c,v 1.263 2020/08/27 01:06:18 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -333,7 +333,7 @@ process_sign_request2(SocketEntry *e)
 		goto send;
 	}
 {	const char *alg = agent_recode_alg(pkalg, flags);
-	ssh_sign_ctx ctx = { alg, id->key, &ctx_compat, NULL };
+	ssh_sign_ctx ctx = { alg, id->key, &ctx_compat, NULL, NULL };
 
 	r = Xkey_sign(&ctx, &signature, &slen, data, dlen);
 }

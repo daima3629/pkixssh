@@ -478,7 +478,7 @@ test_key(int agent_fd, const char *filename)
 
 	alg = sshkey_ssh_name(key);
 
-{	ssh_sign_ctx ctx = { alg, key, &ctx_compat, NULL };
+{	ssh_sign_ctx ctx = { alg, key, &ctx_compat, NULL, NULL };
 
 	r = Xssh_agent_sign(agent_fd, &ctx, &sig, &slen, data, sizeof(data));
 	if (r != 0) {

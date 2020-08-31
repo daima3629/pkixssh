@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh_api.c,v 1.20 2020/07/01 16:28:31 markus Exp $ */
+/* $OpenBSD: ssh_api.c,v 1.21 2020/08/27 01:06:18 djm Exp $ */
 /*
  * Copyright (c) 2012 Markus Friedl.  All rights reserved.
  * Copyright (c) 2014-2020 Roumen Petrov.  All rights reserved.
@@ -51,8 +51,6 @@ struct sshkey *_ssh_host_private_key(const char*, struct ssh *);
  * disable privsep so our stubs will never be called.
  */
 int	use_privsep = 0;
-int	mm_sshkey_sign(struct sshkey *, u_char **, u_int *,
-    const u_char *, u_int, const char *, const char *, u_int);
 
 #ifdef WITH_OPENSSL
 DH	*mm_choose_dh(int, int, int);
@@ -61,20 +59,6 @@ DH	*mm_choose_dh(int, int, int);
 /* Define these two variables here so that they are part of the library */
 u_char *session_id2 = NULL;
 u_int session_id2_len = 0;
-
-int
-mm_sshkey_sign(struct sshkey *key, u_char **sigp, u_int *lenp,
-    const u_char *data, u_int datalen, const char *alg, const char *sk_provider,
-    u_int compat)
-{
-	UNUSED(key);
-	UNUSED(sigp); UNUSED(lenp);
-	UNUSED(data); UNUSED(datalen);
-	UNUSED(alg);
-	UNUSED(sk_provider);
-	UNUSED(compat);
-	return (-1);
-}
 
 #ifdef WITH_OPENSSL
 DH *

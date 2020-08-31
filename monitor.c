@@ -1,11 +1,10 @@
-/* $OpenBSD: monitor.c,v 1.212 2020/07/07 02:47:21 deraadt Exp $ */
+/* $OpenBSD: monitor.c,v 1.213 2020/08/27 01:06:18 djm Exp $ */
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * Copyright 2002 Markus Friedl <markus@openbsd.org>
  * All rights reserved.
  *
- * X509 certificate support,
- * Copyright (c) 2014-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2014-2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -687,13 +686,13 @@ mm_answer_sign(struct ssh *ssh, int sock, struct sshbuf *m)
 	}
 
 	if ((key = get_hostkey_by_index(keyid)) != NULL) {
-		ssh_sign_ctx ctx = { alg, key, &compat, NULL };
+		ssh_sign_ctx ctx = { alg, key, &compat, NULL, NULL };
 		if ((r = Xkey_sign(&ctx, &signature, &siglen, p, datlen)) != 0)
 			fatal("%s: Xkey_sign failed: %s",
 			    __func__, ssh_err(r));
 	} else if ((key = get_hostkey_public_by_index(keyid, ssh)) != NULL &&
 	    auth_sock > 0) {
-		ssh_sign_ctx ctx = { alg, key, &compat, NULL };
+		ssh_sign_ctx ctx = { alg, key, &compat, NULL, NULL };
 		if ((r = Xssh_agent_sign(auth_sock, &ctx, &signature, &siglen,
 		    p, datlen)) != 0) {
 			fatal("%s: ssh_agent_sign failed: %s",

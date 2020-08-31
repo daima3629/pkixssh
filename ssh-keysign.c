@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keysign.c,v 1.63 2019/11/18 16:10:05 naddy Exp $ */
+/* $OpenBSD: ssh-keysign.c,v 1.64 2020/08/27 01:06:18 djm Exp $ */
 /*
  * Copyright (c) 2002 Markus Friedl.  All rights reserved.
  * Copyright (c) 2011-2020 Roumen Petrov.  All rights reserved.
@@ -364,7 +364,7 @@ main(int argc, char **argv)
 	}
 
 {	ssh_compat ctx_compat = { 0, 0 }; /* TODO-Xkey_sign compat */
-	ssh_sign_ctx ctx = { NULL, keys[i], &ctx_compat, NULL };
+	ssh_sign_ctx ctx = { NULL, keys[i], &ctx_compat, NULL, NULL };
 
 	r = Xkey_sign(&ctx, &signature, &slen, data, dlen);
 	if (r != 0)

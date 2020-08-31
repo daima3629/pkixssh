@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keygen.c,v 1.415 2020/08/03 02:53:51 djm Exp $ */
+/* $OpenBSD: ssh-keygen.c,v 1.416 2020/08/27 01:06:18 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1994 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -628,7 +628,7 @@ do_convert_private_ssh2(struct sshbuf *b)
 		error("%s: remaining bytes in key blob %d", __func__, rlen);
 
 	/* try the key */
-	if (sshkey_sign(key, &sig, &slen, data, sizeof(data), NULL, NULL, 0) != 0 ||
+	if (sshkey_sign(key, &sig, &slen, data, sizeof(data), NULL, NULL, NULL, 0) != 0 ||
 	    sshkey_verify(key, sig, slen, data, sizeof(data), NULL, 0) != 0) {
 		sshkey_free(key);
 		free(sig);
@@ -1779,11 +1779,12 @@ load_pkcs11_key(char *path)
 static int
 agent_signer(struct sshkey *key, u_char **sigp, size_t *lenp,
     const u_char *data, size_t datalen,
-    const char *alg, const char *provider, u_int compat, void *v_sock)
+    const char *alg, const char *provider, const char *pin,
+    u_int compat, void *v_sock)
 {
 	int *sock = (int *)v_sock;
 	ssh_compat ctx_compat = { compat, 0 }; /* TODO-Xkey_sign compat */
-	ssh_sign_ctx ctx = { alg, key, &ctx_compat, provider };
+	ssh_sign_ctx ctx = { alg, key, &ctx_compat, provider, pin };
 
 	return Xssh_agent_sign(*sock, &ctx, sigp, lenp, data, datalen);
 }
@@ -1897,12 +1898,15 @@ do_ca_sign(struct passwd *pw, const char *ca_key_path, int prefer_agent,
 			fatal("sshkey_from_private (ca key): %s", ssh_err(r));
 
 		if (agent_fd != -1 && (ca->flags & SSHKEY_FLAG_EXT) != 0) {
-			if ((r = sshkey_certify_custom(public, ca,
-			    key_type_name, NULL, agent_signer, &agent_fd)) != 0)
+			r = sshkey_certify_custom(public, ca, key_type_name,
+			    NULL, NULL, agent_signer, &agent_fd);
+			if (r != 0)
 				fatal("Couldn't certify key %s via agent: %s",
 				    tmp, ssh_err(r));
 		} else {
-			if ((sshkey_certify(public, ca, key_type_name, NULL)) != 0)
+			r = sshkey_certify(public, ca, key_type_name,
+			    NULL, NULL);
+			if (r != 0)
 				fatal("Couldn't certify key %s: %s",
 				    tmp, ssh_err(r));
 		}

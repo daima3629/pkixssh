@@ -2,8 +2,7 @@
 /*
  * Copyright (c) 2000 Niels Provos.  All rights reserved.
  * Copyright (c) 2001 Markus Friedl.  All rights reserved.
- *
- * Copyright (c) 2014-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2014-2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -186,7 +185,7 @@ input_kex_dh_gex_init(int type, u_int32_t seq, struct ssh *ssh)
 		goto out;
 
 	/* sign H */
-{	ssh_sign_ctx ctx = { kex->hostkey_alg, server_host_private, &ssh->compat, NULL };
+{	ssh_sign_ctx ctx = { kex->hostkey_alg, server_host_private, &ssh->compat, NULL, NULL };
 
 	r = kex->xsign(ssh, &ctx, server_host_public, &signature, &slen, hash, hashlen);
 	if (r != 0)

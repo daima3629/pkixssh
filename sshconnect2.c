@@ -1,4 +1,4 @@
-/* $OpenBSD: sshconnect2.c,v 1.324 2020/06/27 13:39:09 bket Exp $ */
+/* $OpenBSD: sshconnect2.c,v 1.325 2020/08/27 01:06:18 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Damien Miller.  All rights reserved.
@@ -1125,7 +1125,7 @@ identity_sign(struct identity *id, ssh_sign_ctx *id_ctx,
 {
 	struct sshkey *prv = NULL;
 	int r;
-	ssh_sign_ctx ctx = { id_ctx->alg, id->key, id_ctx->compat, id_ctx->provider };
+	ssh_sign_ctx ctx = { id_ctx->alg, id->key, id_ctx->compat, NULL, NULL };
 
 	/* The agent supports this key. */
 	if (id->key != NULL && id->agent_fd != -1)
@@ -1280,7 +1280,7 @@ sign_and_send_pubkey(struct ssh *ssh, Identity *id)
 		}
 
 		/* generate signature */
-	{	ssh_sign_ctx ctx = { pkalg, NULL, &ssh->compat, NULL };
+	{	ssh_sign_ctx ctx = { pkalg, NULL, &ssh->compat, NULL, NULL };
 
 		r = identity_sign(sign_id, &ctx, &signature, &slen, sshbuf_ptr(b), sshbuf_len(b));
 	}

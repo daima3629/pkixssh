@@ -2031,7 +2031,7 @@ Xkey_sign(ssh_sign_ctx *ctx,
 	if (ssh_xkalg_nameind(ctx->alg, &xkalg, -1) < 0) {
 		int ret = sshkey_sign(key, sigp, lenp,
 		    data, datalen,
-		    ctx->alg, ctx->provider,
+		    ctx->alg, ctx->provider, ctx->pin,
 		    ctx->compat->datafellows);
 		if (ret == SSH_ERR_LIBCRYPTO_ERROR)
 			log_crypto_errors(SYSLOG_LEVEL_ERROR, __func__);

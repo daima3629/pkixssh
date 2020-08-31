@@ -1,4 +1,4 @@
-/* $OpenBSD: sshd.c,v 1.560 2020/07/03 10:12:26 markus Exp $ */
+/* $OpenBSD: sshd.c,v 1.561 2020/08/27 01:06:19 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -2514,7 +2514,8 @@ Xsshd_hostkey_sign(
 				fatal("%s: Xkey_sign failed: %s",
 				      __func__, ssh_err(r));
 		} else {
-			ssh_sign_ctx mm_ctx = { ctx->alg, pubkey, ctx->compat, ctx->provider };
+			ssh_sign_ctx mm_ctx = { ctx->alg, pubkey, ctx->compat,
+			    ctx->provider, ctx->pin };
 			r = mm_Xkey_sign(ssh, &mm_ctx, signature, slenp, data, dlen);
 			if (r != 0)
 				fatal("%s: pubkey Xkey_sign failed: %s",
@@ -2527,7 +2528,8 @@ Xsshd_hostkey_sign(
 				fatal("%s: Xkey_sign failed: %s",
 				      __func__, ssh_err(r));
 		} else {
-			ssh_sign_ctx a_ctx = { ctx->alg, pubkey, ctx->compat, ctx->provider };
+			ssh_sign_ctx a_ctx = { ctx->alg, pubkey, ctx->compat,
+			    ctx->provider, ctx->pin };
 			r = Xssh_agent_sign(auth_sock, &a_ctx, signature, slenp,
 			    data, dlen);
 			if (r != 0)
