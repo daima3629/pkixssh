@@ -1,4 +1,4 @@
-/* $OpenBSD: readconf.c,v 1.333 2020/07/17 07:09:24 dtucker Exp $ */
+/* $OpenBSD: readconf.c,v 1.335 2020/08/27 02:11:09 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -1980,9 +1980,44 @@ parse_keytypes:
 #endif
 
 	case oAddKeysToAgent:
-		intptr = &options->add_keys_to_agent;
-		multistate_ptr = multistate_yesnoaskconfirm;
-		goto parse_multistate;
+		arg = strdelim(&s);
+		arg2 = strdelim(&s);
+		value = parse_multistate_value(arg, filename, linenum,
+		     multistate_yesnoaskconfirm);
+		value2 = 0; /* unlimited lifespan by default */
+		if (value == 3 && arg2 != NULL) {
+			long t = convtime(arg2);
+			/* allow "AddKeysToAgent confirm 5m" */
+			if (t == -1)
+				fatal("%s line %d: invalid time value.",
+				    filename, linenum);
+		#if SIZEOF_LONG_INT > SIZEOF_INT
+			if (t > INT_MAX)
+				fatal("%s line %d: time value too high.",
+				    filename, linenum);
+		#endif
+			value2 = (int)t; /*save cast*/
+		} else if (value == -1 && arg2 == NULL) {
+			long t = convtime(arg);
+			if (t == -1)
+				fatal("%s line %d: unsupported option",
+				    filename, linenum);
+		#if SIZEOF_LONG_INT > SIZEOF_INT
+			if (t > INT_MAX)
+				fatal("%s line %d: time value too high",
+				    filename, linenum);
+		#endif
+			value = 1;
+			value2 = (int)t; /*save cast*/
+		} else if (value == -1 || arg2 != NULL) {
+			fatal("%s line %d: unsupported option",
+			    filename, linenum);
+		}
+		if (*activep && options->add_keys_to_agent == -1) {
+			options->add_keys_to_agent = value;
+			options->add_keys_to_agent_lifespan = value2;
+		}
+		break;
 
 	case oIdentityAgent:
 		charptr = &options->identity_agent;
@@ -2222,6 +2257,7 @@ initialize_options(Options * options)
 	options->permit_local_command = -1;
 	options->remote_command = NULL;
 	options->add_keys_to_agent = -1;
+	options->add_keys_to_agent_lifespan = -1;
 	options->identity_agent = NULL;
 	options->visual_host_key = -1;
 	options->ip_qos_interactive = -1;
@@ -2328,8 +2364,10 @@ fill_default_options(Options * options)
 		options->number_of_password_prompts = 3;
 	/* options->hostkeyalgorithms, default set in myproposals.h */
 	/* HostKeyAlgorithms depend from X509KeyAlgorithm options */
-	if (options->add_keys_to_agent == -1)
+	if (options->add_keys_to_agent == -1) {
 		options->add_keys_to_agent = 0;
+		options->add_keys_to_agent_lifespan = 0;
+	}
 	if (options->num_identity_files == 0) {
 		add_identity_file(options, "~/", _PATH_SSH_CLIENT_ID_RSA, 0);
 #ifdef OPENSSL_HAS_ECC
@@ -2973,7 +3011,6 @@ dump_client_config(Options *o, const char *host)
 #endif /*def SSH_OCSP_ENABLED*/
 
 	/* Flag options */
-	dump_cfg_fmtint(oAddKeysToAgent, o->add_keys_to_agent);
 	dump_cfg_fmtint(oAddressFamily, o->address_family);
 	dump_cfg_fmtint(oBatchMode, o->batch_mode);
 	dump_cfg_fmtint(oCanonicalizeFallbackLocal, o->canonicalize_fallback_local);
@@ -3060,6 +3097,15 @@ dump_client_config(Options *o, const char *host)
 	dump_cfg_strarray(oSetEnv, o->num_setenv, o->setenv);
 
 	/* Special cases */
+
+	/* AddKeysToAgent */
+	if (o->add_keys_to_agent_lifespan <= 0)
+		dump_cfg_fmtint(oAddKeysToAgent, o->add_keys_to_agent);
+	else {
+		printf("addkeystoagent%s %d\n",
+		    o->add_keys_to_agent == 3 ? " confirm" : "",
+		    o->add_keys_to_agent_lifespan);
+	}
 
 	/* oForwardAgent */
 	if (o->forward_agent_sock_path == NULL)
