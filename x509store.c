@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -23,6 +23,7 @@
  */
 
 #include "x509store.h"
+#include "ssh_ldap.h"
 #include <openssl/x509v3.h>
 #include "log.h"
 
