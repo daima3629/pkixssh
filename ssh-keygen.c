@@ -849,13 +849,15 @@ do_print_public(struct passwd *pw)
 		ask_filename(pw, "Enter file in which the key is");
 	if (Xstat(identity_file) == -1)
 		fatal("%s: %s", identity_file, strerror(errno));
+
 	prv = load_identity(identity_file, &comment);
 	if ((r = sshkey_write(prv, stdout)) != 0)
 		error("sshkey_write failed: %s", ssh_err(r));
-	sshkey_free(prv);
 	if (comment != NULL && *comment != '\0')
 		fprintf(stdout, " %s", comment);
 	fprintf(stdout, "\n");
+
+	sshkey_free(prv);
 	free(comment);
 	exit(0);
 }
