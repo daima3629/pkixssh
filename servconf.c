@@ -1,4 +1,4 @@
-/* $OpenBSD: servconf.c,v 1.367 2020/07/05 23:59:45 djm Exp $ */
+/* $OpenBSD: servconf.c,v 1.369 2020/08/28 03:15:52 dtucker Exp $ */
 /*
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
@@ -1232,6 +1232,9 @@ match_cfg_line(char **condition, int line, struct connection_info *ci)
 				    "%.100s' at line %d", ci->host, arg, line);
 		} else if (strcasecmp(attrib, "address") == 0) {
 			if (ci == NULL || (ci->test && ci->address == NULL)) {
+				if (addr_match_list(NULL, arg) != 0)
+					fatal("Invalid Match address argument "
+					    "'%s' at line %d", arg, line);
 				result = 0;
 				continue;
 			}
@@ -1251,6 +1254,10 @@ match_cfg_line(char **condition, int line, struct connection_info *ci)
 			}
 		} else if (strcasecmp(attrib, "localaddress") == 0){
 			if (ci == NULL || (ci->test && ci->laddress == NULL)) {
+				if (addr_match_list(NULL, arg) != 0)
+					fatal("Invalid Match localaddress "
+					    "argument '%s' at line %d", arg,
+					    line);
 				result = 0;
 				continue;
 			}
