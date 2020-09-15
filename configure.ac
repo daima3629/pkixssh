@@ -19,6 +19,7 @@ m4_include([version.m4])
 
 AC_INIT([SSH_PACKAGE], [SSH_VERSION], [SSH_BUGREPORT], [openssh], [SSH_URL])
 AC_CONFIG_SRCDIR([ssh.c])
+m4_include([m4/local.m4])
 m4_include([m4/ldap.m4])
 AC_LANG([C])
 
