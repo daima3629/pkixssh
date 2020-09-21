@@ -1597,13 +1597,16 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[ #include <glob.h> ]],
 
 # Check for g.gl_statv glob() extension
 AC_MSG_CHECKING([for gl_statv and GLOB_KEEPSTAT extensions for glob])
-AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[ #include <glob.h> ]], [[
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+#include <stdlib.h>
+#include <glob.h>
+	]], [[
 #ifndef GLOB_KEEPSTAT
 #error "glob does not support GLOB_KEEPSTAT extension"
 #endif
 glob_t g;
 g.gl_statv = NULL;
-]])],
+	]])],
 	[
 		AC_DEFINE([GLOB_HAS_GL_STATV], [1],
 			[Define if your system glob() function has
