@@ -1336,21 +1336,16 @@ AC_CHECK_FUNCS([dirname], [AC_CHECK_HEADERS([libgen.h])] , [
 			save_LIBS="$LIBS"
 			LIBS="$LIBS -lgen"
 			AC_RUN_IFELSE(
-				[AC_LANG_SOURCE([[
+				[AC_LANG_PROGRAM([[
 #include <libgen.h>
 #include <string.h>
-
-int main(int argc, char **argv) {
+				]], [[
     char *s, buf[32];
 
     strncpy(buf,"/etc", 32);
     s = dirname(buf);
-    if (!s || strncmp(s, "/", 32) != 0) {
-	exit(1);
-    } else {
-	exit(0);
-    }
-}
+    if (s == NULL || strncmp(s, "/", 32) != 0)
+	return 1;
 				]])],
 				[ ac_cv_have_broken_dirname="no" ],
 				[ ac_cv_have_broken_dirname="yes" ],
