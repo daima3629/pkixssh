@@ -1740,18 +1740,12 @@ AC_ARG_WITH(ldns,
 # Verify that ldns works.
 if test "x$LDNS_MSG" = "xyes" ; then
 	AC_MSG_CHECKING([for ldns support])
-	AC_LINK_IFELSE([AC_LANG_SOURCE([[
-#include <stdio.h>
-#include <stdlib.h>
-#ifdef HAVE_STDINT_H
-# include <stdint.h>
-#endif
+	AC_LINK_IFELSE([AC_LANG_PROGRAM([[
 #include <ldns/ldns.h>
-int main() {
-  ldns_status status = ldns_verify_trusted(NULL, NULL, NULL, NULL);
-  status = LDNS_STATUS_OK;
-  exit(0);
-}]])],
+	]],[[
+	ldns_status status = ldns_verify_trusted(NULL, NULL, NULL, NULL);
+	status = LDNS_STATUS_OK;
+	]])],
 	[AC_MSG_RESULT(yes)],
 	[
 		AC_MSG_RESULT(no)
