@@ -2628,12 +2628,15 @@ AC_CACHE_CHECK(
 # include <sys/select.h>
 #endif
 #include <sys/types.h>
-#include <sys/time.h>
-#include <stdlib.h>
+#ifdef HAVE_SYS_TIME_H
+# include <sys/time.h>
+#endif
 #include <signal.h>
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 static void sighandler(int sig) { }
 		]], [[
-	int r;
 	pid_t pid;
 	struct sigaction sa;
 
@@ -2647,11 +2650,10 @@ static void sighandler(int sig) { }
 		sleep(1);
 		if (getppid() == pid) /* if parent did not exit, shoot it */
 			kill(pid, SIGKILL);
-		exit(0);
 	} else { /* parent */
-		r = select(0, NULL, NULL, NULL, NULL);
+		int r = select(0, NULL, NULL, NULL, NULL);
+		if (r != -1) return 1;
 	}
-	exit(r == -1 ? 0 : 1);
 	]])],
 	[ssh_cv_sa_restart_work=yes],
 	[ssh_cv_sa_restart_work=no],
