@@ -4318,6 +4318,7 @@ AC_CACHE_CHECK(
 	[AC_RUN_IFELSE([AC_LANG_PROGRAM([[
 #include <sys/types.h>
 #include <stdio.h>
+#include <string.h>
 	]], [[
 size_t a = 1, b = 2;
 char z[128];
@@ -4347,6 +4348,12 @@ if test "x$ssh_snprintf_broken" = xyes ; then
 	AC_MSG_CHECKING([whether snprintf declare const char *fmt])
 	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 #include <stdio.h>
+#ifdef NO_ATTRIBUTE_ON_PROTOTYPE_ARGS
+int snprintf(char *a, size_t b, const char *c, ...)
+#else
+int snprintf(char *a, size_t b, const char *c, ...);
+__attribute__ ((__format__ (__printf__, 3, 4)));
+#endif
 int snprintf(char *a, size_t b, const char *c, ...) { return 0; }
 		]], [[
 snprintf(0, 0, 0);
