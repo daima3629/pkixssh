@@ -590,8 +590,9 @@ case "$host" in
 	AC_COMPILE_IFELSE(
 	    [AC_LANG_PROGRAM([[
 #define testmacro foo
-#define testmacro bar]],
-	    [[ exit(0); ]])],
+#define testmacro bar
+	    ]], [[
+	    ]])],
 	    [ AC_MSG_RESULT([yes]) ],
 	    [ AC_MSG_RESULT([no])
 	      CC="`echo $CC | sed 's/-qlanglvl\=ansi//g'`"
@@ -703,11 +704,12 @@ case "$host" in
 *-*-darwin*)
 	use_pie=auto
 	AC_MSG_CHECKING([if we have working getaddrinfo])
-	AC_RUN_IFELSE([AC_LANG_SOURCE([[ #include <mach-o/dyld.h>
+	AC_RUN_IFELSE([AC_LANG_SOURCE([[
+#include <mach-o/dyld.h>
 main() { if (NSVersionOfRunTimeLibrary("System") >= (60 << 16))
-		exit(0);
+		return 0;
 	else
-		exit(1);
+		return 1;
 }
 			]])],
 	[AC_MSG_RESULT([working])],
@@ -1434,26 +1436,23 @@ else
     AC_MSG_CHECKING([for possibly buggy zlib])
     AC_RUN_IFELSE([AC_LANG_PROGRAM([[
 #include <stdio.h>
-#include <stdlib.h>
 #include <zlib.h>
 	]],
 	[[
 	int a=0, b=0, c=0, d=0, n, v;
 	n = sscanf(ZLIB_VERSION, "%d.%d.%d.%d", &a, &b, &c, &d);
 	if (n != 3 && n != 4)
-		exit(1);
+		return 1;
 	v = a*1000000 + b*10000 + c*100 + d;
 	fprintf(stderr, "found zlib version %s (%d)\n", ZLIB_VERSION, v);
 
 	/* 1.1.4 is OK */
 	if (a == 1 && b == 1 && c >= 4)
-		exit(0);
+		return 0;
 
 	/* 1.2.3 and up are OK */
-	if (v >= 1020300)
-		exit(0);
-
-	exit(2);
+	if (v < 1020300)
+		return 2;
 	]])],
 	AC_MSG_RESULT([no]),
 	[ AC_MSG_RESULT([yes])
@@ -1539,10 +1538,12 @@ AC_FUNC_REALLOC
 AC_CACHE_CHECK([if calloc(0, N) returns non-null],
 	[ssh_cv_func_calloc_0_nonnull],
 AC_RUN_IFELSE(
-	[AC_LANG_PROGRAM(
-		[[ #include <stdlib.h> ]],
-		[[ void *p = calloc(0, 1); exit(p == NULL); ]]
-	)],
+	[AC_LANG_PROGRAM([[
+#include <stdlib.h>
+	]], [[
+	void *p = calloc(0, 1);
+	if (p == NULL) return 1;
+	]])],
 	[ ssh_cv_func_calloc_0_nonnull=yes ],
 	[ ssh_cv_func_calloc_0_nonnull=no ],
 	[ ssh_cv_func_calloc_0_nonnull=cross ]
@@ -1627,11 +1628,11 @@ AC_CACHE_CHECK([whether struct dirent allocates space for d_name],
 AC_RUN_IFELSE(
 	[AC_LANG_PROGRAM([[
 #include <sys/types.h>
-#include <stdlib.h>
 #include <dirent.h>]],
 	[[
 	struct dirent d;
-	exit(sizeof(d.d_name)<=sizeof(char));
+	if (sizeof(d.d_name) <= sizeof(char))
+		return 1;
 	]])],
 	[ssh_cv_dirent_allocates_space_for_d_name=yes],
 	[ssh_cv_dirent_allocates_space_for_d_name=no],
@@ -1793,11 +1794,11 @@ AC_ARG_WITH([libedit],
 		)
 		AC_MSG_CHECKING([if libedit version is compatible])
 		AC_COMPILE_IFELSE(
-		    [AC_LANG_PROGRAM([[ #include <histedit.h> ]],
-		    [[
+		    [AC_LANG_PROGRAM([[
+#include <histedit.h>
+		    ]], [[
 	int i = H_SETSIZE;
 	el_init("", NULL, NULL, NULL);
-	exit(0);
 		    ]])],
 		    [ AC_MSG_RESULT([yes]) ],
 		    [ AC_MSG_RESULT([no])
@@ -2067,12 +2068,9 @@ AC_MSG_CHECKING([for utf8 locale support])
 AC_RUN_IFELSE(
 	[AC_LANG_PROGRAM([[
 #include <locale.h>
-#include <stdlib.h>
 	]], [[
 	char *loc = setlocale(LC_CTYPE, "en_US.UTF-8");
-	if (loc != NULL)
-		exit(0);
-	exit(1);
+	if (loc == NULL) return 1;
 	]])],
 	AC_MSG_RESULT(yes),
 	[AC_MSG_RESULT(no)
@@ -2291,8 +2289,7 @@ AC_CHECK_FUNCS([realpath], [
 		char buf[PATH_MAX];
 		if (realpath("/opensshnonexistentfilename1234", buf) == NULL)
 			if (errno == ENOENT)
-				exit(1);
-		exit(0);
+				return 1;
 		]])],
 		[AC_MSG_RESULT([yes])],
 		[AC_DEFINE([BROKEN_REALPATH], [1],
@@ -2365,9 +2362,8 @@ AC_RUN_IFELSE(
 	]], [[
 	char template[]="conftest.mkstemp-test";
 	if (mkstemp(template) == -1)
-		exit(1);
+		return 1;
 	unlink(template);
-	exit(0);
 	]])],
 	[
 		AC_MSG_RESULT([no])
@@ -2392,7 +2388,6 @@ if test ! -z "$check_for_openpty_ctty_bug"; then
 #include <sys/fcntl.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <stdlib.h>
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
 #endif
@@ -2405,22 +2400,21 @@ if test ! -z "$check_for_openpty_ctty_bug"; then
 
 	pid = fork();
 	if (pid == -1) {	/* failed */
-		exit(1);
+		return 1;
 	} else if (pid > 0) {	/* parent */
 		waitpid(pid, &status, 0);
 		if (WIFEXITED(status))
-			exit(WEXITSTATUS(status));
+			return WEXITSTATUS(status);
 		else
-			exit(2);
+			return 2;
 	} else {		/* child */
 		close(0); close(1); close(2);
 		setsid();
 		openpty(&ptyfd, &ttyfd, NULL, NULL, NULL);
 		fd = open("/dev/tty", O_RDWR | O_NOCTTY);
 		if (fd != -1)
-			exit(3);	/* Acquired ctty: broken */
-		else
-			exit(0);	/* Did not acquire ctty: OK */
+			return 3;	/* Acquired ctty: broken */
+		/*else Did not acquire ctty: OK */
 	}
 		]])],
 		[
@@ -2461,7 +2455,7 @@ if test "x$ac_cv_func_getaddrinfo" = "xyes" && \
 	err = getaddrinfo(name, TEST_PORT, &hints, &gai_ai);
 	if (err != 0) {
 		fprintf(stderr, "getaddrinfo failed (%s)", gai_strerror(err));
-		exit(1);
+		return 1;
 	}
 
 	for (ai = gai_ai; ai != NULL; ai = ai->ai_next) {
@@ -2478,7 +2472,7 @@ if test "x$ac_cv_func_getaddrinfo" = "xyes" && \
 			else
 				fprintf(stderr, "getnameinfo failed: %s\n",
 				    gai_strerror(err));
-			exit(2);
+			return 2;
 		}
 
 		sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
@@ -2486,10 +2480,9 @@ if test "x$ac_cv_func_getaddrinfo" = "xyes" && \
 			perror("socket");
 		if (bind(sock, ai->ai_addr, ai->ai_addrlen) == -1) {
 			if (errno == EBADF)
-				exit(3);
+				return 3;
 		}
 	}
-	exit(0);
 		]])],
 		[
 			AC_MSG_RESULT([yes])
@@ -2529,7 +2522,7 @@ if test "x$ac_cv_func_getaddrinfo" = "xyes" && \
 	err = getaddrinfo(name, TEST_PORT, &hints, &gai_ai);
 	if (err != 0) {
 		fprintf(stderr, "getaddrinfo failed (%s)", gai_strerror(err));
-		exit(1);
+		return 1;
 	}
 
 	for (ai = gai_ai; ai != NULL; ai = ai->ai_next) {
@@ -2542,10 +2535,9 @@ if test "x$ac_cv_func_getaddrinfo" = "xyes" && \
 
 		if (ai->ai_family == AF_INET && err != 0) {
 			perror("getnameinfo");
-			exit(2);
+			return 2;
 		}
 	}
-	exit(0);
 		]])],
 		[
 			AC_MSG_RESULT([yes])
@@ -2572,8 +2564,10 @@ fi
 
 if test "x$check_for_conflicting_getspnam" = "x1"; then
 	AC_MSG_CHECKING([for conflicting getspnam in shadow.h])
-	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[ #include <shadow.h> ]],
-		[[ exit(0); ]])],
+	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+#include <shadow.h>
+		]], [[
+		]])],
 		[
 			AC_MSG_RESULT([no])
 		],
@@ -2600,17 +2594,16 @@ if test "x$ac_cv_func_strnvis" = "xyes"; then
 	AC_RUN_IFELSE(
 		[AC_LANG_PROGRAM([[
 #include <signal.h>
-#include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <vis.h>
 static void sighandler(int sig) { _exit(1); }
 		]], [[
 	char dst[16];
 
 	signal(SIGSEGV, sighandler);
-	if (strnvis(dst, "src", 4, 0) && strcmp(dst, "src") == 0)
-		exit(0);
-	exit(1)
+	if (strnvis(dst, "src", 4, 0) != 4 || strcmp(dst, "src") != 0)
+		return 1;
 		]])],
 		[AC_MSG_RESULT([yes])],
 		[AC_MSG_RESULT([no])
@@ -3493,11 +3486,12 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM([[
 		#include <linux/seccomp.h>
 		#include <stdlib.h>
 		#include <sys/prctl.h>
-	]],
-	[[ int i = $seccomp_audit_arch;
+	]], [[
+	   int i = $seccomp_audit_arch;
 	   errno = 0;
 	   prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, NULL, 0, 0);
-	   exit(errno == EFAULT ? 0 : 1); ]])],
+	   if (errno != EFAULT) return 1;
+	]])],
 	[ AC_MSG_RESULT([yes]) ], [
 		AC_MSG_RESULT([no])
 		# Disable seccomp filter as a target
@@ -3551,7 +3545,7 @@ AC_RUN_IFELSE(
 	tv.tv_sec = 1;
 	tv.tv_usec = 0;
 	r = select(fd+1, &fds, NULL, NULL, &tv);
-	exit (r == -1 ? 1 : 0);
+	if (r == -1) return 1;
 	]])],
 	[AC_MSG_RESULT([yes])
 	 select_works_with_rlimit=yes],
@@ -3570,14 +3564,13 @@ AC_RUN_IFELSE(
 #endif
 #include <sys/resource.h>
 #include <errno.h>
-#include <stdlib.h>
 	]],[[
 	struct rlimit rl_zero;
 	int r;
 
 	rl_zero.rlim_cur = rl_zero.rlim_max = 0;
 	r = setrlimit(RLIMIT_NOFILE, &rl_zero);
-	exit (r == -1 ? 1 : 0);
+	if (r == -1) return 1;
 	]])],
 	[AC_MSG_RESULT([yes])
 	 rlimit_nofile_zero_works=yes],
@@ -3591,15 +3584,17 @@ AC_MSG_CHECKING([if setrlimit RLIMIT_FSIZE works])
 AC_RUN_IFELSE(
 	[AC_LANG_PROGRAM([[
 #include <sys/types.h>
+#ifdef HAVE_SYS_TIME_H
+# include <sys/time.h>
+#endif
 #include <sys/resource.h>
-#include <stdlib.h>
 	]],[[
 	struct rlimit rl_zero;
 	int r;
 
 	rl_zero.rlim_cur = rl_zero.rlim_max = 0;
 	r = setrlimit(RLIMIT_FSIZE, &rl_zero);
-	exit(r == -1 ? 1 : 0);
+	if (r == -1) return 1;
 	]])],
 	[AC_MSG_RESULT([yes])],
 	[AC_MSG_RESULT([no])
@@ -3743,7 +3738,7 @@ fprint_ll(FILE *f, long long n)
 	long long i, llmin, llmax = 0;
 
 	if((f = fopen(DATA,"w")) == NULL)
-		exit(1);
+		return 1;
 
 #if defined(LLONG_MIN) && defined(LLONG_MAX)
 	fprintf(stderr, "Using system header for LLONG_MIN and LLONG_MAX\n");
@@ -3762,16 +3757,15 @@ fprint_ll(FILE *f, long long n)
 	    || llmax - 1 > llmax || llmin == llmax || llmin == 0
 	    || llmax == 0 || llmax < LONG_MAX || llmin > LONG_MIN) {
 		fprintf(f, "unknown unknown\n");
-		exit(2);
+		return 2;
 	}
 
 	if (fprint_ll(f, llmin) < 0)
-		exit(3);
+		return 3;
 	if (fprint_ll(f, llmax) < 0)
-		exit(4);
+		return 4;
 	if (fclose(f) < 0)
-		exit(5);
-	exit(0);
+		return 5;
 		]])],
 		[
 			llong_min=`$AWK '{print $1}' conftest.llminmax`
@@ -4348,12 +4342,11 @@ if test "x$ssh_snprintf_broken" = xyes ; then
 	AC_MSG_CHECKING([whether snprintf declare const char *fmt])
 	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 #include <stdio.h>
-#ifdef NO_ATTRIBUTE_ON_PROTOTYPE_ARGS
 int snprintf(char *a, size_t b, const char *c, ...)
-#else
-int snprintf(char *a, size_t b, const char *c, ...);
-__attribute__ ((__format__ (__printf__, 3, 4)));
+#ifndef NO_ATTRIBUTE_ON_PROTOTYPE_ARGS
+__attribute__ ((__format__ (__printf__, 3, 4)))
 #endif
+;
 int snprintf(char *a, size_t b, const char *c, ...) { return 0; }
 		]], [[
 snprintf(0, 0, 0);
@@ -4450,15 +4443,13 @@ AC_CACHE_CHECK([for msg_accrights field in struct msghdr],
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
-#include <stdlib.h>
 		]], [[
 #ifdef msg_accrights
 #error "msg_accrights is a macro"
-exit(1);
+return 1;
 #endif
 struct msghdr m;
 m.msg_accrights = 0;
-exit(0);
 		]])],
 		[ ac_cv_have_accrights_in_msghdr="yes" ],
 		[ ac_cv_have_accrights_in_msghdr="no" ]
@@ -4516,15 +4507,13 @@ AC_CACHE_CHECK([for msg_control field in struct msghdr],
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
-#include <stdlib.h>
 		]], [[
 #ifdef msg_control
 #error "msg_control is a macro"
-exit(1);
+return 1;
 #endif
 struct msghdr m;
 m.msg_control = 0;
-exit(0);
 		]])],
 		[ ac_cv_have_control_in_msghdr="yes" ],
 		[ ac_cv_have_control_in_msghdr="no" ]
@@ -4931,8 +4920,6 @@ AC_ARG_WITH([maildir],
 	    AC_RUN_IFELSE(
 		[AC_LANG_PROGRAM([[
 #include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
 #ifdef HAVE_PATHS_H
 #include <paths.h>
 #endif
@@ -4946,22 +4933,20 @@ AC_ARG_WITH([maildir],
 
 	fd = fopen(DATA,"w");
 	if(fd == NULL)
-		exit(1);
+		return 1;
 
 #if defined (_PATH_MAILDIR)
 	if ((rc = fprintf(fd ,"_PATH_MAILDIR:%s\n", _PATH_MAILDIR)) <0)
-		exit(1);
+		return 1;
 #elif defined (MAILDIR)
 	if ((rc = fprintf(fd ,"MAILDIR:%s\n", MAILDIR)) <0)
-		exit(1);
+		return 1;
 #elif defined (_PATH_MAIL)
 	if ((rc = fprintf(fd ,"_PATH_MAIL:%s\n", _PATH_MAIL)) <0)
-		exit(1);
+		return 1;
 #else
-	exit (2);
+	return 2;
 #endif
-
-	exit(0);
 		]])],
 		[
 		    maildir_what=`awk -F: '{print $1}' conftest.maildir`
@@ -5195,12 +5180,10 @@ otherwise scp will not work.])
 
 	fd = fopen(DATA,"w");
 	if(fd == NULL)
-		exit(1);
+		return 1;
 
 	if ((rc = fprintf(fd,"%s", _PATH_STDPATH)) < 0)
-		exit(1);
-
-	exit(0);
+		return 1;
 		]])],
 		[ user_path=`cat conftest.stdpath` ],
 		[ user_path="/usr/bin:/bin:/usr/sbin:/sbin" ],
