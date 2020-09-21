@@ -2820,7 +2820,7 @@ if test "x$openssl" = "xyes" ; then
 		const char *ver_s = OPENSSL_VERSION_TEXT;
 
 		fd = fopen(DATA,"w");
-		if(fd == NULL) return 1;
+		if (fd == NULL) return 1;
 	#ifdef HAVE_OPENSSL_VERSION_MAJOR
 		rc = fprintf(fd, "%u.%u.%u (%s)\n",
 			(unsigned)OPENSSL_VERSION_MAJOR,
@@ -2854,7 +2854,6 @@ if test "x$openssl" = "xyes" ; then
 	AC_RUN_IFELSE(
 		[AC_LANG_PROGRAM([[
 	#include <stdio.h>
-	#include <string.h>
 	#include <openssl/crypto.h>
 	#define DATA "conftest.ssllibver"
 		]], [[
@@ -2868,7 +2867,7 @@ if test "x$openssl" = "xyes" ; then
 	#endif
 
 		fd = fopen(DATA,"w");
-		if(fd == NULL) return 1;
+		if (fd == NULL) return 1;
 	#ifdef HAVE_OPENSSL_VERSION_MAJOR
 		rc = fprintf(fd, "%u.%u.%u (%s)\n",
 			OPENSSL_version_major(),
@@ -2906,7 +2905,6 @@ if test "x$openssl" = "xyes" ; then
 	AC_MSG_CHECKING([whether OpenSSL's headers match the library])
 	AC_RUN_IFELSE(
 		[AC_LANG_PROGRAM([[
-	#include <string.h>
 	#include <openssl/crypto.h>
 		]], [[
 	#ifdef HAVE_OPENSSL_VERSION_MAJOR
@@ -2966,10 +2964,11 @@ if test "x$openssl" = "xyes" ; then
 	AC_MSG_CHECKING([whether OpenSSL has crippled AES support])
 	AC_LINK_IFELSE(
 		[AC_LANG_PROGRAM([[
-	#include <string.h>
 	#include <openssl/evp.h>
 		]], [[
-		exit(EVP_aes_192_cbc() == NULL || EVP_aes_256_cbc() == NULL);
+		if (EVP_aes_192_cbc() == NULL ||
+		    EVP_aes_256_cbc() == NULL)
+			return 1;
 		]])],
 		[
 			AC_MSG_RESULT([no])
@@ -2985,12 +2984,12 @@ if test "x$openssl" = "xyes" ; then
 	AC_MSG_CHECKING([whether OpenSSL has AES CTR via EVP])
 	AC_LINK_IFELSE(
 		[AC_LANG_PROGRAM([[
-	#include <string.h>
 	#include <openssl/evp.h>
 		]], [[
-		exit(EVP_aes_128_ctr() == NULL ||
+		if (EVP_aes_128_ctr() == NULL ||
 		    EVP_aes_192_ctr() == NULL ||
-		    EVP_aes_256_ctr() == NULL);
+		    EVP_aes_256_ctr() == NULL)
+			return 1;
 		]])],
 		[
 			AC_MSG_RESULT([yes])
@@ -3006,16 +3005,16 @@ if test "x$openssl" = "xyes" ; then
 	AC_MSG_CHECKING([whether OpenSSL has AES GCM via EVP])
 	AC_LINK_IFELSE(
 		[AC_LANG_PROGRAM([[
-	#include <string.h>
 	#include <openssl/evp.h>
 		]], [[
-		exit(EVP_aes_128_gcm() == NULL ||
+		if (EVP_aes_128_gcm() == NULL ||
 		    EVP_aes_256_gcm() == NULL ||
 		    EVP_CTRL_GCM_SET_IV_FIXED == 0 ||
 		    EVP_CTRL_GCM_IV_GEN == 0 ||
 		    EVP_CTRL_GCM_SET_TAG == 0 ||
 		    EVP_CTRL_GCM_GET_TAG == 0 ||
-		    EVP_CIPHER_CTX_ctrl(NULL, 0, 0, NULL) == 0);
+		    EVP_CIPHER_CTX_ctrl(NULL, 0, 0, NULL) == 0)
+			return 1;
 		]])],
 		[
 			AC_MSG_RESULT([yes])
@@ -3150,7 +3149,8 @@ if test "x$openssl" = "xyes" ; then
 			]],[[
 			EC_KEY *e = EC_KEY_new_by_curve_name(NID_secp521r1);
 			const EVP_MD *m = EVP_sha512(); /* We need this too */
-			exit(e == NULL || m == NULL);
+			if (e == NULL || m == NULL)
+				return 1;
 			]])],
 			[ssh_cv_working_secp521r1=yes],
 			[ssh_cv_working_secp521r1=no]
@@ -3271,10 +3271,10 @@ if test "x$openssl" = "xyes" ; then
 	AC_MSG_CHECKING([whether OpenSSL's PRNG is internally seeded])
 	AC_RUN_IFELSE(
 		[AC_LANG_PROGRAM([[
-	#include <string.h>
 	#include <openssl/rand.h>
 		]], [[
-		exit(RAND_status() == 1 ? 0 : 1);
+		if (RAND_status() != 1)
+			return 1;
 		]])],
 		[
 			OPENSSL_SEEDS_ITSELF=yes
@@ -5440,19 +5440,12 @@ ssh_x509dn_email=yes
 if test "x$ssh_x509store" = "xyes"; then
 	# Check for Email in X.509 'Distinguished Name'
 	AC_MSG_CHECKING([for Email in X.509 'Distinguished Name'])
-	AC_RUN_IFELSE(
-	[AC_LANG_SOURCE([
+	AC_RUN_IFELSE([AC_LANG_PROGRAM([[
 #include <openssl/evp.h>
-
-int main(void) {
-  int nid;
-  nid = OBJ_txt2nid("Email");
-  if (nid == NID_undef)
-    exit (1);
-  exit (0);
-  return (0);
-}
-	])],
+	]], [[
+	int nid = OBJ_txt2nid("Email");
+	if (nid == NID_undef) return 1;
+	]])],
 	[	AC_MSG_RESULT(yes)	],
 	[
 		AC_MSG_RESULT(no)
