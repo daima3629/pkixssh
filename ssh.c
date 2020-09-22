@@ -2257,13 +2257,15 @@ ssh_session2(struct ssh *ssh, struct passwd *pw)
 	 * as it may want to write to stdout.
 	 */
 	if (!need_controlpersist_detach) {
-		if ((devnull = open(_PATH_DEVNULL, O_WRONLY)) == -1)
+		if ((devnull = open(_PATH_DEVNULL, O_WRONLY)) == -1) {
 			error("%s: open %s: %s", __func__,
 			    _PATH_DEVNULL, strerror(errno));
-		if (dup2(devnull, STDOUT_FILENO) == -1)
-			fatal("%s: dup2() stdout failed", __func__);
-		if (devnull > STDERR_FILENO)
-			close(devnull);
+		} else {
+			if (dup2(devnull, STDOUT_FILENO) == -1)
+				fatal("%s: dup2() stdout failed", __func__);
+			if (devnull > STDERR_FILENO)
+				close(devnull);
+		}
 	}
 
 	/*
