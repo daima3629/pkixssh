@@ -23,20 +23,22 @@
  */
 
 #include "x509store.h"
-#include "ssh_ldap.h"
+#ifdef LDAP_ENABLED
+# include "ssh_ldap.h"
+#endif
 #include <openssl/x509v3.h>
-#include "log.h"
-
-#include <string.h>
+#include <openssl/x509_vfy.h>
 #include <openssl/err.h>
 
+#include <string.h>
+
+#ifdef LDAP_ENABLED
+# include "x509_by_ldap.h"
+#endif
+#include "log.h"
 #include "xmalloc.h"
 #include "pathnames.h"
 #include "misc.h"
-#include <openssl/x509_vfy.h>
-#ifdef LDAP_ENABLED
-#  include "x509_by_ldap.h"
-#endif
 
 #if 0 /* enable if check below is not suitable for you build environment */
 /* work-around if attribute X509_VERIFY_PARAM.check_time is not accessible */
