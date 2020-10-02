@@ -1,4 +1,4 @@
-/* $OpenBSD: readpass.c,v 1.62 2020/07/14 23:57:01 djm Exp $ */
+/* $OpenBSD: readpass.c,v 1.63 2020/08/11 09:45:54 djm Exp $ */
 /*
  * Copyright (c) 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2019-2020 Roumen Petrov.  All rights reserved.

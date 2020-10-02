@@ -1,4 +1,4 @@
-/* $OpenBSD: auth-options.c,v 1.92 2020/03/06 18:15:38 markus Exp $ */
+/* $OpenBSD: auth-options.c,v 1.93 2020/08/27 01:07:09 djm Exp $ */
 /*
  * Copyright (c) 2018 Damien Miller <djm@mindrot.org>
  *
