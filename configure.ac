@@ -3130,7 +3130,7 @@ if test "x$openssl" = "xyes" ; then
 		const EVP_MD *m = EVP_sha512(); /* We need this too */
 		]])],
 		[ AC_MSG_RESULT([yes])
-		  AC_CACHE_CHECK([if OpenSSL's NID_secp521r1 is functional],[ssh_cv_working_secp521r1],[
+		  AC_CACHE_CHECK([if OpenSSL's curve secp521r1 is functional],[ssh_cv_working_secp521r1],[
 		  AC_RUN_IFELSE(
 			[AC_LANG_PROGRAM([[
 	#include <openssl/ec.h>
@@ -3146,8 +3146,13 @@ if test "x$openssl" = "xyes" ; then
 				return 1;
 			]])],
 			[ssh_cv_working_secp521r1=yes],
-			[ssh_cv_working_secp521r1=no]
+			[ssh_cv_working_secp521r1=no],
+			[ssh_cv_working_secp521r1=cross]
 		  )])
+		  if test "x$ssh_cv_working_secp521r1" = xcross ; then
+			AC_MSG_WARN([cross compiling: assuming functional secp521r1 curve])
+			ssh_cv_working_secp521r1=yes
+		  fi
 		  if test "x$ssh_cv_working_secp521r1" = xyes ; then
 			enable_nistp521=1
 		  fi
