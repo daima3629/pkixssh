@@ -32,7 +32,9 @@
 #include <sha1.h>
 #endif
 #ifdef HAVE_SHA2_H
-#include <sha2.h>
+# include <sha2.h>
+#else
+# include "openbsd-compat/sha2.h"
 #endif
 
 #include "ssherr.h"

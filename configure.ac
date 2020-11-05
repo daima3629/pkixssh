@@ -420,7 +420,6 @@ AC_CHECK_HEADERS([ \
 	blf.h \
 	bstring.h \
 	crypt.h \
-	crypto/sha2.h \
 	dirent.h \
 	endian.h \
 	elf.h \

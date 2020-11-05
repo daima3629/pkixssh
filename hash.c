@@ -23,6 +23,8 @@ crypto_hash_sha512(unsigned char *out, const unsigned char *in,
 #elif defined(HAVE_SHA512UPDATE)
 # ifdef HAVE_SHA2_H
 #  include <sha2.h>
+# else
+#  include "openbsd-compat/sha2.h"
 # endif
 
 int
