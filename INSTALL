@@ -104,7 +104,7 @@ https://nlnetlabs.nl/projects/ldns/
 Autoconf:
 
 If you modify configure.ac or configure doesn't exist (eg if you checked
-the code out of git yourself) then you will need autoconf (2.59+) and
+the code out of git yourself) then you will need autoconf (2.60+) and
 aclocal (from automake) to rebuild the automatically generated files by
 running "autoreconf".
 

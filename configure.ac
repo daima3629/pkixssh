@@ -14,18 +14,22 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-AC_PREREQ([2.59])
+AC_PREREQ([2.60])
 m4_include([version.m4])
 
 AC_INIT([SSH_PACKAGE], [SSH_VERSION], [SSH_BUGREPORT], [openssh], [SSH_URL])
 AC_CONFIG_SRCDIR([ssh.c])
 m4_include([m4/local.m4])
 m4_include([m4/ldap.m4])
-AC_LANG([C])
 
 AC_CONFIG_HEADER([config.h])
-AC_PROG_CC
+
 AC_CANONICAL_HOST
+
+AC_PROG_CC_C99
+if test "x$ac_cv_prog_cc_c99" = "xno" ; then
+	AC_MSG_ERROR([*** PKIX-SSH requires a C99 capable compiler ***])
+fi
 AC_C_BIGENDIAN
 
 # Checks for programs.
@@ -284,6 +288,7 @@ int main(int argc, char* argv[]) {
 	    done
 	fi
 
+	# TODO: remove check as C99 is required
 	if test -z "$have_llong_max"; then
 		# retry LLONG_MAX with -std=gnu99, needed on some Linuxes
 		unset ac_cv_have_decl_LLONG_MAX
@@ -3697,6 +3702,7 @@ if test "x$ac_cv_sizeof_long_long_int" = "x4" ; then
 	ac_cv_sizeof_long_long_int=0
 fi
 
+# TODO: remove computation as C99 is required
 # compute LLONG_MIN and LLONG_MAX if we don't know them.
 if test -z "$have_llong_max"; then
 	AC_MSG_CHECKING([for max value of long long])
