@@ -35,8 +35,6 @@
 # Shell script to install your public key(s) on a remote machine
 # See the ssh-copy-id(1) man page for details
 
-# shellcheck shell=dash
-
 # check that we have something mildly sane as our shell, or try to find something better
 if false ^ printf "%s: WARNING: ancient shell, hunting for a more modern one... " "$0"
 then
@@ -60,7 +58,6 @@ then
   fi
 fi
 
-# shellcheck disable=SC2010
 DEFAULT_PUB_ID_FILE=$(ls -t "${HOME}"/.ssh/id*.pub 2>/dev/null | grep -v -- '-cert.pub$' | head -n 1)
 
 usage () {
@@ -156,12 +153,10 @@ SSH_OPTS="${SSH_OPTS:+$SSH_OPTS }'$(quote "$USER_HOST")'"
 # and populate "$@" for later use (only way to get proper quoting of options)
 eval set -- "$SSH_OPTS"
 
-# shellcheck disable=SC2086
 if [ -z "$(eval $GET_ID)" ] && [ -r "${PUB_ID_FILE:=$DEFAULT_PUB_ID_FILE}" ] ; then
   use_id_file "$PUB_ID_FILE"
 fi
 
-# shellcheck disable=SC2086
 if [ -z "$(eval $GET_ID)" ] ; then
   printf '%s: ERROR: No identities found\n' "$0" >&2
   exit 1
@@ -172,7 +167,6 @@ fi
 populate_new_ids() {
   L_SUCCESS="$1"
 
-  # shellcheck disable=SC2086
   if [ "$FORCED" ] ; then
     NEW_IDS=$(eval $GET_ID)
     return
@@ -188,10 +182,8 @@ populate_new_ids() {
     exit 1
   fi
   L_CLEANUP="rm -f \"$L_TMP_ID_FILE\" \"${L_TMP_ID_FILE}.stderr\""
-  # shellcheck disable=SC2064
   trap "$L_CLEANUP" EXIT TERM INT QUIT
   printf '%s: INFO: attempting to log in with the new key(s), to filter out any that are already installed\n' "$0" >&2
-  # shellcheck disable=SC2086
   NEW_IDS=$(
     eval $GET_ID | {
       while read -r ID || [ "$ID" ] ; do
@@ -269,7 +261,6 @@ EOF
 REMOTE_VERSION=$(ssh -v -o PreferredAuthentications=',' -o ControlPath=none "$@" 2>&1 |
                  sed -ne 's/.*remote software version //p')
 
-# shellcheck disable=SC2029
 case "$REMOTE_VERSION" in
   NetScreen*)
     populate_new_ids 1
