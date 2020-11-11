@@ -87,7 +87,7 @@ use_id_file() {
     PUB_ID_FILE="$L_ID_FILE.pub"
   fi
 
-  [ "$FORCED" ] || PRIV_ID_FILE=$(dirname "$PUB_ID_FILE")/$(basename "$PUB_ID_FILE" .pub)
+  $FORCED || PRIV_ID_FILE=$(dirname "$PUB_ID_FILE")/$(basename "$PUB_ID_FILE" .pub)
 
   # check that the files are readable
   for f in "$PUB_ID_FILE" ${PRIV_ID_FILE:+"$PRIV_ID_FILE"} ; do
@@ -106,26 +106,28 @@ if [ -n "$SSH_AUTH_SOCK" ] && ssh-add -L >/dev/null 2>&1 ; then
   GET_ID="ssh-add -L"
 fi
 
+SEEN_OPT_I=false
+FORCED=false
+DRY_RUN=false
 while getopts "i:o:p:F:fnh?" OPT
 do
-
   case "$OPT" in
     i)
-      [ "${SEEN_OPT_I}" ] && {
+      if $SEEN_OPT_I ; then
         printf '\n%s: ERROR: -i option must not be specified more than once\n\n' "$0"
         usage
-      }
-      SEEN_OPT_I="yes"
+      fi
+      SEEN_OPT_I=:
       use_id_file "${OPTARG:-$DEFAULT_PUB_ID_FILE}"
       ;;
     o|p|F)
       SSH_OPTS="${SSH_OPTS:+$SSH_OPTS }-$OPT '$(quote "${OPTARG}")'"
       ;;
     f)
-      FORCED=1
+      FORCED=:
       ;;
     n)
-      DRY_RUN=1
+      DRY_RUN=:
       ;;
     h|\?)
       usage
@@ -134,9 +136,6 @@ do
 done 
 #shift all args to keep only USER_HOST
 shift `expr $OPTIND - 1`
-
-
-
 
 if [ $# = 0 ] ; then
   usage
@@ -167,7 +166,7 @@ fi
 populate_new_ids() {
   L_SUCCESS="$1"
 
-  if [ "$FORCED" ] ; then
+  if $FORCED ; then
     NEW_IDS=$(eval $GET_ID)
     return
   fi
@@ -270,7 +269,7 @@ case "$REMOTE_VERSION" in
          printf '%s: WARNING: Non-dsa key (#%d) skipped (NetScreen only supports DSA keys)\n' "$0" "$KEY_NO" >&2
          continue
       }
-      [ "$DRY_RUN" ] || printf 'set ssh pka-dsa key %s\nsave\nexit\n' "$KEY" | ssh -T "$@" >/dev/null 2>&1
+      $DRY_RUN || printf 'set ssh pka-dsa key %s\nsave\nexit\n' "$KEY" | ssh -T "$@" >/dev/null 2>&1
       if [ $? = 255 ] ; then
         printf '%s: ERROR: installation of key #%d failed (please report a bug describing what caused this, so that we can make this message useful)\n' "$0" "$KEY_NO" >&2
       else
@@ -283,22 +282,26 @@ case "$REMOTE_VERSION" in
     ;;
   dropbear*)
     populate_new_ids 0
-    [ "$DRY_RUN" ] || printf '%s\n' "$NEW_IDS" | \
+    if ! $DRY_RUN ; then
+      printf '%s\n' "$NEW_IDS" | \
       ssh "$@" "$(installkeys_sh /etc/dropbear/authorized_keys)" \
       || exit 1
+    fi
     ADDED=$(printf '%s\n' "$NEW_IDS" | wc -l)
     ;;
   *)
     # Assuming that the remote host treats ~/.ssh/authorized_keys as one might expect
     populate_new_ids 0
-    [ "$DRY_RUN" ] || printf '%s\n' "$NEW_IDS" | \
+    if ! $DRY_RUN ; then
+      printf '%s\n' "$NEW_IDS" | \
       ssh "$@" "$(installkeys_sh)" \
       || exit 1
+    fi
     ADDED=$(printf '%s\n' "$NEW_IDS" | wc -l)
     ;;
 esac
 
-if [ "$DRY_RUN" ] ; then
+if $DRY_RUN ; then
   cat <<-EOF
 	=-=-=-=-=-=-=-=
 	Would have added the following key(s):
