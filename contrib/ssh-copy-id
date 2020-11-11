@@ -76,7 +76,7 @@ quote() {
 use_id_file() {
   L_ID_FILE="$1"
 
-  if [ -z "$L_ID_FILE" ] ; then
+  if test -z "$L_ID_FILE" ; then
     printf '%s: ERROR: no ID file found\n' "$0"
     exit 1
   fi
@@ -93,7 +93,7 @@ use_id_file() {
   for f in "$PUB_ID_FILE" ${PRIV_ID_FILE:+"$PRIV_ID_FILE"} ; do
     ErrMSG=$( { : < "$f" ; } 2>&1 ) || {
       L_PRIVMSG=""
-      [ "$f" = "$PRIV_ID_FILE" ] && L_PRIVMSG="	(to install the contents of '$PUB_ID_FILE' anyway, look at the -f option)"
+      test "$f" = "$PRIV_ID_FILE" && L_PRIVMSG="	(to install the contents of '$PUB_ID_FILE' anyway, look at the -f option)"
       printf "\\n%s: ERROR: failed to open ID file '%s': %s\\n" "$0" "$f" "$(printf '%s\n%s\n' "$ErrMSG" "$L_PRIVMSG" | sed -e 's/.*: *//')"
       exit 1
     }
@@ -102,7 +102,7 @@ use_id_file() {
   GET_ID="cat \"$PUB_ID_FILE\""
 }
 
-if [ -n "$SSH_AUTH_SOCK" ] && ssh-add -L >/dev/null 2>&1 ; then
+if test -n "$SSH_AUTH_SOCK" && ssh-add -L >/dev/null 2>&1 ; then
   GET_ID="ssh-add -L"
 fi
 
@@ -137,10 +137,10 @@ done
 #shift all args to keep only USER_HOST
 shift `expr $OPTIND - 1`
 
-if [ $# = 0 ] ; then
+if test $# = 0 ; then
   usage
 fi
-if [ $# != 1 ] ; then
+if test $# != 1 ; then
   printf '%s: ERROR: Too many arguments.  Expecting a target hostname, got: %s\n\n' "$0" "$SAVEARGS" >&2
   usage
 fi
@@ -152,11 +152,11 @@ SSH_OPTS="${SSH_OPTS:+$SSH_OPTS }'$(quote "$USER_HOST")'"
 # and populate "$@" for later use (only way to get proper quoting of options)
 eval set -- "$SSH_OPTS"
 
-if [ -z "$(eval $GET_ID)" ] && [ -r "${PUB_ID_FILE:=$DEFAULT_PUB_ID_FILE}" ] ; then
+if test -z "$(eval $GET_ID)" && test -r "${PUB_ID_FILE:=$DEFAULT_PUB_ID_FILE}" ; then
   use_id_file "$PUB_ID_FILE"
 fi
 
-if [ -z "$(eval $GET_ID)" ] ; then
+if test -z "$(eval $GET_ID)" ; then
   printf '%s: ERROR: No identities found\n' "$0" >&2
   exit 1
 fi
@@ -213,7 +213,7 @@ populate_new_ids() {
     printf '\n%s: %s\n\n' "$0" "$NEW_IDS" >&2
     exit 1
   fi
-  if [ -z "$NEW_IDS" ] ; then
+  if test -z "$NEW_IDS" ; then
     printf '\n%s: WARNING: All keys were skipped because they already exist on the remote system.\n' "$0" >&2
     printf '\t\t(if you think this is a mistake, you may want to use -f option)\n\n' >&2
     exit 0
@@ -240,7 +240,7 @@ cat <<EOF
 	cd;
 	umask 077;
 	mkdir -p $(dirname "${AUTH_KEY_FILE}") &&
-	  { [ -z \`tail -1c ${AUTH_KEY_FILE} 2>/dev/null\` ] || echo >> ${AUTH_KEY_FILE}; } &&
+	  { test -z \`tail -1c ${AUTH_KEY_FILE} 2>/dev/null\` || echo >> ${AUTH_KEY_FILE}; } &&
 	  cat >> ${AUTH_KEY_FILE} ||
 	  exit 1;
 	if type restorecon >/dev/null 2>&1; then
@@ -279,13 +279,13 @@ case "$REMOTE_VERSION" in
          continue
       }
       $DRY_RUN || printf 'set ssh pka-dsa key %s\nsave\nexit\n' "$KEY" | ssh -T "$@" >/dev/null 2>&1
-      if [ $? = 255 ] ; then
+      if test $? = 255 ; then
         printf '%s: ERROR: installation of key #%d failed (please report a bug describing what caused this, so that we can make this message useful)\n' "$0" "$KEY_NO" >&2
       else
         ADDED=`expr $ADDED + 1`
       fi
     done
-    if [ -z "$ADDED" ] ; then
+    if test -z "$ADDED" ; then
       exit 1
     fi
     ;;
