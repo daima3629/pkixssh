@@ -59,6 +59,7 @@ then
 fi
 
 DEFAULT_PUB_ID_FILE=$(ls -t "${HOME}"/.ssh/id*.pub 2>/dev/null | grep -v -- '-cert.pub$' | head -n 1)
+SSH="ssh -a -x"
 
 usage () {
   printf 'Usage: %s [-h|-?|-f|-n] [-i [identity_file]] [-p port] [-F alternative ssh_config file] [[-o <ssh -o options>] ...] [user@]hostname\n' "$0" >&2
@@ -178,7 +179,7 @@ filter_ids() {
     # assumption will break if we implement the possibility of multiple -i options.
     # The point being that if file based, ssh needs the private key, which it cannot
     # find if only given the contents of the .pub file in an unrelated tmpfile
-    ssh -i "${PRIV_ID_FILE:-$L_TMP_ID_FILE}" \
+    $SSH -i "${PRIV_ID_FILE:-$L_TMP_ID_FILE}" \
       -o ControlPath=none \
       -o LogLevel=INFO \
       -o PreferredAuthentications=publickey \
@@ -266,7 +267,7 @@ else
   exit 1
 fi
 
-REMOTE_VERSION=$(ssh -v -o PreferredAuthentications=',' -o ControlPath=none "$@" 2>&1 |
+REMOTE_VERSION=$($SSH -v -o PreferredAuthentications=',' -o ControlPath=none "$@" 2>&1 |
                  sed -ne 's/.*remote software version //p')
 
 case "$REMOTE_VERSION" in
@@ -278,7 +279,7 @@ case "$REMOTE_VERSION" in
          printf '%s: WARNING: Non-dsa key (#%d) skipped (NetScreen only supports DSA keys)\n' "$0" "$KEY_NO" >&2
          continue
       }
-      $DRY_RUN || printf 'set ssh pka-dsa key %s\nsave\nexit\n' "$KEY" | ssh -T "$@" >/dev/null 2>&1
+      $DRY_RUN || printf 'set ssh pka-dsa key %s\nsave\nexit\n' "$KEY" | $SSH -T "$@" >/dev/null 2>&1
       if test $? = 255 ; then
         printf '%s: ERROR: installation of key #%d failed (please report a bug describing what caused this, so that we can make this message useful)\n' "$0" "$KEY_NO" >&2
       else
@@ -293,7 +294,7 @@ case "$REMOTE_VERSION" in
     populate_new_ids 0
     if ! $DRY_RUN ; then
       printf '%s\n' "$NEW_IDS" | \
-      ssh "$@" "$(installkeys_sh /etc/dropbear/authorized_keys)" \
+      $SSH "$@" "$(installkeys_sh /etc/dropbear/authorized_keys)" \
       || exit 1
     fi
     ADDED=$(printf '%s\n' "$NEW_IDS" | wc -l)
@@ -303,7 +304,7 @@ case "$REMOTE_VERSION" in
     populate_new_ids 0
     if ! $DRY_RUN ; then
       printf '%s\n' "$NEW_IDS" | \
-      ssh "$@" "$(installkeys_sh)" \
+      $SSH "$@" "$(installkeys_sh)" \
       || exit 1
     fi
     ADDED=$(printf '%s\n' "$NEW_IDS" | wc -l)
