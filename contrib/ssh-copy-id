@@ -165,6 +165,8 @@ fi
 # and has the side effect of setting $NEW_IDS
 populate_new_ids() {
   L_SUCCESS="$1"
+  L_TMP_ID_FILE="$SCRATCH_DIR"/popids_tmp_id
+  L_OUTPUT_FILE="$SCRATCH_DIR"/popids_output
 
   if $FORCED ; then
     NEW_IDS=$(eval $GET_ID)
@@ -175,13 +177,7 @@ populate_new_ids() {
   eval set -- "$SSH_OPTS"
 
   umask 0177
-  L_TMP_ID_FILE=$(mktemp ~/.ssh/ssh-copy-id_id.XXXXXXXXXX)
-  if test $? -ne 0 || test "x$L_TMP_ID_FILE" = "x" ; then
-    printf '%s: ERROR: mktemp failed\n' "$0" >&2
-    exit 1
-  fi
-  L_CLEANUP="rm -f \"$L_TMP_ID_FILE\" \"${L_TMP_ID_FILE}.stderr\""
-  trap "$L_CLEANUP" EXIT TERM INT QUIT
+
   printf '%s: INFO: attempting to log in with the new key(s), to filter out any that are already installed\n' "$0" >&2
   NEW_IDS=$(
     eval $GET_ID | {
@@ -196,12 +192,12 @@ populate_new_ids() {
             -o ControlPath=none \
             -o LogLevel=INFO \
             -o PreferredAuthentications=publickey \
-            -o IdentitiesOnly=yes "$@" exit 2>"$L_TMP_ID_FILE.stderr" </dev/null
+            -o IdentitiesOnly=yes "$@" exit 2> "$L_OUTPUT_FILE" < /dev/null
         if [ "$?" = "$L_SUCCESS" ] ; then
           : > "$L_TMP_ID_FILE"
         else
-          grep 'Permission denied' "$L_TMP_ID_FILE.stderr" >/dev/null || {
-            sed -e 's/^/ERROR: /' <"$L_TMP_ID_FILE.stderr" >"$L_TMP_ID_FILE"
+          grep 'Permission denied' "$L_OUTPUT_FILE" > /dev/null || {
+            sed -e 's/^/ERROR: /' < "$L_OUTPUT_FILE" > "$L_TMP_ID_FILE"
             cat >/dev/null #consume the other keys, causing loop to end
           }
         fi
@@ -210,7 +206,6 @@ populate_new_ids() {
       done
     }
   )
-  eval "$L_CLEANUP" && trap - EXIT TERM INT QUIT
 
   if expr "$NEW_IDS" : "^ERROR: " >/dev/null ; then
     printf '\n%s: %s\n\n' "$0" "$NEW_IDS" >&2
@@ -256,6 +251,18 @@ EOF
   # to defend against quirky remote shells: use 'exec sh -c' to get POSIX;
   printf "exec sh -c '%s'" "${INSTALLKEYS_SH}"
 }
+
+# create a scratch dir for any temporary files needed
+if SCRATCH_DIR=$(mktemp -d ~/.ssh/ssh-copy-id.XXXXXXXXXX) &&
+    test -n "$SCRATCH_DIR" && test -d "$SCRATCH_DIR"
+then
+  chmod 0700 "$SCRATCH_DIR"
+  SCRATCH_CLEANUP="rm -rf \"$SCRATCH_DIR\""
+  trap "$SCRATCH_CLEANUP" EXIT TERM INT QUIT
+else
+  printf '%s: ERROR: failed to create required temporary directory under ~/.ssh\n' "$0" >&2
+  exit 1
+fi
 
 REMOTE_VERSION=$(ssh -v -o PreferredAuthentications=',' -o ControlPath=none "$@" 2>&1 |
                  sed -ne 's/.*remote software version //p')
