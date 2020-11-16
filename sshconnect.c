@@ -747,7 +747,6 @@ check_host_key(char *hostname, struct sockaddr *hostaddr, u_short port,
 	char *ip = NULL, *host = NULL;
 	char hostline[1000], *hostp, *fp, *ra;
 	char msg[1024];
-	char extramsg[1024], *subject = NULL;
 	const char *type;
 	const struct hostkey_entry *host_found, *ip_found;
 	int len, cancelled_forwarding = 0;
@@ -894,60 +893,47 @@ check_host_key(char *hostname, struct sockaddr *hostaddr, u_short port,
 			goto fail;
 		} else if (options.strict_host_key_checking ==
 		    SSH_STRICT_HOSTKEY_ASK) {
-			char msg1[1024], msg2[1024];
+			char *msg1 = NULL;
 			int confirmed;
 
+			xasprintf(&msg1, "The authenticity of host "
+			    "'%.200s (%s)' can't be established", host, ip);
+
 			if (show_other_keys(host_hostkeys, host_key))
-				snprintf(msg1, sizeof(msg1),
-				    "\nbut keys of different type are already"
-				    " known for this host.");
+				xextendf(&msg1, "\n", "but keys of different "
+				    "type are already known for this host.");
 			else
-				snprintf(msg1, sizeof(msg1), ".");
-			/* The default */
+				xextendf(&msg1, "", ".");
+
 			fp = sshkey_fingerprint(host_key,
 			    options.fingerprint_hash, SSH_FP_DEFAULT);
 			ra = sshkey_fingerprint(host_key,
 			    options.fingerprint_hash, SSH_FP_RANDOMART);
 			if (fp == NULL || ra == NULL)
 				fatal("%s: sshkey_fingerprint fail", __func__);
-			msg2[0] = '\0';
-			if (options.verify_host_key_dns) {
-				if (matching_host_key_dns)
-					snprintf(msg2, sizeof(msg2),
-					    "Matching host key fingerprint"
-					    " found in DNS.\n");
-				else
-					snprintf(msg2, sizeof(msg2),
-					    "No matching host key fingerprint"
-					    " found in DNS.\n");
-			}
+			xextendf(&msg1, "\n", "%s key fingerprint is %s.",
+			    type, fp);
 			if (sshkey_is_x509(host_key)) {
-				subject = x509key_subject(host_key);
-				snprintf(extramsg, sizeof(extramsg),
-				    "Distinguished name is '%s'.\n",
+				char *subject = x509key_subject(host_key);
+				xextendf(&msg1, "\n",
+				    "Distinguished name is '%s'.",
 				    subject);
-			} else {
-				subject = NULL;
-				*extramsg = '\0';
-			}
-			snprintf(msg, sizeof(msg),
-			    "The authenticity of host '%.200s (%s)' can't be "
-			    "established%s\n"
-			    "%s key fingerprint is %s.%s%s\n%s"
-			    "%s"
-			    "Are you sure you want to continue connecting "
-			    "(yes/no/[fingerprint])? ",
-			    host, ip, msg1, type, fp,
-			    options.visual_host_key ? "\n" : "",
-			    options.visual_host_key ? ra : "",
-			    msg2, extramsg);
-			if(subject != NULL) {
 				free(subject);
-				subject = NULL;
 			}
+			if (options.visual_host_key)
+				xextendf(&msg1, "\n", "%s", ra);
+			if (options.verify_host_key_dns)
+				xextendf(&msg1, "\n",
+				    "%s host key fingerprint found in DNS.",
+				    matching_host_key_dns
+				    ? "Matching" : "No matching");
+			xextendf(&msg1, "\n",
+			    "Are you sure you want to continue connecting "
+			    "(yes/no/[fingerprint])? ");
+			confirmed = confirm(msg1, fp);
 			free(ra);
-			confirmed = confirm(msg, fp);
 			free(fp);
+			free(msg1);
 			if (!confirmed)
 				goto fail;
 			hostkey_trusted = 1; /* user explicitly confirmed */
