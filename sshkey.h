@@ -1,4 +1,4 @@
-/* $OpenBSD: sshkey.h,v 1.46 2020/08/27 01:06:19 djm Exp $ */
+/* $OpenBSD: sshkey.h,v 1.48 2020/11/08 11:46:12 dtucker Exp $ */
 
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
@@ -301,17 +301,12 @@ int	sshrsa_check_length(const RSA *rsa);
 int sshrsa_complete_crt_parameters(struct sshkey *key, const BIGNUM *rsa_iqmp);
 
 /* stateful keys (e.g. XMSS) */
-#ifdef NO_ATTRIBUTE_ON_PROTOTYPE_ARGS
-typedef void sshkey_printfn(const char *, ...);
-#else
-typedef void sshkey_printfn(const char *, ...) __attribute__((format(printf, 1, 2)));
-#endif
 int	 sshkey_set_filename(struct sshkey *, const char *);
 int	 sshkey_enable_maxsign(struct sshkey *, u_int32_t);
 u_int32_t sshkey_signatures_left(const struct sshkey *);
-int	 sshkey_forward_state(const struct sshkey *, u_int32_t, sshkey_printfn *);
-int	 sshkey_private_serialize_maxsign(struct sshkey *key, struct sshbuf *buf,
-    u_int32_t maxsign, sshkey_printfn *pr);
+int	 sshkey_forward_state(const struct sshkey *, u_int32_t, int);
+int	 sshkey_private_serialize_maxsign(struct sshkey *key,
+    struct sshbuf *buf, u_int32_t maxsign, int);
 
 #ifdef SSHKEY_INTERNAL
 int ssh_rsa_sign(const struct sshkey *key,
