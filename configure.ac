@@ -22,7 +22,7 @@ AC_CONFIG_SRCDIR([ssh.c])
 m4_include([m4/local.m4])
 m4_include([m4/ldap.m4])
 
-AC_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADERS([config.h])
 
 AC_CANONICAL_HOST
 
