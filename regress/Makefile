@@ -17,7 +17,7 @@ clean:
 
 distclean:	clean
 
-LTESTS= 	connect \
+LTESTS=		connect \
 		proxy-connect \
 		connect-privsep \
 		connect-uri \
@@ -103,7 +103,7 @@ INTEROP_TESTS=	putty-transfer putty-ciphers putty-kex conch-ciphers
 #INTEROP_TESTS+=ssh-com ssh-com-client ssh-com-keygen ssh-com-sftp
 
 EXTRA_TESTS=	agent-pkcs11
-#EXTRA_TESTS+= 	cipher-speed
+#EXTRA_TESTS+=	cipher-speed
 
 USERNAME=		${LOGNAME}
 CLEANFILES=	*.core actual agent-key.* authkeys_orig \

@@ -1,4 +1,4 @@
-/* $OpenBSD: sshconnect2.c,v 1.330 2020/10/16 02:37:12 djm Exp $ */
+/* $OpenBSD: sshconnect2.c,v 1.334 2020/11/08 22:37:24 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Damien Miller.  All rights reserved.
@@ -1444,8 +1444,8 @@ load_identity_file(Identity *id)
 
 /*
  * try keys in the following order:
- * 	1. certificates listed in the config file
- * 	2. other input certificates
+ *	1. certificates listed in the config file
+ *	2. other input certificates
  *	3. agent keys that are found in the config file
  *	4. other agent keys
  *	5. keys that are only listed in the config file

@@ -129,7 +129,7 @@ static AuditInfoTermID ssh_bsm_tid;
  * getaudit_addr() is only present on IPv6 capable machines.
  */
 #if defined(HAVE_AUG_GET_MACHINE) || !defined(HAVE_GETAUDIT_ADDR)
-extern int 	aug_get_machine(char *, u_int32_t *, u_int32_t *);
+extern int	aug_get_machine(char *, u_int32_t *, u_int32_t *);
 #else
 static int
 aug_get_machine(char *host, u_int32_t *addr, u_int32_t *type)

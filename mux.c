@@ -1,4 +1,4 @@
-/* $OpenBSD: mux.c,v 1.84 2020/10/03 09:22:26 djm Exp $ */
+/* $OpenBSD: mux.c,v 1.86 2020/10/29 02:52:43 djm Exp $ */
 /*
  * Copyright (c) 2002-2008 Damien Miller <djm@openbsd.org>
  * Copyright (c) 2018-2020 Roumen Petrov.  All rights reserved.
@@ -479,7 +479,7 @@ mux_master_process_new_session(struct ssh *ssh, u_int rid,
 	    CHAN_EXTENDED_WRITE, "client-session", /*nonblock*/0);
 
 	nc->ctl_chan = c->self;		/* link session -> control channel */
-	c->remote_id = nc->self; 	/* link control -> session channel */
+	c->remote_id = nc->self;	/* link control -> session channel */
 	c->have_remote_id = 1;
 
 	if (cctx->want_tty && escape_char != 0xffffffff) {
@@ -1050,7 +1050,7 @@ mux_master_process_stdio_fwd(struct ssh *ssh, u_int rid,
 	free(chost);
 
 	nc->ctl_chan = c->self;		/* link session -> control channel */
-	c->remote_id = nc->self; 	/* link control -> session channel */
+	c->remote_id = nc->self;	/* link control -> session channel */
 	c->have_remote_id = 1;
 
 	debug2("%s: channel_new: %d linked to control channel %d",

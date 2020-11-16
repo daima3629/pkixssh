@@ -11,7 +11,7 @@
 
 #
 # Tunable configuration settings
-# 	create a "config.local" in your build directory or set
+#	create a "config.local" in your build directory or set
 #	environment variables to override these.
 #
 [ -z "$PERMIT_ROOT_LOGIN" ] && PERMIT_ROOT_LOGIN=no
@@ -52,7 +52,7 @@ fi
 #
 # Directories used during build:
 # current dir = $objdir		directory you ran ./configure in.
-# $objdir/$PKGDIR/ 		directory package files are constructed in
+# $objdir/$PKGDIR/		directory package files are constructed in
 # $objdir/$PKGDIR/root/		package root ($FAKE_ROOT)
 #
 objdir=`pwd`

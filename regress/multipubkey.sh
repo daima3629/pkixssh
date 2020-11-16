@@ -39,7 +39,7 @@ for privsep in $SSHD_PRIVSEP ; do
 		echo "AuthenticationMethods publickey,publickey"
 		echo "TrustedUserCAKeys $OBJ/user_ca_key.pub"
 		echo "AuthorizedPrincipalsFile $OBJ/authorized_principals_%u"
- 	) > $OBJ/sshd_proxy
+	) > $OBJ/sshd_proxy
 
 	# Single key should fail.
 	rm -f $OBJ/authorized_principals_$USER

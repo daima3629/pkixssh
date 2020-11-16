@@ -775,7 +775,7 @@ done:
  * Reads the engine config file and execute commands accordingly.
  * If the file does not exist, just exit.
  */
-int/*bool*/ 
+int/*bool*/
 process_engconfig_file(const char *filename) {
 	FILE *f;
 	char line[1024];

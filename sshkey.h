@@ -171,7 +171,7 @@ int		 sshkey_equal_public(const struct sshkey *,
     const struct sshkey *);
 int		 sshkey_equal(const struct sshkey *, const struct sshkey *);
 		 /*bool*/
-int	 	 sshkey_match_pkalg(struct sshkey *key, const char* pkalg);
+int		 sshkey_match_pkalg(struct sshkey *key, const char* pkalg);
 char		*sshkey_fingerprint(const struct sshkey *,
     int, enum sshkey_fp_rep);
 int		 sshkey_fingerprint_raw(const struct sshkey *k,

@@ -16,7 +16,7 @@ struct chacha_ctx {
 	u_int input[16];
 };
 
-#define CHACHA_MINKEYLEN 	16
+#define CHACHA_MINKEYLEN	16
 #define CHACHA_NONCELEN		8
 #define CHACHA_CTRLEN		8
 #define CHACHA_STATELEN		(CHACHA_NONCELEN+CHACHA_CTRLEN)

@@ -103,7 +103,7 @@ void assert_u64(const char *file, int line,
 #define TEST_START(n)			test_start(n)
 #define TEST_DONE()			test_done()
 #define TEST_ONERROR(f, c)		set_onerror_func(f, c)
-#define SSL_ERR_CHECK() 		ssl_err_check(__FILE__, __LINE__)
+#define SSL_ERR_CHECK()			ssl_err_check(__FILE__, __LINE__)
 
 #define ASSERT_BIGNUM_EQ(a1, a2) \
 	assert_bignum(__FILE__, __LINE__, #a1, #a2, a1, a2, TEST_EQ)

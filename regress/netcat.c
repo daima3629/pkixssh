@@ -1254,7 +1254,7 @@ map_tos(char *s, int *val)
 		{ "netcontrol",		IPTOS_PREC_NETCONTROL },
 		{ "reliability",	IPTOS_RELIABILITY },
 		{ "throughput",		IPTOS_THROUGHPUT },
-		{ NULL, 		-1 },
+		{ NULL,			-1 },
 	};
 
 	for (t = toskeywords; t->keyword != NULL; t++) {

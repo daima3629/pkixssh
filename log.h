@@ -61,7 +61,7 @@ void     log_crypto_errors(LogLevel level, const char *fn);
 char*    crypto_errormsg(char *buf, size_t len);
 
 SyslogFacility	log_facility_number(char *);
-const char * 	log_facility_name(SyslogFacility);
+const char *	log_facility_name(SyslogFacility);
 LogLevel	log_level_number(char *);
 const char *	log_level_name(LogLevel);
 

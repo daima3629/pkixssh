@@ -200,7 +200,7 @@ auth_krb5_password(Authctxt *authctxt, const char *password)
 		if (authctxt->krb5_ctx != NULL && problem!=-1) {
 			errmsg = krb5_get_error_message(authctxt->krb5_ctx,
 			    problem);
- 			debug("Kerberos password authentication failed: %s",
+			debug("Kerberos password authentication failed: %s",
 			    errmsg);
 			krb5_free_error_message(authctxt->krb5_ctx, errmsg);
 		} else

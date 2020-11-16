@@ -59,7 +59,7 @@ prepare_config() {
 		for x in "$@" ; do
 			echo "$x"
 		done
- 	) > $OBJ/sshd_proxy
+	) > $OBJ/sshd_proxy
 }
 
 # Return the required parameter for PubkeyAcceptedKeyTypes corresponding to
