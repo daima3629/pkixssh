@@ -8,6 +8,7 @@ cp $OBJ/sshd_proxy $OBJ/sshd_proxy_bak
 cp $OBJ/ssh_proxy $OBJ/ssh_proxy_bak
 
 PLAIN_TYPES=`echo "$SSH_KEYTYPES" | sed 's/^ssh-dss/ssh-dsa/;s/^ssh-//'`
+PLAIN_TYPES=`echo "$PLAIN_TYPES" | sed 's/xmss@openssh.com//'` # TODO
 EXTRA_TYPES=
 rsa=
 

@@ -75,6 +75,7 @@ touch $OBJ/host_revoked_cert
 cat $OBJ/host_ca_key.pub $OBJ/host_ca_key2.pub > $OBJ/host_revoked_ca
 
 PLAIN_TYPES=`echo "$SSH_HOSTKEY_TYPES" | sed 's/^ssh-dss/ssh-dsa/g;s/^ssh-//'`
+PLAIN_TYPES=`echo "$PLAIN_TYPES" | sed 's/xmss@openssh.com//'` # TODO
 
 if echo "$PLAIN_TYPES" | grep '^rsa$' >/dev/null 2>&1 ; then
     if config_defined HAVE_EVP_SHA256 ; then

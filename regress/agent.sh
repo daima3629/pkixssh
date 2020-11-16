@@ -2,6 +2,7 @@
 #	Placed in the Public Domain.
 
 tid="simple agent test"
+PLAIN_TYPES=`echo "$SSH_KEYTYPES" | sed 's/ssh-xmss@openssh.com//'` # TODO
 
 SSH_AUTH_SOCK=/nonexistent ${SSHADD} -l > /dev/null 2>&1
 if [ $? -ne 2 ]; then
@@ -33,7 +34,7 @@ ${SSHKEYGEN} -q -N '' -t ed25519 -f $OBJ/user_ca_key \
 trace "overwrite authorized keys"
 printf '' > $OBJ/authorized_keys_$USER
 
-for t in ${SSH_KEYTYPES}; do
+for t in $PLAIN_TYPES ; do
 	# generate user key for agent
 	rm -f $OBJ/$t-agent $OBJ/$t-agent.pub*
 	${SSHKEYGEN} -q -N '' -t $t -f $OBJ/$t-agent ||\
@@ -86,13 +87,13 @@ if [ $r -ne 52 ]; then
 	fail "ssh connect with failed (exit code $r)"
 fi
 
-for t in ${SSH_KEYTYPES}; do
+for t in $PLAIN_TYPES; do
 	trace "connect via agent using $t key"
 	${SSH} -F $OBJ/ssh_proxy -i $OBJ/$t-agent.pub -oIdentitiesOnly=yes \
 		somehost exit 52
 	r=$?
 	if [ $r -ne 52 ]; then
-		fail "ssh connect with failed (exit code $r)"
+		fail "ssh connect with $t failed (exit code $r)"
 	fi
 done
 
@@ -140,14 +141,14 @@ fi
 
 (printf 'cert-authority,principals="estragon" '; cat $OBJ/user_ca_key.pub) \
 	> $OBJ/authorized_keys_$USER
-for t in ${SSH_KEYTYPES}; do
+for t in $PLAIN_TYPES; do
 	trace "connect via agent using $t key"
 	${SSH} -F $OBJ/ssh_proxy -i $OBJ/$t-agent.pub \
 		-oCertificateFile=$OBJ/$t-agent-cert.pub \
 		-oIdentitiesOnly=yes somehost exit 52
 	r=$?
 	if [ $r -ne 52 ]; then
-		fail "ssh connect with failed (exit code $r)"
+		fail "ssh connect with $t failed (exit code $r)"
 	fi
 done
 
@@ -167,7 +168,7 @@ if [ $r -ne 1 ]; then
 fi
 trace "readd keys"
 # re-add keys/certs to agent
-for t in ${SSH_KEYTYPES}; do
+for t in $PLAIN_TYPES; do
 	${SSHADD} $OBJ/$t-agent-private >/dev/null 2>&1 || \
 		fail "ssh-add failed exit code $?"
 done

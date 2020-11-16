@@ -536,6 +536,9 @@ for t in ${SSH_HOSTKEY_TYPES}; do
 	if test ! -f $OBJ/host.$t || test $OBJ/$t -nt $OBJ/host.$t ; then
 		# use key as host key, too
 		cp $OBJ/$t $OBJ/host.$t
+		case $t in
+		*xmss*) rm -f $OBJ/host.$t.*;; # remove state
+		esac
 	fi
 	echo HostKey $OBJ/host.$t >> $OBJ/sshd_config
 

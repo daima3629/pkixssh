@@ -2,6 +2,7 @@
 #	Placed in the Public Domain.
 
 tid="hostkey agent"
+PLAIN_TYPES=`echo "$SSH_HOSTKEY_TYPES" | sed 's/ssh-xmss@openssh.com//'` # TODO
 
 rm -f $OBJ/agent-key.* $OBJ/ssh_proxy.orig $OBJ/known_hosts.orig
 
@@ -14,7 +15,7 @@ grep -vi 'hostkey' $OBJ/sshd_proxy > $OBJ/sshd_proxy.orig
 echo "HostKeyAgent $SSH_AUTH_SOCK" >> $OBJ/sshd_proxy.orig
 
 trace "load hostkeys"
-for k in $SSH_HOSTKEY_TYPES ; do
+for k in $PLAIN_TYPES ; do
 	${SSHKEYGEN} -qt $k -f $OBJ/agent-key.$k -N '' || fatal "ssh-keygen $k"
 	(
 		printf 'localhost-with-alias,127.0.0.1,::1 '
@@ -31,7 +32,7 @@ cp $OBJ/known_hosts.orig $OBJ/known_hosts
 unset SSH_AUTH_SOCK
 
 for ps in $SSHD_PRIVSEP ; do
-	for k in $SSH_HOSTKEY_TYPES ; do
+	for k in $PLAIN_TYPES ; do
 		verbose "key type $k privsep=$ps"
 		cp $OBJ/sshd_proxy.orig $OBJ/sshd_proxy
 		echo "UsePrivilegeSeparation $ps" >> $OBJ/sshd_proxy
