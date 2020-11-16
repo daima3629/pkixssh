@@ -1,4 +1,4 @@
-/* $OpenBSD: sshconnect2.c,v 1.334 2020/11/08 22:37:24 djm Exp $ */
+/* $OpenBSD: sshconnect2.c,v 1.336 2020/11/13 07:30:44 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Damien Miller.  All rights reserved.
@@ -34,6 +34,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <netdb.h>
 #include <pwd.h>
 #include <signal.h>
@@ -1830,27 +1831,55 @@ userauth_kbdint(struct ssh *ssh)
 	return 1;
 }
 
+static char*
+get_response(Authctxt *authctxt, const char *prompt, u_char echo)
+{
+	char *ret, *display_prompt;
+	const char *host = options.host_key_alias
+	    ? options.host_key_alias : authctxt->host;
+
+	if (asnmprintf(&display_prompt, INT_MAX, NULL, "(%s@%s) %s",
+	    authctxt->server_user, host, prompt) == -1)
+		fatal("%s: asnmprintf failed", __func__);
+	ret = read_passphrase(display_prompt, echo ? RP_ECHO : 0);
+	free(display_prompt);
+
+	return ret;
+}
+
+static int
+put_response(struct ssh *ssh, const char *prompt, u_char echo)
+{
+	int r;
+	Authctxt *authctxt = ssh->authctxt;
+	char *response;
+
+	response = get_response(authctxt, prompt, echo);
+	r = sshpkt_put_cstring(ssh, response);
+	freezero(response, strlen(response));
+
+	return r;
+}
+
 /*
  * parse INFO_REQUEST, prompt user and send INFO_RESPONSE
  */
 static int
 input_userauth_info_req(int type, u_int32_t seq, struct ssh *ssh)
 {
-	Authctxt *authctxt = ssh->authctxt;
 	char *name = NULL, *inst = NULL, *lang = NULL, *prompt = NULL;
-	char *response = NULL;
-	u_char echo = 0;
 	u_int num_prompts, i;
 	int r;
 
 	UNUSED(type);
 	UNUSED(seq);
-	debug2("input_userauth_info_req");
+	debug2("%s: entering", __func__);
 
+{	Authctxt *authctxt = ssh->authctxt;
 	if (authctxt == NULL)
-		fatal("input_userauth_info_req: no authentication context");
-
+		fatal("%s: no authentication context", __func__);
 	authctxt->info_req_seen = 1;
+}
 
 	if ((r = sshpkt_get_cstring(ssh, &name, NULL)) != 0 ||
 	    (r = sshpkt_get_cstring(ssh, &inst, NULL)) != 0 ||
@@ -1873,17 +1902,15 @@ input_userauth_info_req(int type, u_int32_t seq, struct ssh *ssh)
 	    (r = sshpkt_put_u32(ssh, num_prompts)) != 0)
 		goto out;
 
-	debug2("input_userauth_info_req: num_prompts %d", num_prompts);
+	debug2("%s: num_prompts %d", __func__, num_prompts);
 	for (i = 0; i < num_prompts; i++) {
+		u_char echo;
 		if ((r = sshpkt_get_cstring(ssh, &prompt, NULL)) != 0 ||
 		    (r = sshpkt_get_u8(ssh, &echo)) != 0)
 			goto out;
-		response = read_passphrase(prompt, echo ? RP_ECHO : 0);
-		if ((r = sshpkt_put_cstring(ssh, response)) != 0)
-			goto out;
-		freezero(response, strlen(response));
-		free(prompt);
-		response = prompt = NULL;
+		r = put_response(ssh, prompt, echo);
+		if (r != 0) goto out;
+		free(prompt); prompt = NULL;
 	}
 	/* done with parsing incoming message. */
 	if ((r = sshpkt_get_end(ssh)) != 0 ||
@@ -1891,8 +1918,6 @@ input_userauth_info_req(int type, u_int32_t seq, struct ssh *ssh)
 		goto out;
 	r = sshpkt_send(ssh);
  out:
-	if (response)
-		freezero(response, strlen(response));
 	free(prompt);
 	free(name);
 	free(inst);
