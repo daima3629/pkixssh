@@ -10,8 +10,9 @@ fi
 
 USER=`id -u -n`
 USERID=`id -u`
-HOST=`hostname | cut -f1 -d.`
 HOSTNAME=`hostname`
+test -z "$HOSTNAME" && HOSTNAME=`uname -n`
+HOST=`echo $HOSTNAME | cut -f1 -d.`
 
 # Localcommand is evaluated after connection because %T is not available
 # until then.  Because of this we use a different method of exercising it,
