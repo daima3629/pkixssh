@@ -1,4 +1,4 @@
-/* $OpenBSD: log.h,v 1.24 2019/09/06 04:53:27 djm Exp $ */
+/* $OpenBSD: log.h,v 1.29 2020/10/18 11:21:59 djm Exp $ */
 
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
@@ -50,7 +50,8 @@ typedef enum {
 	SYSLOG_LEVEL_NOT_SET = -1
 }       LogLevel;
 
-typedef void (log_handler_fn)(LogLevel, const char *, void *);
+typedef void (log_handler_fn)(const char *file, const char *func, int line,
+    LogLevel level, const char *msg, void *ctx);
 
 void     log_init(char *, LogLevel, SyslogFacility, int);
 int      log_change_level(LogLevel);
@@ -84,4 +85,10 @@ void	 do_log2(LogLevel, const char *, ...)
     __attribute__((format(printf, 2, 3)));
 void	 do_log(LogLevel, const char *, va_list);
 void	 cleanup_exit(int) __attribute__((noreturn));
+
+void	 sshlog(const char *file, const char *func, int line,
+    LogLevel level, const char *fmt, ...)
+    __attribute__((format(printf, 5, 6)));
+void	 sshlogv(const char *file, const char *func, int line,
+    LogLevel level, const char *fmt, va_list args);
 #endif

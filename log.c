@@ -1,4 +1,4 @@
-/* $OpenBSD: log.c,v 1.52 2020/07/03 06:46:41 djm Exp $ */
+/* $OpenBSD: log.c,v 1.55 2020/10/18 11:21:59 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -70,10 +70,15 @@ extern char *__progname;
 #include <android/log.h>
 
 static void
-android_log(LogLevel level, const char *msg, void *ctx) {
+android_log(const char *file, const char *func, int line,
+	LogLevel level, const char *msg, void *ctx
+) {
 	android_LogPriority a;
 
-	(void)ctx;
+	UNUSED(file);
+	UNUSED(func);
+	UNUSED(line);
+	UNUSED(ctx);
 
 	switch (level) {
 	case SYSLOG_LEVEL_QUIET		: a = ANDROID_LOG_SILENT	; break;
@@ -515,6 +520,13 @@ do_log2(LogLevel level, const char *fmt,...)
 void
 do_log(LogLevel level, const char *fmt, va_list args)
 {
+	sshlogv(NULL, NULL, 0, level, fmt, args);
+}
+
+void
+sshlogv(const char *file, const char *func, int line,
+    LogLevel level, const char *fmt, va_list args)
+{
 	char msgbuf[MSGBUFSIZ];
 	char fmtbuf[MSGBUFSIZ];
 	char *txt = NULL;
@@ -575,7 +587,7 @@ do_log(LogLevel level, const char *fmt, va_list args)
 		/* Avoid recursion */
 		tmp_handler = log_handler;
 		log_handler = NULL;
-		tmp_handler(level, fmtbuf, log_handler_ctx);
+		tmp_handler(file, func, line, level, fmtbuf, log_handler_ctx);
 		log_handler = tmp_handler;
 	} else if (log_on_stderr) {
 		snprintf(msgbuf, sizeof msgbuf, "%.*s\r\n",
@@ -595,4 +607,15 @@ do_log(LogLevel level, const char *fmt, va_list args)
 #endif
 	}
 	errno = saved_errno;
+}
+
+void
+sshlog(const char *file, const char *func, int line,
+    LogLevel level, const char *fmt, ...)
+{
+	va_list args;
+
+	va_start(args, fmt);
+	sshlogv(file, func, line, level, fmt, args);
+	va_end(args);
 }

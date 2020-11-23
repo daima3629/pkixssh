@@ -1,10 +1,10 @@
-/* $OpenBSD: monitor_wrap.h,v 1.45 2020/08/27 01:06:18 djm Exp $ */
+/* $OpenBSD: monitor_wrap.h,v 1.46 2020/10/16 13:24:45 djm Exp $ */
 
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * All rights reserved.
  *
- * Copyright (c) 2017-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2017-2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -41,7 +41,8 @@ struct Authctxt;
 struct sshkey;
 struct sshauthopt;
 
-void mm_log_handler(LogLevel, const char *, void *);
+void mm_log_handler(const char *file, const char *func, int line,
+    LogLevel level, const char *msg, void *ctx);
 int mm_is_monitor(void);
 #ifdef WITH_OPENSSL
   /* for "typedef struct dh_st DH;" in OpenSSL before 0.9.8 */

@@ -88,8 +88,8 @@ int	 sshkey_xmss_decrypt_state(const struct sshkey *, struct sshbuf *,
 int	 sshkey_xmss_serialize_enc_key(const struct sshkey *, struct sshbuf *);
 int	 sshkey_xmss_deserialize_enc_key(struct sshkey *, struct sshbuf *);
 
-#define PRINT(...) do { if (printerror) \
-    do_log2(SYSLOG_LEVEL_ERROR, __VA_ARGS__); } while (0)
+#define PRINT(...) do { if (printerror) sshlog(__FILE__, __func__, __LINE__, \
+    SYSLOG_LEVEL_ERROR, __VA_ARGS__); } while (0)
 
 int
 sshkey_xmss_init(struct sshkey *key, const char *name)

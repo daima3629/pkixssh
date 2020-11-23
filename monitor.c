@@ -1,4 +1,4 @@
-/* $OpenBSD: monitor.c,v 1.214 2020/08/27 01:07:09 djm Exp $ */
+/* $OpenBSD: monitor.c,v 1.217 2020/10/18 11:32:01 djm Exp $ */
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * Copyright 2002 Markus Friedl <markus@openbsd.org>
@@ -422,10 +422,10 @@ monitor_read_log(struct monitor *pmonitor)
 {
 	struct sshbuf *logmsg;
 	u_int len, level;
-	char *msg;
+	char *msg, *file, *func;
 	u_char *p;
-	int r;
-	u_int32_t val;
+	int r, line;
+	u_int32_t val, val2;
 
 	if ((logmsg = sshbuf_new()) == NULL)
 		fatal("%s: sshbuf_new", __func__);
@@ -456,17 +456,24 @@ monitor_read_log(struct monitor *pmonitor)
 	if (atomicio(read, pmonitor->m_log_recvfd, p, len) != len)
 		fatal("%s: log fd read: %s", __func__, strerror(errno));
 
-	/* Log it */
-	if ((r = sshbuf_get_u32(logmsg, &val)) != 0 ||
+	if ((r = sshbuf_get_cstring(logmsg, &file, NULL)) != 0 ||
+	    (r = sshbuf_get_cstring(logmsg, &func, NULL)) != 0 ||
+	    (r = sshbuf_get_u32(logmsg, &val2)) != 0 ||
+	    (r = sshbuf_get_u32(logmsg, &val)) != 0 ||
 	    (r = sshbuf_get_cstring(logmsg, &msg, NULL)) != 0)
 		fatal("%s: decode: %s", __func__, ssh_err(r));
+	line = val2;
 	level = val;
+
+	/* Log it */
 	if (log_level_name(level) == NULL)
 		fatal("%s: invalid log level %u (corrupted message?)",
 		    __func__, level);
-	do_log2(level, "%s [preauth]", msg);
+	sshlog(file, func, line, level, "%s [preauth]", msg);
 
 	sshbuf_free(logmsg);
+	free(file);
+	free(func);
 	free(msg);
 
 	return 0;

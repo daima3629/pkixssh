@@ -1,10 +1,10 @@
-/* $OpenBSD: monitor_wrap.c,v 1.118 2020/08/27 01:06:18 djm Exp $ */
+/* $OpenBSD: monitor_wrap.c,v 1.121 2020/10/18 11:32:01 djm Exp $ */
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * Copyright 2002 Markus Friedl <markus@openbsd.org>
  * All rights reserved.
  *
- * Copyright (c) 2007-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2007-2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -84,7 +84,8 @@ extern struct sshbuf *loginmsg;
 extern ServerOptions options;
 
 void
-mm_log_handler(LogLevel level, const char *msg, void *ctx)
+mm_log_handler(const char *file, const char *func, int line,
+    LogLevel level, const char *msg, void *ctx)
 {
 	struct sshbuf *log_msg;
 	struct monitor *mon = (struct monitor *)ctx;
@@ -98,6 +99,9 @@ mm_log_handler(LogLevel level, const char *msg, void *ctx)
 		fatal("%s: sshbuf_new failed", __func__);
 
 	if ((r = sshbuf_put_u32(log_msg, 0)) != 0 || /* length; filled below */
+	    (r = sshbuf_put_cstring(log_msg, file)) != 0 ||
+	    (r = sshbuf_put_cstring(log_msg, func)) != 0 ||
+	    (r = sshbuf_put_u32(log_msg, (u_int32_t)line)) != 0 ||
 	    (r = sshbuf_put_u32(log_msg, level)) != 0 ||
 	    (r = sshbuf_put_cstring(log_msg, msg)) != 0)
 		fatal("%s: buffer error: %s", __func__, ssh_err(r));
