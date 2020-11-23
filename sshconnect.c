@@ -728,6 +728,19 @@ get_hostfile_hostname_ipaddr(char *hostname, struct sockaddr *hostaddr,
 	}
 }
 
+/* returns non-zero if path appears in hostfiles, or 0 if not. */
+static int
+path_in_hostfiles(const char *path, char **hostfiles, u_int num_hostfiles)
+{
+	u_int i;
+
+	for (i = 0; i < num_hostfiles; i++) {
+		if (strcmp(path, hostfiles[i]) == 0)
+			return 1;
+	}
+	return 0;
+}
+
 /*
  * check whether the supplied host key is valid, return -1 if the key
  * is not valid. user_hostfile[0] will not be updated if 'readonly' is true.
@@ -741,14 +754,13 @@ check_host_key(char *hostname, struct sockaddr *hostaddr, u_short port,
     char **user_hostfiles, u_int num_user_hostfiles,
     char **system_hostfiles, u_int num_system_hostfiles)
 {
-	HostStatus host_status;
-	HostStatus ip_status;
+	HostStatus host_status = -1, ip_status = -1;
 	struct sshkey *raw_key = NULL;
 	char *ip = NULL, *host = NULL;
 	char hostline[1000], *hostp, *fp, *ra;
 	char msg[1024];
 	const char *type;
-	const struct hostkey_entry *host_found, *ip_found;
+	const struct hostkey_entry *host_found = NULL, *ip_found = NULL;
 	int len, cancelled_forwarding = 0;
 	int local = sockaddr_is_local(hostaddr);
 	int r, want_cert = sshkey_is_cert(host_key), host_ip_differ = 0;
@@ -768,6 +780,7 @@ check_host_key(char *hostname, struct sockaddr *hostaddr, u_short port,
 	    options.host_key_alias == NULL) {
 		debug("Forcing accepting of host key for "
 		    "loopback/localhost.");
+		options.update_hostkeys = 0;
 		return 0;
 	}
 
@@ -839,6 +852,17 @@ check_host_key(char *hostname, struct sockaddr *hostaddr, u_short port,
 		    !check_host_cert(options.host_key_alias == NULL ?
 		    hostname : options.host_key_alias, host_key))
 			goto fail;
+		/* Turn off UpdateHostkeys if key was in system known_hosts */
+		if (options.update_hostkeys != 0 &&
+		    (path_in_hostfiles(host_found->file,
+		    system_hostfiles, num_system_hostfiles) ||
+		    (ip_status == HOST_OK && ip_found != NULL &&
+		    path_in_hostfiles(ip_found->file,
+		    system_hostfiles, num_system_hostfiles)))) {
+			options.update_hostkeys = 0;
+			debug3("%s: host key found in GlobalKnownHostsFile; "
+			    "disabling UpdateHostkeys", __func__);
+		}
 		if (options.check_host_ip && ip_status == HOST_NEW) {
 			if (readonly || want_cert)
 				logit("%s host key for IP address "

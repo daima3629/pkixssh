@@ -42,8 +42,8 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: ssh_config.5,v 1.332 2020/08/11 09:49:57 djm Exp $
-.Dd $Mdocdate: August 11 2020 $
+.\" $OpenBSD: ssh_config.5,v 1.336 2020/10/08 00:31:05 djm Exp $
+.Dd $Mdocdate: October 8 2020 $
 .Dt SSH_CONFIG 5
 .Os
 .Sh NAME
@@ -1804,10 +1804,15 @@ The argument must be
 Enabling this option allows learning alternate hostkeys for a server
 and supports graceful key rotation by allowing a server to send replacement
 public keys before old ones are removed.
+.Pp
 Hostkeys are only accepted if the key algorithm used to authenticate the
 host is accepted by the user (see the
 .Cm HostKeyAlgorithms
-option for details).
+option for details), the host was
+authenticated via
+.Cm UserKnownHostsFile
+(i.e. not
+.Cm GlobalKnownHostsFile).
 If
 .Cm UpdateHostKeys
 is set to
