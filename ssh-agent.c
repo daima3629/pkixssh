@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-agent.c,v 1.265 2020/10/03 09:22:26 djm Exp $ */
+/* $OpenBSD: ssh-agent.c,v 1.267 2020/11/08 22:37:24 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -1181,6 +1181,9 @@ main(int ac, char **av)
 	size_t npfd = 0;
 	u_int maxfds;
 
+	socket_name[0] = '\0';
+	socket_dir[0] = '\0';
+
 	ssh_malloc_init();	/* must be called before any mallocs */
 	/* Ensure that fds 0, 1 and 2 are open or directed to /dev/null */
 	sanitise_stdfd();
@@ -1325,12 +1328,20 @@ main(int ac, char **av)
 			perror("mkdtemp: private socket dir");
 			exit(1);
 		}
-		snprintf(socket_name, sizeof socket_name, "%s/agent.%ld", socket_dir,
-		    (long)parent_pid);
+	{	int r = snprintf(socket_name, sizeof socket_name, "%s/agent.%ld",
+		    socket_dir, (long)parent_pid);
+		if (r < 0 || r > (int)sizeof(socket_name)) {
+			fprintf(stderr, "too long socket path\n");
+			exit(1);
+		}
+	}
 	} else {
 		/* Try to use specified agent socket */
-		socket_dir[0] = '\0';
-		strlcpy(socket_name, agentsocket, sizeof socket_name);
+		if (strlcpy(socket_name, agentsocket, sizeof socket_name)
+		    > sizeof(socket_name)) {
+			fprintf(stderr, "too long agent socket path\n");
+			exit(1);
+		}
 	}
 
 	/*
