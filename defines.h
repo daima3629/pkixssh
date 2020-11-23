@@ -885,13 +885,6 @@ struct winsize {
  */
 #define DEF_WEAK(x)	void __ssh_compat_weak_##x(void)
 
-/* Write by owner (BSD compatible)  */
-#ifndef S_IWRITE
-# ifdef S_IWUSR
-#  define S_IWRITE S_IWUSR
-# endif
-#endif
-
 #ifndef HAVE_VA_COPY
 # ifdef HAVE___VA_COPY
 #  define va_copy(dest, src) __va_copy(dest, src)
