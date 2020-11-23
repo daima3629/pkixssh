@@ -709,7 +709,7 @@ mm_answer_sign(struct ssh *ssh, int sock, struct sshbuf *m)
 		fatal("%s: no hostkey from index %d", __func__, keyid);
 
 	debug3("%s: %s signature %p(%zu)", __func__,
-	    is_proof ? "hostkey proof" : "KEX", signature, siglen);
+	    is_proof ? "hostkey proof" : "KEX", (void*)signature, siglen);
 
 	sshbuf_reset(m);
 	if ((r = sshbuf_put_string(m, signature, siglen)) != 0)

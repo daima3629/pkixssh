@@ -183,100 +183,6 @@ log_level_name(LogLevel level)
 	return NULL;
 }
 
-/* Error messages that should be logged. */
-
-void
-error(const char *fmt,...)
-{
-	va_list args;
-
-	va_start(args, fmt);
-	do_log(SYSLOG_LEVEL_ERROR, fmt, args);
-	va_end(args);
-}
-
-void
-sigdie(const char *fmt,...)
-{
-#ifdef DO_LOG_SAFE_IN_SIGHAND
-	va_list args;
-
-	va_start(args, fmt);
-	do_log(SYSLOG_LEVEL_FATAL, fmt, args);
-	va_end(args);
-#else
-	UNUSED(fmt);
-#endif
-	_exit(1);
-}
-
-void
-logdie(const char *fmt,...)
-{
-	va_list args;
-
-	va_start(args, fmt);
-	do_log(SYSLOG_LEVEL_INFO, fmt, args);
-	va_end(args);
-	cleanup_exit(255);
-}
-
-/* Log this message (information that usually should go to the log). */
-
-void
-logit(const char *fmt,...)
-{
-	va_list args;
-
-	va_start(args, fmt);
-	do_log(SYSLOG_LEVEL_INFO, fmt, args);
-	va_end(args);
-}
-
-/* More detailed messages (information that does not need to go to the log). */
-
-void
-verbose(const char *fmt,...)
-{
-	va_list args;
-
-	va_start(args, fmt);
-	do_log(SYSLOG_LEVEL_VERBOSE, fmt, args);
-	va_end(args);
-}
-
-/* Debugging messages that should not be logged during normal operation. */
-
-void
-debug(const char *fmt,...)
-{
-	va_list args;
-
-	va_start(args, fmt);
-	do_log(SYSLOG_LEVEL_DEBUG1, fmt, args);
-	va_end(args);
-}
-
-void
-debug2(const char *fmt,...)
-{
-	va_list args;
-
-	va_start(args, fmt);
-	do_log(SYSLOG_LEVEL_DEBUG2, fmt, args);
-	va_end(args);
-}
-
-void
-debug3(const char *fmt,...)
-{
-	va_list args;
-
-	va_start(args, fmt);
-	do_log(SYSLOG_LEVEL_DEBUG3, fmt, args);
-	va_end(args);
-}
-
 /*
  * Initialize the log.
  */
@@ -508,22 +414,6 @@ set_log_handler(log_handler_fn *handler, void *ctx)
 }
 
 void
-do_log2(LogLevel level, const char *fmt,...)
-{
-	va_list args;
-
-	va_start(args, fmt);
-	do_log(level, fmt, args);
-	va_end(args);
-}
-
-void
-do_log(LogLevel level, const char *fmt, va_list args)
-{
-	sshlogv(NULL, NULL, 0, level, fmt, args);
-}
-
-void
 sshlogv(const char *file, const char *func, int line,
     LogLevel level, const char *fmt, va_list args)
 {
@@ -618,4 +508,33 @@ sshlog(const char *file, const char *func, int line,
 	va_start(args, fmt);
 	sshlogv(file, func, line, level, fmt, args);
 	va_end(args);
+}
+
+void
+sshlogdie(const char *file, const char *func, int line,
+    const char *fmt,...)
+{
+	va_list args;
+
+	va_start(args, fmt);
+	sshlogv(file, func, line, SYSLOG_LEVEL_INFO, fmt, args);
+	va_end(args);
+	cleanup_exit(255);
+}
+
+void
+sshsigdie(const char *file, const char *func, int line,
+    const char *fmt,...)
+{
+#ifdef DO_LOG_SAFE_IN_SIGHAND
+	va_list args;
+
+	va_start(args, fmt);
+	sshlogv(file, func, line, SYSLOG_LEVEL_FATAL, fmt, args);
+	va_end(args);
+#else
+	UNUSED(file); UNUSED(func); UNUSED(line);
+	UNUSED(fmt);
+#endif
+	_exit(1);
 }

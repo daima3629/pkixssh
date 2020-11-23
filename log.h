@@ -11,6 +11,29 @@
  * incompatible with the protocol description in the RFC file, it must be
  * called by a name other than "ssh" or "Secure Shell".
  */
+/*
+ * Copyright (c) 2020 Roumen Petrov.  All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+ * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
 #ifndef SSH_LOG_H
 #define SSH_LOG_H
@@ -66,24 +89,7 @@ const char *	log_facility_name(SyslogFacility);
 LogLevel	log_level_number(char *);
 const char *	log_level_name(LogLevel);
 
-void     fatal(const char *, ...) __attribute__((noreturn))
-    __attribute__((format(printf, 1, 2)));
-void     error(const char *, ...) __attribute__((format(printf, 1, 2)));
-void     sigdie(const char *, ...)  __attribute__((noreturn))
-    __attribute__((format(printf, 1, 2)));
-void     logdie(const char *, ...) __attribute__((noreturn))
-    __attribute__((format(printf, 1, 2)));
-void     logit(const char *, ...) __attribute__((format(printf, 1, 2)));
-void     verbose(const char *, ...) __attribute__((format(printf, 1, 2)));
-void     debug(const char *, ...) __attribute__((format(printf, 1, 2)));
-void     debug2(const char *, ...) __attribute__((format(printf, 1, 2)));
-void     debug3(const char *, ...) __attribute__((format(printf, 1, 2)));
-
-
 void	 set_log_handler(log_handler_fn *, void *);
-void	 do_log2(LogLevel, const char *, ...)
-    __attribute__((format(printf, 2, 3)));
-void	 do_log(LogLevel, const char *, va_list);
 void	 cleanup_exit(int) __attribute__((noreturn));
 
 void	 sshlog(const char *file, const char *func, int line,
@@ -91,4 +97,31 @@ void	 sshlog(const char *file, const char *func, int line,
     __attribute__((format(printf, 5, 6)));
 void	 sshlogv(const char *file, const char *func, int line,
     LogLevel level, const char *fmt, va_list args);
+
+#define do_log2(level, ...)	sshlog(__FILE__, __func__, __LINE__, level, __VA_ARGS__)
+
+/* Error messages that should be logged. */
+#define error(...)	sshlog(__FILE__, __func__, __LINE__, SYSLOG_LEVEL_ERROR, __VA_ARGS__)
+/* Log this message (information that usually should go to the log). */
+#define logit(...)	sshlog(__FILE__, __func__, __LINE__, SYSLOG_LEVEL_INFO, __VA_ARGS__)
+/* More detailed messages (information that does not need to go to the log). */
+#define verbose(...)	sshlog(__FILE__, __func__, __LINE__, SYSLOG_LEVEL_VERBOSE, __VA_ARGS__)
+/* Debugging messages that should not be logged during normal operation. */
+#define debug(...)	sshlog(__FILE__, __func__, __LINE__, SYSLOG_LEVEL_DEBUG1, __VA_ARGS__)
+#define debug2(...)	sshlog(__FILE__, __func__, __LINE__, SYSLOG_LEVEL_DEBUG2, __VA_ARGS__)
+#define debug3(...)	sshlog(__FILE__, __func__, __LINE__, SYSLOG_LEVEL_DEBUG3, __VA_ARGS__)
+
+void     sshfatal(const char *file, const char *func, int line,
+    const char *fmt, ...) __attribute__((noreturn))
+    __attribute__((format(printf, 4, 5)));
+void     sshsigdie(const char *file, const char *func, int line,
+    const char *fmt, ...) __attribute__((noreturn))
+    __attribute__((format(printf, 4, 5)));
+void     sshlogdie(const char *file, const char *func, int line,
+    const char *fmt, ...) __attribute__((noreturn))
+    __attribute__((format(printf, 4, 5)));
+
+#define fatal(...)	sshfatal(__FILE__, __func__, __LINE__, __VA_ARGS__)
+#define logdie(...)	sshlogdie(__FILE__, __func__, __LINE__, __VA_ARGS__)
+#define sigdie(...)	sshsigdie(__FILE__, __func__, __LINE__, __VA_ARGS__)
 #endif
