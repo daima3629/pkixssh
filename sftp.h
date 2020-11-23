@@ -25,7 +25,7 @@
  */
 
 /*
- * draft-ietf-secsh-filexfer-01.txt
+ * draft-ietf-secsh-filexfer-02.txt
  */
 
 /* version */
