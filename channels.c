@@ -243,12 +243,12 @@ channel_by_id(struct ssh *ssh, int id)
 	Channel *c;
 
 	if (id < 0 || (u_int)id >= ssh->chanctxt->channels_alloc) {
-		logit("%s: %d: bad id", __func__, id);
+		debug("%s: %d: bad id", __func__, id);
 		return NULL;
 	}
 	c = ssh->chanctxt->channels[id];
 	if (c == NULL) {
-		logit("%s: %d: bad id: channel free", __func__, id);
+		debug("%s: %d: bad id: channel free", __func__, id);
 		return NULL;
 	}
 	return c;
@@ -960,7 +960,7 @@ channel_request_start(struct ssh *ssh, int id, char *service, int wantconfirm)
 	int r;
 
 	if (c == NULL) {
-		logit("%s: %d: unknown channel id", __func__, id);
+		debug("%s: %d: unknown channel id", __func__, id);
 		return;
 	}
 	if (!c->have_remote_id)
@@ -999,7 +999,7 @@ channel_register_open_confirm(struct ssh *ssh, int id,
 	Channel *c = channel_lookup(ssh, id);
 
 	if (c == NULL) {
-		logit("%s: %d: bad id", __func__, id);
+		debug("%s: %d: bad id", __func__, id);
 		return;
 	}
 	c->open_confirm = fn;
@@ -1013,7 +1013,7 @@ channel_register_cleanup(struct ssh *ssh, int id,
 	Channel *c = channel_by_id(ssh, id);
 
 	if (c == NULL) {
-		logit("%s: %d: bad id", __func__, id);
+		debug("%s: %d: bad id", __func__, id);
 		return;
 	}
 	c->detach_user = fn;
@@ -1026,7 +1026,7 @@ channel_cancel_cleanup(struct ssh *ssh, int id)
 	Channel *c = channel_by_id(ssh, id);
 
 	if (c == NULL) {
-		logit("%s: %d: bad id", __func__, id);
+		debug("%s: %d: bad id", __func__, id);
 		return;
 	}
 	c->detach_user = NULL;
@@ -1040,7 +1040,7 @@ channel_register_filter(struct ssh *ssh, int id, channel_infilter_fn *ifn,
 	Channel *c = channel_lookup(ssh, id);
 
 	if (c == NULL) {
-		logit("%s: %d: bad id", __func__, id);
+		debug("%s: %d: bad id", __func__, id);
 		return;
 	}
 	c->input_filter = ifn;
@@ -1308,18 +1308,16 @@ channel_decode_socks4(Channel *c, struct sshbuf *input, struct sshbuf *output)
 	have = sshbuf_len(input);
 	p = sshbuf_ptr(input);
 	if (memchr(p, '\0', have) == NULL) {
-		error("channel %d: decode socks4: user not nul terminated",
-		    c->self);
+		error("channel %d: decode socks4: unterminated user", c->self);
 		return -1;
 	}
 	len = strlen(p);
 	debug2("channel %d: decode socks4: user %s/%d", c->self, p, len);
 	len++; /* trailing '\0' */
 	strlcpy(username, p, sizeof(username));
-	if ((r = sshbuf_consume(input, len)) != 0) {
+	if ((r = sshbuf_consume(input, len)) != 0)
 		fatal("%s: channel %d: consume: %s", __func__,
 		    c->self, ssh_err(r));
-	}
 	free(c->path);
 	c->path = NULL;
 	if (need == 1) {			/* SOCKS4: one string */
@@ -1343,10 +1341,9 @@ channel_decode_socks4(Channel *c, struct sshbuf *input, struct sshbuf *output)
 			return -1;
 		}
 		c->path = xstrdup(p);
-		if ((r = sshbuf_consume(input, len)) != 0) {
+		if ((r = sshbuf_consume(input, len)) != 0)
 			fatal("%s: channel %d: consume: %s", __func__,
 			    c->self, ssh_err(r));
-		}
 	}
 	c->host_port = ntohs(s4_req.dest_port);
 
@@ -1362,10 +1359,9 @@ channel_decode_socks4(Channel *c, struct sshbuf *input, struct sshbuf *output)
 	s4_rsp.command = 90;			/* cd: req granted */
 	s4_rsp.dest_port = 0;			/* ignored */
 	s4_rsp.dest_addr.s_addr = INADDR_ANY;	/* ignored */
-	if ((r = sshbuf_put(output, &s4_rsp, sizeof(s4_rsp))) != 0) {
+	if ((r = sshbuf_put(output, &s4_rsp, sizeof(s4_rsp))) != 0)
 		fatal("%s: channel %d: append reply: %s", __func__,
 		    c->self, ssh_err(r));
-	}
 	return 1;
 }
 
@@ -1418,16 +1414,14 @@ channel_decode_socks5(Channel *c, struct sshbuf *input, struct sshbuf *output)
 			    c->self);
 			return -1;
 		}
-		if ((r = sshbuf_consume(input, nmethods + 2)) != 0) {
+		if ((r = sshbuf_consume(input, nmethods + 2)) != 0)
 			fatal("%s: channel %d: consume: %s", __func__,
 			    c->self, ssh_err(r));
-		}
 		/* version, method */
 		if ((r = sshbuf_put_u8(output, 0x05)) != 0 ||
-		    (r = sshbuf_put_u8(output, SSH_SOCKS5_NOAUTH)) != 0) {
+		    (r = sshbuf_put_u8(output, SSH_SOCKS5_NOAUTH)) != 0)
 			fatal("%s: channel %d: append reply: %s", __func__,
 			    c->self, ssh_err(r));
-		}
 		c->flags |= SSH_SOCKS5_AUTHDONE;
 		debug2("channel %d: socks5 auth done", c->self);
 		return 0;				/* need more */
@@ -1464,16 +1458,14 @@ channel_decode_socks5(Channel *c, struct sshbuf *input, struct sshbuf *output)
 		need++;
 	if (have < need)
 		return 0;
-	if ((r = sshbuf_consume(input, sizeof(s5_req))) != 0) {
+	if ((r = sshbuf_consume(input, sizeof(s5_req))) != 0)
 		fatal("%s: channel %d: consume: %s", __func__,
 		    c->self, ssh_err(r));
-	}
 	if (s5_req.atyp == SSH_SOCKS5_DOMAIN) {
 		/* host string length */
-		if ((r = sshbuf_consume(input, 1)) != 0) {
+		if ((r = sshbuf_consume(input, 1)) != 0)
 			fatal("%s: channel %d: consume: %s", __func__,
 			    c->self, ssh_err(r));
-		}
 	}
 	if ((r = sshbuf_get(input, &dest_addr, addrlen)) != 0 ||
 	    (r = sshbuf_get(input, &dest_port, 2)) != 0) {
@@ -1609,10 +1601,9 @@ channel_before_prepare_select_rdynamic(struct ssh *ssh, Channel *c)
 	/* sshbuf_dump(c->output, stderr); */
 	/* EOF received */
 	if (c->flags & CHAN_EOF_RCVD) {
-		if ((r = sshbuf_consume(c->output, have)) != 0) {
+		if ((r = sshbuf_consume(c->output, have)) != 0)
 			fatal("%s: channel %d: consume: %s",
 			    __func__, c->self, ssh_err(r));
-		}
 		rdynamic_close(ssh, c);
 		return;
 	}
@@ -1647,10 +1638,9 @@ channel_before_prepare_select_rdynamic(struct ssh *ssh, Channel *c)
 				fatal("%s: channel %i: rdynamic: %s", __func__,
 				    c->self, ssh_err(r));
 			}
-			if ((r = sshbuf_consume(c->input, len)) != 0) {
+			if ((r = sshbuf_consume(c->input, len)) != 0)
 				fatal("%s: channel %d: consume: %s",
 				    __func__, c->self, ssh_err(r));
-			}
 			c->remote_window -= len;
 		}
 	} else if (rdynamic_connect_finish(ssh, c) < 0) {
@@ -1739,43 +1729,37 @@ port_open_helper(struct ssh *ssh, Channel *c, char *rtype)
 	if (strcmp(rtype, "direct-tcpip") == 0) {
 		/* target host, port */
 		if ((r = sshpkt_put_cstring(ssh, c->path)) != 0 ||
-		    (r = sshpkt_put_u32(ssh, c->host_port)) != 0) {
+		    (r = sshpkt_put_u32(ssh, c->host_port)) != 0)
 			fatal("%s: channel %i: reply %s", __func__,
 			    c->self, ssh_err(r));
-		}
 	} else if (strcmp(rtype, "direct-streamlocal@openssh.com") == 0) {
 		/* target path */
-		if ((r = sshpkt_put_cstring(ssh, c->path)) != 0) {
+		if ((r = sshpkt_put_cstring(ssh, c->path)) != 0)
 			fatal("%s: channel %i: reply %s", __func__,
 			    c->self, ssh_err(r));
-		}
 	} else if (strcmp(rtype, "forwarded-streamlocal@openssh.com") == 0) {
 		/* listen path */
-		if ((r = sshpkt_put_cstring(ssh, c->path)) != 0) {
+		if ((r = sshpkt_put_cstring(ssh, c->path)) != 0)
 			fatal("%s: channel %i: reply %s", __func__,
 			    c->self, ssh_err(r));
-		}
 	} else {
 		/* listen address, port */
 		if ((r = sshpkt_put_cstring(ssh, c->path)) != 0 ||
-		    (r = sshpkt_put_u32(ssh, local_port)) != 0) {
+		    (r = sshpkt_put_u32(ssh, local_port)) != 0)
 			fatal("%s: channel %i: reply %s", __func__,
 			    c->self, ssh_err(r));
-		}
 	}
 	if (strcmp(rtype, "forwarded-streamlocal@openssh.com") == 0) {
 		/* reserved for future owner/mode info */
-		if ((r = sshpkt_put_cstring(ssh, "")) != 0) {
+		if ((r = sshpkt_put_cstring(ssh, "")) != 0)
 			fatal("%s: channel %i: reply %s", __func__,
 			    c->self, ssh_err(r));
-		}
 	} else {
 		/* originator host and port */
 		if ((r = sshpkt_put_cstring(ssh, remote_ipaddr)) != 0 ||
-		    (r = sshpkt_put_u32(ssh, (u_int)remote_port)) != 0) {
+		    (r = sshpkt_put_u32(ssh, (u_int)remote_port)) != 0)
 			fatal("%s: channel %i: reply %s", __func__,
 			    c->self, ssh_err(r));
-		}
 	}
 	if ((r = sshpkt_send(ssh)) != 0)
 		fatal("%s: channel %i: send %s", __func__, c->self, ssh_err(r));
@@ -1914,13 +1898,10 @@ channel_post_connecting(struct ssh *ssh, Channel *c,
 			    (r = sshpkt_put_u32(ssh, c->remote_id)) != 0 ||
 			    (r = sshpkt_put_u32(ssh, c->self)) != 0 ||
 			    (r = sshpkt_put_u32(ssh, c->local_window)) != 0 ||
-			    (r = sshpkt_put_u32(ssh, c->local_maxpacket))
-			    != 0)
-				fatal("%s: channel %i: confirm: %s", __func__,
+			    (r = sshpkt_put_u32(ssh, c->local_maxpacket)) != 0 ||
+			    (r = sshpkt_send(ssh)) != 0)
+				fatal("%s: channel %i open confirm: %s", __func__,
 				    c->self, ssh_err(r));
-			if ((r = sshpkt_send(ssh)) != 0)
-				fatal("%s: channel %i: %s", __func__, c->self,
-				    ssh_err(r));
 		}
 	} else {
 		debug("channel %d: connection failed: %s",
@@ -1945,13 +1926,10 @@ channel_post_connecting(struct ssh *ssh, Channel *c,
 			    (r = sshpkt_put_u32(ssh,
 			    SSH2_OPEN_CONNECT_FAILED)) != 0 ||
 			    (r = sshpkt_put_cstring(ssh, strerror(err))) != 0 ||
-			    (r = sshpkt_put_cstring(ssh, "")) != 0) {
-				fatal("%s: channel %i: failure: %s", __func__,
+			    (r = sshpkt_put_cstring(ssh, "")) != 0 ||
+			    (r = sshpkt_send(ssh)) != 0)
+				fatal("%s: channel %i open failure: %s", __func__,
 				    c->self, ssh_err(r));
-			}
-			if ((r = sshpkt_send(ssh)) != 0)
-				fatal("%s: channel %i: %s", __func__, c->self,
-				    ssh_err(r));
 			chan_mark_dead(ssh, c);
 		}
 	}
@@ -2002,10 +1980,9 @@ channel_handle_rfd(struct ssh *ssh, Channel *c,
 		if ((r = sshbuf_put_string(c->input, buf, len)) != 0)
 			fatal("%s: channel %d: put datagram: %s", __func__,
 			    c->self, ssh_err(r));
-	} else if ((r = sshbuf_put(c->input, buf, len)) != 0) {
+	} else if ((r = sshbuf_put(c->input, buf, len)) != 0)
 		fatal("%s: channel %d: put data: %s", __func__,
 		    c->self, ssh_err(r));
-	}
 	return 1;
 }
 
@@ -2096,10 +2073,9 @@ channel_handle_wfd(struct ssh *ssh, Channel *c,
 	}
 }
 #endif /* BROKEN_TCGETATTR_ICANON */
-	if ((r = sshbuf_consume(c->output, len)) != 0) {
+	if ((r = sshbuf_consume(c->output, len)) != 0)
 		fatal("%s: channel %d: consume: %s",
 		    __func__, c->self, ssh_err(r));
-	}
  out:
 	c->local_consumed += olen - sshbuf_len(c->output);
 
@@ -2127,10 +2103,9 @@ channel_handle_efd_write(struct ssh *ssh, Channel *c,
 		debug2("channel %d: closing write-efd %d", c->self, c->efd);
 		channel_close_fd(ssh, &c->efd);
 	} else {
-		if ((r = sshbuf_consume(c->extended, len)) != 0) {
+		if ((r = sshbuf_consume(c->extended, len)) != 0)
 			fatal("%s: channel %d: consume: %s",
 			    __func__, c->self, ssh_err(r));
-		}
 		c->local_consumed += len;
 	}
 	return 1;
@@ -2157,18 +2132,13 @@ channel_handle_efd_read(struct ssh *ssh, Channel *c,
 	    errno == EWOULDBLOCK) && !force)))
 		return 1;
 	if (len <= 0) {
-		debug2("channel %d: closing read-efd %d",
-		    c->self, c->efd);
+		debug2("channel %d: closing read-efd %d", c->self, c->efd);
 		channel_close_fd(ssh, &c->efd);
-	} else {
-		if (c->extended_usage == CHAN_EXTENDED_IGNORE) {
-			debug3("channel %d: discard efd",
-			    c->self);
-		} else if ((r = sshbuf_put(c->extended, buf, len)) != 0) {
-			fatal("%s: channel %d: append: %s",
-			    __func__, c->self, ssh_err(r));
-		}
-	}
+	} else if (c->extended_usage == CHAN_EXTENDED_IGNORE)
+		debug3("channel %d: discard efd", c->self);
+	else if ((r = sshbuf_put(c->extended, buf, len)) != 0)
+		fatal("%s: channel %d: append: %s",
+		    __func__, c->self, ssh_err(r));
 	return 1;
 }
 
@@ -2208,13 +2178,11 @@ channel_check_window(struct ssh *ssh, Channel *c)
 		    SSH2_MSG_CHANNEL_WINDOW_ADJUST)) != 0 ||
 		    (r = sshpkt_put_u32(ssh, c->remote_id)) != 0 ||
 		    (r = sshpkt_put_u32(ssh, c->local_consumed)) != 0 ||
-		    (r = sshpkt_send(ssh)) != 0) {
+		    (r = sshpkt_send(ssh)) != 0)
 			fatal("%s: channel %i: %s", __func__,
 			    c->self, ssh_err(r));
-		}
-		debug2("channel %d: window %d sent adjust %d",
-		    c->self, c->local_window,
-		    c->local_consumed);
+		debug2("channel %d: window %d sent adjust %d", c->self,
+		    c->local_window, c->local_consumed);
 		c->local_window += c->local_consumed;
 		c->local_consumed = 0;
 	}
@@ -2249,10 +2217,9 @@ read_mux(struct ssh *ssh, Channel *c, u_int need)
 			    c->self, c->rfd, len);
 			chan_read_failed(ssh, c);
 			return 0;
-		} else if ((r = sshbuf_put(c->input, buf, len)) != 0) {
+		} else if ((r = sshbuf_put(c->input, buf, len)) != 0)
 			fatal("%s: channel %d: append: %s",
 			    __func__, c->self, ssh_err(r));
-		}
 	}
 	return sshbuf_len(c->input);
 }
@@ -2610,10 +2577,9 @@ channel_output_poll_input_open(struct ssh *ssh, Channel *c)
 		if ((r = sshpkt_start(ssh, SSH2_MSG_CHANNEL_DATA)) != 0 ||
 		    (r = sshpkt_put_u32(ssh, c->remote_id)) != 0 ||
 		    (r = sshpkt_put_string(ssh, pkt, plen)) != 0 ||
-		    (r = sshpkt_send(ssh)) != 0) {
+		    (r = sshpkt_send(ssh)) != 0)
 			fatal("%s: channel %i: datagram: %s", __func__,
 			    c->self, ssh_err(r));
-		}
 		c->remote_window -= plen;
 		return;
 	}
@@ -2628,10 +2594,9 @@ channel_output_poll_input_open(struct ssh *ssh, Channel *c)
 	if ((r = sshpkt_start(ssh, SSH2_MSG_CHANNEL_DATA)) != 0 ||
 	    (r = sshpkt_put_u32(ssh, c->remote_id)) != 0 ||
 	    (r = sshpkt_put_string(ssh, sshbuf_ptr(c->input), len)) != 0 ||
-	    (r = sshpkt_send(ssh)) != 0) {
+	    (r = sshpkt_send(ssh)) != 0)
 		fatal("%s: channel %i: data: %s", __func__,
 		    c->self, ssh_err(r));
-	}
 	if ((r = sshbuf_consume(c->input, len)) != 0)
 		fatal("%s: channel %i: consume: %s", __func__,
 		    c->self, ssh_err(r));
@@ -2664,10 +2629,9 @@ channel_output_poll_extended_read(struct ssh *ssh, Channel *c)
 	    (r = sshpkt_put_u32(ssh, c->remote_id)) != 0 ||
 	    (r = sshpkt_put_u32(ssh, SSH2_EXTENDED_DATA_STDERR)) != 0 ||
 	    (r = sshpkt_put_string(ssh, sshbuf_ptr(c->extended), len)) != 0 ||
-	    (r = sshpkt_send(ssh)) != 0) {
+	    (r = sshpkt_send(ssh)) != 0)
 		fatal("%s: channel %i: data: %s", __func__,
 		    c->self, ssh_err(r));
-	}
 	if ((r = sshbuf_consume(c->extended, len)) != 0)
 		fatal("%s: channel %i: consume: %s", __func__,
 		    c->self, ssh_err(r));
@@ -3311,7 +3275,7 @@ channel_input_status_confirm(int type, u_int32_t seq, struct ssh *ssh)
 	debug2("%s: type %d id %d", __func__, type, id);
 
 	if ((c = channel_lookup(ssh, id)) == NULL) {
-		logit("%s: %d: unknown", __func__, id);
+		debug("%s: %d: unknown", __func__, id);
 		return 0;
 	}
 	if (channel_proxy_upstream(c, type, seq, ssh))
@@ -4183,7 +4147,7 @@ channel_update_permission(struct ssh *ssh, int idx, int newport)
 		    __func__, idx, pset->num_permitted_user);
 		return;
 	}
-	debug("%s allowed port %d for forwarding to host %s port %d",
+	verbose("%s allowed port %d for forwarding to host %s port %d",
 	    newport > 0 ? "Updating" : "Removing",
 	    newport,
 	    pset->permitted_user[idx].host_to_connect,
@@ -4577,10 +4541,9 @@ rdynamic_connect_prepare(struct ssh *ssh, char *ctype, char *rname)
 	    (r = sshpkt_put_u32(ssh, c->remote_id)) != 0 ||
 	    (r = sshpkt_put_u32(ssh, c->self)) != 0 ||
 	    (r = sshpkt_put_u32(ssh, c->local_window)) != 0 ||
-	    (r = sshpkt_put_u32(ssh, c->local_maxpacket)) != 0) {
+	    (r = sshpkt_put_u32(ssh, c->local_maxpacket)) != 0)
 		fatal("%s: channel %i: confirm: %s", __func__,
 		    c->self, ssh_err(r));
-	}
 	return c;
 }
 
