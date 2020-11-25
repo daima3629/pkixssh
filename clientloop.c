@@ -2338,6 +2338,19 @@ client_input_global_request(int type, u_int32_t seq, struct ssh *ssh)
 	return r;
 }
 
+static void
+client_send_env(struct ssh *ssh, int id, const char *name, const char *val)
+{
+	int r;
+
+	debug("channel %d: setting env %s = \"%s\"", id, name, val);
+	channel_request_start(ssh, id, "env", 0);
+	if ((r = sshpkt_put_cstring(ssh, name)) != 0 ||
+	    (r = sshpkt_put_cstring(ssh, val)) != 0 ||
+	    (r = sshpkt_send(ssh)) != 0)
+		fatal("%s: send setenv: %s", __func__, ssh_err(r));
+}
+
 void
 client_session2_setup(struct ssh *ssh, int id, int want_tty, int want_subsystem,
     const char *term, struct termios *tiop, int in_fd, struct sshbuf *cmd,
@@ -2404,15 +2417,7 @@ client_session2_setup(struct ssh *ssh, int id, int want_tty, int want_subsystem,
 				free(name);
 				continue;
 			}
-
-			debug("Sending env %s = %s", name, val);
-			channel_request_start(ssh, id, "env", 0);
-			if ((r = sshpkt_put_cstring(ssh, name)) != 0 ||
-			    (r = sshpkt_put_cstring(ssh, val)) != 0 ||
-			    (r = sshpkt_send(ssh)) != 0) {
-				fatal("%s: send packet: %s",
-				    __func__, ssh_err(r));
-			}
+			client_send_env(ssh, id, name, val);
 			free(name);
 		}
 	}
@@ -2424,13 +2429,7 @@ client_session2_setup(struct ssh *ssh, int id, int want_tty, int want_subsystem,
 			continue;
 		}
 		*val++ = '\0';
-
-		debug("Setting env %s = %s", name, val);
-		channel_request_start(ssh, id, "env", 0);
-		if ((r = sshpkt_put_cstring(ssh, name)) != 0 ||
-		    (r = sshpkt_put_cstring(ssh, val)) != 0 ||
-		    (r = sshpkt_send(ssh)) != 0)
-			fatal("%s: send packet: %s", __func__, ssh_err(r));
+		client_send_env(ssh, id, name, val);
 		free(name);
 	}
 
