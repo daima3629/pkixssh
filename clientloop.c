@@ -2018,27 +2018,29 @@ update_known_hosts(struct hostkeys_update_ctx *ctx)
 	 * cancel the operation).
 	 */
 	for (i = 0; i < options.num_user_hostfiles; i++) {
+		char *known_hosts_file = options.user_hostfiles[i];
 		/*
 		 * NB. keys are only added to hostfiles[0], for the rest we
 		 * just delete the hostname entries.
 		 */
-		if (stat(options.user_hostfiles[i], &sb) == -1) {
+		if (stat(known_hosts_file, &sb) == -1) {
 			if (errno == ENOENT) {
 				debug("%s: known hosts file %s does not exist",
-				    __func__, strerror(errno));
+				    __func__, known_hosts_file);
 			} else {
-				error("%s: known hosts file %s inaccessible",
-				    __func__, strerror(errno));
+				error("%s: known hosts file %s "
+				    "inaccessible: %s", __func__,
+				    known_hosts_file, strerror(errno));
 			}
 			continue;
 		}
-		if ((r = hostfile_replace_entries(options.user_hostfiles[i],
+		if ((r = hostfile_replace_entries(known_hosts_file,
 		    ctx->host_str, ctx->ip_str,
 		    i == 0 ? ctx->keys : NULL, i == 0 ? ctx->nkeys : 0,
 		    options.hash_known_hosts, 0,
 		    options.fingerprint_hash)) != 0) {
 			error("%s: hostfile_replace_entries failed for %s: %s",
-			    __func__, options.user_hostfiles[i], ssh_err(r));
+			    __func__, known_hosts_file, ssh_err(r));
 		}
 	}
 }
