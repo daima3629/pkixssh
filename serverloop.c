@@ -332,21 +332,18 @@ process_input(struct ssh *ssh, fd_set *readset, int connection_in)
 			    ssh_remote_ipaddr(ssh), ssh_remote_port(ssh));
 			return -1;
 		} else if (len == -1) {
-			if (errno != EINTR && errno != EAGAIN &&
-			    errno != EWOULDBLOCK) {
-				verbose("Read error from remote host "
-				    "%.100s port %d: %.100s",
-				    ssh_remote_ipaddr(ssh),
-				    ssh_remote_port(ssh), strerror(errno));
-				cleanup_exit(255);
-			}
-		} else {
-			/* Buffer any received data. */
-			if ((r = ssh_packet_process_incoming(ssh, buf, len))
-			    != 0)
-				fatal("%s: ssh_packet_process_incoming: %s",
-				    __func__, ssh_err(r));
+			if (errno == EINTR || errno == EAGAIN ||
+			    errno == EWOULDBLOCK)
+				return 0;
+			verbose("Read error from remote host %s port %d: %s",
+			    ssh_remote_ipaddr(ssh), ssh_remote_port(ssh),
+			    strerror(errno));
+			cleanup_exit(255);
 		}
+		/* Buffer any received data. */
+		if ((r = ssh_packet_process_incoming(ssh, buf, len)) != 0)
+			fatal("%s: ssh_packet_process_incoming: %s",
+			    __func__, ssh_err(r));
 	}
 	return 0;
 }
