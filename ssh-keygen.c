@@ -1187,7 +1187,7 @@ do_gen_all_hostkeys(struct passwd *pw)
 		}
 		(void)close(fd); /* just using mkstemp() to reserve a name */
 		if ((r = sshkey_save_public(public, pub_tmp, comment)) != 0) {
-			fatal("Unable to save public key to %s: %s",
+			error("Unable to save public key to %s: %s",
 			    identity_file, ssh_err(r));
 			goto failnext;
 		}
