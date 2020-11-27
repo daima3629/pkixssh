@@ -263,6 +263,41 @@ get_sock_af(int fd)
 	return to.ss_family;
 }
 
+void
+set_sock_tos(int fd, int tos)
+{
+#ifndef IP_TOS_IS_BROKEN
+	int af = get_sock_af(fd);
+
+	switch (af) {
+	case AF_UNSPEC:
+		/* assume not a socket */
+		break;
+	case AF_INET:
+# ifdef IP_TOS
+		debug3("%s: set socket %d IP_TOS 0x%02x", __func__, fd, tos);
+		if (setsockopt(fd, IPPROTO_IP, IP_TOS,
+		    &tos, sizeof(tos)) == -1)
+			error("setsockopt socket %d IP_TOS %d: %s:",
+			    fd, tos, strerror(errno));
+# endif /* IP_TOS */
+		break;
+	case AF_INET6:
+# ifdef IPV6_TCLASS
+		debug3("%s: set socket %d IPV6_TCLASS 0x%02x", __func__, fd, tos);
+		if (setsockopt(fd, IPPROTO_IPV6, IPV6_TCLASS,
+		    &tos, sizeof(tos)) == -1)
+			error("setsockopt socket %d IPV6_TCLASS %d: %s:",
+			    fd, tos, strerror(errno));
+# endif /* IPV6_TCLASS */
+		break;
+	default:
+		debug2("%s: unsupported socket family %d", __func__, af);
+		break;
+	}
+#endif /* IP_TOS_IS_BROKEN */
+}
+
 /*
  * Wait up to *timeoutp milliseconds for events on fd. Updates
  * *timeoutp with time remaining.
