@@ -433,13 +433,10 @@ ssh_X509_NAME_add_entry_by_NID(X509_NAME* name, int nid, const u_char* str, size
 
 	/* this method will fail if string exceed max size limit for nid */
 	ret = X509_NAME_add_entry_by_NID(name, nid, type, buf, (int)k, -1, 0);
-	if (!ret) {
-		char ebuf[1024];
-		crypto_errormsg(ebuf, sizeof(ebuf));
-		error("%s: X509_NAME_add_entry_by_NID fail for nid=%d/%.32s"
-		    " with errormsg '%s' and data='%.512s'"
-		    , __func__, nid, OBJ_nid2ln(nid), ebuf, str);
-	}
+	if (!ret)
+		error_crypto("X509_NAME_add_entry_by_NID",
+		    "nid=%d/%.32s, data='%.512s'",
+		    nid, OBJ_nid2ln(nid), str);
 	return ret;
 }
 
@@ -626,10 +623,7 @@ x509_to_key(X509 *x509) {
 
 	env_pkey = X509_get_pubkey(x509);
 	if (env_pkey == NULL) {
-		char ebuf[1024];
-		crypto_errormsg(ebuf, sizeof(ebuf));
-		error("%s: X509_get_pubkey fail: '%s'"
-		    , __func__, ebuf);
+		error_crypto("X509_get_pubkey", "");
 		return NULL;
 	}
 #if 0
@@ -722,10 +716,7 @@ X509_from_blob(const u_char *blob, size_t blen, X509 **xp) {
 	/* read X509 certificate from BIO data */
 	x = d2i_X509_bio(mbio, NULL);
 	if (x == NULL) {
-		char ebuf[1024];
-		crypto_errormsg(ebuf, sizeof(ebuf));
-		debug3("%s: can not read X.509 from memory BIO: '%s'"
-		    , __func__, ebuf);
+		debug3_crypto("d2i_X509_bio", "");
 		r = SSH_ERR_INVALID_FORMAT;
 		goto done;
 	}
@@ -1360,10 +1351,7 @@ x509key_parse_cert(struct sshkey *key, EVP_PKEY *pk, BIO *bio) {
 	debug3("read X.509 certificate begin");
 	x = PEM_read_bio_X509(bio, NULL, NULL, NULL);
 	if (x == NULL) {
-		char ebuf[1024];
-		crypto_errormsg(ebuf, sizeof(ebuf));
-		debug3("%s: PEM_read_X509 fail: '%s'"
-		    , __func__, ebuf);
+		debug3_crypto("PEM_read_bio_X509", "");
 		return;
 	}
 
@@ -1506,12 +1494,8 @@ x509key_write_bio_cert(BIO *out, X509 *x509) {
 	}
 
 	ret = PEM_write_bio_X509(out, x509);
-	if (!ret) {
-		char ebuf[1024];
-		crypto_errormsg(ebuf, sizeof(ebuf));
-		error("%s: PEM_write_bio_X509 fail: '%s'",
-		    __func__, ebuf);
-	}
+	if (!ret)
+		error_crypto("PEM_write_bio_X509", "");
 
 	return ret;
 }
@@ -1768,7 +1752,7 @@ ssh_x509_sign(
 
 	if (!res) { /*EVP_PKEY_set1_... returns boolean*/
 		error("ssh_x509_sign: EVP_PKEY_set1_XXX: fail");
-		log_crypto_errors(SYSLOG_LEVEL_ERROR, __func__);
+		do_log_crypto_errors(SYSLOG_LEVEL_ERROR);
 		r = SSH_ERR_LIBCRYPTO_ERROR;
 		goto end_sign_pkey;
 	}
@@ -1776,7 +1760,7 @@ ssh_x509_sign(
 	keylen = EVP_PKEY_size(privkey);
 	if (keylen <= 0) {
 		error("ssh_x509_sign: cannot get key size");
-		log_crypto_errors(SYSLOG_LEVEL_ERROR, __func__);
+		do_log_crypto_errors(SYSLOG_LEVEL_ERROR);
 		r = SSH_ERR_LIBCRYPTO_ERROR;
 		goto end_sign_pkey;
 	}
@@ -1801,7 +1785,7 @@ ssh_x509_sign(
 	res = ssh_x509_EVP_PKEY_sign(privkey, &dgst, sigret, &siglen, data, len);
 }
 	if (res <= 0) {
-		log_crypto_errors(SYSLOG_LEVEL_ERROR, __func__);
+		do_log_crypto_errors(SYSLOG_LEVEL_ERROR);
 		r = SSH_ERR_LIBCRYPTO_ERROR;
 	}
 }
@@ -1995,7 +1979,7 @@ end_sign_blob:
 		ret = ssh_xkalg_verify(pubkey, dgst, sigblob, len, data, datalen);
 		if (ret > 0) break;
 
-		log_crypto_errors(SYSLOG_LEVEL_ERROR, __func__);
+		do_log_crypto_errors(SYSLOG_LEVEL_ERROR);
 	}
 	if (ret <= 0) {
 		debug3("ssh_x509_verify: failed for all digests");
@@ -2034,7 +2018,7 @@ Xkey_sign(ssh_sign_ctx *ctx,
 		    ctx->alg, ctx->provider, ctx->pin,
 		    ctx->compat->datafellows);
 		if (ret == SSH_ERR_LIBCRYPTO_ERROR)
-			log_crypto_errors(SYSLOG_LEVEL_ERROR, __func__);
+			do_log_crypto_errors(SYSLOG_LEVEL_ERROR);
 		else
 			debug3("%s: return %d", __func__, ret);
 		return ret;

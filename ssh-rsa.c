@@ -257,10 +257,7 @@ ssh_rsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 	ok = EVP_SignInit_ex(md, evp_md, NULL);
 	if (ok <= 0) {
 #ifdef TRACE_EVP_ERROR
-		char ebuf[1024];
-		crypto_errormsg(ebuf, sizeof(ebuf));
-		error("%s: EVP_SignInit_ex fail with errormsg='%s'"
-		    , __func__, ebuf);
+		error_crypto("EVP_SignInit_ex", "");
 #endif
 		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto evp_md_end;
@@ -269,10 +266,7 @@ ssh_rsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 	ok = EVP_SignUpdate(md, data, datalen);
 	if (ok <= 0) {
 #ifdef TRACE_EVP_ERROR
-		char ebuf[1024];
-		crypto_errormsg(ebuf, sizeof(ebuf));
-		error("%s: EVP_SignUpdate fail with errormsg='%s'"
-		    , __func__, ebuf);
+		error_crypto("EVP_SignUpdate", "");
 #endif
 		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto evp_md_end;
@@ -281,10 +275,7 @@ ssh_rsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 	ok = EVP_SignFinal(md, sig, &len, pkey);
 	if (ok <= 0) {
 #ifdef TRACE_EVP_ERROR
-		char ebuf[1024];
-		crypto_errormsg(ebuf, sizeof(ebuf));
-		error("%s: SignFinal fail with errormsg='%s'"
-		    , __func__, ebuf);
+		error_crypto("EVP_SignFinal", "");
 #endif
 		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto evp_md_end;
@@ -432,10 +423,7 @@ ssh_rsa_verify(const struct sshkey *key,
 	ok = EVP_VerifyInit(md, evp_md);
 	if (ok <= 0) {
 #ifdef TRACE_EVP_ERROR
-		char ebuf[1024];
-		crypto_errormsg(ebuf, sizeof(ebuf));
-		error("%s: EVP_VerifyInit fail with errormsg='%s'"
-		    , __func__, ebuf);
+		error_crypto("EVP_VerifyInit", "");
 #endif
 		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto evp_md_end;
@@ -444,10 +432,7 @@ ssh_rsa_verify(const struct sshkey *key,
 	ok = EVP_VerifyUpdate(md, data, datalen);
 	if (ok <= 0) {
 #ifdef TRACE_EVP_ERROR
-		char ebuf[1024];
-		crypto_errormsg(ebuf, sizeof(ebuf));
-		error("%s: EVP_VerifyUpdate fail with errormsg='%s'"
-		    , __func__, ebuf);
+		error_crypto("EVP_VerifyUpdate", "");
 #endif
 		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto evp_md_end;
@@ -456,10 +441,7 @@ ssh_rsa_verify(const struct sshkey *key,
 	ok = EVP_VerifyFinal(md, sigblob, len, pkey);
 	if (ok < 0) {
 #ifdef TRACE_EVP_ERROR
-		char ebuf[1024];
-		crypto_errormsg(ebuf, sizeof(ebuf));
-		error("%s: EVP_VerifyFinal fail with errormsg='%s'"
-		    , __func__, ebuf);
+		error_crypto("EVP_VerifyFinal", "");
 #endif
 		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto evp_md_end;

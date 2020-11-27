@@ -255,7 +255,7 @@ process_sign(void)
 		if ((found = lookup_key(key)) != NULL) {
 			ok = process_key_sign(dlen, data, found, &signature, &slen);
 			if (ok != 0)
-				log_crypto_errors(SYSLOG_LEVEL_ERROR, __func__);
+				do_log_crypto_errors(SYSLOG_LEVEL_ERROR);
 		}
 		sshkey_free(key);
 	}

@@ -53,6 +53,8 @@
 #include "log.h"
 #include <openssl/err.h>
 
+#define MSGBUFSIZ 1024
+
 static LogLevel log_level = SYSLOG_LEVEL_INFO;
 static int log_on_stderr = 1;
 static int log_stderr_fd = STDERR_FILENO;
@@ -355,21 +357,22 @@ get_one_crypto_error(char *buf, size_t len) {
 	return buf;
 }
 
-void
-log_crypto_errors(LogLevel level, const char *fn) {
-	char ebuf[1024];
+void 
+sshlog_cryptoerr_all(const char *file, const char *func, int line,
+    LogLevel level
+) {
+	char ebuf[MSGBUFSIZ];
 	const char *emsg;
-
 	for (
 	    emsg = get_one_crypto_error(ebuf, sizeof(ebuf));
 	    emsg != NULL;
 	    emsg = get_one_crypto_error(ebuf, sizeof(ebuf))
-	) {
-		do_log2(level, "%s: crypto message: %s", fn, emsg);
-	}
+	)
+		sshlog(file, func, line, level,
+		    "%s: crypto message: '%s'", func, emsg);
 }
 
-char*
+static char*
 crypto_errormsg(char *buf, size_t len) {
 	unsigned long err_code;
 	const char *err_data;
@@ -403,8 +406,26 @@ out:
 	return buf;
 }
 
+void
+sshlog_cryptoerr(const char *file, const char *func, int line,
+    LogLevel level, const char *openssl_method, const char *fmt, ...)
+{
+	char *sep, mbuf[MSGBUFSIZ], ebuf[MSGBUFSIZ];
+	va_list args;
 
-#define MSGBUFSIZ 1024
+	va_start(args, fmt);
+	vsnprintf(mbuf, sizeof(mbuf), fmt, args);
+	va_end(args);
+
+	sep = mbuf[0] != '\0' ? "/" : "",
+
+	crypto_errormsg(ebuf, sizeof(ebuf));
+
+	sshlog(file, func, line, level,
+	    "%s->%s%s%s%s last error: '%s'", func, openssl_method,
+	    sep, mbuf, sep, ebuf);
+}
+
 
 void
 set_log_handler(log_handler_fn *handler, void *ctx)

@@ -462,10 +462,7 @@ engine_load_private_type(int type, const char *filename,
 
 	pk = ENGINE_load_private_key(e, engkeyid, ssh_ui_method, NULL);
 	if (pk == NULL) {
-		char ebuf[1024];
-		crypto_errormsg(ebuf, sizeof(ebuf));
-		error("%s: ENGINE_load_private_key(%s) fail with errormsg='%s'"
-		    , __func__, ENGINE_get_id(e) , ebuf);
+		error_crypto("ENGINE_load_private_key", "engine %s", ENGINE_get_id(e));
 		ret = SSH_ERR_KEY_NOT_FOUND;
 		goto done;
 	}
@@ -531,14 +528,12 @@ engine_try_load_public(const char *filename, struct sshkey **keyp, char **commen
 
 	pk = ENGINE_load_public_key(e, engkeyid, ssh_ui_method, NULL);
 	if (pk == NULL) {
-		char ebuf[1024];
+		error_crypto("ENGINE_load_public_key", "engine %s", ENGINE_get_id(e));
 		/* fatal here to avoid PIN lock, for instance
 		 * when ssh-askpass program is missing.
 		 * NOTE programs still try to load public key many times!
 		 */
-		crypto_errormsg(ebuf, sizeof(ebuf));
-		fatal("%s: ENGINE_load_public_key(%s) fail with errormsg='%s'"
-		    , __func__, ENGINE_get_id(e), ebuf);
+		fatal("%s: avoid device locks ...", __func__);
 		/* TODO library mode in case of failure */
 		ret = SSH_ERR_KEY_NOT_FOUND;
 		goto done;
@@ -571,10 +566,7 @@ try_load_engine(const char *engine) {
 	ENGINE *e = NULL;
 	int self_registered = 0;
 
-	if (engine == NULL) {
-		fatal("%s: engine is NULL", __func__);
-		return(NULL); /* ;-) */
-	}
+	if (engine == NULL) return NULL;
 
 	/* Check if engine is not already loaded by openssl
 	 * (as internal or from config file).
@@ -590,11 +582,8 @@ try_load_engine(const char *engine) {
 
 	e = ENGINE_by_id(engine);
 	if (e == NULL) {
-		char ebuf[1024];
-		crypto_errormsg(ebuf, sizeof(ebuf));
-		fatal("%s(%s): setup fail with last error '%s'"
-		    , __func__, engine, ebuf);
-		return(NULL); /* ;-) */
+		error_crypto("ENGINE_by_id", "");
+		goto done;
 	}
 
 {	/* OpenSSL 1.0.1g start to register engines internaly!
@@ -612,16 +601,17 @@ try_load_engine(const char *engine) {
 }
 
 	if (!self_registered && !ENGINE_add(e)) {
-		char ebuf[1024];
-		crypto_errormsg(ebuf, sizeof(ebuf));
-		fatal("%s(%s): registration fail with last error '%s'"
-		    , __func__, engine, ebuf);
-		return(NULL); /* ;-) */
+		error_crypto("ENGINE_add", "");
+		/*ENGINE_free(e);?*/
+		e = NULL;
 	}
 
 done:
-	debug3("%s: engine '%s' loaded", __func__, ENGINE_get_name(e));
-	return(e);
+	if (e != NULL)
+		debug3("%s: engine '%s' loaded", __func__, ENGINE_get_name(e));
+	else
+		debug3("%s: cannot load engine '%s'", __func__, engine);
+	return e;
 }
 
 
@@ -630,29 +620,23 @@ ssh_engine_setup(const char *engine) {
 	int ctrl_ret;
 	ENGINE *e = NULL;
 
-	e = try_load_engine(engine); /* fatal on error */
+	e = try_load_engine(engine);
+	if (e == NULL) return NULL;
 
 	if (!ENGINE_init(e)) {
-		char ebuf[1024];
-		crypto_errormsg(ebuf, sizeof(ebuf));
-		fatal("%s(%s): ENGINE_init fail with last error '%s'"
-		    , __func__, engine, ebuf);
-		return(NULL); /* ;-) */
+		error_crypto("ENGINE_init", "");
+		return NULL;
 	}
 
 	ctrl_ret = ENGINE_ctrl_cmd(e, "SET_USER_INTERFACE", 0, ssh_ui_method, 0, 1);
-	if (!ctrl_ret) {
-		char ebuf[1024];
-		crypto_errormsg(ebuf, sizeof(ebuf));
-		debug3("%s(%s): unsupported engine command SET_USER_INTERFACE: %s"
-		    , __func__, engine, ebuf);
-	}
+	if (!ctrl_ret)
+		debug3_crypto("ENGINE_ctrl_cmd",
+		    "engine %s, command SET_USER_INTERFACE",
+		    engine);
 
-	if (!ENGINE_free(e)) {
-		e = NULL;
-	}
+	if (!ENGINE_free(e)) e = NULL;
 
-	return(e);
+	return e;
 }
 
 
@@ -722,12 +706,9 @@ process_engconfig_line(char *line, const char *filename, int linenum) {
 		}
 
 		e = ssh_engine_setup(arg);
-		if (e == NULL) {
-			char ebuf[1024];
-			crypto_errormsg(ebuf, sizeof(ebuf));
-			fatal("%.200s line %d: cannot load engine %s: '%s'"
-			    , filename, linenum, arg, ebuf);
-		}
+		if (e == NULL)
+			fatal("%.200s line %d: cannot load engine %s",
+			    filename, linenum, arg);
 		if (eng_name != NULL)
 			free(eng_name);
 		eng_name = xstrdup(arg); /*fatal on error*/
@@ -749,11 +730,9 @@ process_engconfig_line(char *line, const char *filename, int linenum) {
 
 		ctrl_ret = ENGINE_ctrl_cmd_string(e, keyword, arg, 0);
 		if (!ctrl_ret) {
-			char ebuf[1024];
-			crypto_errormsg(ebuf, sizeof(ebuf));
-			fatal("%.200s line %d: engine command fail"
-			    " with errormsg='%s'"
-			    , filename, linenum, ebuf);
+			error_crypto("ENGINE_ctrl_cmd_string", "");
+			fatal("%.200s line %d: engine(%s) command fail"
+			    , filename, linenum, eng_name);
 			ret = 0;
 		}
 
@@ -762,10 +741,9 @@ process_engconfig_line(char *line, const char *filename, int linenum) {
 
 done:
 	/* check that there is no garbage at end of line */
-	if ((arg = strdelim(&s)) != NULL && *arg != '\0') {
+	if ((arg = strdelim(&s)) != NULL && *arg != '\0')
 		fatal("%.200s line %d: garbage at end of line - '%.200s'.",
 		    filename, linenum, arg);
-	}
 
 	return(ret);
 }

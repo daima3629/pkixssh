@@ -246,10 +246,7 @@ ssh_x509store_lookup(X509_STORE *store, int type, X509_NAME *name, X509_OBJECT *
 
 	csc = X509_STORE_CTX_new();
 	if (csc == NULL) {
-		char ebuf[1024];
-		crypto_errormsg(ebuf, sizeof(ebuf));
-		error("%s: X509_STORE_CTX_new failed with '%s'"
-		    , __func__, ebuf);
+		error_crypto("X509_STORE_CTX_new", "");
 		return -1;
 	}
 
@@ -862,17 +859,11 @@ ssh_verify_cert(X509_STORE_CTX *_csc) {
 			 * OpenSSL code just return 1. This openssl behavior is same
 			 * as ssh option "AllowedCertPurpose=skip".
 			 */
-			int ecode;
-			char ebuf[1024];
-
-			ecode = X509_STORE_CTX_get_error(_csc);
+			int ecode = X509_STORE_CTX_get_error(_csc);
 			error("ssh_verify_cert: context purpose error, code=%d, msg='%.200s'"
 				, ecode
 				, X509_verify_cert_error_string(ecode));
-
-			crypto_errormsg(ebuf, sizeof(ebuf));
-			error("%s: X509_STORE_CTX_purpose_inherit failed with '%s'"
-			    , __func__, ebuf);
+			error_crypto("X509_STORE_CTX_purpose_inherit", "");
 			return -1;
 		}
 	}
@@ -959,10 +950,7 @@ ssh_x509store_verify_cert(X509 *_cert, STACK_OF(X509) *_chain) {
 
 	csc = X509_STORE_CTX_new();
 	if (csc == NULL) {
-		char ebuf[1024];
-		crypto_errormsg(ebuf, sizeof(ebuf));
-		error("%s: X509_STORE_CTX_new failed with '%s'"
-		    , __func__, ebuf);
+		error_crypto("X509_STORE_CTX_new", "");
 		ret = -1;
 		goto done;
 	}
@@ -1069,10 +1057,7 @@ ssh_x509store_build_certchain(X509 *cert, STACK_OF(X509) *untrusted) {
 
 	csc = X509_STORE_CTX_new();
 	if (csc == NULL) {
-		char ebuf[1024];
-		crypto_errormsg(ebuf, sizeof(ebuf));
-		error("%s: X509_STORE_CTX_new failed with '%s'"
-		    , __func__, ebuf);
+		error_crypto("X509_STORE_CTX_new", "");
 		return NULL;
 	}
 
@@ -1349,10 +1334,7 @@ ssh_is_cert_revoked(X509_STORE_CTX *_ctx, X509_CRL *_crl, X509 *_cert) {
 
 	revoked = X509_REVOKED_new();
 	if (revoked == NULL) {
-		char ebuf[1024];
-		crypto_errormsg(ebuf, sizeof(ebuf));
-		error("%s: X509_REVOKED_new failed with '%s'"
-		    , __func__, ebuf);
+		error_crypto("X509_REVOKED_new", "");
 		return 1;
 	}
 

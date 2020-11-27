@@ -201,16 +201,6 @@ ssh_set_validator(const VAOptions *_va) {
 }
 
 
-static void
-openssl_error(const char *ssh_method, const char *openssl_method) {
-	char buf[1024];
-
-	crypto_errormsg(buf, sizeof(buf));
-	error("%s: %s fail with errormsg: '%s'"
-	    , ssh_method, openssl_method, buf);
-}
-
-
 static char*
 ssh_ASN1_GENERALIZEDTIME_2_string(ASN1_GENERALIZEDTIME *asn1_time) {
 	BIO    *bio;
@@ -263,11 +253,9 @@ ssh_load_x509certs(const char *certs_file, const char* certs_descrip) {
 	}
 
 	if (BIO_read_filename(fbio, certs_file) <= 0) {
-		openssl_error("ssh_load_x509certs", "BIO_read_filename");
-		logit("ssh_load_x509certs:"
-			" description/filename='%.512s'/'%.512s'"
-			, certs_descrip
-			, certs_file);
+		error_crypto("BIO_read_filename",
+		    " description '%.128s, filename '%.256s'",
+		    certs_descrip, certs_file);
 		goto exit;
 	}
 
@@ -521,7 +509,7 @@ ssh_ocsp_get_response(const ssh_ocsp_conn *conn, OCSP_REQUEST *req) {
 #ifndef OPENSSL_NO_SOCK
 	bio_conn = BIO_new_connect(conn->host);
 	if (bio_conn == NULL) {
-		openssl_error("ssh_ocsp_get_response", "BIO_new_connect");
+		error_crypto("BIO_new_connect", "");
 		goto exit;
 	}
 #else
@@ -544,7 +532,7 @@ ssh_ocsp_get_response(const ssh_ocsp_conn *conn, OCSP_REQUEST *req) {
 #endif /*def SSH_WITH_SSLOCSP*/
 
 	if (BIO_do_connect(bio_conn) <= 0) {
-		openssl_error("ssh_ocsp_get_response", "BIO_do_connect");
+		error_crypto("BIO_do_connect", "");
 		goto exit;
 	}
 
@@ -554,7 +542,7 @@ ssh_ocsp_get_response(const ssh_ocsp_conn *conn, OCSP_REQUEST *req) {
 	 */
 	resp = OCSP_sendreq_bio(bio_conn, (char*)(conn->path ? conn->path : "/") , req);
 	if (resp == NULL) {
-		openssl_error("ssh_ocsp_get_response", "OCSP_sendreq_bio");
+		error_crypto("OCSP_sendreq_bio", "");
 	}
 
 exit:
@@ -593,7 +581,7 @@ ssh_ocsp_get_basicresp(
 
 	br = OCSP_response_get1_basic(resp);
 	if (br == NULL) {
-		openssl_error("ssh_ocsp_get_basicresp", "OCSP_response_get1_basic");
+		error_crypto("OCSP_response_get1_basic", "");
 		return(NULL);
 	}
 
@@ -602,7 +590,7 @@ ssh_ocsp_get_basicresp(
 		if (flag == -1) {
 			logit("ssh_ocsp_get_basicresp: WARNING - no nonce in response");
 		} else {
-			openssl_error("ssh_ocsp_get_basicresp", "OCSP_check_nonce");
+			error_crypto("OCSP_check_nonce", "");
 			goto error;
 		}
 	}
@@ -656,8 +644,7 @@ for (k = 0; k < sk_X509_num(vacrts); k++) {
 		flag = OCSP_basic_verify(br, NULL, x509store, basic_verify_flags);
 	}
 	if (flag <= 0) {
-		openssl_error("ssh_ocsp_get_basicresp", "OCSP_basic_verify");
-		logit("ssh_ocsp_get_basicresp: flag=%d", flag);
+		error_crypto("OCSP_basic_verify", "flag=%d", flag);
 		goto error;
 	}
 
@@ -739,12 +726,7 @@ ssh_ocsp_check_validity(
 		}
 
 		if (!OCSP_check_validity(thisupd, nextupd, nsec, maxage)) {
-			char ebuf[1024];
-			crypto_errormsg(ebuf, sizeof(ebuf));
-			logit("ssh_ocsp_check_validity: "
-			    " WARNING-invalid status time."
-			    " OCSP_check_validity fail with errormsg: '%s'"
-			    , ebuf);
+			error_crypto("OCSP_check_validity", "WARNING-invalid status time");
 			ret = -1;
 			break;
 		}

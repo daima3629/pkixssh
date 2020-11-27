@@ -4521,7 +4521,7 @@ sshkey_parse_private_pem_fileblob(struct sshbuf *blob, int type,
 	if ((pk = PEM_read_bio_PrivateKey(bio, NULL, NULL,
 	    (char *)passphrase)) == NULL) {
 		debug3("read PEM private key fail");
-		log_crypto_errors(SYSLOG_LEVEL_DEBUG3, __func__);
+		do_log_crypto_errors(SYSLOG_LEVEL_DEBUG3);
 		r = SSH_ERR_KEY_WRONG_PASSPHRASE;
 		goto out;
 	}

@@ -81,8 +81,6 @@ int      log_change_level(LogLevel);
 int      log_is_on_stderr(void);
 void     log_redirect_stderr_to(const char *);
 LogLevel get_log_level(void);
-void     log_crypto_errors(LogLevel level, const char *fn);
-char*    crypto_errormsg(char *buf, size_t len);
 
 SyslogFacility	log_facility_number(char *);
 const char *	log_facility_name(SyslogFacility);
@@ -124,4 +122,20 @@ void     sshlogdie(const char *file, const char *func, int line,
 #define fatal(...)	sshfatal(__FILE__, __func__, __LINE__, __VA_ARGS__)
 #define logdie(...)	sshlogdie(__FILE__, __func__, __LINE__, __VA_ARGS__)
 #define sigdie(...)	sshsigdie(__FILE__, __func__, __LINE__, __VA_ARGS__)
+
+
+/* Error messages from cryptographic library that should be logged. */
+void sshlog_cryptoerr(const char *file, const char *func, int line,
+    LogLevel level, const char *openssl_method, const char *fmt, ...)
+    __attribute__((format(printf, 6, 7)));
+void  sshlog_cryptoerr_all(const char *file, const char *func, int line,
+    LogLevel level);
+
+#define error_crypto(openssl_method, ...)	\
+    sshlog_cryptoerr(__FILE__, __func__, __LINE__, SYSLOG_LEVEL_ERROR, openssl_method, __VA_ARGS__)
+#define debug3_crypto(openssl_method, ...)	\
+    sshlog_cryptoerr(__FILE__, __func__, __LINE__, SYSLOG_LEVEL_DEBUG3, openssl_method, __VA_ARGS__)
+ 
+#define do_log_crypto_errors(level)	\
+    sshlog_cryptoerr_all(__FILE__, __func__, __LINE__, level)
 #endif
