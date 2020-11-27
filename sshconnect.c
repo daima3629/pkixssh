@@ -52,6 +52,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <netdb.h>
 #ifdef HAVE_PATHS_H
 #include <paths.h>
@@ -390,6 +391,10 @@ ssh_create_socket(struct addrinfo *ai)
 		return -1;
 	}
 	fcntl(sock, F_SETFD, FD_CLOEXEC);
+
+	/* Use interactive QOS (if specified) until authentication completed */
+	if (options.ip_qos_interactive != INT_MAX)
+		set_sock_tos(sock, options.ip_qos_interactive);
 
 	/* Bind the socket to an alternative local IP address */
 	if (options.bind_address == NULL && options.bind_interface == NULL)

@@ -2082,8 +2082,7 @@ ssh_packet_set_interactive(struct ssh *ssh, int interactive, int qos_interactive
 	if (!ssh_packet_connection_is_on_socket(ssh))
 		return;
 	set_nodelay(state->connection_in);
-	ssh_packet_set_tos(ssh, interactive ? qos_interactive :
-	    qos_bulk);
+	ssh_packet_set_tos(ssh, interactive ? qos_interactive : qos_bulk);
 }
 
 /* Returns true if the current connection is interactive. */
