@@ -307,10 +307,7 @@ process_sign_request2(SocketEntry *e)
 	if ((r = sshbuf_get_string(e->request, &blob, &blen)) != 0 ||
 	    (r = parse_key_from_blob(blob, blen, &key, &pkalg)) != 0) {
 		free(blob);
-		if (r == SSH_ERR_KEY_TYPE_UNKNOWN)
-			verbose("%s: could not parse key: %s", __func__, ssh_err(r));
-		else
-			error("%s: couldn't parse request: %s", __func__, ssh_err(r));
+		error("%s: parse key: %s", __func__, ssh_err(r));
 		goto send;
 	}
 	free(blob);
@@ -318,18 +315,18 @@ process_sign_request2(SocketEntry *e)
 	if (
 	    (r = sshbuf_get_string_direct(e->request, &data, &dlen)) != 0 ||
 	    (r = sshbuf_get_u32(e->request, &flags)) != 0) {
-		error("%s: couldn't parse request: %s", __func__, ssh_err(r));
+		error("%s: parse: %s", __func__, ssh_err(r));
 		goto send;
 	}
 
 	if (flags & SSH_AGENT_RFC6187_OPAQUE_ECDSA_SIGNATURE)
 		ctx_compat.extra = SSHX_RFC6187_ASN1_OPAQUE_ECDSA_SIGNATURE;
 	if ((id = lookup_identity(key)) == NULL) {
-		verbose("%s: %s key not found", __func__, sshkey_type(key));
+		error("%s: %s key not found", __func__, sshkey_type(key));
 		goto send;
 	}
 	if (id->confirm && confirm_key(id) != 0) {
-		verbose("%s: user refused key", __func__);
+		debug("%s: user refused key", __func__);
 		goto send;
 	}
 {	const char *alg = agent_recode_alg(pkalg, flags);
@@ -454,14 +451,13 @@ process_add_identity(SocketEntry *e)
 	}
 	while (sshbuf_len(e->request)) {
 		if ((r = sshbuf_get_u8(e->request, &ctype)) != 0) {
-			error("%s: buffer error: %s", __func__, ssh_err(r));
+			error("%s: parse constraint type: %s", __func__, ssh_err(r));
 			goto err;
 		}
 		switch (ctype) {
 		case SSH_AGENT_CONSTRAIN_LIFETIME:
 			if ((r = sshbuf_get_u32(e->request, &seconds)) != 0) {
-				error("%s: bad lifetime constraint: %s",
-				    __func__, ssh_err(r));
+				error("%s: parse lifetime constraint: %s", __func__, ssh_err(r));
 				goto err;
 			}
 			death = monotime() + seconds;
@@ -471,21 +467,18 @@ process_add_identity(SocketEntry *e)
 			break;
 		case SSH_AGENT_CONSTRAIN_MAXSIGN:
 			if ((r = sshbuf_get_u32(e->request, &maxsign)) != 0) {
-				error("%s: bad maxsign constraint: %s",
-				    __func__, ssh_err(r));
+				error("%s: parse maxsign constraint: %s", __func__, ssh_err(r));
 				goto err;
 			}
 			if ((r = sshkey_enable_maxsign(k, maxsign)) != 0) {
-				error("%s: cannot enable maxsign: %s",
-				    __func__, ssh_err(r));
+				error("%s: enable maxsign: %s", __func__, ssh_err(r));
 				goto err;
 			}
 			break;
 		case SSH_AGENT_CONSTRAIN_EXTENSION:
 			if ((r = sshbuf_get_cstring(e->request,
 			    &ext_name, NULL)) != 0) {
-				error("%s: cannot parse extension: %s",
-				    __func__, ssh_err(r));
+				error("%s: parse constraint extension: %s", __func__, ssh_err(r));
 				goto err;
 			}
 			debug("%s: constraint ext %s", __func__, ext_name);
@@ -496,19 +489,17 @@ process_add_identity(SocketEntry *e)
 				}
 				if ((r = sshbuf_get_cstring(e->request,
 				    &sk_provider, NULL)) != 0) {
-					error("%s: cannot parse %s: %s",
-					    __func__, ext_name, ssh_err(r));
+					error("%s: parse %s: %s", __func__, ext_name, ssh_err(r));
 					goto err;
 				}
 			} else {
-				error("%s: unsupported constraint \"%s\"",
-				    __func__, ext_name);
+				error("%s: unsupported constraint \"%s\"", __func__, ext_name);
 				goto err;
 			}
 			free(ext_name);
 			break;
 		default:
-			error("%s: Unknown constraint %d", __func__, ctype);
+			error("%s: unknown constraint %d", __func__, ctype);
  err:
 			free(sk_provider);
 			free(ext_name);
@@ -624,20 +615,19 @@ process_add_smartcard_key(SocketEntry *e)
 
 	if ((r = sshbuf_get_cstring(e->request, &provider, NULL)) != 0 ||
 	    (r = sshbuf_get_cstring(e->request, &pin, NULL)) != 0) {
-		error("%s: buffer error: %s", __func__, ssh_err(r));
+		error("%s: decode provider: %s", __func__, ssh_err(r));
 		goto send;
 	}
 
 	while (sshbuf_len(e->request)) {
 		if ((r = sshbuf_get_u8(e->request, &type)) != 0) {
-			error("%s: buffer error: %s", __func__, ssh_err(r));
+			error("%s: parse constraint type: %s", __func__, ssh_err(r));
 			goto send;
 		}
 		switch (type) {
 		case SSH_AGENT_CONSTRAIN_LIFETIME:
 			if ((r = sshbuf_get_u32(e->request, &seconds)) != 0) {
-				error("%s: buffer error: %s",
-				    __func__, ssh_err(r));
+				error("%s: parse lifetime constraint: %s", __func__, ssh_err(r));
 				goto send;
 			}
 			death = monotime() + seconds;
@@ -646,7 +636,7 @@ process_add_smartcard_key(SocketEntry *e)
 			confirm = 1;
 			break;
 		default:
-			error("%s: Unknown constraint type %d", __func__, type);
+			error("%s: unknown constraint %d", __func__, type);
 			goto send;
 		}
 	}
@@ -779,10 +769,10 @@ process_message(u_int socknum)
 	    (r = sshbuf_get_u8(e->request, &type)) != 0) {
 		if (r == SSH_ERR_MESSAGE_INCOMPLETE ||
 		    r == SSH_ERR_STRING_TOO_LARGE) {
-			debug("%s: buffer error: %s", __func__, ssh_err(r));
+			error("%s: parse: %s", __func__, ssh_err(r));
 			return -1;
 		}
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal("%s: parse: %s", __func__, ssh_err(r));
 	}
 
 	debug("%s: socket %u (fd=%d) type %d", __func__, socknum, e->fd, type);
@@ -859,11 +849,9 @@ new_socket(sock_type type, int fd)
 	for (i = 0; i < sockets_alloc; i++)
 		if (sockets[i].type == AUTH_UNUSED) {
 			sockets[i].fd = fd;
-			if ((sockets[i].input = sshbuf_new()) == NULL)
-				fatal("%s: sshbuf_new failed", __func__);
-			if ((sockets[i].output = sshbuf_new()) == NULL)
-				fatal("%s: sshbuf_new failed", __func__);
-			if ((sockets[i].request = sshbuf_new()) == NULL)
+			if ((sockets[i].input = sshbuf_new()) == NULL ||
+			    (sockets[i].output = sshbuf_new()) == NULL ||
+			    (sockets[i].request = sshbuf_new()) == NULL)
 				fatal("%s: sshbuf_new failed", __func__);
 			sockets[i].type = type;
 			return;
@@ -875,11 +863,9 @@ new_socket(sock_type type, int fd)
 		sockets[i].type = AUTH_UNUSED;
 	sockets_alloc = new_alloc;
 	sockets[old_alloc].fd = fd;
-	if ((sockets[old_alloc].input = sshbuf_new()) == NULL)
-		fatal("%s: sshbuf_new failed", __func__);
-	if ((sockets[old_alloc].output = sshbuf_new()) == NULL)
-		fatal("%s: sshbuf_new failed", __func__);
-	if ((sockets[old_alloc].request = sshbuf_new()) == NULL)
+	if ((sockets[old_alloc].input = sshbuf_new()) == NULL ||
+	    (sockets[old_alloc].output = sshbuf_new()) == NULL ||
+	    (sockets[old_alloc].request = sshbuf_new()) == NULL)
 		fatal("%s: sshbuf_new failed", __func__);
 	sockets[old_alloc].type = type;
 }

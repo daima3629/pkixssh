@@ -291,7 +291,7 @@ ssh_tty_make_modes(struct ssh *ssh, int fd, struct termios *tiop)
 			goto end;
 		}
 		if (tcgetattr(fd, &tio) == -1) {
-			logit("tcgetattr: %.100s", strerror(errno));
+			debug("tcgetattr: %.100s", strerror(errno));
 			goto end;
 		}
 	} else
@@ -365,7 +365,7 @@ ssh_tty_parse_modes(struct ssh *ssh, int fd)
 	 * modes, they will initially have reasonable values.
 	 */
 	if (tcgetattr(fd, &tio) == -1) {
-		logit("tcgetattr: %.100s", strerror(errno));
+		debug("tcgetattr: %.100s", strerror(errno));
 		failure = -1;
 	}
 
@@ -433,7 +433,7 @@ ssh_tty_parse_modes(struct ssh *ssh, int fd)
 					    ssh_err(r));
 				break;
 			} else {
-				logit("%s: unknown opcode %d", __func__,
+				error("%s: unknown opcode %d", __func__,
 				    opcode);
 				goto set;
 			}
@@ -444,7 +444,7 @@ set:
 	len = sshbuf_len(buf);
 	sshbuf_free(buf);
 	if (len > 0) {
-		logit("%s: %zu bytes left", __func__, len);
+		error("%s: %zu bytes left", __func__, len);
 		return;		/* Don't process bytes passed */
 	}
 	if (failure == -1)

@@ -1373,8 +1373,7 @@ ssh_is_cert_revoked(X509_STORE_CTX *_ctx, X509_CRL *_crl, X509 *_cert) {
 	ser = ssh_ASN1_INTEGER_2_string(serial);
 	in  = ssh_X509_NAME_oneline(X509_CRL_get_issuer  (_crl )); /*fatal on error*/
 
-	error("certificate '%s' with serial '%.40s' revoked from issuer '%s'"
-		, dn, ser, in);
+	logit("Certificate '%s' with serial '%.40s' revoked from issuer '%s'", dn, ser, in);
 	free(dn);
 	free(ser);
 	free(in);

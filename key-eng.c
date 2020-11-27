@@ -101,7 +101,7 @@ ui_read(UI *ui, UI_STRING *uis) {
 		} break;
 	case UIT_INFO: {
 		const char *s = UI_get0_output_string(uis);
-		verbose("%s: UIT_INFO '%s'", __func__, s);
+		debug("%s: UIT_INFO '%s'", __func__, s);
 		return(1);
 		} break;
 	case UIT_ERROR: {
@@ -145,7 +145,7 @@ ui_write(UI *ui, UI_STRING *uis) {
 	switch(uis_type) {
 	case UIT_INFO: {
 		const char *s = UI_get0_output_string(uis);
-		verbose("%s: UIT_INFO '%s'", __func__, s);
+		debug("%s: UIT_INFO '%s'", __func__, s);
 		return(1);
 		} break;
 	case UIT_ERROR: {
@@ -268,13 +268,13 @@ sshkey_from_EVP_PKEY_EC(EVP_PKEY *pk, struct sshkey *ret) {
 	sshkey_dump_ec_point(EC_KEY_get0_group(ret->ecdsa), q);
 #endif
 	if (q == NULL) {
-		error("%s: cannot get public ec key ", __func__);
+		error("%s: cannot get public ec key", __func__);
 		goto err;
 	}
 
 {	int r = sshkey_ec_validate_public(EC_KEY_get0_group(ret->ecdsa), q);
 	if (r != SSH_ERR_SUCCESS) {
-		debug3("%s: cannot validate public ec key ", __func__);
+		debug3("%s: cannot validate public ec key", __func__);
 		goto err;
 	}
 }
