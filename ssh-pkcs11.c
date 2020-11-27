@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-pkcs11.c,v 1.50 2020/05/29 03:14:02 djm Exp $ */
+/* $OpenBSD: ssh-pkcs11.c,v 1.52 2020/11/22 22:38:26 djm Exp $ */
 /*
  * Copyright (c) 2010 Markus Friedl.  All rights reserved.
  * Copyright (c) 2011 Kenneth Robinette.  All rights reserved.
@@ -51,6 +51,7 @@
 #include "ssh-x509.h"
 #include "ssherr.h"
 #include "ssh-pkcs11.h"
+#include "digest.h"
 #include "xmalloc.h"
 
 struct pkcs11_slotinfo {
@@ -1028,6 +1029,24 @@ done:
 }
 
 static void
+note_key(struct pkcs11_provider *p, CK_ULONG slotidx,
+    struct sshkey *key)
+{
+	char *fp;
+
+	if (key == NULL) return;
+
+	fp = sshkey_fingerprint(key, SSH_FP_HASH_DEFAULT, SSH_FP_DEFAULT);
+	if (fp == NULL) {
+		error("%s: sshkey_fingerprint failed", __func__);
+		return;
+	}
+	debug2("provider %s slot %lu: %s %s", p->name,
+	    (unsigned long)slotidx, sshkey_type(key), fp);
+	free(fp);
+}
+
+static void
 pkcs11_push_key(struct sshkey *key, char *label,
     struct sshkey ***keysp, char ***labelsp, int *nkeys)
 {
@@ -1106,6 +1125,7 @@ pkcs11_fetch_certs(struct pkcs11_provider *p, CK_ULONG slotidx,
 			continue;
 		}
 		label = x509key_subject(key);
+		note_key(p, slotidx, key);
 		pkcs11_push_key(key, label, keysp, labelsp, nkeys);
 	}
 
@@ -1407,6 +1427,7 @@ pkcs11_fetch_keys(struct pkcs11_provider *p, CK_ULONG slotidx,
 			break;
 
 		key = pkcs11_get_pubkey(p, slotidx, obj, &label);
+		note_key(p, slotidx, key);
 		pkcs11_push_key(key, label, keysp, labelsp, nkeys);
 	}
 
