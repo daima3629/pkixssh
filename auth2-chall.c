@@ -124,7 +124,7 @@ kbdint_alloc(const char *devs)
 	} else {
 		kbdintctxt->devices = xstrdup(devs);
 	}
-	debug("kbdint_alloc: devices '%s'", kbdintctxt->devices);
+	debug_f("devices '%s'", kbdintctxt->devices);
 	kbdintctxt->ctxt = NULL;
 	kbdintctxt->device = NULL;
 	kbdintctxt->nreq = 0;
@@ -178,7 +178,7 @@ kbdint_next_device(Authctxt *authctxt, KbdintAuthctxt *kbdintctxt)
 		t = kbdintctxt->devices;
 		kbdintctxt->devices = t[len] ? xstrdup(t+len+1) : NULL;
 		free(t);
-		debug2("kbdint_next_device: devices %s", kbdintctxt->devices ?
+		debug2_f("devices %s", kbdintctxt->devices ?
 		    kbdintctxt->devices : "<empty>");
 	} while (kbdintctxt->devices && !kbdintctxt->device);
 
@@ -193,7 +193,7 @@ int
 auth2_challenge(struct ssh *ssh, char *devs)
 {
 	Authctxt *authctxt = ssh->authctxt;
-	debug("auth2_challenge: user=%s devs=%s",
+	debug_f("user=%s devs=%s",
 	    authctxt->user ? authctxt->user : "<nouser>",
 	    devs ? devs : "<no devs>");
 
@@ -224,14 +224,14 @@ auth2_challenge_start(struct ssh *ssh)
 	Authctxt *authctxt = ssh->authctxt;
 	KbdintAuthctxt *kbdintctxt = authctxt->kbdintctxt;
 
-	debug2("auth2_challenge_start: devices %s",
+	debug2_f("devices %s",
 	    kbdintctxt->devices ?  kbdintctxt->devices : "<empty>");
 
 	if (kbdint_next_device(authctxt, kbdintctxt) == 0) {
 		auth2_challenge_stop(ssh);
 		return 0;
 	}
-	debug("auth2_challenge_start: trying authentication method '%s'",
+	debug_f("trying authentication method '%s'",
 	    kbdintctxt->device->name);
 
 	if ((kbdintctxt->ctxt = kbdintctxt->device->init_ctx(authctxt)) == NULL) {

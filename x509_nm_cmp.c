@@ -179,7 +179,7 @@ ssh_ASN1_STRING_to_UTF8(unsigned char **out, ASN1_STRING *in) {
 		u_char *p;
 
 		if (*out) {
-			error("ssh_ASN1_STRING_to_UTF8: *out is not NULL");
+			error_f("*out is not NULL");
 			return(-1);
 		}
 		/* we MUST allocate memory with OPENSSL method! */
@@ -206,18 +206,18 @@ ssh_ASN1_PRINTABLESTRING_cmp(ASN1_STRING *a, ASN1_STRING *b) {
 	tagA = ASN1_STRING_type(a);
 	tagB = ASN1_STRING_type(b);
 	if (tagA != V_ASN1_PRINTABLESTRING) {
-		debug3("ssh_ASN1_PRINTABLESTRING_cmp: a->type=%d(%.30s) is not PrintableString", tagA, ASN1_tag2str(tagA));
+		debug3_f("a->type=%d(%.30s) is not PrintableString", tagA, ASN1_tag2str(tagA));
 		/* just in case - see caling methods */
 		if (tagB != V_ASN1_PRINTABLESTRING) {
-			error("ssh_ASN1_PRINTABLESTRING_cmp: b is not PrintableString too");
+			error_f("b is not PrintableString too");
 			return(-1);
 		}
 	}
 	if (tagB != V_ASN1_PRINTABLESTRING) {
-		debug3("ssh_ASN1_PRINTABLESTRING_cmp: b->type=%d(%.30s) is not PrintableString", tagB, ASN1_tag2str(tagB));
+		debug3_f("b->type=%d(%.30s) is not PrintableString", tagB, ASN1_tag2str(tagB));
 		/* just in case - see caling methods */
 		if (tagA != V_ASN1_PRINTABLESTRING) {
-			error("ssh_ASN1_PRINTABLESTRING_cmp: a is not PrintableString too");
+			error_f("a is not PrintableString too");
 			return(1);
 		}
 	}
@@ -250,7 +250,7 @@ done:
 	if(ua) OPENSSL_free(ua);
 	if(ub) OPENSSL_free(ub);
 #ifdef SSHX509TEST_DBGCMP
-fprintf(stderr, "ssh_ASN1_PRINTABLESTRING_cmp: return %d\n", n);
+fprintf(stderr, "%s: return %d\n", __func__, n);
 #endif
 	return(n);
 }
@@ -349,13 +349,13 @@ ssh_ASN1_DIRECTORYSTRING_cmp(ASN1_STRING *a, ASN1_STRING *b) {
 		lb = ssh_ASN1_STRING_to_UTF8(&ub, b);
 		if (lb <= 0) {
 			/*second string is greater in case of error or zero length*/
-			logit("ssh_ASN1_DIRECTORYSTRING_cmp lb=%d", lb);
+			debug_f("lb=%d", lb);
 			n = 1;
 			goto done;
 		}
 #ifdef SSHX509TEST_DBGCMP
-fprintf(stderr, "ssh_ASN1_DIRECTORYSTRING_cmp ua='%s'\n", ua);
-fprintf(stderr, "ssh_ASN1_DIRECTORYSTRING_cmp ub='%s'\n", ub);
+fprintf(stderr, "%s: ua='%s'\n", __func__, ua);
+fprintf(stderr, "%s: ub='%s'\n", __func__, ub);
 #endif
 		pa = (const char *)ua;
 		pb = (const char *)ub;
@@ -367,7 +367,7 @@ fprintf(stderr, "ssh_ASN1_DIRECTORYSTRING_cmp ub='%s'\n", ub);
 	 */
 	n = memcmp(pa, pb, (size_t)MIN(la, lb));
 #ifdef SSHX509TEST_DBGCMP
-fprintf(stderr, "ssh_ASN1_DIRECTORYSTRING_cmp n=%d, la=%d, lb=%d\n", n, la, lb);
+fprintf(stderr, "%s: n=%d, la=%d, lb=%d\n", __func__, n, la, lb);
 #endif
 	if (n == 0) n = (lb - la);
 
@@ -375,7 +375,7 @@ done:
 	if(ua) OPENSSL_free(ua);
 	if(ub) OPENSSL_free(ub);
 #ifdef SSHX509TEST_DBGCMP
-fprintf(stderr, "ssh_ASN1_DIRECTORYSTRING_cmp: return %d\n", n);
+fprintf(stderr, "%: return %d\n", __func__, n);
 #endif
 	return(n);
 }
@@ -461,7 +461,7 @@ ssh_X509_NAME_cmp(X509_NAME *_a, X509_NAME *_b) {
 
 			buf1 = ssh_X509_NAME_oneline(_a); /*fatal on error*/
 			buf2 = ssh_X509_NAME_oneline(_b); /*fatal on error*/
-			debug3("ssh_X509_NAME_cmp: insufficient entries with nid=%d(%.40s) in second name."
+			debug3_f("insufficient entries with nid=%d(%.40s) in second name."
 				" na=%s, nb=%s",
 				nid, OBJ_nid2ln(nid),
 				buf1, buf2);
@@ -500,7 +500,7 @@ trynextentry:
 				n = -1;
 				break;
 				*/
-				error("ssh_X509_NAME_cmp: incorrect type for emailAddress(a) %d(%.30s)", tag, ASN1_tag2str(tag));
+				error_f("incorrect type for emailAddress(a) %d(%.30s)", tag, ASN1_tag2str(tag));
 			}
 
 			tag = ASN1_STRING_type(nvB);
@@ -509,7 +509,7 @@ trynextentry:
 				n = 1;
 				break;
 				*/
-				error("ssh_X509_NAME_cmp: incorrect type for emailAddress(b) %d(%.30s)", tag, ASN1_tag2str(tag));
+				error_f("incorrect type for emailAddress(b) %d(%.30s)", tag, ASN1_tag2str(tag));
 			}
 
 			/* NOTE: [PKCS9] emailAddress attribute must be encoded as
@@ -570,7 +570,7 @@ getnextentry:
 
 	X509_NAME_free(b);
 #ifdef SSHX509TEST_DBGCMP
-fprintf(stderr, "ssh_X509_NAME_cmp: return %d\n", n);
+fprintf(stderr, "%s: return %d\n", __func__, n);
 #endif
 	return(n);
 }

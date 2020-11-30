@@ -217,7 +217,7 @@ ssh_ASN1_INTEGER_2_string(ASN1_INTEGER *_asni) {
 	char *p;
 
 	if (_asni == NULL) {
-		error("ssh_ASN1_INTEGER_2_string: _asni is NULL");
+		error_f("_asni is NULL");
 		return NULL;
 	}
 
@@ -275,7 +275,7 @@ ssh_x509store_get_cert_by_subject(X509_STORE *store, X509_NAME *name) {
 
 	xobj = X509_OBJECT_new();
 	if (xobj == NULL) {
-		error("ssh_x509store_get_cert_by_subject: cannot allocate X509_OBJECT");
+		error_f("cannot allocate X509_OBJECT");
 		return NULL;
 	}
 
@@ -298,7 +298,7 @@ ssh_x509store_get_crl_by_subject(X509_STORE *store, X509_NAME *name) {
 
 	xobj = X509_OBJECT_new();
 	if (xobj == NULL) {
-		error("ssh_X509_STORE_get_X509_CRL_by_subject: cannot allocate X509_OBJECT");
+		error_f("cannot allocate X509_OBJECT");
 		return NULL;
 	}
 
@@ -330,7 +330,7 @@ ssh_x509store_cb(int ok, X509_STORE_CTX *ctx) {
 	if (!ok) {
 		char *buf;
 		buf = ssh_X509_NAME_oneline(X509_get_subject_name(ctx_cert)); /*fatal on error*/
-		error("ssh_x509store_cb: subject='%s', error %d at %d depth lookup:%.200s",
+		error_f("subject='%s', error %d at %d depth lookup:%.200s",
 			buf,
 			ctx_error,
 			X509_STORE_CTX_get_error_depth(ctx),
@@ -628,18 +628,18 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 	int flag;
 
 	if (_locations == NULL) {
-		error("ssh_x509store_addlocations: _locations is NULL");
+		error_f("_locations is NULL");
 		return 0;
 	}
 	if ((_locations->certificate_path == NULL) &&
 	    (_locations->certificate_file == NULL)) {
-		error("ssh_x509store_addlocations: certificate path and file are NULLs");
+		error_f("certificate path and file are NULLs");
 		return 0;
 	}
 #ifdef SSH_CHECK_REVOKED
 	if ((_locations->revocation_path == NULL) &&
 	    (_locations->revocation_file == NULL)) {
-		error("ssh_x509store_addlocations: revocation path and file are NULLs");
+		error_f("revocation path and file are NULLs");
 		return 0;
 	}
 #endif
@@ -860,7 +860,7 @@ ssh_verify_cert(X509_STORE_CTX *_csc) {
 			 * as ssh option "AllowedCertPurpose=skip".
 			 */
 			int ecode = X509_STORE_CTX_get_error(_csc);
-			error("ssh_verify_cert: context purpose error, code=%d, msg='%.200s'"
+			error_f("context purpose error, code=%d, msg='%.200s'"
 				, ecode
 				, X509_verify_cert_error_string(ecode));
 			error_crypto("X509_STORE_CTX_purpose_inherit", "");
@@ -908,12 +908,12 @@ ssh_verify_cert(X509_STORE_CTX *_csc) {
 		 * NULL, i.e. certificate has to be set in context!
 		 * Lets log (possible in future) cases with negative value.
 		 */
-		logit("ssh_verify_cert: X509_verify_cert return unexpected negative value: '%d'", flag);
+		logit("X509_verify_cert return unexpected negative value: '%d'", flag);
 		return -1;
 	}
 	if (flag == 0) {
 		int ecode = X509_STORE_CTX_get_error(_csc);
-		error("ssh_verify_cert: verify error, code=%d, msg='%.200s'"
+		error_f("verify error, code=%d, msg='%.200s'"
 			, ecode
 			, X509_verify_cert_error_string(ecode));
 		return -1;
@@ -1031,7 +1031,7 @@ ssh_build_certchain_cb(int ok, X509_STORE_CTX *ctx) {
 		char *buf;
 
 		buf = ssh_X509_NAME_oneline(X509_get_subject_name(ctx_cert)); /*fatal on error*/
-		debug3("ssh_build_certchain_cb: subject='%s'", buf);
+		debug3_f("subject='%s'", buf);
 		free(buf);
 	}
 
@@ -1096,7 +1096,7 @@ ssh_get_namestr_and_hash(
 	u_long *hash
 ) {
 	if (name == NULL) {
-		debug("ssh_get_namestr_and_hash: name is NULL");
+		debug_f("name is NULL");
 		if (buf ) *buf  = NULL;
 		if (hash) *hash = 0; /* not correct but :-( */
 		return;
@@ -1165,11 +1165,11 @@ ssh_check_crl(X509_STORE_CTX *_ctx, X509* _issuer, X509_CRL *_crl) {
 	u_long hash;
 
 	if (_issuer == NULL) {
-		error("ssh_check_crl: issuer is NULL");
+		error_f("issuer is NULL");
 		return 0;
 	}
 	if (_crl == NULL) {
-		debug("ssh_check_crl: crl is NULL");
+		debug_f("crl is NULL");
 		return 1;
 	}
 
@@ -1196,7 +1196,7 @@ ssh_check_crl(X509_STORE_CTX *_ctx, X509* _issuer, X509_CRL *_crl) {
 		k = BIO_read(bio, p, k);
 		p[k] = '\0';
 
-		debug3("ssh_check_crl: Issuer: %s", p);
+		debug3_f("issuer: %s", p);
 
 		free(p);
 		BIO_free(bio);
@@ -1215,8 +1215,7 @@ ssh_check_crl(X509_STORE_CTX *_ctx, X509* _issuer, X509_CRL *_crl) {
 		X509_STORE_CTX_set_error(_ctx, X509_V_ERR_KEYUSAGE_NO_CRL_SIGN);
 	#endif
 		ssh_get_namestr_and_hash(X509_get_subject_name(_issuer), &buf, &hash);
-		error("ssh_check_crl:"
-			" to verify crl signature key usage 'cRLSign'"
+		error_f("to verify crl signature key usage 'cRLSign'"
 			" must present in issuer certificate '%s' with hash=0x%08lx"
 			, buf, hash
 		);
@@ -1227,7 +1226,7 @@ ssh_check_crl(X509_STORE_CTX *_ctx, X509* _issuer, X509_CRL *_crl) {
 	{
 		EVP_PKEY *pkey = X509_get_pubkey(_issuer);
 		if (pkey == NULL) {
-			error("ssh_check_crl: unable to decode issuer public key");
+			error_f("unable to decode issuer public key");
 			X509_STORE_CTX_set_error(_ctx, X509_V_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY);
 			return 0;
 		}
@@ -1236,10 +1235,7 @@ ssh_check_crl(X509_STORE_CTX *_ctx, X509* _issuer, X509_CRL *_crl) {
 			char *buf;
 
 			ssh_get_namestr_and_hash(X509_CRL_get_issuer(_crl), &buf, &hash);
-			error("ssh_check_crl: CRL has invalid signature"
-				": issuer='%s', hash=0x%08lx"
-				, buf, hash
-			);
+			error_f("CRL has invalid signature: issuer='%s', hash=0x%08lx", buf, hash);
 			X509_STORE_CTX_set_error(_ctx, X509_V_ERR_CRL_SIGNATURE_FAILURE);
 			free(buf);
 			EVP_PKEY_free(pkey);
@@ -1260,10 +1256,7 @@ ssh_check_crl(X509_STORE_CTX *_ctx, X509* _issuer, X509_CRL *_crl) {
 		char *buf;
 
 		ssh_get_namestr_and_hash(X509_CRL_get_issuer(_crl), &buf, &hash);
-		error("ssh_check_crl: CRL has invalid lastUpdate field"
-			": issuer='%s', hash=0x%08lx"
-			, buf, hash
-		);
+		error_f("CRL has invalid lastUpdate field: issuer='%s', hash=0x%08lx", buf, hash);
 		X509_STORE_CTX_set_error(_ctx, X509_V_ERR_ERROR_IN_CRL_LAST_UPDATE_FIELD);
 		free(buf);
 		return 0;
@@ -1272,10 +1265,7 @@ ssh_check_crl(X509_STORE_CTX *_ctx, X509* _issuer, X509_CRL *_crl) {
 		char *buf;
 
 		ssh_get_namestr_and_hash(X509_CRL_get_issuer(_crl), &buf, &hash);
-		error("ssh_check_crl: CRL is not yet valid"
-			": issuer='%s', hash=0x%08lx"
-			, buf, hash
-		);
+		error_f("CRL is not yet valid: issuer='%s', hash=0x%08lx", buf, hash);
 		X509_STORE_CTX_set_error(_ctx, X509_V_ERR_CRL_NOT_YET_VALID);
 		free(buf);
 		return 0;
@@ -1286,10 +1276,7 @@ ssh_check_crl(X509_STORE_CTX *_ctx, X509* _issuer, X509_CRL *_crl) {
 		char *buf;
 
 		ssh_get_namestr_and_hash(X509_CRL_get_issuer(_crl), &buf, &hash);
-		error("ssh_check_crl: CRL has invalid nextUpdate field"
-			": issuer='%s', hash=0x%08lx"
-			, buf, hash
-		);
+		error_f("CRL has invalid nextUpdate field: issuer='%s', hash=0x%08lx", buf, hash);
 		X509_STORE_CTX_set_error(_ctx, X509_V_ERR_ERROR_IN_CRL_NEXT_UPDATE_FIELD);
 		free(buf);
 		return 0;
@@ -1310,10 +1297,7 @@ ssh_check_crl(X509_STORE_CTX *_ctx, X509* _issuer, X509_CRL *_crl) {
 		char *buf;
 
 		ssh_get_namestr_and_hash(X509_CRL_get_issuer(_crl), &buf, &hash);
-		error("ssh_check_crl: CRL is expired"
-			": issuer='%s', hash=0x%08lx"
-			, buf, hash
-		);
+		error_f("CRL is expired: issuer='%s', hash=0x%08lx", buf, hash);
 		X509_STORE_CTX_set_error(_ctx, X509_V_ERR_CRL_HAS_EXPIRED);
 		free(buf);
 		return 0;
@@ -1377,7 +1361,7 @@ ssh_x509revoked_cb(int ok, X509_STORE_CTX *ctx) {
 
 	cert = X509_STORE_CTX_get_current_cert(ctx);
 	if (cert == NULL) {
-		error("ssh_x509revoked_cb: missing current certificate in x509store context");
+		error_f("missing current certificate in x509store context");
 		return 0;
 	}
 
@@ -1385,11 +1369,11 @@ ssh_x509revoked_cb(int ok, X509_STORE_CTX *ctx) {
 		char *buf;
 
 		buf = ssh_X509_NAME_oneline(X509_get_issuer_name(cert)); /*fatal on error*/
-		debug3("ssh_x509revoked_cb: Issuer: %s", buf);
+		debug3_f("issuer: %s", buf);
 		free(buf);
 
 		buf = ssh_X509_NAME_oneline(X509_get_subject_name(cert)); /*fatal on error*/
-		debug3("ssh_x509revoked_cb: Subject: %s", buf);
+		debug3_f("subject: %s", buf);
 		free(buf);
 	}
 
@@ -1430,7 +1414,7 @@ ssh_x509revoked_cb(int ok, X509_STORE_CTX *ctx) {
 			loc = X509_get_ext_by_NID(cert, NID_crl_distribution_points, -1);
 			ok = (loc < 0);
 			if (!ok) {
-				error("ssh_x509revoked_cb: unable to get issued CRL");
+				error_f("unable to get issued CRL");
 				X509_STORE_CTX_set_error(ctx, X509_V_ERR_UNABLE_TO_GET_CRL);
 			}
 		}

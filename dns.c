@@ -242,7 +242,7 @@ get_dns_sign_algo(X509 *x509) {
 	if (alg == NULL) goto done;
 
 	algo_nid = OBJ_obj2nid(alg);
-	debug3("get_dns_sign_algo: nid=%d(%s)\n", algo_nid, OBJ_nid2ln(algo_nid));
+	debug3_f("nid=%d(%s)\n", algo_nid, OBJ_nid2ln(algo_nid));
 
 	switch(algo_nid) {
 	case NID_md5WithRSAEncryption:
@@ -417,7 +417,7 @@ verify_hostcert_dns(const char *hostname, const struct sshkey *hostkey, int *fla
 	ssh_dns_cert_param hostkey_param;
 	ssh_dns_cert_param dnskey_param;
 
-	debug3("verify_hostcert_dns");
+	debug3_f("...");
 
 	memset(&hostkey_param, 0, sizeof(hostkey_param));
 	memset(&dnskey_param , 0, sizeof(dnskey_param ));
@@ -525,7 +525,7 @@ verify_host_key_dns(const char *hostname, struct sockaddr *address,
 	UNUSED(address);
 	*flags = 0;
 
-	debug3("verify_host_key_dns");
+	debug3_f("...");
 	if (hostkey == NULL)
 		fatal("No key to look up!");
 

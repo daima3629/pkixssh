@@ -136,8 +136,7 @@ userauth_pubkey(struct ssh *ssh)
 		goto done;
 	}
 	if (!pubkey_algorithm_allowed(pkalg)) {
-		debug("userauth_pubkey: disallowed public key algorithm: %s",
-		    pkalg);
+		debug_f("disallowed public key algorithm: %s", pkalg);
 		goto done;
 	}
 	if ((r = Xkey_from_blob(pkalg, pkblob, blen, &key)) != 0) {

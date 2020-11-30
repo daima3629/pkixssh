@@ -4195,7 +4195,7 @@ connect_next(struct channel_connect *cctx)
 			if (getnameinfo(cctx->ai->ai_addr, cctx->ai->ai_addrlen,
 			    ntop, sizeof(ntop), strport, sizeof(strport),
 			    NI_NUMERICHOST|NI_NUMERICSERV) != 0) {
-				error("connect_next: getnameinfo failed");
+				error_f("getnameinfo failed");
 				continue;
 			}
 			break;
@@ -4214,7 +4214,7 @@ connect_next(struct channel_connect *cctx)
 			fatal("%s: set_nonblock(%d)", __func__, sock);
 		if (connect(sock, cctx->ai->ai_addr,
 		    cctx->ai->ai_addrlen) == -1 && errno != EINPROGRESS) {
-			debug("connect_next: host %.100s ([%.100s]:%s): "
+			debug_f("host %.100s ([%.100s]:%s): "
 			    "%.100s", cctx->host, ntop, strport,
 			    strerror(errno));
 			saved_errno = errno;
@@ -4224,7 +4224,7 @@ connect_next(struct channel_connect *cctx)
 		}
 		if (cctx->ai->ai_family != AF_UNIX)
 			set_nodelay(sock);
-		debug("connect_next: host %.100s ([%.100s]:%s) "
+		debug_f("host %.100s ([%.100s]:%s) "
 		    "in progress, fd=%d", cctx->host, ntop, strport, sock);
 		cctx->ai = cctx->ai->ai_next;
 		return sock;
@@ -4620,7 +4620,7 @@ x11_create_display_inet(struct ssh *ssh, int x11_display_offset,
 					freeaddrinfo(aitop);
 					return -1;
 				} else {
-					debug("x11_create_display_inet: Socket family %d not supported",
+					debug_f("socket family %d not supported",
 						 ai->ai_family);
 					continue;
 				}
@@ -4759,7 +4759,7 @@ x11_connect_display(struct ssh *ssh)
 		char path[PATH_MAX];
 
 		if (is_path_to_xsocket(display, path, sizeof(path))) {
-			debug("x11_connect_display: $DISPLAY is launchd");
+			debug_f("$DISPLAY is launchd");
 
 			/* Create a socket. */
 			sock = connect_local_xsocket_path(path);

@@ -209,7 +209,7 @@ rexec_recv_rng_seed(struct sshbuf *m)
 	if ((r = sshbuf_get_string_direct(m, &buf, &len)) != 0)
 		fatal("%s: buffer error: %s", __func__, ssh_err(r));
 
-	debug3("rexec_recv_rng_seed: seeding rng with %zu bytes", len);
+	debug3_f("seeding rng with %zu bytes", len);
 	RAND_add(buf, len, len);
 }
 #endif /* OPENSSL_PRNG_ONLY */

@@ -169,7 +169,7 @@ ssh_set_validator(const VAOptions *_va) {
 		va.responder_url = NULL;
 	}
 	if (_va == NULL) {
-		debug("ssh_set_validator: NULL options - set vatype to none");
+		debug_f("NULL options - set vatype to none");
 		ssh_set_vatype(SSHVA_NONE);
 		return;
 	}
@@ -179,7 +179,7 @@ ssh_set_validator(const VAOptions *_va) {
 		switch(va.type) {
 		case SSHVA_NONE:
 		case SSHVA_OCSP_CERT:
-			debug("ssh_set_validator: ignore certificate file");
+			debug_f("ignore certificate file");
 			break;
 		case SSHVA_OCSP_SPEC:
 			va.certificate_file = xstrdup(_va->certificate_file); /*fatal on error*/
@@ -189,7 +189,7 @@ ssh_set_validator(const VAOptions *_va) {
 	switch(va.type) {
 	case SSHVA_NONE:
 	case SSHVA_OCSP_CERT:
-		debug("ssh_set_validator: ignore responder url");
+		debug_f("ignore responder url");
 		break;
 	case SSHVA_OCSP_SPEC:
 		if (_va->responder_url == NULL) {
@@ -208,13 +208,13 @@ ssh_ASN1_GENERALIZEDTIME_2_string(ASN1_GENERALIZEDTIME *asn1_time) {
 	char   *p = NULL;
 
 	if (asn1_time == NULL) {
-		error("ssh_ASN1_GENERALIZEDTIME_2_string: asn1_time is NULL");
+		error_f("asn1_time is NULL");
 		return(NULL);
 	}
 
 	bio = BIO_new(BIO_s_mem());
 	if (bio == NULL) {
-		error("ssh_ASN1_GENERALIZEDTIME_2_string: BIO_new fail");
+		error_f("BIO_new fail");
 		return(NULL);
 	}
 
@@ -236,19 +236,19 @@ ssh_load_x509certs(const char *certs_file, const char* certs_descrip) {
 	BIO *fbio = NULL;
 
 	if (certs_file == NULL) {
-		error("ssh_load_x509certs: file is NULL");
+		error_f("file is NULL");
 		goto exit;
 	}
 
 	ret_certs = sk_X509_new_null();
 	if (ret_certs == NULL) {
-		error("ssh_load_x509certs: sk_X509_new_null fail");
+		error_f("sk_X509_new_null fail");
 		goto exit;
 	}
 
 	fbio = BIO_new(BIO_s_file());
 	if (fbio == NULL) {
-		error("ssh_load_x509certs: BIO_new fail");
+		error_f("BIO_new fail");
 		goto exit;
 	}
 
@@ -265,7 +265,7 @@ ssh_load_x509certs(const char *certs_file, const char* certs_descrip) {
 
 		data = PEM_X509_INFO_read_bio(fbio, NULL, NULL, NULL);
 		if (data == NULL) {
-			error("ssh_load_x509certs: no data.");
+			error_f("no data.");
 			goto exit;
 		}
 
@@ -282,9 +282,9 @@ ssh_load_x509certs(const char *certs_file, const char* certs_descrip) {
 exit:
 	BIO_free_all(fbio);
 	if (ret_certs != NULL) {
-		debug3("ssh_load_x509certs: return %d certs", (int)sk_X509_num(ret_certs));
+		debug3_f("return %d certs", (int)sk_X509_num(ret_certs));
 	} else {
-		debug("ssh_load_x509certs: return NULL");
+		debug_f("return NULL");
 	}
 	return(ret_certs);
 }
@@ -303,49 +303,49 @@ ssh_ocspreq_addcert(
 	char        *subj = NULL;
 
 	if (cert == NULL) {
-		error("ssh_ocspreq_addcert: cert is NULL");
+		error_f("cert is NULL");
 		return(0);
 	}
 	if (x509store == NULL) {
-		error("ssh_ocspreq_addcert: x509store is NULL");
+		error_f("x509store is NULL");
 		return(0);
 	}
 	if (req == NULL) {
-		error("ssh_ocspreq_addcert: req is NULL");
+		error_f("req is NULL");
 		return(0);
 	}
 	if (ids == NULL) {
-		error("ssh_ocspreq_addcert: ids is NULL");
+		error_f("ids is NULL");
 		return(0);
 	}
 	if (subjs == NULL) {
-		error("ssh_ocspreq_addcert: subjs is NULL");
+		error_f("subjs is NULL");
 		return(0);
 	}
 
 	issuer = ssh_x509store_get_cert_by_subject(x509store, X509_get_issuer_name(cert));
 	if (issuer == NULL) {
-		error("ssh_ocspreq_addcert: cannot found issuer certificate");
+		error_f("cannot found issuer certificate");
 		return(0);
 	}
 
 	id = OCSP_cert_to_id(NULL, cert, issuer);
 	if (id == NULL) {
-		error("ssh_ocspreq_addcert: OCSP_cert_to_id fail");
+		error_f("OCSP_cert_to_id fail");
 		return(0);
 	}
 
 	if (!OCSP_request_add0_id(req, id)) {
-		error("ssh_ocspreq_addcert: OCSP_request_add0_id fail");
+		error_f("OCSP_request_add0_id fail");
 		return(0);
 	}
 	if (!sk_OCSP_CERTID_push(ids, id)) {
-		error("ssh_ocspreq_addcert: sk_OCSP_CERTID_push fail");
+		error_f("sk_OCSP_CERTID_push fail");
 		return(0);
 	}
 	subj = ssh_X509_NAME_oneline(X509_get_subject_name(cert)); /*fatal on error*/
 	if (!sk_OPENSSL_STRING_push(subjs, subj)) {
-		error("ssh_ocspreq_addcert: sk_push(..., subj) fail");
+		error_f("sk_push(..., subj) fail");
 		return(0);
 	}
 
@@ -416,7 +416,7 @@ ssh_ocsp_conn_new(const char *url) {
 	char *q = NULL;
 
 	if (url == NULL) {
-		error("ssh_ocsp_conn_new: url is NULL");
+		error_f("url is NULL");
 		return(NULL);
 	}
 
@@ -433,29 +433,23 @@ ssh_ocsp_conn_new(const char *url) {
 	*q = '\x0';
 
 	if (!ssh_ocsp_set_protocol(conn, p)) {
-		error("ssh_ocsp_conn_new:"
-			" unsupported protocol '%.16s'"
-			, p);
+		error_f("unsupported protocol '%.16s'", p);
 		goto error;
 	}
 
 	p = q;
 	if (*++p != '/') { /*this symbol is inside data */
-		error("ssh_ocsp_conn_new: expected first slash,"
-			" got char with code %d"
-			, (int)*p);
+		error_f("expected first slash, got char with code %d", (int)*p);
 		goto error;
 	}
 	if (*++p != '/') { /*this symbol is inside data */
-		error("ssh_ocsp_conn_new: expected second slash,"
-			" got char with code %d"
-			, (int)*p);
+		error_f("expected second slash, got char with code %d", (int)*p);
 		goto error;
 	}
 
 	/* check for host and port */
 	if (*++p == '\x0') {
-		error("ssh_ocsp_conn_new: missing host in url '%.512s'", url);
+		error_f("missing host in url '%.512s'", url);
 		goto error;
 	}
 	conn->host = p;
@@ -498,11 +492,11 @@ ssh_ocsp_get_response(const ssh_ocsp_conn *conn, OCSP_REQUEST *req) {
 #endif
 
 	if (conn == NULL) {
-		error("ssh_ocsp_get_response: conn is NULL");
+		error_f("conn is NULL");
 		return(NULL);
 	}
 	if (req == NULL) {
-		error("ssh_ocsp_get_response: req is NULL");
+		error_f("req is NULL");
 		return(NULL);
 	}
 
@@ -513,7 +507,7 @@ ssh_ocsp_get_response(const ssh_ocsp_conn *conn, OCSP_REQUEST *req) {
 		goto exit;
 	}
 #else
-	error("ssh_ocsp_get_response: sockets are not supported in OpenSSL");
+	error_f("sockets are not supported in OpenSSL");
 	goto exit;
 #endif
 	if (conn->port != NULL) {
@@ -567,15 +561,15 @@ ssh_ocsp_get_basicresp(
 	int	flag;
 
 	if (req == NULL) {
-		error("ssh_ocsp_get_basicresp: req is NULL");
+		error_f("req is NULL");
 		return(NULL);
 	}
 	if (resp == NULL) {
-		error("ssh_ocsp_get_basicresp: resp is NULL");
+		error_f("resp is NULL");
 		return(NULL);
 	}
 	if (x509store == NULL) {
-		error("ssh_ocsp_get_basicresp: x509store is NULL");
+		error_f("x509store is NULL");
 		return(NULL);
 	}
 
@@ -588,7 +582,7 @@ ssh_ocsp_get_basicresp(
 	flag = OCSP_check_nonce(req, br);
 	if (flag <= 0) {
 		if (flag == -1) {
-			logit("ssh_ocsp_get_basicresp: WARNING - no nonce in response");
+			error_f("WARNING - no nonce in response");
 		} else {
 			error_crypto("OCSP_check_nonce", "");
 			goto error;
@@ -598,12 +592,12 @@ ssh_ocsp_get_basicresp(
 #ifdef SSHOCSPTEST
 {
 int k;
-logit("ssh_ocsp_get_basicresp: VA certs num=%d", sk_X509_num(vacrts));
+error_f("VA certs num=%d", sk_X509_num(vacrts));
 for (k = 0; k < sk_X509_num(vacrts); k++) {
 	char *buf;
 	X509 *x = sk_X509_value(vacrts, k);
 	buf = ssh_X509_NAME_oneline(X509_get_subject_name(x)); /*fatal on error*/
-	logit("ssh_ocsp_get_basicresp: VA[%d] subject='%s'", k, buf);
+	error_f("VA[%d] subject='%s'", k, buf);
 	free(buf);
 }
 }
@@ -648,11 +642,11 @@ for (k = 0; k < sk_X509_num(vacrts); k++) {
 		goto error;
 	}
 
-	debug3("ssh_ocsp_get_basicresp: OK");
+	debug3_f("OK");
 	return(br);
 
 error:
-	debug3("ssh_ocsp_get_basicresp: FAIL");
+	debug3_f("FAIL");
 	OCSP_BASICRESP_free(br);
 	return(NULL);
 }
@@ -681,30 +675,23 @@ ssh_ocsp_check_validity(
 	ASN1_GENERALIZEDTIME *rev, *thisupd, *nextupd;
 
 	if (req == NULL) {
-		error("ssh_ocsp_check_validity: req is NULL");
+		error_f("req is NULL");
 		return(-1);
 	}
 	if (br == NULL) {
-		error("ssh_ocsp_check_validity: br is NULL");
+		error_f("br is NULL");
 		return(-1);
 	}
 	if (sk_OCSP_CERTID_num(ids) <= 0) {
-		error("ssh_ocsp_check_validity:"
-			" number of ids is %d"
-			, sk_OCSP_CERTID_num(ids));
+		error_f("number of ids is %d", sk_OCSP_CERTID_num(ids));
 		return(-1);
 	}
 	if (sk_OPENSSL_STRING_num(subjs) <= 0) {
-		error("ssh_ocsp_check_validity:"
-			" number of subjs is %d"
-			, sk_OPENSSL_STRING_num(subjs));
+		error_f("number of subjs is %d", sk_OPENSSL_STRING_num(subjs));
 		return(-1);
 	}
 	if (sk_OCSP_CERTID_num(ids) != sk_OPENSSL_STRING_num(subjs)) {
-		error("ssh_ocsp_check_validity:"
-			" ids(%d) != subjs(%d)"
-			, sk_OCSP_CERTID_num(ids)
-			, sk_OPENSSL_STRING_num(subjs));
+		error_f("ids(%d) != subjs(%d)", sk_OCSP_CERTID_num(ids), sk_OPENSSL_STRING_num(subjs));
 		return(-1);
 	}
 
@@ -713,7 +700,7 @@ ssh_ocsp_check_validity(
 
 		if (get_log_level() >= SYSLOG_LEVEL_DEBUG3) {
 			char *subject = sk_OPENSSL_STRING_value(subjs, k);
-			debug3("ssh_ocsp_check_validity: cert[%d]='%s'", k, subject);
+			debug3_f("cert[%d]='%s'", k, subject);
 		}
 
 		if (!OCSP_resp_find_status(
@@ -721,7 +708,7 @@ ssh_ocsp_check_validity(
 			&rev, &thisupd, &nextupd)
 		) {
 			ret = -1;
-			error("ssh_ocsp_check_validity: cannot found status");
+			error_f("cannot found status");
 			break;
 		}
 
@@ -730,14 +717,14 @@ ssh_ocsp_check_validity(
 			ret = -1;
 			break;
 		}
-		debug("ssh_ocsp_check_validity: status=%.32s", OCSP_cert_status_str(status));
+		debug_f("status=%.32s", OCSP_cert_status_str(status));
 		if (get_log_level() >= SYSLOG_LEVEL_DEBUG3) {
 			char *p = ssh_ASN1_GENERALIZEDTIME_2_string(thisupd);
-			debug3("ssh_ocsp_check_validity: This Update=%.128s", p);
+			debug3_f("This Update=%.128s", p);
 			free(p);
 			if (nextupd != NULL) {
 				p = ssh_ASN1_GENERALIZEDTIME_2_string(nextupd);
-				debug3("ssh_ocsp_check_validity: Next Update=%.128s", p);
+				debug3_f("Next Update=%.128s", p);
 				free(p);
 			}
 		}
@@ -746,24 +733,22 @@ ssh_ocsp_check_validity(
 
 		if (status != V_OCSP_CERTSTATUS_REVOKED) {
 			ret = -1;
-			error("ssh_ocsp_check_validity: unknown certificate status");
+			error_f("unknown certificate status");
 			break;
 		}
 
 		ret = 0;
 		if (get_log_level() >= SYSLOG_LEVEL_DEBUG3) {
 			char *p = ssh_ASN1_GENERALIZEDTIME_2_string(rev);
-			debug3("ssh_ocsp_check_validity: Revocation Time=%.128s", p);
+			debug3_f("Revocation Time=%.128s", p);
 			free(p);
 			if (reason != -1) {
-				debug3("ssh_ocsp_check_validity:"
-					" Revocation Reason='%.128s'"
-					, OCSP_crl_reason_str(reason));
+				debug3_f("Revocation Reason='%.128s'", OCSP_crl_reason_str(reason));
 			}
 		}
 		break;
 	}
-	debug3("ssh_ocsp_check_validity: return %d", ret);
+	debug3_f("return %d", ret);
 	return(ret);
 }
 
@@ -788,7 +773,7 @@ ssh_ocsp_validate2(
 	    (va.certificate_file != NULL)) {
 		vacrts = ssh_load_x509certs(va.certificate_file, "'OCSP Responder' trusted certificates");
 		if (vacrts == NULL) goto exit;
-		debug("ssh_ocsp_validate2: VA certs num=%d", sk_X509_num(vacrts));
+		debug_f("VA certs num=%d", sk_X509_num(vacrts));
 	}
 
 	/*NOTE: functiona fail on NULL argument*/
@@ -806,10 +791,7 @@ ssh_ocsp_validate2(
 	{ /*check OCSP response status*/
 		int flag = OCSP_response_status(resp);
 		if (flag != OCSP_RESPONSE_STATUS_SUCCESSFUL) {
-			error("ssh_ocsp_validate2:"
-				" responder error=%d(%.256s)"
-				, flag
-				, OCSP_response_status_str((long/*???*/)flag));
+			error_f("responder error=%d(%.256s)", flag, OCSP_response_status_str((long/*???*/)flag));
 			goto exit;
 		}
 	}
@@ -839,13 +821,13 @@ ssh_aia_get(X509_EXTENSION *ext) {
 	int len;
 
 	if (ext == NULL) {
-		error("ssh_aia_get: ext is NULL");
+		error_f("ext is NULL");
 		return(NULL);
 	}
 
 	method = (X509V3_EXT_METHOD*) X509V3_EXT_get(ext);
 	if (method == NULL) {
-		debug("ssh_aia_get: cannot get method");
+		debug_f("cannot get method");
 		return(NULL);
 	}
 
@@ -860,7 +842,7 @@ ssh_aia_get(X509_EXTENSION *ext) {
 		ext_str = method->d2i(NULL, &p, len);
 	}
 	if (ext_str == NULL) {
-		debug("ssh_aia_get: null ext_str!");
+		debug_f("null ext_str!");
 		return(NULL);
 	}
 
@@ -938,7 +920,7 @@ if (bio != NULL) {
 
 		conn = ssh_ocsp_conn_new((const char*)uri->data);
 		if (conn == NULL) {
-			debug("ssh_aiaocsp_validate: cannot create ocsp connection");
+			debug_f("cannot create ocsp connection");
 			continue;
 		}
 		ret = ssh_ocsp_validate2(cert, x509store, conn);
@@ -967,7 +949,7 @@ ssh_ocsp_validate4cert(X509 *cert, X509_STORE *x509store) {
 
 		xe = X509_get_ext(cert, loc);
 		if (xe == NULL) {
-			debug("ssh_ocsp_validate4cert: cannot get x509 extension");
+			debug_f("cannot get x509 extension");
 			continue;
 		}
 
@@ -984,9 +966,9 @@ ssh_ocsp_validate4cert(X509 *cert, X509_STORE *x509store) {
 	}
 
 	if (found) {
-		debug3("ssh_ocsp_validate4cert: validation result=%d", ret);
+		debug3_f("validation result=%d", ret);
 	} else {
-		debug3("ssh_ocsp_validate4cert: no OCSP 'Service Locator' URL");
+		debug3_f("no OCSP 'Service Locator' URL");
 	}
 	return(found ? ret : 1);
 }
@@ -999,7 +981,7 @@ ssh_ocsp_validate(X509 *cert, X509_STORE *x509store) {
 
 	if (get_log_level() >= SYSLOG_LEVEL_DEBUG3) {
 		char *buf = ssh_X509_NAME_oneline(X509_get_subject_name(cert)); /*fatal on error*/
-		debug3("ssh_ocsp_validate: for '%s'", buf);
+		debug3_f("for '%s'", buf);
 		free(buf);
 	}
 
@@ -1009,7 +991,7 @@ ssh_ocsp_validate(X509 *cert, X509_STORE *x509store) {
 		fatal("ssh_ocsp_validate: invalid validator type %d", va.type);
 		break; /*;-)*/
 	case SSHVA_NONE:
-		debug3("ssh_ocsp_validate: none");
+		debug3_f("none");
 		ret = 1;
 		break;
 	case SSHVA_OCSP_CERT:

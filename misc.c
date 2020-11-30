@@ -686,7 +686,7 @@ put_host_port(const char *host, u_short port)
 		return(xstrdup(host));
 	if (asprintf(&hoststr, "[%s]:%d", host, (int)port) < 0)
 		fatal("put_host_port: asprintf: %s", strerror(errno));
-	debug3("put_host_port: %s", hoststr);
+	debug3_f("%s", hoststr);
 	return hoststr;
 }
 

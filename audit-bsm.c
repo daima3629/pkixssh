@@ -140,7 +140,7 @@ aug_get_machine(char *host, u_int32_t *addr, u_int32_t *type)
 	int ret = 0, r;
 
 	if ((r = getaddrinfo(host, NULL, NULL, &ai)) != 0) {
-		error("BSM audit: getaddrinfo failed for %.100s: %.100s", host,
+		error_f("getaddrinfo failed for %.100s: %.100s", host,
 		    r == EAI_SYSTEM ? strerror(errno) : gai_strerror(r));
 		return -1;
 	}
@@ -159,7 +159,7 @@ aug_get_machine(char *host, u_int32_t *addr, u_int32_t *type)
 		break;
 #endif
 	default:
-		error("BSM audit: unknown address family for %.100s: %d",
+		error_f("unknown address family for %.100s: %d",
 		    host, ai->ai_family);
 		ret = -1;
 	}
@@ -267,11 +267,11 @@ bsm_audit_record(int typ, char *string, au_event_t event_no)
 
 	rc = (typ == 0) ? 0 : -1;
 	sel = selected(the_authctxt->user, uid, event_no, rc);
-	debug3("BSM audit: typ %d rc %d \"%s\"", typ, rc, string);
+	debug3_f("typ %d rc %d \"%s\"", typ, rc, string);
 	if (!sel)
 		return;	/* audit event does not match mask, do not write */
 
-	debug3("BSM audit: writing audit new record");
+	debug3_f("writing audit new record");
 	ad = au_open();
 
 	(void) au_write(ad, AUToSubjectFunc(uid, uid, gid, uid, gid,
@@ -289,8 +289,8 @@ bsm_audit_record(int typ, char *string, au_event_t event_no)
 #endif
 
 	if (rc < 0)
-		error("BSM audit: %s failed to write \"%s\" record: %s",
-		    __func__, string, strerror(errno));
+		error_f("failed to write \"%s\" record: %s",
+		    string, strerror(errno));
 }
 
 static void
@@ -301,7 +301,7 @@ bsm_audit_session_setup(void)
 	au_mask_t mask;
 
 	if (the_authctxt == NULL) {
-		error("BSM audit: session setup internal error (NULL ctxt)");
+		error_f("internal error (NULL ctxt)");
 		return;
 	}
 
@@ -322,8 +322,7 @@ bsm_audit_session_setup(void)
 
 	rc = SetAuditFunc(&info, sizeof(info));
 	if (rc < 0)
-		error("BSM audit: %s: %s failed: %s", __func__,
-		    SetAuditFuncText, strerror(errno));
+		error_f("%s failed: %s", SetAuditFuncText, strerror(errno));
 }
 
 static void
@@ -354,7 +353,7 @@ audit_connection_from(const char *host, int port)
 
 	if (cannot_audit(0))
 		return;
-	debug3("BSM audit: connection from %.100s port %d", host, port);
+	debug3_f("%.100s port %d", host, port);
 
 	/* populate our terminal id structure */
 #if defined(HAVE_GETAUDIT_ADDR)
@@ -362,13 +361,13 @@ audit_connection_from(const char *host, int port)
 	aug_get_machine((char *)host, &(tid->at_addr[0]), &(tid->at_type));
 	snprintf(buf, sizeof(buf), "%08x %08x %08x %08x", tid->at_addr[0],
 	    tid->at_addr[1], tid->at_addr[2], tid->at_addr[3]);
-	debug3("BSM audit: iptype %d machine ID %s", (int)tid->at_type, buf);
+	debug3_f("iptype %d machine ID %s", (int)tid->at_type, buf);
 #else
 	/* this is used on IPv4-only machines */
 	tid->port = (dev_t)port;
 	tid->machine = inet_addr(host);
 	snprintf(buf, sizeof(buf), "%08x", tid->machine);
-	debug3("BSM audit: machine ID %s", buf);
+	debug3_f("machine ID %s", buf);
 #endif
 }
 

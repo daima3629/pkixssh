@@ -534,7 +534,7 @@ ssh_add_x509key_alg(const char *data) {
 	int nid = -1;
 
 	if (data == NULL) {
-		error("ssh_add_x509pubkey_alg: data is NULL");
+		error_f("data is NULL");
 		return(-1);
 	}
 
@@ -542,7 +542,7 @@ ssh_add_x509key_alg(const char *data) {
 
 	mdname = strchr(name, ',');
 	if (mdname == NULL) {
-		error("ssh_add_x509pubkey_alg: cannot parse digest");
+		error_f("cannot parse digest");
 		goto err;
 	}
 	*mdname++ = '\0';
@@ -559,7 +559,7 @@ ssh_add_x509key_alg(const char *data) {
 			if (p->name == NULL) break;
 		}
 		if (k <= 0) {
-			error("ssh_add_x509pubkey_alg: insufficient slots");
+			error_f("insufficient slots");
 			goto err;
 		}
 	}
@@ -598,21 +598,19 @@ ssh_add_x509key_alg(const char *data) {
 		p->chain = 0;
 	} else
 	{
-		error("ssh_add_x509pubkey_alg: "
-			"unsupported public key algorithm '%s'", name);
+		error_f("unsupported public key algorithm '%s'", name);
 		goto err;
 	}
 
 	if (ssh_x509key_alg_digest(p, mdname) < 0) {
-		error("ssh_add_x509pubkey_alg: unsupported digest %.50s", mdname);
+		error_f("unsupported digest %.50s", mdname);
 		goto err;
 	}
 
 #ifdef OPENSSL_FIPS
 	if (FIPS_mode()) {
 		if ((EVP_MD_flags(p->dgst.evp) & EVP_MD_FLAG_FIPS) == 0) {
-			error("ssh_add_x509pubkey_alg: "
-				"%s in not enabled in FIPS mode ", mdname);
+			error_f("%s in not enabled in FIPS mode ", mdname);
 			goto err;
 		}
 	}
@@ -747,7 +745,7 @@ ssh_xkalg_list(int type, struct sshbuf *b, const char *sep) {
 	int seplen;
 
 	if (b == NULL) {
-		error("ssh_xkalg_list: buffer is NULL");
+		error_f("buffer is NULL");
 		return;
 	}
 

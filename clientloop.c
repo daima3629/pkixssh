@@ -382,7 +382,7 @@ client_x11_get_proto(struct ssh *ssh, const char *display,
 			    generated ? "-f " : "" ,
 			    generated ? xauthfile : "",
 			    display);
-			debug2("x11_get_proto: %s", cmd);
+			debug2_f("%s", cmd);
 			f = popen(cmd, "r");
 			if (f && fgets(line, sizeof(line), f) &&
 			    sscanf(line, "%*s %511s %511s", proto, data) == 2)
@@ -1599,8 +1599,7 @@ client_request_x11(struct ssh *ssh, const char *request_type, int rchan)
 		fatal("%s: parse packet: %s", __func__, ssh_err(r));
 	/* XXX check permission */
 	/* XXX range check originator port? */
-	debug("client_request_x11: request from %s %u", originator,
-	    (unsigned)originator_port);
+	debug_f("request from %s %u", originator, (unsigned)originator_port);
 	free(originator);
 	sock = x11_connect_display(ssh);
 	if (sock < 0)
@@ -1709,7 +1708,7 @@ client_input_channel_open(int type, u_int32_t seq, struct ssh *ssh)
 	    (r = sshpkt_get_u32(ssh, &rmaxpack)) != 0)
 		goto out;
 
-	debug("client_input_channel_open: ctype %s rchan %d win %d max %d",
+	debug_f("ctype %s rchan %d win %d max %d",
 	    ctype, (int)rchan, (int)rwindow, (int)rmaxpack);
 
 	if (strcmp(ctype, "forwarded-tcpip") == 0) {
@@ -1774,12 +1773,11 @@ client_input_channel_req(int type, u_int32_t seq, struct ssh *ssh)
 	    (r = sshpkt_get_u8(ssh, &reply)) != 0)
 		goto out;
 
-	debug("client_input_channel_req: channel %u rtype %s reply %d",
+	debug_f("channel %u rtype %s reply %d",
 	    (unsigned)id, rtype, (int)reply);
 
 	if (c == NULL) {
-		error("client_input_channel_req: channel %d: "
-		    "unknown channel", id);
+		error_f("channel %d: unknown channel", id);
 	} else if (strcmp(rtype, "eow@openssh.com") == 0) {
 		if ((r = sshpkt_get_end(ssh)) != 0)
 			goto out;
@@ -2321,8 +2319,7 @@ client_input_global_request(int type, u_int32_t seq, struct ssh *ssh)
 	if ((r = sshpkt_get_cstring(ssh, &rtype, NULL)) != 0 ||
 	    (r = sshpkt_get_u8(ssh, &want_reply)) != 0)
 		goto out;
-	debug("client_input_global_request: rtype %s want_reply %d",
-	    rtype, (int)want_reply);
+	debug_f("rtype %s want_reply %d", rtype, (int)want_reply);
 	if (strcmp(rtype, "hostkeys-00@openssh.com") == 0)
 		success = client_input_hostkeys(ssh);
 	if (want_reply) {

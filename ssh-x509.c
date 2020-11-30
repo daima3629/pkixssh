@@ -145,7 +145,7 @@ ssh_X509_NAME_oneline(X509_NAME *xn) {
 
 	size = ssh_X509_NAME_print(mbio, xn);
 	if (size <= 0) {
-		error("ssh_X509_NAME_oneline: no data in buffer");
+		error_f("no data in buffer");
 		goto done;
 	}
 
@@ -153,7 +153,7 @@ ssh_X509_NAME_oneline(X509_NAME *xn) {
 
 	/* we should request one byte more !?!? */
 	if (size != BIO_gets(mbio, buf, size + 1)) {
-		error("ssh_X509_NAME_oneline: cannot get data from buffer");
+		error_f("cannot get data from buffer");
 		goto done;
 	}
 	buf[size] = '\0';
@@ -193,7 +193,7 @@ x509key_find_subject(const char* s) {
 	size_t len;
 
 	if (s == NULL) {
-		error("x509key_find_subject: no input data");
+		error_f("no input data");
 		return NULL;
 	}
 	for (; *s && ISSPACE(*s); s++)
@@ -206,14 +206,14 @@ x509key_find_subject(const char* s) {
 		for (p = s + len; *p && ISSPACE(*p); p++)
 		{/*skip space*/}
 		if (!*p) {
-			error("x509key_find_subject: no data after keyword");
+			error_f("no data after keyword");
 			return NULL;
 		}
 		if (*p == ':' || *p == '=') {
 			for (p++; *p && ISSPACE(*p); p++)
 			{/*skip space*/}
 			if (!*p) {
-				error("x509key_find_subject: no data after separator");
+				error_f("no data after separator");
 				return NULL;
 			}
 		}
@@ -222,7 +222,7 @@ x509key_find_subject(const char* s) {
 			for (p++; *p && ISSPACE(*p); p++)
 			{/*skip space*/}
 			if (!*p) {
-				error("x509key_find_subject: no data");
+				error_f("no data");
 				return NULL;
 			}
 		}
@@ -266,8 +266,7 @@ get_escsymbol(const u_char* str, size_t len, u_long *value) {
 	long v;
 
 	if (len < 1) {
-		error("get_escsymbol:"
-		" missing characters in escape sequence");
+		error_f("missing characters in escape sequence");
 		return -1;
 	}
 
@@ -283,29 +282,25 @@ get_escsymbol(const u_char* str, size_t len, u_long *value) {
 	}
 	if (ch == 'W') {
 		if (len < 9) {
-			error("get_escsymbol:"
-			" to short 32-bit escape sequence");
+			error_f("to short 32-bit escape sequence");
 			return -1;
 		}
 		v = ssh_hatol(++str, 8);
 		if (v < 0) {
-			error("get_escsymbol:"
-			" invalid character in 32-bit hex sequence");
-			 return -1;
+			error_f("invalid character in 32-bit hex sequence");
+			return -1;
 		}
 		if (value) *value = v;
 		return 9;
 	}
 	if (ch == 'U') {
 		if (len < 5) {
-			error("get_escsymbol:"
-			" to short 16-bit escape sequence");
+			error_f("to short 16-bit escape sequence");
 			return -1;
 		}
 		v = ssh_hatol(++str, 4);
 		if (v < 0) {
-			error("get_escsymbol:"
-			" invalid character in 16-bit hex sequence");
+			error_f("invalid character in 16-bit hex sequence");
 			 return -1;
 		}
 		if (value) *value = v;
@@ -317,8 +312,7 @@ get_escsymbol(const u_char* str, size_t len, u_long *value) {
 		if (*str > 127) { /*ASCII comparison !*/
 			/* there is no reason symbol above 127
                            to be escaped in this way */
-			error("get_escsymbol:"
-			" non-ascii character in escape sequence");
+			error_f("non-ascii character in escape sequence");
 			return -1;
 		}
 		if (value) *value = *str;
@@ -329,15 +323,13 @@ get_escsymbol(const u_char* str, size_t len, u_long *value) {
 	{
 		long vlo;
 		if (len < 2) {
-			error("get_escsymbol:"
-			" to short 8-bit escape sequence");
+			error_f("to short 8-bit escape sequence");
 			return -1;
 		}
 		vlo = ssh_hctol(*++str);
 		if (vlo < 0) {
-			error("get_escsymbol:"
-			" invalid character in 8-bit hex sequence");
-			 return -1;
+			error_f("invalid character in 8-bit hex sequence");
+			return -1;
 		}
 		v = (v << 4) + vlo;
 	}
@@ -371,15 +363,13 @@ ssh_X509_NAME_add_entry_by_NID(X509_NAME* name, int nid, const u_char* str, size
 	while ((len > 0) && (k > 0)) {
 		int ch_utf8 = 1;
 		if (*q == '\0') {
-			error("ssh_X509_NAME_add_entry_by_NID:"
-			" unsupported zero(NIL) symbol in name");
+			error_f("unsupported zero(NIL) symbol in name");
 			return 0;
 		}
 		if (*q == '\\') {
 			len--;
 			if (len <= 0) {
-				error("ssh_X509_NAME_add_entry_by_NID:"
-				" escape sequence without data");
+				error_f("escape sequence without data");
 				return 0;
 			}
 
@@ -392,9 +382,7 @@ ssh_X509_NAME_add_entry_by_NID(X509_NAME* name, int nid, const u_char* str, size
 		} else {
 			ret = UTF8_getc(q, len, &ch);
 			if(ret < 0) {
-				error("ssh_X509_NAME_add_entry_by_NID:"
-				" cannot get next symbol(%.32s)"
-				, q);
+				error_f("cannot get next symbol(%.32s)", q);
 				return 0;
 			}
 		}
@@ -405,8 +393,7 @@ ssh_X509_NAME_add_entry_by_NID(X509_NAME* name, int nid, const u_char* str, size
 			/* UTF8_putc return negative if buffer is too short */
 			ret = UTF8_putc(p, k, ch);
 			if (ret < 0) {
-				error("ssh_X509_NAME_add_entry_by_NID:"
-				" UTF8_putc fail for symbol %ld", ch);
+				error_f("UTF8_putc fail for symbol %ld", ch);
 				return 0;
 			}
 		} else {
@@ -417,8 +404,7 @@ ssh_X509_NAME_add_entry_by_NID(X509_NAME* name, int nid, const u_char* str, size
 		p += ret;
 	}
 	if (len > 0) {
-		error("ssh_X509_NAME_add_entry_by_NID:"
-		" too long data");
+		error_f("too long data");
 		return 0;
 	}
 	*p = '\0';
@@ -480,7 +466,7 @@ x509key_str2X509NAME(const char* _str, X509_NAME *_name) {
 		}
 		q = strchr(p, '=');
 		if (!q) {
-			error("x509key_str2X509NAME: cannot parse '%.200s' ...", p);
+			error_f("cannot parse '%.200s' ...", p);
 			ret = 0;
 			break;
 		}
@@ -500,14 +486,14 @@ x509key_str2X509NAME(const char* _str, X509_NAME *_name) {
 		}
 #endif /* def SSH_OPENSSL_DN_WITHOUT_EMAIL */
 		if (nid == NID_undef) {
-			error("x509key_str2X509NAME: cannot get nid from string '%.200s'", p);
+			error_f("cannot get nid from string '%.200s'", p);
 			ret = 0;
 			break;
 		}
 
 		p = q + 1;
 		if (!*p) {
-			error("x509key_str2X509NAME: no data");
+			error_f("no data");
 			ret = 0;
 			break;
 		}
@@ -528,7 +514,7 @@ x509key_str2X509NAME(const char* _str, X509_NAME *_name) {
 	}
 
 	free(str);
-	debug3("x509key_str2X509NAME: return %d", ret);
+	debug3_f("return %d", ret);
 	return ret;
 }
 
@@ -539,16 +525,15 @@ x509key_from_subject(int basetype, const char* _cp) {
 	struct sshkey *key;
 	X509       *x;
 
-	debug3("x509key_from_subject(%d, [%.1024s]) called",
-		basetype, (_cp ? _cp : ""));
+	debug3_f("%d, [%.1024s] called", basetype, (_cp ? _cp : ""));
 	subject = x509key_find_subject(_cp);
 	if (subject == NULL)
 		return NULL;
 
-	debug3("x509key_from_subject: subject=[%.1024s]", subject);
+	debug3_f("subject=[%.1024s]", subject);
 	key = sshkey_new(KEY_UNSPEC);
 	if (key == NULL) {
-		error("x509key_from_subject: out of memory");
+		error_f("out of memory");
 		return NULL;
 	}
 
@@ -589,7 +574,7 @@ err:
 	}
 
 done:
-	debug3("x509key_from_subject: return %p", (void*)key);
+	debug3_f("return %p", (void*)key);
 	return key;
 }
 
@@ -628,7 +613,7 @@ x509_to_key(X509 *x509) {
 	}
 #if 0
 	/*else*/
-	debug3("x509_to_key: X509_get_pubkey done!");
+	debug3_f("X509_get_pubkey done!");
 #endif
 
 	switch (EVP_PKEY_base_id(env_pkey)) {
@@ -867,7 +852,7 @@ if ((SSHX_RFC6187_MISSING_KEY_IDENTIFIER & xcompat) == 0) {
 
 	pchain = sk_X509_new_null();
 	if (pchain == NULL) {
-		error("X509key_from_buf2_common: out of memory (chain)");
+		error_f("out of memory (chain)");
 		r = SSH_ERR_ALLOC_FAIL;
 		goto err;
 	}
@@ -1681,7 +1666,7 @@ ssh_x509_EVP_PKEY_sign(
 
 	ctx = EVP_MD_CTX_new();
 	if (ctx == NULL) {
-		error("ssh_x509_EVP_PKEY_sign: out of memory");
+		error_f("out of memory");
 		return -1;
 	}
 
@@ -1720,9 +1705,9 @@ ssh_x509_sign(
 	u_char *sigret = NULL;
 	u_int  siglen;
 
-	debug3("ssh_x509_sign: key alg/type/name: %s/%s/%s",
+	debug3_f("key alg/type/name: %s/%s/%s",
 	    ctx->alg, sshkey_type(key), sshkey_ssh_name(key));
-	debug3("ssh_x509_sign: compatibility: { 0x%08x, 0x%08x }",
+	debug3_f("compatibility: { 0x%08x, 0x%08x }",
 	    ctx->compat->datafellows, ctx->compat->extra);
 
 {	/* compute signature */
@@ -1730,7 +1715,7 @@ ssh_x509_sign(
 	int res = -1;
 
 	if (privkey == NULL) {
-		error("ssh_x509_sign: out of memory - EVP_PKEY_new");
+		error_f("out of memory - EVP_PKEY_new");
 		r = SSH_ERR_ALLOC_FAIL;
 		goto done;
 	}
@@ -1745,13 +1730,13 @@ ssh_x509_sign(
 		res = EVP_PKEY_set1_EC_KEY(privkey, key->ecdsa);
 #endif
 	else {
-		error("ssh_x509_sign: missing private key");
+		error_f("missing private key");
 		r = SSH_ERR_INVALID_ARGUMENT;
 		goto end_sign_pkey;
 	}
 
 	if (!res) { /*EVP_PKEY_set1_... returns boolean*/
-		error("ssh_x509_sign: EVP_PKEY_set1_XXX: fail");
+		error_f("EVP_PKEY_set1_XXX: fail");
 		do_log_crypto_errors(SYSLOG_LEVEL_ERROR);
 		r = SSH_ERR_LIBCRYPTO_ERROR;
 		goto end_sign_pkey;
@@ -1759,7 +1744,7 @@ ssh_x509_sign(
 
 	keylen = EVP_PKEY_size(privkey);
 	if (keylen <= 0) {
-		error("ssh_x509_sign: cannot get key size");
+		error_f("cannot get key size");
 		do_log_crypto_errors(SYSLOG_LEVEL_ERROR);
 		r = SSH_ERR_LIBCRYPTO_ERROR;
 		goto end_sign_pkey;
@@ -1771,7 +1756,7 @@ ssh_x509_sign(
 	 */
 	sigret = xmalloc(keylen+20/*?*/); /*fatal on error*/
 
-	debug3("ssh_x509_sign: alg=%.50s, md=%.30s", xkalg->name, xkalg->dgst.name);
+	debug3_f("alg=%.50s, md=%.30s", xkalg->name, xkalg->dgst.name);
 
 {	u_int len = datalen;
 
@@ -1801,13 +1786,13 @@ end_sign_pkey:
 
 	buf = sshbuf_new();
 	if (buf == NULL) {
-		error("ssh_x509_sign: out of memory - sshbuf_new");
+		error_f("out of memory - sshbuf_new");
 		r = SSH_ERR_ALLOC_FAIL;
 		goto done;
 	}
 
 	signame = X509PUBALG_SIGNAME(xkalg);
-	debug3("ssh_x509_sign: signame=%.50s", signame);
+	debug3_f("signame=%.50s", signame);
 
 	r = sshbuf_put_cstring(buf, signame);
 	if (r != 0) goto end_sign_blob;
@@ -1834,7 +1819,7 @@ done:
 		free(sigret);
 	}
 
-	debug3("ssh_x509_sign: return %d", r);
+	debug3_f("return %d", r);
 	return r;
 }
 
@@ -1849,7 +1834,7 @@ ssh_xkalg_verify(
 
 	ctx = EVP_MD_CTX_new();
 	if (ctx == NULL) {
-		error("ssh_xkalg_verify: out of memory");
+		error_f("out of memory");
 		return -1;
 	}
 
@@ -1893,14 +1878,14 @@ ssh_x509_verify(
 	u_int datalen;
 
 	key = ctx->key;
-	debug3("ssh_x509_verify:  key alg/type/name: %s/%s/%s",
+	debug3_f("key alg/type/name: %s/%s/%s",
 	    ctx->alg, sshkey_type(key), sshkey_ssh_name(key));
-	debug3("ssh_x509_verify: compatibility: { 0x%08x, 0x%08x }",
+	debug3_f("compatibility: { 0x%08x, 0x%08x }",
 	    ctx->compat->datafellows, ctx->compat->extra);
 
 	loc = ssh_xkalg_nameind(ctx->alg, &xkalg, -1);
 	if (loc < 0) {
-		error("ssh_x509_verify: cannot handle algorithm"
+		error_f("cannot handle algorithm"
 		    " '%s' for key type %d[, curve %d]",
 		    ctx->alg, key->type, key->ecdsa_nid);
 		return SSH_ERR_INVALID_ARGUMENT;
@@ -1908,7 +1893,7 @@ ssh_x509_verify(
 
 	pubkey = X509_get_pubkey(key->x509_data->cert);
 	if (pubkey == NULL) {
-		error("ssh_x509_verify: no 'X.509 public-key'");
+		error_f("no 'X.509 public-key'");
 		return SSH_ERR_INVALID_ARGUMENT;
 	}
 
@@ -1921,7 +1906,7 @@ ssh_x509_verify(
 
 	buf = sshbuf_new();
 	if (buf == NULL) {
-		error("ssh_x509_verify: out of memory - sshbuf_new");
+		error_f("out of memory - sshbuf_new");
 		return SSH_ERR_ALLOC_FAIL;
 	}
 
@@ -1934,9 +1919,9 @@ ssh_x509_verify(
 	r = sshbuf_get_string(buf, &sigformat, NULL);
 	if (r != 0) goto end_sign_blob;
 
-	debug3("ssh_x509_verify: signature name = %.40s", sigformat);
+	debug3_f("signature name = %.40s", sigformat);
 	if (!ssh_is_x509signame(sigformat)) {
-		error("ssh_x509_verify: cannot handle signature name %.40s", sigformat);
+		error_f("cannot handle signature name %.40s", sigformat);
 		r = SSH_ERR_INVALID_FORMAT;
 	}
 	free(sigformat);
@@ -1960,7 +1945,7 @@ ssh_x509_verify(
 	/* check consistency */
 {	size_t rlen = sshbuf_len(buf);
 	if (rlen != 0) {
-		error("ssh_x509_verify: remaining bytes in signature %zu", rlen);
+		error_f("remaining bytes in signature %zu", rlen);
 		r = SSH_ERR_INVALID_FORMAT;
 	}
 }
@@ -1974,7 +1959,7 @@ end_sign_blob:
 {	int ret;
 	for (; loc >= 0; loc = ssh_xkalg_nameind(ctx->alg, &xkalg, loc)) {
 		const ssh_x509_md *dgst = &xkalg->dgst;
-		debug3("ssh_x509_verify: md=%.30s, loc=%d", dgst->name, loc);
+		debug3_f("md=%.30s, loc=%d", dgst->name, loc);
 
 		ret = ssh_xkalg_verify(pubkey, dgst, sigblob, len, data, datalen);
 		if (ret > 0) break;
@@ -1982,7 +1967,7 @@ end_sign_blob:
 		do_log_crypto_errors(SYSLOG_LEVEL_ERROR);
 	}
 	if (ret <= 0) {
-		debug3("ssh_x509_verify: failed for all digests");
+		debug3_f("failed for all digests");
 		r = SSH_ERR_SIGNATURE_INVALID;
 	}
 }
@@ -1995,7 +1980,7 @@ done:
 	}
 	EVP_PKEY_free(pubkey);
 
-	debug3("ssh_x509_verify: return %d", r);
+	debug3_f("return %d", r);
 	return r;
 }
 

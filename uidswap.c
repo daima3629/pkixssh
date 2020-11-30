@@ -64,7 +64,7 @@ temporarily_use_uid(struct passwd *pw)
 #ifdef SAVED_IDS_WORK_WITH_SETEUID
 	saved_euid = geteuid();
 	saved_egid = getegid();
-	debug("temporarily_use_uid: %u/%u (e=%u/%u)",
+	debug_f("%u/%u (e=%u/%u)",
 	    (u_int)pw->pw_uid, (u_int)pw->pw_gid,
 	    (u_int)saved_euid, (u_int)saved_egid);
 #ifndef HAVE_CYGWIN
@@ -143,14 +143,14 @@ restore_uid(void)
 {
 	/* it's a no-op unless privileged */
 	if (!privileged) {
-		debug("restore_uid: (unprivileged)");
+		debug_f("(unprivileged)");
 		return;
 	}
 	if (!temporarily_use_uid_effective)
 		fatal("restore_uid: temporarily_use_uid not effective");
 
 #ifdef SAVED_IDS_WORK_WITH_SETEUID
-	debug("restore_uid: %u/%u", (u_int)saved_euid, (u_int)saved_egid);
+	debug_f("%u/%u", (u_int)saved_euid, (u_int)saved_egid);
 	/* Set the effective uid back to the saved privileged uid. */
 	if (seteuid(saved_euid) == -1)
 		fatal("seteuid %u: %.100s", (u_int)saved_euid, strerror(errno));
@@ -189,7 +189,7 @@ permanently_set_uid(struct passwd *pw)
 		fatal("permanently_set_uid: no user given");
 	if (temporarily_use_uid_effective)
 		fatal("permanently_set_uid: temporarily_use_uid effective");
-	debug("permanently_set_uid: %u/%u", (u_int)pw->pw_uid,
+	debug_f("%u/%u", (u_int)pw->pw_uid,
 	    (u_int)pw->pw_gid);
 
 	if (setresgid(pw->pw_gid, pw->pw_gid, pw->pw_gid) == -1)

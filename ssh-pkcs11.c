@@ -333,7 +333,7 @@ pkcs11_provider_finalize(struct pkcs11_provider *p)
 	CK_RV rv;
 	CK_ULONG i;
 
-	debug("pkcs11_provider_finalize: %p refcount %d valid %d",
+	debug_f("%p refcount %d valid %d",
 	    (void*)p, p->refcount, p->valid);
 	if (!p->valid)
 		return;
@@ -357,10 +357,10 @@ pkcs11_provider_finalize(struct pkcs11_provider *p)
 static void
 pkcs11_provider_unref(struct pkcs11_provider *p)
 {
-	debug("pkcs11_provider_unref: %p refcount %d", (void*)p, p->refcount);
+	debug_f("%p refcount %d", (void*)p, p->refcount);
 	if (--p->refcount <= 0) {
 		if (p->valid)
-			error("pkcs11_provider_unref: %p still valid", (void*)p);
+			error_f("%p still valid", (void*)p);
 		pkcs11_provider_free(p);
 	}
 }

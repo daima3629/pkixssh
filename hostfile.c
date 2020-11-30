@@ -79,24 +79,24 @@ extract_salt(const char *s, u_int l, u_char *salt, size_t salt_len)
 	int ret;
 
 	if (l < sizeof(HASH_MAGIC) - 1) {
-		debug2("extract_salt: string too short");
+		debug2_f("string too short");
 		return (-1);
 	}
 	if (strncmp(s, HASH_MAGIC, sizeof(HASH_MAGIC) - 1) != 0) {
-		debug2("extract_salt: invalid magic identifier");
+		debug2_f("invalid magic identifier");
 		return (-1);
 	}
 	s += sizeof(HASH_MAGIC) - 1;
 	l -= sizeof(HASH_MAGIC) - 1;
 	if ((p = memchr(s, HASH_DELIM, l)) == NULL) {
-		debug2("extract_salt: missing salt termination character");
+		debug2_f("missing salt termination character");
 		return (-1);
 	}
 
 	b64len = p - s;
 	/* Sanity check */
 	if (b64len == 0 || b64len > 1024) {
-		debug2("extract_salt: bad encoded salt length %u", b64len);
+		debug2_f("bad encoded salt length %u", b64len);
 		return (-1);
 	}
 	b64salt = xmalloc(1 + b64len);
@@ -106,11 +106,11 @@ extract_salt(const char *s, u_int l, u_char *salt, size_t salt_len)
 	ret = __b64_pton(b64salt, salt, salt_len);
 	free(b64salt);
 	if (ret == -1) {
-		debug2("extract_salt: salt decode error");
+		debug2_f("salt decode error");
 		return (-1);
 	}
 	if (ret != (int)ssh_hmac_bytes(SSH_DIGEST_SHA1)) {
-		debug2("extract_salt: expected salt len %zd, got %d",
+		debug2_f("expected salt len %zd, got %d",
 		    ssh_hmac_bytes(SSH_DIGEST_SHA1), ret);
 		return (-1);
 	}

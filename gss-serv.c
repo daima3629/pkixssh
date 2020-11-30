@@ -333,7 +333,7 @@ ssh_gssapi_storecreds(void)
 	if (gssapi_client.mech && gssapi_client.mech->storecreds) {
 		(*gssapi_client.mech->storecreds)(&gssapi_client);
 	} else
-		debug("ssh_gssapi_storecreds: Not a GSSAPI mechanism");
+		debug_f("Not a GSSAPI mechanism");
 }
 
 /* This allows GSSAPI methods to do things to the child's environment based
@@ -377,7 +377,7 @@ ssh_gssapi_userok(char *user)
 			return 0;
 		}
 	else
-		debug("ssh_gssapi_userok: Unknown GSSAPI mechanism");
+		debug_f("unknown GSSAPI mechanism");
 	return (0);
 }
 

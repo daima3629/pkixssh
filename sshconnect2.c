@@ -1334,7 +1334,7 @@ send_pubkey_test(struct ssh *ssh, Identity *id)
 	u_int have_sig = 0;
 	int sent = 0, r;
 
-	debug3("send_pubkey_test: %s", pkalg);
+	debug3_f("%s", pkalg);
 
 	/* Keys stored in secure token does not have chain if is used
 	 * configuration with IdentityFile pointing to public part.
@@ -1811,12 +1811,12 @@ userauth_kbdint(struct ssh *ssh)
 		return 0;
 	/* disable if no SSH2_MSG_USERAUTH_INFO_REQUEST has been seen */
 	if (authctxt->attempt_kbdint > 1 && !authctxt->info_req_seen) {
-		debug3("userauth_kbdint: disable: no info_req_seen");
+		debug3_f("disable: no info_req_seen");
 		ssh_dispatch_set(ssh, SSH2_MSG_USERAUTH_INFO_REQUEST, NULL);
 		return 0;
 	}
 
-	debug2("userauth_kbdint");
+	debug2_f("entering");
 	if ((r = sshpkt_start(ssh, SSH2_MSG_USERAUTH_REQUEST)) != 0 ||
 	    (r = sshpkt_put_cstring(ssh, authctxt->server_user)) != 0 ||
 	    (r = sshpkt_put_cstring(ssh, authctxt->service)) != 0 ||

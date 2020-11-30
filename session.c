@@ -1836,7 +1836,7 @@ session_new(void)
 	sessions_first_unused = s->next_unused;
 	s->used = 1;
 	s->next_unused = -1;
-	debug("session_new: session %d", s->self);
+	debug_f("session %d", s->self);
 
 	return s;
 }
@@ -1863,7 +1863,7 @@ int
 session_open(Authctxt *authctxt, int chanid)
 {
 	Session *s = session_new();
-	debug("session_open: channel %d", chanid);
+	debug_f("channel %d", chanid);
 	if (s == NULL) {
 		error("no more sessions");
 		return 0;
@@ -1872,7 +1872,7 @@ session_open(Authctxt *authctxt, int chanid)
 	s->pw = authctxt->pw;
 	if (s->pw == NULL || !authctxt->valid)
 		fatal("no user for session %d", s->self);
-	debug("session_open: session %d: link with channel %d", s->self, chanid);
+	debug_f("session %d: link with channel %d", s->self, chanid);
 	s->chanid = chanid;
 	return 1;
 }
@@ -1884,11 +1884,11 @@ session_by_tty(char *tty)
 	for (i = 0; i < sessions_nalloc; i++) {
 		Session *s = &sessions[i];
 		if (s->used && s->ttyfd != -1 && strcmp(s->tty, tty) == 0) {
-			debug("session_by_tty: session %d tty %s", i, tty);
+			debug_f("session %d tty %s", i, tty);
 			return s;
 		}
 	}
-	debug("session_by_tty: unknown tty %.100s", tty);
+	debug_f("unknown tty %.100s", tty);
 	session_dump();
 	return NULL;
 }
@@ -1900,12 +1900,11 @@ session_by_channel(int id)
 	for (i = 0; i < sessions_nalloc; i++) {
 		Session *s = &sessions[i];
 		if (s->used && s->chanid == id) {
-			debug("session_by_channel: session %d channel %d",
-			    i, id);
+			debug_f("session %d channel %d", i, id);
 			return s;
 		}
 	}
-	debug("session_by_channel: unknown channel %d", id);
+	debug_f("unknown channel %d", id);
 	session_dump();
 	return NULL;
 }
@@ -1922,13 +1921,12 @@ session_by_x11_channel(int id)
 			continue;
 		for (j = 0; s->x11_chanids[j] != -1; j++) {
 			if (s->x11_chanids[j] == id) {
-				debug("session_by_x11_channel: session %d "
-				    "channel %d", s->self, id);
+				debug_f("session %d channel %d", s->self, id);
 				return s;
 			}
 		}
 	}
-	debug("session_by_x11_channel: unknown channel %d", id);
+	debug_f("unknown channel %d", id);
 	session_dump();
 	return NULL;
 }
@@ -1937,13 +1935,13 @@ static Session *
 session_by_pid(pid_t pid)
 {
 	int i;
-	debug("session_by_pid: pid %ld", (long)pid);
+	debug_f("pid %ld", (long)pid);
 	for (i = 0; i < sessions_nalloc; i++) {
 		Session *s = &sessions[i];
 		if (s->used && s->pid == pid)
 			return s;
 	}
-	error("session_by_pid: unknown pid %ld", (long)pid);
+	error_f("unknown pid %ld", (long)pid);
 	session_dump();
 	return NULL;
 }
@@ -2016,10 +2014,10 @@ session_pty_req(struct ssh *ssh, Session *s)
 		s->term = NULL;
 		s->ptyfd = -1;
 		s->ttyfd = -1;
-		error("session_pty_req: session %d alloc failed", s->self);
+		error_f("session %d alloc failed", s->self);
 		return 0;
 	}
-	debug("session_pty_req: session %d alloc %s", s->self, s->tty);
+	debug_f("session %d alloc %s", s->self, s->tty);
 
 	ssh_tty_parse_modes(ssh, s->ttyfd);
 

@@ -192,7 +192,7 @@ auth_rhosts2(struct passwd *pw, const char *client_user, const char *hostname,
 	static const char *rhosts_files[] = {".shosts", ".rhosts", NULL};
 	u_int rhosts_file_index;
 
-	debug2("auth_rhosts2: clientuser %s hostname %s ipaddr %s",
+	debug2_f("clientuser %s hostname %s ipaddr %s",
 	    client_user, hostname, ipaddr);
 
 	/* Switch to the user's uid. */

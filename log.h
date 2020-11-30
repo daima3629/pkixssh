@@ -138,4 +138,19 @@ void  sshlog_cryptoerr_all(const char *file, const char *func, int line,
  
 #define do_log_crypto_errors(level)	\
     sshlog_cryptoerr_all(__FILE__, __func__, __LINE__, level)
+
+
+/* Variants that prepend the caller's function.
+ * Excludes information and verbose messages.
+ */
+void	 sshlog_f(const char *file, const char *func, int line,
+    LogLevel level, const char *fmt, ...)
+    __attribute__((format(printf, 5, 6)));
+
+#define do_log2_f(level, ...)	sshlog_f(__FILE__, __func__, __LINE__, level, __VA_ARGS__)
+
+#define error_f(...)	sshlog_f(__FILE__, __func__, __LINE__, SYSLOG_LEVEL_ERROR, __VA_ARGS__)
+#define debug_f(...)	sshlog_f(__FILE__, __func__, __LINE__, SYSLOG_LEVEL_DEBUG1, __VA_ARGS__)
+#define debug2_f(...)	sshlog_f(__FILE__, __func__, __LINE__, SYSLOG_LEVEL_DEBUG2, __VA_ARGS__)
+#define debug3_f(...)	sshlog_f(__FILE__, __func__, __LINE__, SYSLOG_LEVEL_DEBUG3, __VA_ARGS__)
 #endif

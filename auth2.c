@@ -340,7 +340,7 @@ input_userauth_request(int type, u_int32_t seq, struct ssh *ssh)
 	/* try to authenticate user */
 	m = authmethod_lookup(authctxt, method);
 	if (m != NULL && authctxt->failures < options.max_authtries) {
-		debug2("input_userauth_request: try method %s", method);
+		debug2_f("try method %s", method);
 		authenticated =	m->userauth(ssh);
 	}
 	if (!authctxt->authenticated)
