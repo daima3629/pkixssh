@@ -126,16 +126,23 @@ void     sshlogdie(const char *file, const char *func, int line,
 
 /* Error messages from cryptographic library that should be logged. */
 void sshlog_cryptoerr(const char *file, const char *func, int line,
+    LogLevel level, const char *openssl_method);
+void sshlog_cryptoerr_fmt(const char *file, const char *func, int line,
     LogLevel level, const char *openssl_method, const char *fmt, ...)
     __attribute__((format(printf, 6, 7)));
 void  sshlog_cryptoerr_all(const char *file, const char *func, int line,
     LogLevel level);
 
-#define error_crypto(openssl_method, ...)	\
-    sshlog_cryptoerr(__FILE__, __func__, __LINE__, SYSLOG_LEVEL_ERROR, openssl_method, __VA_ARGS__)
-#define debug3_crypto(openssl_method, ...)	\
-    sshlog_cryptoerr(__FILE__, __func__, __LINE__, SYSLOG_LEVEL_DEBUG3, openssl_method, __VA_ARGS__)
+#define error_crypto(openssl_method)	\
+    sshlog_cryptoerr(__FILE__, __func__, __LINE__, SYSLOG_LEVEL_ERROR, openssl_method)
+#define debug3_crypto(openssl_method)	\
+    sshlog_cryptoerr(__FILE__, __func__, __LINE__, SYSLOG_LEVEL_DEBUG3, openssl_method)
  
+#define error_crypto_fmt(openssl_method, ...)	\
+    sshlog_cryptoerr_fmt(__FILE__, __func__, __LINE__, SYSLOG_LEVEL_ERROR, openssl_method, __VA_ARGS__)
+#define debug3_crypto_fmt(openssl_method, ...)	\
+    sshlog_cryptoerr_fmt(__FILE__, __func__, __LINE__, SYSLOG_LEVEL_DEBUG3, openssl_method, __VA_ARGS__)
+
 #define do_log_crypto_errors(level)	\
     sshlog_cryptoerr_all(__FILE__, __func__, __LINE__, level)
 

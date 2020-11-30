@@ -407,7 +407,7 @@ out:
 }
 
 void
-sshlog_cryptoerr(const char *file, const char *func, int line,
+sshlog_cryptoerr_fmt(const char *file, const char *func, int line,
     LogLevel level, const char *openssl_method, const char *fmt, ...)
 {
 	char *sep, mbuf[MSGBUFSIZ], ebuf[MSGBUFSIZ];
@@ -424,6 +424,18 @@ sshlog_cryptoerr(const char *file, const char *func, int line,
 	sshlog(file, func, line, level,
 	    "%s->%s%s%s%s last error: '%s'", func, openssl_method,
 	    sep, mbuf, sep, ebuf);
+}
+
+void
+sshlog_cryptoerr(const char *file, const char *func, int line,
+    LogLevel level, const char *openssl_method)
+{
+	char ebuf[MSGBUFSIZ];
+
+	crypto_errormsg(ebuf, sizeof(ebuf));
+
+	sshlog(file, func, line, level,
+	    "%s->%s last error: '%s'", func, openssl_method, ebuf);
 }
 
 

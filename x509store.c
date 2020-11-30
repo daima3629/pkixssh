@@ -246,7 +246,7 @@ ssh_x509store_lookup(X509_STORE *store, int type, X509_NAME *name, X509_OBJECT *
 
 	csc = X509_STORE_CTX_new();
 	if (csc == NULL) {
-		error_crypto("X509_STORE_CTX_new", "");
+		error_crypto("X509_STORE_CTX_new");
 		return -1;
 	}
 
@@ -863,7 +863,7 @@ ssh_verify_cert(X509_STORE_CTX *_csc) {
 			error_f("context purpose error, code=%d, msg='%.200s'"
 				, ecode
 				, X509_verify_cert_error_string(ecode));
-			error_crypto("X509_STORE_CTX_purpose_inherit", "");
+			error_crypto("X509_STORE_CTX_purpose_inherit");
 			return -1;
 		}
 	}
@@ -950,7 +950,7 @@ ssh_x509store_verify_cert(X509 *_cert, STACK_OF(X509) *_chain) {
 
 	csc = X509_STORE_CTX_new();
 	if (csc == NULL) {
-		error_crypto("X509_STORE_CTX_new", "");
+		error_crypto("X509_STORE_CTX_new");
 		ret = -1;
 		goto done;
 	}
@@ -1057,7 +1057,7 @@ ssh_x509store_build_certchain(X509 *cert, STACK_OF(X509) *untrusted) {
 
 	csc = X509_STORE_CTX_new();
 	if (csc == NULL) {
-		error_crypto("X509_STORE_CTX_new", "");
+		error_crypto("X509_STORE_CTX_new");
 		return NULL;
 	}
 
@@ -1318,7 +1318,7 @@ ssh_is_cert_revoked(X509_STORE_CTX *_ctx, X509_CRL *_crl, X509 *_cert) {
 
 	revoked = X509_REVOKED_new();
 	if (revoked == NULL) {
-		error_crypto("X509_REVOKED_new", "");
+		error_crypto("X509_REVOKED_new");
 		return 1;
 	}
 

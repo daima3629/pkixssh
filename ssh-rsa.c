@@ -257,7 +257,7 @@ ssh_rsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 	ok = EVP_SignInit_ex(md, evp_md, NULL);
 	if (ok <= 0) {
 #ifdef TRACE_EVP_ERROR
-		error_crypto("EVP_SignInit_ex", "");
+		error_crypto("EVP_SignInit_ex");
 #endif
 		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto evp_md_end;
@@ -266,7 +266,7 @@ ssh_rsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 	ok = EVP_SignUpdate(md, data, datalen);
 	if (ok <= 0) {
 #ifdef TRACE_EVP_ERROR
-		error_crypto("EVP_SignUpdate", "");
+		error_crypto("EVP_SignUpdate");
 #endif
 		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto evp_md_end;
@@ -275,7 +275,7 @@ ssh_rsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 	ok = EVP_SignFinal(md, sig, &len, pkey);
 	if (ok <= 0) {
 #ifdef TRACE_EVP_ERROR
-		error_crypto("EVP_SignFinal", "");
+		error_crypto("EVP_SignFinal");
 #endif
 		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto evp_md_end;
@@ -423,7 +423,7 @@ ssh_rsa_verify(const struct sshkey *key,
 	ok = EVP_VerifyInit(md, evp_md);
 	if (ok <= 0) {
 #ifdef TRACE_EVP_ERROR
-		error_crypto("EVP_VerifyInit", "");
+		error_crypto("EVP_VerifyInit");
 #endif
 		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto evp_md_end;
@@ -432,7 +432,7 @@ ssh_rsa_verify(const struct sshkey *key,
 	ok = EVP_VerifyUpdate(md, data, datalen);
 	if (ok <= 0) {
 #ifdef TRACE_EVP_ERROR
-		error_crypto("EVP_VerifyUpdate", "");
+		error_crypto("EVP_VerifyUpdate");
 #endif
 		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto evp_md_end;
@@ -441,7 +441,7 @@ ssh_rsa_verify(const struct sshkey *key,
 	ok = EVP_VerifyFinal(md, sigblob, len, pkey);
 	if (ok < 0) {
 #ifdef TRACE_EVP_ERROR
-		error_crypto("EVP_VerifyFinal", "");
+		error_crypto("EVP_VerifyFinal");
 #endif
 		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto evp_md_end;

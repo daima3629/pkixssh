@@ -420,7 +420,7 @@ ssh_X509_NAME_add_entry_by_NID(X509_NAME* name, int nid, const u_char* str, size
 	/* this method will fail if string exceed max size limit for nid */
 	ret = X509_NAME_add_entry_by_NID(name, nid, type, buf, (int)k, -1, 0);
 	if (!ret)
-		error_crypto("X509_NAME_add_entry_by_NID",
+		error_crypto_fmt("X509_NAME_add_entry_by_NID",
 		    "nid=%d/%.32s, data='%.512s'",
 		    nid, OBJ_nid2ln(nid), str);
 	return ret;
@@ -608,7 +608,7 @@ x509_to_key(X509 *x509) {
 
 	env_pkey = X509_get_pubkey(x509);
 	if (env_pkey == NULL) {
-		error_crypto("X509_get_pubkey", "");
+		error_crypto("X509_get_pubkey");
 		return NULL;
 	}
 #if 0
@@ -701,7 +701,7 @@ X509_from_blob(const u_char *blob, size_t blen, X509 **xp) {
 	/* read X509 certificate from BIO data */
 	x = d2i_X509_bio(mbio, NULL);
 	if (x == NULL) {
-		debug3_crypto("d2i_X509_bio", "");
+		debug3_crypto("d2i_X509_bio");
 		r = SSH_ERR_INVALID_FORMAT;
 		goto done;
 	}
@@ -1336,7 +1336,7 @@ x509key_parse_cert(struct sshkey *key, EVP_PKEY *pk, BIO *bio) {
 	debug3("read X.509 certificate begin");
 	x = PEM_read_bio_X509(bio, NULL, NULL, NULL);
 	if (x == NULL) {
-		debug3_crypto("PEM_read_bio_X509", "");
+		debug3_crypto("PEM_read_bio_X509");
 		return;
 	}
 
@@ -1480,7 +1480,7 @@ x509key_write_bio_cert(BIO *out, X509 *x509) {
 
 	ret = PEM_write_bio_X509(out, x509);
 	if (!ret)
-		error_crypto("PEM_write_bio_X509", "");
+		error_crypto("PEM_write_bio_X509");
 
 	return ret;
 }

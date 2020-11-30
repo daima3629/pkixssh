@@ -253,7 +253,7 @@ ssh_load_x509certs(const char *certs_file, const char* certs_descrip) {
 	}
 
 	if (BIO_read_filename(fbio, certs_file) <= 0) {
-		error_crypto("BIO_read_filename",
+		error_crypto_fmt("BIO_read_filename",
 		    " description '%.128s, filename '%.256s'",
 		    certs_descrip, certs_file);
 		goto exit;
@@ -503,7 +503,7 @@ ssh_ocsp_get_response(const ssh_ocsp_conn *conn, OCSP_REQUEST *req) {
 #ifndef OPENSSL_NO_SOCK
 	bio_conn = BIO_new_connect(conn->host);
 	if (bio_conn == NULL) {
-		error_crypto("BIO_new_connect", "");
+		error_crypto("BIO_new_connect");
 		goto exit;
 	}
 #else
@@ -526,7 +526,7 @@ ssh_ocsp_get_response(const ssh_ocsp_conn *conn, OCSP_REQUEST *req) {
 #endif /*def SSH_WITH_SSLOCSP*/
 
 	if (BIO_do_connect(bio_conn) <= 0) {
-		error_crypto("BIO_do_connect", "");
+		error_crypto("BIO_do_connect");
 		goto exit;
 	}
 
@@ -536,7 +536,7 @@ ssh_ocsp_get_response(const ssh_ocsp_conn *conn, OCSP_REQUEST *req) {
 	 */
 	resp = OCSP_sendreq_bio(bio_conn, (char*)(conn->path ? conn->path : "/") , req);
 	if (resp == NULL) {
-		error_crypto("OCSP_sendreq_bio", "");
+		error_crypto("OCSP_sendreq_bio");
 	}
 
 exit:
@@ -575,7 +575,7 @@ ssh_ocsp_get_basicresp(
 
 	br = OCSP_response_get1_basic(resp);
 	if (br == NULL) {
-		error_crypto("OCSP_response_get1_basic", "");
+		error_crypto("OCSP_response_get1_basic");
 		return(NULL);
 	}
 
@@ -584,7 +584,7 @@ ssh_ocsp_get_basicresp(
 		if (flag == -1) {
 			error_f("WARNING - no nonce in response");
 		} else {
-			error_crypto("OCSP_check_nonce", "");
+			error_crypto("OCSP_check_nonce");
 			goto error;
 		}
 	}
@@ -638,7 +638,7 @@ for (k = 0; k < sk_X509_num(vacrts); k++) {
 		flag = OCSP_basic_verify(br, NULL, x509store, basic_verify_flags);
 	}
 	if (flag <= 0) {
-		error_crypto("OCSP_basic_verify", "flag=%d", flag);
+		error_crypto_fmt("OCSP_basic_verify", "flag=%d", flag);
 		goto error;
 	}
 
@@ -713,7 +713,7 @@ ssh_ocsp_check_validity(
 		}
 
 		if (!OCSP_check_validity(thisupd, nextupd, nsec, maxage)) {
-			error_crypto("OCSP_check_validity", "WARNING-invalid status time");
+			error_crypto_fmt("OCSP_check_validity", "WARNING-invalid status time");
 			ret = -1;
 			break;
 		}

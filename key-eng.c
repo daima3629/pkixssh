@@ -462,7 +462,7 @@ engine_load_private_type(int type, const char *filename,
 
 	pk = ENGINE_load_private_key(e, engkeyid, ssh_ui_method, NULL);
 	if (pk == NULL) {
-		error_crypto("ENGINE_load_private_key", "engine %s", ENGINE_get_id(e));
+		error_crypto_fmt("ENGINE_load_private_key", "engine %s", ENGINE_get_id(e));
 		ret = SSH_ERR_KEY_NOT_FOUND;
 		goto done;
 	}
@@ -528,7 +528,7 @@ engine_try_load_public(const char *filename, struct sshkey **keyp, char **commen
 
 	pk = ENGINE_load_public_key(e, engkeyid, ssh_ui_method, NULL);
 	if (pk == NULL) {
-		error_crypto("ENGINE_load_public_key", "engine %s", ENGINE_get_id(e));
+		error_crypto_fmt("ENGINE_load_public_key", "engine %s", ENGINE_get_id(e));
 		/* fatal here to avoid PIN lock, for instance
 		 * when ssh-askpass program is missing.
 		 * NOTE programs still try to load public key many times!
@@ -582,7 +582,7 @@ try_load_engine(const char *engine) {
 
 	e = ENGINE_by_id(engine);
 	if (e == NULL) {
-		error_crypto("ENGINE_by_id", "");
+		error_crypto("ENGINE_by_id");
 		goto done;
 	}
 
@@ -601,7 +601,7 @@ try_load_engine(const char *engine) {
 }
 
 	if (!self_registered && !ENGINE_add(e)) {
-		error_crypto("ENGINE_add", "");
+		error_crypto("ENGINE_add");
 		/*ENGINE_free(e);?*/
 		e = NULL;
 	}
@@ -624,13 +624,13 @@ ssh_engine_setup(const char *engine) {
 	if (e == NULL) return NULL;
 
 	if (!ENGINE_init(e)) {
-		error_crypto("ENGINE_init", "");
+		error_crypto("ENGINE_init");
 		return NULL;
 	}
 
 	ctrl_ret = ENGINE_ctrl_cmd(e, "SET_USER_INTERFACE", 0, ssh_ui_method, 0, 1);
 	if (!ctrl_ret)
-		debug3_crypto("ENGINE_ctrl_cmd",
+		debug3_crypto_fmt("ENGINE_ctrl_cmd",
 		    "engine %s, command SET_USER_INTERFACE",
 		    engine);
 
@@ -730,7 +730,7 @@ process_engconfig_line(char *line, const char *filename, int linenum) {
 
 		ctrl_ret = ENGINE_ctrl_cmd_string(e, keyword, arg, 0);
 		if (!ctrl_ret) {
-			error_crypto("ENGINE_ctrl_cmd_string", "");
+			error_crypto("ENGINE_ctrl_cmd_string");
 			fatal("%.200s line %d: engine(%s) command fail"
 			    , filename, linenum, eng_name);
 			ret = 0;

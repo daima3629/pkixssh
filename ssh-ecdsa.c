@@ -92,7 +92,7 @@ ssh_ecdsa_pkey_sign(EC_KEY *ec, const EVP_MD *type, const u_char *data, u_int da
 	ret = EVP_SignInit_ex(md, type, NULL);
 	if (ret <= 0) {
 #ifdef TRACE_EVP_ERROR
-		error_crypto("EVP_SignInit_ex", "");
+		error_crypto("EVP_SignInit_ex");
 #endif
 		goto clean;
 	}
@@ -100,7 +100,7 @@ ssh_ecdsa_pkey_sign(EC_KEY *ec, const EVP_MD *type, const u_char *data, u_int da
 	ret = EVP_SignUpdate(md, data, datalen);
 	if (ret <= 0) {
 #ifdef TRACE_EVP_ERROR
-		error_crypto("EVP_SignUpdate", "");
+		error_crypto("EVP_SignUpdate");
 #endif
 		goto clean;
 	}
@@ -108,7 +108,7 @@ ssh_ecdsa_pkey_sign(EC_KEY *ec, const EVP_MD *type, const u_char *data, u_int da
 	ret = EVP_SignFinal(md, tsig, &len, pkey);
 	if (ret <= 0) {
 #ifdef TRACE_EVP_ERROR
-		error_crypto("EVP_SignFinal", "");
+		error_crypto("EVP_SignFinal");
 #endif
 		goto clean;
 	}
@@ -266,7 +266,7 @@ ssh_ecdsa_pkey_verify(EC_KEY *ec, const EVP_MD *type,
 	ok = EVP_VerifyInit(md, type);
 	if (ok <= 0) {
 #ifdef TRACE_EVP_ERROR
-		error_crypto("EVP_VerifyInit", "");
+		error_crypto("EVP_VerifyInit");
 #endif
 		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto clean;
@@ -275,7 +275,7 @@ ssh_ecdsa_pkey_verify(EC_KEY *ec, const EVP_MD *type,
 	ok = EVP_VerifyUpdate(md, data, datalen);
 	if (ok <= 0) {
 #ifdef TRACE_EVP_ERROR
-		error_crypto("EVP_VerifyUpdate", "");
+		error_crypto("EVP_VerifyUpdate");
 #endif
 		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto clean;
@@ -284,7 +284,7 @@ ssh_ecdsa_pkey_verify(EC_KEY *ec, const EVP_MD *type,
 	ok = EVP_VerifyFinal(md, tsig, len, pkey);
 	if (ok < 0) {
 #ifdef TRACE_EVP_ERROR
-		error_crypto("EVP_VerifyFinal", "");
+		error_crypto("EVP_VerifyFinal");
 #endif
 		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto clean;
