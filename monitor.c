@@ -1035,7 +1035,7 @@ mm_answer_pam_init_ctx(struct ssh *ssh, int sock, struct sshbuf *m)
 	int r;
 
 	UNUSED(ssh);
-	debug3("%s", __func__);
+	debug3_f("entering");
 	if (!options.kbd_interactive_authentication)
 		fatal("%s: kbd-int authentication not enabled", __func__);
 	if (sshpam_ctxt != NULL)
@@ -1062,7 +1062,7 @@ mm_answer_pam_query(struct ssh *ssh, int sock, struct sshbuf *m)
 	int r, ret;
 
 	UNUSED(ssh);
-	debug3("%s", __func__);
+	debug3_f("entering");
 	sshpam_authok = NULL;
 	if (sshpam_ctxt == NULL)
 		fatal("%s: no context", __func__);
@@ -1104,7 +1104,7 @@ mm_answer_pam_respond(struct ssh *ssh, int sock, struct sshbuf *m)
 	int r, ret;
 
 	UNUSED(ssh);
-	debug3("%s", __func__);
+	debug3_f("entering");
 	if (sshpam_ctxt == NULL)
 		fatal("%s: no context", __func__);
 	sshpam_authok = NULL;
@@ -1141,7 +1141,7 @@ mm_answer_pam_free_ctx(struct ssh *ssh, int sock, struct sshbuf *m)
 	int r = sshpam_authok != NULL && sshpam_authok == sshpam_ctxt;
 
 	UNUSED(ssh);
-	debug3("%s", __func__);
+	debug3_f("entering");
 	if (sshpam_ctxt == NULL)
 		fatal("%s: no context", __func__);
 	(sshpam_device.free_ctx)(sshpam_ctxt);

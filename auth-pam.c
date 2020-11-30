@@ -308,7 +308,7 @@ sshpam_password_change_required(int reqd)
 	extern struct sshauthopt *auth_opts;
 	static int saved_port, saved_agent, saved_x11;
 
-	debug3("%s %d", __func__, reqd);
+	debug3_f("reqd: %d", reqd);
 	if (sshpam_authctxt == NULL)
 		fatal("%s: PAM authctxt not initialized", __func__);
 	sshpam_authctxt->force_pwchange = reqd;
@@ -337,7 +337,7 @@ import_environments(struct sshbuf *b)
 	u_int32_t n, i, num_env;
 	int r;
 
-	debug3("PAM: %s entering", __func__);
+	debug3_f("PAM entering");
 
 #ifndef UNSUPPORTED_POSIX_THREADS_HACK
 	/* Import variables set by do_pam_account */
@@ -398,7 +398,7 @@ sshpam_thread_conv(int n, sshpam_const struct pam_message **msg,
 	int r, i;
 	u_char status;
 
-	debug3("PAM: %s entering, %d messages", __func__, n);
+	debug3_f("PAM entering, %d messages", n);
 	*resp = NULL;
 
 	if (data == NULL) {
@@ -596,7 +596,7 @@ sshpam_thread_cleanup(void)
 {
 	struct pam_ctxt *ctxt = cleanup_ctxt;
 
-	debug3("PAM: %s entering", __func__);
+	debug3_f("PAM entering");
 	if (ctxt != NULL && ctxt->pam_thread != 0) {
 		pthread_cancel(ctxt->pam_thread);
 		pthread_join(ctxt->pam_thread, NULL);
@@ -614,7 +614,7 @@ sshpam_null_conv(int n, sshpam_const struct pam_message **msg,
 	UNUSED(msg);
 	UNUSED(resp);
 	UNUSED(data);
-	debug3("PAM: %s entering, %d messages", __func__, n);
+	debug3_f("PAM entering, %d messages", n);
 	return (PAM_CONV_ERR);
 }
 
@@ -628,7 +628,7 @@ sshpam_store_conv(int n, sshpam_const struct pam_message **msg,
 	int r, i;
 
 	UNUSED(data);
-	debug3("PAM: %s called with %d messages", __func__, n);
+	debug3_f("PAM called with %d messages", n);
 	*resp = NULL;
 
 	if (n <= 0 || n > PAM_MAX_NUM_MSG)
@@ -766,8 +766,10 @@ sshpam_init(struct ssh *ssh, Authctxt *authctxt)
 	return (0);
 }
 
+#define export_authinfo()	sshpam_put_authinfo(__FILE__, __func__, __LINE__)
+
 static void
-expose_authinfo(const char *caller)
+sshpam_put_authinfo(const char *file, const char *func, int line)
 {
 	char *auth_info;
 
@@ -782,7 +784,8 @@ expose_authinfo(const char *caller)
 	    sshpam_authctxt->session_info)) == NULL)
 		fatal("%s: sshbuf_dup_string failed", __func__);
 
-	debug2("%s: auth information in SSH_AUTH_INFO_0", caller);
+	sshlog_f(file, func, line, SYSLOG_LEVEL_DEBUG2,
+	    "auth information in SSH_AUTH_INFO_0");
 	do_pam_putenv("SSH_AUTH_INFO_0", auth_info);
 	free(auth_info);
 }
@@ -793,7 +796,7 @@ sshpam_init_ctx(Authctxt *authctxt)
 	struct pam_ctxt *ctxt;
 	int result, socks[2];
 
-	debug3("PAM: %s entering", __func__);
+	debug3_f("PAM entering");
 	/*
 	 * Refuse to start if we don't have PAM enabled or do_pam_account
 	 * has previously failed.
@@ -807,7 +810,7 @@ sshpam_init_ctx(Authctxt *authctxt)
 		return (NULL);
 	}
 
-	expose_authinfo(__func__);
+	export_authinfo();
 	ctxt = xcalloc(1, sizeof *ctxt);
 
 	/* Start the authentication thread */
@@ -843,7 +846,7 @@ sshpam_query(void *ctx, char **name, char **info,
 	size_t len, mlen;
 	int r;
 
-	debug3("PAM: %s entering", __func__);
+	debug3_f("PAM entering");
 	if ((buffer = sshbuf_new()) == NULL)
 		fatal("%s: sshbuf_new failed", __func__);
 	*name = xstrdup("");
@@ -975,7 +978,7 @@ sshpam_respond(void *ctx, u_int num, char **resp)
 	char *fake;
 	int r;
 
-	debug2("PAM: %s entering, %u responses", __func__, num);
+	debug2_f("PAM entering, %u responses", num);
 	switch (ctxt->pam_done) {
 	case 1:
 		sshpam_authenticated = 1;
@@ -1015,7 +1018,7 @@ sshpam_free_ctx(void *ctxtp)
 {
 	struct pam_ctxt *ctxt = ctxtp;
 
-	debug3("PAM: %s entering", __func__);
+	debug3_f("PAM entering");
 	sshpam_thread_cleanup();
 	free(ctxt);
 	/*
@@ -1067,14 +1070,14 @@ finish_pam(void)
 u_int
 do_pam_account(void)
 {
-	debug("%s: called", __func__);
+	debug_f("called");
 	if (sshpam_account_status != -1)
 		return (sshpam_account_status);
 
-	expose_authinfo(__func__);
+	export_authinfo();
 
 	sshpam_err = pam_acct_mgmt(sshpam_handle, 0);
-	debug3("PAM: %s pam_acct_mgmt = %d (%s)", __func__, sshpam_err,
+	debug3_f("PAM pam_acct_mgmt = %d (%s)", sshpam_err,
 	    pam_strerror(sshpam_handle, sshpam_err));
 
 	if (sshpam_err != PAM_SUCCESS && sshpam_err != PAM_NEW_AUTHTOK_REQD) {
@@ -1125,7 +1128,7 @@ sshpam_tty_conv(int n, sshpam_const struct pam_message **msg,
 	int i;
 
 	UNUSED(data);
-	debug3("PAM: %s called with %d messages", __func__, n);
+	debug3_f("PAM called with %d messages", n);
 
 	*resp = NULL;
 
@@ -1199,7 +1202,7 @@ do_pam_session(struct ssh *ssh)
 {
 	debug3("PAM: opening session");
 
-	expose_authinfo(__func__);
+	export_authinfo();
 
 	sshpam_err = pam_set_item(sshpam_handle, PAM_CONV,
 	    (const void *)&store_conv);
@@ -1285,7 +1288,7 @@ sshpam_passwd_conv(int n, sshpam_const struct pam_message **msg,
 	size_t len;
 
 	UNUSED(data);
-	debug3("PAM: %s called with %d messages", __func__, n);
+	debug3_f("PAM called with %d messages", n);
 
 	*resp = NULL;
 
