@@ -1,4 +1,4 @@
-/* $OpenBSD: auth2.c,v 1.158 2020/03/06 18:16:21 markus Exp $ */
+/* $OpenBSD: auth2.c,v 1.159 2020/10/18 11:32:01 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  *
@@ -146,7 +146,7 @@ userauth_send_banner(struct ssh *ssh, const char *msg)
 	    (r = sshpkt_put_cstring(ssh, "")) != 0 ||	/* language, unused */
 	    (r = sshpkt_send(ssh)) != 0)
 		fatal("%s: %s", __func__, ssh_err(r));
-	debug("%s: sent", __func__);
+	debug_f("sent");
 }
 
 static void
@@ -242,7 +242,7 @@ user_specific_delay(const char *user)
 	/* 0-4.2 ms of delay */
 	delay = (double)PEEK_U32(hash) / 1000 / 1000 / 1000 / 1000;
 	freezero(hash, len);
-	debug3("%s: user specific delay %0.3lfms", __func__, delay/1000);
+	debug3_f("user specific delay %0.3lfms", delay/1000);
 	return MIN_FAIL_DELAY_SECONDS + delay;
 }
 
@@ -258,8 +258,8 @@ ensure_minimum_time_since(double start, double seconds)
 
 	ts.tv_sec = remain;
 	ts.tv_nsec = (remain - ts.tv_sec) * 1000000000;
-	debug3("%s: elapsed %0.3lfms, delaying %0.3lfms (requested %0.3lfms)",
-	    __func__, elapsed*1000, remain*1000, req*1000);
+	debug3_f("elapsed %0.3lfms, delaying %0.3lfms (requested %0.3lfms)",
+	    elapsed*1000, remain*1000, req*1000);
 	nanosleep(&ts, NULL);
 }
 
@@ -293,8 +293,7 @@ input_userauth_request(int type, u_int32_t seq, struct ssh *ssh)
 		authctxt->user = xstrdup(user);
 		if (authctxt->pw && strcmp(service, "ssh-connection")==0) {
 			authctxt->valid = 1;
-			debug2("%s: setting up authctxt for %s",
-			    __func__, user);
+			debug2_f("setting up authctxt for %s", user);
 		} else {
 			/* Invalid user, fake password information */
 			authctxt->pw = fakepw();
@@ -440,7 +439,7 @@ userauth_finish(struct ssh *ssh, int authenticated, const char *method,
 			auth_maxtries_exceeded(ssh);
 		}
 		methods = authmethods_get(authctxt);
-		debug3("%s: failure partial=%d next methods=\"%s\"", __func__,
+		debug3_f("failure partial=%d next methods=\"%s\"",
 		    partial, methods);
 		if ((r = sshpkt_start(ssh, SSH2_MSG_USERAUTH_FAILURE)) != 0 ||
 		    (r = sshpkt_put_cstring(ssh, methods)) != 0 ||
@@ -592,7 +591,7 @@ auth2_setup_methods_lists(Authctxt *authctxt)
 
 	if (options.num_auth_methods == 0)
 		return 0;
-	debug3("%s: checking methods", __func__);
+	debug3_f("checking methods");
 	authctxt->auth_methods = xcalloc(options.num_auth_methods,
 	    sizeof(*authctxt->auth_methods));
 	authctxt->num_auth_methods = 0;
@@ -680,7 +679,7 @@ auth2_update_methods_lists(Authctxt *authctxt, const char *method,
 {
 	u_int i, found = 0;
 
-	debug3("%s: updating methods list after \"%s\"", __func__, method);
+	debug3_f("updating methods list after \"%s\"", method);
 	for (i = 0; i < authctxt->num_auth_methods; i++) {
 		if (!remove_method(&(authctxt->auth_methods[i]), method,
 		    submethod))
@@ -770,7 +769,7 @@ auth2_key_already_used(Authctxt *authctxt, const struct sshkey *key)
 		if (sshkey_equal_public(key, authctxt->prev_keys[i])) {
 			fp = sshkey_fingerprint(authctxt->prev_keys[i],
 			    options.fingerprint_hash, SSH_FP_DEFAULT);
-			debug3("%s: key already used: %s %s", __func__,
+			debug3_f("key already used: %s %s",
 			    sshkey_type(authctxt->prev_keys[i]),
 			    fp == NULL ? "UNKNOWN" : fp);
 			free(fp);

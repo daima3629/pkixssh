@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-pkcs11-client.c,v 1.16 2020/01/25 00:03:36 djm Exp $ */
+/* $OpenBSD: ssh-pkcs11-client.c,v 1.17 2020/10/18 11:32:02 djm Exp $ */
 /*
  * Copyright (c) 2010 Markus Friedl.  All rights reserved.
  * Copyright (c) 2016-2020 Roumen Petrov.  All rights reserved.
@@ -163,7 +163,7 @@ pkcs11_rsa_private_encrypt(int flen, const u_char *from, u_char *to, RSA *rsa,
 
 	key = sshkey_new(KEY_UNSPEC);
 	if (key == NULL) {
-		error("%s: sshkey_new failed", __func__);
+		error_f("sshkey_new failed");
 		goto done;
 	}
 	key->type = KEY_RSA;
@@ -215,7 +215,7 @@ pkcs11_ecdsa_do_sign(
 
 	key = sshkey_new(KEY_UNSPEC);
 	if (key == NULL) {
-		error("%s: sshkey_new failed", __func__);
+		error_f("sshkey_new failed");
 		goto done;
 	}
 	key->type = KEY_ECDSA;
@@ -223,7 +223,7 @@ pkcs11_ecdsa_do_sign(
 	key->ecdsa = ec;
 	key->ecdsa_nid = sshkey_ecdsa_key_to_nid(ec);
 	if (key->ecdsa_nid < 0) {
-		error("%s: unsupported curve", __func__);
+		error_f("unsupported curve");
 		goto done;
 	}
 
@@ -372,7 +372,7 @@ pkcs11_start_helper(void)
 		helper = getenv("SSH_PKCS11_HELPER");
 		if (helper == NULL || strlen(helper) == 0)
 			helper = _PATH_SSH_PKCS11_HELPER;
-		debug("%s: starting %s %s", __func__, helper,
+		debug_f("starting %s %s", helper,
 		    verbosity == NULL ? "" : verbosity);
 		execlp(helper, helper, verbosity, (char *)NULL);
 		fprintf(stderr, "exec: %s: %s\n", helper, strerror(errno));
@@ -413,7 +413,7 @@ pkcs11_add_provider(char *name, char *pin,
 	switch (type) {
 	case SSH2_AGENT_IDENTITIES_ANSWER: {
 		if ((r = sshbuf_get_u32(msg, &nkeys)) != 0) {
-			error("%s: buffer error: %s", __func__, ssh_err(r));
+			error_f("buffer error: %s", ssh_err(r));
 			goto done;
 		}
 		*keysp = xcalloc(nkeys, sizeof(struct sshkey *));
@@ -427,13 +427,12 @@ pkcs11_add_provider(char *name, char *pin,
 
 			if ((r = sshbuf_get_string(msg, &blob, &blen)) != 0 ||
 			    (r = sshbuf_get_cstring(msg, &label, NULL)) != 0) {
-				error("%s: buffer error: %s",
-				    __func__, ssh_err(r));
+				error_f("buffer error: %s", ssh_err(r));
 				k = NULL;
 				goto set_key;
 			}
 			if ((r = Akey_from_blob(blob, blen, &k)) != 0) {
-				error("%s: bad key: %s", __func__, ssh_err(r));
+				error_f("bad key: %s", ssh_err(r));
 				k = NULL;
 				goto set_key;
 			}
@@ -457,15 +456,14 @@ set_key:
 	}	break;
 	case SSH2_AGENT_FAILURE: {
 		if ((r = sshbuf_get_u32(msg, &nkeys)) != 0) {
-			error("%s: buffer error: %s", __func__, ssh_err(r));
+			error_f("buffer error: %s", ssh_err(r));
 		} else {
 			ret = -nkeys;
-			error("%s: helper fail to add provider: %d",
-			    __func__, ret);
+			error_f("helper fail to add provider: %d", ret);
 		}
 	}	break;
 	default:
-		error("%s: unknown message: %d", __func__, type);
+		error_f("unknown message: %d", type);
 	}
 
 done:

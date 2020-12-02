@@ -1,4 +1,4 @@
-/* $OpenBSD: hostfile.c,v 1.84 2020/10/07 02:25:43 djm Exp $ */
+/* $OpenBSD: hostfile.c,v 1.86 2020/10/18 11:32:01 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -255,7 +255,7 @@ record_hostkey(struct hostkey_foreach_line *l, void *_ctx)
 		return 0;
 	}
 
-	debug3("%s: found %skey type %s in file %s:%lu", __func__,
+	debug3_f("found %skey type %s in file %s:%lu",
 	    l->marker == MRK_NONE ? "" :
 	    (l->marker == MRK_CA ? "ca " : "revoked "),
 	    sshkey_type(l->key), l->path, l->linenum);
@@ -288,12 +288,11 @@ load_hostkeys(struct hostkeys *hostkeys, const char *host, const char *path)
 	if ((r = hostkeys_foreach(path, record_hostkey, &ctx, host, NULL,
 	    HKF_WANT_MATCH|HKF_WANT_PARSE_KEY)) != 0) {
 		if (r != SSH_ERR_SYSTEM_ERROR && errno != ENOENT)
-			debug("%s: hostkeys_foreach failed for %s: %s",
-			    __func__, path, ssh_err(r));
+			debug_f("hostkeys_foreach failed for %s: %s",
+			    path, ssh_err(r));
 	}
 	if (ctx.num_loaded != 0)
-		debug3("%s: loaded %lu keys from %s", __func__,
-		    ctx.num_loaded, host);
+		debug3_f("loaded %lu keys from %s", ctx.num_loaded, host);
 }
 
 void
@@ -452,7 +451,7 @@ write_host_entry(FILE *f, const char *host, const char *ip,
 
 	if (store_hash) {
 		if ((hashed_host = host_hash(lhost, NULL, 0)) == NULL) {
-			error("%s: host_hash failed", __func__);
+			error_f("host_hash failed");
 			free(lhost);
 			return 0;
 		}
@@ -473,7 +472,7 @@ write_host_entry(FILE *f, const char *host, const char *ip,
 	if (r == 0)
 		success = 1;
 	else
-		error("%s: sshkey_write failed: %s", __func__, ssh_err(r));
+		error_f("sshkey_write failed: %s", ssh_err(r));
 	fputc('\n', f);
 	/* If hashing is enabled, the IP address needs to go on its own line */
 	if (success && store_hash && ip != NULL)
@@ -587,7 +586,7 @@ host_delete(struct hostkey_foreach_line *l, void *_ctx)
 			if (sshkey_equal(ctx->keys[i], l->key)) {
 				ctx->skip_keys[i] = 1;
 				fprintf(ctx->out, "%s\n", l->line);
-				debug3("%s: %s key already at %s:%ld", __func__,
+				debug3_f("%s key already at %s:%ld",
 				    sshkey_type(l->key), l->path, l->linenum);
 				return 0;
 			}
@@ -646,14 +645,14 @@ hostfile_replace_entries(const char *filename, const char *host, const char *ip,
 
 	if ((fd = mkstemp(temp)) == -1) {
 		oerrno = errno;
-		error("%s: mkstemp: %s", __func__, strerror(oerrno));
+		error_f("mkstemp: %s", strerror(oerrno));
 		r = SSH_ERR_SYSTEM_ERROR;
 		goto fail;
 	}
 	if ((ctx.out = fdopen(fd, "w")) == NULL) {
 		oerrno = errno;
 		close(fd);
-		error("%s: fdopen: %s", __func__, strerror(oerrno));
+		error_f("fdopen: %s", strerror(oerrno));
 		r = SSH_ERR_SYSTEM_ERROR;
 		goto fail;
 	}
@@ -662,7 +661,7 @@ hostfile_replace_entries(const char *filename, const char *host, const char *ip,
 	if ((r = hostkeys_foreach(filename, host_delete, &ctx, host, ip,
 	    HKF_WANT_PARSE_KEY)) != 0) {
 		oerrno = errno;
-		error("%s: hostkeys_foreach failed: %s", __func__, ssh_err(r));
+		error_f("hostkeys_foreach failed: %s", ssh_err(r));
 		goto fail;
 	}
 
@@ -695,30 +694,28 @@ hostfile_replace_entries(const char *filename, const char *host, const char *ip,
 		/* Backup the original file and replace it with the temporary */
 		if (unlink(back) == -1 && errno != ENOENT) {
 			oerrno = errno;
-			error("%s: unlink %.100s: %s", __func__,
-			    back, strerror(errno));
+			error_f("unlink %.100s: %s", back, strerror(errno));
 			r = SSH_ERR_SYSTEM_ERROR;
 			goto fail;
 		}
 		if (xrename(filename, back) == -1) {
 			oerrno = errno;
-			error("%s: xrename %.100s to %.100s: %s", __func__,
-			    filename, back, strerror(errno));
+			error_f("xrename %.100s to %.100s: %s", filename,
+			    back, strerror(errno));
 			r = SSH_ERR_SYSTEM_ERROR;
 			goto fail;
 		}
 		if (rename(temp, filename) == -1) {
 			oerrno = errno;
-			error("%s: rename \"%s\" to \"%s\": %s", __func__,
-			    temp, filename, strerror(errno));
+			error_f("rename \"%s\" to \"%s\": %s", temp,
+			    filename, strerror(errno));
 			r = SSH_ERR_SYSTEM_ERROR;
 			goto fail;
 		}
 	} else {
 		/* No changes made; just delete the temporary file */
 		if (unlink(temp) != 0)
-			error("%s: unlink \"%s\": %s", __func__,
-			    temp, strerror(errno));
+			error_f("unlink \"%s\": %s", temp, strerror(errno));
 	}
 
 	/* success */
@@ -775,7 +772,7 @@ hostkeys_foreach(const char *path, hostkeys_foreach_fn *callback, void *ctx,
 	if ((f = fopen(path, "r")) == NULL)
 		return SSH_ERR_SYSTEM_ERROR;
 
-	debug3("%s: reading file \"%s\"", __func__, path);
+	debug3_f("reading file \"%s\"", path);
 	while (getline(&line, &linesize, f) != -1) {
 		linenum++;
 		line[strcspn(line, "\n")] = '\0';
@@ -803,8 +800,7 @@ hostkeys_foreach(const char *path, hostkeys_foreach_fn *callback, void *ctx,
 		}
 
 		if ((lineinfo.marker = check_markers(&cp)) == MRK_ERROR) {
-			verbose("%s: invalid marker at %s:%lu",
-			    __func__, path, linenum);
+			debug_f("invalid marker at %s:%lu", path, linenum);
 			if ((options & HKF_WANT_MATCH) == 0)
 				goto bad;
 			continue;
@@ -820,8 +816,8 @@ hostkeys_foreach(const char *path, hostkeys_foreach_fn *callback, void *ctx,
 		if (host != NULL) {
 			if ((s = match_maybe_hashed(host, lineinfo.hosts,
 			    &hashed)) == -1) {
-				debug2("%s: %s:%ld: bad host hash \"%.32s\"",
-				    __func__, path, linenum, lineinfo.hosts);
+				debug2_f("%s:%ld: bad host hash \"%.32s\"",
+				    path, linenum, lineinfo.hosts);
 				goto bad;
 			}
 			if (s == 1) {
@@ -833,9 +829,9 @@ hostkeys_foreach(const char *path, hostkeys_foreach_fn *callback, void *ctx,
 			if (ip != NULL) {
 				if ((s = match_maybe_hashed(ip, lineinfo.hosts,
 				    &hashed)) == -1) {
-					debug2("%s: %s:%ld: bad ip hash "
-					    "\"%.32s\"", __func__, path,
-					    linenum, lineinfo.hosts);
+					debug2_f("%s:%ld: bad ip hash "
+					    "\"%.32s\"", path, linenum,
+					    lineinfo.hosts);
 					goto bad;
 				}
 				if (s == 1) {
@@ -870,7 +866,7 @@ hostkeys_foreach(const char *path, hostkeys_foreach_fn *callback, void *ctx,
 			 * lines.
 			 */
 			if ((lineinfo.key = sshkey_new(KEY_UNSPEC)) == NULL) {
-				error("%s: sshkey_new failed", __func__);
+				error_f("sshkey_new failed");
 				r = SSH_ERR_ALLOC_FAIL;
 				break;
 			}

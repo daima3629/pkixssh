@@ -64,7 +64,7 @@ ssh_dss_pkey_sign(DSA *dsa, const u_char *data, u_int datalen)
 
 	pkey = EVP_PKEY_new();
 	if (pkey == NULL) {
-		error("%s: out of memory", __func__);
+		error_f("out of memory");
 		return NULL;
 	}
 
@@ -79,7 +79,7 @@ ssh_dss_pkey_sign(DSA *dsa, const u_char *data, u_int datalen)
 	md = EVP_MD_CTX_new();
 	if (md == NULL) {
 		ret = -1;
-		error("%s: out of memory", __func__);
+		error_f("out of memory");
 		goto clean;
 	}
 
@@ -216,7 +216,7 @@ ssh_dss_pkey_verify(DSA *dsa, DSA_SIG *sig, const u_char *data, u_int datalen)
 
 	pkey = EVP_PKEY_new();
 	if (pkey == NULL) {
-		error("%s: out of memory", __func__);
+		error_f("out of memory");
 		ret = SSH_ERR_ALLOC_FAIL;
 		goto done;
 	}
@@ -228,7 +228,7 @@ ssh_dss_pkey_verify(DSA *dsa, DSA_SIG *sig, const u_char *data, u_int datalen)
 
 	md = EVP_MD_CTX_new();
 	if (md == NULL) {
-		error("%s: out of memory", __func__);
+		error_f("out of memory");
 		ret = SSH_ERR_ALLOC_FAIL;
 		goto clean;
 	}

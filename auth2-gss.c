@@ -1,4 +1,4 @@
-/* $OpenBSD: auth2-gss.c,v 1.29 2018/07/31 03:10:27 djm Exp $ */
+/* $OpenBSD: auth2-gss.c,v 1.30 2020/10/18 11:32:01 djm Exp $ */
 
 /*
  * Copyright (c) 2001-2003 Simon Wilkinson. All rights reserved.
@@ -104,7 +104,7 @@ userauth_gssapi(struct ssh *ssh)
 	}
 
 	if (!authctxt->valid || authctxt->user == NULL) {
-		debug2("%s: disabled because of invalid user", __func__);
+		debug2_f("disabled because of invalid user");
 		free(doid);
 		return (0);
 	}

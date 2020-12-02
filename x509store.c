@@ -252,8 +252,7 @@ ssh_x509store_lookup(X509_STORE *store, int type, X509_NAME *name, X509_OBJECT *
 
 	if (X509_STORE_CTX_init(csc, store, NULL, NULL) <= 0) {
 		/*memory allocation error*/
-		error("%s: cannot initialize x509store context"
-		    , __func__);
+		error_f("cannot initialize x509store context");
 		goto done;
 	}
 	ret = X509_STORE_CTX_get_by_subject(csc, type, name, xobj);
@@ -505,11 +504,11 @@ ssh_X509_is_selfissued(X509 *_cert) {
 		char *buf;
 
 		buf = ssh_X509_NAME_oneline(issuer);  /*fatal on error*/
-		debug3("%s: issuer='%s'", __func__, buf);
+		debug3_f("issuer='%s'", buf);
 		free(buf);
 
 		buf = ssh_X509_NAME_oneline(subject); /*fatal on error*/
-		debug3("%s: subject='%s'", __func__, buf);
+		debug3_f("subject='%s'", buf);
 		free(buf);
 	}
 
@@ -805,7 +804,7 @@ ssh_x509store_addpaths(const STACK_OF(SSHXSTOREPATH) *paths) {
 		char *path = sk_SSHXSTOREPATH_value(paths, k);
 
 		if (stat(path, &st) == -1) {
-			error("%s: error %s for path='%s'", __func__, strerror(errno), path);
+			error_f("error %s for path='%s'", strerror(errno), path);
 			return 0;
 		}
 
@@ -930,13 +929,13 @@ ssh_x509store_verify_cert(X509 *_cert, STACK_OF(X509) *_chain) {
 
 	if (_cert == NULL) {
 		/*already checked but ...*/
-		error("%s: cert is NULL", __func__);
+		error_f("cert is NULL");
 		ret = -1;
 		goto done;
 	}
 	/* _chain could be NULL */
 	if (x509store == NULL) {
-		error("%s: context is NULL", __func__);
+		error_f("context is NULL");
 		ret = -1;
 		goto done;
 	}
@@ -944,7 +943,7 @@ ssh_x509store_verify_cert(X509 *_cert, STACK_OF(X509) *_chain) {
 	if (get_log_level() >= SYSLOG_LEVEL_DEBUG3) {
 		char *buf;
 		buf = ssh_X509_NAME_oneline(X509_get_subject_name(_cert)); /*fatal on error*/
-		debug3("%s: for '%s'", __func__, buf);
+		debug3_f("for '%s'", buf);
 		free(buf);
 	}
 
@@ -957,7 +956,7 @@ ssh_x509store_verify_cert(X509 *_cert, STACK_OF(X509) *_chain) {
 
 	if (X509_STORE_CTX_init(csc, x509store, _cert, _chain) <= 0) {
 		/*memory allocation error*/
-		error("%s: cannot initialize x509store context", __func__);
+		error_f("cannot initialize x509store context");
 		ret = -1;
 		goto donecsc;
 	}
@@ -1017,7 +1016,7 @@ done:
 	const char *msg_ok = "trusted";
 	const char *msg;
 	msg = (ret > 0) ? msg_ok : (ret < 0 ? "error" : "rejected");
-	debug3("%s: return %d(%s)", __func__, ret, msg);
+	debug3_f("return %d(%s)", ret, msg);
 }
 	return ret;
 }
@@ -1046,12 +1045,12 @@ ssh_x509store_build_certchain(X509 *cert, STACK_OF(X509) *untrusted) {
 
 	if (cert == NULL) {
 		/*already checked but ...*/
-		error("%s: cert is NULL", __func__);
+		error_f("cert is NULL");
 		return NULL;
 	}
 	/* _chain could be NULL */
 	if (x509store == NULL) {
-		error("%s: X.509 store in not initialized", __func__);
+		error_f("X.509 store in not initialized");
 		return NULL;
 	}
 
@@ -1063,7 +1062,7 @@ ssh_x509store_build_certchain(X509 *cert, STACK_OF(X509) *untrusted) {
 
 	if (X509_STORE_CTX_init(csc, x509store, cert, untrusted) <= 0) {
 		/*memory allocation error*/
-		error("%s: cannot initialize X.509 store context", __func__);
+		error_f("cannot initialize X.509 store context");
 		goto donecsc;
 	}
 

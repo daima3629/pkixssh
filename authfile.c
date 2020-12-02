@@ -147,7 +147,7 @@ int
 sshkey_load_private_type(int type, const char *filename, const char *passphrase,
     struct sshkey **keyp, char **commentp)
 {
-	debug3("%s() type=%d, filename=%s", __func__, type, (filename ? filename : "?!?"));
+	debug3_f("type=%d, filename=%s", type, (filename ? filename : "?!?"));
 
 #ifdef USE_OPENSSL_STORE2
 	if (strncmp(filename, "store:", 6) == 0)
@@ -189,7 +189,7 @@ int
 sshkey_load_private(const char *filename, const char *passphrase,
     struct sshkey **keyp, char **commentp)
 {
-	debug3("%s() filename=%s", __func__, (filename ? filename : "?!?"));
+	debug3_f("filename=%s", (filename ? filename : "?!?"));
 	
 	return sshkey_load_private_type_file(KEY_UNSPEC, filename, passphrase, 
 	    keyp, commentp);
@@ -283,7 +283,7 @@ sshkey_load_public(const char *filename, struct sshkey **keyp, char **commentp)
 {
 	int r;
 
-	debug3("%s() filename=%s", __func__, (filename ? filename : "?!?"));
+	debug3_f("filename=%s", (filename ? filename : "?!?"));
 #ifdef USE_OPENSSL_STORE2
 	if (strncmp(filename, "store:", 6) == 0) {
 		return store_try_load_public(filename + 6, keyp, commentp);
@@ -302,7 +302,7 @@ sshkey_load_public(const char *filename, struct sshkey **keyp, char **commentp)
 {	char *pubfile = NULL;
 	if (asprintf(&pubfile, "%s.pub", filename) < 0)
 		return SSH_ERR_ALLOC_FAIL;
-	debug3("%s() pubfile=%s", __func__, pubfile);
+	debug3_f("pubfile=%s", pubfile);
 
 	r = sshkey_try_load_public(pubfile, keyp, commentp);
 
@@ -318,7 +318,7 @@ sshkey_load_cert(const char *filename, struct sshkey **keyp)
 	char *file = NULL;
 	int r;
 
-	debug3("%s() filename=%s", __func__, (filename ? filename : "?!?"));
+	debug3_f("filename=%s", (filename ? filename : "?!?"));
 	if (keyp != NULL)
 		*keyp = NULL;
 
@@ -339,7 +339,7 @@ sshkey_load_private_cert(int type, const char *filename, const char *passphrase,
 	struct sshkey *key = NULL, *cert = NULL;
 	int r;
 
-	debug3("%s() type=%d, filename=%s", __func__, type, (filename ? filename : "?!?"));
+	debug3_f("type=%d, filename=%s", type, (filename ? filename : "?!?"));
 	if (keyp != NULL)
 		*keyp = NULL;
 
@@ -516,11 +516,11 @@ sshkey_save_public(const struct sshkey *key, const char *path,
 	int r = SSH_ERR_INTERNAL_ERROR;
 
 	if ((fd = open(path, O_WRONLY|O_CREAT|O_TRUNC, 0644)) == -1) {
-		debug3("%s: open: %s", __func__, strerror(errno));
+		debug3_f("open: %s", strerror(errno));
 		return SSH_ERR_SYSTEM_ERROR;
 	}
 	if ((f = fdopen(fd, "w")) == NULL) {
-		debug3("%s: fdopen: %s", __func__, strerror(errno));
+		debug3_f("fdopen: %s", strerror(errno));
 		r = SSH_ERR_SYSTEM_ERROR;
 		goto fail;
 	}

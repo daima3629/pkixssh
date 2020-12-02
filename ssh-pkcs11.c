@@ -957,7 +957,7 @@ pkcs11_get_x509key(
 
 	rv = f->C_GetAttributeValue(session, obj, attribs, 3);
 	if (rv != CKR_OK) {
-		error("%s: C_GetAttributeValue failed: %lu", __func__, rv);
+		error_f("C_GetAttributeValue failed: %lu", rv);
 		return NULL;
 	}
 	/*
@@ -977,7 +977,7 @@ pkcs11_get_x509key(
 	/* retrieve ID, subject and value for certificate */
 	rv = f->C_GetAttributeValue(session, obj, attribs, 3);
 	if (rv != CKR_OK) {
-		error("%s: C_GetAttributeValue failed: %lu", __func__, rv);
+		error_f("C_GetAttributeValue failed: %lu", rv);
 		goto done;
 	}
 
@@ -986,13 +986,13 @@ pkcs11_get_x509key(
 	int r;
 
 	if (attribs[2].ulValueLen != (unsigned long) blen) {
-		debug3("%s: invalid attribute length", __func__);
+		debug3_f("invalid attribute length");
 		goto done;
 	}
 
 	r = X509key_from_blob(blob, blen, &key);
 	if (r != SSH_ERR_SUCCESS) {
-		debug3("%s: X509key_from_blob fail", __func__);
+		debug3_f("X509key_from_blob fail");
 		goto done;
 	}
 }
@@ -1038,7 +1038,7 @@ note_key(struct pkcs11_provider *p, CK_ULONG slotidx,
 
 	fp = sshkey_fingerprint(key, SSH_FP_HASH_DEFAULT, SSH_FP_DEFAULT);
 	if (fp == NULL) {
-		error("%s: sshkey_fingerprint failed", __func__);
+		error_f("sshkey_fingerprint failed");
 		return;
 	}
 	debug2("provider %s slot %lu: %s %s", p->name,
@@ -1100,7 +1100,7 @@ pkcs11_fetch_certs(struct pkcs11_provider *p, CK_ULONG slotidx,
 
 	rv = f->C_FindObjectsInit(session, filter, 2);
 	if (rv != CKR_OK) {
-		error("%s: C_FindObjectsInit failed: %lu", __func__, rv);
+		error_f("C_FindObjectsInit failed: %lu", rv);
 		return -1;
 	}
 }
@@ -1113,7 +1113,7 @@ pkcs11_fetch_certs(struct pkcs11_provider *p, CK_ULONG slotidx,
 
 		rv = f->C_FindObjects(session, &obj, 1, &nfound);
 		if (rv != CKR_OK) {
-			error("%s: C_FindObjects failed: %lu", __func__, rv);
+			error_f("C_FindObjects failed: %lu", rv);
 			break;
 		}
 		if (nfound == 0)
@@ -1121,7 +1121,7 @@ pkcs11_fetch_certs(struct pkcs11_provider *p, CK_ULONG slotidx,
 
 		key = pkcs11_get_x509key(p, slotidx, obj);
 		if (key == NULL) {
-			error("%s: pkcs11_get_x509key failed", __func__);
+			error_f("pkcs11_get_x509key failed");
 			continue;
 		}
 		label = x509key_subject(key);
@@ -1131,7 +1131,7 @@ pkcs11_fetch_certs(struct pkcs11_provider *p, CK_ULONG slotidx,
 
 	rv = f->C_FindObjectsFinal(session);
 	if (rv != CKR_OK)
-		error("%s: C_FindObjectsFinal failed: %lu", __func__, rv);
+		error_f("C_FindObjectsFinal failed: %lu", rv);
 
 	return 0;
 }
@@ -1157,7 +1157,7 @@ pkcs11_get_pubkey_rsa(
 
 	rv = f->C_GetAttributeValue(session, obj, attribs, 3);
 	if (rv != CKR_OK) {
-		error("%s: C_GetAttributeValue failed: %lu", __func__, rv);
+		error_f("C_GetAttributeValue failed: %lu", rv);
 		return NULL;
 	}
 	/*
@@ -1177,13 +1177,13 @@ pkcs11_get_pubkey_rsa(
 	/* retrieve ID, modulus and public exponent of RSA key */
 	rv = f->C_GetAttributeValue(session, obj, attribs, 3);
 	if (rv != CKR_OK) {
-		error("%s: C_GetAttributeValue failed: %lu", __func__, rv);
+		error_f("C_GetAttributeValue failed: %lu", rv);
 		goto done;
 	}
 
 	key = sshkey_new(KEY_RSA);
 	if (key == NULL) {
-		error("%s: sshkey_new failed", __func__);
+		error_f("sshkey_new failed");
 		goto done;
 	}
 
@@ -1194,13 +1194,13 @@ pkcs11_get_pubkey_rsa(
 	if (rsa_n == NULL || rsa_e == NULL) {
 		BN_free(rsa_n);
 		BN_free(rsa_e);
-		error("%s: BN_bin2bn failed", __func__);
+		error_f("BN_bin2bn failed");
 		goto fail;
 	}
 	if (!RSA_set0_key(key->rsa, rsa_n, rsa_e, NULL)) {
 		BN_free(rsa_n);
 		BN_free(rsa_e);
-		error("%s: RSA_set0_key failed", __func__);
+		error_f("RSA_set0_key failed");
 		goto fail;
 	}
 }
@@ -1243,7 +1243,7 @@ pkcs11_get_pubkey_ec(
 
 	rv = f->C_GetAttributeValue(session, obj, attribs, 3);
 	if (rv != CKR_OK) {
-		error("%s: C_GetAttributeValue failed: %lu", __func__, rv);
+		error_f("C_GetAttributeValue failed: %lu", rv);
 		return NULL;
 	}
 	/*
@@ -1263,13 +1263,13 @@ pkcs11_get_pubkey_ec(
 	/* retrieve ID, point and curve parameters of EC key */
 	rv = f->C_GetAttributeValue(session, obj, attribs, 3);
 	if (rv != CKR_OK) {
-		error("%s: C_GetAttributeValue failed: %lu", __func__, rv);
+		error_f("C_GetAttributeValue failed: %lu", rv);
 		goto done;
 	}
 
 	key = sshkey_new(KEY_ECDSA);
 	if (key == NULL) {
-		error("%s: sshkey_new failed", __func__);
+		error_f("sshkey_new failed");
 		goto done;
 	}
 
@@ -1278,7 +1278,7 @@ pkcs11_get_pubkey_ec(
 
 	q = attribs[1].pValue;
 	if (d2i_ECParameters(&key->ecdsa, &q, attribs[1].ulValueLen) == NULL) {
-		error("%s: d2i_ECParameters failed", __func__);
+		error_f("d2i_ECParameters failed");
 		goto fail;
 	}
 }
@@ -1292,7 +1292,7 @@ pkcs11_get_pubkey_ec(
 	q = attribs[2].pValue;
 	point = d2i_ASN1_OCTET_STRING(NULL, &q, attribs[2].ulValueLen);
 	if (point == NULL)  {
-		error("%s: d2i_ASN1_OCTET_STRING failed", __func__);
+		error_f("d2i_ASN1_OCTET_STRING failed");
 		goto fail;
 	}
 
@@ -1305,7 +1305,7 @@ pkcs11_get_pubkey_ec(
 	q = attribs[2].pValue;
 	ec = o2i_ECPublicKey(&key->ecdsa, &q, attribs[2].ulValueLen);
 	if (ec == NULL) {
-		error("%s: o2i_ECPublicKey failed", __func__);
+		error_f("o2i_ECPublicKey failed");
 		goto fail;
 	}
 }
@@ -1356,7 +1356,7 @@ pkcs11_get_pubkey(
 
 	rv = f->C_GetAttributeValue(session, obj, attribs, 2);
 	if (rv != CKR_OK) {
-		error("%s: C_GetAttributeValue failed: %lu", __func__, rv);
+		error_f("C_GetAttributeValue failed: %lu", rv);
 		return NULL;
 	}
 
@@ -1376,7 +1376,7 @@ pkcs11_get_pubkey(
 		return pkcs11_get_pubkey_ec(p, slotidx, obj);
 #endif /* OPENSSL_HAS_ECC */
 	default:
-		error("%s: unsupported key type: %lu", __func__, type);
+		error_f("unsupported key type: %lu", type);
 	}
 
 	return NULL;
@@ -1407,7 +1407,7 @@ pkcs11_fetch_keys(struct pkcs11_provider *p, CK_ULONG slotidx,
 
 	rv = f->C_FindObjectsInit(session, filter, 1);
 	if (rv != CKR_OK) {
-		error("%s: C_FindObjectsInit failed: %lu", __func__, rv);
+		error_f("C_FindObjectsInit failed: %lu", rv);
 		return -1;
 	}
 }
@@ -1420,7 +1420,7 @@ pkcs11_fetch_keys(struct pkcs11_provider *p, CK_ULONG slotidx,
 
 		rv = f->C_FindObjects(session, &obj, 1, &nfound);
 		if (rv != CKR_OK) {
-			error("%s: C_FindObjects failed: %lu", __func__, rv);
+			error_f("C_FindObjects failed: %lu", rv);
 			break;
 		}
 		if (nfound == 0)
@@ -1433,7 +1433,7 @@ pkcs11_fetch_keys(struct pkcs11_provider *p, CK_ULONG slotidx,
 
 	rv = f->C_FindObjectsFinal(session);
 	if (rv != CKR_OK)
-		error("%s: C_FindObjectsFinal failed: %lu", __func__, rv);
+		error_f("C_FindObjectsFinal failed: %lu", rv);
 
 	return 0;
 }
@@ -1478,8 +1478,7 @@ pkcs11_register_provider(char *provider_id, char *pin,
 	*providerp = NULL;
 
 	if (pkcs11_provider_lookup(provider_id) != NULL) {
-		debug("%s: provider already registered: %s",
-		    __func__, provider_id);
+		debug_f("provider already registered: %s", provider_id);
 		goto fail;
 	}
 	/* open shared pkcs11-library */
@@ -1538,8 +1537,7 @@ pkcs11_register_provider(char *provider_id, char *pin,
 		goto fail;
 	}
 	if (p->nslots == 0) {
-		debug("%s: provider %s returned no slots", __func__,
-		    provider_id);
+		debug_f("provider %s returned no slots", provider_id);
 		ret = SSH_PKCS11_ERR_NO_SLOTS;
 		goto fail;
 	}
@@ -1563,9 +1561,8 @@ pkcs11_register_provider(char *provider_id, char *pin,
 			continue;
 		}
 		if ((token->flags & CKF_TOKEN_INITIALIZED) == 0) {
-			debug2("%s: ignoring uninitialised token in "
-			    "provider %s slot %lu", __func__,
-			    provider_id, (unsigned long)i);
+			debug2_f("ignoring uninitialised token in "
+			    "provider %s slot %lu", provider_id, (unsigned long)i);
 			continue;
 		}
 		rmspace(token->label, sizeof(token->label));
@@ -1653,8 +1650,7 @@ pkcs11_add_provider(char *provider_id, char *pin, struct sshkey ***keyp,
 		pkcs11_provider_unref(p);
 	}
 	if (nkeys == 0)
-		debug("%s: provider %s returned no keys", __func__,
-		    provider_id);
+		debug_f("provider %s returned no keys", provider_id);
 
 	return nkeys;
 }

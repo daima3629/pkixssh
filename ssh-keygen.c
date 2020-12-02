@@ -627,7 +627,7 @@ do_convert_private_ssh2(struct sshbuf *b)
 	}
 	rlen = sshbuf_len(b);
 	if (rlen != 0)
-		error("%s: remaining bytes in key blob %d", __func__, rlen);
+		error_f("remaining bytes in key blob %d", rlen);
 
 	/* try the key */
 	if (sshkey_sign(key, &sig, &slen, data, sizeof(data), NULL, NULL, NULL, 0) != 0 ||
@@ -1706,13 +1706,13 @@ prepare_options_buf(struct sshbuf *c, int which)
 			continue;
 		if (ext->val == NULL) {
 			/* flag option */
-			debug3("%s: %s", __func__, ext->key);
+			debug3_f("%s", ext->key);
 			if ((r = sshbuf_put_cstring(c, ext->key)) != 0 ||
 			    (r = sshbuf_put_string(c, NULL, 0)) != 0)
 				fatal("%s: buffer: %s", __func__, ssh_err(r));
 		} else {
 			/* key/value option */
-			debug3("%s: %s=%s", __func__, ext->key, ext->val);
+			debug3_f("%s=%s", ext->key, ext->val);
 			sshbuf_reset(b);
 			if ((r = sshbuf_put_cstring(c, ext->key)) != 0 ||
 			    (r = sshbuf_put_cstring(b, ext->val)) != 0 ||
@@ -1760,7 +1760,7 @@ load_pkcs11_key(char *path)
 
 	nkeys = pkcs11_add_provider(pkcs11provider, identity_passphrase,
 	    &keys, NULL);
-	debug3("%s: %d keys", __func__, nkeys);
+	debug3_f("%d keys", nkeys);
 	if (nkeys <= 0)
 		fatal("cannot read public key from pkcs11");
 	for (i = 0; i < nkeys; i++) {

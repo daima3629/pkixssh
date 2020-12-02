@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-add.c,v 1.157 2020/08/31 04:33:17 djm Exp $ */
+/* $OpenBSD: ssh-add.c,v 1.158 2020/10/18 11:32:02 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -392,12 +392,12 @@ add_file(int agent_fd, const char *filename, int key_only, int qflag,
 
 	/* Graft with private bits */
 	if ((r = sshkey_to_certified(private)) != 0) {
-		error("%s: sshkey_to_certified: %s", __func__, ssh_err(r));
+		error_f("sshkey_to_certified: %s", ssh_err(r));
 		sshkey_free(cert);
 		goto out;
 	}
 	if ((r = sshkey_cert_copy(cert, private)) != 0) {
-		error("%s: sshkey_cert_copy: %s", __func__, ssh_err(r));
+		error_f("sshkey_cert_copy: %s", ssh_err(r));
 		sshkey_free(cert);
 		goto out;
 	}

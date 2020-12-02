@@ -210,7 +210,7 @@ ssh_rsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 	else
 		hash_alg = rsa_hash_id_from_keyname(alg_ident);
 {	const char *s = rsa_hash_alg_ident(hash_alg);
-	debug3("%s  hash_alg=%d/%s", __func__, hash_alg, s != NULL ? s: "");
+	debug3_f("hash_alg=%d/%s", hash_alg, s != NULL ? s: "");
 }
 	if (hash_alg == -1)
 		return SSH_ERR_INVALID_ARGUMENT;
@@ -229,14 +229,14 @@ ssh_rsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 	sig = NULL;
 
 	if ((evp_md = EVP_get_digestbynid(nid)) == NULL) {
-		error("%s: EVP_get_digestbynid %d failed", __func__, nid);
+		error_f("EVP_get_digestbynid %d failed", nid);
 		ret = SSH_ERR_INTERNAL_ERROR;
 		goto out;
 	}
 
 	pkey = EVP_PKEY_new();
 	if (pkey == NULL) {
-		error("%s: out of memory", __func__);
+		error_f("out of memory");
 		ret = SSH_ERR_ALLOC_FAIL;
 		goto evp_end;
 	}
@@ -244,12 +244,12 @@ ssh_rsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 	EVP_PKEY_set1_RSA(pkey, key->rsa);
 
 	slen = EVP_PKEY_size(pkey);
-	debug3("%s  slen=%ld", __func__, (long)slen);
+	debug3_f("slen=%ld", (long)slen);
 	sig = xmalloc(slen);	/*fatal on error*/
 
 {	EVP_MD_CTX *md = EVP_MD_CTX_new();
 	if (md == NULL) {
-		error("%s: out of memory", __func__);
+		error_f("out of memory");
 		ret = SSH_ERR_ALLOC_FAIL;
 		goto evp_end;
 	}
@@ -354,7 +354,7 @@ ssh_rsa_verify(const struct sshkey *key,
 		ret = SSH_ERR_KEY_TYPE_MISMATCH;
 		goto out;
 	}
-	debug3("%s  hash_alg=%d/%s", __func__, hash_alg, rsa_hash_alg_ident(hash_alg));
+	debug3_f("hash_alg=%d/%s", hash_alg, rsa_hash_alg_ident(hash_alg));
 	/*
 	 * For legacy reasons allow ssh-rsa-cert-v01 certs to accept SHA2 signatures
 	 * but otherwise the signature algorithm should match.
@@ -408,7 +408,7 @@ ssh_rsa_verify(const struct sshkey *key,
 
 	nid = rsa_hash_alg_nid(hash_alg);
 	if ((evp_md = EVP_get_digestbynid(nid)) == NULL) {
-		error("%s: EVP_get_digestbynid %d failed", __func__, nid);
+		error_f("EVP_get_digestbynid %d failed", nid);
 		ret = SSH_ERR_INTERNAL_ERROR;
 		goto out;
 	}

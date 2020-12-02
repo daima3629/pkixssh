@@ -345,7 +345,7 @@ get_decode_stat(struct sftp_conn *conn, u_int expected_id, int quiet)
 		    SSH2_FXP_ATTRS, type);
 	}
 	if ((r = decode_attrib(msg, &a)) != 0) {
-		error("%s: couldn't decode attrib: %s", __func__, ssh_err(r));
+		error_f("decode_attrib: %s", ssh_err(r));
 		sshbuf_free(msg);
 		return NULL;
 	}
@@ -648,8 +648,7 @@ do_lsreaddir(struct sftp_conn *conn, const char *path, int print_flag,
 				fatal("%s: buffer error: %s",
 				    __func__, ssh_err(r));
 			if ((r = decode_attrib(msg, &a)) != 0) {
-				error("%s: couldn't decode attrib: %s",
-				    __func__, ssh_err(r));
+				error_f("decode_attrib: %s", ssh_err(r));
 				free(filename);
 				free(longname);
 				goto out;

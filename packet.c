@@ -1,4 +1,4 @@
-/* $OpenBSD: packet.c,v 1.296 2020/07/05 23:59:45 djm Exp $ */
+/* $OpenBSD: packet.c,v 1.298 2020/11/27 00:49:58 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -288,13 +288,13 @@ ssh_packet_set_connection(struct ssh *ssh, int fd_in, int fd_out)
 	int r;
 
 	if (none == NULL) {
-		error("%s: cannot load cipher 'none'", __func__);
+		error_f("cannot load cipher 'none'");
 		return NULL;
 	}
 	if (ssh == NULL)
 		ssh = ssh_alloc_session_state();
 	if (ssh == NULL) {
-		error("%s: could not allocate state", __func__);
+		error_f("could not allocate state");
 		return NULL;
 	}
 	state = ssh->state;
@@ -304,7 +304,7 @@ ssh_packet_set_connection(struct ssh *ssh, int fd_in, int fd_out)
 	    (const u_char *)"", 0, NULL, 0, CIPHER_ENCRYPT)) != 0 ||
 	    (r = cipher_init(&state->receive_context, none,
 	    (const u_char *)"", 0, NULL, 0, CIPHER_DECRYPT)) != 0) {
-		error("%s: cipher_init failed: %s", __func__, ssh_err(r));
+		error_f("cipher_init failed: %s", ssh_err(r));
 		free(ssh); /* XXX need ssh_free_session_state? */
 		return NULL;
 	}
@@ -871,7 +871,7 @@ ssh_set_newkeys(struct ssh *ssh, int mode)
 	int r, crypt_type;
 	const char *dir = (mode == MODE_OUT) ? "out" : "in";
 
-	debug2("%s: mode %d/%s", __func__, mode, dir);
+	debug2_f("mode %d/%s", mode, dir);
 
 	if (mode == MODE_OUT) {
 		ccp = &state->send_context;
@@ -885,8 +885,8 @@ ssh_set_newkeys(struct ssh *ssh, int mode)
 		max_blocks = &state->max_blocks_in;
 	}
 	if (state->newkeys[mode] != NULL) {
-		debug("%s: rekeying %s, input %llu bytes %llu blocks, "
-		   "output %llu bytes %llu blocks", __func__, dir,
+		debug_f("rekeying %s, input %llu bytes %llu blocks, "
+		   "output %llu bytes %llu blocks", dir,
 		   (unsigned long long)state->p_read.bytes,
 		   (unsigned long long)state->p_read.blocks,
 		   (unsigned long long)state->p_send.bytes,
@@ -908,7 +908,7 @@ ssh_set_newkeys(struct ssh *ssh, int mode)
 			return r;
 	}
 	mac->enabled = 1;
-	DBG(debug("%s: cipher_init_context: %s", __func__, dir));
+	DBG(debug_f("cipher_init_context: %s", dir));
 	cipher_free(*ccp);
 	*ccp = NULL;
 	if ((r = cipher_init(ccp, enc->cipher, enc->key, enc->key_len,
@@ -1131,8 +1131,8 @@ ssh_packet_send2_wrapped(struct ssh *ssh)
 		if (tmp > state->extra_pad)
 			return SSH_ERR_INVALID_ARGUMENT;
 		pad = state->extra_pad - tmp;
-		DBG(debug3("%s: adding %d (len %d padlen %d extra_pad %d)",
-		    __func__, pad, len, padlen, state->extra_pad));
+		DBG(debug3_f("adding %d (len %d padlen %d extra_pad %d)",
+		    pad, len, padlen, state->extra_pad));
 		tmp = padlen;
 		padlen += pad;
 		/* Check whether padlen calculation overflowed */
@@ -1247,7 +1247,7 @@ ssh_packet_send2(struct ssh *ssh)
 	 */
 	if ((need_rekey || state->rekeying) && !ssh_packet_type_is_kex(type)) {
 		if (need_rekey)
-			debug3("%s: rekex triggered", __func__);
+			debug3_f("rekex triggered");
 		debug("enqueue packet: %u", type);
 		p = calloc(1, sizeof(*p));
 		if (p == NULL)
@@ -1289,8 +1289,7 @@ ssh_packet_send2(struct ssh *ssh)
 			 */
 			if (ssh_packet_need_rekeying(ssh,
 			    sshbuf_len(p->payload))) {
-				debug3("%s: queued packet triggered rekex",
-				    __func__);
+				debug3_f("queued packet triggered rekex");
 				return kex_start_rekex(ssh);
 			}
 			debug("dequeue packet: %u", type);
@@ -1466,7 +1465,7 @@ ssh_packet_read_poll2_mux(struct ssh *ssh, u_char *typep, u_int32_t *seqnr_p)
 	    (r = sshbuf_get_u8(state->incoming_packet, typep)) != 0)
 		return r;
 	if (ssh_packet_log_type(*typep))
-		debug3("%s: type %u", __func__, *typep);
+		debug3_f("type %u", *typep);
 	/* sshbuf_dump(state->incoming_packet, stderr); */
 	/* reset for next packet */
 	state->packlen = 0;
@@ -1697,7 +1696,7 @@ ssh_packet_read_poll2(struct ssh *ssh, u_char *typep, u_int32_t *seqnr_p)
 
 	/* do we need to rekey? */
 	if (ssh_packet_need_rekeying(ssh, 0)) {
-		debug3("%s: rekex triggered", __func__);
+		debug3_f("rekex triggered");
 		if ((r = kex_start_rekex(ssh)) != 0)
 			return r;
 	}
@@ -2181,7 +2180,7 @@ ssh_packet_set_postauth(struct ssh *ssh)
 {
 	int r;
 
-	debug("%s: called", __func__);
+	debug_f("called");
 	/* This was set in net child, but is not visible in user child */
 	ssh->state->after_authentication = 1;
 	ssh->state->rekeying = 0;
@@ -2442,7 +2441,7 @@ ssh_packet_set_state(struct ssh *ssh, struct sshbuf *m)
 
 	if (sshbuf_len(m))
 		return SSH_ERR_INVALID_FORMAT;
-	debug3("%s: done", __func__);
+	debug3_f("done");
 	return 0;
 }
 
@@ -2631,7 +2630,7 @@ ssh_packet_send_mux(struct ssh *ssh)
 	cp = sshbuf_mutable_ptr(state->outgoing_packet);
 	type = cp[5];
 	if (ssh_packet_log_type(type))
-		debug3("%s: type %u", __func__, type);
+		debug3_f("type %u", type);
 	/* drop everything, but the connection protocol */
 	if (type >= SSH2_MSG_CONNECTION_MIN &&
 	    type <= SSH2_MSG_CONNECTION_MAX) {

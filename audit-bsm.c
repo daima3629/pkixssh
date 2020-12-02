@@ -419,8 +419,7 @@ audit_event(struct ssh *ssh, ssh_audit_event_t event)
 			    gettext("sshd logout %s"), the_authctxt->user);
 			bsm_audit_record(0, textbuf, AUE_logout);
 		} else {
-			debug("%s: connection closed without authentication",
-			    __func__);
+			debug_f("connection closed without authentication");
 		}
 		break;
 
@@ -448,7 +447,7 @@ audit_event(struct ssh *ssh, ssh_audit_event_t event)
 		break;
 
 	default:
-		debug("%s: unhandled event %d", __func__, event);
+		debug_f("unhandled event %d", event);
 	}
 }
 #endif /* BSM */

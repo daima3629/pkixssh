@@ -1,4 +1,4 @@
-/* $OpenBSD: monitor.c,v 1.217 2020/10/18 11:32:01 djm Exp $ */
+/* $OpenBSD: monitor.c,v 1.218 2020/11/27 00:37:10 djm Exp $ */
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * Copyright 2002 Markus Friedl <markus@openbsd.org>
@@ -310,8 +310,7 @@ monitor_child_preauth(struct ssh *ssh, struct monitor *pmonitor)
 			if (authenticated &&
 			    !auth2_update_methods_lists(authctxt,
 			    auth_method, auth_submethod)) {
-				debug3("%s: method %s: partial", __func__,
-				    auth_method);
+				debug3_f("method %s: partial", auth_method);
 				authenticated = 0;
 				partial = 1;
 			}
@@ -357,8 +356,7 @@ monitor_child_preauth(struct ssh *ssh, struct monitor *pmonitor)
 	if (strcmp(auth_method, "unknown") == 0)
 		fatal("%s: authentication method name unknown", __func__);
 
-	debug("%s: %s has been authenticated by privileged process",
-	    __func__, authctxt->user);
+	debug_f("user %s authenticated by privileged process", authctxt->user);
 	ssh->authctxt = NULL;
 	ssh_packet_set_log_preamble(ssh, "user %s", authctxt->user);
 
@@ -436,7 +434,7 @@ monitor_read_log(struct monitor *pmonitor)
 	if (atomicio(read, pmonitor->m_log_recvfd, p, 4) != 4) {
 		if (errno == EPIPE) {
 			sshbuf_free(logmsg);
-			debug("%s: child log fd closed", __func__);
+			debug_f("child log fd closed");
 			close(pmonitor->m_log_recvfd);
 			pmonitor->m_log_recvfd = -1;
 			return -1;
@@ -518,7 +516,7 @@ monitor_read(struct ssh *ssh, struct monitor *pmonitor, struct mon_table *ent,
 	if ((r = sshbuf_get_u8(m, &type)) != 0)
 		fatal("%s: decode: %s", __func__, ssh_err(r));
 
-	debug3("%s: checking request %d", __func__, type);
+	debug3_f("checking request %d", type);
 
 	while (ent->f != NULL) {
 		if (ent->type == type)
@@ -535,8 +533,7 @@ monitor_read(struct ssh *ssh, struct monitor *pmonitor, struct mon_table *ent,
 
 		/* The child may use this request only once, disable it */
 		if (ent->flags & MON_ONCE) {
-			debug2("%s: %d used once, disabling now", __func__,
-			    type);
+			debug2_f("%d used once, disabling now", type);
 			ent->flags &= ~MON_PERMIT;
 		}
 
@@ -593,8 +590,7 @@ mm_answer_moduli(struct ssh *ssh, int sock, struct sshbuf *m)
 	    (r = sshbuf_get_u32(m, &max)) != 0)
 		fatal("%s: buffer error: %s", __func__, ssh_err(r));
 
-	debug3("%s: got parameters: %d %d %d",
-	    __func__, (int)min, (int)want, (int)max);
+	debug3_f("got parameters: %d %d %d", (int)min, (int)want, (int)max);
 	/* We need to check here, too, in case the child got corrupted */
 	if (max < min || want < min || max < want ||
 	    max > INT32_MAX || want > INT32_MAX || min > INT32_MAX)
@@ -639,7 +635,7 @@ mm_answer_sign(struct ssh *ssh, int sock, struct sshbuf *m)
 	ssh_compat compat = { datafellows, xcompat };
 	const char proof_req[] = "hostkeys-prove-00@openssh.com";
 
-	debug3("%s", __func__);
+	debug3_f("entering");
 
 	if ((r = sshbuf_get_u32(m, &keyid)) != 0 ||
 	    (r = sshbuf_get_string(m, &p, &datlen)) != 0 ||
@@ -708,8 +704,8 @@ mm_answer_sign(struct ssh *ssh, int sock, struct sshbuf *m)
 	} else
 		fatal("%s: no hostkey from index %d", __func__, keyid);
 
-	debug3("%s: %s signature %p(%zu)", __func__,
-	    is_proof ? "hostkey proof" : "KEX", (void*)signature, siglen);
+	debug3_f("%s signature %p(%zu)", is_proof ? "hostkey proof" : "KEX",
+	    (void*)signature, siglen);
 
 	sshbuf_reset(m);
 	if ((r = sshbuf_put_string(m, signature, siglen)) != 0)
@@ -737,7 +733,7 @@ mm_answer_pwnamallow(struct ssh *ssh, int sock, struct sshbuf *m)
 	int r, allowed = 0;
 	u_int i;
 
-	debug3("%s", __func__);
+	debug3_f("entering");
 
 	if (authctxt->attempt++ != 0)
 		fatal("%s: multiple attempts for getpwnam", __func__);
@@ -819,10 +815,10 @@ mm_answer_pwnamallow(struct ssh *ssh, int sock, struct sshbuf *m)
 		 * run to it's ssh_packet_disconnect(), but it must not allow any
 		 * authentication to succeed.
 		 */
-		debug("%s: no valid authentication method lists", __func__);
+		debug_f("no valid authentication method lists");
 	}
 
-	debug3("%s: sending MONITOR_ANS_PWNAM: %d", __func__, allowed);
+	debug3_f("sending MONITOR_ANS_PWNAM: %d", allowed);
 	mm_request_send(sock, MONITOR_ANS_PWNAM, m);
 
 	/* Allow service/style information on the auth context */
@@ -866,8 +862,7 @@ mm_answer_authserv(struct ssh *ssh, int sock, struct sshbuf *m)
 	if ((r = sshbuf_get_cstring(m, &authctxt->service, NULL)) != 0 ||
 	    (r = sshbuf_get_cstring(m, &authctxt->style, NULL)) != 0)
 		fatal("%s: buffer error: %s", __func__, ssh_err(r));
-	debug3("%s: service=%s, style=%s",
-	    __func__, authctxt->service, authctxt->style);
+	debug3_f("service=%s, style=%s", authctxt->service, authctxt->style);
 
 	if (strlen(authctxt->style) == 0) {
 		free(authctxt->style);
@@ -902,7 +897,7 @@ mm_answer_authpassword(struct ssh *ssh, int sock, struct sshbuf *m)
 		fatal("%s: buffer error: %s", __func__, ssh_err(r));
 #endif
 
-	debug3("%s: sending result %d", __func__, authenticated);
+	debug3_f("sending result %d", authenticated);
 	mm_request_send(sock, MONITOR_ANS_AUTHPASSWORD, m);
 
 	call_count++;
@@ -938,7 +933,7 @@ mm_answer_bsdauthquery(struct ssh *ssh, int sock, struct sshbuf *m)
 			fatal("%s: buffer error: %s", __func__, ssh_err(r));
 	}
 
-	debug3("%s: sending challenge success: %u", __func__, success);
+	debug3_f("sending challenge success: %u", success);
 	mm_request_send(sock, MONITOR_ANS_BSDAUTHQUERY, m);
 
 	if (success) {
@@ -968,14 +963,14 @@ mm_answer_bsdauthrespond(struct ssh *ssh, int sock, struct sshbuf *m)
 	authok = options.challenge_response_authentication &&
 	    auth_userresponse(authctxt->as, response, 0);
 	authctxt->as = NULL;
-	debug3("%s: <%s> = <%d>", __func__, response, authok);
+	debug3_f("<%s> = <%d>", response, authok);
 	free(response);
 
 	sshbuf_reset(m);
 	if ((r = sshbuf_put_u32(m, authok)) != 0)
 		fatal("%s: buffer error: %s", __func__, ssh_err(r));
 
-	debug3("%s: sending authenticated: %d", __func__, authok);
+	debug3_f("sending authenticated: %d", authok);
 	mm_request_send(sock, MONITOR_ANS_BSDAUTHRESPOND, m);
 
 	auth_method = "keyboard-interactive";
@@ -1169,7 +1164,7 @@ mm_answer_keyallowed(struct ssh *ssh, int sock, struct sshbuf *m)
 	int r, allowed = 0;
 	struct sshauthopt *opts = NULL;
 
-	debug3("%s entering", __func__);
+	debug3_f("entering");
 	if ((r = sshbuf_get_u32(m, &val)) != 0 || /*type*/
 	    (r = sshbuf_get_cstring(m, &cuser, NULL)) != 0 ||
 	    (r = sshbuf_get_cstring(m, &chost, NULL)) != 0 ||
@@ -1182,7 +1177,7 @@ mm_answer_keyallowed(struct ssh *ssh, int sock, struct sshbuf *m)
 	if ((r = Xkey_from_blob(pkalg, blob, bloblen, &key)) != 0)
 		fatal("%s: Xkey_from_blob: %s", __func__, ssh_err(r));
 
-	debug3("%s: xkey_from_blob: %s %p", __func__, pkalg, (void*)key);
+	debug3_f("xkey_from_blob: %s %p", pkalg, (void*)key);
 
 {	ssh_compat ctx_compat = { datafellows, xcompat };
 	ssh_verify_ctx ctx = { pkalg, key, &ctx_compat, NULL };
@@ -1227,8 +1222,8 @@ mm_answer_keyallowed(struct ssh *ssh, int sock, struct sshbuf *m)
 	}
 }
 
-	debug3("%s: %s authentication%s: %s key is %s", __func__,
-	    auth_method, pubkey_auth_attempt ? "" : " test",
+	debug3_f("%s authentication%s: %s key is %s", auth_method,
+	    pubkey_auth_attempt ? "" : " test",
 	    (key == NULL || !authctxt->valid) ? "invalid" : sshkey_type(key),
 	    allowed ? "allowed" : "not allowed");
 
@@ -1446,7 +1441,7 @@ mm_answer_keyverify(struct ssh *ssh, int sock, struct sshbuf *m)
 	ssh_verify_ctx ctx = { pkalg, key, &ctx_compat, NULL };
 
 	ret = Xkey_verify(&ctx, signature, signaturelen, data, datalen);
-	debug3("%s: %s %p signature %s%s%s", __func__, auth_method, (void*)key,
+	debug3_f("%s %p signature %s%s%s", auth_method, (void*)key,
 	    (ret == 0) ? "verified" : "unverified",
 	    (ret != 0) ? ": " : "", (ret != 0) ? ssh_err(ret) : "");
 }
@@ -1502,9 +1497,9 @@ mm_record_login(struct ssh *ssh, Session *s, struct passwd *pw)
 static void
 mm_session_close(Session *s)
 {
-	debug3("%s: session %d pid %ld", __func__, s->self, (long)s->pid);
+	debug3_f("session %d pid %ld", s->self, (long)s->pid);
 	if (s->ttyfd != -1) {
-		debug3("%s: tty %s ptyfd %d", __func__, s->tty, s->ptyfd);
+		debug3_f("tty %s ptyfd %d", s->tty, s->ptyfd);
 		session_pty_cleanup2(s);
 	}
 	session_unused(s->self);
@@ -1517,7 +1512,7 @@ mm_answer_pty(struct ssh *ssh, int sock, struct sshbuf *m)
 	Session *s;
 	int r, res, fd0;
 
-	debug3("%s entering", __func__);
+	debug3_f("entering");
 
 	sshbuf_reset(m);
 	s = session_new();
@@ -1559,7 +1554,7 @@ mm_answer_pty(struct ssh *ssh, int sock, struct sshbuf *m)
 	if ((fd0 = open(_PATH_DEVNULL, O_RDONLY)) == -1)
 		fatal("%s: open(/dev/null): %s", __func__, strerror(errno));
 	if (fd0 != 0)
-		error("%s: fd0 %d != 0", __func__, fd0);
+		error_f("fd0 %d != 0", fd0);
 
 	/* slave side of pty is not needed */
 	close(s->ttyfd);
@@ -1567,7 +1562,7 @@ mm_answer_pty(struct ssh *ssh, int sock, struct sshbuf *m)
 	/* no need to dup() because nobody closes ptyfd */
 	s->ptymaster = s->ptyfd;
 
-	debug3("%s: tty %s ptyfd %d", __func__, s->tty, s->ttyfd);
+	debug3_f("tty %s ptyfd %d", s->tty, s->ttyfd);
 
 	return (0);
 
@@ -1589,7 +1584,7 @@ mm_answer_pty_cleanup(struct ssh *ssh, int sock, struct sshbuf *m)
 
 	UNUSED(ssh);
 	UNUSED(sock);
-	debug3("%s entering", __func__);
+	debug3_f("entering");
 
 	if ((r = sshbuf_get_cstring(m, &tty, NULL)) != 0)
 		fatal("%s: buffer error: %s", __func__, ssh_err(r));
@@ -1608,7 +1603,7 @@ mm_answer_term(struct ssh *ssh, int sock, struct sshbuf *m)
 
 	UNUSED(sock);
 	UNUSED(m);
-	debug3("%s: tearing down sessions", __func__);
+	debug3_f("tearing down sessions");
 
 	/* The child is terminating */
 	session_destroy_all(ssh, &mm_session_close);
@@ -1638,7 +1633,7 @@ mm_answer_audit_event(struct ssh *ssh, int sock, struct sshbuf *m)
 	int r;
 
 	UNUSED(sock);
-	debug3("%s entering", __func__);
+	debug3_f("entering");
 
 	if ((r = sshbuf_get_u32(m, &n)) != 0)
 		fatal("%s: buffer error: %s", __func__, ssh_err(r));
@@ -1668,7 +1663,7 @@ mm_answer_audit_command(struct ssh *ssh, int sock, struct sshbuf *m)
 
 	UNUSED(ssh);
 	UNUSED(sock);
-	debug3("%s entering", __func__);
+	debug3_f("entering");
 	if ((r = sshbuf_get_cstring(m, &cmd, NULL)) != 0)
 		fatal("%s: buffer error: %s", __func__, ssh_err(r));
 	/* sanity check command, if so how? */
@@ -1693,7 +1688,7 @@ monitor_apply_keystate(struct ssh *ssh)
 	struct kex *kex;
 	int r;
 
-	debug3("%s: ssh_packet_set_state ...", __func__);
+	debug3_f("ssh_packet_set_state ...");
 	if ((r = ssh_packet_set_state(ssh, child_state)) != 0)
                 fatal("%s: ssh_packet_set_state: %s", __func__, ssh_err(r));
 	sshbuf_free(child_state);
@@ -1727,13 +1722,13 @@ monitor_apply_keystate(struct ssh *ssh)
 static void
 mm_get_keystate(struct monitor *pmonitor)
 {
-	debug3("%s: Waiting for new keys", __func__);
+	debug3_f("waiting for new keys");
 
 	if ((child_state = sshbuf_new()) == NULL)
 		fatal("%s: sshbuf_new failed", __func__);
 	mm_request_receive_expect(pmonitor->m_sendfd, MONITOR_REQ_KEYEXPORT,
 	    child_state);
-	debug3("%s: GOT new keys", __func__);
+	debug3_f("got new keys");
 }
 
 
@@ -1913,7 +1908,7 @@ mm_answer_gss_userok(struct ssh *ssh, int sock, struct sshbuf *m)
 	if ((r = sshbuf_put_u32(m, authenticated)) != 0)
 		fatal("%s: buffer error: %s", __func__, ssh_err(r));
 
-	debug3("%s: sending result %d", __func__, authenticated);
+	debug3_f("sending result %d", authenticated);
 	mm_request_send(sock, MONITOR_ANS_GSSUSEROK, m);
 
 	auth_method = "gssapi-with-mic";

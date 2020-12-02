@@ -495,7 +495,7 @@ add_certificate_file(Options *options, const char *path, int userprovided)
 	for (i = 0; i < options->num_certificate_files; i++) {
 		if (options->certificate_file_userprovided[i] == userprovided &&
 		    strcmp(options->certificate_files[i], path) == 0) {
-			debug2("%s: ignoring duplicate key %s", __func__, path);
+			debug2_f("ignoring duplicate key %s", path);
 			return;
 		}
 	}
@@ -526,7 +526,7 @@ add_identity_file(Options *options, const char *dir, const char *filename,
 	for (i = 0; i < options->num_identity_files; i++) {
 		if (options->identity_file_userprovided[i] == userprovided &&
 		    strcmp(options->identity_files[i], path) == 0) {
-			debug2("%s: ignoring duplicate key %s", __func__, path);
+			debug2_f("ignoring duplicate key %s", path);
 			free(path);
 			return;
 		}

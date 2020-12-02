@@ -1,4 +1,4 @@
-/* $OpenBSD: readpass.c,v 1.63 2020/08/11 09:45:54 djm Exp $ */
+/* $OpenBSD: readpass.c,v 1.68 2020/11/10 07:46:20 claudio Exp $ */
 /*
  * Copyright (c) 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2019-2020 Roumen Petrov.  All rights reserved.
@@ -58,16 +58,16 @@ ssh_askpass(const char *askpass, const char *msg, const char *env_hint)
 	void (*osigchld)(int);
 
 	if (fflush(stdout) != 0)
-		error("%s: fflush: %s", __func__, strerror(errno));
+		error_f("fflush: %s", strerror(errno));
 	if (askpass == NULL)
 		fatal("internal error: askpass undefined");
 	if (pipe(p) == -1) {
-		error("%s: pipe: %s", __func__, strerror(errno));
+		error_f("pipe: %s", strerror(errno));
 		return NULL;
 	}
 	osigchld = ssh_signal(SIGCHLD, SIG_DFL);
 	if ((pid = fork()) == -1) {
-		error("%s: fork: %s", __func__, strerror(errno));
+		error_f("fork: %s", strerror(errno));
 		ssh_signal(SIGCHLD, osigchld);
 		return NULL;
 	}
@@ -145,7 +145,7 @@ read_passphrase(const char *prompt, int flags)
 
 	rppflags = (flags & RP_ECHO) ? RPP_ECHO_ON : RPP_ECHO_OFF;
 	if (use_askpass)
-		debug("%s: requested to askpass", __func__);
+		debug_f("requested to askpass");
 	else if (flags & RP_USE_ASKPASS)
 		use_askpass = 1;
 	else if (flags & RP_ALLOW_STDIN) {

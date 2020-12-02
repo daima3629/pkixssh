@@ -77,7 +77,7 @@ DSS1RAW_SignFinal(EVP_MD_CTX *ctx, unsigned char *sigret, unsigned int *siglen, 
 		slen = BN_num_bytes(ps);
 
 		if (rlen > SHA_DIGEST_LENGTH || slen > SHA_DIGEST_LENGTH) {
-			error("%s: bad sig size %u %u", __func__, rlen, slen);
+			error_f("bad sig size %u %u", rlen, slen);
 			goto done;
 		}
 

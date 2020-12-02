@@ -1,4 +1,4 @@
-/* $OpenBSD: ttymodes.c,v 1.34 2018/07/09 21:20:26 markus Exp $ */
+/* $OpenBSD: ttymodes.c,v 1.35 2020/10/18 11:32:02 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -287,11 +287,11 @@ ssh_tty_make_modes(struct ssh *ssh, int fd, struct termios *tiop)
 
 	if (tiop == NULL) {
 		if (fd == -1) {
-			debug("%s: no fd or tio", __func__);
+			debug_f("no fd or tio");
 			goto end;
 		}
 		if (tcgetattr(fd, &tio) == -1) {
-			debug("tcgetattr: %.100s", strerror(errno));
+			debug_f("tcgetattr: %.100s", strerror(errno));
 			goto end;
 		}
 	} else
@@ -317,7 +317,7 @@ ssh_tty_make_modes(struct ssh *ssh, int fd, struct termios *tiop)
 
 #define TTYMODE(NAME, FIELD, OP) \
 	if (OP == SSH_TTYMODE_IUTF8 && (datafellows & SSH_BUG_UTF8TTYMODE)) { \
-		debug3("%s: SSH_BUG_UTF8TTYMODE", __func__); \
+		debug3_f("SSH_BUG_UTF8TTYMODE"); \
 	} else if ((r = sshbuf_put_u8(buf, OP)) != 0 || \
 	    (r = sshbuf_put_u32(buf, ((tio.FIELD & NAME) != 0))) != 0) \
 		fatal("%s: buffer error: %s", __func__, ssh_err(r)); \
@@ -355,7 +355,7 @@ ssh_tty_parse_modes(struct ssh *ssh, int fd)
 	if (len == 0)
 		return;
 	if ((buf = sshbuf_from(data, len)) == NULL) {
-		error("%s: sshbuf_from failed", __func__);
+		error_f("sshbuf_from failed");
 		return;
 	}
 
@@ -433,8 +433,7 @@ ssh_tty_parse_modes(struct ssh *ssh, int fd)
 					    ssh_err(r));
 				break;
 			} else {
-				error("%s: unknown opcode %d", __func__,
-				    opcode);
+				error_f("unknown opcode %d", opcode);
 				goto set;
 			}
 		}
@@ -444,7 +443,7 @@ set:
 	len = sshbuf_len(buf);
 	sshbuf_free(buf);
 	if (len > 0) {
-		error("%s: %zu bytes left", __func__, len);
+		error_f("%zu bytes left", len);
 		return;		/* Don't process bytes passed */
 	}
 	if (failure == -1)

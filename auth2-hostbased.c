@@ -1,4 +1,4 @@
-/* $OpenBSD: auth2-hostbased.c,v 1.42 2019/11/25 00:51:37 djm Exp $ */
+/* $OpenBSD: auth2-hostbased.c,v 1.43 2020/10/18 11:32:01 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  *
@@ -102,7 +102,7 @@ userauth_hostbased(struct ssh *ssh)
 	    (r = sshpkt_get_string(ssh, &sig, &slen)) != 0)
 		fatal("%s: packet parsing: %s", __func__, ssh_err(r));
 
-	debug("%s: cuser %s chost %s pkalg %s slen %zu", __func__,
+	debug_f("cuser %s chost %s pkalg %s slen %zu",
 	    cuser, chost, pkalg, slen);
 #ifdef DEBUG_PK
 	debug("signature:");
@@ -111,24 +111,23 @@ userauth_hostbased(struct ssh *ssh)
 	pktype = sshkey_type_from_name(pkalg);
 	if (pktype == KEY_UNSPEC) {
 		/* this is perfectly legal */
-		logit("%s: unsupported public key algorithm: %s",
-		    __func__, pkalg);
+		verbose("Unsupported public key algorithm: %s", pkalg);
 		goto done;
 	}
 	if (!hostbased_algorithm_allowed(pkalg)) {
 		goto done;
 	}
 	if ((r = Xkey_from_blob(pkalg, pkblob, blen, &key)) != 0) {
-		error("%s: could not parse key: %s", __func__, ssh_err(r));
+		error_f("could not parse key: %s", ssh_err(r));
 		goto done;
 	}
 	if (key == NULL) {
-		error("%s: cannot decode key: %s", __func__, pkalg);
+		error_f("cannot decode key: %s", pkalg);
 		goto done;
 	}
 	if (key->type != pktype) {
-		error("%s: type mismatch for decoded key "
-		    "(received %d, expected %d)", __func__, key->type, pktype);
+		error_f("type mismatch for decoded key "
+		    "(received %d, expected %d)", key->type, pktype);
 		goto done;
 	}
 	if (sshkey_type_plain(key->type) == KEY_RSA &&
@@ -139,14 +138,14 @@ userauth_hostbased(struct ssh *ssh)
 	}
 	if ((r = sshkey_check_cert_sigtype(key,
 	    options.ca_sign_algorithms)) != 0) {
-		logit("%s: certificate signature algorithm %s: %s", __func__,
+		logit("Certificate signature algorithm %s: %s",
 		    (key->cert == NULL || key->cert->signature_type == NULL) ?
 		    "(null)" : key->cert->signature_type, ssh_err(r));
 		goto done;
 	}
 
 	if (!authctxt->valid || authctxt->user == NULL) {
-		debug2("%s: disabled because of invalid user", __func__);
+		debug2_f("disabled because of invalid user");
 		goto done;
 	}
 
@@ -184,7 +183,7 @@ userauth_hostbased(struct ssh *ssh)
 	auth2_record_key(authctxt, authenticated, key);
 	sshbuf_free(b);
 done:
-	debug2("%s: authenticated %d", __func__, authenticated);
+	debug2_f("authenticated %d pkalg %s", authenticated, pkalg);
 	sshkey_free(key);
 	free(pkalg);
 	free(pkblob);
@@ -211,7 +210,7 @@ hostbased_xkey_allowed(struct ssh *ssh, struct passwd *pw,
 	resolvedname = auth_get_canonical_hostname(ssh, options.use_dns);
 	ipaddr = ssh_remote_ipaddr(ssh);
 
-	debug2("%s: chost %s resolvedname %s ipaddr %s", __func__,
+	debug2_f("chost %s resolvedname %s ipaddr %s",
 	    chost, resolvedname, ipaddr);
 
 	if (((len = strlen(chost)) > 0) && chost[len - 1] == '.') {
@@ -221,9 +220,8 @@ hostbased_xkey_allowed(struct ssh *ssh, struct passwd *pw,
 
 	if (options.hostbased_uses_name_from_packet_only) {
 		if (auth_rhosts2(pw, cuser, chost, chost) == 0) {
-			debug2("%s: auth_rhosts2 refused "
-			    "user \"%.100s\" host \"%.100s\" (from packet)",
-			    __func__, cuser, chost);
+			debug2_f("auth_rhosts2 refused user \"%.100s\" "
+			    "host \"%.100s\" (from packet)", cuser, chost);
 			return 0;
 		}
 		lookup = chost;
@@ -233,14 +231,14 @@ hostbased_xkey_allowed(struct ssh *ssh, struct passwd *pw,
 			    "client sends %s, but we resolve %s to %s",
 			    chost, ipaddr, resolvedname);
 		if (auth_rhosts2(pw, cuser, resolvedname, ipaddr) == 0) {
-			debug2("%s: auth_rhosts2 refused "
+			debug2_f("auth_rhosts2 refused "
 			    "user \"%.100s\" host \"%.100s\" addr \"%.100s\"",
-			    __func__, cuser, resolvedname, ipaddr);
+			    cuser, resolvedname, ipaddr);
 			return 0;
 		}
 		lookup = resolvedname;
 	}
-	debug2("%s: access allowed by auth_rhosts2", __func__);
+	debug2_f("access allowed by auth_rhosts2");
 
 	if (sshkey_is_cert(key) &&
 	    sshkey_cert_check_authority(key, 1, 0, lookup, &reason)) {

@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh_api.c,v 1.21 2020/08/27 01:06:18 djm Exp $ */
+/* $OpenBSD: ssh_api.c,v 1.22 2020/10/18 11:32:02 djm Exp $ */
 /*
  * Copyright (c) 2012 Markus Friedl.  All rights reserved.
  * Copyright (c) 2014-2020 Roumen Petrov.  All rights reserved.
@@ -375,7 +375,7 @@ _ssh_read_banner(struct ssh *ssh, struct sshbuf *banner)
 		if (sshbuf_len(banner) >= 4 &&
 		    memcmp(sshbuf_ptr(banner), "SSH-", 4) == 0)
 			break;
-		debug("%s: %.*s", __func__, (int)sshbuf_len(banner),
+		debug_f("%.*s", (int)sshbuf_len(banner),
 		    sshbuf_ptr(banner));
 		/* Accept lines before banner only on client */
 		if (ssh->kex->server || ++n > SSH_MAX_PRE_BANNER_LINES) {
@@ -490,9 +490,9 @@ _ssh_host_public_key(const char* pkalg, struct ssh *ssh)
 {
 	struct key_entry *k;
 
-	debug3("%s: need %s", __func__, pkalg);
+	debug3_f("need %s", pkalg);
 	TAILQ_FOREACH(k, &ssh->public_keys, next) {
-		debug3("%s: check %s", __func__, sshkey_type(k->key));
+		debug3_f("check %s", sshkey_type(k->key));
 		if (sshkey_match_pkalg(k->key, pkalg))
 			return (k->key);
 	}
@@ -504,9 +504,9 @@ _ssh_host_private_key(const char* pkalg, struct ssh *ssh)
 {
 	struct key_entry *k;
 
-	debug3("%s: need %s", __func__, pkalg);
+	debug3_f("need %s", pkalg);
 	TAILQ_FOREACH(k, &ssh->private_keys, next) {
-		debug3("%s: check %s", __func__, sshkey_type(k->key));
+		debug3_f("check %s", sshkey_type(k->key));
 		if (sshkey_match_pkalg(k->key, pkalg))
 			return (k->key);
 	}
@@ -518,9 +518,9 @@ _ssh_verify_host_key(struct sshkey *hostkey, struct ssh *ssh)
 {
 	struct key_entry *k;
 
-	debug3("%s: need %s", __func__, sshkey_type(hostkey));
+	debug3_f("need %s", sshkey_type(hostkey));
 	TAILQ_FOREACH(k, &ssh->public_keys, next) {
-		debug3("%s: check %s", __func__, sshkey_type(k->key));
+		debug3_f("check %s", sshkey_type(k->key));
 		if (sshkey_equal_public(hostkey, k->key))
 			return (0);	/* ok */
 	}
@@ -566,8 +566,8 @@ _ssh_order_hostkeyalgs(struct ssh *ssh)
 		}
 	}
 	if (*replace != '\0') {
-		debug2("%s: orig/%d    %s", __func__, ssh->kex->server, orig);
-		debug2("%s: replace/%d %s", __func__, ssh->kex->server, replace);
+		debug2_f("orig/%d    %s", ssh->kex->server, orig);
+		debug2_f("replace/%d %s", ssh->kex->server, replace);
 		free(orig);
 		proposal[PROPOSAL_SERVER_HOST_KEY_ALGS] = replace;
 		replace = NULL;	/* owned by proposal */

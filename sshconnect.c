@@ -1,4 +1,4 @@
-/* $OpenBSD: sshconnect.c,v 1.344 2020/11/22 22:37:11 djm Exp $ */
+/* $OpenBSD: sshconnect.c,v 1.345 2020/11/27 00:49:58 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -173,7 +173,7 @@ ssh_proxy_fdpass_connect(struct ssh *ssh, const char *host,
 		    options.control_persist &&
 		    options.control_path != NULL;
 		if (stdfd_devnull(0, 0, null_stderr) == -1)
-			error("%s: stdfd_devnull failed", __func__);
+			error_f("stdfd_devnull failed");
 }
 
 		argv[0] = shell;
@@ -260,7 +260,7 @@ ssh_proxy_connect(struct ssh *ssh, const char *host, const char *host_arg,
 		    options.control_persist &&
 		    options.control_path != NULL;
 		if (stdfd_devnull(0, 0, null_stderr) == -1)
-			error("%s: stdfd_devnull failed", __func__);
+			error_f("stdfd_devnull failed");
 }
 
 		argv[0] = shell;
@@ -341,8 +341,7 @@ check_ifaddrs(const char *ifname, int af, const struct ifaddrs *ifaddrs,
 				    htonl(INADDR_LOOPBACK))
 					continue;
 				if (*rlenp < sizeof(struct sockaddr_in)) {
-					error("%s: v4 addr doesn't fit",
-					    __func__);
+					error_f("v4 addr doesn't fit");
 					return -1;
 				}
 				*rlenp = sizeof(struct sockaddr_in);
@@ -356,8 +355,7 @@ check_ifaddrs(const char *ifname, int af, const struct ifaddrs *ifaddrs,
 				    IN6_IS_ADDR_LOOPBACK(v6addr)))
 					continue;
 				if (*rlenp < sizeof(struct sockaddr_in6)) {
-					error("%s: v6 addr doesn't fit",
-					    __func__);
+					error_f("v6 addr doesn't fit");
 					return -1;
 				}
 				*rlenp = sizeof(struct sockaddr_in6);
@@ -438,15 +436,14 @@ ssh_create_socket(struct addrinfo *ai)
 	}
 	if ((r = getnameinfo((struct sockaddr *)&bindaddr, bindaddrlen,
 	    ntop, sizeof(ntop), NULL, 0, NI_NUMERICHOST)) != 0) {
-		error("%s: getnameinfo failed: %s", __func__,
-		    ssh_gai_strerror(r));
+		error_f("getnameinfo failed: %s", ssh_gai_strerror(r));
 		goto fail;
 	}
 	if (bind(sock, (struct sockaddr *)&bindaddr, bindaddrlen) == -1) {
-		error("bind %s: %s", ntop, strerror(errno));
+		error_f("bind %s: %s", ntop, strerror(errno));
 		goto fail;
 	}
-	debug("%s: bound to %s", __func__, ntop);
+	debug_f("bound to %s", ntop);
 	/* success */
 	goto out;
 fail:
@@ -482,7 +479,7 @@ ssh_connect_direct(struct ssh *ssh, const char *host, struct addrinfo *aitop,
 	struct addrinfo *ai;
 
 	UNUSED(port);
-	debug2("%s", __func__);
+	debug3_f("entering");
 	memset(ntop, 0, sizeof(ntop));
 	memset(strport, 0, sizeof(strport));
 
@@ -506,7 +503,7 @@ ssh_connect_direct(struct ssh *ssh, const char *host, struct addrinfo *aitop,
 			    ntop, sizeof(ntop), strport, sizeof(strport),
 			    NI_NUMERICHOST|NI_NUMERICSERV) != 0) {
 				oerrno = errno;
-				error("%s: getnameinfo failed", __func__);
+				error_f("getnameinfo failed");
 				errno = oerrno;
 				continue;
 			}
@@ -577,7 +574,7 @@ ssh_connect(struct ssh *ssh, const char *host, const char *host_arg,
 		    (out = dup(STDOUT_FILENO)) == -1) {
 			if (in != -1)
 				close(in);
-			error("%s: dup() in/out failed", __func__);
+			error_f("dup() in/out failed");
 			return -1; /* ssh_packet_set_connection logs error */
 		}
 		if ((ssh_packet_set_connection(ssh, in, out)) == NULL)
@@ -645,13 +642,13 @@ check_host_cert(const char *host, const struct sshkey *key)
 		return 0;
 	}
 	if (sshbuf_len(key->cert->critical) != 0) {
-		error("Certificate for %s contains unsupported "
+		error_f("certificate for %s contains unsupported "
 		    "critical options(s)", host);
 		return 0;
 	}
 	if ((r = sshkey_check_cert_sigtype(key,
 	    options.ca_sign_algorithms)) != 0) {
-		logit("%s: certificate signature algorithm %s: %s", __func__,
+		error_f("certificate signature algorithm %s: %s",
 		    (key->cert == NULL || key->cert->signature_type == NULL) ?
 		    "(null)" : key->cert->signature_type, ssh_err(r));
 		return 0;
@@ -865,8 +862,8 @@ check_host_key(char *hostname, struct sockaddr *hostaddr, u_short port,
 		    path_in_hostfiles(ip_found->file,
 		    system_hostfiles, num_system_hostfiles)))) {
 			options.update_hostkeys = 0;
-			debug3("%s: host key found in GlobalKnownHostsFile; "
-			    "disabling UpdateHostkeys", __func__);
+			debug3_f("host key found in GlobalKnownHostsFile; "
+			    "disabling UpdateHostkeys");
 		}
 		if (options.check_host_ip && ip_status == HOST_NEW) {
 			if (readonly || want_cert)
@@ -1175,8 +1172,8 @@ check_host_key(char *hostname, struct sockaddr *hostaddr, u_short port,
 	}
 
 	if (!hostkey_trusted && options.update_hostkeys) {
-		debug("%s: hostkey not known or explicitly trusted: "
-		    "disabling UpdateHostkeys", __func__);
+		debug_f("hostkey not known or explicitly trusted: "
+		    "disabling UpdateHostkeys");
 		options.update_hostkeys = 0;
 	}
 
@@ -1232,7 +1229,7 @@ verify_host_key(char *host, struct sockaddr *hostaddr,
 
 	if ((fp = sshkey_fingerprint(host_key,
 	    options.fingerprint_hash, SSH_FP_DEFAULT)) == NULL) {
-		error("%s: fingerprint host key: %s", __func__, ssh_err(r));
+		error_f("fingerprint host key: %s", ssh_err(r));
 		r = -1;
 		goto out;
 	}
@@ -1240,8 +1237,7 @@ verify_host_key(char *host, struct sockaddr *hostaddr,
 	if (sshkey_is_cert(host_key)) {
 		if ((cafp = sshkey_fingerprint(host_key->cert->signature_key,
 		    options.fingerprint_hash, SSH_FP_DEFAULT)) == NULL) {
-			error("%s: fingerprint CA key: %s",
-			    __func__, ssh_err(r));
+			error_f("fingerprint CA key: %s", ssh_err(r));
 			r = -1;
 			goto out;
 		}
@@ -1263,8 +1259,8 @@ verify_host_key(char *host, struct sockaddr *hostaddr,
 	}
 
 	if (sshkey_equal(previous_host_key, host_key)) {
-		debug2("%s: server host key %s %s matches cached key",
-		    __func__, sshkey_type(host_key), fp);
+		debug2_f("server host key %s %s matches cached key",
+		    sshkey_type(host_key), fp);
 		r = 0;
 		goto out;
 	}

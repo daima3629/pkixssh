@@ -1,4 +1,4 @@
-/* $OpenBSD: monitor_wrap.c,v 1.121 2020/10/18 11:32:01 djm Exp $ */
+/* $OpenBSD: monitor_wrap.c,v 1.122 2020/11/27 00:37:10 djm Exp $ */
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * Copyright 2002 Markus Friedl <markus@openbsd.org>
@@ -130,7 +130,7 @@ mm_request_send(int sock, enum monitor_reqtype type, struct sshbuf *m)
 	size_t mlen = sshbuf_len(m);
 	u_char buf[5];
 
-	debug3("%s entering: type %d", __func__, type);
+	debug3_f("entering, type %d", type);
 
 	if (mlen >= 0xffffffff)
 		fatal("%s: bad length %zu", __func__, mlen);
@@ -149,7 +149,7 @@ mm_request_receive(int sock, struct sshbuf *m)
 	u_int msg_len;
 	int r;
 
-	debug3("%s entering", __func__);
+	debug3_f("entering");
 
 	if (atomicio(read, sock, buf, sizeof(buf)) != sizeof(buf)) {
 		if (errno == EPIPE)
@@ -172,7 +172,7 @@ mm_request_receive_expect(int sock, enum monitor_reqtype type, struct sshbuf *m)
 	u_char rtype;
 	int r;
 
-	debug3("%s entering: type %d", __func__, type);
+	debug3_f("entering, type %d", type);
 
 	mm_request_receive(sock, m);
 	if ((r = sshbuf_get_u8(m, &rtype)) != 0)
@@ -200,7 +200,7 @@ mm_choose_dh(int min, int nbits, int max)
 
 	mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_MODULI, m);
 
-	debug3("%s: waiting for MONITOR_ANS_MODULI", __func__);
+	debug3_f("waiting for MONITOR_ANS_MODULI");
 	mm_request_receive_expect(pmonitor->m_recvfd, MONITOR_ANS_MODULI, m);
 
 	if ((r = sshbuf_get_u8(m, &success)) != 0)
@@ -212,7 +212,7 @@ mm_choose_dh(int min, int nbits, int max)
 	    (r = sshbuf_get_bignum2(m, &g)) != 0)
 		fatal("%s: buffer error: %s", __func__, ssh_err(r));
 
-	debug3("%s: remaining %zu", __func__, sshbuf_len(m));
+	debug3_f("remaining %zu", sshbuf_len(m));
 	sshbuf_free(m);
 
 	return (dh_new_group(g, p));
@@ -230,7 +230,7 @@ mm_Xkey_sign(struct ssh *ssh, ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 	u_int ndx = kex->host_key_index(key, 0, ssh);
 	int r;
 
-	debug3("%s entering", __func__);
+	debug3_f("entering");
 
 	if ((m = sshbuf_new()) == NULL)
 		fatal("%s: sshbuf_new failed", __func__);
@@ -242,7 +242,7 @@ mm_Xkey_sign(struct ssh *ssh, ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 
 	mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_SIGN, m);
 
-	debug3("%s: waiting for MONITOR_ANS_SIGN", __func__);
+	debug3_f("waiting for MONITOR_ANS_SIGN");
 	mm_request_receive_expect(pmonitor->m_recvfd, MONITOR_ANS_SIGN, m);
 	if ((r = sshbuf_get_string(m, sigp, lenp)) != 0)
 		fatal("%s: buffer error: %s", __func__, ssh_err(r));
@@ -263,7 +263,7 @@ mm_getpwnamallow(struct ssh *ssh, const char *username)
 	u_char ok;
 	const u_char *p;
 
-	debug3("%s entering", __func__);
+	debug3_f("entering");
 
 	if ((m = sshbuf_new()) == NULL)
 		fatal("%s: sshbuf_new failed", __func__);
@@ -272,7 +272,7 @@ mm_getpwnamallow(struct ssh *ssh, const char *username)
 
 	mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_PWNAM, m);
 
-	debug3("%s: waiting for MONITOR_ANS_PWNAM", __func__);
+	debug3_f("waiting for MONITOR_ANS_PWNAM");
 	mm_request_receive_expect(pmonitor->m_recvfd, MONITOR_ANS_PWNAM, m);
 
 	if ((r = sshbuf_get_u8(m, &ok)) != 0)
@@ -371,7 +371,7 @@ mm_auth2_read_banner(void)
 	char *banner;
 	int r;
 
-	debug3("%s entering", __func__);
+	debug3_f("entering");
 
 	if ((m = sshbuf_new()) == NULL)
 		fatal("%s: sshbuf_new failed", __func__);
@@ -400,7 +400,7 @@ mm_inform_authserv(char *service, char *style)
 	struct sshbuf *m;
 	int r;
 
-	debug3("%s entering", __func__);
+	debug3_f("entering");
 
 	if ((m = sshbuf_new()) == NULL)
 		fatal("%s: sshbuf_new failed", __func__);
@@ -425,7 +425,7 @@ mm_auth_password(struct ssh *ssh, char *password)
 	u_int32_t val;
 
 	UNUSED(ssh);
-	debug3("%s entering", __func__);
+	debug3_f("entering");
 
 	if ((m = sshbuf_new()) == NULL)
 		fatal("%s: sshbuf_new failed", __func__);
@@ -433,7 +433,7 @@ mm_auth_password(struct ssh *ssh, char *password)
 		fatal("%s: buffer error: %s", __func__, ssh_err(r));
 	mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_AUTHPASSWORD, m);
 
-	debug3("%s: waiting for MONITOR_ANS_AUTHPASSWORD", __func__);
+	debug3_f("waiting for MONITOR_ANS_AUTHPASSWORD");
 	mm_request_receive_expect(pmonitor->m_recvfd,
 	    MONITOR_ANS_AUTHPASSWORD, m);
 
@@ -451,8 +451,7 @@ mm_auth_password(struct ssh *ssh, char *password)
 
 	sshbuf_free(m);
 
-	debug3("%s: user %sauthenticated",
-	    __func__, authenticated ? "" : "not ");
+	debug3_f("user %sauthenticated", authenticated ? "" : "not ");
 	return (authenticated);
 }
 
@@ -466,7 +465,7 @@ mm_xkey_allowed(enum mm_keytype type, const char *user, const char *host,
 	struct sshauthopt *opts = NULL;
 	u_int32_t val;
 
-	debug3("%s entering", __func__);
+	debug3_f("entering");
 
 	if (authoptp != NULL)
 		*authoptp = NULL;
@@ -485,7 +484,7 @@ mm_xkey_allowed(enum mm_keytype type, const char *user, const char *host,
 
 	mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_KEYALLOWED, m);
 
-	debug3("%s: waiting for MONITOR_ANS_KEYALLOWED", __func__);
+	debug3_f("waiting for MONITOR_ANS_KEYALLOWED");
 	mm_request_receive_expect(pmonitor->m_recvfd,
 	    MONITOR_ANS_KEYALLOWED, m);
 
@@ -546,7 +545,7 @@ mm_Xkey_verify(
 	u_int32_t encoded_ret = 0;
 	int r;
 
-	debug3("%s entering", __func__);
+	debug3_f("entering");
 
 	if (pkalg == NULL) pkalg = sshkey_ssh_name(ctx->key);
 
@@ -560,7 +559,7 @@ mm_Xkey_verify(
 
 	mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_KEYVERIFY, m);
 
-	debug3("%s: waiting for MONITOR_ANS_KEYVERIFY", __func__);
+	debug3_f("waiting for MONITOR_ANS_KEYVERIFY");
 	mm_request_receive_expect(pmonitor->m_recvfd,
 	    MONITOR_ANS_KEYVERIFY, m);
 
@@ -586,7 +585,7 @@ mm_send_keystate(struct ssh *ssh, struct monitor *monitor)
 		fatal("%s: get_state failed: %s",
 		    __func__, ssh_err(r));
 	mm_request_send(monitor->m_recvfd, MONITOR_REQ_KEYEXPORT, m);
-	debug3("%s: Finished sending state", __func__);
+	debug3_f("finished sending state");
 	sshbuf_free(m);
 }
 
@@ -601,7 +600,7 @@ mm_pty_allocate(int *ptyfd, int *ttyfd, char *namebuf, size_t namebuflen)
 	/* Kludge: ensure there are fds free to receive the pty/tty */
 	if ((tmp1 = dup(pmonitor->m_recvfd)) == -1 ||
 	    (tmp2 = dup(pmonitor->m_recvfd)) == -1) {
-		error("%s: cannot allocate fds for pty", __func__);
+		error_f("cannot allocate fds for pty");
 		if (tmp1 > 0)
 			close(tmp1);
 		if (tmp2 > 0)
@@ -615,13 +614,13 @@ mm_pty_allocate(int *ptyfd, int *ttyfd, char *namebuf, size_t namebuflen)
 		fatal("%s: sshbuf_new failed", __func__);
 	mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_PTY, m);
 
-	debug3("%s: waiting for MONITOR_ANS_PTY", __func__);
+	debug3_f("waiting for MONITOR_ANS_PTY");
 	mm_request_receive_expect(pmonitor->m_recvfd, MONITOR_ANS_PTY, m);
 
 	if ((r = sshbuf_get_u32(m, &success)) != 0)
 		fatal("%s: buffer error: %s", __func__, ssh_err(r));
 	if (success == 0) {
-		debug3("%s: pty alloc failed", __func__);
+		debug3_f("pty alloc failed");
 		sshbuf_free(m);
 		return (0);
 	}
@@ -864,7 +863,7 @@ mm_bsdauth_query(void *ctx, char **name, char **infotxt,
 	int r;
 
 	UNUSED(ctx);
-	debug3("%s: entering", __func__);
+	debug3_f("entering");
 
 	if ((m = sshbuf_new()) == NULL)
 		fatal("%s: sshbuf_new failed", __func__);
@@ -875,7 +874,7 @@ mm_bsdauth_query(void *ctx, char **name, char **infotxt,
 	if ((r = sshbuf_get_u32(m, &success)) != 0)
 		fatal("%s: buffer error: %s", __func__, ssh_err(r));
 	if (success == 0) {
-		debug3("%s: no challenge", __func__);
+		debug3_f("no challenge");
 		sshbuf_free(m);
 		return (-1);
 	}
@@ -888,7 +887,7 @@ mm_bsdauth_query(void *ctx, char **name, char **infotxt,
 	mm_chall_setup(name, infotxt, numprompts, prompts, echo_on);
 	(*prompts)[0] = challenge;
 
-	debug3("%s: received challenge: %s", __func__, challenge);
+	debug3_f("received challenge: %s", challenge);
 
 	return (0);
 }
@@ -901,7 +900,7 @@ mm_bsdauth_respond(void *ctx, u_int numresponses, char **responses)
 	int r;
 
 	UNUSED(ctx);
-	debug3("%s: entering", __func__);
+	debug3_f("entering");
 	if (numresponses != 1)
 		return (-1);
 
@@ -929,7 +928,7 @@ mm_audit_event(struct ssh *ssh, ssh_audit_event_t event)
 	int r;
 
 	UNUSED(ssh);
-	debug3("%s entering", __func__);
+	debug3_f("entering");
 
 	if ((m = sshbuf_new()) == NULL)
 		fatal("%s: sshbuf_new failed", __func__);
@@ -946,7 +945,7 @@ mm_audit_run_command(const char *command)
 	struct sshbuf *m;
 	int r;
 
-	debug3("%s entering command %s", __func__, command);
+	debug3_f("entering command %s", command);
 
 	if ((m = sshbuf_new()) == NULL)
 		fatal("%s: sshbuf_new failed", __func__);
@@ -1058,7 +1057,7 @@ mm_ssh_gssapi_userok(char *user)
 		fatal("%s: buffer error: %s", __func__, ssh_err(r));
 
 	sshbuf_free(m);
-	debug3("%s: user %sauthenticated",__func__, authenticated ? "" : "not ");
+	debug3_f("user %sauthenticated", authenticated ? "" : "not ");
 	return (authenticated);
 }
 #endif /* GSSAPI */

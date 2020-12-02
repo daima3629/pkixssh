@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keyscan.c,v 1.132 2020/08/12 01:23:45 cheloha Exp $ */
+/* $OpenBSD: ssh-keyscan.c,v 1.137 2020/10/19 08:07:08 djm Exp $ */
 /*
  * Copyright 1995, 1996 by David Mazieres <dm@lcs.mit.edu>.
  *
@@ -384,7 +384,7 @@ conalloc(char *iname, char *oname, const char *keyname)
 	if (fdcon[s].c_status)
 		fatal("conalloc: attempt to reuse fdno %d", s);
 
-	debug3("%s: oname %s keyname %s", __func__, oname, keyname);
+	debug3_f("oname %s keyname %s", oname, keyname);
 	fdcon[s].c_fd = s;
 	fdcon[s].c_status = CS_CON;
 	fdcon[s].c_namebase = namebase;
@@ -625,8 +625,7 @@ do_host(char *host)
 		while (ncon >= MAXCON)
 			conloop();
 		if (match_pattern_list(keyname, filter, 0) != 1 ) {
-			debug("%s: %s host key not permitted by filter",
-			    __func__, keyname);
+			debug_f("%s host key not permitted by filter", keyname);
 			continue;
 		}
 		conalloc(name, *host ? host : name, keyname);

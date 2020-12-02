@@ -70,7 +70,7 @@ ssh_ecdsa_pkey_sign(EC_KEY *ec, const EVP_MD *type, const u_char *data, u_int da
 
 	pkey = EVP_PKEY_new();
 	if (pkey == NULL) {
-		error("%s: out of memory", __func__);
+		error_f("out of memory");
 		return NULL;
 	}
 
@@ -85,7 +85,7 @@ ssh_ecdsa_pkey_sign(EC_KEY *ec, const EVP_MD *type, const u_char *data, u_int da
 	md = EVP_MD_CTX_new();
 	if (md == NULL) {
 		ret = -1;
-		error("%s: out of memory", __func__);
+		error_f("out of memory");
 		goto clean;
 	}
 
@@ -246,7 +246,7 @@ ssh_ecdsa_pkey_verify(EC_KEY *ec, const EVP_MD *type,
 
 	pkey = EVP_PKEY_new();
 	if (pkey == NULL) {
-		error("%s: out of memory", __func__);
+		error_f("out of memory");
 		ret = SSH_ERR_ALLOC_FAIL;
 		goto done;
 	}
@@ -258,7 +258,7 @@ ssh_ecdsa_pkey_verify(EC_KEY *ec, const EVP_MD *type,
 
 	md = EVP_MD_CTX_new();
 	if (md == NULL) {
-		error("%s: out of memory", __func__);
+		error_f("out of memory");
 		ret = SSH_ERR_ALLOC_FAIL;
 		goto clean;
 	}

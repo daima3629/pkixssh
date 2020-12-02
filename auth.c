@@ -1,4 +1,4 @@
-/* $OpenBSD: auth.c,v 1.147 2020/08/27 01:07:09 djm Exp $ */
+/* $OpenBSD: auth.c,v 1.149 2020/10/18 11:32:01 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  *
@@ -492,10 +492,10 @@ check_key_in_hostfiles(struct passwd *pw, struct sshkey *key, const char *host,
 		error("WARNING: revoked key for %s attempted authentication",
 		    host);
 	else if (host_status == HOST_OK)
-		debug("%s: key for %s found at %s:%ld", __func__,
+		debug_f("key for %s found at %s:%ld",
 		    found->host, found->file, found->line);
 	else
-		debug("%s: key for host %s not found", __func__, host);
+		debug_f("key for host %s not found", host);
 
 	free_hostkeys(hostkeys);
 
@@ -632,7 +632,7 @@ auth_key_is_revoked(struct sshkey *key)
 	if ((fp = sshkey_fingerprint(key, options.fingerprint_hash,
 	    SSH_FP_DEFAULT)) == NULL) {
 		r = SSH_ERR_ALLOC_FAIL;
-		error("%s: fingerprint key: %s", __func__, ssh_err(r));
+		error_f("fingerprint key: %s", ssh_err(r));
 		goto out;
 	}
 
@@ -864,17 +864,17 @@ subprocess(const char *tag, struct passwd *pw, const char *command,
 	if (child != NULL)
 		*child = NULL;
 
-	debug3("%s: %s command \"%s\" running as %s (flags 0x%x)", __func__,
+	debug3_f("%s command \"%s\" running as %s (flags 0x%x)",
 	    tag, command, pw->pw_name, flags);
 
 	/* Check consistency */
 	if ((flags & SSH_SUBPROCESS_STDOUT_DISCARD) != 0 &&
 	    (flags & SSH_SUBPROCESS_STDOUT_CAPTURE) != 0) {
-		error("%s: inconsistent flags", __func__);
+		error_f("inconsistent flags");
 		return 0;
 	}
 	if (((flags & SSH_SUBPROCESS_STDOUT_CAPTURE) == 0) != (child == NULL)) {
-		error("%s: inconsistent flags/output", __func__);
+		error_f("inconsistent flags/output");
 		return 0;
 	}
 
@@ -986,7 +986,7 @@ subprocess(const char *tag, struct passwd *pw, const char *command,
 		return 0;
 	}
 	/* Success */
-	debug3("%s: %s pid %ld", __func__, tag, (long)pid);
+	debug3_f("%s pid %ld", tag, (long)pid);
 	if (child != NULL)
 		*child = f;
 	return pid;
@@ -1070,7 +1070,7 @@ auth_activate_options(struct ssh *ssh, struct sshauthopt *opts)
 	const char *emsg = NULL;
 
 	UNUSED(ssh);
-	debug("%s: setting new authentication options", __func__);
+	debug_f("setting new authentication options");
 	if ((auth_opts = sshauthopt_merge(old, opts, &emsg)) == NULL) {
 		error("Inconsistent authentication options: %s", emsg);
 		return -1;
@@ -1084,7 +1084,7 @@ auth_restrict_session(struct ssh *ssh)
 {
 	struct sshauthopt *restricted;
 
-	debug("%s: restricting session", __func__);
+	debug_f("restricting session");
 
 	/* A blank sshauthopt defaults to permitting nothing */
 	restricted = sshauthopt_new();
@@ -1167,8 +1167,7 @@ auth_authorise_keyopts(struct ssh *ssh, struct passwd *pw,
 		case -1:
 		default:
 			/* invalid */
-			error("%s: Certificate source-address invalid",
-			    loc);
+			error("%s: Certificate source-address invalid", loc);
 			/* FALLTHROUGH */
 		case 0:
 			logit("%s: Authentication tried for %.100s with valid "

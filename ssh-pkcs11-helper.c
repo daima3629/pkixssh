@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-pkcs11-helper.c,v 1.23 2020/03/06 18:26:21 markus Exp $ */
+/* $OpenBSD: ssh-pkcs11-helper.c,v 1.24 2020/10/18 11:32:02 djm Exp $ */
 /*
  * Copyright (c) 2010 Markus Friedl.  All rights reserved.
  * Copyright (c) 2011 Kenneth Robinette.  All rights reserved.
@@ -142,8 +142,7 @@ process_add(void)
 			fatal("%s: buffer error: %s", __func__, ssh_err(r));
 		for (i = 0; i < nkeys; i++) {
 			if ((r = Akey_to_blob(keys[i], &blob, &blen)) != 0) {
-				debug("%s: sshkey_to_blob: %s",
-				    __func__, ssh_err(r));
+				debug_f("sshkey_to_blob: %s", ssh_err(r));
 				continue;
 			}
 			if ((r = sshbuf_put_string(msg, blob, blen)) != 0 ||
@@ -250,7 +249,7 @@ process_sign(void)
 		fatal("%s: buffer error: %s", __func__, ssh_err(r));
 
 	if ((r = sshkey_from_blob(blob, blen, &key)) != 0)
-		error("%s: sshkey_from_blob: %s", __func__, ssh_err(r));
+		error_f("sshkey_from_blob: %s", ssh_err(r));
 	else {
 		if ((found = lookup_key(key)) != NULL) {
 			ok = process_key_sign(dlen, data, found, &signature, &slen);

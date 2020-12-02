@@ -194,7 +194,7 @@ mux_master_session_cleanup_cb(struct ssh *ssh, int cid, void *arg)
 	Channel *cc, *c = channel_by_id(ssh, cid);
 
 	UNUSED(arg);
-	debug3("%s: entering for channel %d", __func__, cid);
+	debug3_f("entering for channel %d", cid);
 	if (c == NULL)
 		fatal("%s: channel_by_id(%i) == NULL", __func__, cid);
 	if (c->ctl_chan != -1) {
@@ -216,7 +216,7 @@ mux_master_control_cleanup_cb(struct ssh *ssh, int cid, void *arg)
 	Channel *sc, *c = channel_by_id(ssh, cid);
 
 	UNUSED(arg);
-	debug3("%s: entering for channel %d", __func__, cid);
+	debug3_f("entering for channel %d", cid);
 	if (c == NULL)
 		fatal("%s: channel_by_id(%i) == NULL", __func__, cid);
 	if (c->have_remote_id) {
@@ -228,7 +228,7 @@ mux_master_control_cleanup_cb(struct ssh *ssh, int cid, void *arg)
 		sc->ctl_chan = -1;
 		if (sc->type != SSH_CHANNEL_OPEN &&
 		    sc->type != SSH_CHANNEL_OPENING) {
-			debug2("%s: channel %d: not open", __func__, sc->self);
+			debug2_f("channel %d: not open", sc->self);
 			chan_mark_dead(ssh, sc);
 		} else {
 			if (sc->istate == CHAN_INPUT_OPEN)
@@ -251,7 +251,7 @@ env_permitted(char *env)
 		return 0;
 	ret = snprintf(name, sizeof(name), "%.*s", (int)(cp - env), env);
 	if (ret <= 0 || (size_t)ret >= sizeof(name)) {
-		error("%s: name '%.100s...' too long", __func__, env);
+		error_f("name '%.100s...' too long", env);
 		return 0;
 	}
 
@@ -279,19 +279,19 @@ mux_master_process_hello(struct ssh *ssh, u_int rid,
 	if (state == NULL)
 		fatal("%s: channel %d: c->mux_ctx == NULL", __func__, c->self);
 	if (state->hello_rcvd) {
-		error("%s: HELLO received twice", __func__);
+		error_f("HELLO received twice");
 		return -1;
 	}
 	if ((r = sshbuf_get_u32(m, &ver)) != 0) {
-		error("%s: malformed message: %s", __func__, ssh_err(r));
+		error_f("parse: %s", ssh_err(r));
 		return -1;
 	}
 	if (ver != SSHMUX_VER) {
-		error("%s: unsupported multiplexing protocol version %u "
-		    "(expected %u)", __func__, (int)ver, SSHMUX_VER);
+		error_f("unsupported multiplexing protocol version %u "
+		    "(expected %u)", (int)ver, SSHMUX_VER);
 		return -1;
 	}
-	debug2("%s: channel %d client version %u", __func__, c->self, (unsigned)ver);
+	debug2_f("channel %d client version %u", c->self, (unsigned)ver);
 
 	/* No extensions are presently defined */
 	while (sshbuf_len(m) > 0) {
@@ -300,13 +300,12 @@ mux_master_process_hello(struct ssh *ssh, u_int rid,
 
 		if ((r = sshbuf_get_cstring(m, &name, NULL)) != 0 ||
 		    (r = sshbuf_get_string_direct(m, NULL, &value_len)) != 0) {
-			error("%s: malformed extension: %s",
-			    __func__, ssh_err(r));
+			error_f("parse extension: %s", ssh_err(r));
 			free(name);
 			return -1;
 		}
-		debug2("%s: Unrecognised extension \"%s\" length %zu",
-		    __func__, name, value_len);
+		debug2_f("unrecognised extension \"%s\" length %zu",
+		    name, value_len);
 		free(name);
 	}
 	state->hello_rcvd = 1;
@@ -368,7 +367,7 @@ mux_master_process_new_session(struct ssh *ssh, u_int rid,
 		free(cctx->env);
 		free(cctx->term);
 		free(cctx);
-		error("%s: malformed message", __func__);
+		error_f("malformed message");
 		return -1;
 	}
 
@@ -385,14 +384,14 @@ mux_master_process_new_session(struct ssh *ssh, u_int rid,
 		cctx->env[env_len++] = cp;
 		cctx->env[env_len] = NULL;
 		if (env_len > MUX_MAX_ENV_VARS) {
-			error("%s: >%d environment variables received, "
-			    "ignoring additional", __func__, MUX_MAX_ENV_VARS);
+			error_f(">%d environment variables received, "
+			    "ignoring additional", MUX_MAX_ENV_VARS);
 			break;
 		}
 	}
 
-	debug2("%s: channel %d: request tty %d, X %d, agent %d, subsys %d, "
-	    "term \"%s\", cmd \"%s\", env %u", __func__, c->self,
+	debug2_f("channel %d: request tty %d, X %d, agent %d, subsys %d, "
+	    "term \"%s\", cmd \"%s\", env %u", c->self,
 	    cctx->want_tty, cctx->want_x_fwd, cctx->want_agent_fwd,
 	    cctx->want_subsys, cctx->term, cmd, env_len);
 
@@ -406,8 +405,7 @@ mux_master_process_new_session(struct ssh *ssh, u_int rid,
 	/* Gather fds from client */
 	for(i = 0; i < 3; i++) {
 		if ((new_fd[i] = mm_receive_fd(c->sock)) == -1) {
-			error("%s: failed to receive fd %d from client",
-			    __func__, i);
+			error_f("failed to receive fd %d from client", i);
 			for (j = 0; j < i; j++)
 				close(new_fd[j]);
 			for (j = 0; j < env_len; j++)
@@ -422,12 +420,12 @@ mux_master_process_new_session(struct ssh *ssh, u_int rid,
 		}
 	}
 
-	debug3("%s: got fds stdin %d, stdout %d, stderr %d", __func__,
+	debug3_f("got fds stdin %d, stdout %d, stderr %d",
 	    new_fd[0], new_fd[1], new_fd[2]);
 
 	/* XXX support multiple child sessions in future */
 	if (c->have_remote_id) {
-		debug2("%s: session already open", __func__);
+		debug2_f("session already open");
 		reply_error(reply, MUX_S_FAILURE, rid,
 		    "Multiple sessions not supported");
  cleanup:
@@ -448,7 +446,7 @@ mux_master_process_new_session(struct ssh *ssh, u_int rid,
 	if (options.control_master == SSHCTL_MASTER_ASK ||
 	    options.control_master == SSHCTL_MASTER_AUTO_ASK) {
 		if (!ask_permission("Allow shared connection to %s? ", host)) {
-			debug2("%s: session refused by user", __func__);
+			debug2_f("session refused by user");
 			reply_error(reply, MUX_S_PERMISSION_DENIED, rid,
 			    "Permission denied");
 			goto cleanup;
@@ -457,7 +455,7 @@ mux_master_process_new_session(struct ssh *ssh, u_int rid,
 
 	/* Try to pick up ttymodes from client before it goes raw */
 	if (cctx->want_tty && tcgetattr(new_fd[0], &cctx->tio) == -1)
-		error("%s: tcgetattr: %s", __func__, strerror(errno));
+		error_f("tcgetattr: %s", strerror(errno));
 
 	/* enable nonblocking unless tty */
 	if (!isatty(new_fd[0]))
@@ -489,8 +487,8 @@ mux_master_process_new_session(struct ssh *ssh, u_int rid,
 		    client_new_escape_filter_ctx((int)escape_char));
 	}
 
-	debug2("%s: channel_new: %d linked to control channel %d",
-	    __func__, nc->self, nc->ctl_chan);
+	debug2_f("channel_new: %d linked to control channel %d",
+	    nc->self, nc->ctl_chan);
 
 	channel_send_open(ssh, nc->self);
 	channel_register_open_confirm(ssh, nc->self, mux_session_confirm, cctx);
@@ -510,7 +508,7 @@ mux_master_process_alive_check(struct ssh *ssh, u_int rid,
 
 	UNUSED(ssh);
 	UNUSED(m);
-	debug2("%s: channel %d: alive check", __func__, c->self);
+	debug2_f("channel %d: alive check", c->self);
 
 	/* prepare reply */
 	if ((r = sshbuf_put_u32(reply, MUX_S_ALIVE)) != 0 ||
@@ -527,13 +525,13 @@ mux_master_process_terminate(struct ssh *ssh, u_int rid,
 {
 	UNUSED(ssh);
 	UNUSED(m);
-	debug2("%s: channel %d: terminate request", __func__, c->self);
+	debug2_f("channel %d: terminate request", c->self);
 
 	if (options.control_master == SSHCTL_MASTER_ASK ||
 	    options.control_master == SSHCTL_MASTER_AUTO_ASK) {
 		if (!ask_permission("Terminate shared connection to %s? ",
 		    host)) {
-			debug2("%s: termination refused by user", __func__);
+			debug2_f("termination refused by user");
 			reply_error(reply, MUX_S_PERMISSION_DENIED, rid,
 			    "Permission denied");
 			return 0;
@@ -624,7 +622,7 @@ mux_confirm_remote_forward(struct ssh *ssh, int type, u_int32_t seq, void *ctxt)
 	UNUSED(seq);
 	if ((c = channel_by_id(ssh, fctx->cid)) == NULL) {
 		/* no channel for reply */
-		error("%s: unknown channel", __func__);
+		error_f("unknown channel");
 		return;
 	}
 	if ((out = sshbuf_new()) == NULL)
@@ -636,7 +634,7 @@ mux_confirm_remote_forward(struct ssh *ssh, int type, u_int32_t seq, void *ctxt)
 		goto fail;
 	}
 	rfwd = &options.remote_forwards[fctx->fid];
-	debug("%s: %s for: listen %d, connect %s:%d", __func__,
+	debug_f("%s for: listen %d, connect %s:%d",
 	    type == SSH2_MSG_REQUEST_SUCCESS ? "success" : "failure",
 	    rfwd->listen_port, rfwd->connect_path ? rfwd->connect_path :
 	    rfwd->connect_host, rfwd->connect_port);
@@ -677,8 +675,8 @@ mux_confirm_remote_forward(struct ssh *ssh, int type, u_int32_t seq, void *ctxt)
 			xasprintf(&failmsg, "remote port forwarding failed for "
 			    "listen port %d", rfwd->listen_port);
 
-                debug2("%s: clearing registered forwarding for listen %d, "
-		    "connect %s:%d", __func__, rfwd->listen_port,
+                debug2_f("clearing registered forwarding for listen %d, "
+		    "connect %s:%d", rfwd->listen_port,
 		    rfwd->connect_path ? rfwd->connect_path :
 		    rfwd->connect_host, rfwd->connect_port);
 
@@ -689,7 +687,7 @@ mux_confirm_remote_forward(struct ssh *ssh, int type, u_int32_t seq, void *ctxt)
 		memset(rfwd, 0, sizeof(*rfwd));
 	}
  fail:
-	error("%s: %s", __func__, failmsg);
+	error_f("%s", failmsg);
 	reply_error(out, MUX_S_FAILURE, fctx->rid, failmsg);
 	free(failmsg);
  out:
@@ -721,7 +719,7 @@ mux_master_process_open_fwd(struct ssh *ssh, u_int rid,
 	    (r = sshbuf_get_u32(m, &cport)) != 0 ||
 	    (lport != (u_int32_t)PORT_STREAMLOCAL && lport > 65535) ||
 	    (cport != (u_int32_t)PORT_STREAMLOCAL && cport > 65535)) {
-		error("%s: malformed message", __func__);
+		error_f("malformed message");
 		ret = -1;
 		goto out;
 	}
@@ -745,12 +743,12 @@ mux_master_process_open_fwd(struct ssh *ssh, u_int rid,
 	else
 		fwd.connect_host = connect_addr;
 
-	debug2("%s: channel %d: request %s", __func__, c->self,
+	debug2_f("channel %d: request %s", c->self,
 	    (fwd_desc = format_forward(ftype, &fwd)));
 
 	if (ftype != MUX_FWD_LOCAL && ftype != MUX_FWD_REMOTE &&
 	    ftype != MUX_FWD_DYNAMIC) {
-		logit("%s: invalid forwarding type %u", __func__, (unsigned)ftype);
+		error_f("invalid forwarding type %u", (unsigned)ftype);
  invalid:
 		free(listen_addr);
 		free(connect_addr);
@@ -759,26 +757,24 @@ mux_master_process_open_fwd(struct ssh *ssh, u_int rid,
 		return 0;
 	}
 	if (ftype == MUX_FWD_DYNAMIC && fwd.listen_path) {
-		logit("%s: streamlocal and dynamic forwards "
-		    "are mutually exclusive", __func__);
+		error_f("streamlocal and dynamic forwards "
+		    "are mutually exclusive");
 		goto invalid;
 	}
 	if (fwd.listen_port != PORT_STREAMLOCAL && fwd.listen_port >= 65536) {
-		logit("%s: invalid listen port %u", __func__,
-		    fwd.listen_port);
+		error_f("invalid listen port %u", fwd.listen_port);
 		goto invalid;
 	}
 	if ((fwd.connect_port != PORT_STREAMLOCAL &&
 	    fwd.connect_port >= 65536) ||
 	    (ftype != MUX_FWD_DYNAMIC && ftype != MUX_FWD_REMOTE &&
 	    fwd.connect_port == 0)) {
-		logit("%s: invalid connect port %u", __func__,
-		    fwd.connect_port);
+		error_f("invalid connect port %u", fwd.connect_port);
 		goto invalid;
 	}
 	if (ftype != MUX_FWD_DYNAMIC && fwd.connect_host == NULL &&
 	    fwd.connect_path == NULL) {
-		logit("%s: missing connect host", __func__);
+		error_f("missing connect host");
 		goto invalid;
 	}
 
@@ -790,8 +786,7 @@ mux_master_process_open_fwd(struct ssh *ssh, u_int rid,
 			if (compare_forward(&fwd,
 			    options.local_forwards + i)) {
  exists:
-				debug2("%s: found existing forwarding",
-				    __func__);
+				debug2_f("found existing forwarding");
 				reply_ok(reply, rid);
 				goto out;
 			}
@@ -803,7 +798,7 @@ mux_master_process_open_fwd(struct ssh *ssh, u_int rid,
 				continue;
 			if (fwd.listen_port != 0)
 				goto exists;
-			debug2("%s: found allocated port", __func__);
+			debug2_f("found allocated port");
 			if ((r = sshbuf_put_u32(reply,
 			    MUX_S_REMOTE_PORT)) != 0 ||
 			    (r = sshbuf_put_u32(reply, rid)) != 0 ||
@@ -818,7 +813,7 @@ mux_master_process_open_fwd(struct ssh *ssh, u_int rid,
 	if (options.control_master == SSHCTL_MASTER_ASK ||
 	    options.control_master == SSHCTL_MASTER_AUTO_ASK) {
 		if (!ask_permission("Open %s on %s?", fwd_desc, host)) {
-			debug2("%s: forwarding refused by user", __func__);
+			debug2_f("forwarding refused by user");
 			reply_error(reply, MUX_S_PERMISSION_DENIED, rid,
 			    "Permission denied");
 			goto out;
@@ -829,7 +824,7 @@ mux_master_process_open_fwd(struct ssh *ssh, u_int rid,
 		if (!channel_setup_local_fwd_listener(ssh, &fwd,
 		    &options.fwd_opts)) {
  fail:
-			logit("%s: requested %s failed", __func__, fwd_desc);
+			error_f("requested %s failed", fwd_desc);
 			reply_error(reply, MUX_S_FAILURE, rid,
 			    "Port forwarding failed");
 			goto out;
@@ -886,7 +881,7 @@ mux_master_process_close_fwd(struct ssh *ssh, u_int rid,
 	    (r = sshbuf_get_u32(m, &cport)) != 0 ||
 	    (lport != (u_int32_t)PORT_STREAMLOCAL && lport > 65535) ||
 	    (cport != (u_int32_t)PORT_STREAMLOCAL && cport > 65535)) {
-		error("%s: malformed message", __func__);
+		error_f("malformed message");
 		ret = -1;
 		goto out;
 	}
@@ -911,7 +906,7 @@ mux_master_process_close_fwd(struct ssh *ssh, u_int rid,
 	else
 		fwd.connect_host = connect_addr;
 
-	debug2("%s: channel %d: request cancel %s", __func__, c->self,
+	debug2_f("channel %d: request cancel %s", c->self,
 	    (fwd_desc = format_forward(ftype, &fwd)));
 
 	/* make sure this has been requested */
@@ -991,18 +986,16 @@ mux_master_process_stdio_fwd(struct ssh *ssh, u_int rid,
 	    (r = sshbuf_get_cstring(m, &chost, NULL)) != 0 ||
 	    (r = sshbuf_get_u32(m, &cport)) != 0) {
 		free(chost);
-		error("%s: malformed message", __func__);
+		error_f("malformed message");
 		return -1;
 	}
 
-	debug2("%s: channel %d: request stdio fwd to %s:%u",
-	    __func__, c->self, chost, (unsigned)cport);
+	debug2_f("channel %d: stdio fwd to %s:%u", c->self, chost, (unsigned)cport);
 
 	/* Gather fds from client */
 	for(i = 0; i < 2; i++) {
 		if ((new_fd[i] = mm_receive_fd(c->sock)) == -1) {
-			error("%s: failed to receive fd %d from client",
-			    __func__, i);
+			error_f("failed to receive fd %d from client", i);
 			for (j = 0; j < i; j++)
 				close(new_fd[j]);
 			free(chost);
@@ -1014,12 +1007,11 @@ mux_master_process_stdio_fwd(struct ssh *ssh, u_int rid,
 		}
 	}
 
-	debug3("%s: got fds stdin %d, stdout %d", __func__,
-	    new_fd[0], new_fd[1]);
+	debug3_f("got fds stdin %d, stdout %d", new_fd[0], new_fd[1]);
 
 	/* XXX support multiple child sessions in future */
 	if (c->have_remote_id) {
-		debug2("%s: session already open", __func__);
+		debug2_f("session already open");
 		reply_error(reply, MUX_S_FAILURE, rid,
 		    "Multiple sessions not supported");
  cleanup:
@@ -1033,7 +1025,7 @@ mux_master_process_stdio_fwd(struct ssh *ssh, u_int rid,
 	    options.control_master == SSHCTL_MASTER_AUTO_ASK) {
 		if (!ask_permission("Allow forward to %s:%u? ",
 		    chost, cport)) {
-			debug2("%s: stdio fwd refused by user", __func__);
+			debug2_f("stdio fwd refused by user");
 			reply_error(reply, MUX_S_PERMISSION_DENIED, rid,
 			    "Permission denied");
 			goto cleanup;
@@ -1053,8 +1045,7 @@ mux_master_process_stdio_fwd(struct ssh *ssh, u_int rid,
 	c->remote_id = nc->self;	/* link control -> session channel */
 	c->have_remote_id = 1;
 
-	debug2("%s: channel_new: %d linked to control channel %d",
-	    __func__, nc->self, nc->ctl_chan);
+	debug2_f("channel_new: %d control %d", nc->self, nc->ctl_chan);
 
 	channel_register_cleanup(ssh, nc->self,
 	    mux_master_session_cleanup_cb, 1);
@@ -1088,14 +1079,14 @@ mux_stdio_confirm(struct ssh *ssh, int id, int success, void *arg)
 		fatal("%s: sshbuf_new", __func__);
 
 	if (!success) {
-		debug3("%s: sending failure reply", __func__);
+		debug3_f("sending failure reply");
 		reply_error(reply, MUX_S_FAILURE, cctx->rid,
 		    "Session open refused by peer");
 		/* prepare reply */
 		goto done;
 	}
 
-	debug3("%s: sending success reply", __func__);
+	debug3_f("sending success reply");
 	/* prepare reply */
 	if ((r = sshbuf_put_u32(reply, MUX_S_SESSION_OPENED)) != 0 ||
 	    (r = sshbuf_put_u32(reply, cctx->rid)) != 0 ||
@@ -1120,13 +1111,13 @@ mux_master_process_stop_listening(struct ssh *ssh, u_int rid,
     Channel *c, struct sshbuf *m, struct sshbuf *reply)
 {
 	UNUSED(m);
-	debug("%s: channel %d: stop listening", __func__, c->self);
+	debug_f("channel %d: stop listening", c->self);
 
 	if (options.control_master == SSHCTL_MASTER_ASK ||
 	    options.control_master == SSHCTL_MASTER_AUTO_ASK) {
 		if (!ask_permission("Disable further multiplexing on shared "
 		    "connection to %s? ", host)) {
-			debug2("%s: stop listen refused by user", __func__);
+			debug2_f("stop listen refused by user");
 			reply_error(reply, MUX_S_PERMISSION_DENIED, rid,
 			    "Permission denied");
 			return 0;
@@ -1154,7 +1145,7 @@ mux_master_process_proxy(struct ssh *ssh, u_int rid,
 
 	UNUSED(ssh);
 	UNUSED(m);
-	debug("%s: channel %d: proxy request", __func__, c->self);
+	debug_f("channel %d: proxy request", c->self);
 
 	c->mux_rcb = channel_proxy_downstream;
 	if ((r = sshbuf_put_u32(reply, MUX_S_PROXY)) != 0 ||
@@ -1192,7 +1183,7 @@ mux_master_read_cb(struct ssh *ssh, Channel *c)
 		if ((r = sshbuf_put_stringb(c->output, out)) != 0)
 			fatal("%s: sshbuf_put_stringb: %s",
 			    __func__, ssh_err(r));
-		debug3("%s: channel %d: hello sent", __func__, c->self);
+		debug3_f("channel %d: hello sent", c->self);
 		ret = 0;
 		goto out;
 	}
@@ -1200,21 +1191,21 @@ mux_master_read_cb(struct ssh *ssh, Channel *c)
 	/* Channel code ensures that we receive whole packets */
 	if ((r = sshbuf_froms(c->input, &in)) != 0) {
  malf:
-		error("%s: malformed message", __func__);
+		error_f("malformed message");
 		goto out;
 	}
 
 	if ((r = sshbuf_get_u32(in, &type)) != 0)
 		goto malf;
-	debug3("%s: channel %d packet type 0x%08x len %zu",
-	    __func__, c->self, type, sshbuf_len(in));
+	debug3_f("channel %d packet type 0x%08x len %zu", c->self,
+	    type, sshbuf_len(in));
 
 	if (type == MUX_MSG_HELLO)
 		rid = 0;
 	else {
 		if (!state->hello_rcvd) {
-			error("%s: expected MUX_MSG_HELLO(0x%08x), "
-			    "received 0x%08x", __func__, MUX_MSG_HELLO, (unsigned)type);
+			error_f("expected MUX_MSG_HELLO(0x%08x), "
+			    "received 0x%08x", MUX_MSG_HELLO, (unsigned)type);
 			goto out;
 		}
 		if ((r = sshbuf_get_u32(in, &rid)) != 0)
@@ -1229,7 +1220,7 @@ mux_master_read_cb(struct ssh *ssh, Channel *c)
 		}
 	}
 	if (mux_master_handlers[i].handler == NULL) {
-		error("%s: unsupported mux message 0x%08x", __func__, (unsigned)type);
+		error_f("unsupported mux message 0x%08x", (unsigned)type);
 		reply_error(out, MUX_S_FAILURE, rid, "unsupported request");
 		ret = 0;
 	}
@@ -1252,8 +1243,7 @@ mux_exit_message(struct ssh *ssh, Channel *c, int exitval)
 	Channel *mux_chan;
 	int r;
 
-	debug3("%s: channel %d: exit message, exitval %d", __func__, c->self,
-	    exitval);
+	debug3_f("channel %d: exit message, exitval %d", c->self, exitval);
 
 	if ((mux_chan = channel_by_id(ssh, c->ctl_chan)) == NULL)
 		fatal("%s: channel %d missing mux channel %d",
@@ -1277,7 +1267,7 @@ mux_tty_alloc_failed(struct ssh *ssh, Channel *c)
 	Channel *mux_chan;
 	int r;
 
-	debug3("%s: channel %d: TTY alloc failed", __func__, c->self);
+	debug3_f("channel %d: TTY alloc failed", c->self);
 
 	if ((mux_chan = channel_by_id(ssh, c->ctl_chan)) == NULL)
 		fatal("%s: channel %d missing mux channel %d",
@@ -1324,7 +1314,7 @@ muxserver_listen(struct ssh *ssh)
 	rbuf[sizeof(rbuf) - 1] = '\0';
 	options.control_path = NULL;
 	xasprintf(&options.control_path, "%s.%s", orig_control_path, rbuf);
-	debug3("%s: temporary control path %s", __func__, options.control_path);
+	debug3_f("temporary control path %s", options.control_path);
 
 	old_umask = umask(0177);
 	muxserver_sock = unix_listener(options.control_path, 64, 0);
@@ -1370,7 +1360,7 @@ muxserver_listen(struct ssh *ssh)
 	    CHAN_TCP_WINDOW_DEFAULT, CHAN_TCP_PACKET_DEFAULT,
 	    0, options.control_path, 1);
 	mux_listener_channel->mux_rcb = mux_master_read_cb;
-	debug3("%s: mux listener channel %d fd %d", __func__,
+	debug3_f("mux listener channel %d fd %d",
 	    mux_listener_channel->self, mux_listener_channel->sock);
 }
 
@@ -1395,7 +1385,7 @@ mux_session_confirm(struct ssh *ssh, int id, int success, void *arg)
 		fatal("%s: sshbuf_new", __func__);
 
 	if (!success) {
-		debug3("%s: sending failure reply", __func__);
+		debug3_f("sending failure reply");
 		reply_error(reply, MUX_S_FAILURE, cctx->rid,
 		    "Session open refused by peer");
 		goto done;
@@ -1430,7 +1420,7 @@ mux_session_confirm(struct ssh *ssh, int id, int success, void *arg)
 	client_session2_setup(ssh, id, cctx->want_tty, cctx->want_subsys,
 	    cctx->term, &cctx->tio, c->rfd, cctx->cmd, cctx->env);
 
-	debug3("%s: sending success reply", __func__);
+	debug3_f("sending success reply");
 	/* prepare reply */
 	if ((r = sshbuf_put_u32(reply, MUX_S_SESSION_OPENED)) != 0 ||
 	    (r = sshbuf_put_u32(reply, cctx->rid)) != 0 ||
@@ -1589,7 +1579,7 @@ mux_client_read_packet(int fd, struct sshbuf *m)
 		fatal("%s: sshbuf_new", __func__);
 	if (mux_client_read(fd, queue, 4) != 0) {
 		if ((oerrno = errno) == EPIPE)
-			debug3("%s: read header failed: %s", __func__,
+			debug3_f("read header failed: %s",
 			    strerror(errno));
 		sshbuf_free(queue);
 		errno = oerrno;
@@ -1598,7 +1588,7 @@ mux_client_read_packet(int fd, struct sshbuf *m)
 	need = PEEK_U32(sshbuf_ptr(queue));
 	if (mux_client_read(fd, queue, need) != 0) {
 		oerrno = errno;
-		debug3("%s: read body failed: %s", __func__, strerror(errno));
+		debug3_f("read body failed: %s", strerror(errno));
 		sshbuf_free(queue);
 		errno = oerrno;
 		return -1;
@@ -1625,7 +1615,7 @@ mux_client_hello_exchange(int fd)
 	/* no extensions */
 
 	if (mux_client_write_packet(fd, m) != 0) {
-		debug("%s: write packet: %s", __func__, strerror(errno));
+		debug_f("write packet: %s", strerror(errno));
 		goto out;
 	}
 
@@ -1633,15 +1623,14 @@ mux_client_hello_exchange(int fd)
 
 	/* Read their HELLO */
 	if (mux_client_read_packet(fd, m) != 0) {
-		debug("%s: read packet failed", __func__);
+		debug_f("read packet failed");
 		goto out;
 	}
 
 	if ((r = sshbuf_get_u32(m, &type)) != 0)
 		fatal("%s: decode type: %s", __func__, ssh_err(r));
 	if (type != MUX_MSG_HELLO) {
-		error("%s: expected HELLO (%u) received %u",
-		    __func__, MUX_MSG_HELLO, (unsigned)type);
+		error_f("expected HELLO (%u) got %u", MUX_MSG_HELLO, (unsigned)type);
 		goto out;
 	}
 	if ((r = sshbuf_get_u32(m, &ver)) != 0)
@@ -1651,18 +1640,17 @@ mux_client_hello_exchange(int fd)
 		    "(expected %d)", (int)ver, SSHMUX_VER);
 		goto out;
 	}
-	debug2("%s: master version %u", __func__, (unsigned)ver);
+	debug2_f("master version %u", (unsigned)ver);
 	/* No extensions are presently defined */
 	while (sshbuf_len(m) > 0) {
 		char *name = NULL;
 
 		if ((r = sshbuf_get_cstring(m, &name, NULL)) != 0 ||
 		    (r = sshbuf_skip_string(m)) != 0) { /* value */
-			error("%s: malformed extension: %s",
-			    __func__, ssh_err(r));
+			error_f("parse extension: %s", ssh_err(r));
 			goto out;
 		}
-		debug2("Unrecognised master extension \"%s\"", name);
+		debug2_f("unrecognised master extension \"%s\"", name);
 		free(name);
 	}
 	/* success */
@@ -1680,7 +1668,7 @@ mux_client_request_alive(int fd)
 	u_int32_t pid, type, rid;
 	int r;
 
-	debug3("%s: entering", __func__);
+	debug3_f("entering");
 
 	if ((m = sshbuf_new()) == NULL)
 		fatal("%s: sshbuf_new", __func__);
@@ -1716,7 +1704,7 @@ mux_client_request_alive(int fd)
 		fatal("%s: decode PID: %s", __func__, ssh_err(r));
 	sshbuf_free(m);
 
-	debug3("%s: done pid = %u", __func__, (unsigned)pid);
+	debug3_f("done pid = %u", (unsigned)pid);
 
 	muxclient_request_id++;
 
@@ -1731,7 +1719,7 @@ mux_client_request_terminate(int fd)
 	u_int32_t type, rid;
 	int r;
 
-	debug3("%s: entering", __func__);
+	debug3_f("entering");
 
 	if ((m = sshbuf_new()) == NULL)
 		fatal("%s: sshbuf_new", __func__);
@@ -1868,7 +1856,7 @@ mux_client_forward(int fd, int cancel_flag, u_int ftype, struct Forward *fwd)
 		if ((r = sshbuf_get_cstring(m, &e, NULL)) != 0)
 			fatal("%s: decode error: %s", __func__, ssh_err(r));
 		sshbuf_free(m);
-		error("%s: forwarding request failed: %s", __func__, e);
+		error_f("forwarding request failed: %s", e);
 		return -1;
 	default:
 		fatal("%s: unexpected response from master 0x%08x",
@@ -1885,7 +1873,7 @@ mux_client_forwards(int fd, int cancel_flag)
 {
 	int i, ret = 0;
 
-	debug3("%s: %s forwardings: %d local, %d remote", __func__,
+	debug3_f("%s forwardings: %d local, %d remote",
 	    cancel_flag ? "cancel" : "request",
 	    options.num_local_forwards, options.num_remote_forwards);
 
@@ -1915,10 +1903,10 @@ mux_client_request_session(int fd)
 	extern char **environ;
 	int r, i, rawmode, exitval_seen;
 
-	debug3("%s: entering", __func__);
+	debug3_f("entering");
 
 	if ((muxserver_pid = mux_client_request_alive(fd)) == 0) {
-		error("%s: master alive request failed", __func__);
+		error_f("master alive request failed");
 		return -1;
 	}
 
@@ -1970,13 +1958,12 @@ mux_client_request_session(int fd)
 	    mm_send_fd(fd, STDERR_FILENO) == -1)
 		fatal("%s: send fds failed", __func__);
 
-	debug3("%s: session request sent", __func__);
+	debug3_f("session request sent");
 
 	/* Read their reply */
 	sshbuf_reset(m);
 	if (mux_client_read_packet(fd, m) != 0) {
-		error("%s: read from master failed: %s",
-		    __func__, strerror(errno));
+		error_f("read from master failed: %s", strerror(errno));
 		sshbuf_free(m);
 		return -1;
 	}
@@ -1992,7 +1979,7 @@ mux_client_request_session(int fd)
 	case MUX_S_SESSION_OPENED:
 		if ((r = sshbuf_get_u32(m, &sid)) != 0)
 			fatal("%s: decode ID: %s", __func__, ssh_err(r));
-		debug("%s: master session id: %u", __func__, (unsigned)sid);
+		debug_f("master session id: %u", (unsigned)sid);
 		break;
 	case MUX_S_PERMISSION_DENIED:
 		if ((r = sshbuf_get_cstring(m, &e, NULL)) != 0)
@@ -2003,13 +1990,12 @@ mux_client_request_session(int fd)
 	case MUX_S_FAILURE:
 		if ((r = sshbuf_get_cstring(m, &e, NULL)) != 0)
 			fatal("%s: decode error: %s", __func__, ssh_err(r));
-		error("%s: session request failed: %s", __func__, e);
+		error_f("session request failed: %s", e);
 		sshbuf_free(m);
 		return -1;
 	default:
 		sshbuf_free(m);
-		error("%s: unexpected response from master 0x%08x",
-		    __func__, (unsigned)type);
+		error_f("unexpected response from master 0x%08x", (unsigned)type);
 		return -1;
 	}
 	muxclient_request_id++;
@@ -2131,7 +2117,7 @@ mux_client_proxy(int fd)
 	}
 	sshbuf_free(m);
 
-	debug3("%s: done", __func__);
+	debug3_f("done");
 	muxclient_request_id++;
 	return 0;
 }
@@ -2144,10 +2130,10 @@ mux_client_request_stdio_fwd(int fd)
 	u_int32_t type, rid, sid;
 	int r;
 
-	debug3("%s: entering", __func__);
+	debug3_f("entering");
 
 	if ((muxserver_pid = mux_client_request_alive(fd)) == 0) {
-		error("%s: master alive request failed", __func__);
+		error_f("master alive request failed");
 		return -1;
 	}
 
@@ -2177,14 +2163,13 @@ mux_client_request_stdio_fwd(int fd)
 		fatal("%s pledge(): %s", __func__, strerror(errno));
 	platform_pledge_mux();
 
-	debug3("%s: stdio forward request sent", __func__);
+	debug3_f("stdio forward request sent");
 
 	/* Read their reply */
 	sshbuf_reset(m);
 
 	if (mux_client_read_packet(fd, m) != 0) {
-		error("%s: read from master failed: %s",
-		    __func__, strerror(errno));
+		error_f("read from master failed: %s", strerror(errno));
 		sshbuf_free(m);
 		return -1;
 	}
@@ -2199,7 +2184,7 @@ mux_client_request_stdio_fwd(int fd)
 	case MUX_S_SESSION_OPENED:
 		if ((r = sshbuf_get_u32(m, &sid)) != 0)
 			fatal("%s: decode ID: %s", __func__, ssh_err(r));
-		debug("%s: master session id: %u", __func__, (unsigned)sid);
+		debug_f("master session id: %u", (unsigned)sid);
 		break;
 	case MUX_S_PERMISSION_DENIED:
 		if ((r = sshbuf_get_cstring(m, &e, NULL)) != 0)
@@ -2213,8 +2198,7 @@ mux_client_request_stdio_fwd(int fd)
 		fatal("Stdio forwarding request failed: %s", e);
 	default:
 		sshbuf_free(m);
-		error("%s: unexpected response from master 0x%08x",
-		    __func__, (unsigned)type);
+		error_f("unexpected response from master 0x%08x", (unsigned)type);
 		return -1;
 	}
 	muxclient_request_id++;
@@ -2246,7 +2230,7 @@ mux_client_request_stop_listening(int fd)
 	u_int32_t type, rid;
 	int r;
 
-	debug3("%s: entering", __func__);
+	debug3_f("entering");
 
 	if ((m = sshbuf_new()) == NULL)
 		fatal("%s: sshbuf_new", __func__);
@@ -2352,7 +2336,7 @@ muxclient(const char *path)
 	set_nonblock(sock);
 
 	if (mux_client_hello_exchange(sock) != 0) {
-		error("%s: master hello exchange failed", __func__);
+		error_f("master hello exchange failed");
 		close(sock);
 		return -1;
 	}
@@ -2374,7 +2358,7 @@ muxclient(const char *path)
 		exit(0);
 	case SSHMUX_COMMAND_OPEN:
 		if (mux_client_forwards(sock, 0) != 0) {
-			error("%s: master forward request failed", __func__);
+			error_f("master forward request failed");
 			return -1;
 		}
 		mux_client_request_session(sock);
@@ -2389,8 +2373,7 @@ muxclient(const char *path)
 		exit(0);
 	case SSHMUX_COMMAND_CANCEL_FWD:
 		if (mux_client_forwards(sock, 1) != 0)
-			error("%s: master cancel forward request failed",
-			    __func__);
+			error_f("master cancel forward request failed");
 		exit(0);
 	case SSHMUX_COMMAND_PROXY:
 		mux_client_proxy(sock);

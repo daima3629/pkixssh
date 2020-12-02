@@ -328,7 +328,7 @@ login_get_lastlog(struct logininfo *li, const uid_t uid)
 
 	if (strlcpy(li->username, pw->pw_name, sizeof(li->username)) >=
 	    sizeof(li->username)) {
-		error("%s: username too long (%lu > max %lu)", __func__,
+		error_f("username too long (%lu > max %lu)",
 		    (unsigned long)strlen(pw->pw_name),
 		    (unsigned long)sizeof(li->username) - 1);
 		return NULL;
@@ -880,7 +880,7 @@ utmp_write_direct(struct logininfo *li, struct utmp *ut)
 	endttyent();
 
 	if (NULL == ty) {
-		error("%s: tty not found", __func__);
+		error_f("tty not found");
 		return (0);
 	}
 #else /* FIXME */
@@ -894,13 +894,13 @@ utmp_write_direct(struct logininfo *li, struct utmp *ut)
 
 		pos = (off_t)tty * sizeof(struct utmp);
 		if ((ret = lseek(fd, pos, SEEK_SET)) == -1) {
-			error("%s: lseek: %s", __func__, strerror(errno));
+			error_f("lseek: %s", strerror(errno));
 			close(fd);
 			return (0);
 		}
 		if (ret != pos) {
-			error("%s: couldn't seek to tty %d slot in %s",
-			    __func__, tty, UTMP_FILE);
+			error_f("couldn't seek to tty %d slot in %s",
+			    tty, UTMP_FILE);
 			close(fd);
 			return (0);
 		}
@@ -916,18 +916,18 @@ utmp_write_direct(struct logininfo *li, struct utmp *ut)
 			memcpy(ut->ut_host, old_ut.ut_host, sizeof(ut->ut_host));
 
 		if ((ret = lseek(fd, pos, SEEK_SET)) == -1) {
-			error("%s: lseek: %s", __func__, strerror(errno));
+			error_f("lseek: %s", strerror(errno));
 			close(fd);
 			return (0);
 		}
 		if (ret != pos) {
-			error("%s: couldn't seek to tty %d slot in %s",
-			    __func__, tty, UTMP_FILE);
+			error_f("couldn't seek to tty %d slot in %s",
+			    tty, UTMP_FILE);
 			close(fd);
 			return (0);
 		}
 		if (atomicio(vwrite, fd, ut, sizeof(*ut)) != sizeof(*ut)) {
-			error("%s: error writing %s: %s", __func__,
+			error_f("error writing %s: %s",
 			    UTMP_FILE, strerror(errno));
 			close(fd);
 			return (0);
@@ -949,12 +949,12 @@ utmp_perform_login(struct logininfo *li)
 	construct_utmp(li, &ut);
 # ifdef UTMP_USE_LIBRARY
 	if (!utmp_write_library(li, &ut)) {
-		error("%s: utmp_write_library() failed", __func__);
+		error_f("utmp_write_library() failed");
 		return (0);
 	}
 # else
 	if (!utmp_write_direct(li, &ut)) {
-		error("%s: utmp_write_direct() failed", __func__);
+		error_f("utmp_write_direct() failed");
 		return (0);
 	}
 # endif
@@ -970,12 +970,12 @@ utmp_perform_logout(struct logininfo *li)
 	construct_utmp(li, &ut);
 # ifdef UTMP_USE_LIBRARY
 	if (!utmp_write_library(li, &ut)) {
-		error("%s: utmp_write_library() failed", __func__);
+		error_f("utmp_write_library() failed");
 		return (0);
 	}
 # else
 	if (!utmp_write_direct(li, &ut)) {
-		error("%s: utmp_write_direct() failed", __func__);
+		error_f("utmp_write_direct() failed");
 		return (0);
 	}
 # endif
@@ -994,7 +994,7 @@ utmp_write_entry(struct logininfo *li)
 		return (utmp_perform_logout(li));
 
 	default:
-		error("%s: invalid type field", __func__);
+		error_f("invalid type field");
 		return (0);
 	}
 }
@@ -1035,7 +1035,7 @@ utmpx_write_library(struct logininfo *li, struct utmpx *utx)
 static int
 utmpx_write_direct(struct logininfo *li, struct utmpx *utx)
 {
-	error("%s: not implemented!", __func__);
+	error_f("not implemented!");
 	return (0);
 }
 # endif /* UTMPX_USE_LIBRARY */
@@ -1048,12 +1048,12 @@ utmpx_perform_login(struct logininfo *li)
 	construct_utmpx(li, &utx);
 # ifdef UTMPX_USE_LIBRARY
 	if (!utmpx_write_library(li, &utx)) {
-		error("%s: utmp_write_library() failed", __func__);
+		error_f("utmp_write_library() failed");
 		return (0);
 	}
 # else
 	if (!utmpx_write_direct(li, &ut)) {
-		error("%s: utmp_write_direct() failed", __func__);
+		error_f("utmp_write_direct() failed");
 		return (0);
 	}
 # endif
@@ -1091,7 +1091,7 @@ utmpx_write_entry(struct logininfo *li)
 	case LTYPE_LOGOUT:
 		return (utmpx_perform_logout(li));
 	default:
-		error("%s: invalid type field", __func__);
+		error_f("invalid type field");
 		return (0);
 	}
 }
@@ -1115,14 +1115,14 @@ wtmp_write(struct logininfo *li, struct utmp *ut)
 	int fd, ret = 1;
 
 	if ((fd = open(WTMP_FILE, O_WRONLY|O_APPEND, 0)) == -1) {
-		error("%s: problem writing %s: %s", __func__,
+		error_f("problem writing %s: %s",
 		    WTMP_FILE, strerror(errno));
 		return (0);
 	}
 	if (fstat(fd, &buf) != -1)
 		if (atomicio(vwrite, fd, ut, sizeof(*ut)) != sizeof(*ut)) {
 			ftruncate(fd, buf.st_size);
-			error("%s: problem writing %s: %s", __func__,
+			error_f("problem writing %s: %s",
 			    WTMP_FILE, strerror(errno));
 			ret = 0;
 		}
@@ -1159,7 +1159,7 @@ wtmp_write_entry(struct logininfo *li)
 	case LTYPE_LOGOUT:
 		return (wtmp_perform_logout(li));
 	default:
-		error("%s: invalid type field", __func__);
+		error_f("invalid type field");
 		return (0);
 	}
 }
@@ -1209,12 +1209,12 @@ wtmp_get_entry(struct logininfo *li)
 	li->tv_sec = li->tv_usec = 0;
 
 	if ((fd = open(WTMP_FILE, O_RDONLY)) == -1) {
-		error("%s: problem opening %s: %s", __func__,
+		error_f("problem opening %s: %s",
 		    WTMP_FILE, strerror(errno));
 		return (0);
 	}
 	if (fstat(fd, &st) == -1) {
-		error("%s: couldn't stat %s: %s", __func__,
+		error_f("couldn't stat %s: %s",
 		    WTMP_FILE, strerror(errno));
 		close(fd);
 		return (0);
@@ -1229,7 +1229,7 @@ wtmp_get_entry(struct logininfo *li)
 
 	while (!found) {
 		if (atomicio(read, fd, &ut, sizeof(ut)) != sizeof(ut)) {
-			error("%s: read of %s failed: %s", __func__,
+			error_f("read of %s failed: %s",
 			    WTMP_FILE, strerror(errno));
 			close (fd);
 			return (0);
@@ -1287,7 +1287,7 @@ wtmpx_write(struct logininfo *li, struct utmpx *utx)
 	int fd, ret = 1;
 
 	if ((fd = open(WTMPX_FILE, O_WRONLY|O_APPEND, 0)) == -1) {
-		error("%s: problem opening %s: %s", __func__,
+		error_f("problem opening %s: %s",
 		    WTMPX_FILE, strerror(errno));
 		return (0);
 	}
@@ -1295,7 +1295,7 @@ wtmpx_write(struct logininfo *li, struct utmpx *utx)
 	if (fstat(fd, &buf) != -1)
 		if (atomicio(vwrite, fd, utx, sizeof(*utx)) != sizeof(*utx)) {
 			ftruncate(fd, buf.st_size);
-			error("%s: problem writing %s: %s", __func__,
+			error_f("problem writing %s: %s",
 			    WTMPX_FILE, strerror(errno));
 			ret = 0;
 		}
@@ -1338,7 +1338,7 @@ wtmpx_write_entry(struct logininfo *li)
 	case LTYPE_LOGOUT:
 		return (wtmpx_perform_logout(li));
 	default:
-		error("%s: invalid type field", __func__);
+		error_f("invalid type field");
 		return (0);
 	}
 }
@@ -1374,12 +1374,12 @@ wtmpx_get_entry(struct logininfo *li)
 	li->tv_sec = li->tv_usec = 0;
 
 	if ((fd = open(WTMPX_FILE, O_RDONLY)) == -1) {
-		error("%s: problem opening %s: %s", __func__,
+		error_f("problem opening %s: %s",
 		    WTMPX_FILE, strerror(errno));
 		return (0);
 	}
 	if (fstat(fd, &st) == -1) {
-		error("%s: couldn't stat %s: %s", __func__,
+		error_f("couldn't stat %s: %s",
 		    WTMPX_FILE, strerror(errno));
 		close(fd);
 		return (0);
@@ -1394,7 +1394,7 @@ wtmpx_get_entry(struct logininfo *li)
 
 	while (!found) {
 		if (atomicio(read, fd, &utx, sizeof(utx)) != sizeof(utx)) {
-			error("%s: read of %s failed: %s", __func__,
+			error_f("read of %s failed: %s",
 			    WTMPX_FILE, strerror(errno));
 			close (fd);
 			return (0);
@@ -1455,7 +1455,7 @@ syslogin_perform_logout(struct logininfo *li)
 	(void)line_stripname(line, li->line, sizeof(line));
 
 	if (!logout(line))
-		error("%s: logout() returned an error", __func__);
+		error_f("logout() returned an error");
 #  ifdef HAVE_LOGWTMP
 	else
 		logwtmp(line, "", "");
@@ -1477,7 +1477,7 @@ syslogin_write_entry(struct logininfo *li)
 	case LTYPE_LOGOUT:
 		return (syslogin_perform_logout(li));
 	default:
-		error("%s: invalid type field", __func__);
+		error_f("invalid type field");
 		return (0);
 	}
 }
@@ -1501,7 +1501,7 @@ lastlog_openseek(struct logininfo *li, int *fd, int filemode)
 	struct stat st;
 
 	if (stat(LASTLOG_FILE, &st) == -1) {
-		error("%s: couldn't stat %s: %s", __func__,
+		error_f("couldn't stat %s: %s",
 		    LASTLOG_FILE, strerror(errno));
 		return (0);
 	}
@@ -1511,14 +1511,14 @@ lastlog_openseek(struct logininfo *li, int *fd, int filemode)
 	} else if (S_ISREG(st.st_mode)) {
 		strlcpy(lastlog_file, LASTLOG_FILE, sizeof(lastlog_file));
 	} else {
-		error("%s: %.100s is not a file or directory!", __func__,
+		error_f("%.100s is not a file or directory!",
 		    LASTLOG_FILE);
 		return (0);
 	}
 
 	*fd = open(lastlog_file, filemode, 0600);
 	if (*fd == -1) {
-		error("%s: couldn't open %s: %s", __func__,
+		error_f("couldn't open %s: %s",
 		    lastlog_file, strerror(errno));
 		return (0);
 	}
@@ -1528,7 +1528,7 @@ lastlog_openseek(struct logininfo *li, int *fd, int filemode)
 		offset = (off_t) ((u_long)li->uid * sizeof(struct lastlog));
 
 		if (lseek(*fd, offset, SEEK_SET) != offset) {
-			error("%s: %s->lseek(): %s", __func__,
+			error_f("%s->lseek(): %s",
 			    lastlog_file, strerror(errno));
 			close(*fd);
 			return (0);
@@ -1573,7 +1573,7 @@ lastlog_write_entry(struct logininfo *li)
 		/* write the entry */
 		if (atomicio(vwrite, fd, &last, sizeof(last)) != sizeof(last)) {
 			close(fd);
-			error("%s: error writing to %s: %s", __func__,
+			error_f("error writing to %s: %s",
 			    LASTLOG_FILE, strerror(errno));
 			return (0);
 		}
@@ -1581,7 +1581,7 @@ lastlog_write_entry(struct logininfo *li)
 		close(fd);
 		return (1);
 	default:
-		error("%s: invalid type field", __func__);
+		error_f("invalid type field");
 		return (0);
 	}
 }
@@ -1628,12 +1628,12 @@ lastlog_get_entry(struct logininfo *li)
 		li->tv_sec = last.ll_time;
 		return (1);
 	case -1:
-		error("%s: error reading from %s: %s", __func__,
+		error_f("error reading from %s: %s",
 		    LASTLOG_FILE, strerror(errno));
 		return (0);
 	default:
-		error("%s: error reading from %s: expecting %d, got %d",
-		    __func__, LASTLOG_FILE, (int)sizeof(last), ret);
+		error_f("error reading from %s: expecting %d, got %d",
+		    LASTLOG_FILE, (int)sizeof(last), ret);
 		return (0);
 	}
 
@@ -1699,7 +1699,7 @@ record_failed_login(struct ssh *ssh, const char *username, const char *hostname,
 		return;
 	}
 	if (fstat(fd, &fst) == -1) {
-		error("%s: fstat of %s failed: %s", __func__, _PATH_BTMP,
+		error_f("fstat of %s failed: %s", _PATH_BTMP,
 		    strerror(errno));
 		goto out;
 	}

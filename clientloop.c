@@ -1,4 +1,4 @@
-/* $OpenBSD: clientloop.c,v 1.346 2020/09/16 03:07:31 dtucker Exp $ */
+/* $OpenBSD: clientloop.c,v 1.355 2020/10/29 02:47:23 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -231,13 +231,13 @@ set_control_persist_exit_time(struct ssh *ssh)
 	} else if (channel_still_open(ssh)) {
 		/* some client connections are still open */
 		if (control_persist_exit_time > 0)
-			debug2("%s: cancel scheduled exit", __func__);
+			debug2_f("cancel scheduled exit");
 		control_persist_exit_time = 0;
 	} else if (control_persist_exit_time <= 0) {
 		/* a client connection has recently closed */
 		control_persist_exit_time = monotime() +
 			(time_t)options.control_persist_timeout;
-		debug2("%s: schedule exit in %d seconds", __func__,
+		debug2_f("schedule exit in %d seconds",
 		    options.control_persist_timeout);
 	}
 	/* else we are already counting down to the timeout */
@@ -305,7 +305,7 @@ client_x11_get_proto(struct ssh *ssh, const char *display,
 			if ((r = snprintf(xdisplay, sizeof(xdisplay), "unix:%s",
 			    display + 10)) < 0 ||
 			    (size_t)r >= sizeof(xdisplay)) {
-				error("%s: display name too long", __func__);
+				error_f("display name too long");
 				return -1;
 			}
 			display = xdisplay;
@@ -320,15 +320,14 @@ client_x11_get_proto(struct ssh *ssh, const char *display,
 			 */
 			mktemp_proto(xauthdir, sizeof(xauthdir));
 			if (mkdtemp(xauthdir) == NULL) {
-				error("%s: mkdtemp: %s",
-				    __func__, strerror(errno));
+				error_f("mkdtemp: %s", strerror(errno));
 				return -1;
 			}
 			do_unlink = 1;
 			if ((r = snprintf(xauthfile, sizeof(xauthfile),
 			    "%s/xauthfile", xauthdir)) < 0 ||
 			    (size_t)r >= sizeof(xauthfile)) {
-				error("%s: xauthfile path too long", __func__);
+				error_f("xauthfile path too long");
 				rmdir(xauthdir);
 				return -1;
 			}
@@ -354,7 +353,7 @@ client_x11_get_proto(struct ssh *ssh, const char *display,
 				    SSH_X11_PROTO, x11_timeout_real,
 				    _PATH_DEVNULL);
 			}
-			debug2("%s: xauth command: %s", __func__, cmd);
+			debug2_f("xauth command: %s", cmd);
 
 			if (timeout != 0 && x11_refuse_time == 0) {
 				now = monotime() + 1;
@@ -443,7 +442,7 @@ client_check_window_change(struct ssh *ssh)
 	if (!received_window_change_signal)
 		return;
 	received_window_change_signal = 0;
-	debug2("%s: changed", __func__);
+	debug2_f("changed");
 	channel_send_window_changes(ssh);
 }
 
@@ -1083,9 +1082,8 @@ process_escapes(struct ssh *ssh, Channel *c,
 				/* Stop listening for new connections. */
 				channel_stop_listening(ssh);
 
-				if ((r = sshbuf_putf(berr,
-				    "%c& [backgrounded]\n", efc->escape_char))
-				     != 0)
+				if ((r = sshbuf_putf(berr, "%c& "
+				    "[backgrounded]\n", efc->escape_char)) != 0)
 					fatal("%s: buffer error: %s",
 					    __func__, ssh_err(r));
 
@@ -1505,13 +1503,13 @@ client_request_forwarded_tcpip(struct ssh *ssh, const char *request_type,
 	    (r = sshpkt_get_end(ssh)) != 0)
 		fatal("%s: parse packet: %s", __func__, ssh_err(r));
 
-	debug("%s: listen %s port %d, originator %s port %d", __func__,
+	debug_f("listen %s port %d, originator %s port %d",
 	    listen_address, (int)listen_port, originator_address, (int)originator_port);
 
 	if (listen_port > 0xffff)
-		error("%s: invalid listen port", __func__);
+		error_f("invalid listen port");
 	else if (originator_port > 0xffff)
-		error("%s: invalid originator port", __func__);
+		error_f("invalid originator port");
 	else {
 		c = channel_connect_by_listen_address(ssh,
 		    listen_address, listen_port, "forwarded-tcpip",
@@ -1520,7 +1518,7 @@ client_request_forwarded_tcpip(struct ssh *ssh, const char *request_type,
 
 	if (c != NULL && c->type == SSH_CHANNEL_MUX_CLIENT) {
 		if ((b = sshbuf_new()) == NULL) {
-			error("%s: alloc reply", __func__);
+			error_f("alloc reply");
 			goto out;
 		}
 		/* reconstruct and send to muxclient */
@@ -1535,8 +1533,7 @@ client_request_forwarded_tcpip(struct ssh *ssh, const char *request_type,
 		    (r = sshbuf_put_cstring(b, originator_address)) != 0 ||
 		    (r = sshbuf_put_u32(b, originator_port)) != 0 ||
 		    (r = sshbuf_put_stringb(c->output, b)) != 0) {
-			error("%s: compose for muxclient %s", __func__,
-			    ssh_err(r));
+			error_f("compose for muxclient %s", ssh_err(r));
 			goto out;
 		}
 	}
@@ -1564,7 +1561,7 @@ client_request_forwarded_streamlocal(struct ssh *ssh,
 	    (r = sshpkt_get_end(ssh)) != 0)
 		fatal("%s: parse packet: %s", __func__, ssh_err(r));
 
-	debug("%s: request: %s", __func__, listen_path);
+	debug_f("request: %s", listen_path);
 
 	c = channel_connect_by_listen_path(ssh, listen_path,
 	    "forwarded-streamlocal@openssh.com", "forwarded-streamlocal");
@@ -1632,8 +1629,8 @@ client_request_agent(struct ssh *ssh, const char *request_type, int rchan)
 	}
 	if (r != 0) {
 		if (r != SSH_ERR_AGENT_NOT_PRESENT)
-			debug("%s: ssh_get_authentication_socket: %s",
-			    __func__, ssh_err(r));
+			debug_f("ssh_get_authentication_socket: %s",
+			    ssh_err(r));
 		return NULL;
 	}
 	c = channel_new(ssh, "authentication agent connection",
@@ -1795,8 +1792,7 @@ client_input_channel_req(int type, u_int32_t seq, struct ssh *ssh)
 			exit_status = exitval;
 		} else {
 			/* Probably for a mux channel that has already closed */
-			debug("%s: no sink for exit-status on channel %d",
-			    __func__, id);
+			debug_f("no sink for exit-status on channel %d", id);
 		}
 		if ((r = sshpkt_get_end(ssh)) != 0)
 			goto out;
@@ -1815,7 +1811,7 @@ client_input_channel_req(int type, u_int32_t seq, struct ssh *ssh)
 		}
 
 		exitval = ssh_signame2code(signame);
-		debug3("%s: remote killed by signal '%s'", __func__, signame);
+		debug3_f("remote killed by signal '%s'", signame);
 		free(signame);
 
 		if (exitval >= 0) exitval += 128; /*shell style*/
@@ -1829,8 +1825,7 @@ client_input_channel_req(int type, u_int32_t seq, struct ssh *ssh)
 			exit_status = exitval;
 		} else {
 			/* Probably for a mux channel that has already closed */
-			debug("%s: no sink for exit-signal on channel %d",
-			    __func__, id);
+			debug_f("no sink for exit-signal on channel %d", id);
 		}
 	}
 	if (reply && c != NULL && !(c->flags & CHAN_CLOSE_SENT)) {
@@ -1908,15 +1903,15 @@ hostkeys_find(struct hostkey_foreach_line *l, void *_ctx)
 	/* Mark off keys we've already seen for this host */
 	for (i = 0; i < ctx->nkeys; i++) {
 		if (sshkey_equal(l->key, ctx->keys[i])) {
-			debug3("%s: found %s key at %s:%ld", __func__,
+			debug3_f("found %s key at %s:%ld",
 			    sshkey_ssh_name(ctx->keys[i]), l->path, l->linenum);
 			ctx->keys_seen[i] = 1;
 			return 0;
 		}
 	}
 	/* This line contained a key that not offered by the server */
-	debug3("%s: deprecated %s key at %s:%ld", __func__,
-	    sshkey_ssh_name(l->key), l->path, l->linenum);
+	debug3_f("deprecated %s key at %s:%ld", sshkey_ssh_name(l->key),
+	    l->path, l->linenum);
 	if ((tmp = recallocarray(ctx->old_keys, ctx->nold, ctx->nold + 1,
 	    sizeof(*ctx->old_keys))) == NULL)
 		fatal("%s: recallocarray failed nold = %zu",
@@ -2023,11 +2018,11 @@ update_known_hosts(struct hostkeys_update_ctx *ctx)
 		 */
 		if (stat(known_hosts_file, &sb) == -1) {
 			if (errno == ENOENT) {
-				debug("%s: known hosts file %s does not exist",
-				    __func__, known_hosts_file);
+				debug_f("known hosts file %s does not "
+				    "exist", known_hosts_file);
 			} else {
-				error("%s: known hosts file %s "
-				    "inaccessible: %s", __func__,
+				error_f("known hosts file %s "
+				    "inaccessible: %s",
 				    known_hosts_file, strerror(errno));
 			}
 			continue;
@@ -2037,8 +2032,8 @@ update_known_hosts(struct hostkeys_update_ctx *ctx)
 		    i == 0 ? ctx->keys : NULL, i == 0 ? ctx->nkeys : 0,
 		    options.hash_known_hosts, 0,
 		    options.fingerprint_hash)) != 0) {
-			error("%s: hostfile_replace_entries failed for %s: %s",
-			    __func__, known_hosts_file, ssh_err(r));
+			error_f("hostfile_replace_entries failed for %s: %s",
+			    known_hosts_file, ssh_err(r));
 		}
 	}
 }
@@ -2091,16 +2086,15 @@ client_global_hostkeys_private_confirm(struct ssh *ssh, int type,
 			    __func__, ssh_err(r));
 		/* Extract and verify signature */
 		if ((r = sshpkt_get_string_direct(ssh, &sig, &siglen)) != 0) {
-			error("%s: couldn't parse message: %s",
-			    __func__, ssh_err(r));
+			error_f("couldn't parse message: %s", ssh_err(r));
 			goto out;
 		}
 	{	ssh_verify_ctx verify_ctx = { pkalg, ctx->keys[i], &ssh->compat, NULL };
 
 		r = Xkey_verify(&verify_ctx, sig, siglen, sshbuf_ptr(signdata), sshbuf_len(signdata));
 		if (r != 0) {
-			error("%s: server gave bad signature for %s key %zu",
-			    __func__, sshkey_type(ctx->keys[i]), i);
+			error_f("server gave bad signature for %s key %zu",
+			    sshkey_type(ctx->keys[i]), i);
 			goto out;
 		}
 	}
@@ -2112,7 +2106,7 @@ client_global_hostkeys_private_confirm(struct ssh *ssh, int type,
 		fatal("%s: ndone != ctx->nnew (%zu / %zu)", __func__,
 		    ndone, ctx->nnew);  /* Shouldn't happen */
 	if ((r = sshpkt_get_end(ssh)) != 0) {
-		error("%s: protocol error", __func__);
+		error_f("protocol error");
 		goto out;
 	}
 
@@ -2156,19 +2150,18 @@ client_input_hostkeys(struct ssh *ssh)
 		free(pkalg);
 		pkalg = NULL;
 		if ((r = sshpkt_get_string_direct(ssh, &blob, &len)) != 0) {
-			error("%s: couldn't parse message: %s",
-			    __func__, ssh_err(r));
+			error_f("couldn't parse message: %s", ssh_err(r));
 			goto out;
 		}
 		if ((r = parse_key_from_blob(blob, len, &key, &pkalg)) != 0) {
-			do_log2(r == SSH_ERR_KEY_TYPE_UNKNOWN ?
+			do_log2_f(r == SSH_ERR_KEY_TYPE_UNKNOWN ?
 			    SYSLOG_LEVEL_DEBUG1 : SYSLOG_LEVEL_ERROR,
-			    "%s: parse key: %s", __func__, ssh_err(r));
+			    "parse key: %s", ssh_err(r));
 			continue;
 		}
 		fp = sshkey_fingerprint(key, options.fingerprint_hash,
 		    SSH_FP_DEFAULT);
-		debug3("%s: received key %s %s", __func__, pkalg, fp);
+		debug3_f("received key %s %s", pkalg, fp);
 		free(fp);
 
 		/* Check that the key is accepted in HostkeyAlgorithms */
@@ -2176,22 +2169,22 @@ client_input_hostkeys(struct ssh *ssh)
 		   is either assembled (if not set by configuration)
 		   or set to default. See ssh_kex2() in sshconnect2.c */
 		if (match_pattern_list(pkalg, options.hostkeyalgorithms, 0) != 1) {
-			debug3("%s: %s key not permitted by HostkeyAlgorithms",
-			    __func__, pkalg);
+			debug3_f("%s key not permitted by HostkeyAlgorithms",
+			    pkalg);
 			continue;
 		}
 		/* Skip certs */
 		if (sshkey_is_cert(key)) {
-			debug3("%s: %s key is a certificate; skipping",
-			    __func__, pkalg);
+			debug3_f("%s key is a certificate; skipping",
+			    pkalg);
 			continue;
 		}
 	{	/* Exclude equal keys */
 		int found = 0;
 		for (i = 0; i < ctx->nkeys; i++) {
 			if (sshkey_equal(key, ctx->keys[i])) {
-				debug3("%s: host key is equal but algorithm is %s ",
-				    __func__, pkalg);
+				debug3_f("host key is equal but algorithm is %s ",
+				    pkalg);
 				found = 1;
 				break;
 			}
@@ -2216,7 +2209,7 @@ client_input_hostkeys(struct ssh *ssh)
 	}
 
 	if (ctx->nkeys == 0) {
-		debug("%s: server sent no hostkeys", __func__);
+		debug_f("server sent no hostkeys");
 		goto out;
 	}
 
@@ -2231,19 +2224,19 @@ client_input_hostkeys(struct ssh *ssh)
 
 	/* Find which keys we already know about. */
 	for (i = 0; i < options.num_user_hostfiles; i++) {
-		debug("%s: searching %s for %s / %s", __func__,
+		debug_f("searching %s for %s / %s",
 		    options.user_hostfiles[i], ctx->host_str,
 		    ctx->ip_str ? ctx->ip_str : "(none)");
 		if ((r = hostkeys_foreach(options.user_hostfiles[i],
 		    hostkeys_find, ctx, ctx->host_str, ctx->ip_str,
 		    HKF_WANT_PARSE_KEY|HKF_WANT_MATCH)) != 0) {
 			if (r == SSH_ERR_SYSTEM_ERROR && errno == ENOENT) {
-				debug("%s: hostkeys file %s does not exist",
-				    __func__, options.user_hostfiles[i]);
+				debug_f("hostkeys file %s does not exist",
+				    options.user_hostfiles[i]);
 				continue;
 			}
-			error("%s: hostkeys_foreach failed for %s: %s",
-			    __func__, options.user_hostfiles[i], ssh_err(r));
+			error_f("hostkeys_foreach failed for %s: %s",
+			    options.user_hostfiles[i], ssh_err(r));
 			goto out;
 		}
 	}
@@ -2255,8 +2248,8 @@ client_input_hostkeys(struct ssh *ssh)
 			ctx->nnew++;
 	}
 
-	debug3("%s: %zu keys from server: %zu new, %zu retained. %zu to remove",
-	    __func__, ctx->nkeys, ctx->nnew, ctx->nkeys - ctx->nnew, ctx->nold);
+	debug3_f("%zu keys from server: %zu new, %zu retained. %zu to remove",
+	    ctx->nkeys, ctx->nnew, ctx->nkeys - ctx->nnew, ctx->nold);
 
 	if (ctx->nnew == 0 && ctx->nold != 0) {
 		/* We have some keys to remove. Just do it. */
@@ -2266,8 +2259,8 @@ client_input_hostkeys(struct ssh *ssh)
 		 * We have received hitherto-unseen keys from the server.
 		 * Ask the server to confirm ownership of the private halves.
 		 */
-		debug3("%s: asking server to prove ownership for %zu keys",
-		    __func__, ctx->nnew);
+		debug3_f("asking server to prove ownership for %zu keys",
+		    ctx->nnew);
 		if ((r = sshpkt_start(ssh, SSH2_MSG_GLOBAL_REQUEST)) != 0 ||
 		    (r = sshpkt_put_cstring(ssh,
 		    "hostkeys-prove-00@openssh.com")) != 0 ||
@@ -2357,7 +2350,7 @@ client_session2_setup(struct ssh *ssh, int id, int want_tty, int want_subsystem,
 	char *name, *val;
 	Channel *c = NULL;
 
-	debug2("%s: id %d", __func__, id);
+	debug2_f("id %d", id);
 
 	if ((c = channel_lookup(ssh, id)) == NULL)
 		fatal("%s: channel %d: unknown channel", __func__, id);

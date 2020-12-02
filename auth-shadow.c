@@ -61,7 +61,7 @@ auth_shadow_acctexpired(struct spwd *spw)
 
 	today = time(NULL) / DAY;
 	daysleft = spw->sp_expire - today;
-	debug3("%s: today %d sp_expire %d days left %d", __func__, (int)today,
+	debug3_f("today %d sp_expire %d days left %d", (int)today,
 	    (int)spw->sp_expire, daysleft);
 
 	if (spw->sp_expire == -1) {
@@ -98,7 +98,7 @@ auth_shadow_pwexpired(Authctxt *ctxt)
 	}
 
 	today = time(NULL) / DAY;
-	debug3("%s: today %d sp_lstchg %d sp_max %d", __func__, (int)today,
+	debug3_f("today %d sp_lstchg %d sp_max %d", (int)today,
 	    (int)spw->sp_lstchg, (int)spw->sp_max);
 
 #if defined(__hpux) && !defined(HAVE_SECUREWARE)

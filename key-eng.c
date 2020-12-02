@@ -92,7 +92,7 @@ ui_read(UI *ui, UI_STRING *uis) {
 		char *password;
 
 		prompt = UI_get0_output_string(uis);
-		debug3("%s: read_passphrase prompt=%s", __func__, prompt);
+		debug3_f("read_passphrase prompt=%s",  prompt);
 		password = read_passphrase(prompt, flags);
 		UI_set_result(ui, uis, password);
 		memset(password, 'x', strlen(password));
@@ -101,12 +101,12 @@ ui_read(UI *ui, UI_STRING *uis) {
 		} break;
 	case UIT_INFO: {
 		const char *s = UI_get0_output_string(uis);
-		debug("%s: UIT_INFO '%s'", __func__, s);
+		debug_f("UIT_INFO '%s'", s);
 		return(1);
 		} break;
 	case UIT_ERROR: {
 		const char *s = UI_get0_output_string(uis);
-		error("%s: UIT_ERROR '%s'", __func__, s);
+		error_f("UIT_ERROR '%s'", s);
 		return(1);
 		} break;
 	default:
@@ -145,12 +145,12 @@ ui_write(UI *ui, UI_STRING *uis) {
 	switch(uis_type) {
 	case UIT_INFO: {
 		const char *s = UI_get0_output_string(uis);
-		debug("%s: UIT_INFO '%s'", __func__, s);
+		debug_f("UIT_INFO '%s'", s);
 		return(1);
 		} break;
 	case UIT_ERROR: {
 		const char *s = UI_get0_output_string(uis);
-		error("%s: UIT_ERROR '%s'", __func__, s);
+		error_f("UIT_ERROR '%s'", s);
 		return(1);
 		} break;
 	default:
@@ -212,7 +212,7 @@ sshkey_from_EVP_PKEY_RSA(EVP_PKEY *pk, struct sshkey *ret) {
 	RSA_print_fp(stderr, ret->rsa, 8);
 #endif
 	if (RSA_blinding_on(ret->rsa, NULL) != 1) {
-		error("%s: RSA_blinding_on failed", __func__);
+		error_f("RSA_blinding_on failed");
 		goto err;
 	}
 
@@ -259,7 +259,7 @@ sshkey_from_EVP_PKEY_EC(EVP_PKEY *pk, struct sshkey *ret) {
 
 	ret->ecdsa_nid = sshkey_ecdsa_key_to_nid(ret->ecdsa);
 	if (ret->ecdsa_nid < 0) {
-		error("%s: unsupported elliptic curve", __func__);
+		error_f("unsupported elliptic curve");
 		goto err;
 	}
 
@@ -268,13 +268,13 @@ sshkey_from_EVP_PKEY_EC(EVP_PKEY *pk, struct sshkey *ret) {
 	sshkey_dump_ec_point(EC_KEY_get0_group(ret->ecdsa), q);
 #endif
 	if (q == NULL) {
-		error("%s: cannot get public ec key", __func__);
+		error_f("cannot get public ec key");
 		goto err;
 	}
 
 {	int r = sshkey_ec_validate_public(EC_KEY_get0_group(ret->ecdsa), q);
 	if (r != SSH_ERR_SUCCESS) {
-		debug3("%s: cannot validate public ec key", __func__);
+		debug3_f("cannot validate public ec key");
 		goto err;
 	}
 }
@@ -310,7 +310,7 @@ sshkey_from_EVP_PKEY(int type, EVP_PKEY *pk, struct sshkey **keyp) {
 		ret = sshkey_from_EVP_PKEY_EC(pk, ret);
 #endif /*def OPENSSL_HAS_ECC*/
 	} else {
-		error("%s: mismatch or unknown EVP_PKEY type %d", __func__, evp_id);
+		error_f("mismatch or unknown EVP_PKEY type %d", evp_id);
 		return SSH_ERR_KEY_TYPE_UNKNOWN;
 	}
 
@@ -380,7 +380,7 @@ eng_try_load_cert(ENGINE *e, const char *keyid, EVP_PKEY *pk, struct sshkey *k) 
 		param.pkey = pk;
 
 		ctrl_ret = ENGINE_ctrl_cmd(e, "LOAD_CERT_EVP", 0, &param, 0, 0);
-		debug3("%s: eng cmd LOAD_CERT_EVP return %d", __func__, ctrl_ret);
+		debug3_f("eng cmd LOAD_CERT_EVP return %d", ctrl_ret);
 		if (ctrl_ret == 1)
 			x509 = param.x509;
 	}
@@ -394,11 +394,11 @@ eng_try_load_cert(ENGINE *e, const char *keyid, EVP_PKEY *pk, struct sshkey *k) 
 		param.keyid = keyid;
 
 		ctrl_ret = ENGINE_ctrl_cmd(e, "LOAD_CERT_CTRL", 0, &param, 0, 0);
-		debug3("%s: eng cmd LOAD_CERT_CTRL return %d", __func__, ctrl_ret);
+		debug3_f("eng cmd LOAD_CERT_CTRL return %d", ctrl_ret);
 		if (ctrl_ret == 1)
 			x509 = param.x509;
 	}
-	debug3("%s: certificate=%p", __func__, (void*)x509);
+	debug3_f("certificate=%p", (void*)x509);
 
 	if (x509 == NULL)
 		return;
@@ -406,7 +406,7 @@ eng_try_load_cert(ENGINE *e, const char *keyid, EVP_PKEY *pk, struct sshkey *k) 
 	if (ssh_x509_set_cert(k, x509, NULL))
 		x509key_build_chain(k);
 	else
-		error("%s: can not set X.509 certificate to key ", __func__);
+		error_f("can not set X.509 certificate to key ");
 }
 
 
@@ -503,7 +503,7 @@ engine_try_load_public(const char *filename, struct sshkey **keyp, char **commen
 	EVP_PKEY *pk = NULL;
 	struct sshkey *k = NULL;
 
-	debug3("%s filename=%s", __func__, filename);
+	debug3_f("filename=%s", filename);
 	if (keyp != NULL)
 		*keyp = NULL;
 	if (commentp != NULL)
@@ -518,7 +518,7 @@ engine_try_load_public(const char *filename, struct sshkey **keyp, char **commen
 		return SSH_ERR_SYSTEM_ERROR;
 	}
 
-	debug3("%s keyid=%s", __func__, keyid);
+	debug3_f("keyid=%s", keyid);
 
 	e = split_eng_keyid(keyid, &engkeyid);
 	if (e == NULL) {
@@ -608,9 +608,9 @@ try_load_engine(const char *engine) {
 
 done:
 	if (e != NULL)
-		debug3("%s: engine '%s' loaded", __func__, ENGINE_get_name(e));
+		debug3_f("engine '%s' loaded", ENGINE_get_name(e));
 	else
-		debug3("%s: cannot load engine '%s'", __func__, engine);
+		debug3_f("cannot load engine '%s'", engine);
 	return e;
 }
 
@@ -882,7 +882,7 @@ store_set_key_certs(STORE_KEY_DATA *kd, struct sshkey *key) {
 			break;
 	}
 	if (n >= len) {
-		debug3("%s: no certificate that match private key", __func__);
+		debug3_f("no certificate that match private key");
 		return;
 	}
 
@@ -941,7 +941,7 @@ store_try_load_public(const char *filename, struct sshkey **keyp, char **comment
 	STORE_KEY_DATA *kd = NULL;
 	struct sshkey *k = NULL;
 
-	debug3("%s filename=%s", __func__, filename);
+	debug3_f("filename=%s", filename);
 	if (keyp != NULL)
 		*keyp = NULL;
 	if (commentp != NULL)
@@ -956,7 +956,7 @@ store_try_load_public(const char *filename, struct sshkey **keyp, char **comment
 		return SSH_ERR_SYSTEM_ERROR;
 	}
 
-	debug3("%s url=%s", __func__, url);
+	debug3_f("url=%s", url);
 
 	kd = store_load_key(url);
 	if (kd == NULL) {

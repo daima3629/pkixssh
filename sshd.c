@@ -1,4 +1,4 @@
-/* $OpenBSD: sshd.c,v 1.562 2020/10/03 09:22:26 djm Exp $ */
+/* $OpenBSD: sshd.c,v 1.565 2020/11/08 11:46:12 dtucker Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -667,9 +667,9 @@ add_hostkey_algoritms(int k, struct sshbuf *b) {
 		if (match_pattern_list(pkalg,
 		    options.hostkeyalgorithms, 0) != 1
 		) {
-			debug3("%s: %s not permitted by "
+			debug3_f("%s not permitted by "
 				"HostkeyAlgorithms for key %d",
-				__func__, pkalg, k);
+				pkalg, k);
 			continue;
 		}
 
@@ -692,8 +692,7 @@ append_hostkey_type(struct sshbuf *b, const char *s)
 	int r;
 
 	if (match_pattern_list(s, options.hostkeyalgorithms, 0) != 1) {
-		debug3("%s: %s key not permitted by HostkeyAlgorithms",
-		    __func__, s);
+		debug3_f("%s key not permitted by HostkeyAlgorithms", s);
 		return;
 	}
 	if ((r = sshbuf_putf(b, "%s%s", sshbuf_len(b) > 0 ? "," : "", s)) != 0)
@@ -742,7 +741,7 @@ list_hostkey_types(void)
 	if ((ret = sshbuf_dup_string(b)) == NULL)
 		fatal("%s: sshbuf_dup_string failed", __func__);
 	sshbuf_free(b);
-	debug("%s: %s", __func__, ret);
+	debug_f("%s", ret);
 	return ret;
 }
 
@@ -925,8 +924,7 @@ notify_hostkeys(struct ssh *ssh)
 			pkalg = "ssh-rsa";
 		}
 
-		debug3("%s: key %d: %s %s", __func__, i,
-		    pkalg, fp);
+		debug3_f("key %d: %s %s", i, pkalg, fp);
 		if (nkeys == 0 && n_algs == 0) {
 			/*
 			 * Start building the request when we find the
@@ -949,7 +947,7 @@ notify_hostkeys(struct ssh *ssh)
 		free(fp);
 		nkeys++;
 	}
-	debug3("%s: sent %u hostkeys", __func__, nkeys);
+	debug3_f("sent %u hostkeys", nkeys);
 	if (nkeys == 0)
 		fatal("%s: no hostkeys", __func__);
 	if ((r = sshpkt_send(ssh)) != 0)
@@ -981,7 +979,7 @@ should_drop_connection(int startups)
 	p += options.max_startups_rate;
 	r = arc4random_uniform(100);
 
-	debug("%s: p %d, r %d", __func__, p, r);
+	debug_f("p %d, r %d", p, r);
 	return (r < p) ? 1 : 0;
 }
 
@@ -1064,7 +1062,7 @@ send_rexec_state(int fd, struct sshbuf *conf)
 	struct include_item *item = NULL;
 	int r;
 
-	debug3("%s: entering fd = %d config len %zu", __func__, fd,
+	debug3_f("entering fd = %d config len %zu", fd,
 	    sshbuf_len(conf));
 
 	if ((m = sshbuf_new()) == NULL || (inc = sshbuf_new()) == NULL)
@@ -1095,12 +1093,12 @@ send_rexec_state(int fd, struct sshbuf *conf)
 	rexec_send_rng_seed(m);
 #endif
 	if (ssh_msg_send(fd, 0, m) == -1)
-		error("%s: ssh_msg_send failed", __func__);
+		error_f("ssh_msg_send failed");
 
 	sshbuf_free(m);
 	sshbuf_free(inc);
 
-	debug3("%s: done", __func__);
+	debug3_f("done");
 }
 
 static void
@@ -1112,7 +1110,7 @@ recv_rexec_state(int fd, struct sshbuf *conf)
 	int r;
 	struct include_item *item;
 
-	debug3("%s: entering fd = %d", __func__, fd);
+	debug3_f("entering fd = %d", fd);
 
 	if ((m = sshbuf_new()) == NULL || (inc = sshbuf_new()) == NULL)
 		fatal("%s: sshbuf_new failed", __func__);
@@ -1147,7 +1145,7 @@ recv_rexec_state(int fd, struct sshbuf *conf)
 	free(cp);
 	sshbuf_free(m);
 
-	debug3("%s: done", __func__);
+	debug3_f("done");
 }
 
 /* Accept a connection from inetd */
@@ -1167,7 +1165,7 @@ server_accept_inetd(int *sock_in, int *sock_out)
 	 * ttyfd happens to be one of those.
 	 */
 	if (stdfd_devnull(1, 1, !log_stderr) == -1)
-		error("%s: stdfd_devnull failed", __func__);
+		error_f("stdfd_devnull failed");
 	debug("inetd sockets after dupping: %d, %d", *sock_in, *sock_out);
 }
 
@@ -1351,9 +1349,9 @@ server_accept_loop(int *sock_in, int *sock_out, int *newsock, int *config_s)
 				if (errno == EINTR || errno == EAGAIN)
 					continue;
 				if (errno != EPIPE) {
-					error("%s: startup pipe %d (fd=%d): "
-					    "read %s", __func__, i,
-					    startup_pipes[i], strerror(errno));
+					error_f("startup pipe %d (fd=%d): "
+					    "read %s", i, startup_pipes[i],
+					    strerror(errno));
 				}
 				/* FALLTHROUGH */
 			case 0:
@@ -1593,7 +1591,7 @@ set_process_rdomain(struct ssh *ssh, const char *name)
 	if (rtable != ortable && setrtable(rtable) != 0)
 		fatal("Unable to set routing domain %d: %s",
 		    rtable, strerror(errno));
-	debug("%s: set routing domain %d (was %d)", __func__, rtable, ortable);
+	debug_f("set routing domain %d (was %d)", rtable, ortable);
 #else /* defined(HAVE_SETRTABLE) */
 	/*unreachable*/
 	UNUSED(ssh);
@@ -2264,7 +2262,7 @@ main(int ac, char **av)
 		close(REEXEC_CONFIG_PASS_FD);
 		newsock = sock_out = sock_in = dup(STDIN_FILENO);
 		if (stdfd_devnull(1, 1, 0) == -1)
-			error("%s: stdfd_devnull failed", __func__);
+			error_f("stdfd_devnull failed");
 		debug("rexec cleanup in %d out %d newsock %d pipe %d sock %d",
 		    sock_in, sock_out, newsock, startup_pipe, config_s[0]);
 	}
@@ -2606,8 +2604,8 @@ cleanup_exit(int i)
 			debug("Killing privsep child %d", pmonitor->m_pid);
 			if (kill(pmonitor->m_pid, SIGKILL) != 0 &&
 			    errno != ESRCH)
-				error("%s: kill(%d): %s", __func__,
-				    pmonitor->m_pid, strerror(errno));
+				error_f("kill(%d): %s", pmonitor->m_pid,
+				    strerror(errno));
 		}
 	}
 #ifdef SSH_AUDIT_EVENTS

@@ -300,7 +300,7 @@ ssh_fetch_identitylist(int sock, struct ssh_identitylist **idlp)
 			} else
 				goto out;
 		}
-		debug3("%s comment[%d]: '%s'", __func__, i, idl->comments[i]);
+		debug3_f("comment[%d]: '%s'", i, idl->comments[i]);
 		i++;
 	}
 	idl->nkeys = num;

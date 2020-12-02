@@ -1,4 +1,4 @@
-/* $OpenBSD: auth-options.c,v 1.93 2020/08/27 01:07:09 djm Exp $ */
+/* $OpenBSD: auth-options.c,v 1.94 2020/10/18 11:32:01 djm Exp $ */
 /*
  * Copyright (c) 2018 Damien Miller <djm@mindrot.org>
  *
@@ -79,7 +79,7 @@ cert_option_list(struct sshauthopt *opts, struct sshbuf *oblob,
 	int r, ret = -1, found;
 
 	if ((c = sshbuf_fromb(oblob)) == NULL) {
-		error("%s: sshbuf_fromb failed", __func__);
+		error_f("sshbuf_fromb failed");
 		goto out;
 	}
 

@@ -346,8 +346,8 @@ resolve_host(const char *name, int port, int logerr, char *cname, size_t clen)
 	}
 	if (cname != NULL && res->ai_canonname != NULL) {
 		if (strlcpy(cname, res->ai_canonname, clen) >= clen) {
-			error("%s: host \"%s\" cname \"%s\" too long (max %lu)",
-			    __func__, name,  res->ai_canonname, (u_long)clen);
+			error_f("host \"%s\" cname \"%s\" too long (max %lu)",
+			    name,  res->ai_canonname, (u_long)clen);
 			if (clen > 0)
 				*cname = '\0';
 		}
@@ -411,29 +411,27 @@ resolve_addr(const char *name, int port, char *caddr, size_t clen)
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_NUMERICHOST|AI_NUMERICSERV;
 	if ((gaierr = getaddrinfo(name, strport, &hints, &res)) != 0) {
-		debug2("%s: could not resolve name %.100s as address: %s",
-		    __func__, name, ssh_gai_strerror(gaierr));
+		debug2_f("could not resolve name %.100s as address: %s",
+		    name, ssh_gai_strerror(gaierr));
 		return NULL;
 	}
 	if (res == NULL) {
-		debug("%s: getaddrinfo %.100s returned no addresses",
-		 __func__, name);
+		debug_f("getaddrinfo %.100s returned no addresses", name);
 		return NULL;
 	}
 	if (res->ai_next != NULL) {
-		debug("%s: getaddrinfo %.100s returned multiple addresses",
-		    __func__, name);
+		debug_f("getaddrinfo %.100s returned multiple addresses", name);
 		goto fail;
 	}
 	if ((gaierr = getnameinfo(res->ai_addr, res->ai_addrlen,
 	    addr, sizeof(addr), NULL, 0, NI_NUMERICHOST)) != 0) {
-		debug("%s: Could not format address for name %.100s: %s",
-		    __func__, name, ssh_gai_strerror(gaierr));
+		debug_f("could not format address for name %.100s: %s",
+		    name, ssh_gai_strerror(gaierr));
 		goto fail;
 	}
 	if (strlcpy(caddr, addr, clen) >= clen) {
-		error("%s: host \"%s\" addr \"%s\" too long (max %lu)",
-		    __func__, name,  addr, (u_long)clen);
+		debug_f("host \"%s\" addr \"%s\" too long (max %lu)",
+		    name,  addr, (u_long)clen);
 		if (clen > 0)
 			*caddr = '\0';
  fail:
@@ -466,7 +464,7 @@ check_follow_cname(int direct, char **namep, const char *cname)
 	if (!direct &&
 	    options.canonicalize_hostname != SSH_CANONICALISE_ALWAYS)
 		return 0;
-	debug3("%s: check \"%s\" CNAME \"%s\"", __func__, *namep, cname);
+	debug3_f("check \"%s\" CNAME \"%s\"", *namep, cname);
 	for (i = 0; i < options.num_permitted_cnames; i++) {
 		rule = options.permitted_cnames + i;
 		if (match_pattern_list(*namep, rule->source_list, 1) != 1 ||
@@ -500,10 +498,10 @@ resolve_canonicalize(char **hostp, int port)
 	 */
 	if ((addrs = resolve_addr(*hostp, port,
 	    newname, sizeof(newname))) != NULL) {
-		debug2("%s: hostname %.100s is address", __func__, *hostp);
+		debug2_f("hostname %.100s is address", *hostp);
 		if (strcasecmp(*hostp, newname) != 0) {
-			debug2("%s: canonicalised address \"%s\" => \"%s\"",
-			    __func__, *hostp, newname);
+			debug2_f("canonicalised address \"%s\" => \"%s\"",
+			    *hostp, newname);
 			free(*hostp);
 			*hostp = xstrdup(newname);
 		}
@@ -516,8 +514,7 @@ resolve_canonicalize(char **hostp, int port)
 	 * attempts at canonicalisation.
 	 */
 	if (is_addr_fast(*hostp)) {
-		debug("%s: hostname %.100s is an unrecognised address",
-		    __func__, *hostp);
+		debug_f("hostname %.100s is an unrecognised address", *hostp);
 		return NULL;
 	}
 
@@ -536,7 +533,7 @@ resolve_canonicalize(char **hostp, int port)
 
 	/* If domain name is anchored, then resolve it now */
 	if ((*hostp)[strlen(*hostp) - 1] == '.') {
-		debug3("%s: name is fully qualified", __func__);
+		debug3_f("name is fully qualified");
 		fullhost = xstrdup(*hostp);
 		if ((addrs = resolve_host(fullhost, port, 0,
 		    newname, sizeof(newname))) != NULL)
@@ -552,16 +549,15 @@ resolve_canonicalize(char **hostp, int port)
 			ndots++;
 	}
 	if (ndots > options.canonicalize_max_dots) {
-		debug3("%s: not canonicalizing hostname \"%s\" (max dots %d)",
-		    __func__, *hostp, options.canonicalize_max_dots);
+		debug3_f("not canonicalizing hostname \"%s\" (max dots %d)",
+		    *hostp, options.canonicalize_max_dots);
 		return NULL;
 	}
 	/* Attempt each supplied suffix */
 	for (i = 0; i < options.num_canonical_domains; i++) {
 		xasprintf(&fullhost, "%s.%s.", *hostp,
 		    options.canonical_domains[i]);
-		debug3("%s: attempting \"%s\" => \"%s\"", __func__,
-		    *hostp, fullhost);
+		debug3_f("attempting \"%s\" => \"%s\"", *hostp, fullhost);
 		if ((addrs = resolve_host(fullhost, port, 0,
 		    newname, sizeof(newname))) == NULL) {
 			free(fullhost);
@@ -582,7 +578,7 @@ resolve_canonicalize(char **hostp, int port)
  notfound:
 	if (!options.canonicalize_fallback_local)
 		fatal("%s: Could not resolve host \"%s\"", __progname, *hostp);
-	debug2("%s: host %s not found in any suffix", __func__, *hostp);
+	debug2_f("host %s not found in any suffix", *hostp);
 	return NULL;
 }
 
@@ -1795,7 +1791,7 @@ control_persist_detach(void)
 {
 	pid_t pid;
 
-	debug("%s: backgrounding master process", __func__);
+	debug_f("backgrounding master process");
 
 	/*
 	 * master (current process) into the background, and make the
@@ -1809,7 +1805,7 @@ control_persist_detach(void)
 		break;
 	default:
 		/* Parent: set up mux client to connect to backgrounded master */
-		debug2("%s: background process is %ld", __func__, (long)pid);
+		debug2_f("background process is %ld", (long)pid);
 		stdin_null_flag = ostdin_null_flag;
 		options.request_tty = orequest_tty;
 		tty_flag = otty_flag;
@@ -1822,7 +1818,7 @@ control_persist_detach(void)
 	}
 {	int keep_stderr = debug_flag && log_is_on_stderr();
 	if (stdfd_devnull(1, 1, !keep_stderr) == -1)
-		error("%s: stdfd_devnull failed", __func__);
+		error_f("stdfd_devnull failed");
 }
 	daemon(1, 1);
 	setproctitle("%s [mux]", options.control_path);
@@ -1840,7 +1836,7 @@ fork_postauth(void)
 		fatal("daemon() failed: %.200s", strerror(errno));
 {	int keep_stderr = debug_flag && log_is_on_stderr();
 	if (stdfd_devnull(1, 1, !keep_stderr) == -1)
-		error("%s: stdfd_devnull failed", __func__);
+		error_f("stdfd_devnull failed");
 }
 }
 
@@ -1850,12 +1846,12 @@ forwarding_success(void)
 	if (forward_confirms_pending < 0)
 		return;
 	if (--forward_confirms_pending == 0) {
-		debug("%s: all expected forwarding replies received", __func__);
+		debug_f("all expected forwarding replies received");
 		if (fork_after_authentication_flag)
 			fork_postauth();
 	} else {
-		debug2("%s: %d expected forwarding replies remaining",
-		    __func__, forward_confirms_pending);
+		debug2_f("%d expected forwarding replies remaining",
+		    forward_confirms_pending);
 	}
 }
 
@@ -1953,7 +1949,7 @@ ssh_tun_confirm(struct ssh *ssh, int id, int success, void *arg)
 			cleanup_exit(255);
 	}
 
-	debug("%s: tunnel forward established, id=%d", __func__, id);
+	debug_f("tunnel forward established, id=%d", id);
 	forwarding_success();
 }
 
@@ -1966,7 +1962,7 @@ ssh_init_stdio_forwarding(struct ssh *ssh)
 	if (options.stdio_forward_host == NULL)
 		return;
 
-	debug3("%s: %s:%d", __func__, options.stdio_forward_host,
+	debug3_f("%s:%d", options.stdio_forward_host,
 	    options.stdio_forward_port);
 
 	if ((in = dup(STDIN_FILENO)) == -1 ||
@@ -2052,7 +2048,7 @@ ssh_init_forwarding(struct ssh *ssh, char **ifname)
 			forward_confirms_pending++;
 	}
 	if (forward_confirms_pending > 0) {
-		debug("%s: expecting replies for %d forwards", __func__,
+		debug_f("expecting replies for %d forwards",
 		    forward_confirms_pending);
 	} else
 		forward_confirms_pending = -1;
@@ -2155,7 +2151,7 @@ ssh_session2_open(struct ssh *ssh)
 	    window, packetmax, CHAN_EXTENDED_WRITE,
 	    "client-session", /*nonblock*/0);
 
-	debug3("%s: channel_new: %d", __func__, c->self);
+	debug3_f("channel_new: %d", c->self);
 
 	channel_send_open(ssh, c->self);
 	if (!no_shell_flag)
@@ -2256,7 +2252,7 @@ ssh_session2(struct ssh *ssh, struct passwd *pw)
 	 * as it may want to write to stdout.
 	 */
 	if (stdfd_devnull(0, !need_controlpersist_detach, 0) == -1)
-		error("%s: stdfd_devnull failed", __func__);
+		error_f("stdfd_devnull failed");
 
 	/*
 	 * If requested and we are not interested in replies to remote
@@ -2364,8 +2360,8 @@ load_public_identity_files(struct passwd *pw)
 			continue;
 		}
 		if (!sshkey_is_cert(public)) {
-			debug("%s: key %s type %s is not a certificate",
-			    __func__, cp, sshkey_type(public));
+			debug_f("key %s type %s is not a certificate",
+			    cp, sshkey_type(public));
 			sshkey_free(public);
 			free(cp);
 			continue;
@@ -2398,8 +2394,8 @@ load_public_identity_files(struct passwd *pw)
 			continue;
 		}
 		if (!sshkey_is_cert(public)) {
-			debug("%s: key %s type %s is not a certificate",
-			    __func__, filename, sshkey_type(public));
+			debug_f("key %s type %s is not a certificate",
+			    filename, sshkey_type(public));
 			sshkey_free(public);
 			free(filename);
 			continue;

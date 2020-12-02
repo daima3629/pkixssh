@@ -1,4 +1,4 @@
-/* $OpenBSD: auth2-pubkey.c,v 1.100 2020/08/27 01:07:09 djm Exp $ */
+/* $OpenBSD: auth2-pubkey.c,v 1.101 2020/10/18 11:32:01 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2003-2020 Roumen Petrov.  All rights reserved.
@@ -131,8 +131,7 @@ userauth_pubkey(struct ssh *ssh)
 	pktype = sshkey_type_from_name(pkalg);
 	if (pktype == KEY_UNSPEC) {
 		/* this is perfectly legal */
-		verbose("%s: unsupported public key algorithm: %s",
-		    __func__, pkalg);
+		verbose("Unsupported public key algorithm: %s", pkalg);
 		goto done;
 	}
 	if (!pubkey_algorithm_allowed(pkalg)) {
@@ -140,16 +139,16 @@ userauth_pubkey(struct ssh *ssh)
 		goto done;
 	}
 	if ((r = Xkey_from_blob(pkalg, pkblob, blen, &key)) != 0) {
-		error("%s: could not parse key: %s", __func__, ssh_err(r));
+		error_f("could not parse key: %s", ssh_err(r));
 		goto done;
 	}
 	if (key == NULL) {
-		error("%s: cannot decode key: %s", __func__, pkalg);
+		error_f("cannot decode key: %s", pkalg);
 		goto done;
 	}
 	if (key->type != pktype) {
-		error("%s: type mismatch for decoded key "
-		    "(received %d, expected %d)", __func__, key->type, pktype);
+		error_f("type mismatch for decoded key "
+		    "(received %d, expected %d)", key->type, pktype);
 		goto done;
 	}
 	if (sshkey_type_plain(key->type) == KEY_RSA &&
@@ -164,7 +163,7 @@ userauth_pubkey(struct ssh *ssh)
 	}
 	if ((r = sshkey_check_cert_sigtype(key,
 	    options.ca_sign_algorithms)) != 0) {
-		logit("%s: certificate signature algorithm %s: %s", __func__,
+		logit("Certificate signature algorithm %s: %s",
 		    (key->cert == NULL || key->cert->signature_type == NULL) ?
 		    "(null)" : key->cert->signature_type, ssh_err(r));
 		goto done;
@@ -177,18 +176,15 @@ userauth_pubkey(struct ssh *ssh)
 		ca_s = format_key(key->cert->signature_key);
 
 	if (have_sig) {
-		debug3("%s: have signature for %s %s%s%s",
-		    __func__, pkalg, key_s,
-		    ca_s == NULL ? "" : " CA ",
-		    ca_s == NULL ? "" : ca_s);
+		debug3_f("have signature for %s %s%s%s", pkalg, key_s,
+		    ca_s == NULL ? "" : " CA ", ca_s == NULL ? "" : ca_s);
 		if ((r = sshpkt_get_string(ssh, &sig, &slen)) != 0 ||
 		    (r = sshpkt_get_end(ssh)) != 0)
 			fatal("%s: %s", __func__, ssh_err(r));
 		if ((b = sshbuf_new()) == NULL)
 			fatal("%s: sshbuf_new failed", __func__);
 		if (ssh_compat_fellows(ssh, SSH_OLD_SESSIONID)) {
-			if ((r = sshbuf_put(b, session_id2,
-			    session_id2_len)) != 0)
+			if ((r = sshbuf_put(b, session_id2, session_id2_len)) != 0)
 				fatal("%s: sshbuf_put session id: %s",
 				    __func__, ssh_err(r));
 		} else {
@@ -198,8 +194,7 @@ userauth_pubkey(struct ssh *ssh)
 				    __func__, ssh_err(r));
 		}
 		if (!authctxt->valid || authctxt->user == NULL) {
-			debug2("%s: disabled because of invalid user",
-			    __func__);
+			debug2_f("disabled because of invalid user");
 			goto done;
 		}
 		/* reconstruct packet */
@@ -227,17 +222,14 @@ userauth_pubkey(struct ssh *ssh)
 		}
 		auth2_record_key(authctxt, authenticated, key);
 	} else {
-		debug("%s: test pkalg %s pkblob %s%s%s",
-		    __func__, pkalg, key_s,
-		    ca_s == NULL ? "" : " CA ",
-		    ca_s == NULL ? "" : ca_s);
+		debug_f("test pkalg %s pkblob %s%s%s", pkalg, key_s,
+		    ca_s == NULL ? "" : " CA ", ca_s == NULL ? "" : ca_s);
 
 		if ((r = sshpkt_get_end(ssh)) != 0)
 			fatal("%s: %s", __func__, ssh_err(r));
 
 		if (!authctxt->valid || authctxt->user == NULL) {
-			debug2("%s: disabled because of invalid user",
-			    __func__);
+			debug2_f("disabled because of invalid user");
 			goto done;
 		}
 		/* XXX fake reply and always send PK_OK ? */
@@ -262,10 +254,10 @@ userauth_pubkey(struct ssh *ssh)
 }
 done:
 	if (authenticated == 1 && auth_activate_options(ssh, authopts) != 0) {
-		debug("%s: key options inconsistent with existing", __func__);
+		debug_f("key options inconsistent with existing");
 		authenticated = 0;
 	}
-	debug2("%s: authenticated %d pkalg %s", __func__, authenticated, pkalg);
+	debug2_f("authenticated %d pkalg %s", authenticated, pkalg);
 
 	sshauthopt_free(authopts);
 	sshkey_free(key);
@@ -432,7 +424,7 @@ x509_match(const struct sshkey *key, const struct sshkey *found) {
 		if (!sshkey_equal_public(key, found))
 			return 0;
 
-		debug3("%s: found matching certificate", __func__);
+		debug3_f("found matching certificate");
 		/* If self-issued is not enabled only verification
 		   process can allow received certificate. */
 		if (!ssh_x509flags.key_allow_selfissued) return 1;
@@ -556,20 +548,20 @@ match_principals_command(struct ssh *ssh, struct passwd *user_pw,
 	}
 	if ((ca_fp = sshkey_fingerprint(cert->signature_key,
 	    options.fingerprint_hash, SSH_FP_DEFAULT)) == NULL) {
-		error("%s: sshkey_fingerprint failed", __func__);
+		error_f("sshkey_fingerprint failed");
 		goto out;
 	}
 	if ((key_fp = sshkey_fingerprint(key,
 	    options.fingerprint_hash, SSH_FP_DEFAULT)) == NULL) {
-		error("%s: sshkey_fingerprint failed", __func__);
+		error_f("sshkey_fingerprint failed");
 		goto out;
 	}
 	if ((r = sshkey_to_base64(cert->signature_key, &catext)) != 0) {
-		error("%s: sshkey_to_base64 failed: %s", __func__, ssh_err(r));
+		error_f("sshkey_to_base64 failed: %s", ssh_err(r));
 		goto out;
 	}
 	if ((r = sshkey_to_base64(key, &keytext)) != 0) {
-		error("%s: sshkey_to_base64 failed: %s", __func__, ssh_err(r));
+		error_f("sshkey_to_base64 failed: %s", ssh_err(r));
 		goto out;
 	}
 	snprintf(serial_s, sizeof(serial_s), "%llu",
@@ -655,7 +647,7 @@ check_authkey_line(struct ssh *ssh, struct passwd *pw, struct sshkey *key,
 		*authoptsp = NULL;
 
 	if ((found = sshkey_new(want_keytype)) == NULL) {
-		debug3("%s: keytype %d failed", __func__, want_keytype);
+		debug3_f("keytype %d failed", want_keytype);
 		goto out;
 	}
 
@@ -708,9 +700,9 @@ check_authkey_line(struct ssh *ssh, struct passwd *pw, struct sshkey *key,
 		: sshkey_fingerprint(found, options.fingerprint_hash, SSH_FP_DEFAULT);
 	if (fp == NULL) {
 		if (sshkey_is_x509(found))
-			error("%s: extract of X.509 distinguished name failed", __func__);
+			error_f("extract of X.509 distinguished name failed");
 		else
-			error("%s: fingerprint failed", __func__);
+			error_f("fingerprint failed");
 		goto out;
 	}
 
@@ -856,7 +848,7 @@ user_cert_trusted_ca(struct ssh *ssh, struct passwd *pw, struct sshkey *key,
 
 	if ((r = sshkey_in_file(key->cert->signature_key,
 	    options.trusted_user_ca_keys, 1, 0)) != 0) {
-		debug2("%s: CA %s %s is not listed in %s: %s", __func__,
+		debug2_f("CA %s %s is not listed in %s: %s",
 		    sshkey_type(key->cert->signature_key), ca_fp,
 		    options.trusted_user_ca_keys, ssh_err(r));
 		goto out;
@@ -1008,11 +1000,11 @@ user_key_command_allowed2(struct ssh *ssh, struct passwd *user_pw,
 	/* Prepare AuthorizedKeysCommand */
 	if ((key_fp = sshkey_fingerprint(key, options.fingerprint_hash,
 	    SSH_FP_DEFAULT)) == NULL) {
-		error("%s: sshkey_fingerprint failed", __func__);
+		error_f("sshkey_fingerprint failed");
 		goto out;
 	}
 	if ((r = sshkey_to_base64(key, &keytext)) != 0) {
-		error("%s: sshkey_to_base64 failed: %s", __func__, ssh_err(r));
+		error_f("sshkey_to_base64 failed: %s", ssh_err(r));
 		goto out;
 	}
 

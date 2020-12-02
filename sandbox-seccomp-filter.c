@@ -333,7 +333,7 @@ ssh_sandbox_init(struct monitor *monitor)
 	 * Strictly, we don't need to maintain any state here but we need
 	 * to return non-NULL to satisfy the API.
 	 */
-	debug3("%s: preparing seccomp filter sandbox", __func__);
+	debug3_f("preparing seccomp filter sandbox");
 	box = xcalloc(1, sizeof(*box));
 	box->child_pid = 0;
 
@@ -363,7 +363,7 @@ ssh_sandbox_child_debugging(void)
 	struct sigaction act;
 	sigset_t mask;
 
-	debug3("%s: installing SIGSYS handler", __func__);
+	debug3_f("installing SIGSYS handler");
 	memset(&act, 0, sizeof(act));
 	sigemptyset(&mask);
 	sigaddset(&mask, SIGSYS);
@@ -401,16 +401,14 @@ ssh_sandbox_child(struct ssh_sandbox *box)
 	ssh_sandbox_child_debugging();
 #endif /* SANDBOX_SECCOMP_FILTER_DEBUG */
 
-	debug3("%s: setting PR_SET_NO_NEW_PRIVS", __func__);
+	debug3_f("setting PR_SET_NO_NEW_PRIVS");
 	if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) == -1) {
-		debug("%s: prctl(PR_SET_NO_NEW_PRIVS): %s",
-		      __func__, strerror(errno));
+		debug_f("prctl(PR_SET_NO_NEW_PRIVS): %s", strerror(errno));
 		nnp_failed = 1;
 	}
-	debug3("%s: attaching seccomp filter program", __func__);
+	debug3_f("attaching seccomp filter program");
 	if (prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, &preauth_program) == -1)
-		debug("%s: prctl(PR_SET_SECCOMP): %s",
-		      __func__, strerror(errno));
+		debug_f("prctl(PR_SET_SECCOMP): %s", strerror(errno));
 	else if (nnp_failed)
 		fatal("%s: SECCOMP_MODE_FILTER activated but "
 		    "PR_SET_NO_NEW_PRIVS failed", __func__);
@@ -420,7 +418,7 @@ void
 ssh_sandbox_parent_finish(struct ssh_sandbox *box)
 {
 	free(box);
-	debug3("%s: finished", __func__);
+	debug3_f("finished");
 }
 
 void

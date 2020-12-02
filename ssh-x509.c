@@ -539,7 +539,7 @@ x509key_from_subject(int basetype, const char* _cp) {
 
 	x = X509_new();
 	if (x == NULL) {
-		error("%s: out of memory X509_new()", __func__);
+		error_f("out of memory X509_new()");
 		goto err;
 	}
 
@@ -548,19 +548,19 @@ x509key_from_subject(int basetype, const char* _cp) {
 		X509_NAME  *xn = X509_get_subject_name(x);
 
 		if (xn == NULL) {
-			error("%s: X.509 certificate without subject", __func__);
+			error_f("X.509 certificate without subject");
 			goto err;
 		}
 
 		if (!x509key_str2X509NAME(subject, xn)) {
-			error("%s: x509key_str2X509NAME fail", __func__);
+			error_f("x509key_str2X509NAME fail");
 			goto err;
 		}
 	}
 
 	key->type = basetype;
 	if (!ssh_x509_set_cert(key, x, NULL)) {
-		error("%s: ssh_x509_set_cert fail", __func__);
+		error_f("ssh_x509_set_cert fail");
 		goto err;
 	}
 	goto done;
@@ -646,16 +646,16 @@ x509_to_key(X509 *x509) {
 		key->type = KEY_ECDSA;
 		key->ecdsa_nid = sshkey_ecdsa_key_to_nid(key->ecdsa);
 		if (key->ecdsa_nid < 0) {
-			error("%s: unsupported elliptic curve", __func__);
+			error_f("unsupported elliptic curve");
 			goto err;
 		}
 		q = EC_KEY_get0_public_key(key->ecdsa);
 		if (q == NULL) {
-			error("%s: cannot get public ec key ", __func__);
+			error_f("cannot get public ec key ");
 			goto err;
 		}
 		if (sshkey_ec_validate_public(EC_KEY_get0_group(key->ecdsa), q) != 0) {
-			debug3("%s: cannot validate public ec key ", __func__);
+			debug3_f("cannot validate public ec key ");
 			goto err;
 		}
 		(void)ssh_x509_set_cert(key, x509, NULL);
@@ -666,8 +666,7 @@ x509_to_key(X509 *x509) {
 #endif /*def OPENSSL_HAS_ECC*/
 
 	default:
-		error("%s: unsupported EVP_PKEY type %d", __func__,
-		    EVP_PKEY_base_id(env_pkey));
+		error_f("unsupported EVP_PKEY type %d", EVP_PKEY_base_id(env_pkey));
 	}
 
 	EVP_PKEY_free(env_pkey);
@@ -708,7 +707,7 @@ X509_from_blob(const u_char *blob, size_t blen, X509 **xp) {
 
 {	size_t k = BIO_ctrl_pending(mbio);
 	if (k > 0) {
-		error("%s: remaining bytes in X.509 blob %d", __func__, (int) k);
+		error_f("remaining bytes in X.509 blob %d", (int) k);
 		r = SSH_ERR_UNEXPECTED_TRAILING_DATA;
 		goto done;
 	}
@@ -782,17 +781,15 @@ if ((SSHX_RFC6187_MISSING_KEY_IDENTIFIER & xcompat) == 0) {
 	/* RFC6187: uint32  certificate-count */
 	r = sshbuf_get_u32(b, &nc);
 	if (r != 0) goto err;
-	debug3("%s: certificate-count: %u", __func__, nc);
+	debug3_f("certificate-count: %u", nc);
 
 	if (nc > 100) {
-		error("%s: the number of X.509 certificates"
-		    " exceed limit(%d > 100)", __func__, nc);
+		error_f("the number of X.509 certificates exceed limit(%d > 100)", nc);
 		r = SSH_ERR_INVALID_FORMAT;
 		goto err;
 	}
 	if (nc < 1) {
-		error("%s: at least one X.509 certificate"
-		    " must present", __func__);
+		error_f("at least one X.509 certificate must present");
 		r = SSH_ERR_INVALID_FORMAT;
 		goto err;
 	}
@@ -810,7 +807,7 @@ if ((SSHX_RFC6187_MISSING_KEY_IDENTIFIER & xcompat) == 0) {
 	r = X509_from_blob(xs, xlen, &x);
 	if (r != SSH_ERR_SUCCESS) goto err;
 
-	debug3("%s: certificate[0]=%p", __func__, (void*)x);
+	debug3_f("certificate[0]=%p", (void*)x);
 
 	key = x509_to_key(x);
 	if (key == NULL) {
@@ -864,7 +861,7 @@ if ((SSHX_RFC6187_MISSING_KEY_IDENTIFIER & xcompat) == 0) {
 		if (r != SSH_ERR_SUCCESS) goto err;
 
 		r = X509_from_blob(xs, xlen, &x);
-		debug3("%s: certificate[%d]=%p", __func__, k, (void*)x);
+		debug3_f("certificate[%d]=%p", k, (void*)x);
 		if (r != SSH_ERR_SUCCESS) goto err;
 
 		sk_X509_insert(pchain, x, -1 /*last*/);
@@ -874,13 +871,11 @@ if ((SSHX_RFC6187_MISSING_KEY_IDENTIFIER & xcompat) == 0) {
 	/* RFC6187: uint32  ocsp-response-count */
 	r = sshbuf_get_u32(b, &no);
 	if (r != 0) goto err;
-	debug3("%s: ocsp-response-count: %u", __func__, no);
+	debug3_f("ocsp-response-count: %u", no);
 
 	/* The number of OCSP responses MUST NOT exceed the number of certificates. */
 	if (no > nc) {
-		error("%s: the number of OCSP responses(%d)"
-		    " exceed the number of certificates(%d)",
-		      __func__, no, nc);
+		error_f("the number of OCSP responses(%d) exceed the number of certificates(%d)", no, nc);
 		r = SSH_ERR_INVALID_FORMAT;
 		goto err;
 	}
@@ -896,7 +891,7 @@ if ((SSHX_RFC6187_MISSING_KEY_IDENTIFIER & xcompat) == 0) {
 
 {	size_t l = sshbuf_len(b);
 	if (l > 0) {
-		error("%s: remaining bytes in key blob %zu", __func__, l);
+		error_f("remaining bytes in key blob %zu", l);
 		r = SSH_ERR_UNEXPECTED_TRAILING_DATA;
 	}
 }
@@ -939,9 +934,7 @@ X509key_from_blob2(const char *pkalg, const u_char *blob, size_t blen, struct ss
 	if (r != SSH_ERR_SUCCESS) goto done;
 
 	if (strcmp(pkalg, xpkalg) != 0) {
-		error("%s: public-key algorithm mismatch:"
-		    " expected %.100s extracted %.100s",
-		    __func__, pkalg, xpkalg);
+		error_f("public-key algorithm mismatch: expected %.100s extracted %.100s", pkalg, xpkalg);
 		r = SSH_ERR_KEY_TYPE_MISMATCH;
 		goto done;
 	}
@@ -1031,7 +1024,7 @@ X509key_encode_identity(const char *pkalg, const struct sshkey *key, struct sshb
 
 		ret = xkey_to_buf2(xkalg, key, d);
 		if (ret != SSH_ERR_SUCCESS)
-			debug3("%s: xkey_to_buf2 fail" , __func__);
+			debug3_f("xkey_to_buf2 fail");
 
 		if (ret == SSH_ERR_SUCCESS)
 			ret = sshbuf_put_stringb(b, d);
@@ -1308,7 +1301,7 @@ x509key_load_certs_bio(struct sshkey *key, BIO *bio) {
 
 		sk_X509_insert(chain, x, -1 /*last*/);
 	} while (1);
-	debug3("%s loaded %d certificates", __func__, sk_X509_num(chain));
+	debug3_f("loaded %d certificates", sk_X509_num(chain));
 
 	/* clear OpenSSL "error buffer" */
 	ERR_clear_error();
@@ -1359,7 +1352,7 @@ void
 x509key_load_certs(const char *pkalg, struct sshkey *key, const char *filename) {
 	size_t len;
 
-	debug3("%s() pkalg=%s, filename=%s", __func__, pkalg, (filename ? filename : "?!?"));
+	debug3_f("pkalg=%s, filename=%s", pkalg, (filename ? filename : "?!?"));
 {	/* check if public algorithm is with X.509 certificates */
 	const SSHX509KeyAlgs *p;
 
@@ -1424,7 +1417,7 @@ x509key_build_chain(struct sshkey *key) {
 	sk_X509_pop_free(x509_data->chain, X509_free);
 	x509_data->chain = chain;
 
-	debug3("%s length=%d", __func__, sk_X509_num(chain));
+	debug3_f("length=%d", sk_X509_num(chain));
 }
 
 
@@ -1454,7 +1447,7 @@ x509key_prepare_chain(const char *pkalg, struct sshkey *key) {
 	sk_X509_pop_free(x509_data->chain, X509_free);
 	x509_data->chain = chain;
 
-	debug3("%s length=%d", __func__, sk_X509_num(chain));
+	debug3_f("length=%d", sk_X509_num(chain));
 }
 }
 
@@ -1672,19 +1665,19 @@ ssh_x509_EVP_PKEY_sign(
 
 	ret = EVP_SignInit_ex(ctx, dgst->evp, NULL);
 	if (ret <= 0) {
-		error("%s: init fail", __func__);
+		error_f("init fail");
 		goto done;
 	}
 
 	ret = EVP_SignUpdate(ctx, data, datalen);
 	if (ret <= 0) {
-		error("%s: update fail", __func__);
+		error_f("update fail");
 		goto done;
 	}
 
 	ret = dgst->SignFinal(ctx, sigret, siglen, privkey);
 	if (ret <= 0) {
-		error("%s: final fail", __func__);
+		error_f("final fail");
 		goto done;
 	}
 
@@ -1840,19 +1833,19 @@ ssh_xkalg_verify(
 
 	ret = EVP_VerifyInit(ctx, dgst->evp);
 	if (ret <= 0) {
-		error("%s: verify-init fail", __func__);
+		error_f("verify-init fail");
 		goto done;
 	}
 
 	ret = EVP_VerifyUpdate(ctx, data, datalen);
 	if (ret <= 0) {
-		error("%s: verify-update fail", __func__);
+		error_f("verify-update fail");
 		goto done;
 	}
 
 	ret = dgst->VerifyFinal(ctx, sigblob, len, pubkey);
 	if (ret <= 0) {
-		error("%s: verify-final fail", __func__);
+		error_f("verify-final fail");
 		goto done;
 	}
 
@@ -2005,7 +1998,7 @@ Xkey_sign(ssh_sign_ctx *ctx,
 		if (ret == SSH_ERR_LIBCRYPTO_ERROR)
 			do_log_crypto_errors(SYSLOG_LEVEL_ERROR);
 		else
-			debug3("%s: return %d", __func__, ret);
+			debug3_f("return %d", ret);
 		return ret;
 	}
 
@@ -2024,7 +2017,7 @@ Xkey_sign(ssh_sign_ctx *ctx,
 	}
 
 done:
-	debug3("%s: return %d", __func__, ret);
+	debug3_f("return %d", ret);
 	return ret;
 }
 }
@@ -2090,7 +2083,7 @@ xkey_validate_cert(const struct sshkey *k) {
 		return SSH_ERR_INVALID_ARGUMENT;
 
 	if (pssh_x509store_verify_cert == NULL) {
-		error("%s: pssh_x509store_verify_cert is NULL", __func__);
+		error_f("pssh_x509store_verify_cert is NULL");
 		return SSH_ERR_INTERNAL_ERROR;
 	}
 
@@ -2207,11 +2200,11 @@ Xkey_from_blob(const char *pkalg, const u_char *blob, size_t blen, struct sshkey
 	int RFC6187_format;
 
 	if (pkalg == NULL) {
-		error("%s: pkalg is NULL", __func__);
+		error_f("pkalg is NULL");
 		return SSH_ERR_INVALID_ARGUMENT;
 	}
 
-	debug3("%s() pkalg='%s', blen=%zu", __func__, pkalg, blen);
+	debug3_f("pkalg='%s', blen=%zu", pkalg, blen);
 
 {	/* check if public algorithm is with X.509 certificates */
 	const SSHX509KeyAlgs *p;
@@ -2440,7 +2433,7 @@ Xkey_puts(const char *pkalg, const struct sshkey *key, struct sshbuf *b) {
 
 		r = xkey_to_buf2(xkalg, key, d);
 		if (r != SSH_ERR_SUCCESS)
-			debug3("%s: xkey_to_buf2 fail" , __func__);
+			debug3_f("xkey_to_buf2 fail");
 		else
 			r = sshbuf_put_stringb(b, d);
 

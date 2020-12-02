@@ -1,4 +1,4 @@
-/* $OpenBSD: dns.c,v 1.38 2018/02/23 15:58:37 markus Exp $ */
+/* $OpenBSD: dns.c,v 1.39 2020/10/18 11:32:01 djm Exp $ */
 
 /*
  * Copyright (c) 2003 Wesley Griffin. All rights reserved.
@@ -703,7 +703,7 @@ export_dns_rr(const char *hostname, struct sshkey *key, FILE *f, int generic)
 
 	/* No SSHFP record was generated at all */
 	if (success == 0) {
-		error("%s: unsupported algorithm and/or digest_type", __func__);
+		error_f("unsupported algorithm and/or digest_type");
 	}
 
 	cert_param_clean(&cert_param);

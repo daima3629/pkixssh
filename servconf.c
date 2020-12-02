@@ -1,4 +1,4 @@
-/* $OpenBSD: servconf.c,v 1.369 2020/08/28 03:15:52 dtucker Exp $ */
+/* $OpenBSD: servconf.c,v 1.371 2020/10/18 11:32:02 djm Exp $ */
 /*
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
@@ -2669,7 +2669,7 @@ load_server_config(const char *filename, struct sshbuf *conf)
 	FILE *f;
 	int r, lineno = 0;
 
-	debug2("%s: filename %s", __func__, filename);
+	debug2_f("filename %s", filename);
 	if ((f = fopen(filename, "r")) == NULL) {
 		perror(filename);
 		exit(1);
@@ -2695,7 +2695,7 @@ load_server_config(const char *filename, struct sshbuf *conf)
 	if ((r = sshbuf_put_u8(conf, 0)) != 0)
 		fatal("%s: buffer error: %s", __func__, ssh_err(r));
 	fclose(f);
-	debug2("%s: done config len = %zu", __func__, sshbuf_len(conf));
+	debug2_f("done config len = %zu", sshbuf_len(conf));
 }
 
 void
@@ -2868,7 +2868,7 @@ parse_server_config_depth(ServerOptions *options, const char *filename,
 	if (depth < 0 || depth > SERVCONF_MAX_DEPTH)
 		fatal("Too many recursive configuration includes");
 
-	debug2("%s: config %s len %zu%s", __func__, filename, sshbuf_len(conf),
+	debug2_f("config %s len %zu%s", filename, sshbuf_len(conf),
 	    (flags & SSHCFG_NEVERMATCH ? " [checking syntax only]" : ""));
 
 	if ((obuf = cbuf = sshbuf_dup_string(conf)) == NULL)

@@ -1,4 +1,4 @@
-/* $OpenBSD: misc.c,v 1.154 2020/10/03 09:22:26 djm Exp $ */
+/* $OpenBSD: misc.c,v 1.156 2020/11/27 00:49:58 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2005,2006 Damien Miller.  All rights reserved.
@@ -275,7 +275,7 @@ set_sock_tos(int fd, int tos)
 		break;
 	case AF_INET:
 # ifdef IP_TOS
-		debug3("%s: set socket %d IP_TOS 0x%02x", __func__, fd, tos);
+		debug3_f("set socket %d IP_TOS 0x%02x", fd, tos);
 		if (setsockopt(fd, IPPROTO_IP, IP_TOS,
 		    &tos, sizeof(tos)) == -1)
 			error("setsockopt socket %d IP_TOS %d: %s:",
@@ -284,7 +284,7 @@ set_sock_tos(int fd, int tos)
 		break;
 	case AF_INET6:
 # ifdef IPV6_TCLASS
-		debug3("%s: set socket %d IPV6_TCLASS 0x%02x", __func__, fd, tos);
+		debug3_f("set socket %d IPV6_TCLASS 0x%02x", fd, tos);
 		if (setsockopt(fd, IPPROTO_IPV6, IPV6_TCLASS,
 		    &tos, sizeof(tos)) == -1)
 			error("setsockopt socket %d IPV6_TCLASS %d: %s:",
@@ -292,7 +292,7 @@ set_sock_tos(int fd, int tos)
 # endif /* IPV6_TCLASS */
 		break;
 	default:
-		debug2("%s: unsupported socket family %d", __func__, af);
+		debug2_f("unsupported socket family %d", af);
 		break;
 	}
 #endif /* IP_TOS_IS_BROKEN */
@@ -1226,25 +1226,22 @@ vdollar_percent_expand(int *parseerror, int dollar, int percent,
 		if (dollar && string[0] == '$' && string[1] == '{') {
 			string += 2;  /* skip over '${' */
 			if ((varend = strchr(string, '}')) == NULL) {
-				error("%s: environment variable '%s' missing "
-				   "closing '}'", __func__, string);
+				error_f("environment variable '%s' missing "
+				   "closing '}'", string);
 				goto out;
 			}
 			len = varend - string;
 			if (len == 0) {
-				error("%s: zero-length environment variable",
-				    __func__);
+				error_f("zero-length environment variable");
 				goto out;
 			}
 			var = xmalloc(len + 1);
 			(void)strlcpy(var, string, len + 1);
 			if ((val = getenv(var)) == NULL) {
-				error("%s: env var ${%s} has no value",
-				    __func__, var);
+				error_f("env var ${%s} has no value", var);
 				missingvar = 1;
 			} else {
-				debug3("%s: expand ${%s} -> '%s'", __func__,
-				    var, val);
+				debug3_f("expand ${%s} -> '%s'", var, val);
 				if ((r = sshbuf_put(buf, val, strlen(val))) !=0)
 					fatal("%s: sshbuf_put: %s", __func__,
 					    ssh_err(r));
@@ -1272,7 +1269,7 @@ vdollar_percent_expand(int *parseerror, int dollar, int percent,
 		if (*string == '%')
 			goto append;
 		if (*string == '\0') {
-			error("%s: invalid format", __func__);
+			error_f("invalid format");
 			goto out;
 		}
 		for (i = 0; i < num_keys; i++) {
@@ -1286,7 +1283,7 @@ vdollar_percent_expand(int *parseerror, int dollar, int percent,
 			}
 		}
 		if (i >= num_keys) {
-			error("%s: unknown key %%%c", __func__, *string);
+			error_f("unknown key %%%c", *string);
 			goto out;
 		}
 	}
@@ -1387,16 +1384,16 @@ tun_open(int tun, int mode, char **ifname)
 				break;
 		}
 	} else {
-		debug("%s: invalid tunnel %u", __func__, tun);
+		debug_f("invalid tunnel %u", tun);
 		return -1;
 	}
 
 	if (fd == -1) {
-		debug("%s: %s open: %s", __func__, name, strerror(errno));
+		debug_f("%s open: %s", name, strerror(errno));
 		return -1;
 	}
 
-	debug("%s: %s mode %d fd %d", __func__, name, mode, fd);
+	debug_f("%s mode %d fd %d", name, mode, fd);
 
 	/* Bring interface up if it is not already */
 	snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), "%s%d", tunbase, tun);
@@ -1404,16 +1401,16 @@ tun_open(int tun, int mode, char **ifname)
 		goto failed;
 
 	if (ioctl(sock, SIOCGIFFLAGS, &ifr) == -1) {
-		debug("%s: get interface %s flags: %s", __func__,
-		    ifr.ifr_name, strerror(errno));
+		debug_f("get interface %s flags: %s", ifr.ifr_name,
+		    strerror(errno));
 		goto failed;
 	}
 
 	if (!(ifr.ifr_flags & IFF_UP)) {
 		ifr.ifr_flags |= IFF_UP;
 		if (ioctl(sock, SIOCSIFFLAGS, &ifr) == -1) {
-			debug("%s: activate interface %s: %s", __func__,
-			    ifr.ifr_name, strerror(errno));
+			debug_f("activate interface %s: %s", ifr.ifr_name,
+			    strerror(errno));
 			goto failed;
 		}
 	}
@@ -1874,8 +1871,7 @@ unix_listener(const char *path, int backlog, int unlink_first)
 	sunaddr.sun_family = AF_UNIX;
 	if (strlcpy(sunaddr.sun_path, path,
 	    sizeof(sunaddr.sun_path)) >= sizeof(sunaddr.sun_path)) {
-		error("%s: path \"%s\" too long for Unix domain socket",
-		    __func__, path);
+		error_f("path \"%s\" too long for Unix domain socket", path);
 		errno = ENAMETOOLONG;
 		return -1;
 	}
@@ -1883,26 +1879,24 @@ unix_listener(const char *path, int backlog, int unlink_first)
 	sock = socket(PF_UNIX, SOCK_STREAM, 0);
 	if (sock == -1) {
 		saved_errno = errno;
-		error("%s: socket: %.100s", __func__, strerror(errno));
+		error_f("socket: %.100s", strerror(errno));
 		errno = saved_errno;
 		return -1;
 	}
 	if (unlink_first == 1) {
 		if (unlink(path) != 0 && errno != ENOENT)
-			error("unlink(%s): %.100s", path, strerror(errno));
+			error_f("unlink(%s): %.100s", path, strerror(errno));
 	}
 	if (bind(sock, (struct sockaddr *)&sunaddr, sizeof(sunaddr)) == -1) {
 		saved_errno = errno;
-		error("%s: cannot bind to path %s: %s",
-		    __func__, path, strerror(errno));
+		error_f("cannot bind to path %s: %s", path, strerror(errno));
 		close(sock);
 		errno = saved_errno;
 		return -1;
 	}
 	if (listen(sock, backlog) == -1) {
 		saved_errno = errno;
-		error("%s: cannot listen on path %s: %s",
-		    __func__, path, strerror(errno));
+		error_f("cannot listen on path %s: %s", path, strerror(errno));
 		close(sock);
 		unlink(path);
 		errno = saved_errno;
@@ -1917,7 +1911,7 @@ sock_set_v6only(int s)
 #if defined(IPV6_V6ONLY) && !defined(__OpenBSD__)
 	int on = 1;
 
-	debug3("%s: set socket %d IPV6_V6ONLY", __func__, s);
+	debug3_f("set socket %d IPV6_V6ONLY", s);
 	if (setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY, &on, sizeof(on)) == -1)
 		error("setsockopt IPV6_V6ONLY: %s", strerror(errno));
 #endif
@@ -2132,7 +2126,7 @@ exited_cleanly(pid_t pid, const char *tag, const char *cmd, int quiet)
 
 	while (waitpid(pid, &status, 0) == -1) {
 		if (errno != EINTR) {
-			error("%s: waitpid: %s", tag, strerror(errno));
+			error("%s waitpid: %s", tag, strerror(errno));
 			return -1;
 		}
 	}
@@ -2641,14 +2635,14 @@ stdfd_devnull(int do_stdin, int do_stdout, int do_stderr)
 		return 0;
 
 	if ((devnull = open(_PATH_DEVNULL, O_RDWR)) == -1) {
-		error("%s: open %s: %s", __func__, _PATH_DEVNULL,
+		error_f("open %s: %s", _PATH_DEVNULL,
 		    strerror(errno));
 		return -1;
 	}
 	if ((do_stdin && dup2(devnull, STDIN_FILENO) == -1) ||
 	    (do_stdout && dup2(devnull, STDOUT_FILENO) == -1) ||
 	    (do_stderr && dup2(devnull, STDERR_FILENO) == -1)) {
-		error("%s: dup2: %s", __func__, strerror(errno));
+		error_f("dup2: %s", strerror(errno));
 		ret = -1;
 	}
 	if (devnull > (do_stderr ? STDOUT_FILENO : STDERR_FILENO))

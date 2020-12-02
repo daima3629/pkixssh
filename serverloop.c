@@ -1,4 +1,4 @@
-/* $OpenBSD: serverloop.c,v 1.223 2020/07/03 06:29:57 djm Exp $ */
+/* $OpenBSD: serverloop.c,v 1.224 2020/10/18 11:32:02 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -157,7 +157,7 @@ notify_done(fd_set *readset)
 
 	if (notify_pipe[0] != -1 && FD_ISSET(notify_pipe[0], readset))
 		while (read(notify_pipe[0], &c, 1) != -1)
-			debug2("%s: reading", __func__);
+			debug2_f("reading");
 }
 
 static void
@@ -492,17 +492,17 @@ server_request_direct_tcpip(struct ssh *ssh, int *reason, const char **errmsg)
 	    (r = sshpkt_get_end(ssh)) != 0)
 		sshpkt_fatal(ssh, r, "%s: parse packet", __func__);
 	if (target_port > 0xFFFF) {
-		error("%s: invalid target port", __func__);
+		error_f("invalid target port");
 		*reason = SSH2_OPEN_ADMINISTRATIVELY_PROHIBITED;
 		goto out;
 	}
 	if (originator_port > 0xFFFF) {
-		error("%s: invalid originator port", __func__);
+		error_f("invalid originator port");
 		*reason = SSH2_OPEN_ADMINISTRATIVELY_PROHIBITED;
 		goto out;
 	}
 
-	debug("%s: originator %s port %u, target %s port %u", __func__,
+	debug_f("originator %s port %u, target %s port %u",
 	    originator, (unsigned)originator_port,
 	    target, (unsigned)target_port);
 
@@ -545,11 +545,11 @@ server_request_direct_streamlocal(struct ssh *ssh)
 	    (r = sshpkt_get_end(ssh)) != 0)
 		sshpkt_fatal(ssh, r, "%s: parse packet", __func__);
 	if (originator_port > 0xFFFF) {
-		error("%s: invalid originator port", __func__);
+		error_f("invalid originator port");
 		goto out;
 	}
 
-	debug("%s: originator %s port %u, target %s", __func__,
+	debug_f("originator %s port %u, target %s",
 	    originator, (unsigned)originator_port, target);
 
 	/* XXX fine grained permissions */
@@ -597,7 +597,7 @@ server_request_tun(struct ssh *ssh)
 	if ((r = sshpkt_get_u32(ssh, &tun)) != 0)
 		sshpkt_fatal(ssh, r, "%s: parse device", __func__);
 	if ((tun > SSH_TUNID_MAX) && (tun != SSH_TUNID_ANY)) {
-		debug("%s: invalid tun", __func__);
+		debug_f("invalid tun");
 		goto done;
 	}
 	if (auth_opts->force_tun_device != -1) {
@@ -688,7 +688,7 @@ server_input_channel_open(int type, u_int32_t seq, struct ssh *ssh)
 	    (r = sshpkt_get_u32(ssh, &rwindow)) != 0 ||
 	    (r = sshpkt_get_u32(ssh, &rmaxpack)) != 0)
 		sshpkt_fatal(ssh, r, "%s: parse packet", __func__);
-	debug("%s: ctype %s rchan %u win %u max %u", __func__,
+	debug_f("ctype %s rchan %u win %u max %u",
 	    ctype, (unsigned)rchan, (unsigned)rwindow, (unsigned)rmaxpack);
 
 	if (strcmp(ctype, "session") == 0) {
@@ -701,7 +701,7 @@ server_input_channel_open(int type, u_int32_t seq, struct ssh *ssh)
 		c = server_request_tun(ssh);
 	}
 	if (c != NULL) {
-		debug("%s: confirm %s", __func__, ctype);
+		debug_f("confirm %s", ctype);
 		c->remote_id = rchan;
 		c->have_remote_id = 1;
 		c->remote_window = rwindow;
@@ -718,7 +718,7 @@ server_input_channel_open(int type, u_int32_t seq, struct ssh *ssh)
 			}
 		}
 	} else {
-		debug("%s: failure %s", __func__, ctype);
+		debug_f("failure %s", ctype);
 		if ((r = sshpkt_start(ssh, SSH2_MSG_CHANNEL_OPEN_FAILURE)) != 0 ||
 		    (r = sshpkt_put_u32(ssh, rchan)) != 0 ||
 		    (r = sshpkt_put_u32(ssh, reason)) != 0 ||
@@ -755,28 +755,26 @@ server_input_hostkeys_prove(struct ssh *ssh, struct sshbuf **respp)
 		pkalg = NULL;
 		if ((r = sshpkt_get_string_direct(ssh, &blob, &blen)) != 0 ||
 		    (r = parse_key_from_blob(blob, blen, &key, &pkalg)) != 0) {
-			error("%s: couldn't parse key: %s",
-			    __func__, ssh_err(r));
+			error_f("couldn't parse key: %s", ssh_err(r));
 			goto out;
 		}
-		debug3("%s: pkalg %s", __func__, pkalg);
+		debug3_f("pkalg %s", pkalg);
 		/*
 		 * Better check that this is actually one of our hostkeys
 		 * before attempting to sign anything with it.
 		 */
 		if ((ndx = ssh->kex->host_key_index(key, 1, ssh)) == -1) {
-			error("%s: unknown host %s key",
-			    __func__, sshkey_type(key));
+			error_f("unknown host %s key", sshkey_type(key));
 			goto out;
 		}
-		debug3("%s: ndx %d", __func__, ndx);
+		debug3_f("ndx %d", ndx);
 		/*
 		 * XXX refactor: make kex->sign just use an index rather
 		 * than passing in public and private keys
 		 */
 		if ((key_prv = get_hostkey_by_index(ndx)) == NULL &&
 		    (key_pub = get_hostkey_public_by_index(ndx, ssh)) == NULL) {
-			error("%s: can't retrieve hostkey %d", __func__, ndx);
+			error_f("can't retrieve hostkey %d", ndx);
 			goto out;
 		}
 		sshbuf_reset(sigbuf);
@@ -792,8 +790,7 @@ server_input_hostkeys_prove(struct ssh *ssh, struct sshbuf **respp)
 		    (r = ssh->kex->xsign(ssh, &ctx, key_pub, &sig, &slen,
 		        sshbuf_ptr(sigbuf), sshbuf_len(sigbuf))) != 0 ||
 		    (r = sshbuf_put_string(resp, sig, slen)) != 0) {
-			error("%s: couldn't prepare signature: %s",
-			    __func__, ssh_err(r));
+			error_f("couldn't prepare signature: %s", ssh_err(r));
 			goto out;
 		}
 	}
@@ -831,14 +828,14 @@ server_input_global_request(int type, u_int32_t seq, struct ssh *ssh)
 	if ((r = sshpkt_get_cstring(ssh, &rtype, NULL)) != 0 ||
 	    (r = sshpkt_get_u8(ssh, &want_reply)) != 0)
 		sshpkt_fatal(ssh, r, "%s: parse packet", __func__);
-	debug("%s: rtype %s want_reply %d", __func__, rtype, (int)want_reply);
+	debug_f("rtype %s want_reply %d", rtype, (int)want_reply);
 
 	/* -R style forwarding */
 	if (strcmp(rtype, "tcpip-forward") == 0) {
 		if ((r = sshpkt_get_cstring(ssh, &fwd.listen_host, NULL)) != 0 ||
 		    (r = sshpkt_get_u32(ssh, &port)) != 0)
 			sshpkt_fatal(ssh, r, "%s: parse tcpip-forward", __func__);
-		debug("%s: tcpip-forward listen %s port %u", __func__,
+		debug_f("tcpip-forward listen %s port %u",
 		    fwd.listen_host, (unsigned)port);
 		if (port <= INT_MAX)
 			fwd.listen_port = (int)port;
@@ -867,7 +864,7 @@ server_input_global_request(int type, u_int32_t seq, struct ssh *ssh)
 		    (r = sshpkt_get_u32(ssh, &port)) != 0)
 			sshpkt_fatal(ssh, r, "%s: parse cancel-tcpip-forward", __func__);
 
-		debug("%s: cancel-tcpip-forward addr %s port %u", __func__,
+		debug_f("cancel-tcpip-forward addr %s port %u",
 		    fwd.listen_host, (unsigned)port);
 		if (port <= INT_MAX) {
 			fwd.listen_port = (int)port;
@@ -876,7 +873,7 @@ server_input_global_request(int type, u_int32_t seq, struct ssh *ssh)
 	} else if (strcmp(rtype, "streamlocal-forward@openssh.com") == 0) {
 		if ((r = sshpkt_get_cstring(ssh, &fwd.listen_path, NULL)) != 0)
 			sshpkt_fatal(ssh, r, "%s: parse streamlocal-forward@openssh.com", __func__);
-		debug("%s: streamlocal-forward listen path %s", __func__,
+		debug_f("streamlocal-forward listen path %s",
 		    fwd.listen_path);
 
 		/* check permissions */
@@ -895,7 +892,7 @@ server_input_global_request(int type, u_int32_t seq, struct ssh *ssh)
 	} else if (strcmp(rtype, "cancel-streamlocal-forward@openssh.com") == 0) {
 		if ((r = sshpkt_get_cstring(ssh, &fwd.listen_path, NULL)) != 0)
 			sshpkt_fatal(ssh, r, "%s: parse cancel-streamlocal-forward@openssh.com", __func__);
-		debug("%s: cancel-streamlocal-forward path %s", __func__,
+		debug_f("cancel-streamlocal-forward path %s",
 		    fwd.listen_path);
 
 		success = channel_cancel_rport_listener(ssh, &fwd);

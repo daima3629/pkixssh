@@ -159,7 +159,7 @@ order_hostkeyalgs(char *host, struct sockaddr *hostaddr, u_short port)
 	xasprintf(&ret, "%s%s%s", first,
 	    (*first == '\0' || *last == '\0') ? "" : ",", last);
 	if (*first != '\0')
-		debug3("%s: prefer hostkeyalgs: %s", __func__, first);
+		debug3_f("prefer hostkeyalgs: %s", first);
 
 	free(first);
 	free(last);
@@ -554,7 +554,7 @@ input_userauth_banner(int type, u_int32_t seq, struct ssh *ssh)
 
 	UNUSED(type);
 	UNUSED(seq);
-	debug3("%s", __func__);
+	debug3_f("entering");
 	if ((r = sshpkt_get_cstring(ssh, &msg, &len)) != 0 ||
 	    (r = sshpkt_get_cstring(ssh, NULL/*language*/, NULL)) != 0)
 		goto out;
@@ -664,7 +664,7 @@ input_userauth_pk_ok(int type, u_int32_t seq, struct ssh *ssh)
 		goto done;
 
 	if ((pktype = sshkey_type_from_name(pkalg)) == KEY_UNSPEC) {
-		debug("%s: server sent unknown pkalg %s", __func__, pkalg);
+		debug_f("server sent unknown pkalg %s", pkalg);
 		goto done;
 	}
 	if ((r = Xkey_from_blob(pkalg, pkblob, blen, &key)) != 0) {
@@ -692,7 +692,7 @@ input_userauth_pk_ok(int type, u_int32_t seq, struct ssh *ssh)
 	if (!found || id == NULL) {
 		char *fp = sshkey_fingerprint(key, options.fingerprint_hash,
 		    SSH_FP_DEFAULT);
-		error("%s: server replied with unknown key: %s %s", __func__,
+		error_f("server replied with unknown key: %s %s",
 		    sshkey_type(key), fp == NULL ? "<ERROR>" : fp);
 		free(fp);
 		goto done;
@@ -1145,8 +1145,8 @@ identity_sign(struct identity *id, ssh_sign_ctx *id_ctx,
 		if ((prv = load_identity_file(id)) == NULL)
 			return SSH_ERR_KEY_NOT_FOUND;
 		if (id->key != NULL && !sshkey_equal_public(prv, id->key)) {
-			error("%s: private key %s contents do not match public",
-			   __func__, id->filename);
+			error_f("private key %s contents do not match public",
+			    id->filename);
 			r = SSH_ERR_KEY_NOT_FOUND;
 			goto out;
 		}
@@ -1199,7 +1199,7 @@ sign_and_send_pubkey(struct ssh *ssh, Identity *id)
 	    SSH_FP_DEFAULT)) == NULL)
 		return 0;
 
-	debug3("%s: %s %s", __func__, pkalg, fp);
+	debug3_f("%s %s", pkalg, fp);
 
 	/*
 	 * If the key is an certificate, try to find a matching private key
@@ -1236,12 +1236,12 @@ sign_and_send_pubkey(struct ssh *ssh, Identity *id)
 			}
 		}
 		if (sign_id != NULL) {
-			debug2("%s: using private key \"%s\"%s for "
-			    "certificate", __func__, id->filename,
+			debug2_f("using private key \"%s\"%s for "
+			    "certificate", id->filename,
 			    id->agent_fd != -1 ? " from agent" : "");
 		} else {
-			debug("%s: no separate private key for certificate "
-			    "\"%s\"", __func__, id->filename);
+			debug_f("no separate private key for certificate "
+			    "\"%s\"", id->filename);
 		}
 	}
 
@@ -1289,7 +1289,7 @@ sign_and_send_pubkey(struct ssh *ssh, Identity *id)
 			break;
 		if (r == SSH_ERR_KEY_NOT_FOUND)
 			goto out; /* soft failure */
-		error("%s: signing failed for %s \"%s\"%s: %s", __func__,
+		error_f("signing failed for %s \"%s\"%s: %s",
 		      pkalg, sign_id->filename,
 		      id->agent_fd != -1 ? " from agent" : "", ssh_err(r));
 		goto out;
@@ -1345,7 +1345,7 @@ send_pubkey_test(struct ssh *ssh, Identity *id)
 
 	if ((r = Xkey_to_blob(pkalg, id->key, &blob, &bloblen)) != 0) {
 		/* we cannot handle this key */
-		debug3("%s: cannot handle key", __func__);
+		debug3_f("cannot handle key");
 		goto out;
 	}
 	/* register callback for USERAUTH_PK_OK message */
@@ -1496,12 +1496,10 @@ pubkey_prepare(Authctxt *authctxt)
 	/* list of keys supported by the agent */
 	if ((r = ssh_get_authentication_socket(&agent_fd)) != 0) {
 		if (r != SSH_ERR_AGENT_NOT_PRESENT)
-			debug("%s: ssh_get_authentication_socket: %s",
-			    __func__, ssh_err(r));
+			debug_f("ssh_get_authentication_socket: %s", ssh_err(r));
 	} else if ((r = ssh_fetch_identitylist(agent_fd, &idlist)) != 0) {
 		if (r != SSH_ERR_AGENT_NO_IDENTITIES)
-			debug("%s: ssh_fetch_identitylist: %s",
-			    __func__, ssh_err(r));
+			debug_f("ssh_fetch_identitylist: %s", ssh_err(r));
 		close(agent_fd);
 	} else {
 		for (j = 0; j < idlist->nkeys; j++) {
@@ -1564,7 +1562,7 @@ pubkey_prepare(Authctxt *authctxt)
 		debug("Will attempt key: %s", ident);
 		free((void*)ident);
 	}
-	debug2("%s: done", __func__);
+	debug2_f("done");
 }
 
 static void
@@ -1873,7 +1871,7 @@ input_userauth_info_req(int type, u_int32_t seq, struct ssh *ssh)
 
 	UNUSED(type);
 	UNUSED(seq);
-	debug2("%s: entering", __func__);
+	debug2_f("entering");
 
 {	Authctxt *authctxt = ssh->authctxt;
 	if (authctxt == NULL)
@@ -1902,7 +1900,7 @@ input_userauth_info_req(int type, u_int32_t seq, struct ssh *ssh)
 	    (r = sshpkt_put_u32(ssh, num_prompts)) != 0)
 		goto out;
 
-	debug2("%s: num_prompts %d", __func__, num_prompts);
+	debug2_f("num_prompts %d", num_prompts);
 	for (i = 0; i < num_prompts; i++) {
 		u_char echo;
 		if ((r = sshpkt_get_cstring(ssh, &prompt, NULL)) != 0 ||
@@ -1942,23 +1940,23 @@ ssh_keysign(struct ssh *ssh, struct sshkey *key, u_char **sigp, size_t *lenp,
 	*lenp = 0;
 
 	if (stat(_PATH_SSH_KEY_SIGN, &st) == -1) {
-		error("%s: not installed: %s", __func__, strerror(errno));
+		error_f("not installed: %s", strerror(errno));
 		return -1;
 	}
 	if (fflush(stdout) != 0) {
-		error("%s: fflush: %s", __func__, strerror(errno));
+		error_f("fflush: %s", strerror(errno));
 		return -1;
 	}
 	if (pipe(to) == -1) {
-		error("%s: pipe: %s", __func__, strerror(errno));
+		error_f("pipe: %s", strerror(errno));
 		return -1;
 	}
 	if (pipe(from) == -1) {
-		error("%s: pipe: %s", __func__, strerror(errno));
+		error_f("pipe: %s", strerror(errno));
 		return -1;
 	}
 	if ((pid = fork()) == -1) {
-		error("%s: fork: %s", __func__, strerror(errno));
+		error_f("fork: %s", strerror(errno));
 		return -1;
 	}
 	osigchld = ssh_signal(SIGCHLD, SIG_DFL);
@@ -1978,8 +1976,8 @@ ssh_keysign(struct ssh *ssh, struct sshkey *key, u_char **sigp, size_t *lenp,
 		fcntl(sock, F_SETFD, 0);	/* keep the socket on exec */
 		closefrom(sock + 1);
 
-		debug3("%s: [child] pid=%ld, exec %s",
-		    __func__, (long)getpid(), _PATH_SSH_KEY_SIGN);
+		debug3_f("[child] pid=%ld, exec %s",
+		    (long)getpid(), _PATH_SSH_KEY_SIGN);
 		execl(_PATH_SSH_KEY_SIGN, _PATH_SSH_KEY_SIGN, (char *)NULL);
 		fatal("%s: exec(%s): %s", __func__, _PATH_SSH_KEY_SIGN,
 		    strerror(errno));
@@ -2001,37 +1999,35 @@ ssh_keysign(struct ssh *ssh, struct sshkey *key, u_char **sigp, size_t *lenp,
 	close(from[0]);
 	close(to[1]);
 	if (r < 0) {
-		error("%s: no reply", __func__);
+		error_f("no reply");
 		goto fail;
 	}
 
 	errno = 0;
 	while (waitpid(pid, &status, 0) == -1) {
 		if (errno != EINTR) {
-			error("%s: waitpid %ld: %s",
-			    __func__, (long)pid, strerror(errno));
+			error_f("waitpid %ld: %s", (long)pid, strerror(errno));
 			goto fail;
 		}
 	}
 	if (!WIFEXITED(status)) {
-		error("%s: exited abnormally", __func__);
+		error_f("exited abnormally");
 		goto fail;
 	}
 	if (WEXITSTATUS(status) != 0) {
-		error("%s: exited with status %d",
-		    __func__, WEXITSTATUS(status));
+		error_f("exited with status %d", WEXITSTATUS(status));
 		goto fail;
 	}
 	if ((r = sshbuf_get_u8(b, &rversion)) != 0) {
-		error("%s: buffer error: %s", __func__, ssh_err(r));
+		error_f("buffer error: %s", ssh_err(r));
 		goto fail;
 	}
 	if (rversion != version) {
-		error("%s: bad version", __func__);
+		error_f("bad version");
 		goto fail;
 	}
 	if ((r = sshbuf_get_string(b, sigp, lenp)) != 0) {
-		error("%s: buffer error: %s", __func__, ssh_err(r));
+		error_f("buffer error: %s", ssh_err(r));
  fail:
 		ssh_signal(SIGCHLD, osigchld);
 		sshbuf_free(b);
@@ -2070,8 +2066,7 @@ userauth_hostbased(struct ssh *ssh)
 		if (authctxt->active_ktype == NULL ||
 		    *authctxt->active_ktype == '\0')
 			break;
-		debug3("%s: trying key type %s", __func__,
-		    authctxt->active_ktype);
+		debug3_f("trying key type %s", authctxt->active_ktype);
 
 		/* check for a useful key */
 		private = NULL;
@@ -2104,32 +2099,31 @@ userauth_hostbased(struct ssh *ssh)
 
 	if ((fp = sshkey_fingerprint(private, options.fingerprint_hash,
 	    SSH_FP_DEFAULT)) == NULL) {
-		error("%s: sshkey_fingerprint failed", __func__);
+		error_f("sshkey_fingerprint failed");
 		goto out;
 	}
 	pkalg = sshkey_ssh_name(private);
-	debug("%s: trying hostkey %s %s",
-	    __func__, pkalg, fp);
+	debug_f("trying hostkey %s %s", pkalg, fp);
 
 	/* figure out a name for the client host */
 	lname = get_local_name(ssh_packet_get_connection_in(ssh));
 	if (lname == NULL) {
-		error("%s: cannot get local ipaddr/name", __func__);
+		error_f("cannot get local ipaddr/name");
 		goto out;
 	}
 
 	/* XXX sshbuf_put_stringf? */
 	xasprintf(&chost, "%s.", lname);
-	debug2("%s: chost %s", __func__, chost);
+	debug2_f("chost %s", chost);
 
 	/* construct data */
 	if ((b = sshbuf_new()) == NULL) {
-		error("%s: sshbuf_new failed", __func__);
+		error_f("sshbuf_new failed");
 		goto out;
 	}
 	r = Xkey_to_blob(pkalg, private, &keyblob, &keylen);
 	if (r != SSH_ERR_SUCCESS) {
-		error("%s: key to blob: %s", __func__, ssh_err(r));
+		error_f("key to blob: %s", ssh_err(r));
 		goto out;
 	}
 	if ((r = sshbuf_put_string(b, session_id2, session_id2_len)) != 0 ||
@@ -2141,7 +2135,7 @@ userauth_hostbased(struct ssh *ssh)
 	    (r = sshbuf_put_string(b, keyblob, keylen)) != 0 ||
 	    (r = sshbuf_put_cstring(b, chost)) != 0 ||
 	    (r = sshbuf_put_cstring(b, authctxt->local_user)) != 0) {
-		error("%s: buffer error: %s", __func__, ssh_err(r));
+		error_f("buffer error: %s", ssh_err(r));
 		goto out;
 	}
 
@@ -2164,7 +2158,7 @@ userauth_hostbased(struct ssh *ssh)
 	    (r = sshpkt_put_cstring(ssh, authctxt->local_user)) != 0 ||
 	    (r = sshpkt_put_string(ssh, sig, siglen)) != 0 ||
 	    (r = sshpkt_send(ssh)) != 0) {
-		error("%s: packet error: %s", __func__, ssh_err(r));
+		error_f("packet error: %s", ssh_err(r));
 		goto out;
 	}
 	success = 1;

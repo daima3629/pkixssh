@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keysign.c,v 1.64 2020/08/27 01:06:18 djm Exp $ */
+/* $OpenBSD: ssh-keysign.c,v 1.65 2020/10/18 11:32:02 djm Exp $ */
 /*
  * Copyright (c) 2002 Markus Friedl.  All rights reserved.
  * Copyright (c) 2011-2020 Roumen Petrov.  All rights reserved.
@@ -185,7 +185,7 @@ valid_request(struct passwd *pw, char *host, struct sshkey **ret,
 	if (pktype == KEY_UNSPEC)
 		fail++;
 	else if ((r = Xkey_from_blob(pkalg, pkblob, blen, &key)) != 0) {
-		error("%s: bad key blob: %s", __func__, ssh_err(r));
+		error_f("bad key blob: %s", ssh_err(r));
 		fail++;
 	} else if (key->type != pktype)
 		fail++;
@@ -195,7 +195,7 @@ valid_request(struct passwd *pw, char *host, struct sshkey **ret,
 	/* client host name, handle trailing dot */
 	if ((r = sshbuf_get_cstring(b, &p, &len)) != 0)
 		fatal("%s: buffer error: %s", __func__, ssh_err(r));
-	debug2("%s: check expect chost %s got %s", __func__, host, p);
+	debug2_f("check expect chost %s got %s", host, p);
 	if (strlen(host) != len - 1)
 		fail++;
 	else if (p[len - 1] != '.')
@@ -217,7 +217,7 @@ valid_request(struct passwd *pw, char *host, struct sshkey **ret,
 		fail++;
 	sshbuf_free(b);
 
-	debug3("%s: fail %d", __func__, fail);
+	debug3_f("fail %d", fail);
 
 	if (fail)
 		sshkey_free(key);
