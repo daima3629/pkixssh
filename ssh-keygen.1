@@ -1,4 +1,4 @@
-.\"	$OpenBSD: ssh-keygen.1,v 1.211 2020/11/17 11:23:58 dtucker Exp $
+.\"	$OpenBSD: ssh-keygen.1,v 1.212 2020/11/27 10:12:30 dtucker Exp $
 .\"
 .\" Author: Tatu Ylonen <ylo@cs.hut.fi>
 .\" Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -44,7 +44,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: November 17 2020 $
+.Dd $Mdocdate: November 27 2020 $
 .Dt SSH-KEYGEN 1
 .Os
 .Sh NAME
@@ -53,6 +53,7 @@
 .Sh SYNOPSIS
 .Nm ssh-keygen
 .Op Fl q
+.Op Fl a Ar rounds
 .Op Fl b Ar bits
 .Op Fl C Ar comment
 .Op Fl f Ar output_keyfile
@@ -60,13 +61,16 @@
 .Op Fl o
 .Op Fl N Ar new_passphrase
 .Op Fl t Cm dsa | ecdsa | ed25519 | rsa
+.Op Fl Z Ar cipher
 .Nm ssh-keygen
 .Fl p
+.Op Fl a Ar rounds
 .Op Fl f Ar keyfile
 .Op Fl m Ar format
 .Op Fl o
 .Op Fl N Ar new_passphrase
 .Op Fl P Ar old_passphrase
+.Op Fl Z Ar cipher
 .Nm ssh-keygen
 .Fl i
 .Op Fl f Ar input_keyfile
@@ -80,6 +84,7 @@
 .Op Fl f Ar input_keyfile
 .Nm ssh-keygen
 .Fl c
+.Op Fl a Ar rounds
 .Op Fl C Ar comment
 .Op Fl f Ar keyfile
 .Op Fl P Ar passphrase
@@ -133,6 +138,7 @@
 .Op Fl f Ar input_keyfile
 .Nm ssh-keygen
 .Fl A
+.Op Fl a Ar rounds
 .Op Fl f Ar prefix_path
 .Nm ssh-keygen
 .Fl k
@@ -236,7 +242,9 @@ when the key is created, but can be changed using the
 .Fl c
 option.
 .Pp
-After a key is generated, instructions below detail where the keys
+After a key is generated,
+.Nm
+will ask where the keys
 should be placed to be activated.
 .Pp
 The options are as follows:
@@ -629,6 +637,13 @@ For more details see configuration option
 .Cm IdentityFile
 in
 .Xr ssh_config 5 .
+.It Fl Z Ar cipher
+Specifies the cipher to use for encryption
+when saving a private key in OpenSSH proprietary format.
+The list of available ciphers may be obtained using
+.Qq ssh -Q cipher .
+The default is
+.Dq aes256-ctr .
 .It Fl z Ar serial_number
 Specifies a serial number to be embedded in the custom certificate to distinguish
 this cusotm certificate from others from the same CA.

@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keygen.c,v 1.424 2020/11/08 22:37:24 djm Exp $ */
+/* $OpenBSD: ssh-keygen.c,v 1.426 2020/11/28 12:52:32 dtucker Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1994 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -91,6 +91,7 @@
 #include "digest.h"
 #include "utf8.h"
 #include "authfd.h"
+#include "cipher.h"
 
 #ifdef WITH_OPENSSL
 # define DEFAULT_KEY_TYPE_NAME "rsa"
@@ -2672,14 +2673,16 @@ static void
 usage(void)
 {
 	fprintf(stderr,
-	    "usage: ssh-keygen [-q] [-b bits] [-C comment] [-f output_keyfile] [-m format] [-o]\n"
-	    "                  [-N new_passphrase] [-t dsa | ecdsa | ed25519 | rsa]\n"
-	    "       ssh-keygen -p [-f keyfile] [-m format] [-o] [-N new_passphrase]\n"
-	    "                   [-P old_passphrase]\n"
+	    "usage: ssh-keygen [-q] [-a rounds] [-b bits] [-C comment] [-f output_keyfile]\n"
+	    "                  [-m format] [-o] [-N new_passphrase]\n"
+	    "                  [-t dsa | ecdsa | ed25519 | rsa]\n"
+	    "                  [-Z cipher]\n"
+	    "       ssh-keygen -p [-a rounds] [-f keyfile] [-m format] [-o]\n"
+	    "                   [-N new_passphrase] [-P old_passphrase] [-Z cipher]\n"
 	    "       ssh-keygen -i [-f input_keyfile] [-m format]\n"
 	    "       ssh-keygen -e [-f input_keyfile] [-m format]\n"
 	    "       ssh-keygen -y [-f input_keyfile]\n"
-	    "       ssh-keygen -c [-C comment] [-f keyfile] [-P passphrase]\n"
+	    "       ssh-keygen -c [-a rounds] [-C comment] [-f keyfile] [-P passphrase]\n"
 	    "       ssh-keygen -l [-v] [-E fingerprint_hash] [-f input_keyfile]\n"
 	    "       ssh-keygen -B [-f input_keyfile]\n");
 #ifdef ENABLE_PKCS11
@@ -2701,7 +2704,7 @@ usage(void)
 	    "                  [-n principals] [-O option] [-V validity_interval]\n"
 	    "                  [-z serial_number] file ...\n"
 	    "       ssh-keygen -L [-f input_keyfile]\n"
-	    "       ssh-keygen -A [-f prefix_path]\n"
+	    "       ssh-keygen -A [-a rounds] [-f prefix_path]\n"
 	    "       ssh-keygen -k -f krl_file [-u] [-s ca_public] [-z version_number]\n"
 	    "                  file ...\n"
 	    "       ssh-keygen -Q [-l] -f krl_file [file ...]\n");
@@ -2863,6 +2866,9 @@ main(int argc, char **argv)
 			break;
 		case 'Z':
 			openssh_format_cipher = optarg;
+			if (cipher_by_name(openssh_format_cipher) == NULL)
+				fatal("invalid cipher '%s'",
+				    openssh_format_cipher);
 			break;
 		case 'C':
 			identity_comment = optarg;
