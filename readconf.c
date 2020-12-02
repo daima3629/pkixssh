@@ -189,7 +189,7 @@ typedef enum {
 	oGlobalKnownHostsFile, oUserKnownHostsFile, oConnectionAttempts,
 	oBatchMode, oCheckHostIP, oStrictHostKeyChecking, oCompression,
 	oTCPKeepAlive, oNumberOfPasswordPrompts,
-	oLogFacility, oLogLevel, oCiphers, oMacs,
+	oLogFacility, oLogLevel, oLogVerbose, oCiphers, oMacs,
 	oPubkeyAuthentication,
 	oKbdInteractiveAuthentication, oKbdInteractiveDevices, oHostKeyAlias,
 	oDynamicForward, oPreferredAuthentications, oHostbasedAuthentication,
@@ -323,6 +323,7 @@ static struct {
 	{ "numberofpasswordprompts", oNumberOfPasswordPrompts },
 	{ "syslogfacility", oLogFacility },
 	{ "loglevel", oLogLevel },
+	{ "logverbose", oLogVerbose },
 	{ "dynamicforward", oDynamicForward },
 	{ "preferredauthentications", oPreferredAuthentications },
 	{ "hostkeyalgorithms", oHostKeyAlgorithms },
@@ -910,7 +911,7 @@ process_config_line_depth(Options *options, struct passwd *pw, const char *host,
     int linenum, int *activep, int flags, int *want_final_pass, int depth)
 {
 	char *s, **charptr, *endofnumber, *keyword, *arg, *arg2;
-	char **cpptr, fwdarg[256];
+	char **cpptr, ***cppptr, fwdarg[256];
 	u_int i, *uintptr, max_entries = 0;
 	int r, oactive, negated, opcode, *intptr, value, value2, cmdline = 0;
 	int remotefwd, dynamicfwd;
@@ -1513,6 +1514,18 @@ parse_keytypes:
 		if (*log_facility_ptr == -1)
 			*log_facility_ptr = (SyslogFacility) value;
 		break;
+
+	case oLogVerbose:
+		cppptr = &options->log_verbose;
+		uintptr = &options->num_log_verbose;
+		if (*activep && *uintptr == 0) {
+			while ((arg = strdelim(&s)) != NULL && *arg != '\0') {
+				*cppptr = xrecallocarray(*cppptr, *uintptr,
+				    *uintptr + 1, sizeof(**cppptr));
+				(*cppptr)[(*uintptr)++] = xstrdup(arg);
+			}
+		}
+		return 0;
 
 	case oLocalForward:
 	case oRemoteForward:
@@ -2217,6 +2230,8 @@ initialize_options(Options * options)
 	options->num_remote_forwards = 0;
 	options->log_facility = SYSLOG_FACILITY_NOT_SET;
 	options->log_level = SYSLOG_LEVEL_NOT_SET;
+	options->num_log_verbose = 0;
+	options->log_verbose = NULL;
 	options->preferred_authentications = NULL;
 	options->bind_address = NULL;
 	options->bind_interface = NULL;
@@ -3084,6 +3099,8 @@ dump_client_config(Options *o, const char *host)
 	dump_cfg_strarray_oneline(oUserKnownHostsFile, o->num_user_hostfiles, o->user_hostfiles);
 	dump_cfg_strarray(oSendEnv, o->num_send_env, o->send_env);
 	dump_cfg_strarray(oSetEnv, o->num_setenv, o->setenv);
+	dump_cfg_strarray_oneline(oLogVerbose,
+	    o->num_log_verbose, o->log_verbose);
 
 	/* Special cases */
 

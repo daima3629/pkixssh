@@ -355,6 +355,7 @@ out:
 
 	copy_set_server_options(&options, newopts, 1);
 	log_change_level(options.log_level);
+	log_verbose_init(options.log_verbose, options.num_log_verbose);
 	process_permitopen(ssh, &options);
 	free(newopts);
 

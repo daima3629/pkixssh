@@ -1448,6 +1448,7 @@ main(int ac, char **av)
 
 	/* reinit */
 	log_init(__progname, options.log_level, options.log_facility, !use_syslog);
+	log_verbose_init(options.log_verbose, options.num_log_verbose);
 
 	if (options.request_tty == REQUEST_TTY_YES ||
 	    options.request_tty == REQUEST_TTY_FORCE)

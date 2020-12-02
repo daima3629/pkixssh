@@ -80,6 +80,7 @@ void     log_init(char *, LogLevel, SyslogFacility, int);
 int      log_change_level(LogLevel);
 int      log_is_on_stderr(void);
 void     log_redirect_stderr_to(const char *);
+void     log_verbose_init(char **, size_t);
 LogLevel get_log_level(void);
 
 SyslogFacility	log_facility_number(char *);

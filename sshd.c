@@ -2158,6 +2158,7 @@ main(int ac, char **av)
 	if (debug_flag && (!inetd_flag || rexeced_flag))
 		log_stderr = 1;
 	log_init(__progname, options.log_level, options.log_facility, log_stderr);
+	log_verbose_init(options.log_verbose, options.num_log_verbose);
 
 	/*
 	 * If not in debugging mode, not started from inetd and not already

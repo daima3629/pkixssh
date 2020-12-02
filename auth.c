@@ -574,6 +574,7 @@ getpwnamallow(struct ssh *ssh, const char *user)
 	ci->user = user;
 	parse_server_match_config(&options, &includes, ci);
 	log_change_level(options.log_level);
+	log_verbose_init(options.log_verbose, options.num_log_verbose);
 	process_permitopen(ssh, &options);
 
 #if defined(_AIX) && defined(HAVE_SETAUTHDB)

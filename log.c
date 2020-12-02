@@ -51,6 +51,7 @@
 #endif
 
 #include "log.h"
+#include "match.h"
 #include <openssl/err.h>
 
 #define MSGBUFSIZ 1024
@@ -62,6 +63,8 @@ static int log_facility = LOG_AUTH;
 static char *argv0;
 static log_handler_fn *log_handler;
 static void *log_handler_ctx;
+static char **log_verbose = NULL;
+static size_t nlog_verbose = 0;
 
 extern char *__progname;
 
@@ -183,6 +186,25 @@ log_level_name(LogLevel level)
 		if (log_levels[i].val == level)
 			return log_levels[i].name;
 	return NULL;
+}
+
+void
+log_verbose_init(char **opts, size_t n) {
+	size_t k;
+
+	for (k = 0; k < nlog_verbose; k++)
+		free(log_verbose[k]);
+	free(log_verbose);
+
+	nlog_verbose = 0;
+	log_verbose = calloc(n, sizeof(*log_verbose));
+
+	for (k = 0; k < n; k++) {
+		/* non-fatal if strdup fail*/
+		log_verbose[nlog_verbose] = strdup(opts[k]);
+		if (log_verbose[nlog_verbose] != NULL)
+			nlog_verbose++;
+	}
 }
 
 /*
@@ -446,6 +468,25 @@ set_log_handler(log_handler_fn *handler, void *ctx)
 	log_handler_ctx = ctx;
 }
 
+static int/*boolean*/
+forced_logging(const char *file, const char *func, int line)
+{
+	char tag[128];
+	size_t k;
+
+	if (nlog_verbose == 0) return 0;
+
+{	const char *s = strrchr(file, '/');
+	if (s != NULL ) file = s + 1;
+	snprintf(tag, sizeof(tag), "%.48s:%.48s():%d", file, func, line);
+}
+	for (k = 0; k < nlog_verbose; k++) {
+		if (match_pattern_list(tag, log_verbose[k], 0) == 1)
+			return 1;
+	}
+	return 0;
+}
+
 void
 sshlogv(const char *file, const char *func, int line,
     LogLevel level, const char *fmt, va_list args)
@@ -457,8 +498,10 @@ sshlogv(const char *file, const char *func, int line,
 	int saved_errno = errno;
 	log_handler_fn *tmp_handler;
 
-	if (level > log_level)
-		return;
+	if (level > log_level) {
+		if (!forced_logging(file, func, line))
+			return;
+	}
 
 	switch (level) {
 	case SYSLOG_LEVEL_FATAL:
