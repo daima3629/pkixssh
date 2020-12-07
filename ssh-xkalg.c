@@ -344,15 +344,15 @@ logit("TRACE_XKALG add_default_xkalg:");
 	/* - RFC6187: ssh opaque signature */
 # ifdef OPENSSL_HAS_NISTP256
 	if (ssh_add_x509key_alg("x509v3-ecdsa-sha2-nistp256,ssh-sha256,ecdsa-sha2-nistp256") < 0)
-		fatal("ssh_init_xkalg: oops");
+		fatal_f("oops");
 # endif
 # ifdef OPENSSL_HAS_NISTP384
 	if (ssh_add_x509key_alg("x509v3-ecdsa-sha2-nistp384,ssh-sha384,ecdsa-sha2-nistp384") < 0)
-		fatal("ssh_init_xkalg: oops");
+		fatal_f("oops");
 # endif
 # ifdef OPENSSL_HAS_NISTP521
 	if (ssh_add_x509key_alg("x509v3-ecdsa-sha2-nistp521,ssh-sha512,ecdsa-sha2-nistp521") < 0)
-		fatal("ssh_init_xkalg: oops");
+		fatal_f("oops");
 # endif
 
 	/* RSA public key algorithm: */
@@ -361,18 +361,18 @@ logit("TRACE_XKALG add_default_xkalg:");
 	 * - starting from version 7.1 first is rsa-sha1
 	 */
 	if (ssh_add_x509key_alg("x509v3-sign-rsa,rsa-sha1") < 0)
-		fatal("ssh_init_xkalg: oops");
+		fatal_f("oops");
 #ifdef OPENSSL_FIPS
 	if(!FIPS_mode())
 #endif
 	if (ssh_add_x509key_alg("x509v3-sign-rsa,rsa-md5") < 0)
-		fatal("ssh_init_xkalg: oops");
+		fatal_f("oops");
 	/* - RFC6187 */
 	if (ssh_add_x509key_alg("x509v3-ssh-rsa,rsa-sha1,ssh-rsa") < 0)
-		fatal("ssh_init_xkalg: oops");
+		fatal_f("oops");
 #ifdef HAVE_EVP_SHA256
 	if (ssh_add_x509key_alg("x509v3-rsa2048-sha256,rsa2048-sha256,rsa2048-sha256") < 0)
-		fatal("ssh_init_xkalg: oops");
+		fatal_f("oops");
 #endif
 
 	/* DSA public key algorithm: */
@@ -380,15 +380,15 @@ logit("TRACE_XKALG add_default_xkalg:");
 	 * where NN <= 12
 	 */
 	if (ssh_add_x509key_alg("x509v3-sign-dss,dss-asn1") < 0)
-		fatal("ssh_init_xkalg: oops");
+		fatal_f("oops");
 	/* - some secsh implementations incompatible with
 	 * draft-ietf-secsh-transport-NN.txt where NN <= 12
 	 */
 	if (ssh_add_x509key_alg("x509v3-sign-dss,dss-raw") < 0)
-		fatal("ssh_init_xkalg: oops");
+		fatal_f("oops");
 	/* - RFC6187 */
 	if (ssh_add_x509key_alg("x509v3-ssh-dss,dss-raw,ssh-dss") < 0)
-		fatal("ssh_init_xkalg: oops");
+		fatal_f("oops");
 }
 
 
@@ -474,7 +474,7 @@ ssh_x509key_alg_digest(SSHX509KeyAlgs* p, const char *dgstname) {
 	const EVP_MD* md = NULL;
 
 	if (dgstname == NULL) {
-		fatal("ssh_get_md: dgstname is NULL");
+		fatal_f("dgstname is NULL");
 		return(-1); /*unreachable code*/
 	}
 
@@ -569,7 +569,7 @@ ssh_add_x509key_alg(const char *data) {
 
 		nid = sshkey_curve_name_to_nid(ec_name);
 		if (nid < 0) {
-			fatal("ssh_add_x509pubkey_alg: unsupported curve %s", ec_name);
+			fatal_f("unsupported curve %s", ec_name);
 		}
 
 		p->basetype = KEY_ECDSA;
@@ -633,7 +633,7 @@ ssh_is_x509signame(const char *signame) {
 	int k;
 
 	if (signame == NULL) {
-		fatal("ssh_is_x509signame: signame is NULL");
+		fatal_f("signame is NULL");
 		return(0); /*unreachable code*/
 	}
 
@@ -876,7 +876,7 @@ ssh_get_allnames(char sep, int sigflag, const char* pattern) {
 		k = n++;
 		list = realloc(list, n * sizeof(char*));
 		if (list == NULL)
-			fatal("ssh_get_all_pkalg: realloc fail for xkalg");
+			fatal_f("realloc fail for xkalg");
 		list[k] = p;
 		len += 1 + strlen(p);
 	}
@@ -914,7 +914,7 @@ ssh_get_allnames(char sep, int sigflag, const char* pattern) {
 		k = n++;
 		list = realloc(list, n * sizeof(char*));
 		if (list == NULL)
-			fatal("ssh_get_all_pkalg: realloc fail for alg");
+			fatal_f("realloc fail for alg");
 		list[k] = p;
 		len += 1 + strlen(p);
 	}
@@ -924,7 +924,7 @@ ssh_get_allnames(char sep, int sigflag, const char* pattern) {
 	if (n > 0) {
 		s = p = malloc(len);
 		if (s == NULL)
-			fatal("ssh_get_all_pkalg: out of memory");
+			fatal_f("out of memory");
 	}
 	for (k = 0; k < n; k++) {
 		size_t l = strlen(list[k]);

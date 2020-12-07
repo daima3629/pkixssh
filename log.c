@@ -616,14 +616,22 @@ sshsigdie(const char *file, const char *func, int line,
 }
 
 void
+sshlogv_f(const char *file, const char *func, int line,
+    LogLevel level, const char *fmt, va_list args)
+{
+	char msgbuf[MSGBUFSIZ];
+
+	vsnprintf(msgbuf, sizeof(msgbuf), fmt, args);
+	sshlog(file, func, line, level, "%s: %s", func, msgbuf);
+}
+
+void
 sshlog_f(const char *file, const char *func, int line,
     LogLevel level, const char *fmt, ...)
 {
-	char fmtbuf[MSGBUFSIZ];
 	va_list args;
 
 	va_start(args, fmt);
-	snprintf(fmtbuf, sizeof(fmtbuf), "%s: %s", func, fmt);
-	sshlogv(file, func, line, level, fmtbuf, args);
+	sshlogv_f(file, func, line, level, fmt, args);
 	va_end(args);
 }

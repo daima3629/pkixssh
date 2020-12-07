@@ -154,6 +154,8 @@ void  sshlog_cryptoerr_all(const char *file, const char *func, int line,
 void	 sshlog_f(const char *file, const char *func, int line,
     LogLevel level, const char *fmt, ...)
     __attribute__((format(printf, 5, 6)));
+void	 sshlogv_f(const char *file, const char *func, int line,
+    LogLevel level, const char *fmt, va_list args);
 
 #define do_log2_f(level, ...)	sshlog_f(__FILE__, __func__, __LINE__, level, __VA_ARGS__)
 
@@ -161,4 +163,10 @@ void	 sshlog_f(const char *file, const char *func, int line,
 #define debug_f(...)	sshlog_f(__FILE__, __func__, __LINE__, SYSLOG_LEVEL_DEBUG1, __VA_ARGS__)
 #define debug2_f(...)	sshlog_f(__FILE__, __func__, __LINE__, SYSLOG_LEVEL_DEBUG2, __VA_ARGS__)
 #define debug3_f(...)	sshlog_f(__FILE__, __func__, __LINE__, SYSLOG_LEVEL_DEBUG3, __VA_ARGS__)
+
+void     sshfatal_f(const char *file, const char *func, int line,
+    const char *fmt, ...) __attribute__((noreturn))
+    __attribute__((format(printf, 4, 5)));
+
+#define fatal_f(...)	sshfatal_f(__FILE__, __func__, __LINE__, __VA_ARGS__)
 #endif

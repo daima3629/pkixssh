@@ -685,7 +685,7 @@ put_host_port(const char *host, u_short port)
 	if (port == 0 || port == SSH_DEFAULT_PORT)
 		return(xstrdup(host));
 	if (asprintf(&hoststr, "[%s]:%d", host, (int)port) < 0)
-		fatal("put_host_port: asprintf: %s", strerror(errno));
+		fatal_f("asprintf: %s", strerror(errno));
 	debug3_f("%s", hoststr);
 	return hoststr;
 }
@@ -1081,7 +1081,7 @@ addargs(arglist *args, char *fmt, ...)
 	r = vasprintf(&cp, fmt, ap);
 	va_end(ap);
 	if (r < 0)
-		fatal("addargs: argument too long");
+		fatal_f("argument too long");
 
 	nalloc = args->nalloc;
 	if (args->list == NULL) {
@@ -1107,10 +1107,10 @@ replacearg(arglist *args, u_int which, char *fmt, ...)
 	r = vasprintf(&cp, fmt, ap);
 	va_end(ap);
 	if (r < 0)
-		fatal("replacearg: argument too long");
+		fatal_f("argument too long");
 
 	if (which >= args->num)
-		fatal("replacearg: tried to replace invalid arg %d >= %d",
+		fatal_f("tried to replace invalid arg %d >= %d",
 		    which, args->num);
 	free(args->list[which]);
 	args->list[which] = cp;
@@ -1150,13 +1150,13 @@ tilde_expand_filename(const char *filename, uid_t uid)
 	if (path != NULL && path > filename) {		/* ~user/path */
 		slash = path - filename;
 		if (slash > sizeof(user) - 1)
-			fatal("tilde_expand_filename: ~username too long");
+			fatal_f("~username too long");
 		memcpy(user, filename, slash);
 		user[slash] = '\0';
 		if ((pw = getpwnam(user)) == NULL)
-			fatal("tilde_expand_filename: No such user %s", user);
+			fatal_f("no such user %s", user);
 	} else if ((pw = getpwuid(uid)) == NULL)	/* ~/path */
-		fatal("tilde_expand_filename: No such uid %ld", (long)uid);
+		fatal_f("no such uid %ld", (long)uid);
 
 	/* Make sure directory has a trailing '/' */
 	len = strlen(pw->pw_dir);
@@ -1170,7 +1170,7 @@ tilde_expand_filename(const char *filename, uid_t uid)
 		filename = path + 1;
 
 	if (xasprintf(&ret, "%s%s%s", pw->pw_dir, sep, filename) >= PATH_MAX)
-		fatal("tilde_expand_filename: Path too long");
+		fatal_f("path too long");
 
 	return (ret);
 }
@@ -2365,7 +2365,7 @@ child_set_env(char ***envp, u_int *envsizep, const char *name,
 		envsize = *envsizep;
 		if (i >= envsize - 1) {
 			if (envsize >= 1000)
-				fatal("child_set_env: too many env vars");
+				fatal_f("too many env vars");
 			envsize += 50;
 			env = (*envp) = xreallocarray(env, envsize, sizeof(char *));
 			*envsizep = envsize;

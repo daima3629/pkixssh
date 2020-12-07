@@ -79,7 +79,7 @@ ssh_rijndael_cbc(EVP_CIPHER_CTX *ctx, u_char *dest, const u_char *src,
 	if (len == 0)
 		return (1);
 	if (len % RIJNDAEL_BLOCKSIZE)
-		fatal("ssh_rijndael_cbc: bad len %d", len);
+		fatal_f("bad len %d", len);
 	if ((c = EVP_CIPHER_CTX_get_app_data(ctx)) == NULL) {
 		error_f("no context");
 		return (0);
@@ -132,7 +132,7 @@ ssh_rijndael_iv(EVP_CIPHER_CTX *evp, int doset, u_char * iv, u_int len)
 	struct ssh_rijndael_ctx *c;
 
 	if ((c = EVP_CIPHER_CTX_get_app_data(evp)) == NULL)
-		fatal("ssh_rijndael_iv: no context");
+		fatal_f("no context");
 	if (doset)
 		memcpy(c->r_iv, iv, len);
 	else

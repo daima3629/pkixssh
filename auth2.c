@@ -193,7 +193,7 @@ input_service_request(int type, u_int32_t seq, struct ssh *ssh)
 		goto out;
 
 	if (authctxt == NULL)
-		fatal("input_service_request: no authctxt");
+		fatal_f("no authctxt");
 
 	if (strcmp(service, "ssh-userauth") == 0) {
 		if (!authctxt->success) {
@@ -275,7 +275,7 @@ input_userauth_request(int type, u_int32_t seq, struct ssh *ssh)
 	UNUSED(type);
 	UNUSED(seq);
 	if (authctxt == NULL)
-		fatal("input_userauth_request: no authctxt");
+		fatal_f("no authctxt");
 
 	if ((r = sshpkt_get_cstring(ssh, &user, NULL)) != 0 ||
 	    (r = sshpkt_get_cstring(ssh, &service, NULL)) != 0 ||

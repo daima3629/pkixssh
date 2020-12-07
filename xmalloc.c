@@ -42,10 +42,10 @@ xmalloc(size_t size)
 	void *ptr;
 
 	if (size == 0)
-		fatal("xmalloc: zero size");
+		fatal_f("zero size");
 	ptr = malloc(size);
 	if (ptr == NULL)
-		fatal("xmalloc: out of memory (allocating %zu bytes)", size);
+		fatal_f("out of memory (allocating %zu bytes)", size);
 	return ptr;
 }
 
@@ -55,12 +55,12 @@ xcalloc(size_t nmemb, size_t size)
 	void *ptr;
 
 	if (size == 0 || nmemb == 0)
-		fatal("xcalloc: zero size");
+		fatal_f("zero size");
 	if (SIZE_MAX / nmemb < size)
-		fatal("xcalloc: nmemb * size > SIZE_MAX");
+		fatal_f("nmemb * size > SIZE_MAX");
 	ptr = calloc(nmemb, size);
 	if (ptr == NULL)
-		fatal("xcalloc: out of memory (allocating %zu bytes)",
+		fatal_f("out of memory (allocating %zu bytes)",
 		    size * nmemb);
 	return ptr;
 }
@@ -72,7 +72,7 @@ xreallocarray(void *ptr, size_t nmemb, size_t size)
 
 	new_ptr = reallocarray(ptr, nmemb, size);
 	if (new_ptr == NULL)
-		fatal("xreallocarray: out of memory (%zu elements of %zu bytes)",
+		fatal_f("out of memory (%zu elements of %zu bytes)",
 		    nmemb, size);
 	return new_ptr;
 }
@@ -84,7 +84,7 @@ xrecallocarray(void *ptr, size_t onmemb, size_t nmemb, size_t size)
 
 	new_ptr = recallocarray(ptr, onmemb, nmemb, size);
 	if (new_ptr == NULL)
-		fatal("xrecallocarray: out of memory (%zu elements of %zu bytes)",
+		fatal_f("out of memory (%zu elements of %zu bytes)",
 		    nmemb, size);
 	return new_ptr;
 }
@@ -108,7 +108,7 @@ xvasprintf(char **ret, const char *fmt, va_list ap)
 
 	i = vasprintf(ret, fmt, ap);
 	if (i < 0 || *ret == NULL)
-		fatal("xvasprintf: could not allocate memory");
+		fatal_f("could not allocate memory");
 	return i;
 }
 

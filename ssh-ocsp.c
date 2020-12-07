@@ -152,7 +152,7 @@ ssh_set_vatype(int type) {
 		va.type = type;
 		break;
 	default:
-		fatal("ssh_set_vatype: invalid type %d", type);
+		fatal_f("invalid type %d", type);
 		break;
 	}
 }
@@ -193,7 +193,7 @@ ssh_set_validator(const VAOptions *_va) {
 		break;
 	case SSHVA_OCSP_SPEC:
 		if (_va->responder_url == NULL) {
-			fatal("ssh_set_validator: responder url is mandatory");
+			fatal_f("responder url is mandatory");
 		}
 		va.responder_url = xstrdup(_va->responder_url); /*fatal on error*/
 		break;
@@ -877,7 +877,7 @@ ssh_aiaocsp_validate(
 	int ret = -1;
 	int k;
 	if (has_ocsp_url == NULL) {
-		fatal("ssh_aiaocsp_validate: has_ocsp_url is NULL");
+		fatal_f("has_ocsp_url is NULL");
 		return(-1); /*;-)*/
 	}
 
@@ -988,7 +988,7 @@ ssh_ocsp_validate(X509 *cert, X509_STORE *x509store) {
 	switch (va.type) {
 	default:
 		/*when something is missing*/
-		fatal("ssh_ocsp_validate: invalid validator type %d", va.type);
+		fatal_f("invalid validator type %d", va.type);
 		break; /*;-)*/
 	case SSHVA_NONE:
 		debug3_f("none");

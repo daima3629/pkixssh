@@ -300,20 +300,20 @@ input_userauth_info_response(int type, u_int32_t seq, struct ssh *ssh)
 	UNUSED(type);
 	UNUSED(seq);
 	if (authctxt == NULL)
-		fatal("input_userauth_info_response: no authctxt");
+		fatal_f("no authctxt");
 	kbdintctxt = authctxt->kbdintctxt;
 	if (kbdintctxt == NULL || kbdintctxt->ctxt == NULL)
-		fatal("input_userauth_info_response: no kbdintctxt");
+		fatal_f("no kbdintctxt");
 	if (kbdintctxt->device == NULL)
-		fatal("input_userauth_info_response: no device");
+		fatal_f("no device");
 
 	authctxt->postponed = 0;	/* reset */
 	if ((r = sshpkt_get_u32(ssh, &nresp)) != 0)
 		fatal("%s: %s", __func__, ssh_err(r));
 	if (nresp != kbdintctxt->nreq)
-		fatal("input_userauth_info_response: wrong number of replies");
+		fatal_f("wrong number of replies");
 	if (nresp > 100)
-		fatal("input_userauth_info_response: too many replies");
+		fatal_f("too many replies");
 	if (nresp > 0) {
 		response = xcalloc(nresp, sizeof(char *));
 		for (i = 0; i < nresp; i++)

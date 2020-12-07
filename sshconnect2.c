@@ -595,7 +595,7 @@ input_userauth_failure(int type, u_int32_t seq, struct ssh *ssh)
 	UNUSED(type);
 	UNUSED(seq);
 	if (authctxt == NULL)
-		fatal("input_userauth_failure: no authentication context");
+		fatal_f("no authentication context");
 
 	if (sshpkt_get_cstring(ssh, &authlist, NULL) != 0 ||
 	    sshpkt_get_u8(ssh, &partial) != 0 ||
@@ -656,7 +656,7 @@ input_userauth_pk_ok(int type, u_int32_t seq, struct ssh *ssh)
 	UNUSED(type);
 	UNUSED(seq);
 	if (authctxt == NULL)
-		fatal("input_userauth_pk_ok: no authentication context");
+		fatal_f("no authentication context");
 
 	if ((r = sshpkt_get_cstring(ssh, &pkalg, NULL)) != 0 ||
 	    (r = sshpkt_get_string(ssh, &pkblob, &blen)) != 0 ||
@@ -863,7 +863,7 @@ input_gssapi_response(int type, u_int32_t plen, struct ssh *ssh)
 	UNUSED(type);
 	UNUSED(plen);
 	if (authctxt == NULL)
-		fatal("input_gssapi_response: no authentication context");
+		fatal_f("no authentication context");
 	gssctxt = authctxt->methoddata;
 
 	/* Setup our OID */
@@ -910,7 +910,7 @@ input_gssapi_token(int type, u_int32_t plen, struct ssh *ssh)
 	UNUSED(type);
 	UNUSED(plen);
 	if (authctxt == NULL)
-		fatal("input_gssapi_response: no authentication context");
+		fatal_f("no authentication context");
 
 	if ((r = sshpkt_get_string(ssh, &p, &len)) != 0 ||
 	    (r = sshpkt_get_end(ssh)) != 0)
@@ -946,7 +946,7 @@ input_gssapi_errtok(int type, u_int32_t plen, struct ssh *ssh)
 	UNUSED(type);
 	UNUSED(plen);
 	if (authctxt == NULL)
-		fatal("input_gssapi_response: no authentication context");
+		fatal_f("no authentication context");
 	gssctxt = authctxt->methoddata;
 
 	if ((r = sshpkt_get_string(ssh, &p, &len)) != 0 ||
@@ -1058,8 +1058,7 @@ input_userauth_passwd_changereq(int type, u_int32_t seq, struct ssh *ssh)
 	debug2_f("entering");
 
 	if (authctxt == NULL)
-		fatal("input_userauth_passwd_changereq: "
-		    "no authentication context");
+		fatal_f("no authentication context");
 	host = options.host_key_alias ? options.host_key_alias : authctxt->host;
 
 	if ((r = sshpkt_get_cstring(ssh, &info, NULL)) != 0 ||

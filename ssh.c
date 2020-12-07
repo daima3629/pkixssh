@@ -1967,7 +1967,7 @@ ssh_init_stdio_forwarding(struct ssh *ssh)
 
 	if ((in = dup(STDIN_FILENO)) == -1 ||
 	    (out = dup(STDOUT_FILENO)) == -1)
-		fatal("channel_connect_stdio_fwd: dup() in/out failed");
+		fatal_f("dup() in/out failed");
 	if ((c = channel_connect_stdio_fwd(ssh, options.stdio_forward_host,
 	    options.stdio_forward_port, in, out)) == NULL)
 		fatal("%s: channel_connect_stdio_fwd failed", __func__);

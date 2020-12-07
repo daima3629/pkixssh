@@ -223,7 +223,7 @@ ssh_ASN1_INTEGER_2_string(ASN1_INTEGER *_asni) {
 
 	bio = BIO_new(BIO_s_mem());
 	if (bio == NULL) {
-		fatal("ssh_ASN1_INTEGER_2_string: out of memory");
+		fatal_f("out of memory");
 		return NULL; /* ;-) */
 	}
 
@@ -447,8 +447,7 @@ ssh_get_x509purpose_s(int _is_server, const char* _purpose_synonym) {
 	if (sslpurpose != NULL) {
 		int purpose_index = X509_PURPOSE_get_by_sname((char*)sslpurpose);
 		if (purpose_index  < 0)
-			fatal(	"ssh_get_x509purpose_s(%.10s): "
-				"X509_PURPOSE_get_by_sname fail for argument '%.30s(%.40s)'",
+			fatal_f("%s X509_PURPOSE_get_by_sname fail for argument '%.30s(%.40s)'",
 				(_is_server ? "server" : "client"),
 				sslpurpose, _purpose_synonym);
 		return purpose_index;
@@ -463,7 +462,7 @@ format_x509_purpose(int purpose_index) {
 
 	xp = X509_PURPOSE_get0(purpose_index);
 	if (xp == NULL) {
-		fatal("format_x509_purpose: cannot get purpose from index");
+		fatal_f("cannot get purpose from index");
 		return "skip"; /* ;-) */
 	}
 	return X509_PURPOSE_get0_sname(xp);
@@ -654,7 +653,7 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 	if (_locations->certificate_path != NULL) {
 		X509_LOOKUP *lookup = X509_STORE_add_lookup(x509store, X509_LOOKUP_hash_dir());
 		if (lookup == NULL) {
-			fatal("ssh_x509store_addlocations: cannot add hash dir lookup !");
+			fatal_f("cannot add hash dir lookup");
 			return 0; /* ;-) */
 		}
 		if (X509_LOOKUP_add_dir(lookup, _locations->certificate_path, X509_FILETYPE_PEM)) {
@@ -666,7 +665,7 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 	if (_locations->certificate_file != NULL) {
 		X509_LOOKUP *lookup = X509_STORE_add_lookup(x509store, X509_LOOKUP_file());
 		if (lookup == NULL) {
-			fatal("ssh_x509store_addlocations: cannot add file lookup !");
+			fatal_f("cannot add file lookup");
 			return 0; /* ;-) */
 		}
 		if (X509_LOOKUP_load_file(lookup, _locations->certificate_file, X509_FILETYPE_PEM)) {
@@ -690,7 +689,7 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 	) {
 		X509_LOOKUP *lookup = X509_STORE_add_lookup(x509revoked, X509_LOOKUP_hash_dir());
 		if (lookup == NULL) {
-			fatal("ssh_x509store_addlocations: cannot add hash dir revocation lookup !");
+			fatal_f("cannot add hash dir revocation lookup");
 			return 0; /* ;-) */
 		}
 		if (X509_LOOKUP_add_dir(lookup, _locations->revocation_path, X509_FILETYPE_PEM)) {
@@ -702,7 +701,7 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 	if (_locations->revocation_file != NULL) {
 		X509_LOOKUP *lookup = X509_STORE_add_lookup(x509revoked, X509_LOOKUP_file());
 		if (lookup == NULL) {
-			fatal("ssh_x509store_addlocations: cannot add file revocation lookup !");
+			fatal_f("cannot add file revocation lookup");
 			return 0; /* ;-) */
 		}
 		if (X509_LOOKUP_load_file(lookup, _locations->revocation_file, X509_FILETYPE_PEM)) {
@@ -740,7 +739,7 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 #ifdef USE_LDAP_STORE
 		/* NOTE: All LDAP-connections will use one and the same protocol version */
 		if (!set_ldap_version(_locations->ldap_ver)) {
-			fatal("ssh_x509store_addlocations: cannot set ldap version !");
+			fatal_f("cannot set ldap version");
 			return 0; /* ;-) */
 		}
 #endif
@@ -748,7 +747,7 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 
 		lookup = X509_STORE_add_lookup(x509store, lookup_method);
 		if (lookup == NULL) {
-			fatal("ssh_x509store_addlocations: cannot add ldap lookup !");
+			fatal_f("cannot add ldap lookup");
 			return 0; /* ;-) */
 		}
 		if (SSH_X509_LOOKUP_ADD(lookup, _locations->ldap_url)) {
@@ -757,7 +756,7 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 #ifndef USE_LDAP_STORE
 		if (_locations->ldap_ver != NULL) {
 			if (!X509_LOOKUP_set_protocol(lookup, _locations->ldap_ver)) {
-				fatal("ssh_x509store_addlocations: cannot set ldap version !");
+				fatal_f("cannot set ldap version");
 				return 0; /* ;-) */
 			}
 		}
@@ -767,7 +766,7 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 #ifdef SSH_CHECK_REVOKED
 		lookup = X509_STORE_add_lookup(x509revoked, lookup_method);
 		if (lookup == NULL) {
-			fatal("ssh_x509store_addlocations: cannot add ldap lookup(revoked) !");
+			fatal_f("cannot add ldap lookup(revoked)");
 			return 0; /* ;-) */
 		}
 		if (SSH_X509_LOOKUP_ADD(lookup, _locations->ldap_url)) {
@@ -776,7 +775,7 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 #ifndef USE_LDAP_STORE
 		if (_locations->ldap_ver != NULL) {
 			if (!X509_LOOKUP_set_protocol(lookup, _locations->ldap_ver)) {
-				fatal("ssh_x509store_addlocations: cannot set ldap version(revoked) !");
+				fatal_f("cannot set ldap version(revoked)");
 				return 0; /* ;-) */
 			}
 		}
@@ -838,7 +837,7 @@ ssh_verify_cert(X509_STORE_CTX *_csc) {
 		X509_PURPOSE *xptmp = X509_PURPOSE_get0(ssh_x509flags.allowedcertpurpose);
 		int purpose;
 		if (xptmp == NULL) {
-			fatal("ssh_verify_cert: cannot get purpose from index");
+			fatal_f("cannot get purpose from index");
 			return -1; /* ;-) */
 		}
 		purpose = X509_PURPOSE_get_id(xptmp);
@@ -1178,7 +1177,7 @@ ssh_check_crl(X509_STORE_CTX *_ctx, X509* _issuer, X509_CRL *_crl) {
 
 		bio = BIO_new(BIO_s_mem());
 		if (bio == NULL) {
-			fatal("ssh_check_crl: out of memory");
+			fatal_f("out of memory");
 			return 0; /* ;-) */
 		}
 

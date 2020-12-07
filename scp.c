@@ -197,7 +197,7 @@ do_local_cmd(arglist *a)
 	pid_t pid;
 
 	if (a->num == 0)
-		fatal("do_local_cmd: no arguments");
+		fatal_f("no arguments");
 
 	if (verbose_mode) {
 		fprintf(stderr, "Executing:");
@@ -206,7 +206,7 @@ do_local_cmd(arglist *a)
 		fprintf(stderr, "\n");
 	}
 	if ((pid = fork()) == -1)
-		fatal("do_local_cmd: fork: %s", strerror(errno));
+		fatal_f("fork: %s", strerror(errno));
 
 	if (pid == 0) {
 		execvp(a->list[0], a->list);
@@ -221,7 +221,7 @@ do_local_cmd(arglist *a)
 
 	while (waitpid(pid, &status, 0) == -1)
 		if (errno != EINTR)
-			fatal("do_local_cmd: waitpid: %s", strerror(errno));
+			fatal_f("waitpid: %s", strerror(errno));
 
 	do_cmd_pid = -1;
 
@@ -361,7 +361,7 @@ do_cmd2(char *host, char *remuser, int port, char *cmd, int fdin, int fdout)
 	}
 	while (waitpid(pid, &status, 0) == -1)
 		if (errno != EINTR)
-			fatal("do_cmd2: waitpid: %s", strerror(errno));
+			fatal_f("waitpid: %s", strerror(errno));
 	return 0;
 }
 

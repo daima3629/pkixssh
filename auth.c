@@ -443,7 +443,7 @@ expand_authorized_keys(const char *filename, struct passwd *pw)
 
 	i = snprintf(ret, sizeof(ret), "%s/%s", pw->pw_dir, file);
 	if (i < 0 || (size_t)i >= sizeof(ret))
-		fatal("expand_authorized_keys: path too long");
+		fatal_f("path too long");
 	free(file);
 	return (xstrdup(ret));
 }

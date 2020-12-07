@@ -147,7 +147,7 @@ restore_uid(void)
 		return;
 	}
 	if (!temporarily_use_uid_effective)
-		fatal("restore_uid: temporarily_use_uid not effective");
+		fatal_f("temporarily_use_uid not effective");
 
 #ifdef SAVED_IDS_WORK_WITH_SETEUID
 	debug_f("%u/%u", (u_int)saved_euid, (u_int)saved_egid);
@@ -186,9 +186,9 @@ permanently_set_uid(struct passwd *pw)
 #endif
 
 	if (pw == NULL)
-		fatal("permanently_set_uid: no user given");
+		fatal_f("no user given");
 	if (temporarily_use_uid_effective)
-		fatal("permanently_set_uid: temporarily_use_uid effective");
+		fatal_f("temporarily_use_uid effective");
 	debug_f("%u/%u", (u_int)pw->pw_uid,
 	    (u_int)pw->pw_gid);
 

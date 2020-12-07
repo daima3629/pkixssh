@@ -380,9 +380,9 @@ conalloc(char *iname, char *oname, const char *keyname)
 	} while ((s = tcpconnect(name)) == -1);
 
 	if (s >= maxfd)
-		fatal("conalloc: fdno %d too high", s);
+		fatal_f("fdno %d too high", s);
 	if (fdcon[s].c_status)
-		fatal("conalloc: attempt to reuse fdno %d", s);
+		fatal_f("attempt to reuse fdno %d", s);
 
 	debug3_f("oname %s keyname %s", oname, keyname);
 	fdcon[s].c_fd = s;
@@ -407,7 +407,7 @@ static void
 confree(int s)
 {
 	if (s >= maxfd || fdcon[s].c_status == CS_UNUSED)
-		fatal("confree: attempt to free bad fdno %d", s);
+		fatal_f("attempt to free bad fdno %d", s);
 	free(fdcon[s].c_namebase);
 	free(fdcon[s].c_output_name);
 	if (fdcon[s].c_status == CS_KEYS)
@@ -549,7 +549,7 @@ conread(int s)
 			c->c_status = CS_KEYS;
 			break;
 		default:
-			fatal("conread: invalid status %d", c->c_status);
+			fatal_f("invalid status %d", c->c_status);
 			break;
 		}
 

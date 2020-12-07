@@ -116,7 +116,7 @@ ssh_aes_ctr_iv(EVP_CIPHER_CTX *evp, int doset, u_char * iv, size_t len)
 	struct ssh_aes_ctr_ctx *c;
 
 	if ((c = EVP_CIPHER_CTX_get_app_data(evp)) == NULL)
-		fatal("ssh_aes_ctr_iv: no context");
+		fatal_f("no context");
 	if (doset)
 		memcpy(c->aes_counter, iv, len);
 	else

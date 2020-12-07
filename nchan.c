@@ -89,7 +89,7 @@ static void
 chan_set_istate(Channel *c, u_int next)
 {
 	if (c->istate > CHAN_INPUT_CLOSED || next > CHAN_INPUT_CLOSED)
-		fatal("chan_set_istate: bad state %d -> %d", c->istate, next);
+		fatal_f("bad state %d -> %d", c->istate, next);
 	debug2("channel %d: input %s -> %s", c->self, istates[c->istate],
 	    istates[next]);
 	c->istate = next;
@@ -99,7 +99,7 @@ static void
 chan_set_ostate(Channel *c, u_int next)
 {
 	if (c->ostate > CHAN_OUTPUT_CLOSED || next > CHAN_OUTPUT_CLOSED)
-		fatal("chan_set_ostate: bad state %d -> %d", c->ostate, next);
+		fatal_f("bad state %d -> %d", c->ostate, next);
 	debug2("channel %d: output %s -> %s", c->self, ostates[c->ostate],
 	    ostates[next]);
 	c->ostate = next;

@@ -1104,7 +1104,7 @@ x509key_copy_identity(const struct sshkey *from, struct sshkey *to) {
 	if (!sshkey_is_x509(from)) return;
 
 	if (!x509key_check("copy_identity", from))
-		fatal("x509key_copy_identity: no X.509 identity");
+		fatal_f("no X.509 identity");
 
 	xd = to->x509_data;
 	if (xd)
@@ -1116,7 +1116,7 @@ x509key_copy_identity(const struct sshkey *from, struct sshkey *to) {
 
 	x = X509_dup(from->x509_data->cert);
 	if (x == NULL)
-		fatal("x509key_copy_identity: X509_dup failed");
+		fatal_f("X509_dup failed");
 	xd->cert = x;
 
 	/* legacy keys does not use chain */
@@ -1126,14 +1126,14 @@ x509key_copy_identity(const struct sshkey *from, struct sshkey *to) {
 
 	pchain = sk_X509_new_null();
 	if (pchain == NULL)
-		fatal("x509key_copy_identity: sk_X509_new_null failed");
+		fatal_f("sk_X509_new_null failed");
 	xd->chain = pchain;
 
 	for (n = 0; n < sk_X509_num(chain); n++) {
 		x = sk_X509_value(chain, n);
 		x = X509_dup(x);
 		if (x == NULL)
-			fatal("x509key_copy_identity: X509_dup failed");
+			fatal_f("X509_dup failed");
 		sk_X509_insert(pchain, x, -1 /*last*/);
 	}
 }
@@ -1291,7 +1291,7 @@ x509key_load_certs_bio(struct sshkey *key, BIO *bio) {
 
 	chain = sk_X509_new_null();
 	if (chain == NULL) {
-		fatal("x509key_load_certs_bio: out of memory");
+		fatal_f("out of memory");
 		return -1; /*unreachable code*/
 	}
 
@@ -1384,7 +1384,7 @@ x509key_load_certs(const char *pkalg, struct sshkey *key, const char *filename) 
 	char file[PATH_MAX];
 
 	if (strlcpy(file, filename, sizeof(file)) < len) {
-		fatal("x509key_load_certs: length of filename exceed PATH_MAX");
+		fatal_f("length of filename exceed PATH_MAX");
 		return; /*unreachable code*/
 	}
 	file[len - 4] = '\0';
@@ -1549,7 +1549,7 @@ ssh_x509key_type(const char *name) {
 	const SSHX509KeyAlgs *p;
 
 	if (name == NULL) {
-		fatal("ssh_x509key_type: name is NULL");
+		fatal_f("name is NULL");
 		return KEY_UNSPEC; /*unreachable code*/
 	}
 
@@ -1566,7 +1566,7 @@ ssh_x509key_name(const struct sshkey *k) {
 	int n;
 
 	if (k == NULL) {
-		fatal("ssh_x509key_name: key is NULL");
+		fatal_f("key is NULL");
 		return NULL; /*unreachable code*/
 	}
 	if (!sshkey_is_x509(k)) return NULL;
@@ -2134,8 +2134,7 @@ ssh_x509_key_size(const struct sshkey *key) {
 		} break;
 #endif
 	default:
-		fatal("ssh_x509_key_size: unknown EVP_PKEY type %d",
-		    EVP_PKEY_base_id(pkey));
+		fatal_f("unsupported EVP_PKEY type %d", EVP_PKEY_base_id(pkey));
 		/*unreachable code*/
 	}
 	EVP_PKEY_free(pkey);

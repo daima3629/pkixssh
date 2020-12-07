@@ -185,7 +185,7 @@ ssh_ASN1_STRING_to_UTF8(unsigned char **out, ASN1_STRING *in) {
 		/* we MUST allocate memory with OPENSSL method! */
 		p = OPENSSL_malloc(l + 1);
 		if (p == NULL) {
-			fatal("ssh_ASN1_STRING_to_UTF8: out of memory (allocating %d bytes)", (l + 1));
+			fatal_f("out of memory (allocating %d bytes)", (l + 1));
 		}
 		memcpy(p, s, l);
 		p[l] = 0;
@@ -424,10 +424,10 @@ ssh_X509_NAME_cmp(X509_NAME *_a, X509_NAME *_b) {
 	}
 #else
 	if (_a == NULL) {
-		fatal("ssh_X509_NAME_cmp: first name is NULL");
+		fatal_f("first name is NULL");
 	}
 	if (_b == NULL) {
-		fatal("ssh_X509_NAME_cmp: second name is NULL");
+		fatal_f("second name is NULL");
 	}
 #endif
 

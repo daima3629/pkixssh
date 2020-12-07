@@ -410,7 +410,7 @@ do_exec_no_pty(struct ssh *ssh, Session *s, const char *command)
 	int pin[2], pout[2], perr[2];
 
 	if (s == NULL)
-		fatal("do_exec_no_pty: no session");
+		fatal_f("no session");
 
 	/* Allocate pipes for communicating with the program. */
 	if (pipe(pin) == -1) {
@@ -435,7 +435,7 @@ do_exec_no_pty(struct ssh *ssh, Session *s, const char *command)
 	int inout[2], err[2];
 
 	if (s == NULL)
-		fatal("do_exec_no_pty: no session");
+		fatal_f("no session");
 
 	/* Uses socket pairs to communicate with the program. */
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, inout) == -1) {
@@ -582,7 +582,7 @@ do_exec_pty(struct ssh *ssh, Session *s, const char *command)
 	pid_t pid;
 
 	if (s == NULL)
-		fatal("do_exec_pty: no session");
+		fatal_f("no session");
 	ptyfd = s->ptyfd;
 	ttyfd = s->ttyfd;
 
