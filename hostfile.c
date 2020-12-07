@@ -555,7 +555,6 @@ add_host_to_hostfile(const char *filename, const char *host,
 
 struct host_delete_ctx {
 	FILE *out;
-	int quiet;
 	const char *host;
 	int *skip_keys; /* XXX split for host/ip? might want to ensure both */
 	struct sshkey * const *keys;
@@ -567,7 +566,6 @@ static int
 host_delete(struct hostkey_foreach_line *l, void *_ctx)
 {
 	struct host_delete_ctx *ctx = (struct host_delete_ctx *)_ctx;
-	LogLevel loglevel = ctx->quiet ? SYSLOG_LEVEL_DEBUG1 : SYSLOG_LEVEL_VERBOSE;
 	size_t i;
 
 	if (l->status == HKF_STATUS_MATCHED) {
@@ -596,16 +594,14 @@ host_delete(struct hostkey_foreach_line *l, void *_ctx)
 		 * Hostname matches and has no CA/revoke marker, delete it
 		 * by *not* writing the line to ctx->out.
 		 */
-		do_log2(loglevel, "%s%s%s:%ld: Removed %s key for host %s",
-		    ctx->quiet ? __func__ : "", ctx->quiet ? ": " : "",
-		    l->path, l->linenum, sshkey_type(l->key), ctx->host);
+		verbose("Removed %s key for host %s - %s:%ld",
+		    sshkey_type(l->key), ctx->host, l->path, l->linenum);
 		ctx->modified = 1;
 		return 0;
 	}
 	/* Retain non-matching hosts and invalid lines when deleting */
 	if (l->status == HKF_STATUS_INVALID) {
-		do_log2(loglevel, "%s%s%s:%ld: invalid known_hosts entry",
-		    ctx->quiet ? __func__ : "", ctx->quiet ? ": " : "",
+		verbose("Invalid known_hosts entry - %s:%ld",
 		    l->path, l->linenum);
 	}
 	fprintf(ctx->out, "%s\n", l->line);
@@ -614,10 +610,9 @@ host_delete(struct hostkey_foreach_line *l, void *_ctx)
 
 int
 hostfile_replace_entries(const char *filename, const char *host, const char *ip,
-    struct sshkey **keys, size_t nkeys, int store_hash, int quiet, int hash_alg)
+    struct sshkey **keys, size_t nkeys, int store_hash, int hash_alg)
 {
 	int r, fd, oerrno = 0;
-	LogLevel loglevel = quiet ? SYSLOG_LEVEL_DEBUG1 : SYSLOG_LEVEL_VERBOSE;
 	struct host_delete_ctx ctx;
 	char *fp, *temp = NULL, *back = NULL;
 	mode_t omask;
@@ -627,7 +622,6 @@ hostfile_replace_entries(const char *filename, const char *host, const char *ip,
 
 	memset(&ctx, 0, sizeof(ctx));
 	ctx.host = host;
-	ctx.quiet = quiet;
 	if ((ctx.skip_keys = calloc(nkeys, sizeof(*ctx.skip_keys))) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
 	ctx.keys = keys;
@@ -677,9 +671,8 @@ hostfile_replace_entries(const char *filename, const char *host, const char *ip,
 			r = SSH_ERR_ALLOC_FAIL;
 			goto fail;
 		}
-		do_log2(loglevel, "%s%sAdding new key for %s to %s: %s %s",
-		    quiet ? __func__ : "", quiet ? ": " : "", host, filename,
-		    sshkey_ssh_name(keys[i]), fp);
+		verbose("Adding new %s key for %s to %s: %s",
+		    sshkey_ssh_name(keys[i]), host, filename, fp);
 		free(fp);
 		if (!write_host_entry(ctx.out, host, ip, keys[i], store_hash)) {
 			r = SSH_ERR_INTERNAL_ERROR;

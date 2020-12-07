@@ -2029,8 +2029,7 @@ update_known_hosts(struct hostkeys_update_ctx *ctx)
 		if ((r = hostfile_replace_entries(known_hosts_file,
 		    ctx->host_str, ctx->ip_str,
 		    i == 0 ? ctx->keys : NULL, i == 0 ? ctx->nkeys : 0,
-		    options.hash_known_hosts, 0,
-		    options.fingerprint_hash)) != 0) {
+		    options.hash_known_hosts, options.fingerprint_hash)) != 0) {
 			error_f("hostfile_replace_entries failed for %s: %s",
 			    known_hosts_file, ssh_err(r));
 		}

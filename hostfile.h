@@ -47,7 +47,7 @@ int	 add_host_to_hostfile(const char *, const char *,
 
 int	 hostfile_replace_entries(const char *filename,
     const char *host, const char *ip, struct sshkey **keys, size_t nkeys,
-    int store_hash, int quiet, int hash_alg);
+    int store_hash, int hash_alg);
 
 #define HASH_MAGIC	"|1|"
 #define HASH_DELIM	'|'
