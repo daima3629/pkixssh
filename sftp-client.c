@@ -277,8 +277,7 @@ get_handle(struct sftp_conn *conn, u_int expected_id, size_t *len,
 	int r;
 
 	va_start(args, errfmt);
-	if (errfmt != NULL)
-		vsnprintf(errmsg, sizeof(errmsg), errfmt, args);
+	vsnprintf(errmsg, sizeof(errmsg), errfmt, args);
 	va_end(args);
 
 	if ((msg = sshbuf_new()) == NULL)
@@ -290,17 +289,16 @@ get_handle(struct sftp_conn *conn, u_int expected_id, size_t *len,
 
 	if (id != expected_id)
 		fatal("%s: ID mismatch (%u != %u)",
-		    errfmt == NULL ? __func__ : errmsg, id, expected_id);
+		    errmsg, id, expected_id);
 	if (type == SSH2_FXP_STATUS) {
 		if ((r = sshbuf_get_u32(msg, &status)) != 0)
 			fatal("%s: buffer error: %s", __func__, ssh_err(r));
-		if (errfmt != NULL)
-			error("%s: %s", errmsg, fx2txt(status));
+		error("%s: %s", errmsg, fx2txt(status));
 		sshbuf_free(msg);
 		return(NULL);
 	} else if (type != SSH2_FXP_HANDLE)
 		fatal("%s: Expected SSH2_FXP_HANDLE(%u) packet, got %u",
-		    errfmt == NULL ? __func__ : errmsg, SSH2_FXP_HANDLE, type);
+		    errmsg, SSH2_FXP_HANDLE, type);
 
 	if ((r = sshbuf_get_string(msg, &handle, len)) != 0)
 		fatal("%s: buffer error: %s", __func__, ssh_err(r));
