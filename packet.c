@@ -1873,8 +1873,7 @@ sshpkt_vfatal(struct ssh *ssh, int r, const char *fmt, va_list ap)
 		/* FALLTHROUGH */
 	default:
 		if (vasprintf(&tag, fmt, ap) < 0)
-			logdie("%s: could not allocate failure message",
-			    __func__);
+			logdie("Could not allocate packet failure message");
 		errno = oerrno;
 		logdie("%s%sConnection %s %s: %s",
 		    tag != NULL ? tag : "", tag != NULL ? ": " : "",
@@ -1892,7 +1891,7 @@ sshpkt_fatal(struct ssh *ssh, int r, const char *fmt, ...)
 	sshpkt_vfatal(ssh, r, fmt, ap);
 	/* NOTREACHED */
 	va_end(ap);
-	logdie("%s: should have exited", __func__);
+	logdie("Packet should have exited");
 }
 
 /*

@@ -672,7 +672,7 @@ input_userauth_pk_ok(int type, u_int32_t seq, struct ssh *ssh)
 		goto done;
 	}
 	if (key->type != pktype) {
-		error("input_userauth_pk_ok: type mismatch "
+		error_f("type mismatch "
 		    "for decoded key (received %d, expected %d)",
 		    key->type, pktype);
 		goto done;
@@ -1055,7 +1055,7 @@ input_userauth_passwd_changereq(int type, u_int32_t seq, struct ssh *ssh)
 
 	UNUSED(type);
 	UNUSED(seq);
-	debug2("input_userauth_passwd_changereq");
+	debug2_f("entering");
 
 	if (authctxt == NULL)
 		fatal("input_userauth_passwd_changereq: "
