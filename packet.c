@@ -1845,22 +1845,19 @@ sshpkt_vfatal(struct ssh *ssh, int r, const char *fmt, va_list ap)
 
 	sshpkt_fmt_connection_id(ssh, remote_id, sizeof(remote_id));
 
+	ssh_packet_close_internal(ssh, 0);
+
 	switch (r) {
 	case SSH_ERR_CONN_CLOSED:
-		ssh_packet_clear_keys(ssh);
 		logdie("Connection closed by %s", remote_id);
 	case SSH_ERR_CONN_TIMEOUT:
-		ssh_packet_clear_keys(ssh);
 		logdie("Connection %s %s timed out",
 		    ssh->state->server_side ? "from" : "to", remote_id);
 	case SSH_ERR_DISCONNECTED:
-		ssh_packet_clear_keys(ssh);
 		logdie("Disconnected from %s", remote_id);
 	case SSH_ERR_SYSTEM_ERROR:
-		if (errno == ECONNRESET) {
-			ssh_packet_clear_keys(ssh);
+		if (errno == ECONNRESET)
 			logdie("Connection reset by %s", remote_id);
-		}
 		/* FALLTHROUGH */
 	case SSH_ERR_NO_CIPHER_ALG_MATCH:
 	case SSH_ERR_NO_MAC_ALG_MATCH:
@@ -1868,7 +1865,6 @@ sshpkt_vfatal(struct ssh *ssh, int r, const char *fmt, va_list ap)
 	case SSH_ERR_NO_KEX_ALG_MATCH:
 	case SSH_ERR_NO_HOSTKEY_ALG_MATCH:
 		if (ssh && ssh->kex && ssh->kex->failed_choice) {
-			ssh_packet_clear_keys(ssh);
 			errno = oerrno;
 			logdie("Unable to negotiate with %s: %s. "
 			    "Their offer: %s", remote_id, ssh_err(r),
@@ -1876,12 +1872,9 @@ sshpkt_vfatal(struct ssh *ssh, int r, const char *fmt, va_list ap)
 		}
 		/* FALLTHROUGH */
 	default:
-		if (vasprintf(&tag, fmt, ap) < 0) {
-			ssh_packet_clear_keys(ssh);
+		if (vasprintf(&tag, fmt, ap) < 0)
 			logdie("%s: could not allocate failure message",
 			    __func__);
-		}
-		ssh_packet_clear_keys(ssh);
 		errno = oerrno;
 		logdie("%s%sConnection %s %s: %s",
 		    tag != NULL ? tag : "", tag != NULL ? ": " : "",
