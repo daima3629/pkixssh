@@ -1191,7 +1191,7 @@ mm_answer_keyallowed(struct ssh *ssh, int sock, struct sshbuf *m)
 	if ((r = Xkey_from_blob(pkalg, blob, bloblen, &key)) != 0)
 		fatal("%s: Xkey_from_blob: %s", __func__, ssh_err(r));
 
-	debug3_f("xkey_from_blob: %s %p", pkalg, (void*)key);
+	debug3_f("Xkey_from_blob: %s %p", pkalg, (void*)key);
 
 {	ssh_compat ctx_compat = { datafellows, xcompat };
 	ssh_verify_ctx ctx = { pkalg, key, &ctx_compat, NULL };
@@ -1702,7 +1702,7 @@ monitor_apply_keystate(struct ssh *ssh)
 	struct kex *kex;
 	int r;
 
-	debug3_f("ssh_packet_set_state ...");
+	debug3_f("entering");
 	if ((r = ssh_packet_set_state(ssh, child_state)) != 0)
                 fatal("%s: ssh_packet_set_state: %s", __func__, ssh_err(r));
 	sshbuf_free(child_state);

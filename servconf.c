@@ -2321,10 +2321,9 @@ parse_string:
 				item = xcalloc(1, sizeof(*item));
 				item->selector = strdup(arg);
 				item->filename = strdup(gbuf.gl_pathv[n]);
-				if ((item->contents = sshbuf_new()) == NULL) {
+				if ((item->contents = sshbuf_new()) == NULL)
 					fatal("%s: sshbuf_new failed",
 					    __func__);
-				}
 				load_server_config(item->filename,
 				    item->contents);
 				parse_server_config_depth(options,

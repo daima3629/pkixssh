@@ -1629,8 +1629,7 @@ client_request_agent(struct ssh *ssh, const char *request_type, int rchan)
 	}
 	if (r != 0) {
 		if (r != SSH_ERR_AGENT_NOT_PRESENT)
-			debug_f("ssh_get_authentication_socket: %s",
-			    ssh_err(r));
+			debug_f("ssh_get_authentication_socket: %s", ssh_err(r));
 		return NULL;
 	}
 	c = channel_new(ssh, "authentication agent connection",
@@ -2086,7 +2085,7 @@ client_global_hostkeys_private_confirm(struct ssh *ssh, int type,
 			    __func__, ssh_err(r));
 		/* Extract and verify signature */
 		if ((r = sshpkt_get_string_direct(ssh, &sig, &siglen)) != 0) {
-			error_f("couldn't parse message: %s", ssh_err(r));
+			error_f("parse sig: %s", ssh_err(r));
 			goto out;
 		}
 	{	ssh_verify_ctx verify_ctx = { pkalg, ctx->keys[i], &ssh->compat, NULL };
@@ -2102,9 +2101,10 @@ client_global_hostkeys_private_confirm(struct ssh *ssh, int type,
 		ctx->keys_seen[i] = 2;
 		ndone++;
 	}
+	/* Shouldn't happen */
 	if (ndone != ctx->nnew)
 		fatal("%s: ndone != ctx->nnew (%zu / %zu)", __func__,
-		    ndone, ctx->nnew);  /* Shouldn't happen */
+		    ndone, ctx->nnew);
 	if ((r = sshpkt_get_end(ssh)) != 0) {
 		error_f("protocol error");
 		goto out;
@@ -2192,8 +2192,8 @@ client_input_hostkeys(struct ssh *ssh)
 		if (found) continue;
 	}
 		/* Key is good, record it */
-		if ((tmp = recallocarray(ctx->keys, ctx->nkeys, ctx->nkeys + 1,
-		    sizeof(*ctx->keys))) == NULL)
+		tmp = recallocarray(ctx->keys, ctx->nkeys, ctx->nkeys + 1, sizeof(*ctx->keys));
+		if (tmp == NULL)
 			fatal("%s: recallocarray failed nkeys = %zu",
 			    __func__, ctx->nkeys);
 		algtmp = reallocarray(ctx->algs, ctx->nkeys + 1, sizeof(*ctx->algs));
@@ -2445,10 +2445,9 @@ client_session2_setup(struct ssh *ssh, int id, int want_tty, int want_subsystem,
 	} else {
 		channel_request_start(ssh, id, "shell", 1);
 		client_expect_confirm(ssh, id, "shell", CONFIRM_CLOSE);
-		if ((r = sshpkt_send(ssh)) != 0) {
+		if ((r = sshpkt_send(ssh)) != 0)
 			fatal("%s: send shell request: %s",
 			    __func__, ssh_err(r));
-		}
 	}
 }
 

@@ -87,7 +87,7 @@ audit_session_open(struct logininfo *li)
 {
 	if (linux_audit_record_event(li->uid, NULL, li->hostname, NULL,
 	    li->line, 1) == 0)
-		fatal("linux_audit_write_entry failed: %s", strerror(errno));
+		fatal("linux_audit_record_event failed: %s", strerror(errno));
 }
 
 void

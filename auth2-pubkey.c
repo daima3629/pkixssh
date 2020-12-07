@@ -139,7 +139,7 @@ userauth_pubkey(struct ssh *ssh)
 		goto done;
 	}
 	if ((r = Xkey_from_blob(pkalg, pkblob, blen, &key)) != 0) {
-		error_f("could not parse key: %s", ssh_err(r));
+		error_f("parse key: %s", ssh_err(r));
 		goto done;
 	}
 	if (key == NULL) {

@@ -1827,10 +1827,9 @@ session_new(void)
 	}
 
 	s = &sessions[sessions_first_unused];
-	if (s->used) {
+	if (s->used)
 		fatal("%s: session %d already used",
 		    __func__, sessions_first_unused);
-	}
 	sessions_first_unused = s->next_unused;
 	s->used = 1;
 	s->next_unused = -1;

@@ -2742,7 +2742,7 @@ channel_proxy_downstream(struct ssh *ssh, Channel *downstream)
 	cp += 2;
 	have -= 2;
 	if (ssh_packet_log_type(type))
-		debug3_f("channel %u: down->up: type %u",
+		debug3_f("channel %d: down->up: type %u",
 		    downstream->self, type);
 
 	switch (type) {

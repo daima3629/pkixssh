@@ -1258,10 +1258,9 @@ vdollar_percent_expand(int *parseerror, int dollar, int percent,
 		 */
 		if (*string != '%' || !percent) {
  append:
-			if ((r = sshbuf_put_u8(buf, *string)) != 0) {
+			if ((r = sshbuf_put_u8(buf, *string)) != 0)
 				fatal("%s: sshbuf_put_u8: %s",
 				    __func__, ssh_err(r));
-			}
 			continue;
 		}
 		string++;
@@ -1275,10 +1274,9 @@ vdollar_percent_expand(int *parseerror, int dollar, int percent,
 		for (i = 0; i < num_keys; i++) {
 			if (strchr(keys[i].key, *string) != NULL) {
 				if ((r = sshbuf_put(buf, keys[i].repl,
-				    strlen(keys[i].repl))) != 0) {
+				    strlen(keys[i].repl))) != 0)
 					fatal("%s: sshbuf_put: %s",
 					    __func__, ssh_err(r));
-				}
 				break;
 			}
 		}

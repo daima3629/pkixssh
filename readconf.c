@@ -1639,10 +1639,9 @@ parse_keytypes:
 		    (u_char) arg[1] >= 64 && (u_char) arg[1] < 128)
 			value = (u_char) arg[1] & 31;
 		else {
+			value = 0;	/* Avoid compiler warning. */
 			fatal("%.200s line %d: Bad escape character.",
 			    filename, linenum);
-			/* NOTREACHED */
-			value = 0;	/* Avoid compiler warning. */
 		}
 		if (*activep && *intptr == -1)
 			*intptr = value;

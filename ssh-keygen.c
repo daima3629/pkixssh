@@ -854,7 +854,7 @@ do_print_public(struct passwd *pw)
 
 	prv = load_identity(identity_file, &comment);
 	if ((r = sshkey_write(prv, stdout)) != 0)
-		error("sshkey_write failed: %s", ssh_err(r));
+		fatal("%s: write key: %s", __func__, ssh_err(r));
 	if (comment != NULL && *comment != '\0')
 		fprintf(stdout, " %s", comment);
 	fprintf(stdout, "\n");
@@ -1644,10 +1644,9 @@ do_change_comment(struct passwd *pw, const char *identity_comment)
 	sshkey_free(private);
 
 	strlcat(identity_file, ".pub", sizeof(identity_file));
-	if ((r = sshkey_save_public(public, identity_file, new_comment)) != 0) {
+	if ((r = sshkey_save_public(public, identity_file, new_comment)) != 0)
 		fatal("Unable to save public key to %s: %s",
 		    identity_file, ssh_err(r));
-	}
 	sshkey_free(public);
 	free(comment);
 

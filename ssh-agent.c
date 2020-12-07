@@ -744,10 +744,9 @@ process_message(u_int socknum)
 	int r;
 	SocketEntry *e;
 
-	if (socknum >= sockets_alloc) {
+	if (socknum >= sockets_alloc)
 		fatal("%s: socket number %u >= allocated %u",
 		    __func__, socknum, sockets_alloc);
-	}
 	e = &sockets[socknum];
 
 	if (sshbuf_len(e->input) < 5)
@@ -1058,10 +1057,9 @@ prepare_poll(struct pollfd **pfdp, size_t *npfdp, int *timeoutp, u_int maxfds)
 			    (r = sshbuf_check_reserve(sockets[i].output,
 			     AGENT_MAX_LEN)) == 0)
 				pfd[j].events = POLLIN;
-			else if (r != SSH_ERR_NO_BUFFER_SPACE) {
+			else if (r != SSH_ERR_NO_BUFFER_SPACE)
 				fatal("%s: buffer error: %s",
 				    __func__, ssh_err(r));
-			}
 			if (sshbuf_len(sockets[i].output) > 0)
 				pfd[j].events |= POLLOUT;
 			j++;

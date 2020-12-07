@@ -317,8 +317,7 @@ input_userauth_info_response(int type, u_int32_t seq, struct ssh *ssh)
 	if (nresp > 0) {
 		response = xcalloc(nresp, sizeof(char *));
 		for (i = 0; i < nresp; i++)
-			if ((r = sshpkt_get_cstring(ssh, &response[i],
-			    NULL)) != 0)
+			if ((r = sshpkt_get_cstring(ssh, &response[i], NULL)) != 0)
 				fatal("%s: %s", __func__, ssh_err(r));
 	}
 	if ((r = sshpkt_get_end(ssh)) != 0)
