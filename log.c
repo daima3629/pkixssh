@@ -52,6 +52,7 @@
 
 #include "log.h"
 #include "match.h"
+#include "ssherr.h"
 #include <openssl/err.h>
 
 #define MSGBUFSIZ 1024
@@ -633,5 +634,26 @@ sshlog_f(const char *file, const char *func, int line,
 
 	va_start(args, fmt);
 	sshlogv_f(file, func, line, level, fmt, args);
+	va_end(args);
+}
+
+void
+sshlogv_fr(const char *file, const char *func, int line,
+    int errcode, LogLevel level, const char *fmt, va_list args)
+{
+	char msgbuf[MSGBUFSIZ];
+
+	vsnprintf(msgbuf, sizeof(msgbuf), fmt, args);
+	sshlog(file, func, line, level, "%s: %s - %s", func, msgbuf, ssh_err(errcode));
+}
+
+void
+sshlog_fr(const char *file, const char *func, int line,
+    int errcode, LogLevel level, const char *fmt, ...)
+{
+	va_list args;
+
+	va_start(args, fmt);
+	sshlogv_fr(file, func, line, level, errcode, fmt, args);
 	va_end(args);
 }

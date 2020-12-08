@@ -169,4 +169,21 @@ void     sshfatal_f(const char *file, const char *func, int line,
     __attribute__((format(printf, 4, 5)));
 
 #define fatal_f(...)	sshfatal_f(__FILE__, __func__, __LINE__, __VA_ARGS__)
+
+
+/* Variants that appends a secsh error reason */
+void	 sshlog_fr(const char *file, const char *func, int line,
+    int errcode, LogLevel level, const char *fmt, ...)
+    __attribute__((format(printf, 6, 7)));
+void	 sshlogv_fr(const char *file, const char *func, int line,
+    int errcode, LogLevel level, const char *fmt, va_list args);
+
+void     sshfatal_fr(const char *file, const char *func, int line,
+    int errcode, const char *fmt, ...) __attribute__((noreturn))
+    __attribute__((format(printf, 5, 6)));
+
+#define error_fr(errcode, ...)	sshlog_fr(__FILE__, __func__, __LINE__, errcode, SYSLOG_LEVEL_ERROR, __VA_ARGS__)
+
+#define fatal_fr(errcode, ...)	sshfatal_fr(__FILE__, __func__, __LINE__, errcode, __VA_ARGS__)
+
 #endif
