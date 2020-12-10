@@ -2954,42 +2954,48 @@ channel_proxy_upstream(Channel *c, int type, u_int32_t seq, struct ssh *ssh)
 
 /* Parse a channel ID from the current packet */
 static int
-channel_parse_id(struct ssh *ssh, const char *where, const char *what)
+channel_parse_id(const char *file, const char *func, int line,
+    struct ssh *ssh, const char *what)
 {
 	u_int32_t id;
 	int r;
 
 	if ((r = sshpkt_get_u32(ssh, &id)) != 0) {
-		error("%s: parse id: %s", where, ssh_err(r));
+		sshlog_fr(file, func, line, r, SYSLOG_LEVEL_ERROR, "parse");
 		ssh_packet_disconnect(ssh, "Invalid %s message", what);
 	}
 	if (id > INT_MAX) {
-		error("%s: bad channel id %u: %s", where, id, ssh_err(r));
+		sshlog_f(file, func, line, SYSLOG_LEVEL_ERROR, "bad channel id %u", id);
 		ssh_packet_disconnect(ssh, "Invalid %s channel id", what);
 	}
 	return (int)id;
 }
+#define CHANNEL_PARSE_ID(ssh, what)	\
+	channel_parse_id(__FILE__, __func__, __LINE__, ssh, what)
+
 
 /* Lookup a channel from an ID in the current packet */
 static Channel *
-channel_from_packet_id(struct ssh *ssh, const char *where, const char *what)
+channel_from_packet_id(const char *file, const char *func, int line,
+    struct ssh *ssh, const char *what)
 {
-	int id = channel_parse_id(ssh, where, what);
+	int id = channel_parse_id(file, func, line, ssh, what);
 	Channel *c;
 
-	if ((c = channel_lookup(ssh, id)) == NULL) {
+	if ((c = channel_lookup(ssh, id)) == NULL)
 		ssh_packet_disconnect(ssh,
 		    "%s packet referred to nonexistent channel %d", what, id);
-	}
 	return c;
 }
+#define CHANNEL_FROM_PACKET_ID(ssh, what)	\
+	channel_from_packet_id(__FILE__, __func__, __LINE__, ssh, what)
 
 int
 channel_input_data(int type, u_int32_t seq, struct ssh *ssh)
 {
 	const u_char *data;
 	size_t data_len, win_len;
-	Channel *c = channel_from_packet_id(ssh, __func__, "data");
+	Channel *c = CHANNEL_FROM_PACKET_ID(ssh, "data");
 	int r;
 
 	if (channel_proxy_upstream(c, type, seq, ssh))
@@ -3052,7 +3058,7 @@ channel_input_extended_data(int type, u_int32_t seq, struct ssh *ssh)
 	const u_char *data;
 	size_t data_len;
 	u_int32_t tcode;
-	Channel *c = channel_from_packet_id(ssh, __func__, "extended data");
+	Channel *c = CHANNEL_FROM_PACKET_ID(ssh, "extended data");
 	int r;
 
 	if (channel_proxy_upstream(c, type, seq, ssh))
@@ -3102,7 +3108,7 @@ channel_input_extended_data(int type, u_int32_t seq, struct ssh *ssh)
 int
 channel_input_ieof(int type, u_int32_t seq, struct ssh *ssh)
 {
-	Channel *c = channel_from_packet_id(ssh, __func__, "ieof");
+	Channel *c = CHANNEL_FROM_PACKET_ID(ssh, "ieof");
 	int r;
 
         if ((r = sshpkt_get_end(ssh)) != 0) {
@@ -3127,7 +3133,7 @@ channel_input_ieof(int type, u_int32_t seq, struct ssh *ssh)
 int
 channel_input_oclose(int type, u_int32_t seq, struct ssh *ssh)
 {
-	Channel *c = channel_from_packet_id(ssh, __func__, "oclose");
+	Channel *c = CHANNEL_FROM_PACKET_ID(ssh, "oclose");
 	int r;
 
 	if (channel_proxy_upstream(c, type, seq, ssh))
@@ -3143,7 +3149,7 @@ channel_input_oclose(int type, u_int32_t seq, struct ssh *ssh)
 int
 channel_input_open_confirmation(int type, u_int32_t seq, struct ssh *ssh)
 {
-	Channel *c = channel_from_packet_id(ssh, __func__, "open confirmation");
+	Channel *c = CHANNEL_FROM_PACKET_ID(ssh, "open confirmation");
 	u_int32_t remote_window, remote_maxpacket;
 	int r;
 
@@ -3197,7 +3203,7 @@ reason2txt(int reason)
 int
 channel_input_open_failure(int type, u_int32_t seq, struct ssh *ssh)
 {
-	Channel *c = channel_from_packet_id(ssh, __func__, "open failure");
+	Channel *c = CHANNEL_FROM_PACKET_ID(ssh, "open failure");
 	u_int32_t reason;
 	char *msg = NULL;
 	int r;
@@ -3234,7 +3240,7 @@ channel_input_open_failure(int type, u_int32_t seq, struct ssh *ssh)
 int
 channel_input_window_adjust(int type, u_int32_t seq, struct ssh *ssh)
 {
-	int id = channel_parse_id(ssh, __func__, "window adjust");
+	int id = CHANNEL_PARSE_ID(ssh, "window adjust");
 	Channel *c;
 	u_int32_t adjust;
 	u_int new_rwin;
@@ -3264,7 +3270,7 @@ channel_input_window_adjust(int type, u_int32_t seq, struct ssh *ssh)
 int
 channel_input_status_confirm(int type, u_int32_t seq, struct ssh *ssh)
 {
-	int id = channel_parse_id(ssh, __func__, "status confirm");
+	int id = CHANNEL_PARSE_ID(ssh, "status confirm");
 	Channel *c;
 	struct channel_confirm *cc;
 
