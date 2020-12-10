@@ -924,7 +924,8 @@ channel_open_message(struct ssh *ssh)
 }
 
 static void
-open_preamble(struct ssh *ssh, const char *where, Channel *c, const char *type)
+open_preamble(const char *file, const char *func, int line,
+    struct ssh *ssh, Channel *c, const char *type)
 {
 	int r;
 
@@ -932,10 +933,11 @@ open_preamble(struct ssh *ssh, const char *where, Channel *c, const char *type)
 	    (r = sshpkt_put_cstring(ssh, type)) != 0 ||
 	    (r = sshpkt_put_u32(ssh, c->self)) != 0 ||
 	    (r = sshpkt_put_u32(ssh, c->local_window)) != 0 ||
-	    (r = sshpkt_put_u32(ssh, c->local_maxpacket)) != 0) {
-		fatal("%s: channel %i: open: %s", where, c->self, ssh_err(r));
-	}
+	    (r = sshpkt_put_u32(ssh, c->local_maxpacket)) != 0)
+		sshfatal_fr(file, func, line, r, "channel %d: open", c->self);
 }
+#define OPEN_PREAMBLE(ssh, c, type)	\
+	open_preamble(__FILE__, __func__, __LINE__, ssh, c, type)
 
 void
 channel_send_open(struct ssh *ssh, int id)
@@ -948,7 +950,7 @@ channel_send_open(struct ssh *ssh, int id)
 		return;
 	}
 	debug2("channel %d: send open", id);
-	open_preamble(ssh, __func__, c, c->ctype);
+	OPEN_PREAMBLE(ssh, c, c->ctype);
 	if ((r = sshpkt_send(ssh)) != 0)
 		fatal("%s: channel %i: %s", __func__, c->self, ssh_err(r));
 }
@@ -1691,7 +1693,7 @@ channel_post_x11_listener(struct ssh *ssh, Channel *c,
 	nc = channel_new(ssh, "accepted x11 socket",
 	    SSH_CHANNEL_OPENING, newsock, newsock, -1,
 	    c->local_window_max, c->local_maxpacket, 0, buf, 1);
-	open_preamble(ssh, __func__, nc, "x11");
+	OPEN_PREAMBLE(ssh, nc, "x11");
 	if ((r = sshpkt_put_cstring(ssh, remote_ipaddr)) != 0 ||
 	    (r = sshpkt_put_u32(ssh, remote_port)) != 0) {
 		fatal("%s: channel %i: reply %s", __func__,
@@ -1725,7 +1727,7 @@ port_open_helper(struct ssh *ssh, Channel *c, char *rtype)
 	    rtype, c->listening_port, c->path, c->host_port,
 	    remote_ipaddr, remote_port, local_ipaddr, local_port);
 
-	open_preamble(ssh, __func__, c, rtype);
+	OPEN_PREAMBLE(ssh, c, rtype);
 	if (strcmp(rtype, "direct-tcpip") == 0) {
 		/* target host, port */
 		if ((r = sshpkt_put_cstring(ssh, c->path)) != 0 ||
@@ -1862,7 +1864,7 @@ channel_post_auth_listener(struct ssh *ssh, Channel *c,
 	    SSH_CHANNEL_OPENING, newsock, newsock, -1,
 	    c->local_window_max, c->local_maxpacket,
 	    0, "accepted auth socket", 1);
-	open_preamble(ssh, __func__, nc, "auth-agent@openssh.com");
+	OPEN_PREAMBLE(ssh, nc, "auth-agent@openssh.com");
 	if ((r = sshpkt_send(ssh)) != 0)
 		fatal("%s: channel %i: %s", __func__, c->self, ssh_err(r));
 }
