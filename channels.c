@@ -1269,7 +1269,7 @@ channel_decode_socks4(Channel *c, struct sshbuf *input, struct sshbuf *output)
 	} s4_req, s4_rsp;
 	int r;
 
-	debug2("channel %d: decode socks4", c->self);
+	debug2_f("channel %d", c->self);
 
 	have = sshbuf_len(input);
 	len = sizeof(s4_req);
@@ -1293,8 +1293,7 @@ channel_decode_socks4(Channel *c, struct sshbuf *input, struct sshbuf *output)
 		}
 		if (i > 1024) {
 			/* the peer is probably sending garbage */
-			debug("channel %d: decode socks4: too long",
-			    c->self);
+			debug_f("channel %d: too long", c->self);
 			return -1;
 		}
 	}
@@ -1304,17 +1303,17 @@ channel_decode_socks4(Channel *c, struct sshbuf *input, struct sshbuf *output)
 	    (r = sshbuf_get(input, &s4_req.command, 1)) != 0 ||
 	    (r = sshbuf_get(input, &s4_req.dest_port, 2)) != 0 ||
 	    (r = sshbuf_get(input, &s4_req.dest_addr, 4)) != 0) {
-		debug("channels %d: decode socks4: %s", c->self, ssh_err(r));
+		error_fr(r, "channels %d: parse", c->self);
 		return -1;
 	}
 	have = sshbuf_len(input);
 	p = sshbuf_ptr(input);
 	if (memchr(p, '\0', have) == NULL) {
-		error("channel %d: decode socks4: unterminated user", c->self);
+		error_f("channel %d: unterminated user", c->self);
 		return -1;
 	}
 	len = strlen(p);
-	debug2("channel %d: decode socks4: user %s/%d", c->self, p, len);
+	debug2_f("channel %d: user %s/%d", c->self, p, len);
 	len++; /* trailing '\0' */
 	strlcpy(username, p, sizeof(username));
 	if ((r = sshbuf_consume(input, len)) != 0)
@@ -1329,16 +1328,15 @@ channel_decode_socks4(Channel *c, struct sshbuf *input, struct sshbuf *output)
 		have = sshbuf_len(input);
 		p = sshbuf_ptr(input);
 		if (memchr(p, '\0', have) == NULL) {
-			error("channel %d: decode socks4a: host not nul "
-			    "terminated", c->self);
+			error_f("channel %d: host not nul terminated",
+			    c->self);
 			return -1;
 		}
 		len = strlen(p);
-		debug2("channel %d: decode socks4a: host %s/%d",
-		    c->self, p, len);
+		debug2_f("channel %d: host %s/%d", c->self, p, len);
 		len++;				/* trailing '\0' */
 		if (len > NI_MAXHOST) {
-			error("channel %d: hostname \"%.100s\" too long",
+			error_f("channel %d: hostname \"%.100s\" too long",
 			    c->self, p);
 			return -1;
 		}
@@ -1349,7 +1347,7 @@ channel_decode_socks4(Channel *c, struct sshbuf *input, struct sshbuf *output)
 	}
 	c->host_port = ntohs(s4_req.dest_port);
 
-	debug2("channel %d: dynamic request: socks4 host %s port %u command %u",
+	debug2_f("channel %d: host %s port %u command %u",
 	    c->self, c->path, c->host_port, s4_req.command);
 
 	if (s4_req.command != 1) {
@@ -1392,7 +1390,7 @@ channel_decode_socks5(Channel *c, struct sshbuf *input, struct sshbuf *output)
 	u_int have, need, i, found, nmethods, addrlen, af;
 	int r;
 
-	debug2("channel %d: decode socks5", c->self);
+	debug2_f("channel %d", c->self);
 	p = sshbuf_ptr(input);
 	if (p[0] != 0x05)
 		return -1;
@@ -1471,7 +1469,7 @@ channel_decode_socks5(Channel *c, struct sshbuf *input, struct sshbuf *output)
 	}
 	if ((r = sshbuf_get(input, &dest_addr, addrlen)) != 0 ||
 	    (r = sshbuf_get(input, &dest_port, 2)) != 0) {
-		debug("channel %d: parse addr/port: %s", c->self, ssh_err(r));
+		error_fr(r, "channel %d: parse addr/port", c->self);
 		return -1;
 	}
 	dest_addr[addrlen] = '\0';
@@ -1479,8 +1477,8 @@ channel_decode_socks5(Channel *c, struct sshbuf *input, struct sshbuf *output)
 	c->path = NULL;
 	if (s5_req.atyp == SSH_SOCKS5_DOMAIN) {
 		if (addrlen >= NI_MAXHOST) {
-			error("channel %d: dynamic request: socks5 hostname "
-			    "\"%.100s\" too long", c->self, dest_addr);
+			error_f("channel %d: hostname \"%.100s\" too long",
+			    c->self, dest_addr);
 			return -1;
 		}
 		c->path = xstrdup(dest_addr);
@@ -1491,7 +1489,7 @@ channel_decode_socks5(Channel *c, struct sshbuf *input, struct sshbuf *output)
 	}
 	c->host_port = ntohs(dest_port);
 
-	debug2("channel %d: dynamic request: socks5 host %s port %u command %u",
+	debug2_f("channel %d: host %s port %u command %u",
 	    c->self, c->path, c->host_port, s5_req.command);
 
 	s5_rsp.version = 0x05;
