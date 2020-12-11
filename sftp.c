@@ -1,4 +1,4 @@
-/* $OpenBSD: sftp.c,v 1.204 2020/10/29 02:52:43 djm Exp $ */
+/* $OpenBSD: sftp.c,v 1.205 2020/12/04 02:41:10 djm Exp $ */
 /*
  * Copyright (c) 2001-2004 Damien Miller <djm@openbsd.org>
  *
@@ -608,7 +608,7 @@ parse_no_flags(const char *cmd, char **argv, int argc)
 }
 
 static int
-is_dir(const char *path)
+local_is_dir(const char *path)
 {
 	struct stat sb;
 
@@ -634,7 +634,7 @@ remote_is_dir(struct sftp_conn *conn, const char *path)
 
 /* Check whether path returned from glob(..., GLOB_MARK, ...) is a directory */
 static int
-pathname_is_dir(const char *pathname)
+globpath_is_dir(const char *pathname)
 {
 	size_t l = strlen(pathname);
 
@@ -670,7 +670,7 @@ process_get(struct sftp_conn *conn, const char *src, const char *dst,
 	 * If multiple matches then dst must be a directory or
 	 * unspecified.
 	 */
-	if (g.gl_matchc > 1 && dst != NULL && !is_dir(dst)) {
+	if (g.gl_matchc > 1 && dst != NULL && !local_is_dir(dst)) {
 		error("Multiple source paths, but destination "
 		    "\"%s\" is not a directory", dst);
 		err = -1;
@@ -687,7 +687,7 @@ process_get(struct sftp_conn *conn, const char *src, const char *dst,
 		}
 
 		if (g.gl_matchc == 1 && dst) {
-			if (is_dir(dst)) {
+			if (local_is_dir(dst)) {
 				abs_dst = path_append(dst, filename);
 			} else {
 				abs_dst = xstrdup(dst);
@@ -706,7 +706,7 @@ process_get(struct sftp_conn *conn, const char *src, const char *dst,
 		else if (!quiet && !resume)
 			mprintf("Fetching %s to %s\n",
 			    g.gl_pathv[i], abs_dst);
-		if (pathname_is_dir(g.gl_pathv[i]) && (rflag || global_rflag)) {
+		if (globpath_is_dir(g.gl_pathv[i]) && (rflag || global_rflag)) {
 			if (download_dir(conn, g.gl_pathv[i], abs_dst, NULL,
 			    pflag || global_pflag, 1, resume,
 			    fflag || global_fflag) == -1)
@@ -799,7 +799,7 @@ process_put(struct sftp_conn *conn, const char *src, const char *dst,
 		else if (!quiet && !resume)
 			mprintf("Uploading %s to %s\n",
 			    g.gl_pathv[i], abs_dst);
-		if (pathname_is_dir(g.gl_pathv[i]) && (rflag || global_rflag)) {
+		if (globpath_is_dir(g.gl_pathv[i]) && (rflag || global_rflag)) {
 			if (upload_dir(conn, g.gl_pathv[i], abs_dst,
 			    pflag || global_pflag, 1, resume,
 			    fflag || global_fflag) == -1)
