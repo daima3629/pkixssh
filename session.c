@@ -71,7 +71,6 @@
 #include "sshpty.h"
 #include "packet.h"
 #include "sshbuf.h"
-#include "ssherr.h"
 #include "match.h"
 #include "uidswap.h"
 #include "compat.h"
@@ -260,7 +259,7 @@ display_loginmsg(void)
 	if (sshbuf_len(loginmsg) == 0)
 		return;
 	if ((r = sshbuf_put_u8(loginmsg, 0)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "sshbuf_put_u8");
 	printf("%s", (char *)sshbuf_ptr(loginmsg));
 	sshbuf_reset(loginmsg);
 }
@@ -319,11 +318,10 @@ set_fwdpermit_from_authopts(struct ssh *ssh, const struct sshauthopt *opts)
 			tmp = cp = xstrdup(auth_opts->permitopen[i]);
 			/* This shouldn't fail as it has already been checked */
 			if ((host = hpdelim(&cp)) == NULL)
-				fatal("%s: internal error: hpdelim", __func__);
+				fatal_f("internal error: hpdelim");
 			host = cleanhostname(host);
 			if (cp == NULL || (port = permitopen_port(cp)) < 0)
-				fatal("%s: internal error: permitopen port",
-				    __func__);
+				fatal_f("internal error: permitopen port");
 			channel_add_permission(ssh,
 			    FORWARD_USER, FORWARD_LOCAL, host, port);
 			free(tmp);
@@ -335,11 +333,10 @@ set_fwdpermit_from_authopts(struct ssh *ssh, const struct sshauthopt *opts)
 			tmp = cp = xstrdup(auth_opts->permitlisten[i]);
 			/* This shouldn't fail as it has already been checked */
 			if ((host = hpdelim(&cp)) == NULL)
-				fatal("%s: internal error: hpdelim", __func__);
+				fatal_f("internal error: hpdelim");
 			host = cleanhostname(host);
 			if (cp == NULL || (port = permitopen_port(cp)) < 0)
-				fatal("%s: internal error: permitlisten port",
-				    __func__);
+				fatal_f("internal error: permitlisten port");
 			channel_add_permission(ssh,
 			    FORWARD_USER, FORWARD_REMOTE, host, port);
 			free(tmp);
@@ -1390,7 +1387,7 @@ safely_chroot(const char *path, uid_t uid)
 		debug3_f("checking '%s'", component);
 
 		if (stat(component, &st) == -1)
-			fatal("%s: stat(\"%s\"): %s", __func__,
+			fatal_f("stat(\"%s\"): %s",
 			    component, strerror(errno));
 		if (st.st_uid != 0 || (st.st_mode & 022) != 0)
 			fatal("bad ownership or modes for chroot "
@@ -1408,8 +1405,7 @@ safely_chroot(const char *path, uid_t uid)
 	if (chroot(path) == -1)
 		fatal("chroot(\"%s\"): %s", path, strerror(errno));
 	if (chdir("/") == -1)
-		fatal("%s: chdir(/) after chroot: %s",
-		    __func__, strerror(errno));
+		fatal_f("chdir(/) after chroot: %s", strerror(errno));
 	verbose("Changed root directory to \"%s\"", path);
 }
 
@@ -1783,8 +1779,8 @@ session_unused(int id)
 	debug3_f("session id %d unused", id);
 	if (id >= options.max_sessions ||
 	    id >= sessions_nalloc) {
-		fatal("%s: insane session id %d (max %d nalloc %d)",
-		    __func__, id, options.max_sessions, sessions_nalloc);
+		fatal_f("insane session id %d (max %d nalloc %d)",
+		    id, options.max_sessions, sessions_nalloc);
 	}
 	memset(&sessions[id], 0, sizeof(*sessions));
 	sessions[id].self = id;
@@ -1821,15 +1817,14 @@ session_new(void)
 
 	if (sessions_first_unused >= sessions_nalloc ||
 	    sessions_first_unused < 0) {
-		fatal("%s: insane first_unused %d max %d nalloc %d",
-		    __func__, sessions_first_unused, options.max_sessions,
+		fatal_f("insane first_unused %d max %d nalloc %d",
+		    sessions_first_unused, options.max_sessions,
 		    sessions_nalloc);
 	}
 
 	s = &sessions[sessions_first_unused];
 	if (s->used)
-		fatal("%s: session %d already used",
-		    __func__, sessions_first_unused);
+		fatal_f("session %d already used", sessions_first_unused);
 	sessions_first_unused = s->next_unused;
 	s->used = 1;
 	s->next_unused = -1;
@@ -2227,7 +2222,7 @@ session_signal_req(struct ssh *ssh, Session *s)
 
 	if ((r = sshpkt_get_cstring(ssh, &signame, NULL)) != 0 ||
 	    (r = sshpkt_get_end(ssh)) != 0) {
-		error_f("parse: %s", ssh_err(r));
+		error_fr(r, "parse");
 		goto out;
 	}
 	sig = ssh_signame2code(signame);
@@ -2441,7 +2436,7 @@ session_close_single_x11(struct ssh *ssh, int id, void *arg)
 	debug3_f("channel %d", id);
 	channel_cancel_cleanup(ssh, id);
 	if ((s = session_by_x11_channel(id)) == NULL)
-		fatal("%s: no x11 channel %d", __func__, id);
+		fatal_f("no x11 channel %d", id);
 	for (i = 0; s->x11_chanids[i] != -1; i++) {
 		debug_f("session %d: closing channel %d",
 		    s->self, s->x11_chanids[i]);
@@ -2471,8 +2466,7 @@ session_exit_message(struct ssh *ssh, Session *s, int status)
 	int r;
 
 	if ((c = channel_lookup(ssh, s->chanid)) == NULL)
-		fatal("%s: session %d: no channel %d",
-		    __func__, s->self, s->chanid);
+		fatal_f("session %d: no channel %d", s->self, s->chanid);
 	debug_f("session %d channel %d pid %ld",
 	    s->self, s->chanid, (long)s->pid);
 

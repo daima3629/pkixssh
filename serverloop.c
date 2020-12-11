@@ -77,7 +77,6 @@
 #include "dispatch.h"
 #include "auth-options.h"
 #include "serverloop.h"
-#include "ssherr.h"
 
 extern ServerOptions options;
 
@@ -201,13 +200,13 @@ client_alive_check(struct ssh *ssh)
 		    (r = sshpkt_put_cstring(ssh, "keepalive@openssh.com"))
 		    != 0 ||
 		    (r = sshpkt_put_u8(ssh, 1)) != 0) /* boolean: want reply */
-			fatal("%s: %s", __func__, ssh_err(r));
+			fatal_fr(r, "compose");
 	} else {
 		channel_request_start(ssh, channel_id,
 		    "keepalive@openssh.com", 1);
 	}
 	if ((r = sshpkt_send(ssh)) != 0)
-		fatal("%s: %s", __func__, ssh_err(r));
+		fatal_fr(r, "send");
 }
 
 /*
@@ -342,8 +341,7 @@ process_input(struct ssh *ssh, fd_set *readset, int connection_in)
 		}
 		/* Buffer any received data. */
 		if ((r = ssh_packet_process_incoming(ssh, buf, len)) != 0)
-			fatal("%s: ssh_packet_process_incoming: %s",
-			    __func__, ssh_err(r));
+			fatal_fr(r, "ssh_packet_process_incoming");
 	}
 	return 0;
 }
@@ -537,7 +535,7 @@ server_request_direct_streamlocal(struct ssh *ssh)
 	int r;
 
 	if (pw == NULL || !the_authctxt->valid)
-		fatal("%s: no/invalid user", __func__);
+		fatal_f("no/invalid user");
 
 	if ((r = sshpkt_get_cstring(ssh, &target, NULL)) != 0 ||
 	    (r = sshpkt_get_cstring(ssh, &originator, NULL)) != 0 ||
@@ -746,7 +744,7 @@ server_input_hostkeys_prove(struct ssh *ssh, struct sshbuf **respp)
 	size_t blen, slen;
 
 	if ((resp = sshbuf_new()) == NULL || (sigbuf = sshbuf_new()) == NULL)
-		fatal("%s: sshbuf_new", __func__);
+		fatal_f("sshbuf_new");
 
 	while (ssh_packet_remaining(ssh) > 0) {
 		sshkey_free(key);
@@ -755,7 +753,7 @@ server_input_hostkeys_prove(struct ssh *ssh, struct sshbuf **respp)
 		pkalg = NULL;
 		if ((r = sshpkt_get_string_direct(ssh, &blob, &blen)) != 0 ||
 		    (r = parse_key_from_blob(blob, blen, &key, &pkalg)) != 0) {
-			error_f("couldn't parse key: %s", ssh_err(r));
+			error_fr(r, "parse key");
 			goto out;
 		}
 		debug3_f("pkalg %s", pkalg);
@@ -790,7 +788,7 @@ server_input_hostkeys_prove(struct ssh *ssh, struct sshbuf **respp)
 		    (r = ssh->kex->xsign(ssh, &ctx, key_pub, &sig, &slen,
 		        sshbuf_ptr(sigbuf), sshbuf_len(sigbuf))) != 0 ||
 		    (r = sshbuf_put_string(resp, sig, slen)) != 0) {
-			error_f("couldn't prepare signature: %s", ssh_err(r));
+			error_fr(r, "assemble signature");
 			goto out;
 		}
 	}
@@ -823,7 +821,7 @@ server_input_global_request(int type, u_int32_t seq, struct ssh *ssh)
 	UNUSED(seq);
 	memset(&fwd, 0, sizeof(fwd));
 	if (pw == NULL || !the_authctxt->valid)
-		fatal("%s: no/invalid user", __func__);
+		fatal_f("no/invalid user");
 
 	if ((r = sshpkt_get_cstring(ssh, &rtype, NULL)) != 0 ||
 	    (r = sshpkt_get_u8(ssh, &want_reply)) != 0)
@@ -855,10 +853,10 @@ server_input_global_request(int type, u_int32_t seq, struct ssh *ssh)
 			    &allocated_listen_port, &options.fwd_opts);
 		}
 		if ((resp = sshbuf_new()) == NULL)
-			fatal("%s: sshbuf_new", __func__);
+			fatal_f("sshbuf_new");
 		if (allocated_listen_port != 0 &&
 		    (r = sshbuf_put_u32(resp, allocated_listen_port)) != 0)
-			fatal("%s: sshbuf_put_u32: %s", __func__, ssh_err(r));
+			fatal_fr(r, "sshbuf_put_u32");
 	} else if (strcmp(rtype, "cancel-tcpip-forward") == 0) {
 		if ((r = sshpkt_get_cstring(ssh, &fwd.listen_host, NULL)) != 0 ||
 		    (r = sshpkt_get_u32(ssh, &port)) != 0)
@@ -950,8 +948,7 @@ server_input_channel_req(int type, u_int32_t seq, struct ssh *ssh)
 		success = session_input_channel_req(ssh, c, rtype);
 	if (want_reply && !(c->flags & CHAN_CLOSE_SENT)) {
 		if (!c->have_remote_id)
-			fatal("%s: channel %d: no remote_id",
-			    __func__, c->self);
+			fatal_f("channel %d: no remote_id", c->self);
 		if ((r = sshpkt_start(ssh, success ?
 		    SSH2_MSG_CHANNEL_SUCCESS : SSH2_MSG_CHANNEL_FAILURE)) != 0 ||
 		    (r = sshpkt_put_u32(ssh, c->remote_id)) != 0 ||

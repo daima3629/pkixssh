@@ -182,6 +182,8 @@ void     sshfatal_fr(const char *file, const char *func, int line,
     int errcode, const char *fmt, ...) __attribute__((noreturn))
     __attribute__((format(printf, 5, 6)));
 
+#define do_log2_fr(errcode, level, ...)	sshlog_fr(__FILE__, __func__, __LINE__, errcode, level, __VA_ARGS__)
+
 #define error_fr(errcode, ...)	sshlog_fr(__FILE__, __func__, __LINE__, errcode, SYSLOG_LEVEL_ERROR, __VA_ARGS__)
 
 #define fatal_fr(errcode, ...)	sshfatal_fr(__FILE__, __func__, __LINE__, errcode, __VA_ARGS__)
