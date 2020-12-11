@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh_api.c,v 1.22 2020/10/18 11:32:02 djm Exp $ */
+/* $OpenBSD: ssh_api.c,v 1.23 2020/12/04 02:29:56 djm Exp $ */
 /*
  * Copyright (c) 2012 Markus Friedl.  All rights reserved.
  * Copyright (c) 2014-2020 Roumen Petrov.  All rights reserved.
@@ -168,9 +168,12 @@ void
 ssh_free(struct ssh *ssh)
 {
 	struct key_entry *k;
-	/*NOTE ssh_packet_close free ssh->kex*/
-	int is_server = ssh->kex != NULL && ssh->kex->server;
+	int is_server;
 
+	if (ssh == NULL) return;
+
+	/* NOTE ssh_packet_close free ssh->kex */
+	is_server = ssh->kex != NULL && ssh->kex->server;
 	ssh_packet_close(ssh);
 	/*
 	 * we've only created the public keys variants in case we
