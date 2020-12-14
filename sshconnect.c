@@ -648,9 +648,9 @@ check_host_cert(const char *host, const struct sshkey *key)
 	}
 	if ((r = sshkey_check_cert_sigtype(key,
 	    options.ca_sign_algorithms)) != 0) {
-		error_f("certificate signature algorithm %s: %s",
+		error_fr(r, "certificate signature algorithm %s",
 		    (key->cert == NULL || key->cert->signature_type == NULL) ?
-		    "(null)" : key->cert->signature_type, ssh_err(r));
+		    "(null)" : key->cert->signature_type);
 		return 0;
 	}
 
@@ -706,7 +706,7 @@ get_hostfile_hostname_ipaddr(char *hostname, struct sockaddr *hostaddr,
 		if (options.proxy_command == NULL) {
 			if (getnameinfo(hostaddr, addrlen,
 			    ntop, sizeof(ntop), NULL, 0, NI_NUMERICHOST) != 0)
-			fatal("%s: getnameinfo failed", __func__);
+			fatal_f("getnameinfo failed");
 			*hostfile_ipaddr = put_host_port(ntop, port);
 		} else {
 			*hostfile_ipaddr = xstrdup("<no hostip for proxy "
@@ -886,7 +886,7 @@ check_host_key(char *hostname, struct sockaddr *hostaddr, u_short port,
 			ra = sshkey_fingerprint(host_key,
 			    options.fingerprint_hash, SSH_FP_RANDOMART);
 			if (fp == NULL || ra == NULL)
-				fatal("%s: sshkey_fingerprint fail", __func__);
+				fatal_f("sshkey_fingerprint failed");
 			logit("Host key fingerprint is %s\n%s", fp, ra);
 			free(ra);
 			free(fp);
@@ -936,7 +936,7 @@ check_host_key(char *hostname, struct sockaddr *hostaddr, u_short port,
 			ra = sshkey_fingerprint(host_key,
 			    options.fingerprint_hash, SSH_FP_RANDOMART);
 			if (fp == NULL || ra == NULL)
-				fatal("%s: sshkey_fingerprint fail", __func__);
+				fatal_f("sshkey_fingerprint failed");
 			xextendf(&msg1, "\n", "%s key fingerprint is %s.",
 			    type, fp);
 			if (sshkey_is_x509(host_key)) {
@@ -1193,8 +1193,7 @@ fail:
 		 */
 		debug("No matching CA found. Retry with plain key");
 		if ((r = sshkey_from_private(host_key, &raw_key)) != 0)
-			fatal("%s: sshkey_from_private: %s",
-			    __func__, ssh_err(r));
+			fatal_fr(r, "decode key");
 		if ((r = sshkey_drop_cert(raw_key)) != 0)
 			fatal("Couldn't drop certificate: %s", ssh_err(r));
 		host_key = raw_key;
@@ -1229,7 +1228,7 @@ verify_host_key(char *host, struct sockaddr *hostaddr,
 
 	if ((fp = sshkey_fingerprint(host_key,
 	    options.fingerprint_hash, SSH_FP_DEFAULT)) == NULL) {
-		error_f("fingerprint host key: %s", ssh_err(r));
+		error_fr(r, "fingerprint host key");
 		r = -1;
 		goto out;
 	}
@@ -1237,7 +1236,7 @@ verify_host_key(char *host, struct sockaddr *hostaddr,
 	if (sshkey_is_cert(host_key)) {
 		if ((cafp = sshkey_fingerprint(host_key->cert->signature_key,
 		    options.fingerprint_hash, SSH_FP_DEFAULT)) == NULL) {
-			error_f("fingerprint CA key: %s", ssh_err(r));
+			error_fr(r, "fingerprint CA key");
 			r = -1;
 			goto out;
 		}
@@ -1416,7 +1415,7 @@ show_other_keys(struct hostkeys *hostkeys, struct sshkey *key)
 		ra = sshkey_fingerprint(found->key,
 		    options.fingerprint_hash, SSH_FP_RANDOMART);
 		if (fp == NULL || ra == NULL)
-			fatal("%s: sshkey_fingerprint fail", __func__);
+			fatal_f("sshkey_fingerprint fail");
 		logit("WARNING: %s key found for host %s\n"
 		    "in %s:%lu\n"
 		    "%s key fingerprint %s.",
@@ -1448,7 +1447,7 @@ warn_changed_key(struct sshkey *host_key)
 	fp = sshkey_fingerprint(host_key, options.fingerprint_hash,
 	    SSH_FP_DEFAULT);
 	if (fp == NULL)
-		fatal("%s: sshkey_fingerprint fail", __func__);
+		fatal_f("sshkey_fingerprint fail");
 
 	error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 	error("@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @");

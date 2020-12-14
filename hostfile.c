@@ -143,12 +143,12 @@ host_hash(const char *host, const char *name_from_hostfile, u_int src_len)
 	    ssh_hmac_init(ctx, salt, len) < 0 ||
 	    ssh_hmac_update(ctx, host, strlen(host)) < 0 ||
 	    ssh_hmac_final(ctx, result, sizeof(result)))
-		fatal("%s: ssh_hmac failed", __func__);
+		fatal_f("ssh_hmac failed");
 	ssh_hmac_free(ctx);
 
 	if (__b64_ntop(salt, len, uu_salt, sizeof(uu_salt)) == -1 ||
 	    __b64_ntop(result, len, uu_result, sizeof(uu_result)) == -1)
-		fatal("%s: __b64_ntop failed", __func__);
+		fatal_f("__b64_ntop failed");
 
 	snprintf(encoded, sizeof(encoded), "%s%s%c%s", HASH_MAGIC, uu_salt,
 	    HASH_DELIM, uu_result);
@@ -288,8 +288,8 @@ load_hostkeys(struct hostkeys *hostkeys, const char *host, const char *path)
 	if ((r = hostkeys_foreach(path, record_hostkey, &ctx, host, NULL,
 	    HKF_WANT_MATCH|HKF_WANT_PARSE_KEY)) != 0) {
 		if (r != SSH_ERR_SYSTEM_ERROR && errno != ENOENT)
-			debug_f("hostkeys_foreach failed for %s: %s",
-			    path, ssh_err(r));
+			error_fr(r, "hostkeys_foreach failed for %s",
+			    path);
 	}
 	if (ctx.num_loaded != 0)
 		debug3_f("loaded %lu keys from %s", ctx.num_loaded, host);
@@ -472,7 +472,7 @@ write_host_entry(FILE *f, const char *host, const char *ip,
 	if (r == 0)
 		success = 1;
 	else
-		error_f("sshkey_write failed: %s", ssh_err(r));
+		error_fr(r, "sshkey_write");
 	fputc('\n', f);
 	/* If hashing is enabled, the IP address needs to go on its own line */
 	if (success && store_hash && ip != NULL)
@@ -655,7 +655,7 @@ hostfile_replace_entries(const char *filename, const char *host, const char *ip,
 	if ((r = hostkeys_foreach(filename, host_delete, &ctx, host, ip,
 	    HKF_WANT_PARSE_KEY)) != 0) {
 		oerrno = errno;
-		error_f("hostkeys_foreach failed: %s", ssh_err(r));
+		error_fr(r, "hostkeys_foreach");
 		goto fail;
 	}
 

@@ -75,7 +75,6 @@
 
 #include "xmalloc.h"
 #include "ssh.h"
-#include "ssherr.h"
 #include "compat.h"
 #include "cipher.h"
 #include "pathnames.h"
@@ -387,7 +386,7 @@ ssh_connection_hash(const char *thishost, const char *host, const char *portstr,
 	    ssh_digest_update(md, portstr, strlen(portstr)) < 0 ||
 	    ssh_digest_update(md, user, strlen(user)) < 0 ||
 	    ssh_digest_final(md, conn_hash, sizeof(conn_hash)) < 0)
-		fatal("%s: mux digest failed", __func__);
+		fatal_f("mux digest failed");
 	ssh_digest_free(md);
 	return tohex(conn_hash, ssh_digest_bytes(SSH_DIGEST_SHA1));
 }
@@ -576,7 +575,7 @@ execute_in_shell(const char *cmd)
 		char *argv[4];
 
 		if (stdfd_devnull(1, 1, 0) == -1)
-			fatal("%s: stdfd_devnull failed", __func__);
+			fatal_f("stdfd_devnull failed");
 		closefrom(STDERR_FILENO + 1);
 
 		argv[0] = shell;
@@ -593,11 +592,11 @@ execute_in_shell(const char *cmd)
 	}
 	/* Parent. */
 	if (pid == -1)
-		fatal("%s: fork: %.100s", __func__, strerror(errno));
+		fatal_f("fork: %.100s", strerror(errno));
 
 	while (waitpid(pid, &status, 0) == -1) {
 		if (errno != EINTR && errno != EAGAIN)
-			fatal("%s: waitpid: %s", __func__, strerror(errno));
+			fatal_f("waitpid: %s", strerror(errno));
 	}
 	if (!WIFEXITED(status)) {
 		error("command '%.100s' exited abnormally", cmd);
@@ -2066,7 +2065,7 @@ parse_keytypes:
 		return 0;
 
 	default:
-		fatal("%s: Unimplemented opcode %d", __func__, opcode);
+		fatal_f("Unimplemented opcode %d", opcode);
 	}
 
 	/* Check that there is no garbage at end of line. */
@@ -2470,7 +2469,7 @@ fill_default_options(Options * options)
 	do { \
 		char *def = match_filter_allowlist(defaults, all); \
 		if ((r = kex_assemble_names(&options->what, def, all)) != 0) \
-			fatal("%s: %s: %s", __func__, #what, ssh_err(r)); \
+			fatal_fr(r, "%s", #what); \
 		free(def); \
 	} while (0)
 
