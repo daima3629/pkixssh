@@ -127,7 +127,7 @@ userauth_pubkey(struct ssh *ssh)
 	if ((r = sshpkt_get_u8(ssh, &have_sig)) != 0 ||
 	    (r = sshpkt_get_cstring(ssh, &pkalg, NULL)) != 0 ||
 	    (r = sshpkt_get_string(ssh, &pkblob, &blen)) != 0)
-		fatal("%s: parse request failed: %s", __func__, ssh_err(r));
+		fatal_fr(r, "parse packet");
 	pktype = sshkey_type_from_name(pkalg);
 	if (pktype == KEY_UNSPEC) {
 		/* this is perfectly legal */
@@ -139,7 +139,7 @@ userauth_pubkey(struct ssh *ssh)
 		goto done;
 	}
 	if ((r = Xkey_from_blob(pkalg, pkblob, blen, &key)) != 0) {
-		error_f("parse key: %s", ssh_err(r));
+		error_fr(r, "parse key");
 		goto done;
 	}
 	if (key == NULL) {
@@ -180,18 +180,16 @@ userauth_pubkey(struct ssh *ssh)
 		    ca_s == NULL ? "" : " CA ", ca_s == NULL ? "" : ca_s);
 		if ((r = sshpkt_get_string(ssh, &sig, &slen)) != 0 ||
 		    (r = sshpkt_get_end(ssh)) != 0)
-			fatal("%s: %s", __func__, ssh_err(r));
+			fatal_fr(r, "parse signature packet");
 		if ((b = sshbuf_new()) == NULL)
-			fatal("%s: sshbuf_new failed", __func__);
+			fatal_f("sshbuf_new failed");
 		if (ssh_compat_fellows(ssh, SSH_OLD_SESSIONID)) {
 			if ((r = sshbuf_put(b, session_id2, session_id2_len)) != 0)
-				fatal("%s: sshbuf_put session id: %s",
-				    __func__, ssh_err(r));
+				fatal_fr(r, "put old session id");
 		} else {
 			if ((r = sshbuf_put_string(b, session_id2,
 			    session_id2_len)) != 0)
-				fatal("%s: sshbuf_put_string session id: %s",
-				    __func__, ssh_err(r));
+				fatal_fr(r, "put session id");
 		}
 		if (!authctxt->valid || authctxt->user == NULL) {
 			debug2_f("disabled because of invalid user");
@@ -208,8 +206,7 @@ userauth_pubkey(struct ssh *ssh)
 		    (r = sshbuf_put_u8(b, have_sig)) != 0 ||
 		    (r = sshbuf_put_cstring(b, pkalg)) != 0 ||
 		    (r = sshbuf_put_string(b, pkblob, blen)) != 0)
-			fatal("%s: build packet failed: %s",
-			    __func__, ssh_err(r));
+			fatal_fr(r, "reconstruct packet");
 #ifdef DEBUG_PK
 		sshbuf_dump(b, stderr);
 #endif
@@ -226,7 +223,7 @@ userauth_pubkey(struct ssh *ssh)
 		    ca_s == NULL ? "" : " CA ", ca_s == NULL ? "" : ca_s);
 
 		if ((r = sshpkt_get_end(ssh)) != 0)
-			fatal("%s: %s", __func__, ssh_err(r));
+			fatal_fr(r, "parse packet");
 
 		if (!authctxt->valid || authctxt->user == NULL) {
 			debug2_f("disabled because of invalid user");
@@ -247,7 +244,7 @@ userauth_pubkey(struct ssh *ssh)
 			    (r = sshpkt_put_string(ssh, pkblob, blen)) != 0 ||
 			    (r = sshpkt_send(ssh)) != 0 ||
 			    (r = ssh_packet_write_wait(ssh)) != 0)
-				fatal("%s: %s", __func__, ssh_err(r));
+				fatal_fr(r, "send packet");
 			authctxt->postponed = 1;
 		}
 	}
@@ -557,11 +554,11 @@ match_principals_command(struct ssh *ssh, struct passwd *user_pw,
 		goto out;
 	}
 	if ((r = sshkey_to_base64(cert->signature_key, &catext)) != 0) {
-		error_f("sshkey_to_base64 failed: %s", ssh_err(r));
+		error_fr(r, "sshkey_to_base64 failed");
 		goto out;
 	}
 	if ((r = sshkey_to_base64(key, &keytext)) != 0) {
-		error_f("sshkey_to_base64 failed: %s", ssh_err(r));
+		error_fr(r, "sshkey_to_base64 failed");
 		goto out;
 	}
 	snprintf(serial_s, sizeof(serial_s), "%llu",
@@ -583,7 +580,7 @@ match_principals_command(struct ssh *ssh, struct passwd *user_pw,
 		    "s", serial_s,
 		    (char *)NULL);
 		if (tmp == NULL)
-			fatal("%s: percent_expand failed", __func__);
+			fatal_f("percent_expand failed");
 		free(av[i]);
 		av[i] = tmp;
 	}
@@ -769,7 +766,7 @@ check_authkey_line(struct ssh *ssh, struct passwd *pw, struct sshkey *key,
 
  success:
 	if (finalopts == NULL)
-		fatal("%s: internal error: missing options", __func__);
+		fatal_f("internal error: missing options");
 	if (authoptsp != NULL) {
 		*authoptsp = finalopts;
 		finalopts = NULL;
@@ -875,7 +872,7 @@ user_cert_trusted_ca(struct ssh *ssh, struct passwd *pw, struct sshkey *key,
 		goto fail_reason;
 	}
 	if (use_authorized_principals && principals_opts == NULL)
-		fatal("%s: internal error: missing principals_opts", __func__);
+		fatal_f("internal error: missing principals_opts");
 	if (sshkey_cert_check_authority(key, 0, 1,
 	    use_authorized_principals ? NULL : pw->pw_name, &reason) != 0)
 		goto fail_reason;
@@ -1004,7 +1001,7 @@ user_key_command_allowed2(struct ssh *ssh, struct passwd *user_pw,
 		goto out;
 	}
 	if ((r = sshkey_to_base64(key, &keytext)) != 0) {
-		error_f("sshkey_to_base64 failed: %s", ssh_err(r));
+		error_fr(r, "sshkey_to_base64 failed");
 		goto out;
 	}
 
@@ -1031,7 +1028,7 @@ user_key_command_allowed2(struct ssh *ssh, struct passwd *user_pw,
 		    "k", keytext,
 		    (char *)NULL);
 		if (tmp == NULL)
-			fatal("%s: percent_expand failed", __func__);
+			fatal_f("percent_expand failed");
 		free(av[i]);
 		av[i] = tmp;
 	}

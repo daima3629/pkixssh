@@ -100,7 +100,7 @@ userauth_hostbased(struct ssh *ssh)
 	    (r = sshpkt_get_cstring(ssh, &chost, NULL)) != 0 ||
 	    (r = sshpkt_get_cstring(ssh, &cuser, NULL)) != 0 ||
 	    (r = sshpkt_get_string(ssh, &sig, &slen)) != 0)
-		fatal("%s: packet parsing: %s", __func__, ssh_err(r));
+		fatal_fr(r, "parse packet");
 
 	debug_f("cuser %s chost %s pkalg %s slen %zu",
 	    cuser, chost, pkalg, slen);
@@ -118,7 +118,7 @@ userauth_hostbased(struct ssh *ssh)
 		goto done;
 	}
 	if ((r = Xkey_from_blob(pkalg, pkblob, blen, &key)) != 0) {
-		error_f("could not parse key: %s", ssh_err(r));
+		error_fr(r, "Xkey_from_blob");
 		goto done;
 	}
 	if (key == NULL) {
@@ -150,7 +150,7 @@ userauth_hostbased(struct ssh *ssh)
 	}
 
 	if ((b = sshbuf_new()) == NULL)
-		fatal("%s: sshbuf_new failed", __func__);
+		fatal_f("sshbuf_new failed");
 	/* reconstruct packet */
 	if ((r = sshbuf_put_string(b, session_id2, session_id2_len)) != 0 ||
 	    (r = sshbuf_put_u8(b, SSH2_MSG_USERAUTH_REQUEST)) != 0 ||
@@ -161,7 +161,7 @@ userauth_hostbased(struct ssh *ssh)
 	    (r = sshbuf_put_string(b, pkblob, blen)) != 0 ||
 	    (r = sshbuf_put_cstring(b, chost)) != 0 ||
 	    (r = sshbuf_put_cstring(b, cuser)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "reconstruct packet");
 #ifdef DEBUG_PK
 	sshbuf_dump(b, stderr);
 #endif
@@ -263,7 +263,7 @@ hostbased_xkey_allowed(struct ssh *ssh, struct passwd *pw,
 		if (sshkey_is_cert(key)) {
 			if ((fp = sshkey_fingerprint(key->cert->signature_key,
 			    options.fingerprint_hash, SSH_FP_DEFAULT)) == NULL)
-				fatal("%s: sshkey_fingerprint fail", __func__);
+				fatal_f("sshkey_fingerprint fail");
 			verbose("Accepted certificate ID \"%s\" signed by "
 			    "%s CA %s from %s@%s", key->cert->key_id,
 			    sshkey_type(key->cert->signature_key), fp,
@@ -271,7 +271,7 @@ hostbased_xkey_allowed(struct ssh *ssh, struct passwd *pw,
 		} else {
 			if ((fp = sshkey_fingerprint(key,
 			    options.fingerprint_hash, SSH_FP_DEFAULT)) == NULL)
-				fatal("%s: sshkey_fingerprint fail", __func__);
+				fatal_f("sshkey_fingerprint fail");
 			verbose("Accepted %s public key %s from %s@%s",
 			    sshkey_type(key), fp, cuser, lookup);
 		}

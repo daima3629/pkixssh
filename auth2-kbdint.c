@@ -38,7 +38,6 @@
 #include "log.h"
 #include "misc.h"
 #include "servconf.h"
-#include "ssherr.h"
 
 /* import */
 extern ServerOptions options;
@@ -52,7 +51,7 @@ userauth_kbdint(struct ssh *ssh)
 	if ((r = sshpkt_get_cstring(ssh, &lang, NULL)) != 0 ||
 	    (r = sshpkt_get_cstring(ssh, &devs, NULL)) != 0 ||
 	    (r = sshpkt_get_end(ssh)) != 0)
-		fatal("%s: %s", __func__, ssh_err(r));
+		fatal_fr(r, "parse packet");
 
 	debug("keyboard-interactive devs %s", devs);
 

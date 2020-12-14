@@ -632,7 +632,7 @@ auth_key_is_revoked(struct sshkey *key)
 	if ((fp = sshkey_fingerprint(key, options.fingerprint_hash,
 	    SSH_FP_DEFAULT)) == NULL) {
 		r = SSH_ERR_ALLOC_FAIL;
-		error_f("fingerprint key: %s", ssh_err(r));
+		error_fr(r, "fingerprint key");
 		goto out;
 	}
 
@@ -673,7 +673,7 @@ auth_debug_add(const char *fmt,...)
 	vsnprintf(buf, sizeof(buf), fmt, args);
 	va_end(args);
 	if ((r = sshbuf_put_cstring(auth_debug, buf)) != 0)
-		fatal("%s: sshbuf_put_cstring: %s", __func__, ssh_err(r));
+		fatal_fr(r, "sshbuf_put_cstring");
 }
 
 void
@@ -686,8 +686,7 @@ auth_debug_send(struct ssh *ssh)
 		return;
 	while (sshbuf_len(auth_debug) != 0) {
 		if ((r = sshbuf_get_cstring(auth_debug, &msg, NULL)) != 0)
-			fatal("%s: sshbuf_get_cstring: %s",
-			    __func__, ssh_err(r));
+			fatal_fr(r, "sshbuf_get_cstring");
 		ssh_packet_send_debug(ssh, "%s", msg);
 		free(msg);
 	}
@@ -699,7 +698,7 @@ auth_debug_reset(void)
 	if (auth_debug != NULL)
 		sshbuf_reset(auth_debug);
 	else if ((auth_debug = sshbuf_new()) == NULL)
-		fatal("%s: sshbuf_new failed", __func__);
+		fatal_f("sshbuf_new failed");
 }
 
 struct passwd *
@@ -1092,7 +1091,7 @@ auth_restrict_session(struct ssh *ssh)
 	restricted->restricted = 1;
 
 	if (auth_activate_options(ssh, restricted) != 0)
-		fatal("%s: failed to restrict session", __func__);
+		fatal_f("failed to restrict session");
 	sshauthopt_free(restricted);
 }
 

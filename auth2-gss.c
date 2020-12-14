@@ -40,7 +40,6 @@
 #include "log.h"
 #include "dispatch.h"
 #include "sshbuf.h"
-#include "ssherr.h"
 #include "misc.h"
 #include "servconf.h"
 #include "packet.h"
@@ -71,7 +70,7 @@ userauth_gssapi(struct ssh *ssh)
 	u_char *doid = NULL;
 
 	if ((r = sshpkt_get_u32(ssh, &mechs)) != 0)
-		fatal("%s: %s", __func__, ssh_err(r));
+		fatal_fr(r, "parse packet");
 
 	if (mechs == 0) {
 		debug("Mechanism negotiation is not supported");
@@ -85,7 +84,7 @@ userauth_gssapi(struct ssh *ssh)
 
 		present = 0;
 		if ((r = sshpkt_get_string(ssh, &doid, &len)) != 0)
-			fatal("%s: %s", __func__, ssh_err(r));
+			fatal_fr(r, "parse oid");
 
 		if (len > 2 && doid[0] == SSH_GSS_OIDTYPE &&
 		    doid[1] == len - 2) {
@@ -123,7 +122,7 @@ userauth_gssapi(struct ssh *ssh)
 	if ((r = sshpkt_start(ssh, SSH2_MSG_USERAUTH_GSSAPI_RESPONSE)) != 0 ||
 	    (r = sshpkt_put_string(ssh, doid, len)) != 0 ||
 	    (r = sshpkt_send(ssh)) != 0)
-		fatal("%s: %s", __func__, ssh_err(r));
+		fatal_fr(r, "send packet");
 
 	free(doid);
 
@@ -154,7 +153,7 @@ input_gssapi_token(int type, u_int32_t plen, struct ssh *ssh)
 	gssctxt = authctxt->methoddata;
 	if ((r = sshpkt_get_string(ssh, &p, &len)) != 0 ||
 	    (r = sshpkt_get_end(ssh)) != 0)
-		fatal("%s: %s", __func__, ssh_err(r));
+		fatal_fr(r, "parse packet");
 
 	recv_tok.value = p;
 	recv_tok.length = len;
@@ -170,7 +169,7 @@ input_gssapi_token(int type, u_int32_t plen, struct ssh *ssh)
 			    (r = sshpkt_put_string(ssh, send_tok.value,
 			    send_tok.length)) != 0 ||
 			    (r = sshpkt_send(ssh)) != 0)
-				fatal("%s: %s", __func__, ssh_err(r));
+				fatal_fr(r, "send ERRTOK packet");
 		}
 		authctxt->postponed = 0;
 		ssh_dispatch_set(ssh, SSH2_MSG_USERAUTH_GSSAPI_TOKEN, NULL);
@@ -182,7 +181,7 @@ input_gssapi_token(int type, u_int32_t plen, struct ssh *ssh)
 			    (r = sshpkt_put_string(ssh, send_tok.value,
 			    send_tok.length)) != 0 ||
 			    (r = sshpkt_send(ssh)) != 0)
-				fatal("%s: %s", __func__, ssh_err(r));
+				fatal_fr(r, "send TOKEN packet");
 		}
 		if (maj_status == GSS_S_COMPLETE) {
 			ssh_dispatch_set(ssh, SSH2_MSG_USERAUTH_GSSAPI_TOKEN, NULL);
@@ -220,7 +219,7 @@ input_gssapi_errtok(int type, u_int32_t plen, struct ssh *ssh)
 	gssctxt = authctxt->methoddata;
 	if ((r = sshpkt_get_string(ssh, &p, &len)) != 0 ||
 	    (r = sshpkt_get_end(ssh)) != 0)
-		fatal("%s: %s", __func__, ssh_err(r));
+		fatal_fr(r, "parse packet");
 	recv_tok.value = p;
 	recv_tok.length = len;
 
@@ -264,7 +263,7 @@ input_gssapi_exchange_complete(int type, u_int32_t plen, struct ssh *ssh)
 	 */
 
 	if ((r = sshpkt_get_end(ssh)) != 0)
-		fatal("%s: %s", __func__, ssh_err(r));
+		fatal_fr(r, "parse packet");
 
 	authenticated = PRIVSEP(ssh_gssapi_userok(authctxt->user));
 
@@ -301,16 +300,16 @@ input_gssapi_mic(int type, u_int32_t plen, struct ssh *ssh)
 	gssctxt = authctxt->methoddata;
 
 	if ((r = sshpkt_get_string(ssh, &p, &len)) != 0)
-		fatal("%s: %s", __func__, ssh_err(r));
+		fatal_fr(r, "parse packet");
 	if ((b = sshbuf_new()) == NULL)
-		fatal("%s: sshbuf_new failed", __func__);
+		fatal_f("sshbuf_new failed");
 	mic.value = p;
 	mic.length = len;
 	ssh_gssapi_buildmic(b, authctxt->user, authctxt->service,
 	    "gssapi-with-mic");
 
 	if ((gssbuf.value = sshbuf_mutable_ptr(b)) == NULL)
-		fatal("%s: sshbuf_mutable_ptr failed", __func__);
+		fatal_f("sshbuf_mutable_ptr failed");
 	gssbuf.length = sshbuf_len(b);
 
 	if (!GSS_ERROR(PRIVSEP(ssh_gssapi_checkmic(gssctxt, &gssbuf, &mic))))
