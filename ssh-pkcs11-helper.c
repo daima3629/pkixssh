@@ -246,27 +246,27 @@ process_sign(void)
 	if ((r = sshbuf_get_string(iqueue, &blob, &blen)) != 0 ||
 	    (r = sshbuf_get_string(iqueue, &data, &dlen)) != 0 ||
 	    (r = sshbuf_get_u32(iqueue, NULL)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "parse");
 
 	if ((r = sshkey_from_blob(blob, blen, &key)) != 0)
-		error_f("sshkey_from_blob: %s", ssh_err(r));
-	else {
-		if ((found = lookup_key(key)) != NULL) {
-			ok = process_key_sign(dlen, data, found, &signature, &slen);
-			if (ok != 0)
-				do_log_crypto_errors(SYSLOG_LEVEL_ERROR);
-		}
-		sshkey_free(key);
+		fatal_fr(r, "decode key");
+
+	if ((found = lookup_key(key)) != NULL) {
+		ok = process_key_sign(dlen, data, found, &signature, &slen);
+		if (ok != 0)
+			do_log_crypto_errors(SYSLOG_LEVEL_ERROR);
 	}
+	sshkey_free(key);
+
 	if ((msg = sshbuf_new()) == NULL)
-		fatal("%s: sshbuf_new failed", __func__);
+		fatal_f("sshbuf_new failed");
 	if (ok == 0) {
 		if ((r = sshbuf_put_u8(msg, SSH2_AGENT_SIGN_RESPONSE)) != 0 ||
 		    (r = sshbuf_put_string(msg, signature, slen)) != 0)
-			fatal("%s: buffer error: %s", __func__, ssh_err(r));
+			fatal_fr(r, "compose response");
 	} else {
 		if ((r = sshbuf_put_u8(msg, SSH2_AGENT_FAILURE)) != 0)
-			fatal("%s: buffer error: %s", __func__, ssh_err(r));
+			fatal_fr(r, "compose failure response");
 	}
 	free(data);
 	free(blob);
@@ -415,10 +415,9 @@ main(int argc, char **argv)
 			} else if (len == -1) {
 				error("read: %s", strerror(errno));
 				cleanup_exit(1);
-			} else if ((r = sshbuf_put(iqueue, buf, len)) != 0) {
+			} else if ((r = sshbuf_put(iqueue, buf, len)) != 0)
 				fatal("%s: buffer error: %s",
 				    __func__, ssh_err(r));
-			}
 		}
 		/* send oqueue to stdout */
 		if ((pfd[1].revents & (POLLOUT|POLLHUP)) != 0) {
@@ -427,10 +426,9 @@ main(int argc, char **argv)
 			if (len == -1) {
 				error("write: %s", strerror(errno));
 				cleanup_exit(1);
-			} else if ((r = sshbuf_consume(oqueue, len)) != 0) {
+			} else if ((r = sshbuf_consume(oqueue, len)) != 0)
 				fatal("%s: buffer error: %s",
 				    __func__, ssh_err(r));
-			}
 		}
 
 		/*
