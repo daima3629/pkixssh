@@ -387,11 +387,11 @@ do_convert_to_ssh2(struct passwd *pw, struct sshkey *k)
 	int r;
 
 	if ((b = sshbuf_new()) == NULL)
-		fatal("%s: sshbuf_new failed", __func__);
+		fatal_f("sshbuf_new failed");
 	if ((r = sshkey_putb(k, b)) != 0)
-		fatal("key_to_blob failed: %s", ssh_err(r));
+		fatal_fr(r, "put key");
 	if ((b64 = sshbuf_dtob64_string(b, 1)) == NULL)
-		fatal("%s: sshbuf_dtob64_string failed", __func__);
+		fatal_f("sshbuf_dtob64_string failed");
 
 	/* Comment + surrounds must fit into 72 chars (RFC 4716 sec 3.3) */
 	snprintf(comment, sizeof(comment),
@@ -428,7 +428,7 @@ do_convert_to_pkcs8(struct sshkey *k)
 		break;
 #endif
 	default:
-		fatal("%s: unsupported key type %s", __func__, sshkey_type(k));
+		fatal_f("unsupported key type %s", sshkey_type(k));
 	}
 	exit(0);
 }
@@ -452,7 +452,7 @@ do_convert_to_pem(struct sshkey *k)
 		break;
 #endif
 	default:
-		fatal("%s: unsupported key type %s", __func__, sshkey_type(k));
+		fatal_f("unsupported key type %s", sshkey_type(k));
 	}
 	exit(0);
 }
@@ -481,7 +481,7 @@ do_convert_to(struct passwd *pw)
 		do_convert_to_pem(k);
 		break;
 	default:
-		fatal("%s: unknown key format %d", __func__, convert_format);
+		fatal_f("unknown key format %d", convert_format);
 	}
 	exit(0);
 }
@@ -497,15 +497,15 @@ buffer_get_bignum_bits(struct sshbuf *b, BIGNUM *value)
 	int r;
 
 	if ((r = sshbuf_get_u32(b, &bignum_bits)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "parse");
 	bytes = (bignum_bits + 7) / 8;
 	if (sshbuf_len(b) < bytes)
-		fatal("%s: input buffer too small: need %d have %zu",
-		    __func__, bytes, sshbuf_len(b));
+		fatal_f("input buffer too small: need %d have %zu",
+		    bytes, sshbuf_len(b));
 	if (BN_bin2bn(sshbuf_ptr(b), bytes, value) == NULL)
-		fatal("%s: BN_bin2bn failed", __func__);
+		fatal_f("BN_bin2bn failed");
 	if ((r = sshbuf_consume(b, bytes)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "consume");
 }
 
 static struct sshkey *
@@ -520,7 +520,7 @@ do_convert_private_ssh2(struct sshbuf *b)
 	u_long e;
 
 	if ((r = sshbuf_get_u32(b, &magic)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "parse magic");
 
 	if (magic != SSH_COM_PRIVATE_KEY_MAGIC) {
 		error("bad magic 0x%x != 0x%x", magic,
@@ -533,7 +533,7 @@ do_convert_private_ssh2(struct sshbuf *b)
 	    (r = sshbuf_get_u32(b, &i2)) != 0 ||
 	    (r = sshbuf_get_u32(b, &i3)) != 0 ||
 	    (r = sshbuf_get_u32(b, &i4)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "parse");
 	debug("ignore (%d %d %d %d)", i1, i2, i3, i4);
 	if (strcmp(cipher, "none") != 0) {
 		error("unsupported cipher %s", cipher);
@@ -566,16 +566,16 @@ do_convert_private_ssh2(struct sshbuf *b)
 		    (g = BN_new()) == NULL ||
 		    (pub_key = BN_new()) == NULL ||
 		    (priv_key = BN_new()) == NULL)
-			fatal("%s: BN_new", __func__);
+			fatal_f("BN_new");
 		buffer_get_bignum_bits(b, p);
 		buffer_get_bignum_bits(b, g);
 		buffer_get_bignum_bits(b, q);
 		buffer_get_bignum_bits(b, pub_key);
 		buffer_get_bignum_bits(b, priv_key);
 		if (!DSA_set0_pqg(key->dsa, p, q, g))
-			fatal("%s: DSA_set0_pqg failed", __func__);
+			fatal_f("DSA_set0_pqg failed");
 		if (!DSA_set0_key(key->dsa, pub_key, priv_key))
-			fatal("%s: DSA_set0_key failed", __func__);
+			fatal_f("DSA_set0_key failed");
 		}
 		break;
 	case KEY_RSA:
@@ -586,7 +586,7 @@ do_convert_private_ssh2(struct sshbuf *b)
 		if ((r = sshbuf_get_u8(b, &e1)) != 0 ||
 		    (e1 < 30 && (r = sshbuf_get_u8(b, &e2)) != 0) ||
 		    (e1 < 30 && (r = sshbuf_get_u8(b, &e3)) != 0))
-			fatal("%s: buffer error: %s", __func__, ssh_err(r));
+			fatal_fr(r, "parse RSA");
 		e = e1;
 		debug("e %lx", e);
 		if (e < 30) {
@@ -598,7 +598,7 @@ do_convert_private_ssh2(struct sshbuf *b)
 			debug("e %lx", e);
 		}
 		if ((rsa_e = BN_new()) == NULL)
-			fatal("%s: BN_new", __func__);
+			fatal_f("BN_new");
 		if (!BN_set_word(rsa_e, e)) {
 			BN_clear_free(rsa_e);
 			sshkey_free(key);
@@ -609,18 +609,18 @@ do_convert_private_ssh2(struct sshbuf *b)
 		    (p = BN_new()) == NULL ||
 		    (q = BN_new()) == NULL ||
 		    (iqmp = BN_new()) == NULL)
-			fatal("%s: BN_new", __func__);
+			fatal_f("BN_new");
 		buffer_get_bignum_bits(b, d);
 		buffer_get_bignum_bits(b, n);
 		buffer_get_bignum_bits(b, iqmp);
 		buffer_get_bignum_bits(b, q);
 		buffer_get_bignum_bits(b, p);
 		if (!RSA_set0_key(key->rsa, n, rsa_e, d))
-			fatal("%s: RSA_set0_key failed", __func__);
+			fatal_f("RSA_set0_key failed");
 		if (!RSA_set0_factors(key->rsa, p, q))
-			fatal("%s: RSA_set0_factors failed", __func__);
+			fatal_f("RSA_set0_factors failed");
 		if ((r = sshrsa_complete_crt_parameters(key, iqmp)) != 0)
-			fatal("generate RSA parameters failed: %s", ssh_err(r));
+			fatal_fr(r, "generate RSA parameters");
 		BN_clear_free(iqmp);
 		}
 		break;
@@ -708,12 +708,12 @@ do_convert_from_ssh2(struct sshkey **k, int *private)
 	    (encoded[len-3] == '='))
 		encoded[len-3] = '\0';
 	if ((r = sshbuf_b64tod(buf, encoded)) != 0)
-		fatal("%s: base64 decoding failed: %s", __func__, ssh_err(r));
+		fatal_fr(r, "base64 decode");
 	if (*private) {
 		if ((*k = do_convert_private_ssh2(buf)) == NULL)
-			fatal("%s: private key conversion failed", __func__);
+			fatal_f("private key conversion failed");
 	} else if ((r = sshkey_fromb(buf, k)) != 0)
-		fatal("decode blob failed: %s", ssh_err(r));
+		fatal_fr(r, "parse key");
 	sshbuf_free(buf);
 	fclose(fp);
 }
@@ -728,7 +728,7 @@ do_convert_from_pkcs8(struct sshkey **k, int *private)
 	if ((fp = fopen(identity_file, "r")) == NULL)
 		fatal("%s: %s: %s", __progname, identity_file, strerror(errno));
 	if ((pubkey = PEM_read_PUBKEY(fp, NULL, NULL, NULL)) == NULL) {
-		fatal("%s: %s is not a recognised public key format", __func__,
+		fatal_f("%s is not a recognised public key format",
 		    identity_file);
 	}
 	fclose(fp);
@@ -755,7 +755,7 @@ do_convert_from_pkcs8(struct sshkey **k, int *private)
 		break;
 #endif
 	default:
-		fatal("%s: unsupported pubkey type %d", __func__,
+		fatal_f("unsupported pubkey type %d",
 		    EVP_PKEY_base_id(pubkey));
 	}
 	EVP_PKEY_free(pubkey);
@@ -779,7 +779,7 @@ do_convert_from_pem(struct sshkey **k, int *private)
 		fclose(fp);
 		return;
 	}
-	fatal("%s: unrecognised raw private key format", __func__);
+	fatal_f("unrecognised raw private key format");
 }
 
 static void
@@ -805,7 +805,7 @@ do_convert_from(struct passwd *pw)
 		do_convert_from_pem(&k, &private);
 		break;
 	default:
-		fatal("%s: unknown key format %d", __func__, convert_format);
+		fatal_f("unknown key format %d", convert_format);
 	}
 	if (k == NULL) exit(1);
 
@@ -827,8 +827,7 @@ do_convert_from(struct passwd *pw)
 		if (r == 0)
 			ok = 1;
 		else if (r == SSH_ERR_INVALID_ARGUMENT)
-			fatal("%s: unsupported key type %s", __func__,
-			    sshkey_type(k));
+			fatal_f("unsupported key type %s", sshkey_type(k));
 		BIO_free_all(out);
 	}
 
@@ -854,7 +853,7 @@ do_print_public(struct passwd *pw)
 
 	prv = load_identity(identity_file, &comment);
 	if ((r = sshkey_write(prv, stdout)) != 0)
-		fatal("%s: write key: %s", __func__, ssh_err(r));
+		fatal_fr(r, "write key");
 	if (comment != NULL && *comment != '\0')
 		fprintf(stdout, " %s", comment);
 	fprintf(stdout, "\n");
@@ -1171,7 +1170,7 @@ do_gen_all_hostkeys(struct passwd *pw)
 		}
 	}
 		if ((r = sshkey_from_private(private, &public)) != 0)
-			fatal("sshkey_from_private failed: %s", ssh_err(r));
+			fatal_fr(r, "sshkey_from_private");
 		snprintf(comment, sizeof comment, "%s@%s", pw->pw_name,
 		    hostname);
 		if ((r = sshkey_save_private(private, prv_tmp, "",
@@ -1400,7 +1399,7 @@ do_known_hosts(struct passwd *pw, const char *name, int find_host,
 	    name, NULL, foreach_options)) != 0) {
 		if (inplace)
 			unlink(tmp);
-		fatal("%s: hostkeys_foreach failed: %s", __func__, ssh_err(r));
+		fatal_fr(r, "hostkeys_foreach");
 	}
 }
 
@@ -1540,7 +1539,7 @@ do_print_resource_record(struct passwd *pw, char *fname, char *hname,
 
 	UNUSED(pw);
 	if (fname == NULL)
-		fatal("%s: no filename", __func__);
+		fatal_f("no filename");
 	if (stat(fname, &st) == -1) {
 		if (errno == ENOENT)
 			return 0;
@@ -1640,7 +1639,7 @@ do_change_comment(struct passwd *pw, const char *identity_comment)
 	}
 	freezero(passphrase, strlen(passphrase));
 	if ((r = sshkey_from_private(private, &public)) != 0)
-		fatal("sshkey_from_private failed: %s", ssh_err(r));
+		fatal_fr(r, "sshkey_from_private");
 	sshkey_free(private);
 
 	strlcat(identity_file, ".pub", sizeof(identity_file));
@@ -1694,7 +1693,7 @@ prepare_options_buf(struct sshbuf *c, int which)
 	size_t i;
 
 	if ((b = sshbuf_new()) == NULL)
-		fatal("%s: sshbuf_new failed", __func__);
+		fatal_f("sshbuf_new failed");
 	sshbuf_reset(c);
 	for (i = 0; i < ncert_ext; i++) {
 		const struct cert_ext *ext = &cert_ext[i];
@@ -1708,7 +1707,7 @@ prepare_options_buf(struct sshbuf *c, int which)
 			debug3_f("%s", ext->key);
 			if ((r = sshbuf_put_cstring(c, ext->key)) != 0 ||
 			    (r = sshbuf_put_string(c, NULL, 0)) != 0)
-				fatal("%s: buffer: %s", __func__, ssh_err(r));
+				fatal_fr(r, "prepare flag");
 		} else {
 			/* key/value option */
 			debug3_f("%s=%s", ext->key, ext->val);
@@ -1716,7 +1715,7 @@ prepare_options_buf(struct sshbuf *c, int which)
 			if ((r = sshbuf_put_cstring(c, ext->key)) != 0 ||
 			    (r = sshbuf_put_cstring(b, ext->val)) != 0 ||
 			    (r = sshbuf_put_stringb(c, b)) != 0)
-				fatal("%s: buffer: %s", __func__, ssh_err(r));
+				fatal_fr(r, "prepare k/v");
 		}
 	}
 	sshbuf_free(b);
@@ -1874,13 +1873,10 @@ do_ca_sign(struct passwd *pw, const char *ca_key_path, int prefer_agent,
 
 		tmp = tilde_expand_filename(argv[i], pw->pw_uid);
 		if ((r = sshkey_load_public(tmp, &public, &comment)) != 0)
-			fatal("%s: unable to open \"%s\": %s",
-			    __func__, tmp, ssh_err(r));
-		if (public->type != KEY_RSA && public->type != KEY_DSA &&
-		    public->type != KEY_ECDSA && public->type != KEY_ED25519 &&
-		    public->type != KEY_XMSS)
-			fatal("%s: key \"%s\" type %s cannot be certified",
-			    __func__, tmp, sshkey_type(public));
+			fatal_fr(r, "load pubkey \"%s\"", tmp);
+		if (sshkey_is_cert(public) || sshkey_is_x509(public))
+			fatal_f("key \"%s\" type %s cannot be certified",
+			    tmp, sshkey_type(public));
 
 		/* Prepare certificate to sign */
 		if ((r = sshkey_to_certified(public)) != 0)
@@ -2074,13 +2070,13 @@ show_options(struct sshbuf *optbuf, int in_critical)
 	int r;
 
 	if ((options = sshbuf_fromb(optbuf)) == NULL)
-		fatal("%s: sshbuf_fromb failed", __func__);
+		fatal_f("sshbuf_fromb failed");
 	while (sshbuf_len(options) != 0) {
 		sshbuf_free(option);
 		option = NULL;
 		if ((r = sshbuf_get_cstring(options, &name, NULL)) != 0 ||
 		    (r = sshbuf_froms(options, &option)) != 0)
-			fatal("%s: buffer error: %s", __func__, ssh_err(r));
+			fatal_fr(r, "parse option");
 		printf("                %s", name);
 		if (!in_critical &&
 		    (strcmp(name, "permit-X11-forwarding") == 0 ||
@@ -2093,8 +2089,7 @@ show_options(struct sshbuf *optbuf, int in_critical)
 		    (strcmp(name, "force-command") == 0 ||
 		    strcmp(name, "source-address") == 0)) {
 			if ((r = sshbuf_get_cstring(option, &arg, NULL)) != 0)
-				fatal("%s: buffer error: %s",
-				    __func__, ssh_err(r));
+				fatal_fr(r, "parse critical");
 			printf(" %s\n", arg);
 			free(arg);
 		} else if (sshbuf_len(option) > 0) {
@@ -2123,7 +2118,7 @@ print_cert(struct sshkey *key)
 	ca_fp = sshkey_fingerprint(key->cert->signature_key,
 	    fingerprint_hash, SSH_FP_DEFAULT);
 	if (key_fp == NULL || ca_fp == NULL)
-		fatal("%s: sshkey_fingerprint fail", __func__);
+		fatal_f("sshkey_fingerprint fail");
 	sshkey_format_cert_validity(key->cert, valid, sizeof(valid));
 
 	printf("        Type: %s %s certificate\n", sshkey_ssh_name(key),
@@ -2253,7 +2248,7 @@ hash_to_blob(const char *cp, u_char **blobp, size_t *lenp,
 		tmp[tlen] = '\0';
 	}
 	if ((b = sshbuf_new()) == NULL)
-		fatal("%s: sshbuf_new failed", __func__);
+		fatal_f("sshbuf_new failed");
 	if ((r = sshbuf_b64tod(b, tmp)) != 0)
 		fatal("%s:%lu: decode hash failed: %s", file, lnum, ssh_err(r));
 	free(tmp);
@@ -2341,8 +2336,7 @@ update_krl_from_file(struct passwd *pw, const char *file, int wild_ca,
 			}
 			if (ssh_krl_revoke_cert_by_serial_range(krl,
 			    ca, serial, serial2) != 0) {
-				fatal("%s: revoke serial failed",
-				    __func__);
+				fatal_f("revoke serial failed");
 			}
 		} else if (strncasecmp(cp, "id:", 3) == 0) {
 			if (ca == NULL && !wild_ca) {
@@ -2352,7 +2346,7 @@ update_krl_from_file(struct passwd *pw, const char *file, int wild_ca,
 			cp += 3;
 			cp = cp + strspn(cp, " \t");
 			if (ssh_krl_revoke_cert_by_key_id(krl, ca, cp) != 0)
-				fatal("%s: revoke key ID failed", __func__);
+				fatal_f("revoke key ID failed");
 		} else if (strncasecmp(cp, "hash:", 5) == 0) {
 			cp += 5;
 			cp = cp + strspn(cp, " \t");
@@ -2369,8 +2363,7 @@ update_krl_from_file(struct passwd *pw, const char *file, int wild_ca,
 			} else
 				fatal("%s:%lu: unsupported hash algorithm", file, lnum);
 			if (r != 0)
-				fatal("%s: revoke key failed: %s",
-				    __func__, ssh_err(r));
+				fatal_fr(r, "revoke key failed");
 		} else {
 			if (strncasecmp(cp, "key:", 4) == 0) {
 				cp += 4;
@@ -2417,8 +2410,7 @@ update_krl_from_file(struct passwd *pw, const char *file, int wild_ca,
 			} else
 				r = ssh_krl_revoke_key(krl, key);
 			if (r != 0)
-				fatal("%s: revoke key failed: %s",
-				    __func__, ssh_err(r));
+				fatal_fr(r, "revoke key failed");
 			freezero(blob, blen);
 			blob = NULL;
 			blen = 0;

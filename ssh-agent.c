@@ -239,7 +239,7 @@ send_status(SocketEntry *e, int success)
 	if ((r = sshbuf_put_u32(e->output, 1)) != 0 ||
 	    (r = sshbuf_put_u8(e->output, success ?
 	    SSH_AGENT_SUCCESS : SSH_AGENT_FAILURE)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "compose");
 }
 
 /* send list of supported public keys to 'client' */
@@ -251,19 +251,19 @@ process_request_identities(SocketEntry *e)
 	int r;
 
 	if ((msg = sshbuf_new()) == NULL)
-		fatal("%s: sshbuf_new failed", __func__);
+		fatal_f("sshbuf_new failed");
 	if ((r = sshbuf_put_u8(msg, SSH2_AGENT_IDENTITIES_ANSWER)) != 0 ||
 	    (r = sshbuf_put_u32(msg, idtab->nentries)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "compose");
 	TAILQ_FOREACH(id, &idtab->idlist, next) {
 		if ((r = Akey_puts_opts(id->key, msg, SSHKEY_SERIALIZE_INFO)) != 0 ||
 		    (r = sshbuf_put_cstring(msg, id->comment)) != 0) {
-			error_f("put key/comment: %s", ssh_err(r));
+			error_fr(r, "compose key/comment");
 			continue;
 		}
 	}
 	if ((r = sshbuf_put_stringb(e->output, msg)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "enqueue");
 	sshbuf_free(msg);
 }
 
@@ -298,7 +298,7 @@ process_sign_request2(SocketEntry *e)
 	struct identity *id;
 
 	if ((msg = sshbuf_new()) == NULL)
-		fatal("%s: sshbuf_new failed", __func__);
+		fatal_f("sshbuf_new failed");
 
 {	u_char *blob = NULL;
 	size_t blen;
@@ -306,7 +306,7 @@ process_sign_request2(SocketEntry *e)
 	if ((r = sshbuf_get_string(e->request, &blob, &blen)) != 0 ||
 	    (r = parse_key_from_blob(blob, blen, &key, &pkalg)) != 0) {
 		free(blob);
-		error_f("parse key: %s", ssh_err(r));
+		error_fr(r, "parse key");
 		goto send;
 	}
 	free(blob);
@@ -314,7 +314,7 @@ process_sign_request2(SocketEntry *e)
 	if (
 	    (r = sshbuf_get_string_direct(e->request, &data, &dlen)) != 0 ||
 	    (r = sshbuf_get_u32(e->request, &flags)) != 0) {
-		error_f("parse: %s", ssh_err(r));
+		error_fr(r, "parse");
 		goto send;
 	}
 
@@ -334,7 +334,7 @@ process_sign_request2(SocketEntry *e)
 	r = Xkey_sign(&ctx, &signature, &slen, data, dlen);
 }
 	if (r != 0) {
-		error_f("Xkey_sign: %s", ssh_err(r));
+		error_fr(r, "Xkey_sign");
 		goto send;
 	}
 	/* Success */
@@ -345,12 +345,12 @@ process_sign_request2(SocketEntry *e)
 	if (ok == 0) {
 		if ((r = sshbuf_put_u8(msg, SSH2_AGENT_SIGN_RESPONSE)) != 0 ||
 		    (r = sshbuf_put_string(msg, signature, slen)) != 0)
-			fatal("%s: buffer error: %s", __func__, ssh_err(r));
+			fatal_fr(r, "compose");
 	} else if ((r = sshbuf_put_u8(msg, SSH_AGENT_FAILURE)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "compose failure");
 
 	if ((r = sshbuf_put_stringb(e->output, msg)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "enqueue");
 
 	sshbuf_free(msg);
 	free(signature);
@@ -365,7 +365,7 @@ process_remove_identity(SocketEntry *e)
 	Identity *id;
 
 	if ((r = Akey_gets(e->request, &key)) != 0) {
-		error_f("get key: %s", ssh_err(r));
+		error_fr(r, "get key");
 		goto done;
 	}
 	if ((id = lookup_identity(key)) == NULL) {
@@ -374,8 +374,7 @@ process_remove_identity(SocketEntry *e)
 	}
 	/* We have this key, free it. */
 	if (idtab->nentries < 1)
-		fatal("%s: internal error: nentries %d",
-		    __func__, idtab->nentries);
+		fatal_f("internal error: nentries %d", idtab->nentries);
 	TAILQ_REMOVE(&idtab->idlist, id, next);
 	free_identity(id);
 	idtab->nentries--;
@@ -445,18 +444,18 @@ process_add_identity(SocketEntry *e)
 	if ((r = sshkey_private_deserialize(e->request, &k)) != 0 ||
 	    k == NULL ||
 	    (r = sshbuf_get_cstring(e->request, &comment, NULL)) != 0) {
-		error_f("parse: %s", ssh_err(r));
+		error_fr(r, "parse");
 		goto err;
 	}
 	while (sshbuf_len(e->request)) {
 		if ((r = sshbuf_get_u8(e->request, &ctype)) != 0) {
-			error_f("parse constraint type: %s", ssh_err(r));
+			error_fr(r, "parse constraint type");
 			goto err;
 		}
 		switch (ctype) {
 		case SSH_AGENT_CONSTRAIN_LIFETIME:
 			if ((r = sshbuf_get_u32(e->request, &seconds)) != 0) {
-				error_f("parse lifetime constraint: %s", ssh_err(r));
+				error_fr(r, "parse lifetime constraint");
 				goto err;
 			}
 			death = monotime() + seconds;
@@ -466,18 +465,18 @@ process_add_identity(SocketEntry *e)
 			break;
 		case SSH_AGENT_CONSTRAIN_MAXSIGN:
 			if ((r = sshbuf_get_u32(e->request, &maxsign)) != 0) {
-				error_f("parse maxsign constraint: %s", ssh_err(r));
+				error_fr(r, "parse maxsign constraint");
 				goto err;
 			}
 			if ((r = sshkey_enable_maxsign(k, maxsign)) != 0) {
-				error_f("enable maxsign: %s", ssh_err(r));
+				error_fr(r, "enable maxsign");
 				goto err;
 			}
 			break;
 		case SSH_AGENT_CONSTRAIN_EXTENSION:
 			if ((r = sshbuf_get_cstring(e->request,
 			    &ext_name, NULL)) != 0) {
-				error_f("parse constraint extension: %s", ssh_err(r));
+				error_fr(r, "parse constraint extension");
 				goto err;
 			}
 			debug_f("constraint ext %s", ext_name);
@@ -488,7 +487,7 @@ process_add_identity(SocketEntry *e)
 				}
 				if ((r = sshbuf_get_cstring(e->request,
 				    &sk_provider, NULL)) != 0) {
-					error_f("parse %s: %s", ext_name, ssh_err(r));
+					error_fr(r, "parse %s", ext_name);
 					goto err;
 				}
 			} else {
@@ -509,7 +508,7 @@ process_add_identity(SocketEntry *e)
 		}
 	}
 	if ((r = sshkey_shield_private(k)) != 0) {
-		error_f("shield private key: %s", ssh_err(r));
+		error_fr(r, "shield private");
 		goto err;
 	}
 
@@ -551,7 +550,7 @@ process_lock_agent(SocketEntry *e, int lock)
 	 * do is abort.
 	 */
 	if ((r = sshbuf_get_cstring(e->request, &passwd, &pwlen)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "parse");
 	if (pwlen == 0) {
 		debug("empty password not supported");
 	} else if (locked && !lock) {
@@ -594,11 +593,11 @@ no_identities(SocketEntry *e)
 	int r;
 
 	if ((msg = sshbuf_new()) == NULL)
-		fatal("%s: sshbuf_new failed", __func__);
+		fatal_f("sshbuf_new failed");
 	if ((r = sshbuf_put_u8(msg, SSH2_AGENT_IDENTITIES_ANSWER)) != 0 ||
 	    (r = sshbuf_put_u32(msg, 0)) != 0 ||
 	    (r = sshbuf_put_stringb(e->output, msg)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "compose");
 	sshbuf_free(msg);
 }
 
@@ -614,19 +613,19 @@ process_add_smartcard_key(SocketEntry *e)
 
 	if ((r = sshbuf_get_cstring(e->request, &provider, NULL)) != 0 ||
 	    (r = sshbuf_get_cstring(e->request, &pin, NULL)) != 0) {
-		error_f("decode provider: %s", ssh_err(r));
+		error_fr(r, "parse");
 		goto send;
 	}
 
 	while (sshbuf_len(e->request)) {
 		if ((r = sshbuf_get_u8(e->request, &type)) != 0) {
-			error_f("parse constraint type: %s", ssh_err(r));
+			error_fr(r, "parse type");
 			goto send;
 		}
 		switch (type) {
 		case SSH_AGENT_CONSTRAIN_LIFETIME:
 			if ((r = sshbuf_get_u32(e->request, &seconds)) != 0) {
-				error_f("parse lifetime constraint: %s", ssh_err(r));
+				error_fr(r, "parse lifetime");
 				goto send;
 			}
 			death = monotime() + seconds;
@@ -698,7 +697,7 @@ process_remove_smartcard_key(SocketEntry *e)
 
 	if ((r = sshbuf_get_cstring(e->request, &provider, NULL)) != 0 ||
 	    (r = sshbuf_get_cstring(e->request, &pin, NULL)) != 0) {
-		error_f("buffer error: %s", ssh_err(r));
+		error_fr(r, "parse");
 		goto send;
 	}
 	free(pin);
@@ -745,8 +744,7 @@ process_message(u_int socknum)
 	SocketEntry *e;
 
 	if (socknum >= sockets_alloc)
-		fatal("%s: socket number %u >= allocated %u",
-		    __func__, socknum, sockets_alloc);
+		fatal_f("sock %u >= allocated %u", socknum, sockets_alloc);
 	e = &sockets[socknum];
 
 	if (sshbuf_len(e->input) < 5)
@@ -767,10 +765,10 @@ process_message(u_int socknum)
 	    (r = sshbuf_get_u8(e->request, &type)) != 0) {
 		if (r == SSH_ERR_MESSAGE_INCOMPLETE ||
 		    r == SSH_ERR_STRING_TOO_LARGE) {
-			error_f("parse: %s", ssh_err(r));
+			error_fr(r, "parse");
 			return -1;
 		}
-		fatal("%s: parse: %s", __func__, ssh_err(r));
+		fatal_fr(r, "parse");
 	}
 
 	debug_f("socket %u (fd=%d) type %d", socknum, e->fd, type);
@@ -850,7 +848,7 @@ new_socket(sock_type type, int fd)
 			if ((sockets[i].input = sshbuf_new()) == NULL ||
 			    (sockets[i].output = sshbuf_new()) == NULL ||
 			    (sockets[i].request = sshbuf_new()) == NULL)
-				fatal("%s: sshbuf_new failed", __func__);
+				fatal_f("sshbuf_new failed");
 			sockets[i].type = type;
 			return;
 		}
@@ -864,7 +862,7 @@ new_socket(sock_type type, int fd)
 	if ((sockets[old_alloc].input = sshbuf_new()) == NULL ||
 	    (sockets[old_alloc].output = sshbuf_new()) == NULL ||
 	    (sockets[old_alloc].request = sshbuf_new()) == NULL)
-		fatal("%s: sshbuf_new failed", __func__);
+		fatal_f("sshbuf_new failed");
 	sockets[old_alloc].type = type;
 }
 
@@ -915,7 +913,7 @@ handle_conn_read(u_int socknum)
 		return -1;
 	}
 	if ((r = sshbuf_put(sockets[socknum].input, buf, len)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "compose");
 	explicit_bzero(buf, sizeof(buf));
 	while(1) {
 		r = process_message(socknum);
@@ -945,7 +943,7 @@ handle_conn_write(u_int socknum)
 		return -1;
 	}
 	if ((r = sshbuf_consume(sockets[socknum].output, len)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "consume");
 	return 0;
 }
 
@@ -1028,7 +1026,7 @@ prepare_poll(struct pollfd **pfdp, size_t *npfdp, int *timeoutp, u_int maxfds)
 	}
 	if (npfd != *npfdp &&
 	    (pfd = recallocarray(pfd, *npfdp, npfd, sizeof(*pfd))) == NULL)
-		fatal("%s: recallocarray failed", __func__);
+		fatal_f("recallocarray failed");
 	*pfdp = pfd;
 	*npfdp = npfd;
 
@@ -1058,8 +1056,7 @@ prepare_poll(struct pollfd **pfdp, size_t *npfdp, int *timeoutp, u_int maxfds)
 			     AGENT_MAX_LEN)) == 0)
 				pfd[j].events = POLLIN;
 			else if (r != SSH_ERR_NO_BUFFER_SPACE)
-				fatal("%s: buffer error: %s",
-				    __func__, ssh_err(r));
+				fatal_fr(r, "reserve");
 			if (sshbuf_len(sockets[i].output) > 0)
 				pfd[j].events |= POLLOUT;
 			j++;

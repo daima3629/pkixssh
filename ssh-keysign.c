@@ -145,33 +145,33 @@ valid_request(struct passwd *pw, char *host, struct sshkey **ret,
 	fail = 0;
 
 	if ((b = sshbuf_from(data, datalen)) == NULL)
-		fatal("%s: sshbuf_from failed", __func__);
+		fatal_f("sshbuf_from failed");
 
 	/* session id, currently limited to SHA1 (20 bytes) or SHA256 (32) */
 	if ((r = sshbuf_get_string(b, NULL, &len)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "parse session ID");
 	if (len != 20 && len != 32)
 		fail++;
 
 	if ((r = sshbuf_get_u8(b, &type)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "parse type");
 	if (type != SSH2_MSG_USERAUTH_REQUEST)
 		fail++;
 
 	/* server user */
 	if ((r = sshbuf_skip_string(b)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "parse user");
 
 	/* service */
 	if ((r = sshbuf_get_cstring(b, &p, NULL)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "parse service");
 	if (strcmp("ssh-connection", p) != 0)
 		fail++;
 	free(p);
 
 	/* method */
 	if ((r = sshbuf_get_cstring(b, &p, NULL)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "parse method");
 	if (strcmp("hostbased", p) != 0)
 		fail++;
 	free(p);
@@ -179,13 +179,13 @@ valid_request(struct passwd *pw, char *host, struct sshkey **ret,
 	/* pubkey */
 	if ((r = sshbuf_get_cstring(b, &pkalg, NULL)) != 0 ||
 	    (r = sshbuf_get_string(b, &pkblob, &blen)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "parse pk");
 
 	pktype = sshkey_type_from_name(pkalg);
 	if (pktype == KEY_UNSPEC)
 		fail++;
 	else if ((r = Xkey_from_blob(pkalg, pkblob, blen, &key)) != 0) {
-		error_f("bad key blob: %s", ssh_err(r));
+		error_fr(r, "decode key");
 		fail++;
 	} else if (key->type != pktype)
 		fail++;
@@ -194,7 +194,7 @@ valid_request(struct passwd *pw, char *host, struct sshkey **ret,
 
 	/* client host name, handle trailing dot */
 	if ((r = sshbuf_get_cstring(b, &p, &len)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "parse hostname");
 	debug2_f("check expect chost %s got %s", host, p);
 	if (strlen(host) != len - 1)
 		fail++;
@@ -206,7 +206,7 @@ valid_request(struct passwd *pw, char *host, struct sshkey **ret,
 
 	/* local user */
 	if ((r = sshbuf_get_cstring(b, &luser, NULL)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "parse luser");
 
 	if (strcmp(pw->pw_name, luser) != 0)
 		fail++;

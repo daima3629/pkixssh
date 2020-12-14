@@ -147,7 +147,7 @@ delete_stdin(int agent_fd, int qflag)
 			continue;
 		sshkey_free(key);
 		if ((key = sshkey_new(KEY_UNSPEC)) == NULL)
-			fatal("%s: sshkey_new", __func__);
+			fatal_f("sshkey_new");
 		if ((r = sshkey_read(key, &cp)) != 0) {
 			error("(stdin):%d: invalid key: %s", lnum, ssh_err(r));
 			continue;
@@ -392,12 +392,12 @@ add_file(int agent_fd, const char *filename, int key_only, int qflag,
 
 	/* Graft with private bits */
 	if ((r = sshkey_to_certified(private)) != 0) {
-		error_f("sshkey_to_certified: %s", ssh_err(r));
+		error_fr(r, "sshkey_to_certified");
 		sshkey_free(cert);
 		goto out;
 	}
 	if ((r = sshkey_cert_copy(cert, private)) != 0) {
-		error_f("sshkey_cert_copy: %s", ssh_err(r));
+		error_fr(r, "sshkey_cert_copy");
 		sshkey_free(cert);
 		goto out;
 	}
