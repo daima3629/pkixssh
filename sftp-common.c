@@ -207,7 +207,7 @@ fx2txt(int status)
 }
 
 /*
- * drwxr-xr-x    5 markus   markus       1024 Jan 13 18:39 .ssh
+ * drwxr-xr-x    5 roumen   roumen       1024 Jan 13 18:39 .ssh
  */
 char *
 ls_file(const char *name, const struct stat *st, int remote, int si_units)
