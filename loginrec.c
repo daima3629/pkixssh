@@ -323,8 +323,7 @@ login_get_lastlog(struct logininfo *li, const uid_t uid)
 	 */
 	pw = getpwuid(uid);
 	if (pw == NULL)
-		fatal("%s: Cannot find account for uid %ld", __func__,
-		    (long)uid);
+		fatal_f("Cannot find account for uid %ld", (long)uid);
 
 	if (strlcpy(li->username, pw->pw_name, sizeof(li->username)) >=
 	    sizeof(li->username)) {
@@ -395,10 +394,8 @@ login_init_entry(struct logininfo *li, pid_t pid, const char *username,
 	if (username) {
 		strlcpy(li->username, username, sizeof(li->username));
 		pw = getpwnam(li->username);
-		if (pw == NULL) {
-			fatal("%s: Cannot find user \"%s\"", __func__,
-			    li->username);
-		}
+		if (pw == NULL)
+			fatal_f("Cannot find user \"%s\"", li->username);
 		li->uid = pw->pw_uid;
 	}
 

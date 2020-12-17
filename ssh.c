@@ -1208,8 +1208,7 @@ main(int ac, char **av)
 		for (i = 0; i < ac; i++) {
 			if ((r = sshbuf_putf(command, "%s%s",
 			    i ? " " : "", av[i])) != 0)
-				fatal("%s: buffer error: %s",
-				    __func__, ssh_err(r));
+				fatal_fr(r, "buffer error");
 		}
 	}
 
@@ -1494,7 +1493,7 @@ main(int ac, char **av)
 		free(cp);
 		if ((r = sshbuf_put(command, options.remote_command,
 		    strlen(options.remote_command))) != 0)
-			fatal("%s: buffer error: %s", __func__, ssh_err(r));
+			fatal_fr(r, "buffer error");
 	}
 
 	if (options.control_path != NULL) {
@@ -1648,13 +1647,13 @@ main(int ac, char **av)
 		/* XXX check errors? */
 #define L_PUBKEY(p,o) do { \
 	if ((o) >= sensitive_data.nkeys) \
-		fatal("%s pubkey out of array bounds", __func__); \
+		fatal_f("pubkey out of array bounds"); \
 	check_load(sshkey_load_public(p, &(sensitive_data.keys[o]), NULL), \
 	    p, "pubkey"); \
 } while (0)
 #define L_CERT(p,o) do { \
 	if ((o) >= sensitive_data.nkeys) \
-		fatal("%s cert out of array bounds", __func__); \
+		fatal_f("cert out of array bounds"); \
 	check_load(sshkey_load_cert(p, &(sensitive_data.keys[o])), p, "cert"); \
 } while (0)
 
@@ -1799,7 +1798,7 @@ control_persist_detach(void)
 	 */
 	switch ((pid = fork())) {
 	case -1:
-		fatal("%s: fork: %s", __func__, strerror(errno));
+		fatal_f("fork: %s", strerror(errno));
 	case 0:
 		/* Child: master process continues mainloop */
 		break;
@@ -1875,7 +1874,7 @@ ssh_confirm_remote_forward(struct ssh *ssh, int type, u_int32_t seq, void *ctxt)
 		if (type == SSH2_MSG_REQUEST_SUCCESS) {
 			u_int32_t port;
 			if ((r = sshpkt_get_u32(ssh, &port)) != 0)
-				fatal("%s: %s", __func__, ssh_err(r));
+				fatal_fr(r, "parse packet");
 			if (port > 65535) {
 				error("Invalid allocated port %u for remote "
 				    "forward to %s:%d", (unsigned)port,
@@ -1970,7 +1969,7 @@ ssh_init_stdio_forwarding(struct ssh *ssh)
 		fatal_f("dup() in/out failed");
 	if ((c = channel_connect_stdio_fwd(ssh, options.stdio_forward_host,
 	    options.stdio_forward_port, in, out)) == NULL)
-		fatal("%s: channel_connect_stdio_fwd failed", __func__);
+		fatal_f("channel_connect_stdio_fwd failed");
 	channel_register_cleanup(ssh, c->self, client_cleanup_stdio_fwd, 0);
 	channel_register_open_confirm(ssh, c->self, ssh_stdio_confirm, NULL);
 }
@@ -2103,7 +2102,7 @@ ssh_session2_setup(struct ssh *ssh, int id, int success, void *arg)
 		debug("Requesting authentication agent forwarding.");
 		channel_request_start(ssh, id, "auth-agent-req@openssh.com", 0);
 		if ((r = sshpkt_send(ssh)) != 0)
-			fatal("%s: %s", __func__, ssh_err(r));
+			fatal_fr(r, "send packet");
 	}
 
 	/* Tell the packet module whether this is an interactive session. */
@@ -2237,7 +2236,7 @@ ssh_session2(struct ssh *ssh, struct passwd *pw)
 		    "no-more-sessions@openssh.com")) != 0 ||
 		    (r = sshpkt_put_u8(ssh, 0)) != 0 ||
 		    (r = sshpkt_send(ssh)) != 0)
-			fatal("%s: %s", __func__, ssh_err(r));
+			fatal_fr(r, "send packet");
 	}
 
 	/* Execute a local command */
@@ -2375,7 +2374,7 @@ load_public_identity_files(struct passwd *pw)
 	}
 
 	if (options.num_certificate_files > SSH_MAX_CERTIFICATE_FILES)
-		fatal("%s: too many certificates", __func__);
+		fatal_f("too many certificates");
 	for (i = 0; i < options.num_certificate_files; i++) {
 		cp = tilde_expand_filename(options.certificate_files[i],
 		    getuid());

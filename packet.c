@@ -304,7 +304,7 @@ ssh_packet_set_connection(struct ssh *ssh, int fd_in, int fd_out)
 	    (const u_char *)"", 0, NULL, 0, CIPHER_ENCRYPT)) != 0 ||
 	    (r = cipher_init(&state->receive_context, none,
 	    (const u_char *)"", 0, NULL, 0, CIPHER_DECRYPT)) != 0) {
-		error_f("cipher_init failed: %s", ssh_err(r));
+		error_fr(r, "cipher_init failed");
 		free(ssh); /* XXX need ssh_free_session_state? */
 		return NULL;
 	}
@@ -1408,7 +1408,7 @@ ssh_packet_read(struct ssh *ssh)
 	int r;
 
 	if ((r = ssh_packet_read_seqnr(ssh, &type, NULL)) != 0)
-		fatal("%s: %s", __func__, ssh_err(r));
+		fatal_fr(r, "read");
 	return type;
 }
 
@@ -1822,7 +1822,7 @@ ssh_packet_send_debug(struct ssh *ssh, const char *fmt,...)
 	    (r = sshpkt_put_cstring(ssh, "")) != 0 ||
 	    (r = sshpkt_send(ssh)) != 0 ||
 	    (r = ssh_packet_write_wait(ssh)) != 0)
-		fatal("%s: %s", __func__, ssh_err(r));
+		fatal_fr(r, "send DEBUG");
 }
 
 void

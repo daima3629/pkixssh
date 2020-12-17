@@ -74,11 +74,11 @@ ssh_askpass(const char *askpass, const char *msg, const char *env_hint)
 	if (pid == 0) {
 		close(p[0]);
 		if (dup2(p[1], STDOUT_FILENO) == -1)
-			fatal("%s: dup2: %s", __func__, strerror(errno));
+			fatal_f("dup2: %s", strerror(errno));
 		if (env_hint != NULL)
 			setenv("SSH_ASKPASS_PROMPT", env_hint, 1);
 		execlp(askpass, askpass, msg, (char *)NULL);
-		fatal("%s: exec(%s): %s", __func__, askpass, strerror(errno));
+		fatal_f("exec(%s): %s", askpass, strerror(errno));
 	}
 	close(p[1]);
 

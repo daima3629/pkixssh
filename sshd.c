@@ -291,7 +291,7 @@ create_session(int fd_in, int fd_out)
 {
 	the_active_state = ssh_packet_set_connection(NULL, fd_in, fd_out);
 	if (the_active_state == NULL)
-		fatal("%s: ssh_packet_set_connection failed", __func__);
+		fatal_f("ssh_packet_set_connection failed");
 
 	ssh_packet_set_server(the_active_state);
 	return the_active_state;
@@ -485,7 +485,7 @@ reseed_prngs(void)
 	RAND_seed(rnd, sizeof(rnd));
 	/* give libcrypto a chance to notice the PID change */
 	if ((RAND_bytes((u_char *)rnd, 1)) <= 0)
-		fatal("%s: RAND_bytes failed", __func__);
+		fatal_f("RAND_bytes failed");
 #endif
 
 	explicit_bzero(rnd, sizeof(rnd));
@@ -566,17 +566,17 @@ privsep_preauth(struct ssh *ssh)
 			if (errno == EINTR)
 				continue;
 			pmonitor->m_pid = -1;
-			fatal("%s: waitpid: %s", __func__, strerror(errno));
+			fatal_f("waitpid: %s", strerror(errno));
 		}
 		privsep_is_preauth = 0;
 		pmonitor->m_pid = -1;
 		if (WIFEXITED(status)) {
 			if (WEXITSTATUS(status) != 0)
-				fatal("%s: preauth child exited with status %d",
-				    __func__, WEXITSTATUS(status));
+				fatal_f("preauth child exited with status %d",
+				    WEXITSTATUS(status));
 		} else if (WIFSIGNALED(status))
-			fatal("%s: preauth child terminated by signal %d",
-			    __func__, WTERMSIG(status));
+			fatal_f("preauth child terminated by signal %d",
+			    WTERMSIG(status));
 		if (box != NULL)
 			ssh_sandbox_parent_finish(box);
 		return 1;
@@ -696,7 +696,7 @@ append_hostkey_type(struct sshbuf *b, const char *s)
 		return;
 	}
 	if ((r = sshbuf_putf(b, "%s%s", sshbuf_len(b) > 0 ? "," : "", s)) != 0)
-		fatal("%s: sshbuf_putf: %s", __func__, ssh_err(r));
+		fatal_fr(r, "sshbuf_putf");
 }
 
 static char *
@@ -708,7 +708,7 @@ list_hostkey_types(void)
 	u_int i;
 
 	if ((b = sshbuf_new()) == NULL)
-		fatal("%s: sshbuf_new failed", __func__);
+		fatal_f("sshbuf_new failed");
 	for (i = 0; i < options.num_host_key_files; i++) {
 		key = sensitive_data.host_keys[i];
 		if (key == NULL)
@@ -739,7 +739,7 @@ list_hostkey_types(void)
 		}
 	}
 	if ((ret = sshbuf_dup_string(b)) == NULL)
-		fatal("%s: sshbuf_dup_string failed", __func__);
+		fatal_f("sshbuf_dup_string failed");
 	sshbuf_free(b);
 	debug_f("%s", ret);
 	return ret;
@@ -899,7 +899,7 @@ notify_hostkeys(struct ssh *ssh)
 		return;
 
 	if ((buf = sshbuf_new()) == NULL)
-		fatal("%s: sshbuf_new", __func__);
+		fatal_f("sshbuf_new");
 	for (i = nkeys = 0; i < options.num_host_key_files; i++) {
 		const char* pkalg;
 		key = get_hostkey_public_by_index(i, ssh);
@@ -938,8 +938,7 @@ notify_hostkeys(struct ssh *ssh)
 		/* Append the key to the request */
 		sshbuf_reset(buf);
 		if ((r = Xkey_putb(pkalg, key, buf)) != 0)
-			fatal("%s: couldn't put hostkey %d: %s",
-			    __func__, i, ssh_err(r));
+			fatal_fr(r, "couldn't put hostkey %d", i);
 		if ((r = sshpkt_put_stringb(ssh, buf)) != 0)
 			sshpkt_fatal(ssh, r, "%s: append key", __func__);
 	}
@@ -949,7 +948,7 @@ notify_hostkeys(struct ssh *ssh)
 	}
 	debug3_f("sent %u hostkeys", nkeys);
 	if (nkeys == 0)
-		fatal("%s: no hostkeys", __func__);
+		fatal_f("no hostkeys");
 	if ((r = sshpkt_send(ssh)) != 0)
 		sshpkt_fatal(ssh, r, "%s: send", __func__);
 	sshbuf_free(buf);
@@ -1066,14 +1065,14 @@ send_rexec_state(int fd, struct sshbuf *conf)
 	    sshbuf_len(conf));
 
 	if ((m = sshbuf_new()) == NULL || (inc = sshbuf_new()) == NULL)
-		fatal("%s: sshbuf_new failed", __func__);
+		fatal_f("sshbuf_new failed");
 
 	/* pack includes into a string */
 	TAILQ_FOREACH(item, &includes, entry) {
 		if ((r = sshbuf_put_cstring(inc, item->selector)) != 0 ||
 		    (r = sshbuf_put_cstring(inc, item->filename)) != 0 ||
 		    (r = sshbuf_put_stringb(inc, item->contents)) != 0)
-			fatal("%s: buffer error: %s", __func__, ssh_err(r));
+			fatal_fr(r, "compose includes");
 	}
 
 	/*
@@ -1088,7 +1087,7 @@ send_rexec_state(int fd, struct sshbuf *conf)
 	 */
 	if ((r = sshbuf_put_stringb(m, conf)) != 0 ||
 	    (r = sshbuf_put_stringb(m, inc)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "compose config");
 #if defined(WITH_OPENSSL) && !defined(OPENSSL_PRNG_ONLY)
 	rexec_send_rng_seed(m);
 #endif
@@ -1113,32 +1112,32 @@ recv_rexec_state(int fd, struct sshbuf *conf)
 	debug3_f("entering fd = %d", fd);
 
 	if ((m = sshbuf_new()) == NULL || (inc = sshbuf_new()) == NULL)
-		fatal("%s: sshbuf_new failed", __func__);
+		fatal_f("sshbuf_new failed");
 	if (ssh_msg_recv(fd, m) == -1)
-		fatal("%s: ssh_msg_recv failed", __func__);
+		fatal_f("ssh_msg_recv failed");
 	if ((r = sshbuf_get_u8(m, &ver)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "parse version");
 	if (ver != 0)
-		fatal("%s: rexec version mismatch", __func__);
+		fatal_f("rexec version mismatch");
 	if ((r = sshbuf_get_string(m, &cp, &len)) != 0 ||
 	    (r = sshbuf_get_stringb(m, inc)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "parse config");
 
 #if defined(WITH_OPENSSL) && !defined(OPENSSL_PRNG_ONLY)
 	rexec_recv_rng_seed(m);
 #endif
 
 	if (conf != NULL && (r = sshbuf_put(conf, cp, len)))
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "sshbuf_put");
 
 	while (sshbuf_len(inc) != 0) {
 		item = xcalloc(1, sizeof(*item));
 		if ((item->contents = sshbuf_new()) == NULL)
-			fatal("%s: sshbuf_new failed", __func__);
+			fatal_f("sshbuf_new failed");
 		if ((r = sshbuf_get_cstring(inc, &item->selector, NULL)) != 0 ||
 		    (r = sshbuf_get_cstring(inc, &item->filename, NULL)) != 0 ||
 		    (r = sshbuf_get_stringb(inc, item->contents)) != 0)
-			fatal("%s: buffer error: %s", __func__, ssh_err(r));
+			fatal_fr(r, "parse includes");
 		TAILQ_INSERT_TAIL(&includes, item, entry);
 	}
 
@@ -1507,7 +1506,7 @@ server_accept_loop(int *sock_in, int *sock_out, int *newsock, int *config_s)
 #ifdef WITH_OPENSSL
 			RAND_seed(rnd, sizeof(rnd));
 			if ((RAND_bytes((u_char *)rnd, 1)) <= 0)
-				fatal("%s: RAND_bytes failed", __func__);
+				fatal_f("RAND_bytes failed");
 #endif
 			explicit_bzero(rnd, sizeof(rnd));
 		}
@@ -1614,16 +1613,16 @@ accumulate_host_timing_secret(struct sshbuf *server_cfg,
 
 	digest_alg = ssh_digest_maxbytes();
 	if (ctx == NULL && (ctx = ssh_digest_start(digest_alg)) == NULL)
-		fatal("%s: ssh_digest_start", __func__);
+		fatal_f("ssh_digest_start");
 	if (key == NULL) { /* finalize */
 		/* add server config in case we are using agent for host keys */
 		if (ssh_digest_update(ctx, sshbuf_ptr(server_cfg),
 		    sshbuf_len(server_cfg)) != 0)
-			fatal("%s: ssh_digest_update", __func__);
+			fatal_f("ssh_digest_update");
 		len = ssh_digest_bytes(digest_alg);
 		hash = xmalloc(len);
 		if (ssh_digest_final(ctx, hash, len) != 0)
-			fatal("%s: ssh_digest_final", __func__);
+			fatal_f("ssh_digest_final");
 		options.timing_secret = PEEK_U64(hash);
 		freezero(hash, len);
 		ssh_digest_free(ctx);
@@ -1631,11 +1630,11 @@ accumulate_host_timing_secret(struct sshbuf *server_cfg,
 		return;
 	}
 	if ((buf = sshbuf_new()) == NULL)
-		fatal("%s could not allocate buffer", __func__);
+		fatal_f("could not allocate buffer");
 	if ((r = sshkey_private_serialize(key, buf)) != 0)
-		fatal("sshkey_private_serialize: %s", ssh_err(r));
+		fatal_fr(r, "decode key");
 	if (ssh_digest_update(ctx, sshbuf_ptr(buf), sshbuf_len(buf)) != 0)
-		fatal("%s: ssh_digest_update", __func__);
+		fatal_f("ssh_digest_update");
 	sshbuf_reset(buf);
 	sshbuf_free(buf);
 }
@@ -1877,7 +1876,7 @@ main(int ac, char **av)
 
 	/* Fetch our configuration */
 	if ((cfg = sshbuf_new()) == NULL)
-		fatal("%s: sshbuf_new failed", __func__);
+		fatal_f("sshbuf_new failed");
 	if (rexeced_flag) {
 		setproctitle("%s", "[rexeced]");
 		recv_rexec_state(REEXEC_CONFIG_PASS_FD, cfg);
@@ -2382,7 +2381,7 @@ main(int ac, char **av)
 
 	/* prepare buffer to collect messages to display to user after login */
 	if ((loginmsg = sshbuf_new()) == NULL)
-		fatal("%s: sshbuf_new failed", __func__);
+		fatal_f("sshbuf_new failed");
 	auth_debug_reset();
 
 	if (use_privsep) {
@@ -2496,30 +2495,26 @@ Xsshd_hostkey_sign(
 		if (ctx->key) {
 			r = mm_Xkey_sign(ssh, ctx, signature, slenp, data, dlen);
 			if (r != 0)
-				fatal("%s: Xkey_sign failed: %s",
-				      __func__, ssh_err(r));
+				fatal_fr(r, "Xkey_sign failed");
 		} else {
 			ssh_sign_ctx mm_ctx = { ctx->alg, pubkey, ctx->compat,
 			    ctx->provider, ctx->pin };
 			r = mm_Xkey_sign(ssh, &mm_ctx, signature, slenp, data, dlen);
 			if (r != 0)
-				fatal("%s: pubkey Xkey_sign failed: %s",
-				    __func__, ssh_err(r));
+				fatal_fr(r, "pubkey Xkey_sign failed");
 		}
 	} else {
 		if (ctx->key) {
 			r = Xkey_sign(ctx, signature, slenp, data, dlen);
 			if (r != 0)
-				fatal("%s: Xkey_sign failed: %s",
-				      __func__, ssh_err(r));
+				fatal_fr(r, "Xkey_sign failed");
 		} else {
 			ssh_sign_ctx a_ctx = { ctx->alg, pubkey, ctx->compat,
 			    ctx->provider, ctx->pin };
 			r = Xssh_agent_sign(auth_sock, &a_ctx, signature, slenp,
 			    data, dlen);
 			if (r != 0)
-				fatal("%s: Xssh_agent_sign failed: %s",
-				    __func__, ssh_err(r));
+				fatal_fr(r, "Xssh_agent_sign failed");
 		}
 	}
 	return 0;
@@ -2556,7 +2551,7 @@ do_ssh2_kex(struct ssh *ssh)
 
 	/* start key exchange */
 	if ((r = kex_setup(ssh, myproposal)) != 0)
-		fatal("kex_setup: %s", ssh_err(r));
+		fatal_fr(r, "kex_setup");
 	kex = ssh->kex;
 #ifdef WITH_OPENSSL
 	kex->kex[KEX_DH_GRP1_SHA1] = kex_gen_server;
@@ -2588,7 +2583,7 @@ do_ssh2_kex(struct ssh *ssh)
 	    (r = sshpkt_put_cstring(ssh, "roumen")) != 0 ||
 	    (r = sshpkt_send(ssh)) != 0 ||
 	    (r = ssh_packet_write_wait(ssh)) != 0)
-		fatal("kex 1st message: %s", ssh_err(r));
+		fatal_fr(r, "kex 1st message");
 #endif
 	debug("KEX done");
 }

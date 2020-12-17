@@ -264,7 +264,7 @@ void
 sshkey_types_from_name(const char *name, int *type, int *subtype) {
 
 	if (type == NULL || subtype == NULL) {
-		fatal("%s: NULL arguments", __func__);
+		fatal_f("NULL arguments");
 		return; /* unreachible code */
 	}
 
@@ -306,7 +306,7 @@ sshkey_alg_list(int certs_only, int plain_only, int include_sigonly, char sep)
 
 		fill_default_xkalg();
 		if ((b = sshbuf_new()) == NULL)
-			fatal("%s: sshbuf_new failed", __func__);
+			fatal_f("sshbuf_new failed");
 	{	char sep_s[2] = { sep, '\0' };
 		ssh_xkalg_listall(b, sep_s);
 	}

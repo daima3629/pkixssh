@@ -29,7 +29,6 @@
 
 #include "sshkey.h"
 #include "sshbuf.h"
-#include "ssherr.h"
 #include "log.h"
 #include "match.h"
 #include "myproposal.h"
@@ -789,12 +788,10 @@ defined in "sshd.c".
 
 		if (sshbuf_len(b) > 0) {
 			if ((r = sshbuf_put(b, sep, seplen)) != 0)
-				fatal("%s: buffer error: %s",
-				    __func__, ssh_err(r));
+				fatal_fr(r, "buffer error");
 		}
 		if ((r = sshbuf_put(b, p, strlen(p))) != 0)
-			fatal("%s: buffer error: %s",
-			    __func__, ssh_err(r));
+			fatal_fr(r, "buffer error");
 	}
 }
 
@@ -815,7 +812,7 @@ default_hostkey_algorithms(void) {
 
 	b = sshbuf_new();
 	if (b == NULL)
-		fatal("%s: sshbuf_new failed", __func__);
+		fatal_f("sshbuf_new failed");
 
 	ssh_xkalg_listall(b, ",");
 
@@ -835,7 +832,7 @@ default_hostkey_algorithms(void) {
 
 	if ((r = sshbuf_put(b, ",", 1)) != 0 ||
 	    (r = sshbuf_put(b, p, strlen(p))) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "buffer error");
 
 	p = xstrdup(sshbuf_ptr(b));
 

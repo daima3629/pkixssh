@@ -419,13 +419,13 @@ split_eng_keyid(const char *keyid, char **engkeyid) {
 
 	p = strchr(q, ':');
 	if (p == NULL) {
-		fatal("%s missing engine identifier", __func__);
+		fatal_f("missing engine identifier");
 		goto done; /*;-)*/
 	}
 	*p = '\0';
 	p++;
 	if (*p == '\0') {
-		fatal("%s missing key identifier", __func__);
+		fatal_f("missing key identifier");
 		goto done; /*;-)*/
 	}
 
@@ -533,7 +533,7 @@ engine_try_load_public(const char *filename, struct sshkey **keyp, char **commen
 		 * when ssh-askpass program is missing.
 		 * NOTE programs still try to load public key many times!
 		 */
-		fatal("%s: avoid device locks ...", __func__);
+		fatal_f("avoid device locks ...");
 		/* TODO library mode in case of failure */
 		ret = SSH_ERR_KEY_NOT_FOUND;
 		goto done;
@@ -714,7 +714,7 @@ process_engconfig_line(char *line, const char *filename, int linenum) {
 		eng_name = xstrdup(arg); /*fatal on error*/
 		r = sshbuf_put_cstring(eng_list, eng_name);
 		if (r != 0)
-			fatal("%s: buffer error: %s", __func__, ssh_err(r));
+			fatal_fr(r, "buffer error");
 	}
 	else {
 		if (eng_name == NULL)
@@ -988,7 +988,7 @@ ssh_engines_startup() {
 #ifdef USE_OPENSSL_ENGINE
 	eng_list = sshbuf_new();
 	if (eng_list == NULL)
-		fatal("%s: sshbuf_new failed", __func__);
+		fatal_f("sshbuf_new failed");
 #endif
 	(void) setup_ssh_ui_method();
 }
@@ -1006,7 +1006,7 @@ ssh_engines_shutdown() {
 
 		r = sshbuf_get_cstring(eng_list, &s, NULL);
 		if (r != 0)
-			fatal("%s: buffer error: %s", __func__, ssh_err(r));
+			fatal_fr(r, "buffer error");
 		ssh_engine_reset(s);
 		free(s);
 	};

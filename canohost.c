@@ -186,7 +186,7 @@ get_sock_port(int sock, int local)
 	/* Return port number. */
 	if ((r = getnameinfo((struct sockaddr *)&from, fromlen, NULL, 0,
 	    strport, sizeof(strport), NI_NUMERICSERV)) != 0)
-		fatal("%s: getnameinfo NI_NUMERICSERV failed: %s", __func__,
+		fatal_f("getnameinfo NI_NUMERICSERV failed: %s",
 		    ssh_gai_strerror(r));
 	return atoi(strport);
 }

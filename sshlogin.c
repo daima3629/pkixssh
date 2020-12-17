@@ -56,7 +56,6 @@
 #include <limits.h>
 
 #include "sshlogin.h"
-#include "ssherr.h"
 #include "loginrec.h"
 #include "log.h"
 #include "sshbuf.h"
@@ -101,7 +100,7 @@ store_lastlog_message(const char *user, uid_t uid)
 	if (time_string != NULL) {
 		if ((r = sshbuf_put(loginmsg,
 		    time_string, strlen(time_string))) != 0)
-			fatal("%s: buffer error: %s", __func__, ssh_err(r));
+			fatal_fr(r, "buffer error");
 		free(time_string);
 	}
 #else
@@ -122,7 +121,7 @@ store_lastlog_message(const char *user, uid_t uid)
 			r = sshbuf_putf(loginmsg, "Last login: %s from %s\r\n",
 			    time_string, hostname);
 		if (r != 0)
-			fatal("%s: buffer error: %s", __func__, ssh_err(r));
+			fatal_fr(r, "sshbuf_putf");
 	}
 }
 #endif /* CUSTOM_SYS_AUTH_GET_LASTLOGIN_MSG */

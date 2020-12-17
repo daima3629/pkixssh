@@ -57,7 +57,6 @@
 #include "pathnames.h"
 #include "log.h"
 #include "sshbuf.h"
-#include "ssherr.h"
 
 /*
  * Portable OpenSSH PRNG seeding:
@@ -195,7 +194,7 @@ rexec_send_rng_seed(struct sshbuf *m)
 		len = 0;
 	}
 	if ((r = sshbuf_put_string(m, buf, len)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "buffer error");
 	explicit_bzero(buf, sizeof(buf));
 }
 
@@ -207,7 +206,7 @@ rexec_recv_rng_seed(struct sshbuf *m)
 	int r;
 
 	if ((r = sshbuf_get_string_direct(m, &buf, &len)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "buffer error");
 
 	debug3_f("seeding rng with %zu bytes", len);
 	RAND_add(buf, len, len);

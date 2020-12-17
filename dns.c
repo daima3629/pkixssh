@@ -3,7 +3,7 @@
 /*
  * Copyright (c) 2003 Wesley Griffin. All rights reserved.
  * Copyright (c) 2003 Jakob Schlyter. All rights reserved.
- * Copyright (c) 2005-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2005-2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -41,7 +41,6 @@
 #include "ssh-x509.h"
 #include "dns.h"
 #include "xmalloc.h"
-#include "ssherr.h"
 #include "log.h"
 #include "digest.h"
 
@@ -144,8 +143,7 @@ dns_read_key(u_int8_t *algorithm, u_int8_t *digest_type,
 	if (*algorithm && *digest_type) {
 		if ((r = sshkey_fingerprint_raw(key, fp_alg, digest,
 		    digest_len)) != 0)
-			fatal("%s: sshkey_fingerprint_raw: %s", __func__,
-			   ssh_err(r));
+			fatal_fr(r, "sshkey_fingerprint_raw");
 		success = 1;
 	} else {
 		*digest = NULL;
@@ -471,7 +469,7 @@ verify_hostcert_dns(const char *hostname, const struct sshkey *hostkey, int *fla
 		 * algorithms defined in [RFC 2535] is limited.
 		 */
 	{	int r = X509key_from_blob(dnskey_param.cert_data, dnskey_param.cert_len, &dns_cert);
-		if (r != SSH_ERR_SUCCESS) {
+		if (r != 0) {
 			verbose("Invalid certificate from DNS.");
 			goto next;
 		}

@@ -35,7 +35,6 @@
 #include <stdarg.h>
 
 #include "sshbuf.h"
-#include "ssherr.h"
 #include "log.h"
 #include "atomicio.h"
 #include "msg.h"
@@ -83,7 +82,7 @@ ssh_msg_recv(int fd, struct sshbuf *m)
 	}
 	sshbuf_reset(m);
 	if ((r = sshbuf_reserve(m, msg_len, &p)) != 0) {
-		error_f("buffer error: %s", ssh_err(r));
+		error_fr(r, "reserve");
 		return -1;
 	}
 	if (atomicio(read, fd, p, msg_len) != msg_len) {

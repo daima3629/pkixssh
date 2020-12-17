@@ -35,7 +35,6 @@
 #include "openbsd-compat/sys-queue.h"
 #include "ssh2.h"
 #include "sshbuf.h"
-#include "ssherr.h"
 #include "packet.h"
 #include "channels.h"
 #include "compat.h"
@@ -185,12 +184,11 @@ chan_send_eof2(struct ssh *ssh, Channel *c)
 	switch (c->istate) {
 	case CHAN_INPUT_WAIT_DRAIN:
 		if (!c->have_remote_id)
-			fatal("%s: channel %d: no remote_id",
-			    __func__, c->self);
+			fatal_f("channel %d: no remote_id", c->self);
 		if ((r = sshpkt_start(ssh, SSH2_MSG_CHANNEL_EOF)) != 0 ||
 		    (r = sshpkt_put_u32(ssh, c->remote_id)) != 0 ||
 		    (r = sshpkt_send(ssh)) != 0)
-			fatal("%s: send CHANNEL_EOF: %s", __func__, ssh_err(r));
+			fatal_fr(r, "send CHANNEL_EOF");
 		c->flags |= CHAN_EOF_SENT;
 		break;
 	default:
@@ -214,12 +212,11 @@ chan_send_close2(struct ssh *ssh, Channel *c)
 		error("channel %d: already sent close", c->self);
 	} else {
 		if (!c->have_remote_id)
-			fatal("%s: channel %d: no remote_id",
-			    __func__, c->self);
+			fatal_f("channel %d: no remote_id", c->self);
 		if ((r = sshpkt_start(ssh, SSH2_MSG_CHANNEL_CLOSE)) != 0 ||
 		    (r = sshpkt_put_u32(ssh, c->remote_id)) != 0 ||
 		    (r = sshpkt_send(ssh)) != 0)
-			fatal("%s: send CHANNEL_EOF: %s", __func__, ssh_err(r));
+			fatal_fr(r, "send CHANNEL_EOF");
 		c->flags |= CHAN_CLOSE_SENT;
 	}
 }
@@ -238,13 +235,13 @@ chan_send_eow2(struct ssh *ssh, Channel *c)
 	if (!(datafellows & SSH_NEW_OPENSSH))
 		return;
 	if (!c->have_remote_id)
-		fatal("%s: channel %d: no remote_id", __func__, c->self);
+		fatal_f("channel %d: no remote_id", c->self);
 	if ((r = sshpkt_start(ssh, SSH2_MSG_CHANNEL_REQUEST)) != 0 ||
 	    (r = sshpkt_put_u32(ssh, c->remote_id)) != 0 ||
 	    (r = sshpkt_put_cstring(ssh, "eow@openssh.com")) != 0 ||
 	    (r = sshpkt_put_u8(ssh, 0)) != 0 ||
 	    (r = sshpkt_send(ssh)) != 0)
-		fatal("%s: send CHANNEL_EOF: %s", __func__, ssh_err(r));
+		fatal_fr(r, "send CHANNEL_EOF");
 }
 
 /* shared */

@@ -2149,13 +2149,13 @@ ssh_x509_set_cert(struct sshkey *key, X509 *x509, STACK_OF(X509) *untrusted) {
 	SSH_X509 *xd;
 
 	if (key == NULL) {
-		fatal("%s: key is NULL", __func__);
+		fatal_f("key is NULL");
 		goto done; /*unreachable code*/
 	}
 
 {	int k_type = sshkey_type_plain(key->type);
 	if (!ssh_x509_support_plain_type(k_type)) {
-		fatal("%s: unsupported key type %d", __func__, key->type);
+		fatal_f("unsupported key type %d", key->type);
 		goto done; /*unreachable code*/
 	}
 }
@@ -2163,7 +2163,7 @@ ssh_x509_set_cert(struct sshkey *key, X509 *x509, STACK_OF(X509) *untrusted) {
 	xd = key->x509_data;
 	if (xd != NULL) {
 		if (xd->cert != NULL) {
-			fatal("%s: X.509 certificate is already set", __func__);
+			fatal_f("X.509 certificate is already set");
 			goto done; /*unreachable code*/
 		}
 	} else
