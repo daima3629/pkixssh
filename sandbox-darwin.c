@@ -65,7 +65,7 @@ ssh_sandbox_child(struct ssh_sandbox *box)
 	debug3_f("starting Darwin sandbox");
 	if (sandbox_init(kSBXProfilePureComputation, SANDBOX_NAMED,
 	    &errmsg) == -1)
-		fatal("%s: sandbox_init: %s", __func__, errmsg);
+		fatal_f("sandbox_init: %s", errmsg);
 
 	/*
 	 * The kSBXProfilePureComputation still allows sockets, so
@@ -73,14 +73,14 @@ ssh_sandbox_child(struct ssh_sandbox *box)
 	 */
 	rl_zero.rlim_cur = rl_zero.rlim_max = 0;
 	if (setrlimit(RLIMIT_FSIZE, &rl_zero) == -1)
-		fatal("%s: setrlimit(RLIMIT_FSIZE, { 0, 0 }): %s",
-			__func__, strerror(errno));
+		fatal_f("setrlimit(RLIMIT_FSIZE, { 0, 0 }): %s",
+			strerror(errno));
 	if (setrlimit(RLIMIT_NOFILE, &rl_zero) == -1)
-		fatal("%s: setrlimit(RLIMIT_NOFILE, { 0, 0 }): %s",
-			__func__, strerror(errno));
+		fatal_f("setrlimit(RLIMIT_NOFILE, { 0, 0 }): %s",
+			strerror(errno));
 	if (setrlimit(RLIMIT_NPROC, &rl_zero) == -1)
-		fatal("%s: setrlimit(RLIMIT_NPROC, { 0, 0 }): %s",
-			__func__, strerror(errno));
+		fatal_f("setrlimit(RLIMIT_NPROC, { 0, 0 }): %s",
+			strerror(errno));
 }
 
 void

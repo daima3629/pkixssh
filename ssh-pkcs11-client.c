@@ -48,7 +48,6 @@
 #include "authfd.h"
 #include "atomicio.h"
 #include "ssh-pkcs11.h"
-#include "ssherr.h"
 
 /* borrows code from sftp-server and ssh-agent */
 
@@ -61,17 +60,17 @@ helper_msg_sign_request(
     const unsigned char *dgst, int dlen
 ) {
 	int r = 0;
-	const char *pkalg;;
 	u_char *blob = NULL;
 	size_t blen;
 
-	/* Use method with algorithm nevertheless that sign request
+{	/* Use method with algorithm nevertheless that sign request
 	 * to helper is only with pure plain keys! Actually key-blob
 	 * below is used by helper only to find key.
 	 */
-	pkalg = sshkey_ssh_name(key);
+	const char *pkalg = sshkey_ssh_name(key);
 	r = Xkey_to_blob(pkalg, key, &blob, &blen);
 	if (r != 0) goto done;
+}
 
 	if ((r = sshbuf_put_u8(buf, SSH2_AGENTC_SIGN_REQUEST)) != 0 ||
 	    (r = sshbuf_put_string(buf, blob, blen)) != 0 ||
@@ -98,7 +97,7 @@ send_msg(struct sshbuf *m)
 	    sshbuf_len(m)) != sshbuf_len(m))
 		error("write to helper failed");
 	if ((r = sshbuf_consume(m, mlen)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "consume");
 }
 
 static int
@@ -126,11 +125,11 @@ recv_msg(struct sshbuf *m)
 			return (0); /* XXX */
 		}
 		if ((r = sshbuf_put(m, buf, l)) != 0)
-			fatal("%s: buffer error: %s", __func__, ssh_err(r));
+			fatal_fr(r, "sshbuf_put");
 		len -= l;
 	}
 	if ((r = sshbuf_get_u8(m, &c)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "parse");
 	return c;
 }
 
@@ -171,7 +170,7 @@ pkcs11_rsa_private_encrypt(int flen, const u_char *from, u_char *to, RSA *rsa,
 	key->rsa = rsa;
 
 	if ((msg = sshbuf_new()) == NULL)
-		fatal("%s: sshbuf_new failed", __func__);
+		fatal_f("sshbuf_new failed");
 	if (helper_msg_sign_request(msg, key, from, flen) != 0)
 		goto done;
 	send_msg(msg);
@@ -228,7 +227,7 @@ pkcs11_ecdsa_do_sign(
 	}
 
 	if ((msg = sshbuf_new()) == NULL)
-		fatal("%s: sshbuf_new failed", __func__);
+		fatal_f("sshbuf_new failed");
 	if (helper_msg_sign_request(msg, key, dgst, dlen) != 0)
 		goto done;
 	send_msg(msg);
@@ -401,11 +400,11 @@ pkcs11_add_provider(char *name, char *pin,
 		*labelsp = NULL;
 
 	if ((msg = sshbuf_new()) == NULL)
-		fatal("%s: sshbuf_new failed", __func__);
+		fatal_f("sshbuf_new failed");
 	if ((r = sshbuf_put_u8(msg, SSH_AGENTC_ADD_SMARTCARD_KEY)) != 0 ||
 	    (r = sshbuf_put_cstring(msg, name)) != 0 ||
 	    (r = sshbuf_put_cstring(msg, pin)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "compose");
 	send_msg(msg);
 	sshbuf_reset(msg);
 
@@ -413,7 +412,7 @@ pkcs11_add_provider(char *name, char *pin,
 	switch (type) {
 	case SSH2_AGENT_IDENTITIES_ANSWER: {
 		if ((r = sshbuf_get_u32(msg, &nkeys)) != 0) {
-			error_f("buffer error: %s", ssh_err(r));
+			error_fr(r, "parse nkeys");
 			goto done;
 		}
 		*keysp = xcalloc(nkeys, sizeof(struct sshkey *));
@@ -427,12 +426,12 @@ pkcs11_add_provider(char *name, char *pin,
 
 			if ((r = sshbuf_get_string(msg, &blob, &blen)) != 0 ||
 			    (r = sshbuf_get_cstring(msg, &label, NULL)) != 0) {
-				error_f("buffer error: %s", ssh_err(r));
+				error_fr(r, "parse key");
 				k = NULL;
 				goto set_key;
 			}
 			if ((r = Akey_from_blob(blob, blen, &k)) != 0) {
-				error_f("bad key: %s", ssh_err(r));
+				error_fr(r, "decode key");
 				k = NULL;
 				goto set_key;
 			}
@@ -455,9 +454,9 @@ set_key:
 		ret = nkeys;
 	}	break;
 	case SSH2_AGENT_FAILURE: {
-		if ((r = sshbuf_get_u32(msg, &nkeys)) != 0) {
-			error_f("buffer error: %s", ssh_err(r));
-		} else {
+		if ((r = sshbuf_get_u32(msg, &nkeys)) != 0)
+			error_fr(r, "parse nkeys");
+		else {
 			ret = -nkeys;
 			error_f("helper fail to add provider: %d", ret);
 		}
@@ -478,11 +477,11 @@ pkcs11_del_provider(char *name)
 	struct sshbuf *msg;
 
 	if ((msg = sshbuf_new()) == NULL)
-		fatal("%s: sshbuf_new failed", __func__);
+		fatal_f("sshbuf_new failed");
 	if ((r = sshbuf_put_u8(msg, SSH_AGENTC_REMOVE_SMARTCARD_KEY)) != 0 ||
 	    (r = sshbuf_put_cstring(msg, name)) != 0 ||
 	    (r = sshbuf_put_cstring(msg, "")) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "compose");
 	send_msg(msg);
 	sshbuf_reset(msg);
 

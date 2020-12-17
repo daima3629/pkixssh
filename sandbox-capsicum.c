@@ -73,16 +73,16 @@ ssh_sandbox_child(struct ssh_sandbox *box)
 	rl_zero.rlim_cur = rl_zero.rlim_max = 0;
 
 	if (setrlimit(RLIMIT_FSIZE, &rl_zero) == -1)
-		fatal("%s: setrlimit(RLIMIT_FSIZE, { 0, 0 }): %s",
-			__func__, strerror(errno));
+		fatal_f("setrlimit(RLIMIT_FSIZE, { 0, 0 }): %s",
+			strerror(errno));
 #ifndef SANDBOX_SKIP_RLIMIT_NOFILE
 	if (setrlimit(RLIMIT_NOFILE, &rl_zero) == -1)
-		fatal("%s: setrlimit(RLIMIT_NOFILE, { 0, 0 }): %s",
-			__func__, strerror(errno));
+		fatal_f("setrlimit(RLIMIT_NOFILE, { 0, 0 }): %s",
+			strerror(errno));
 #endif
 	if (setrlimit(RLIMIT_NPROC, &rl_zero) == -1)
-		fatal("%s: setrlimit(RLIMIT_NPROC, { 0, 0 }): %s",
-			__func__, strerror(errno));
+		fatal_f("setrlimit(RLIMIT_NPROC, { 0, 0 }): %s",
+			strerror(errno));
 
 	cap_rights_init(&rights);
 
@@ -96,13 +96,13 @@ ssh_sandbox_child(struct ssh_sandbox *box)
 	cap_rights_init(&rights, CAP_READ, CAP_WRITE);
 	if (cap_rights_limit(box->monitor->m_recvfd, &rights) < 0 &&
 	    errno != ENOSYS)
-		fatal("%s: failed to limit the network socket", __func__);
+		fatal_f("failed to limit the network socket");
 	cap_rights_init(&rights, CAP_WRITE);
 	if (cap_rights_limit(box->monitor->m_log_sendfd, &rights) < 0 &&
 	    errno != ENOSYS)
-		fatal("%s: failed to limit the logging socket", __func__);
+		fatal_f("failed to limit the logging socket");
 	if (cap_enter() < 0 && errno != ENOSYS)
-		fatal("%s: failed to enter capability mode", __func__);
+		fatal_f("failed to enter capability mode");
 
 }
 

@@ -371,10 +371,9 @@ ssh_sandbox_child_debugging(void)
 	act.sa_sigaction = &ssh_sandbox_violation;
 	act.sa_flags = SA_SIGINFO;
 	if (sigaction(SIGSYS, &act, NULL) == -1)
-		fatal("%s: sigaction(SIGSYS): %s", __func__, strerror(errno));
+		fatal_f("sigaction(SIGSYS): %s", strerror(errno));
 	if (sigprocmask(SIG_UNBLOCK, &mask, NULL) == -1)
-		fatal("%s: sigprocmask(SIGSYS): %s",
-		      __func__, strerror(errno));
+		fatal_f("sigprocmask(SIGSYS): %s", strerror(errno));
 }
 #endif /* SANDBOX_SECCOMP_FILTER_DEBUG */
 
@@ -388,14 +387,14 @@ ssh_sandbox_child(struct ssh_sandbox *box)
 	/* Set rlimits for completeness if possible. */
 	rl_zero.rlim_cur = rl_zero.rlim_max = 0;
 	if (setrlimit(RLIMIT_FSIZE, &rl_zero) == -1)
-		fatal("%s: setrlimit(RLIMIT_FSIZE, { 0, 0 }): %s",
-			__func__, strerror(errno));
+		fatal_f("setrlimit(RLIMIT_FSIZE, { 0, 0 }): %s",
+			strerror(errno));
 	if (setrlimit(RLIMIT_NOFILE, &rl_zero) == -1)
-		fatal("%s: setrlimit(RLIMIT_NOFILE, { 0, 0 }): %s",
-			__func__, strerror(errno));
+		fatal_f("setrlimit(RLIMIT_NOFILE, { 0, 0 }): %s",
+			strerror(errno));
 	if (setrlimit(RLIMIT_NPROC, &rl_zero) == -1)
-		fatal("%s: setrlimit(RLIMIT_NPROC, { 0, 0 }): %s",
-			__func__, strerror(errno));
+		fatal_f("setrlimit(RLIMIT_NPROC, { 0, 0 }): %s",
+			strerror(errno));
 
 #ifdef SANDBOX_SECCOMP_FILTER_DEBUG
 	ssh_sandbox_child_debugging();
@@ -410,8 +409,8 @@ ssh_sandbox_child(struct ssh_sandbox *box)
 	if (prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, &preauth_program) == -1)
 		debug_f("prctl(PR_SET_SECCOMP): %s", strerror(errno));
 	else if (nnp_failed)
-		fatal("%s: SECCOMP_MODE_FILTER activated but "
-		    "PR_SET_NO_NEW_PRIVS failed", __func__);
+		fatal_f("SECCOMP_MODE_FILTER activated but "
+		    "PR_SET_NO_NEW_PRIVS failed");
 }
 
 void

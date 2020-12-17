@@ -116,7 +116,7 @@ ssh_sandbox_child(struct ssh_sandbox *box)
 	debug3_f("ready");
 	ssh_signal(SIGCHLD, box->osigchld);
 	if (kill(getpid(), SIGSTOP) != 0)
-		fatal("%s: kill(%d, SIGSTOP)", __func__, getpid());
+		fatal_f("kill(%d, SIGSTOP)", getpid());
 	debug3_f("started");
 }
 
@@ -136,27 +136,27 @@ ssh_sandbox_parent(struct ssh_sandbox *box, pid_t child_pid,
 	ssh_signal(SIGCHLD, box->osigchld);
 	if (!WIFSTOPPED(status)) {
 		if (WIFSIGNALED(status))
-			fatal("%s: child terminated with signal %d",
-			    __func__, WTERMSIG(status));
+			fatal_f("child terminated with signal %d",
+			    WTERMSIG(status));
 		if (WIFEXITED(status))
-			fatal("%s: child exited with status %d",
-			    __func__, WEXITSTATUS(status));
-		fatal("%s: child not stopped", __func__);
+			fatal_f("child exited with status %d",
+			    WEXITSTATUS(status));
+		fatal_f("child not stopped");
 	}
 	debug3_f("child %ld stopped", (long)child_pid);
 	box->child_pid = child_pid;
 
 	/* Set up systracing of child */
 	if ((dev_systrace = open("/dev/systrace", O_RDONLY)) == -1)
-		fatal("%s: open(\"/dev/systrace\"): %s", __func__,
+		fatal_f("open(\"/dev/systrace\"): %s",
 		    strerror(errno));
 	if (ioctl(dev_systrace, STRIOCCLONE, &box->systrace_fd) == -1)
-		fatal("%s: ioctl(STRIOCCLONE, %d): %s", __func__,
+		fatal_f("ioctl(STRIOCCLONE, %d): %s",
 		    dev_systrace, strerror(errno));
 	close(dev_systrace);
 	debug3_f("systrace attach, fd=%d", box->systrace_fd);
 	if (ioctl(box->systrace_fd, STRIOCATTACH, &child_pid) == -1)
-		fatal("%s: ioctl(%d, STRIOCATTACH, %d): %s", __func__,
+		fatal_f("ioctl(%d, STRIOCATTACH, %d): %s",
 		    box->systrace_fd, child_pid, strerror(errno));
 
 	/* Allocate and assign policy */
@@ -164,14 +164,14 @@ ssh_sandbox_parent(struct ssh_sandbox *box, pid_t child_pid,
 	policy.strp_op = SYSTR_POLICY_NEW;
 	policy.strp_maxents = SYS_MAXSYSCALL;
 	if (ioctl(box->systrace_fd, STRIOCPOLICY, &policy) == -1)
-		fatal("%s: ioctl(%d, STRIOCPOLICY (new)): %s", __func__,
+		fatal_f("ioctl(%d, STRIOCPOLICY (new)): %s",
 		    box->systrace_fd, strerror(errno));
 
 	policy.strp_op = SYSTR_POLICY_ASSIGN;
 	policy.strp_pid = box->child_pid;
 	if (ioctl(box->systrace_fd, STRIOCPOLICY, &policy) == -1)
-		fatal("%s: ioctl(%d, STRIOCPOLICY (assign)): %s",
-		    __func__, box->systrace_fd, strerror(errno));
+		fatal_f("ioctl(%d, STRIOCPOLICY (assign)): %s",
+		    box->systrace_fd, strerror(errno));
 
 	/* Set per-syscall policy */
 	for (i = 0; i < SYS_MAXSYSCALL; i++) {
@@ -189,14 +189,14 @@ ssh_sandbox_parent(struct ssh_sandbox *box, pid_t child_pid,
 		if (found)
 			debug3_f("policy: enable syscall %d", i);
 		if (ioctl(box->systrace_fd, STRIOCPOLICY, &policy) == -1)
-			fatal("%s: ioctl(%d, STRIOCPOLICY (modify)): %s",
-			    __func__, box->systrace_fd, strerror(errno));
+			fatal_f("ioctl(%d, STRIOCPOLICY (modify)): %s",
+			    box->systrace_fd, strerror(errno));
 	}
 
 	/* Signal the child to start running */
 	debug3_f("start child %ld", (long)child_pid);
 	if (kill(box->child_pid, SIGCONT) != 0)
-		fatal("%s: kill(%d, SIGCONT)", __func__, box->child_pid);
+		fatal_f("kill(%d, SIGCONT)", box->child_pid);
 }
 
 void

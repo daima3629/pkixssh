@@ -990,8 +990,7 @@ pkcs11_get_x509key(
 		goto done;
 	}
 
-	r = X509key_from_blob(blob, blen, &key);
-	if (r != SSH_ERR_SUCCESS) {
+	if ((r = X509key_from_blob(blob, blen, &key)) != 0) {
 		debug3_f("X509key_from_blob fail");
 		goto done;
 	}
