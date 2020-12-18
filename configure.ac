@@ -2046,6 +2046,9 @@ dnl header "includes.h".
 saved_CPPFLAGS="$CPPFLAGS"
 CPPFLAGS="$CPPFLAGS -D_GNU_SOURCE"
 AC_CHECK_DECLS([bzero, memmem])
+dnl Function memmem_s, if defined, conforms to c11 and could be
+dnl declared under some conditions.
+AC_CHECK_DECLS([memset_s])
 AS_IF([test $ac_cv_func_endgrent != no], [
   AC_CHECK_DECLS([endgrent], [], [], [
 #include <sys/types.h>
