@@ -54,8 +54,8 @@ sys_get_rdomain(int fd)
 	socklen_t len = sizeof(dev) - 1;
 
 	if (getsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE, dev, &len) == -1) {
-		error("%s: cannot determine VRF for fd=%d : %s",
-		    __func__, fd, strerror(errno));
+		error_f("cannot determine VRF for fd=%d : %s",
+		    fd, strerror(errno));
 		return NULL;
 	}
 	dev[len] = '\0';
@@ -67,8 +67,8 @@ sys_set_rdomain(int fd, const char *name)
 {
 	if (setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE,
 	    name, strlen(name)) == -1) {
-		error("%s: setsockopt(%d, SO_BINDTODEVICE, %s): %s",
-		      __func__, fd, name, strerror(errno));
+		error_f("setsockopt(%d, SO_BINDTODEVICE, %s): %s",
+		      fd, name, strerror(errno));
 		return -1;
 	}
 	return 0;
@@ -117,7 +117,7 @@ valid_rdomain(const char *name)
 void
 sys_set_process_rdomain(const char *name)
 {
-	fatal("%s: not supported", __func__);
+	fatal_f("not supported");
 }
 #endif /* defined(SYS_RDOMAIN_XXX) */
 
@@ -155,8 +155,8 @@ sys_tun_open(int tun, int mode, char **ifname)
 	if (ifname != NULL)
 		*ifname = NULL;
 	if ((fd = open(TUN_CTRL_DEV, O_RDWR)) == -1) {
-		debug("%s: failed to open tunnel control device \"%s\": %s",
-		    __func__, TUN_CTRL_DEV, strerror(errno));
+		debug_f("failed to open tunnel control device \"%s\": %s",
+		    TUN_CTRL_DEV, strerror(errno));
 		return (-1);
 	}
 
@@ -173,23 +173,23 @@ sys_tun_open(int tun, int mode, char **ifname)
 
 	if (tun != SSH_TUNID_ANY) {
 		if (tun > SSH_TUNID_MAX) {
-			debug("%s: invalid tunnel id %x: %s", __func__,
-			    tun, strerror(errno));
+			debug_f("invalid tunnel id %x: %s", tun,
+			    strerror(errno));
 			goto failed;
 		}
 		snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), name, tun);
 	}
 
 	if (ioctl(fd, TUNSETIFF, &ifr) == -1) {
-		debug("%s: failed to configure tunnel (mode %d): %s", __func__,
-		    mode, strerror(errno));
+		debug_f("failed to configure tunnel (mode %d): %s", mode,
+		    strerror(errno));
 		goto failed;
 	}
 
 	if (tun == SSH_TUNID_ANY)
-		debug("%s: tunnel mode %d fd %d", __func__, mode, fd);
+		debug_f("tunnel mode %d fd %d", mode, fd);
 	else
-		debug("%s: %s mode %d fd %d", __func__, ifr.ifr_name, mode, fd);
+		debug_f("%s mode %d fd %d", ifr.ifr_name, mode, fd);
 
 	if (ifname != NULL)
 		*ifname = xstrdup(ifr.ifr_name);
@@ -223,7 +223,7 @@ sys_tun_open(int tun, int mode, char **ifname)
 
 	if (mode == SSH_TUNMODE_ETHERNET) {
 #ifdef SSH_TUN_NO_L2
-		debug("%s: no layer 2 tunnelling support", __func__);
+		debug_f("no layer 2 tunnelling support");
 		return (-1);
 #else
 		tunbase = "tap";
@@ -242,13 +242,12 @@ sys_tun_open(int tun, int mode, char **ifname)
 				break;
 		}
 	} else {
-		debug("%s: invalid tunnel %u\n", __func__, tun);
+		debug_f("invalid tunnel %u", tun);
 		return (-1);
 	}
 
 	if (fd == -1) {
-		debug("%s: %s open failed: %s", __func__, name,
-		    strerror(errno));
+		debug_f("%s open failed: %s", name, strerror(errno));
 		return (-1);
 	}
 
@@ -257,14 +256,13 @@ sys_tun_open(int tun, int mode, char **ifname)
 {	int flag = 1;
 	if (mode != SSH_TUNMODE_ETHERNET &&
 	    ioctl(fd, TUNSIFHEAD, &flag) == -1) {
-		debug("%s: ioctl(%d, TUNSIFHEAD, 1): %s", __func__, fd,
-		    strerror(errno));
+		debug_f("ioctl(%d, TUNSIFHEAD, 1): %s", fd, strerror(errno));
 		close(fd);
 	}
 }
 #endif
 
-	debug("%s: %s mode %d fd %d", __func__, name, mode, fd);
+	debug_f("%s mode %d fd %d", name, mode, fd);
 
 	/* Set the tunnel device operation mode */
 	snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), "%s%d", tunbase, tun);
@@ -290,8 +288,7 @@ sys_tun_open(int tun, int mode, char **ifname)
 		close(fd);
 	if (sock >= 0)
 		close(sock);
-	debug("%s: failed to set %s mode %d: %s", __func__, name,
-	    mode, strerror(errno));
+	debug_f("failed to set %s mode %d: %s", name, mode, strerror(errno));
 	return (-1);
 }
 #endif /* SSH_TUN_FREEBSD */
@@ -312,27 +309,27 @@ sys_tun_open(int tun, int mode, char **ifname)
 		*ifname = NULL;
 
 	if (tun != SSH_TUNID_ANY && tun > SSH_TUNID_MAX) {
-		debug("%s: invalid tunnel %u", __func__, tun);
+		debug_f("invalid tunnel %u", tun);
 		return (-1);
 	}
 
 	if (mode == SSH_TUNMODE_ETHERNET) {
-		debug("%s: no layer 2 tunnelling support", __func__);
+		debug_f("no layer 2 tunnelling support");
 		return (-1);
 	}
 
 	fd = socket(PF_SYSTEM, SOCK_DGRAM, SYSPROTO_CONTROL);
 	if (fd == -1) {
-		debug("%s: failed to create control socket: %s",
-		    __func__, strerror(errno));
+		debug_f("failed to create control socket: %s",
+		    strerror(errno));
 		return (-1);
 	}
 
 	memset(&info, 0, sizeof(info));
 	strlcpy(info.ctl_name, UTUN_CONTROL_NAME, sizeof(info.ctl_name));
 	if (ioctl(fd, CTLIOCGINFO, &info) == -1) {
-		debug("%s: failed to lookup utun control id: %s",
-		    __func__, strerror(errno));
+		debug_f("failed to lookup utun control id: %s",
+		    strerror(errno));
 		goto failed;
 	}
 
@@ -345,8 +342,8 @@ sys_tun_open(int tun, int mode, char **ifname)
 		addr.sc_unit = tun + 1;
 
 	if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
-		debug("%s: failed to connect to utun device: %s",
-		    __func__, strerror(errno));
+		debug_f("failed to connect to utun device: %s",
+		    strerror(errno));
 		goto failed;
 	}
 
@@ -417,7 +414,7 @@ sys_tun_infilter(struct ssh *ssh, struct Channel *c, char *buf, int _len)
 #endif
 
 	if ((r = sshbuf_put_string(c->input, ptr, len)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "buffer error");
 	return (0);
 }
 
@@ -432,7 +429,7 @@ sys_tun_outfilter(struct ssh *ssh, struct Channel *c,
 	UNUSED(ssh);
 	/* XXX new API is incompatible with this signature. */
 	if ((r = sshbuf_get_string(c->output, data, dlen)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "buffer error");
 	if (*dlen < sizeof(af))
 		return (NULL);
 	buf = *data;

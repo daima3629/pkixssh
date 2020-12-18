@@ -56,7 +56,6 @@
 #include "log.h"
 #include "compat.h"
 #include "sshbuf.h"
-#include "ssherr.h"
 
 #define TTY_OP_END		0
 /*
@@ -283,7 +282,7 @@ ssh_tty_make_modes(struct ssh *ssh, int fd, struct termios *tiop)
 	int r, ibaud, obaud;
 
 	if ((buf = sshbuf_new()) == NULL)
-		fatal("%s: sshbuf_new failed", __func__);
+		fatal_f("sshbuf_new failed");
 
 	if (tiop == NULL) {
 		if (fd == -1) {
@@ -304,14 +303,14 @@ ssh_tty_make_modes(struct ssh *ssh, int fd, struct termios *tiop)
 	    (r = sshbuf_put_u32(buf, obaud)) != 0 ||
 	    (r = sshbuf_put_u8(buf, TTY_OP_ISPEED)) != 0 ||
 	    (r = sshbuf_put_u32(buf, ibaud)) != 0)
-		fatal("%s: buffer error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "compose");
 
 	/* Store values of mode flags. */
 #define TTYCHAR(NAME, OP) \
 	if ((r = sshbuf_put_u8(buf, OP)) != 0 || \
 	    (r = sshbuf_put_u32(buf, \
 	    special_char_encode(tio.c_cc[NAME]))) != 0) \
-		fatal("%s: buffer error: %s", __func__, ssh_err(r)); \
+		fatal_fr(r, "compose %s", #NAME);
 
 #define SSH_TTYMODE_IUTF8 42  /* for SSH_BUG_UTF8TTYMODE */
 
@@ -320,7 +319,7 @@ ssh_tty_make_modes(struct ssh *ssh, int fd, struct termios *tiop)
 		debug3_f("SSH_BUG_UTF8TTYMODE"); \
 	} else if ((r = sshbuf_put_u8(buf, OP)) != 0 || \
 	    (r = sshbuf_put_u32(buf, ((tio.FIELD & NAME) != 0))) != 0) \
-		fatal("%s: buffer error: %s", __func__, ssh_err(r)); \
+		fatal_fr(r, "compose %s", #NAME);
 
 #include "ttymodes.h"
 
@@ -331,7 +330,7 @@ end:
 	/* Mark end of mode data. */
 	if ((r = sshbuf_put_u8(buf, TTY_OP_END)) != 0 ||
 	    (r = sshpkt_put_stringb(ssh, buf)) != 0)
-		fatal("%s: packet error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "compose end");
 	sshbuf_free(buf);
 }
 
@@ -351,7 +350,7 @@ ssh_tty_parse_modes(struct ssh *ssh, int fd)
 	size_t len;
 
 	if ((r = sshpkt_get_string_direct(ssh, &data, &len)) != 0)
-		fatal("%s: packet error: %s", __func__, ssh_err(r));
+		fatal_fr(r, "parse");
 	if (len == 0)
 		return;
 	if ((buf = sshbuf_from(data, len)) == NULL) {
@@ -371,15 +370,14 @@ ssh_tty_parse_modes(struct ssh *ssh, int fd)
 
 	while (sshbuf_len(buf) > 0) {
 		if ((r = sshbuf_get_u8(buf, &opcode)) != 0)
-			fatal("%s: packet error: %s", __func__, ssh_err(r));
+			fatal_fr(r, "parse opcode");
 		switch (opcode) {
 		case TTY_OP_END:
 			goto set;
 
 		case TTY_OP_ISPEED:
 			if ((r = sshbuf_get_u32(buf, &baud)) != 0)
-				fatal("%s: packet error: %s",
-				    __func__, ssh_err(r));
+				fatal_fr(r, "parse ispeed");
 			if (failure != -1 &&
 			    cfsetispeed(&tio, baud_to_speed(baud)) == -1)
 				error("cfsetispeed failed for %d", baud);
@@ -387,8 +385,7 @@ ssh_tty_parse_modes(struct ssh *ssh, int fd)
 
 		case TTY_OP_OSPEED:
 			if ((r = sshbuf_get_u32(buf, &baud)) != 0)
-				fatal("%s: packet error: %s",
-				    __func__, ssh_err(r));
+				fatal_fr(r, "parse ospeed");
 			if (failure != -1 &&
 			    cfsetospeed(&tio, baud_to_speed(baud)) == -1)
 				error("cfsetospeed failed for %d", baud);
@@ -397,15 +394,13 @@ ssh_tty_parse_modes(struct ssh *ssh, int fd)
 #define TTYCHAR(NAME, OP) \
 		case OP: \
 			if ((r = sshbuf_get_u32(buf, &u)) != 0) \
-				fatal("%s: packet error: %s", __func__, \
-				    ssh_err(r)); \
+				fatal_fr(r, "parse %s", #NAME); \
 			tio.c_cc[NAME] = special_char_decode(u); \
 			break;
 #define TTYMODE(NAME, FIELD, OP) \
 		case OP: \
 			if ((r = sshbuf_get_u32(buf, &u)) != 0) \
-				fatal("%s: packet error: %s", __func__, \
-				    ssh_err(r)); \
+				fatal_fr(r, "parse %s", #NAME); \
 			if (u) \
 				tio.FIELD |= NAME; \
 			else \
@@ -429,8 +424,7 @@ ssh_tty_parse_modes(struct ssh *ssh, int fd)
 			 */
 			if (opcode > 0 && opcode < 160) {
 				if ((r = sshbuf_get_u32(buf, NULL)) != 0)
-					fatal("%s: packet error: %s", __func__,
-					    ssh_err(r));
+					fatal_fr(r, "parse arg");
 				break;
 			} else {
 				error_f("unknown opcode %d", opcode);

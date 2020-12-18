@@ -1198,9 +1198,9 @@ vdollar_percent_expand(int *parseerror, int dollar, int percent,
 	size_t len;
 
 	if ((buf = sshbuf_new()) == NULL)
-		fatal("%s: sshbuf_new failed", __func__);
+		fatal_f("sshbuf_new failed");
 	if (parseerror == NULL)
-		fatal("%s: null parseerror arg", __func__);
+		fatal_f("null parseerror arg");
 	*parseerror = 1;
 
 	/* Gather keys if we're doing percent expansion. */
@@ -1211,13 +1211,13 @@ vdollar_percent_expand(int *parseerror, int dollar, int percent,
 				break;
 			keys[num_keys].repl = va_arg(ap, char *);
 			if (keys[num_keys].repl == NULL)
-				fatal("%s: NULL replacement for token %s", __func__, keys[num_keys].key);
+				fatal_f("NULL replacement for token %s",
+				    keys[num_keys].key);
 		}
 		if (num_keys == EXPAND_MAX_KEYS && va_arg(ap, char *) != NULL)
-			fatal("%s: too many keys", __func__);
+			fatal_f("too many keys");
 		if (num_keys == 0)
-			fatal("%s: percent expansion without token list",
-			    __func__);
+			fatal_f("percent expansion without token list");
 	}
 
 	/* Expand string */
@@ -1243,8 +1243,7 @@ vdollar_percent_expand(int *parseerror, int dollar, int percent,
 			} else {
 				debug3_f("expand ${%s} -> '%s'", var, val);
 				if ((r = sshbuf_put(buf, val, strlen(val))) !=0)
-					fatal("%s: sshbuf_put: %s", __func__,
-					    ssh_err(r));
+					fatal_fr(r, "sshbuf_put ${}");
 			}
 			free(var);
 			string += len;
@@ -1259,8 +1258,7 @@ vdollar_percent_expand(int *parseerror, int dollar, int percent,
 		if (*string != '%' || !percent) {
  append:
 			if ((r = sshbuf_put_u8(buf, *string)) != 0)
-				fatal("%s: sshbuf_put_u8: %s",
-				    __func__, ssh_err(r));
+				fatal_fr(r, "sshbuf_put_u8 %%");
 			continue;
 		}
 		string++;
@@ -1275,8 +1273,7 @@ vdollar_percent_expand(int *parseerror, int dollar, int percent,
 			if (strchr(keys[i].key, *string) != NULL) {
 				if ((r = sshbuf_put(buf, keys[i].repl,
 				    strlen(keys[i].repl))) != 0)
-					fatal("%s: sshbuf_put: %s",
-					    __func__, ssh_err(r));
+					fatal_fr(r, "sshbuf_put %%-repl");
 				break;
 			}
 		}
@@ -1286,7 +1283,7 @@ vdollar_percent_expand(int *parseerror, int dollar, int percent,
 		}
 	}
 	if (!missingvar && (ret = sshbuf_dup_string(buf)) == NULL)
-		fatal("%s: sshbuf_dup_string failed", __func__);
+		fatal_f("sshbuf_dup_string failed");
 	*parseerror = 0;
  out:
 	sshbuf_free(buf);
@@ -1330,7 +1327,7 @@ percent_expand(const char *string, ...)
 	ret = vdollar_percent_expand(&err, 0, 1, string, ap);
 	va_end(ap);
 	if (err)
-		fatal("%s failed", __func__);
+		fatal_f("failed");
 	return ret;
 }
 
@@ -1349,7 +1346,7 @@ percent_dollar_expand(const char *string, ...)
 	ret = vdollar_percent_expand(&err, 1, 1, string, ap);
 	va_end(ap);
 	if (err)
-		fatal("%s failed", __func__);
+		fatal_f("failed");
 	return ret;
 }
 
@@ -1782,7 +1779,7 @@ mktemp_proto(char *s, size_t len)
 	}
 	r = snprintf(s, len, "/tmp/ssh-XXXXXXXXXX");
 	if (r < 0 || (size_t)r >= len)
-		fatal("%s: template string too short", __func__);
+		fatal_f("template string too short");
 }
 
 static const struct {
@@ -2073,7 +2070,7 @@ argv_assemble(int argc, char **argv)
 	struct sshbuf *buf, *arg;
 
 	if ((buf = sshbuf_new()) == NULL || (arg = sshbuf_new()) == NULL)
-		fatal("%s: sshbuf_new failed", __func__);
+		fatal_f("sshbuf_new failed");
 
 	for (i = 0; i < argc; i++) {
 		ws = 0;
@@ -2098,17 +2095,16 @@ argv_assemble(int argc, char **argv)
 				break;
 			}
 			if (r != 0)
-				fatal("%s: sshbuf_put_u8: %s",
-				    __func__, ssh_err(r));
+				fatal_fr(r, "sshbuf_put_u8");
 		}
 		if ((i != 0 && (r = sshbuf_put_u8(buf, ' ')) != 0) ||
 		    (ws != 0 && (r = sshbuf_put_u8(buf, '"')) != 0) ||
 		    (r = sshbuf_putb(buf, arg)) != 0 ||
 		    (ws != 0 && (r = sshbuf_put_u8(buf, '"')) != 0))
-			fatal("%s: buffer error: %s", __func__, ssh_err(r));
+			fatal_fr(r, "assemble");
 	}
 	if ((ret = malloc(sshbuf_len(buf) + 1)) == NULL)
-		fatal("%s: malloc failed", __func__);
+		fatal_f("malloc failed");
 	memcpy(ret, sshbuf_ptr(buf), sshbuf_len(buf));
 	ret[sshbuf_len(buf)] = '\0';
 	sshbuf_free(buf);

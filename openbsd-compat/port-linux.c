@@ -78,17 +78,17 @@ ssh_selinux_getctxbyname(char *pwname)
 	if (r != 0) {
 		switch (security_getenforce()) {
 		case -1:
-			fatal("%s: ssh_selinux_getctxbyname: "
-			    "security_getenforce() failed", __func__);
+			fatal_f("ssh_selinux_getctxbyname: "
+			    "security_getenforce() failed");
 		case 0:
-			error("%s: Failed to get default SELinux security "
-			    "context for %s", __func__, pwname);
+			error_f("failed to get default SELinux security "
+			    "context for %s", pwname);
 			sc = NULL;
 			break;
 		default:
-			fatal("%s: Failed to get default SELinux security "
+			fatal_f("failed to get default SELinux security "
 			    "context for %s (in enforcing mode)",
-			    __func__, pwname);
+			    pwname);
 		}
 	}
 
@@ -109,26 +109,26 @@ ssh_selinux_setup_exec_context(char *pwname)
 	if (!ssh_selinux_enabled())
 		return;
 
-	debug3("%s: setting execution context", __func__);
+	debug3_f("setting execution context");
 
 	user_ctx = ssh_selinux_getctxbyname(pwname);
 	if (setexeccon(user_ctx) != 0) {
 		switch (security_getenforce()) {
 		case -1:
-			fatal("%s: security_getenforce() failed", __func__);
+			fatal_f("security_getenforce() failed");
 		case 0:
-			error("%s: Failed to set SELinux execution "
-			    "context for %s", __func__, pwname);
+			error_f("failed to set SELinux execution "
+			    "context for %s", pwname);
 			break;
 		default:
-			fatal("%s: Failed to set SELinux execution context "
-			    "for %s (in enforcing mode)", __func__, pwname);
+			fatal_f("failed to set SELinux execution context "
+			    "for %s (in enforcing mode)", pwname);
 		}
 	}
 	if (user_ctx != NULL)
 		freecon(user_ctx);
 
-	debug3("%s: done", __func__);
+	debug3_f("done");
 }
 
 /* Set the TTY context for the specified user */
@@ -141,29 +141,28 @@ ssh_selinux_setup_pty(char *pwname, const char *tty)
 	if (!ssh_selinux_enabled())
 		return;
 
-	debug3("%s: setting TTY context on %s", __func__, tty);
+	debug3_f("setting TTY context on %s", tty);
 
 	user_ctx = ssh_selinux_getctxbyname(pwname);
 
 	/* XXX: should these calls fatal() upon failure in enforcing mode? */
 
 	if (getfilecon(tty, &old_tty_ctx) == -1) {
-		error("%s: getfilecon: %s", __func__, strerror(errno));
+		error_f("getfilecon: %s", strerror(errno));
 		goto out;
 	}
 	if ((chrclass = string_to_security_class("chr_file")) == 0) {
-		error("%s: couldn't get security class for chr_file", __func__);
+		error_f("couldn't get security class for chr_file");
 		goto out;
 	}
 	if (security_compute_relabel(user_ctx, old_tty_ctx,
 	    chrclass, &new_tty_ctx) != 0) {
-		error("%s: security_compute_relabel: %s",
-		    __func__, strerror(errno));
+		error_f("security_compute_relabel: %s", strerror(errno));
 		goto out;
 	}
 
 	if (setfilecon(tty, new_tty_ctx) != 0)
-		error("%s: setfilecon: %s", __func__, strerror(errno));
+		error_f("setfilecon: %s", strerror(errno));
  out:
 	if (new_tty_ctx != NULL)
 		freecon(new_tty_ctx);
@@ -171,7 +170,7 @@ ssh_selinux_setup_pty(char *pwname, const char *tty)
 		freecon(old_tty_ctx);
 	if (user_ctx != NULL)
 		freecon(user_ctx);
-	debug3("%s: done", __func__);
+	debug3_f("done");
 }
 
 void
@@ -185,12 +184,12 @@ ssh_selinux_change_context(const char *newname)
 		return;
 
 	if (getcon(&oldctx) < 0) {
-		logit("%s: getcon failed with %s", __func__, strerror(errno));
+		error_f("getcon failed with %s", strerror(errno));
 		return;
 	}
 	if ((cx = index(oldctx, ':')) == NULL || (cx = index(cx + 1, ':')) ==
 	    NULL) {
-		logit("%s: unparsable context %s", __func__, oldctx);
+		error_f("unparsable context %s", oldctx);
 		return;
 	}
 
@@ -209,11 +208,10 @@ ssh_selinux_change_context(const char *newname)
 	strlcpy(newctx + len, newname, newlen - len);
 	if ((cx = index(cx + 1, ':')))
 		strlcat(newctx, cx, newlen);
-	debug3("%s: setting context from '%s' to '%s'", __func__,
-	    oldctx, newctx);
+	debug3_f("setting context from '%s' to '%s'", oldctx, newctx);
 	if (setcon(newctx) < 0)
-		do_log2(log_level, "%s: setcon %s from %s failed with %s",
-		    __func__, newctx, oldctx, strerror(errno));
+		do_log2_f(log_level, "setcon %s from %s failed with %s",
+		    newctx, oldctx, strerror(errno));
 	free(oldctx);
 	free(newctx);
 }
@@ -263,8 +261,8 @@ oom_adjust_setup(void)
 	int i, value;
 	FILE *fp;
 
-	debug3("%s", __func__);
-	 for (i = 0; oom_adjust[i].path != NULL; i++) {
+	debug3_f("entering");
+	for (i = 0; oom_adjust[i].path != NULL; i++) {
 		oom_adj_path = oom_adjust[i].path;
 		value = oom_adjust[i].value;
 		if ((fp = fopen(oom_adj_path, "r+")) != NULL) {
@@ -293,7 +291,7 @@ oom_adjust_restore(void)
 {
 	FILE *fp;
 
-	debug3("%s", __func__);
+	debug3_f("entering");
 	if (oom_adj_save == INT_MIN || oom_adj_path == NULL ||
 	    (fp = fopen(oom_adj_path, "w")) == NULL)
 		return;

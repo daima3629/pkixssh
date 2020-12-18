@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2005 Darren Tucker <dtucker@zip.com.au>
- * Copyright (c) 2011-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2020 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -40,10 +40,10 @@ RSA_generate_key_ex(RSA *rsa, int bits, BIGNUM *bn_e, void *cb)
 	unsigned long e;
 
 	if (cb != NULL)
-		fatal("%s: callback args not supported", __func__);
+		fatal_f("callback args not supported");
 	e = BN_get_word(bn_e);
 	if (e == 0xffffffffL)
-		fatal("%s: value of e too large", __func__);
+		fatal_f("value of e too large");
 	new_rsa = RSA_generate_key(bits, e, NULL, NULL);
 	if (new_rsa == NULL)
 		return 0;
@@ -64,7 +64,7 @@ DSA_generate_parameters_ex(DSA *dsa, int bits, const unsigned char *seed,
 	DSA *new_dsa, tmp_dsa;
 
 	if (cb != NULL)
-		fatal("%s: callback args not supported", __func__);
+		fatal_f("callback args not supported");
 	new_dsa = DSA_generate_parameters(bits, (unsigned char *)seed, seed_len,
 	    counter_ret, h_ret, NULL, NULL);
 	if (new_dsa == NULL)

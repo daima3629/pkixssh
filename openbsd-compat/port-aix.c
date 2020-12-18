@@ -205,8 +205,7 @@ sys_auth_passwd(struct ssh *ssh, const char *password)
 		if (msg && *msg) {
 			if ((r = sshbuf_put(ctxt->loginmsg,
 			    msg, strlen(msg))) != 0)
-				fatal("%s: buffer error: %s",
-				    __func__, ssh_err(r));
+				fatal_fr(r, "buffer error");
 			aix_remove_embedded_newlines(msg);
 		}
 		debug3("AIX/passwdexpired returned %d msg %.100s", expired, msg);
@@ -249,7 +248,7 @@ sys_auth_allowed_user(struct passwd *pw, struct sshbuf *loginmsg)
 	 * loginrestrictions will always fail due to insufficient privilege).
 	 */
 	if (pw->pw_uid == 0 || geteuid() != 0) {
-		debug3("%s: not checking", __func__);
+		debug3_f("not checking");
 		return 1;
 	}
 
@@ -265,7 +264,7 @@ sys_auth_allowed_user(struct passwd *pw, struct sshbuf *loginmsg)
 		permitted = 1;
 	else if (msg != NULL) {
 		if ((r = sshbuf_put(loginmsg, msg, strlen(msg))) != 0)
-			fatal("%s: buffer error: %s", __func__, ssh_err(r));
+			fatal_fr(r, "buffer error");
 	}
 	if (msg == NULL)
 		msg = xstrdup("(none)");
@@ -344,7 +343,7 @@ aix_setauthdb(const char *user)
 	char *registry;
 
 	if (setuserdb(S_READ) == -1) {
-		debug3("%s: Could not open userdb to read", __func__);
+		debug3_f("could not open userdb to read");
 		return;
 	}
 
@@ -355,7 +354,7 @@ aix_setauthdb(const char *user)
 			debug3("AIX/setauthdb set registry '%s' failed: %s",
 			    registry, strerror(errno));
 	} else
-		debug3("%s: Could not read S_REGISTRY for user: %s", __func__,
+		debug3_f("could not read S_REGISTRY for user: %s",
 		    strerror(errno));
 	enduserdb();
 #  endif /* HAVE_SETAUTHDB */
@@ -372,11 +371,9 @@ aix_restoreauthdb(void)
 {
 #  ifdef HAVE_SETAUTHDB
 	if (setauthdb(old_registry, NULL) == 0)
-		debug3("%s: restoring old registry '%s'", __func__,
-		    old_registry);
+		debug3_f("restoring old registry '%s'", old_registry);
 	else
-		debug3("%s: failed to restore old registry %s", __func__,
-		    old_registry);
+		debug3_f("failed to restore old registry %s", old_registry);
 #  endif /* HAVE_SETAUTHDB */
 }
 

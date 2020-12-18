@@ -163,9 +163,9 @@ restore_uid(void)
 	 * as well.
 	 */
 	if (setuid(getuid()) == -1)
-		fatal("%s: setuid failed: %s", __func__, strerror(errno));
+		fatal_f("setuid failed: %s", strerror(errno));
 	if (setgid(getgid()) == -1)
-		fatal("%s: setgid failed: %s", __func__, strerror(errno));
+		fatal_f("setgid failed: %s", strerror(errno));
 #endif /* SAVED_IDS_WORK_WITH_SETEUID */
 
 	if (setgroups(saved_egroupslen, saved_egroups) == -1)
@@ -212,27 +212,25 @@ permanently_set_uid(struct passwd *pw)
 	/* Try restoration of GID if changed (test clearing of saved gid) */
 	if (old_gid != pw->pw_gid && pw->pw_uid != 0 &&
 	    (setgid(old_gid) != -1 || setegid(old_gid) != -1))
-		fatal("%s: was able to restore old [e]gid", __func__);
+		fatal_f("was able to restore old [e]gid");
 #endif
 
 	/* Verify GID drop was successful */
 	if (getgid() != pw->pw_gid || getegid() != pw->pw_gid) {
-		fatal("%s: egid incorrect gid:%u egid:%u (should be %u)",
-		    __func__, (u_int)getgid(), (u_int)getegid(),
-		    (u_int)pw->pw_gid);
+		fatal_f("egid incorrect gid:%u egid:%u (should be %u)",
+		    (u_int)getgid(), (u_int)getegid(), (u_int)pw->pw_gid);
 	}
 
 #ifndef NO_UID_RESTORATION_TEST
 	/* Try restoration of UID if changed (test clearing of saved uid) */
 	if (old_uid != pw->pw_uid &&
 	    (setuid(old_uid) != -1 || seteuid(old_uid) != -1))
-		fatal("%s: was able to restore old [e]uid", __func__);
+		fatal_f("was able to restore old [e]uid");
 #endif
 
 	/* Verify UID drop was successful */
 	if (getuid() != pw->pw_uid || geteuid() != pw->pw_uid) {
-		fatal("%s: euid incorrect uid:%u euid:%u (should be %u)",
-		    __func__, (u_int)getuid(), (u_int)geteuid(),
-		    (u_int)pw->pw_uid);
+		fatal_f("euid incorrect uid:%u euid:%u (should be %u)",
+		    (u_int)getuid(), (u_int)geteuid(), (u_int)pw->pw_uid);
 	}
 }
