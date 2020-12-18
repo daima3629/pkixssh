@@ -655,6 +655,6 @@ sshlog_fr(const char *file, const char *func, int line,
 	va_list args;
 
 	va_start(args, fmt);
-	sshlogv_fr(file, func, line, level, errcode, fmt, args);
+	sshlogv_fr(file, func, line, errcode, level, fmt, args);
 	va_end(args);
 }
