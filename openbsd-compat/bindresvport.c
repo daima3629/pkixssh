@@ -41,6 +41,7 @@
 
 #include <errno.h>
 #include <string.h>
+#include <stdlib.h> /*for arc4random_uniform*/
 
 #define STARTPORT 600
 #define ENDPORT (IPPORT_RESERVED - 1)
