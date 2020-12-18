@@ -81,6 +81,7 @@ audit_username(void)
 	return (the_authctxt->user);
 }
 
+# ifndef CUSTOM_SSH_AUDIT_EVENTS
 static const char *
 audit_event_lookup(ssh_audit_event_t ev)
 {
@@ -111,7 +112,6 @@ audit_event_lookup(ssh_audit_event_t ev)
 	return(event_lookup[i].name);
 }
 
-# ifndef CUSTOM_SSH_AUDIT_EVENTS
 /*
  * Null implementations of audit functions.
  * These get used if SSH_AUDIT_EVENTS is defined but no audit module is enabled.
@@ -150,7 +150,7 @@ audit_event(struct ssh *ssh, ssh_audit_event_t event)
 void
 audit_session_open(struct logininfo *li)
 {
-	const char *t = li->line ? li->line : "(no tty)";
+	const char *t = li->line[0] != '\0' ? li->line : "(no tty)";
 
 	debug("audit session open euid %d user %s tty name %s", geteuid(),
 	    audit_username(), t);
@@ -166,7 +166,7 @@ audit_session_open(struct logininfo *li)
 void
 audit_session_close(struct logininfo *li)
 {
-	const char *t = li->line ? li->line : "(no tty)";
+	const char *t = li->line[0] != '\0' ? li->line : "(no tty)";
 
 	debug("audit session close euid %d user %s tty name %s", geteuid(),
 	    audit_username(), t);
