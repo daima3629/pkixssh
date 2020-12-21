@@ -460,9 +460,8 @@ demote_sensitive_data(void)
 		if (sensitive_data.host_keys[i]) {
 			if ((r = sshkey_from_private(
 			    sensitive_data.host_keys[i], &tmp)) != 0)
-				fatal("could not demote host %s key: %s",
-				    sshkey_type(sensitive_data.host_keys[i]),
-				    ssh_err(r));
+				fatal_r(r, "could not demote host %s key",
+				    sshkey_type(sensitive_data.host_keys[i]));
 			sshkey_free(sensitive_data.host_keys[i]);
 			sensitive_data.host_keys[i] = tmp;
 		}
@@ -552,8 +551,7 @@ privsep_preauth(struct ssh *ssh)
 		if (have_agent) {
 			r = ssh_get_authentication_socket(&auth_sock);
 			if (r != 0) {
-				error("Could not get agent socket: %s",
-				    ssh_err(r));
+				error_r(r, "Could not get agent socket");
 				have_agent = 0;
 			}
 		}
@@ -1967,8 +1965,8 @@ main(int ac, char **av)
 		if ((r = ssh_get_authentication_socket(NULL)) == 0)
 			have_agent = 1;
 		else
-			error("Could not connect to agent \"%s\": %s",
-			    options.host_key_agent, ssh_err(r));
+			error_r(r, "Could not connect to agent \"%s\"",
+			    options.host_key_agent);
 	}
 
 	for (i = 0; i < options.num_host_key_files; i++) {
@@ -1979,18 +1977,18 @@ main(int ac, char **av)
 			continue;
 		if ((r = sshkey_load_private(options.host_key_files[i], "",
 		    &key, NULL)) != 0 && r != SSH_ERR_SYSTEM_ERROR)
-			do_log2(ll, "Unable to load host key \"%s\": %s",
-			    options.host_key_files[i], ssh_err(r));
+			do_log2_r(r, ll, "Unable to load host key \"%s\"",
+			    options.host_key_files[i]);
 		if (r == 0 && (r = sshkey_shield_private(key)) != 0) {
-			do_log2(ll, "Unable to shield host key \"%s\": %s",
-			    options.host_key_files[i], ssh_err(r));
+			do_log2_r(r, ll, "Unable to shield host key \"%s\"",
+			    options.host_key_files[i]);
 			sshkey_free(key);
 			key = NULL;
 		}
 		if ((r = sshkey_load_public(options.host_key_files[i],
 		    &pubkey, NULL)) != 0 && r != SSH_ERR_SYSTEM_ERROR)
-			do_log2(ll, "Unable to load host key \"%s\": %s",
-			    options.host_key_files[i], ssh_err(r));
+			do_log2_r(r, ll, "Unable to load host key \"%s\"",
+			    options.host_key_files[i]);
 		if (pubkey != NULL && key != NULL) {
 			if (!sshkey_equal(pubkey, key)) {
 				error("Public key for %s does not match "
@@ -2001,8 +1999,8 @@ main(int ac, char **av)
 		}
 		if (pubkey == NULL && key != NULL) {
 			if ((r = sshkey_from_private(key, &pubkey)) != 0)
-				fatal("Could not demote key: \"%s\": %s",
-				    options.host_key_files[i], ssh_err(r));
+				fatal_r(r, "Could not demote key: \"%s\"",
+				    options.host_key_files[i]);
 		}
 		sensitive_data.host_keys[i] = key;
 		sensitive_data.host_pubkeys[i] = pubkey;
@@ -2060,8 +2058,8 @@ main(int ac, char **av)
 			continue;
 		if ((r = sshkey_load_public(options.host_cert_files[i],
 		    &key, NULL)) != 0) {
-			error("Could not load host certificate \"%s\": %s",
-			    options.host_cert_files[i], ssh_err(r));
+			error_r(r, "Could not load host certificate \"%s\"",
+			    options.host_cert_files[i]);
 			continue;
 		}
 		if (!sshkey_is_cert(key)) {
@@ -2389,7 +2387,7 @@ main(int ac, char **av)
 			goto authenticated;
 	} else if (have_agent) {
 		if ((r = ssh_get_authentication_socket(&auth_sock)) != 0) {
-			error("Unable to get agent socket: %s", ssh_err(r));
+			error_r(r, "Unable to get agent socket");
 			have_agent = 0;
 		}
 	}

@@ -594,14 +594,14 @@ check_load(int r, const char *path, const char *message)
 		break;
 	case SSH_ERR_INTERNAL_ERROR:
 	case SSH_ERR_ALLOC_FAIL:
-		fatal("load %s \"%s\": %s", message, path, ssh_err(r));
+		fatal_r(r, "load %s \"%s\"", message, path);
 	case SSH_ERR_SYSTEM_ERROR:
 		/* Ignore missing files */
 		if (errno == ENOENT)
 			break;
 		/* FALLTHROUGH */
 	default:
-		error("load %s \"%s\": %s", message, path, ssh_err(r));
+		error_r(r, "load %s \"%s\"", message, path);
 		break;
 	}
 }
@@ -2063,8 +2063,7 @@ check_agent_present(void)
 		if ((r = ssh_get_authentication_socket(NULL)) != 0) {
 			options.forward_agent = 0;
 			if (r != SSH_ERR_AGENT_NOT_PRESENT)
-				debug("ssh_get_authentication_socket: %s",
-				    ssh_err(r));
+				debug_r(r, "ssh_get_authentication_socket");
 		}
 	}
 }

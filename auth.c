@@ -645,9 +645,9 @@ auth_key_is_revoked(struct sshkey *key)
 		    sshkey_type(key), fp, options.revoked_keys_file);
 		goto out;
 	default:
-		error("Error checking authentication key %s %s in "
-		    "revoked keys file %s: %s", sshkey_type(key), fp,
-		    options.revoked_keys_file, ssh_err(r));
+		error_r(r, "Error checking authentication key %s %s in "
+		    "revoked keys file %s", sshkey_type(key), fp,
+		    options.revoked_keys_file);
 		goto out;
 	}
 

@@ -149,7 +149,7 @@ delete_stdin(int agent_fd, int qflag)
 		if ((key = sshkey_new(KEY_UNSPEC)) == NULL)
 			fatal_f("sshkey_new");
 		if ((r = sshkey_read(key, &cp)) != 0) {
-			error("(stdin):%d: invalid key: %s", lnum, ssh_err(r));
+			error_r(r, "(stdin):%d: invalid key", lnum);
 			continue;
 		}
 		if (delete_one(agent_fd, key, cp, "(stdin)", qflag) == 0)
@@ -186,8 +186,7 @@ delete_file(int agent_fd, const char *filename, int key_only, int qflag)
 	xasprintf(&certpath, "%s-cert.pub", filename);
 	if ((r = sshkey_load_public(certpath, &cert, &comment)) != 0) {
 		if (r != SSH_ERR_SYSTEM_ERROR || errno != ENOENT)
-			error("Failed to load certificate \"%s\": %s",
-			    certpath, ssh_err(r));
+			error_r(r, "Failed to load certificate \"%s\"", certpath);
 		goto out;
 	}
 
@@ -378,8 +377,7 @@ add_file(int agent_fd, const char *filename, int key_only, int qflag,
 	xasprintf(&certpath, "%s-cert.pub", filename);
 	if ((r = sshkey_load_public(certpath, &cert, NULL)) != 0) {
 		if (r != SSH_ERR_SYSTEM_ERROR || errno != ENOENT)
-			error("Failed to load certificate \"%s\": %s",
-			    certpath, ssh_err(r));
+			error_r(r, "Failed to load certificate \"%s\"", certpath);
 		goto out;
 	}
 
@@ -405,8 +403,8 @@ add_file(int agent_fd, const char *filename, int key_only, int qflag,
 
 	if ((r = ssh_add_identity_constrained(agent_fd, private, comment,
 	    lifetime, confirm, maxsign, skprovider)) != 0) {
-		error("Certificate %s (%s) add failed: %s", certpath,
-		    private->cert->key_id, ssh_err(r));
+		error_r(r, "Certificate %s (%s) add failed", certpath,
+		    private->cert->key_id);
 		goto out;
 	}
 	/* success */
@@ -471,7 +469,7 @@ test_key(int agent_fd, const char *filename)
 	ssh_compat ctx_compat = { 0, 0 };
 
 	if ((r = sshkey_load_public(filename, &key, NULL)) != 0) {
-		error("Couldn't read public key %s: %s", filename, ssh_err(r));
+		error_r(r, "Couldn't read public key %s", filename);
 		return -1;
 	}
 	arc4random_buf(data, sizeof(data));
@@ -482,8 +480,7 @@ test_key(int agent_fd, const char *filename)
 
 	r = Xssh_agent_sign(agent_fd, &ctx, &sig, &slen, data, sizeof(data));
 	if (r != 0) {
-		error("Agent signature failed for %s: %s",
-		    filename, ssh_err(r));
+		error_r(r, "Agent signature failed for %s", filename);
 		goto done;
 	}
 }
@@ -491,8 +488,7 @@ test_key(int agent_fd, const char *filename)
 
 	r = Xkey_verify(&ctx, sig, slen, data, sizeof(data));
 	if (r != 0) {
-		error("Signature verification failed for %s: %s",
-		    filename, ssh_err(r));
+		error_r(r, "Signature verification failed for %s", filename);
 		goto done;
 	}
 }

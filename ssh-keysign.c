@@ -60,7 +60,6 @@
 #include "pathnames.h"
 #include "readconf.h"
 #include "uidswap.h"
-#include "ssherr.h"
 
 extern char *__progname;
 
@@ -314,7 +313,7 @@ main(int argc, char **argv)
 		    NULL, &key, NULL);
 		close(key_fd[i]);
 		if (r != 0)
-			debug("parse key %d: %s", i, ssh_err(r));
+			debug_r(r, "parse key %d", i);
 		else if (key != NULL) {
 			keys[i] = key;
 			found = 1;
@@ -331,19 +330,19 @@ main(int argc, char **argv)
 	if (ssh_msg_recv(STDIN_FILENO, b) < 0)
 		fatal("%s: ssh_msg_recv failed", __progname);
 	if ((r = sshbuf_get_u8(b, &rver)) != 0)
-		fatal("%s: buffer error: %s", __progname, ssh_err(r));
+		fatal_r(r, "%s: buffer error", __progname);
 	if (rver != version)
 		fatal("%s: bad version: received %d, expected %d",
 		    __progname, rver, version);
 	if ((r = sshbuf_get_u32(b, (u_int *)&fd)) != 0)
-		fatal("%s: buffer error: %s", __progname, ssh_err(r));
+		fatal_r(r, "%s: buffer error", __progname);
 	if (fd < 0 || fd == STDIN_FILENO || fd == STDOUT_FILENO)
 		fatal("%s: bad fd = %d", __progname, fd);
 	if ((host = get_local_name(fd)) == NULL)
 		fatal("%s: cannot get local name for fd", __progname);
 
 	if ((r = sshbuf_get_string(b, &data, &dlen)) != 0)
-		fatal("%s: buffer error: %s", __progname, ssh_err(r));
+		fatal_r(r, "%s: buffer error", __progname);
 	if (valid_request(pw, host, &key, data, dlen) < 0)
 		fatal("%s: not a valid request", __progname);
 	free(host);
@@ -368,14 +367,14 @@ main(int argc, char **argv)
 	ssh_sign_ctx ctx = { NULL, keys[i], &ctx_compat, NULL, NULL };
 
 	if ((r = Xkey_sign(&ctx, &signature, &slen, data, dlen)) != 0)
-		fatal("%s: Xkey_sign failed: %s", __progname, ssh_err(r));
+		fatal_r(r, "%s: Xkey_sign failed", __progname);
 }
 	free(data);
 
 	/* send reply */
 	sshbuf_reset(b);
 	if ((r = sshbuf_put_string(b, signature, slen)) != 0)
-		fatal("%s: buffer error: %s", __progname, ssh_err(r));
+		fatal_r(r, "%s: buffer error", __progname);
 	if (ssh_msg_send(STDOUT_FILENO, version, b) == -1)
 		fatal("%s: ssh_msg_send failed", __progname);
 

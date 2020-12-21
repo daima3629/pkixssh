@@ -356,7 +356,7 @@ load_identity(const char *filename, char **commentp)
 	if (r == 0) return prv;
 
 	if (r != SSH_ERR_KEY_WRONG_PASSPHRASE)
-		fatal("Load key \"%s\": %s", filename, ssh_err(r));
+		fatal_r(r, "Load key \"%s\"", filename);
 
 {	/* try passphrase only for file based keys */
 	char *pass;
@@ -368,7 +368,7 @@ load_identity(const char *filename, char **commentp)
 	freezero(pass, strlen(pass));
 }
 	if (r != 0)
-		fatal("Load key \"%s\": %s", filename, ssh_err(r));
+		fatal_r(r, "Load key \"%s\"", filename);
 
 	return prv;
 }
@@ -984,10 +984,10 @@ fingerprint_private(const char *path)
 	if (stat(identity_file, &st) == -1)
 		fatal("%s: %s", path, strerror(errno));
 	if ((r = sshkey_load_public(path, &public, &comment)) != 0) {
-		debug("load public \"%s\": %s", path, ssh_err(r));
+		debug_r(r, "load public \"%s\"", path);
 		if ((r = sshkey_load_private(path, NULL,
 		    &public, &comment)) != 0) {
-			debug("load private \"%s\": %s", path, ssh_err(r));
+			debug_r(r, "load private \"%s\"", path);
 			fatal("%s is not a key file.", path);
 		}
 	}
@@ -1165,7 +1165,7 @@ do_gen_all_hostkeys(struct passwd *pw)
 	{	u_int32_t bits = 0;
 		type_bits_valid(type, NULL, &bits);
 		if ((r = sshkey_generate(type, bits, &private)) != 0) {
-			error("sshkey_generate failed: %s", ssh_err(r));
+			error_r(r, "sshkey_generate failed");
 			goto failnext;
 		}
 	}
@@ -1176,8 +1176,7 @@ do_gen_all_hostkeys(struct passwd *pw)
 		if ((r = sshkey_save_private(private, prv_tmp, "",
 		    comment, private_key_format, openssh_format_cipher,
 		    rounds)) != 0) {
-			error("Saving key \"%s\" failed: %s",
-			    prv_tmp, ssh_err(r));
+			error_r(r, "Saving key \"%s\" failed", prv_tmp);
 			goto failnext;
 		}
 		if ((fd = mkstemp(pub_tmp)) == -1) {
@@ -1187,8 +1186,8 @@ do_gen_all_hostkeys(struct passwd *pw)
 		}
 		(void)close(fd); /* just using mkstemp() to reserve a name */
 		if ((r = sshkey_save_public(public, pub_tmp, comment)) != 0) {
-			error("Unable to save public key to %s: %s",
-			    identity_file, ssh_err(r));
+			error_r(r, "Unable to save public key to %s",
+			    identity_file);
 			goto failnext;
 		}
 
@@ -1479,7 +1478,7 @@ do_change_passphrase(struct passwd *pw)
 			goto badkey;
 	} else if (r != 0) {
  badkey:
-		fatal("Failed to load key %s: %s", identity_file, ssh_err(r));
+		fatal_r(r, "Failed to load key %s", identity_file);
 	}
 	if (comment)
 		mprintf("Key has comment '%s'\n", comment);
@@ -1509,8 +1508,7 @@ do_change_passphrase(struct passwd *pw)
 	/* Save the file using the new passphrase. */
 	if ((r = sshkey_save_private(private, identity_file, passphrase1,
 	    comment, private_key_format, openssh_format_cipher, rounds)) != 0) {
-		error("Saving key \"%s\" failed: %s.",
-		    identity_file, ssh_err(r));
+		error_r(r, "Saving key \"%s\" failed", identity_file);
 		freezero(passphrase1, strlen(passphrase1));
 		sshkey_free(private);
 		free(comment);
@@ -1546,8 +1544,7 @@ do_print_resource_record(struct passwd *pw, char *fname, char *hname,
 		fatal("%s: %s", fname, strerror(errno));
 	}
 	if ((r = sshkey_load_public(fname, &public, &comment)) != 0)
-		fatal("Failed to read v2 public key from \"%s\": %s.",
-		    fname, ssh_err(r));
+		fatal_r(r, "Failed to read v2 public key from \"%s\"", fname);
 	export_dns_rr(hname, public, stdout, print_generic);
 	sshkey_free(public);
 	free(comment);
@@ -1574,8 +1571,7 @@ do_change_comment(struct passwd *pw, const char *identity_comment)
 	    &private, &comment)) == 0)
 		passphrase = xstrdup("");
 	else if (r != SSH_ERR_KEY_WRONG_PASSPHRASE)
-		fatal("Cannot load private key \"%s\": %s.",
-		    identity_file, ssh_err(r));
+		fatal_r(r, "Cannot load private key \"%s\"", identity_file);
 	else {
 		if (identity_passphrase)
 			passphrase = xstrdup(identity_passphrase);
@@ -1588,8 +1584,8 @@ do_change_comment(struct passwd *pw, const char *identity_comment)
 		if ((r = sshkey_load_private(identity_file, passphrase,
 		    &private, &comment)) != 0) {
 			freezero(passphrase, strlen(passphrase));
-			fatal("Cannot load private key \"%s\": %s.",
-			    identity_file, ssh_err(r));
+			fatal_r(r, "Cannot load private key \"%s\"",
+			    identity_file);
 		}
 	}
 
@@ -1630,8 +1626,7 @@ do_change_comment(struct passwd *pw, const char *identity_comment)
 	if ((r = sshkey_save_private(private, identity_file, passphrase,
 	    new_comment, private_key_format, openssh_format_cipher,
 	    rounds)) != 0) {
-		error("Saving key \"%s\" failed: %s",
-		    identity_file, ssh_err(r));
+		error_r(r, "Saving key \"%s\" failed", identity_file);
 		freezero(passphrase, strlen(passphrase));
 		sshkey_free(private);
 		free(comment);
@@ -1644,8 +1639,7 @@ do_change_comment(struct passwd *pw, const char *identity_comment)
 
 	strlcat(identity_file, ".pub", sizeof(identity_file));
 	if ((r = sshkey_save_public(public, identity_file, new_comment)) != 0)
-		fatal("Unable to save public key to %s: %s",
-		    identity_file, ssh_err(r));
+		fatal_r(r, "Unable to save public key to %s", identity_file);
 	sshkey_free(public);
 	free(comment);
 
@@ -1753,8 +1747,7 @@ load_pkcs11_key(char *path)
 	int r, i, nkeys;
 
 	if ((r = sshkey_load_public(path, &public, NULL)) != 0)
-		fatal("Couldn't load CA public key \"%s\": %s",
-		    path, ssh_err(r));
+		fatal_r(r, "Couldn't load CA public key \"%s\"", path);
 
 	nkeys = pkcs11_add_provider(pkcs11provider, identity_passphrase,
 	    &keys, NULL);
@@ -1824,13 +1817,11 @@ do_ca_sign(struct passwd *pw, const char *ca_key_path, int prefer_agent,
 		 * agent.
 		 */
 		if ((r = sshkey_load_public(tmp, &ca, NULL)) != 0)
-			fatal("Cannot load CA public key %s: %s",
-			    tmp, ssh_err(r));
+			fatal_r(r, "Cannot load CA public key %s", tmp);
 		if ((r = ssh_get_authentication_socket(&agent_fd)) != 0)
-			fatal("Cannot use public key for CA signature: %s",
-			    ssh_err(r));
+			fatal_r(r, "Cannot use public key for CA signature");
 		if ((r = ssh_fetch_identitylist(agent_fd, &agent_ids)) != 0)
-			fatal("Retrieve agent key list: %s", ssh_err(r));
+			fatal_r(r, "Retrieve agent key list");
 		found = 0;
 		for (j = 0; j < agent_ids->nkeys; j++) {
 			if (sshkey_equal(ca, agent_ids->keys[j])) {
@@ -1880,8 +1871,7 @@ do_ca_sign(struct passwd *pw, const char *ca_key_path, int prefer_agent,
 
 		/* Prepare certificate to sign */
 		if ((r = sshkey_to_certified(public)) != 0)
-			fatal("Could not upgrade key %s to certificate: %s",
-			    tmp, ssh_err(r));
+			fatal_r(r, "Could not upgrade key %s to certificate", tmp);
 		public->cert->type = cert_key_type;
 		public->cert->serial = (u_int64_t)cert_serial;
 		public->cert->key_id = xstrdup(cert_key_id);
@@ -1894,20 +1884,18 @@ do_ca_sign(struct passwd *pw, const char *ca_key_path, int prefer_agent,
 		    OPTIONS_EXTENSIONS);
 		if ((r = sshkey_from_private(ca,
 		    &public->cert->signature_key)) != 0)
-			fatal("sshkey_from_private (ca key): %s", ssh_err(r));
+			fatal_r(r, "sshkey_from_private (ca key)");
 
 		if (agent_fd != -1 && (ca->flags & SSHKEY_FLAG_EXT) != 0) {
 			r = sshkey_certify_custom(public, ca, key_type_name,
 			    NULL, NULL, agent_signer, &agent_fd);
 			if (r != 0)
-				fatal("Couldn't certify key %s via agent: %s",
-				    tmp, ssh_err(r));
+				fatal_r(r, "Couldn't certify %s via agent", tmp);
 		} else {
 			r = sshkey_certify(public, ca, key_type_name,
 			    NULL, NULL);
 			if (r != 0)
-				fatal("Couldn't certify key %s: %s",
-				    tmp, ssh_err(r));
+				fatal_r(r, "Couldn't certify %s", tmp);
 		}
 
 		if ((cp = strrchr(tmp, '.')) != NULL && strcmp(cp, ".pub") == 0)
@@ -1916,8 +1904,8 @@ do_ca_sign(struct passwd *pw, const char *ca_key_path, int prefer_agent,
 		free(tmp);
 
 		if ((r = sshkey_save_public(public, out, comment)) != 0) {
-			fatal("Unable to save certified key to %s: %s",
-			    identity_file, ssh_err(r));
+			fatal_r(r, "Unable to save certified key to %s",
+			    identity_file);
 		}
 
 		if (!quiet) {
@@ -2191,8 +2179,7 @@ do_show_cert(struct passwd *pw)
 		if ((key = sshkey_new(KEY_UNSPEC)) == NULL)
 			fatal("sshkey_new");
 		if ((r = sshkey_read(key, &cp)) != 0) {
-			error("%s:%lu: invalid key: %s", path,
-			    lnum, ssh_err(r));
+			error_r(r, "%s:%lu: invalid key", path, lnum);
 			continue;
 		}
 		if (!sshkey_is_cert(key)) {
@@ -2219,11 +2206,11 @@ load_krl(const char *path, struct ssh_krl **krlp)
 	int r;
 
 	if ((r = sshbuf_load_file(path, &krlbuf)) != 0)
-		fatal("Unable to load KRL: %s", ssh_err(r));
+		fatal_r(r, "Unable to load KRL %s", path);
 	/* XXX check sigs */
 	if ((r = ssh_krl_from_blob(krlbuf, krlp, NULL, 0)) != 0 ||
 	    *krlp == NULL)
-		fatal("Invalid KRL file: %s", ssh_err(r));
+		fatal_r(r, "Invalid KRL file %s", path);
 	sshbuf_free(krlbuf);
 }
 
@@ -2250,7 +2237,7 @@ hash_to_blob(const char *cp, u_char **blobp, size_t *lenp,
 	if ((b = sshbuf_new()) == NULL)
 		fatal_f("sshbuf_new failed");
 	if ((r = sshbuf_b64tod(b, tmp)) != 0)
-		fatal("%s:%lu: decode hash failed: %s", file, lnum, ssh_err(r));
+		fatal_r(r, "%s:%lu: decode hash failed", file, lnum);
 	free(tmp);
 	*lenp = sshbuf_len(b);
 	*blobp = xmalloc(*lenp);
@@ -2387,8 +2374,7 @@ update_krl_from_file(struct passwd *pw, const char *file, int wild_ca,
 			if ((key = sshkey_new(KEY_UNSPEC)) == NULL)
 				fatal("sshkey_new");
 			if ((r = sshkey_read(key, &cp)) != 0)
-				fatal("%s:%lu: invalid key: %s",
-				    path, lnum, ssh_err(r));
+				fatal_r(r, "%s:%lu: invalid key", path, lnum);
 			if (was_explicit_key)
 				r = ssh_krl_revoke_key_explicit(krl, key);
 			else if (was_sha1) {
@@ -2450,8 +2436,7 @@ do_gen_krl(struct passwd *pw, int updating, const char *ca_key_path,
 		else {
 			tmp = tilde_expand_filename(ca_key_path, pw->pw_uid);
 			if ((r = sshkey_load_public(tmp, &ca, NULL)) != 0)
-				fatal("Cannot load CA public key %s: %s",
-				    tmp, ssh_err(r));
+				fatal_r(r, "Cannot load CA public key %s", tmp);
 			free(tmp);
 		}
 	}
@@ -2496,8 +2481,7 @@ do_check_krl(struct passwd *pw, int print_krl, int argc, char **argv)
 		krl_dump(krl, stdout);
 	for (i = 0; i < argc; i++) {
 		if ((r = sshkey_load_public(argv[i], &k, &comment)) != 0)
-			fatal("Cannot load public key %s: %s",
-			    argv[i], ssh_err(r));
+			fatal_r(r, "Cannot load public key %s", argv[i]);
 		r = ssh_krl_check_key(krl, k);
 		printf("%s%s%s%s: %s\n", argv[i],
 		    *comment ? " (" : "", comment, *comment ? ")" : "",
@@ -3098,7 +3082,7 @@ main(int argc, char **argv)
 	if ((r = sshkey_generate(type, bits, &private)) != 0)
 		fatal("sshkey_generate failed");
 	if ((r = sshkey_from_private(private, &public)) != 0)
-		fatal("sshkey_from_private failed: %s\n", ssh_err(r));
+		fatal_r(r, "sshkey_from_private");
 
 	if (!have_identity)
 		ask_filename(pw, "Enter file in which to save the key");
@@ -3123,8 +3107,7 @@ main(int argc, char **argv)
 	/* Save the key with the given passphrase and comment. */
 	if ((r = sshkey_save_private(private, identity_file, passphrase,
 	    comment, private_key_format, openssh_format_cipher, rounds)) != 0) {
-		error("Saving key \"%s\" failed: %s",
-		    identity_file, ssh_err(r));
+		error_r(r, "Saving key \"%s\" failed", identity_file);
 		freezero(passphrase, strlen(passphrase));
 		exit(1);
 	}
@@ -3138,8 +3121,7 @@ main(int argc, char **argv)
 
 	strlcat(identity_file, ".pub", sizeof(identity_file));
 	if ((r = sshkey_save_public(public, identity_file, comment)) != 0)
-		fatal("Unable to save public key to %s: %s",
-		    identity_file, ssh_err(r));
+		fatal_r(r, "Unable to save public key to %s", identity_file);
 
 	if (!quiet) {
 		fp = sshkey_fingerprint(public, fingerprint_hash,

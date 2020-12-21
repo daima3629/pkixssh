@@ -667,7 +667,7 @@ input_userauth_pk_ok(int type, u_int32_t seq, struct ssh *ssh)
 		goto done;
 	}
 	if ((r = Xkey_from_blob(pkalg, pkblob, blen, &key)) != 0) {
-		debug("no key from blob. pkalg %s: %s", pkalg, ssh_err(r));
+		debug_r(r, "no key from blob. pkalg %s", pkalg);
 		goto done;
 	}
 	if (key->type != pktype) {
@@ -1412,14 +1412,13 @@ load_identity_file(Identity *id)
 			break;
 		case SSH_ERR_SYSTEM_ERROR:
 			if (errno == ENOENT) {
-				debug2("Load key \"%s\": %s",
-				    id->filename, ssh_err(r));
+				debug2_r(r, "Load key \"%s\"", id->filename);
 				quit = 1;
 				break;
 			}
 			/* FALLTHROUGH */
 		default:
-			error("Load key \"%s\": %s", id->filename, ssh_err(r));
+			error_r(r, "Load key \"%s\"", id->filename);
 			quit = 1;
 			break;
 		}
@@ -1489,10 +1488,10 @@ pubkey_prepare(Authctxt *authctxt)
 	/* list of keys supported by the agent */
 	if ((r = ssh_get_authentication_socket(&agent_fd)) != 0) {
 		if (r != SSH_ERR_AGENT_NOT_PRESENT)
-			debug_f("ssh_get_authentication_socket: %s", ssh_err(r));
+			error_fr(r, "ssh_get_authentication_socket");
 	} else if ((r = ssh_fetch_identitylist(agent_fd, &idlist)) != 0) {
 		if (r != SSH_ERR_AGENT_NO_IDENTITIES)
-			debug_f("ssh_fetch_identitylist: %s", ssh_err(r));
+			error_fr(r, "ssh_fetch_identitylist");
 		close(agent_fd);
 	} else {
 		for (j = 0; j < idlist->nkeys; j++) {

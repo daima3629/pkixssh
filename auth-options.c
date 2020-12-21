@@ -88,8 +88,7 @@ cert_option_list(struct sshauthopt *opts, struct sshbuf *oblob,
 		data = NULL;
 		if ((r = sshbuf_get_cstring(c, &name, NULL)) != 0 ||
 		    (r = sshbuf_froms(c, &data)) != 0) {
-			error("Unable to parse certificate options: %s",
-			    ssh_err(r));
+			error_r(r, "Unable to parse certificate options");
 			goto out;
 		}
 		debug3("found certificate option \"%.100s\" len %zu",
@@ -119,8 +118,8 @@ cert_option_list(struct sshauthopt *opts, struct sshbuf *oblob,
 			if (strcmp(name, "force-command") == 0) {
 				if ((r = sshbuf_get_cstring(data, &command,
 				    NULL)) != 0) {
-					error("Unable to parse \"%s\" "
-					    "section: %s", name, ssh_err(r));
+					error_r(r, "Unable to parse \"%s\" "
+					    "section", name);
 					goto out;
 				}
 				if (opts->force_command != NULL) {
@@ -135,8 +134,8 @@ cert_option_list(struct sshauthopt *opts, struct sshbuf *oblob,
 			if (strcmp(name, "source-address") == 0) {
 				if ((r = sshbuf_get_cstring(data, &allowed,
 				    NULL)) != 0) {
-					error("Unable to parse \"%s\" "
-					    "section: %s", name, ssh_err(r));
+					error_r(r, "Unable to parse \"%s\" "
+					    "section", name);
 					goto out;
 				}
 				if (opts->required_from_host_cert != NULL) {

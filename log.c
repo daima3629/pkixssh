@@ -639,6 +639,27 @@ sshlog_f(const char *file, const char *func, int line,
 }
 
 void
+sshlogv_r(const char *file, const char *func, int line,
+    int errcode, LogLevel level, const char *fmt, va_list args)
+{
+	char msgbuf[MSGBUFSIZ];
+
+	vsnprintf(msgbuf, sizeof(msgbuf), fmt, args);
+	sshlog(file, func, line, level, "%s - %s", msgbuf, ssh_err(errcode));
+}
+
+void
+sshlog_r(const char *file, const char *func, int line,
+    int errcode, LogLevel level, const char *fmt, ...)
+{
+	va_list args;
+
+	va_start(args, fmt);
+	sshlogv_r(file, func, line, errcode, level, fmt, args);
+	va_end(args);
+}
+
+void
 sshlogv_fr(const char *file, const char *func, int line,
     int errcode, LogLevel level, const char *fmt, va_list args)
 {

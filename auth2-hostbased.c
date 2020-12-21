@@ -138,9 +138,9 @@ userauth_hostbased(struct ssh *ssh)
 	}
 	if ((r = sshkey_check_cert_sigtype(key,
 	    options.ca_sign_algorithms)) != 0) {
-		logit("Certificate signature algorithm %s: %s",
+		error_r(r, "Certificate signature algorithm %s",
 		    (key->cert == NULL || key->cert->signature_type == NULL) ?
-		    "(null)" : key->cert->signature_type, ssh_err(r));
+		    "(null)" : key->cert->signature_type);
 		goto done;
 	}
 

@@ -1195,7 +1195,7 @@ fail:
 		if ((r = sshkey_from_private(host_key, &raw_key)) != 0)
 			fatal_fr(r, "decode key");
 		if ((r = sshkey_drop_cert(raw_key)) != 0)
-			fatal("Couldn't drop certificate: %s", ssh_err(r));
+			fatal_r(r, "Couldn't drop certificate");
 		host_key = raw_key;
 		goto retry;
 	}
@@ -1277,9 +1277,9 @@ verify_host_key(char *host, struct sockaddr *hostaddr,
 			r = -1;
 			goto out;
 		default:
-			error("Error checking host key %s %s in "
-			    "revoked keys file %s: %s", sshkey_type(host_key),
-			    fp, options.revoked_host_keys, ssh_err(r));
+			error_r(r, "Error checking host key %s %s in "
+			    "revoked keys file %s", sshkey_type(host_key),
+			    fp, options.revoked_host_keys);
 			r = -1;
 			goto out;
 		}

@@ -58,6 +58,19 @@ sshfatal_f(const char *file, const char *func, int line,
 	cleanup_exit(255);
 }
 
+
+void
+sshfatal_r(const char *file, const char *func, int line,
+    int errcode, const char *fmt, ...)
+{
+	va_list args;
+
+	va_start(args, fmt);
+	sshlogv_r(file, func, line, errcode, SYSLOG_LEVEL_FATAL, fmt, args);
+	va_end(args);
+	cleanup_exit(255);
+}
+
 void
 sshfatal_fr(const char *file, const char *func, int line,
     int errcode, const char *fmt, ...)

@@ -67,7 +67,6 @@
 #include "monitor_wrap.h"
 #include "authfile.h"
 #include "match.h"
-#include "ssherr.h"
 #include "channels.h" /* XXX for session.h */
 #include "session.h" /* XXX for child_set_env(); refactor? */
 
@@ -163,9 +162,9 @@ userauth_pubkey(struct ssh *ssh)
 	}
 	if ((r = sshkey_check_cert_sigtype(key,
 	    options.ca_sign_algorithms)) != 0) {
-		logit("Certificate signature algorithm %s: %s",
+		error_r(r, "Certificate signature algorithm %s",
 		    (key->cert == NULL || key->cert->signature_type == NULL) ?
-		    "(null)" : key->cert->signature_type, ssh_err(r));
+		    "(null)" : key->cert->signature_type);
 		goto done;
 	}
 
@@ -845,9 +844,9 @@ user_cert_trusted_ca(struct ssh *ssh, struct passwd *pw, struct sshkey *key,
 
 	if ((r = sshkey_in_file(key->cert->signature_key,
 	    options.trusted_user_ca_keys, 1, 0)) != 0) {
-		debug2_f("CA %s %s is not listed in %s: %s",
+		debug2_r(r, "CA %s %s is not listed in %s",
 		    sshkey_type(key->cert->signature_key), ca_fp,
-		    options.trusted_user_ca_keys, ssh_err(r));
+		    options.trusted_user_ca_keys);
 		goto out;
 	}
 	/*

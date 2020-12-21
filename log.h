@@ -171,6 +171,27 @@ void     sshfatal_f(const char *file, const char *func, int line,
 #define fatal_f(...)	sshfatal_f(__FILE__, __func__, __LINE__, __VA_ARGS__)
 
 
+/* Variants that appends a secsh error reason. */
+void	 sshlog_r(const char *file, const char *func, int line,
+    int errcode, LogLevel level, const char *fmt, ...)
+    __attribute__((format(printf, 6, 7)));
+void	 sshlogv_r(const char *file, const char *func, int line,
+    int errcode, LogLevel level, const char *fmt, va_list args);
+
+#define do_log2_r(errcode, level, ...)	sshlog_r(__FILE__, __func__, __LINE__, errcode, level, __VA_ARGS__)
+
+#define error_r(errcode, ...)	sshlog_r(__FILE__, __func__, __LINE__, errcode, SYSLOG_LEVEL_ERROR, __VA_ARGS__)
+#define debug_r(errcode, ...)	sshlog_r(__FILE__, __func__, __LINE__, errcode, SYSLOG_LEVEL_DEBUG1, __VA_ARGS__)
+#define debug2_r(errcode, ...)	sshlog_r(__FILE__, __func__, __LINE__, errcode, SYSLOG_LEVEL_DEBUG2, __VA_ARGS__)
+#define debug3_r(errcode, ...)	sshlog_r(__FILE__, __func__, __LINE__, errcode, SYSLOG_LEVEL_DEBUG3, __VA_ARGS__)
+
+void     sshfatal_r(const char *file, const char *func, int line,
+    int errcode, const char *fmt, ...) __attribute__((noreturn))
+    __attribute__((format(printf, 5, 6)));
+
+#define fatal_r(errcode, ...)	sshfatal_r(__FILE__, __func__, __LINE__, errcode, __VA_ARGS__)
+
+
 /* Variants that prepend the caller's function and
  * appends a secsh error reason.
  */

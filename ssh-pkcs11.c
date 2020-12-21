@@ -49,7 +49,6 @@
 #include "log.h"
 #include "misc.h"
 #include "ssh-x509.h"
-#include "ssherr.h"
 #include "ssh-pkcs11.h"
 #include "digest.h"
 #include "xmalloc.h"
@@ -1579,9 +1578,8 @@ pkcs11_register_provider(char *provider_id, char *pin,
 		 */
 	{	int r = pkcs11_open_session(p, i, pin, user);
 		if (r != 0) {
-			error("pkcs11_open_session for provider %s slot %lu "
-			    "failed: %s", provider_id, (unsigned long)i,
-			    ssh_err(r));
+			error_r(r, "pkcs11_open_session for provider %s slot %lu "
+			    "failed", provider_id, (unsigned long)i);
 			continue;
 		}
 	}
