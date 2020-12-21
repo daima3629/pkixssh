@@ -58,7 +58,6 @@
 .Op Fl C Ar comment
 .Op Fl f Ar output_keyfile
 .Op Fl m Ar format
-.Op Fl o
 .Op Fl N Ar new_passphrase
 .Op Fl t Cm dsa | ecdsa | ed25519 | rsa
 .Op Fl Z Ar cipher
@@ -67,7 +66,6 @@
 .Op Fl a Ar rounds
 .Op Fl f Ar keyfile
 .Op Fl m Ar format
-.Op Fl o
 .Op Fl N Ar new_passphrase
 .Op Fl P Ar old_passphrase
 .Op Fl Z Ar cipher
@@ -168,7 +166,7 @@ will generate an RSA key.
 .Pp
 By default key is stored in PKCS#8 PEM format.
 For compatibility with earlier versions programs
-read keys stored in PEM format as well.
+read keys stored in traditional PEM format as well.
 Option
 .Fl p
 could be used to convert private key between OpenSSH proprietary
@@ -176,9 +174,10 @@ and more portable and widely used PKCS#8 PEM format
 depending from option arguments:
 .Fl m Ar PKCS8
 or
-.Fl o .
-Note if key contain X.509 certificate PKCS#8 PEM format is required.
-For those keys request to store in proprietary format is ignored.
+.Fl m Ar OpenSSH .
+Note if requested proprietary format but key contain X.509 certificate
+will be used PKCS#8 PEM format.
+Also in FIPS mode could be used only PKCS#8 PEM format.
 .Pp
 .Nm
 is also used to generate groups for use in Diffie-Hellman group
@@ -189,7 +188,7 @@ section for details.
 .Pp
 Finally,
 .Nm
-can be used to generate and update Key Revocation Lists, and to test whether
+can be used to generate and update custom Key Revocation Lists, and to test whether
 given keys have been revoked by one.
 See the
 .Sx KEY REVOCATION LISTS
@@ -232,7 +231,7 @@ There is no way to recover a lost passphrase.
 If the passphrase is lost or forgotten, a new key must be generated
 and the corresponding public key copied to other machines.
 .Pp
-For keys stored in the proprietary OpenSSH format,
+For private keys stored in the proprietary OpenSSH format,
 there is also a comment field in the key file that is only for
 convenience to the user to help identify the key.
 The comment can tell what the key is for, or whatever is useful.
@@ -438,21 +437,21 @@ Specify a key format for key generation, the
 change passphrase operation.
 The latter may be used to convert between proprietary OpenSSH private key
 and portable PKCS#8 PEM private key formats.
-The supported key formats are:
+The supported formats are:
 .Dq RFC4716
-(RFC 4716/SSH2 public or private key),
-or
+(RFC 4716/SSH2 public),
 .Dq PKCS8
-(PKCS#8 PEM public or private key).
-The default conversion format is
-.Dq RFC4716 .
-Setting a format of
-.Dq PKCS8
-or
+(PKCS#8 PEM public or private key),
 .Dq PEM
-(compatibility option)
-when generating or updating a supported private key type will cause the
-key to be stored in the portable PKCS#8 PEM private key format.
+(traditional PEM public or private key)
+or
+.Dq OpenSSH
+(proprietary OpenSSH public or private key).
+The default conversion format is
+.Dq RFC4716
+for export/import of public keys and
+.Dq PKCS8
+for private keys.
 .\" Ignore obsolete PEM for import/export - it is only for RSA public!
 .It Fl N Ar new_passphrase
 Provides the new passphrase.
@@ -482,6 +481,8 @@ The
 .Fl O
 option may be specified multiple times.
 .It Fl o
+Obsolete option replaced by
+.Fl m Ar OpenSSH .
 Causes
 .Nm
 to save private keys using the proprietary OpenSSH format rather than
@@ -496,12 +497,14 @@ The program will prompt for the file
 containing the private key, for the old passphrase, and twice for the
 new passphrase.
 Options
-.Fl m Ar PKCS8
+.Fl m Ar PKCS8 ,
+.Fl m Ar PEM ,
 or
-.Fl o
-could change format of stored key:
-either compatible PKCS#8 PEM format
+.Fl m Ar OpenSSH
+could by used to set explicitly format of stored key:
+either compatible PKCS#8 PEM, traditional PEM,
 or proprietary OpenSSH format.
+Note by default is used PKCS#8 PEM format.
 .It Fl Q
 Test whether keys have been revoked in a KRL.
 If the

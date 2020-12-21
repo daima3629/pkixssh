@@ -4373,19 +4373,57 @@ sshkey_parse_private2(struct sshbuf *blob, int type, const char *passphrase,
 }
 
 #ifdef WITH_OPENSSL
-/* convert SSH key to PKCS#8 PEM format */
-int
-sshkey_private_pem_to_bio(struct sshkey *key, BIO *bio,
-    const char *passphrase)
+/* convert SSH key to traditional PEM format */
+static int
+sshkey_private_to_bio_trad(struct sshkey *key, BIO *bio,
+    const EVP_CIPHER *cipher, u_char *passphrase, int len)
 {
-	int r, res;
-	size_t len = strlen(passphrase);
-	EVP_PKEY *pkey;
+	int res;
+
+	switch (key->type) {
+	case KEY_DSA:
+		res = PEM_write_bio_DSAPrivateKey(bio, key->dsa,
+		    cipher, passphrase, len, NULL, NULL);
+		break;
+#ifdef OPENSSL_HAS_ECC
+	case KEY_ECDSA:
+		res = PEM_write_bio_ECPrivateKey(bio, key->ecdsa,
+		    cipher, passphrase, len, NULL, NULL);
+		break;
+#endif
+	case KEY_RSA:
+		res = PEM_write_bio_RSAPrivateKey(bio, key->rsa,
+		    cipher, passphrase, len, NULL, NULL);
+		break;
+	default:
+		return SSH_ERR_INVALID_ARGUMENT;
+	}
+
+	return res ? 0 : SSH_ERR_LIBCRYPTO_ERROR;
+}
+
+/* convert SSH key to PEM formats - PKCS#8 or traditional */
+int
+sshkey_private_to_bio(struct sshkey *key, BIO *bio,
+    const char *passphrase, int format)
+{
+	int len = strlen(passphrase);
+	const EVP_CIPHER *cipher = (len > 0) ? EVP_aes_256_cbc() : NULL;
+	u_char *_passphrase = (len > 0) ? (u_char*)passphrase : NULL;
 
 	if (len > 0 && len <= 4)
 		return SSH_ERR_PASSPHRASE_TOO_SHORT;
-	if ((pkey = EVP_PKEY_new()) == NULL)
-		return SSH_ERR_ALLOC_FAIL;
+	if (len < 0 || len > INT_MAX)
+		return SSH_ERR_INVALID_ARGUMENT;
+	if (format == SSHKEY_PRIVATE_PEM) {
+		return sshkey_private_to_bio_trad(key, bio, cipher,
+		    _passphrase, len);
+	}
+
+{
+	int r, res;
+	EVP_PKEY *pkey = EVP_PKEY_new();
+	if (pkey == NULL) return SSH_ERR_ALLOC_FAIL;
 
 	switch (key->type) {
 	case KEY_DSA:
@@ -4404,13 +4442,9 @@ sshkey_private_pem_to_bio(struct sshkey *key, BIO *bio,
 		goto out;
 		break;
 	}
-	if (res) {
-		const EVP_CIPHER *cipher = (len > 0) ? EVP_aes_256_cbc() : NULL;
-		u_char *_passphrase = (len > 0) ? (u_char*)passphrase : NULL;
-
+	if (res)
 		res = PEM_write_bio_PKCS8PrivateKey(bio, pkey, cipher,
 		    _passphrase, len, NULL, NULL);
-	}
 	if (res && sshkey_is_x509(key))
 		res = x509key_write_identity_bio_pem(bio, key);
 
@@ -4419,10 +4453,11 @@ out:
 	EVP_PKEY_free(pkey);
 	return r;
 }
+}
 
 static int
 sshkey_private_pem_to_blob(struct sshkey *key, struct sshbuf *buf,
-    const char *passphrase)
+    const char *passphrase, int format)
 {
 	int was_shielded = sshkey_is_shielded(key);
 	int r;
@@ -4440,7 +4475,7 @@ sshkey_private_pem_to_blob(struct sshkey *key, struct sshbuf *buf,
 	if ((r = sshkey_unshield_private(key)) != 0)
 		goto out;
 
-	r = sshkey_private_pem_to_bio(key, bio, passphrase);
+	r = sshkey_private_to_bio(key, bio, passphrase, format);
 	if (r != 0) goto out;
 
 	if ((blen = BIO_get_mem_data(bio, &bptr)) <= 0) {
@@ -4471,8 +4506,10 @@ sshkey_private_to_fileblob(struct sshkey *key, struct sshbuf *blob,
     int format, const char *openssh_format_cipher, int openssh_format_rounds)
 {
 	/* never use proprietary format for X.509 keys */
-	if (sshkey_is_x509(key))
-		format = SSHKEY_PRIVATE_PKCS8;
+	if (sshkey_is_x509(key)) {
+		if (format == SSHKEY_PRIVATE_OPENSSH)
+			format = SSHKEY_PRIVATE_PKCS8;
+	}
 
 	switch (key->type) {
 #ifdef WITH_OPENSSL
@@ -4483,7 +4520,7 @@ sshkey_private_to_fileblob(struct sshkey *key, struct sshbuf *blob,
 			return sshkey_private_to_blob2(key, blob, passphrase,
 			    comment, openssh_format_cipher, openssh_format_rounds);
 		}
-		return sshkey_private_pem_to_blob(key, blob, passphrase);
+		return sshkey_private_pem_to_blob(key, blob, passphrase, format);
 #endif /* WITH_OPENSSL */
 	case KEY_ED25519:
 #ifdef WITH_XMSS

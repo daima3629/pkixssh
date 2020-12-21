@@ -290,8 +290,9 @@ int	sshkey_parse_private_fileblob(struct sshbuf *buffer,
     const char *passphrase, struct sshkey **keyp, char **commentp);
 int	sshkey_parse_private_fileblob_type(struct sshbuf *blob, int type,
     const char *passphrase, struct sshkey **keyp, char **commentp);
-int	sshkey_private_pem_to_bio(struct sshkey *key, BIO *bio,
-    const char *passphrase);
+
+int	sshkey_private_to_bio(struct sshkey *key, BIO *bio,
+    const char *passphrase, int format);
 
 int	sshrsa_verify_length(int bits);
 int	sshrsa_check_length(const RSA *rsa);

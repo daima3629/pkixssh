@@ -91,9 +91,9 @@ cp rsa_1 rsa_n
 cp dsa_1 dsa_n
 cp ecdsa_1 ecdsa_n
 
-ssh-keygen -opf rsa_n -N ""
-ssh-keygen -opf dsa_n -N ""
-ssh-keygen -opf ecdsa_n -N ""
+ssh-keygen -pf rsa_n -m OpenSSH -N ""
+ssh-keygen -pf dsa_n -m OpenSSH -N ""
+ssh-keygen -pf ecdsa_n -m OpenSSH -N ""
 
 cp rsa_1 rsa_1_pw
 cp dsa_1 dsa_1_pw
@@ -107,9 +107,9 @@ ssh-keygen -pf rsa_1_pw -m PEM -N "$PW"
 ssh-keygen -pf dsa_1_pw -m PEM -N "$PW"
 ssh-keygen -pf ecdsa_1_pw -m PEM -N "$PW"
 ssh-keygen -pf ed25519_1_pw -N "$PW"
-ssh-keygen -opf rsa_n_pw -N "$PW"
-ssh-keygen -opf dsa_n_pw -N "$PW"
-ssh-keygen -opf ecdsa_n_pw -N "$PW"
+ssh-keygen -pf rsa_n_pw -m OpenSSH -N "$PW"
+ssh-keygen -pf dsa_n_pw -m OpenSSH -N "$PW"
+ssh-keygen -pf ecdsa_n_pw -m OpenSSH -N "$PW"
 
 rsa_params rsa_1 rsa_1.param
 rsa_params rsa_2 rsa_2.param

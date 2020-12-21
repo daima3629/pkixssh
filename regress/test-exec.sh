@@ -503,7 +503,7 @@ case $SCRIPT in
   #do not export OPENSSL_FIPS here
   SSH_KEYTYPES="ssh-rsa"
   SSH_HOSTKEY_TYPES="ssh-rsa"
-  SSHKEYGEN="$SSHKEYGEN -m PEM"
+  SSHKEYGEN="$SSHKEYGEN -m PKCS8"
   ;;
 esac
 

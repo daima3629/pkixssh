@@ -823,7 +823,7 @@ do_convert_from(struct passwd *pw)
 		out = BIO_push(tmpbio, out);
 	}
 #endif
-		r = sshkey_private_pem_to_bio(k, out, "");
+		r = sshkey_private_to_bio(k, out, "", private_key_format);
 		if (r == 0)
 			ok = 1;
 		else if (r == SSH_ERR_INVALID_ARGUMENT)
@@ -1592,7 +1592,7 @@ do_change_comment(struct passwd *pw, const char *identity_comment)
 	if (private->type != KEY_ED25519 && private->type != KEY_XMSS &&
 	    private_key_format != SSHKEY_PRIVATE_OPENSSH) {
 		error("Comments are only supported for keys stored in "
-		    "the new format (-o).");
+		    "the OpenSSH proprietary format.");
 		freezero(passphrase, strlen(passphrase));
 		sshkey_free(private);
 		exit(1);
@@ -2649,10 +2649,10 @@ usage(void)
 {
 	fprintf(stderr,
 	    "usage: ssh-keygen [-q] [-a rounds] [-b bits] [-C comment] [-f output_keyfile]\n"
-	    "                  [-m format] [-o] [-N new_passphrase]\n"
+	    "                  [-m format] [-N new_passphrase]\n"
 	    "                  [-t dsa | ecdsa | ed25519 | rsa]\n"
 	    "                  [-Z cipher]\n"
-	    "       ssh-keygen -p [-a rounds] [-f keyfile] [-m format] [-o]\n"
+	    "       ssh-keygen -p [-a rounds] [-f keyfile] [-m format]\n"
 	    "                   [-N new_passphrase] [-P old_passphrase] [-Z cipher]\n"
 	    "       ssh-keygen -i [-f input_keyfile] [-m format]\n"
 	    "       ssh-keygen -e [-f input_keyfile] [-m format]\n"
@@ -2727,7 +2727,6 @@ main(int argc, char **argv)
 			fatal("FIPS integrity verification test failed.");
 	#endif
 		fprintf(stderr, "%s runs in FIPS mode\n", __progname);
-		private_key_format = SSHKEY_PRIVATE_PKCS8;
 	}
 #endif /*def OPENSSL_FIPS*/
 	ssh_engines_startup();
@@ -2797,10 +2796,16 @@ main(int argc, char **argv)
 			}
 			if (strcasecmp(optarg, "PKCS8") == 0) {
 				convert_format = FMT_PKCS8;
+				private_key_format = SSHKEY_PRIVATE_PKCS8;
 				break;
 			}
 			if (strcasecmp(optarg, "PEM") == 0) {
 				convert_format = FMT_PEM;
+				private_key_format = SSHKEY_PRIVATE_PEM;
+				break;
+			}
+			if (strcasecmp(optarg, "OpenSSH") == 0) {
+				private_key_format = SSHKEY_PRIVATE_OPENSSH;
 				break;
 			}
 			fatal("Unsupported conversion format \"%s\"", optarg);
@@ -2928,8 +2933,13 @@ main(int argc, char **argv)
 	}
 
 #ifdef OPENSSL_FIPS
-	if (FIPS_mode() && private_key_format == SSHKEY_PRIVATE_OPENSSH) {
-		fatal("OpenSSH proprietary key format is not allowed in FIPS mode");
+	if (FIPS_mode())
+		if (private_key_format == SSHKEY_PRIVATE_OPENSSH)
+			fatal("OpenSSH proprietary key format is not allowed in FIPS mode");
+		if (private_key_format == SSHKEY_PRIVATE_PEM) {
+			private_key_format = SSHKEY_PRIVATE_PKCS8;
+			error("In FIPS mode is used only PKCS#8 format");
+		}
 	}
 #endif
 
