@@ -564,7 +564,7 @@ mm_Xkey_verify(
 	    MONITOR_ANS_KEYVERIFY, m);
 
 	if ((r = sshbuf_get_u32(m, &encoded_ret)) != 0)
-		fatal_f("parse: %s", ssh_err(r));
+		fatal_fr(r, "parse");
 
 	sshbuf_free(m);
 

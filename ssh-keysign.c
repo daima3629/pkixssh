@@ -367,8 +367,7 @@ main(int argc, char **argv)
 {	ssh_compat ctx_compat = { 0, 0 }; /* TODO-Xkey_sign compat */
 	ssh_sign_ctx ctx = { NULL, keys[i], &ctx_compat, NULL, NULL };
 
-	r = Xkey_sign(&ctx, &signature, &slen, data, dlen);
-	if (r != 0)
+	if ((r = Xkey_sign(&ctx, &signature, &slen, data, dlen)) != 0)
 		fatal("%s: Xkey_sign failed: %s", __progname, ssh_err(r));
 }
 	free(data);

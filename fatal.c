@@ -1,6 +1,7 @@
 /* $OpenBSD: fatal.c,v 1.11 2020/10/19 08:07:08 djm Exp $ */
 /*
  * Copyright (c) 2002 Markus Friedl.  All rights reserved.
+ * Copyright (c) 2020 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions

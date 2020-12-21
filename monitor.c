@@ -1458,7 +1458,7 @@ mm_answer_keyverify(struct ssh *ssh, int sock, struct sshbuf *m)
 {	/* encode ret != 0 as positive integer, since we're sending u32 */
 	int encoded_ret = (ret != 0);
 	if ((r = sshbuf_put_u32(m, encoded_ret)) != 0)
-		fatal_f("assemble: %s", ssh_err(r));
+		fatal_fr(r, "assemble");
 }
 	mm_request_send(sock, MONITOR_ANS_KEYVERIFY, m);
 

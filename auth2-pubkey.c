@@ -1134,7 +1134,7 @@ user_xkey_allowed(struct ssh *ssh, struct passwd *pw, ssh_verify_ctx *ctx,
 	    !options.x509flags.validate_first &&
 	    sshkey_is_x509(key)
 	)
-		success = (xkey_validate_cert(key) == SSH_ERR_SUCCESS);
+		success = (xkey_validate_cert(key) == 0);
 
 	if (success && authoptsp != NULL) {
 		*authoptsp = opts;

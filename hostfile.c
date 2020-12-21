@@ -288,8 +288,7 @@ load_hostkeys(struct hostkeys *hostkeys, const char *host, const char *path)
 	if ((r = hostkeys_foreach(path, record_hostkey, &ctx, host, NULL,
 	    HKF_WANT_MATCH|HKF_WANT_PARSE_KEY)) != 0) {
 		if (r != SSH_ERR_SYSTEM_ERROR && errno != ENOENT)
-			error_fr(r, "hostkeys_foreach failed for %s",
-			    path);
+			error_fr(r, "hostkeys_foreach failed for %s", path);
 	}
 	if (ctx.num_loaded != 0)
 		debug3_f("loaded %lu keys from %s", ctx.num_loaded, host);
