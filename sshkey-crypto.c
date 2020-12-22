@@ -32,6 +32,50 @@
 #include "sshbuf.h"
 
 
+struct sshkey*
+sshkey_new_rsa(struct sshkey *key) {
+	RSA *rsa = RSA_new();
+	if (rsa == NULL) {
+		free(key);
+		return NULL;
+	}
+	key->rsa = rsa;
+ 	return key;
+}
+
+struct sshkey*
+sshkey_new_dsa(struct sshkey *key) {
+	DSA *dsa = DSA_new();
+	if (dsa == NULL) {
+		free(key);
+		return NULL;
+	}
+	key->dsa = dsa;
+ 	return key;
+}
+
+
+void
+sshkey_free_rsa(struct sshkey *key) {
+	RSA_free(key->rsa);
+	key->rsa = NULL;
+}
+
+void
+sshkey_free_dsa(struct sshkey *key) {
+	DSA_free(key->dsa);
+	key->dsa = NULL;
+}
+
+#ifdef OPENSSL_HAS_ECC
+void
+sshkey_free_ecdsa(struct sshkey *key) {
+	EC_KEY_free(key->ecdsa);
+	key->ecdsa = NULL;
+}
+#endif /* OPENSSL_HAS_ECC */
+
+
 int
 sshbuf_write_pub_rsa(struct sshbuf *buf, const struct sshkey *key) {
 	int r;

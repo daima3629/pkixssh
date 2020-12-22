@@ -633,10 +633,6 @@ struct sshkey *
 sshkey_new(int type)
 {
 	struct sshkey *k;
-#ifdef WITH_OPENSSL
-	RSA *rsa;
-	DSA *dsa;
-#endif /* WITH_OPENSSL */
 
 	if ((k = calloc(1, sizeof(*k))) == NULL)
 		return NULL;
@@ -655,19 +651,13 @@ sshkey_new(int type)
 #ifdef WITH_OPENSSL
 	case KEY_RSA:
 	case KEY_RSA_CERT:
-		if ((rsa = RSA_new()) == NULL) {
-			free(k);
-			return NULL;
-		}
-		k->rsa = rsa;
+		k = sshkey_new_rsa(k);
+		if (k == NULL) return NULL;
 		break;
 	case KEY_DSA:
 	case KEY_DSA_CERT:
-		if ((dsa = DSA_new()) == NULL) {
-			free(k);
-			return NULL;
-		}
-		k->dsa = dsa;
+		k = sshkey_new_dsa(k);
+		if (k == NULL) return NULL;
 		break;
 	case KEY_ECDSA:
 	case KEY_ECDSA_CERT:
@@ -706,19 +696,16 @@ sshkey_free(struct sshkey *k)
 #ifdef WITH_OPENSSL
 	case KEY_RSA:
 	case KEY_RSA_CERT:
-		RSA_free(k->rsa);
-		k->rsa = NULL;
+		sshkey_free_rsa(k);
 		break;
 	case KEY_DSA:
 	case KEY_DSA_CERT:
-		DSA_free(k->dsa);
-		k->dsa = NULL;
+		sshkey_free_dsa(k);
 		break;
 # ifdef OPENSSL_HAS_ECC
 	case KEY_ECDSA:
 	case KEY_ECDSA_CERT:
-		EC_KEY_free(k->ecdsa);
-		k->ecdsa = NULL;
+		sshkey_free_ecdsa(k);
 		break;
 # endif /* OPENSSL_HAS_ECC */
 #endif /* WITH_OPENSSL */
