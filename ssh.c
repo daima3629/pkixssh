@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh.c,v 1.542 2020/11/12 22:38:57 dtucker Exp $ */
+/* $OpenBSD: ssh.c,v 1.544 2020/12/17 23:26:11 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -189,11 +189,6 @@ char *host;
  */
 char *forward_agent_sock_path = NULL;
 
-/* Various strings used to to percent_expand() arguments */
-static char thishost[NI_MAXHOST], shorthost[NI_MAXHOST], portstr[NI_MAXSERV];
-static char uidstr[32], *host_arg, *conn_hash_hex;
-static const char *keyalias;
-
 /* socket address the host resolves to */
 struct sockaddr_storage hostaddr;
 
@@ -239,8 +234,8 @@ USAGE_OPENSSL_ENGINE
 	exit(255);
 }
 
-static int ssh_session2(struct ssh *, struct passwd *);
-static void load_public_identity_files(struct passwd *);
+static int ssh_session2(struct ssh *, const struct ssh_conn_info *);
+static void load_public_identity_files(const struct ssh_conn_info *);
 static void main_sigchld_handler(int);
 
 /* ~/ expand a list of paths. NB. assumes path[n] is heap-allocated. */
@@ -257,14 +252,19 @@ tilde_expand_paths(char **paths, u_int num_paths)
 	}
 }
 
-#define DEFAULT_CLIENT_PERCENT_EXPAND_ARGS \
-    "C", conn_hash_hex, \
-    "L", shorthost, \
-    "i", uidstr, \
-    "k", keyalias, \
-    "l", thishost, \
-    "n", host_arg, \
-    "p", portstr
+/* default argument for client percent expansions */
+#define DEFAULT_CLIENT_PERCENT_EXPAND_ARGS(conn_info) \
+	"C", conn_info->conn_hash_hex, \
+	"L", conn_info->shorthost, \
+	"i", conn_info->uidstr, \
+	"k", conn_info->keyalias, \
+	"l", conn_info->thishost, \
+	"n", conn_info->host_arg, \
+	"p", conn_info->portstr, \
+	"d", conn_info->homedir, \
+	"h", conn_info->remhost, \
+	"r", conn_info->remuser, \
+	"u", conn_info->locuser
 
 /*
  * Expands the set of percent_expand options used by the majority of keywords
@@ -272,17 +272,11 @@ tilde_expand_paths(char **paths, u_int num_paths)
  * Caller must free returned string.
  */
 static char *
-default_client_percent_expand(const char *str, const char *homedir,
-    const char *remhost, const char *remuser, const char *locuser)
+default_client_percent_expand(const char *str,
+    const struct ssh_conn_info *cinfo)
 {
 	return percent_expand(str,
-	    /* values from statics above */
-	    DEFAULT_CLIENT_PERCENT_EXPAND_ARGS,
-	    /* values from arguments */
-	    "d", homedir,
-	    "h", remhost,
-	    "r", remuser,
-	    "u", locuser,
+	    DEFAULT_CLIENT_PERCENT_EXPAND_ARGS(cinfo),
 	    (char *)NULL);
 }
 
@@ -292,19 +286,13 @@ default_client_percent_expand(const char *str, const char *homedir,
  * Caller must free returned string.
  */
 static char *
-default_client_percent_dollar_expand(const char *str, const char *homedir,
-    const char *remhost, const char *remuser, const char *locuser)
+default_client_percent_dollar_expand(const char *str,
+    const struct ssh_conn_info *cinfo)
 {
 	char *ret;
 
 	ret = percent_dollar_expand(str,
-	    /* values from statics above */
-	    DEFAULT_CLIENT_PERCENT_EXPAND_ARGS,
-	    /* values from arguments */
-	    "d", homedir,
-	    "h", remhost,
-	    "r", remuser,
-	    "u", locuser,
+	    DEFAULT_CLIENT_PERCENT_EXPAND_ARGS(cinfo),
 	    (char *)NULL);
 	if (ret == NULL)
 		fatal("invalid environment variable expansion");
@@ -659,6 +647,25 @@ set_addrinfo_port(struct addrinfo *addrs, int port)
 	}
 }
 
+static void
+ssh_conn_info_free(struct ssh_conn_info *cinfo)
+{
+	if (cinfo == NULL)
+		return;
+	free(cinfo->conn_hash_hex);
+	free(cinfo->shorthost);
+	free(cinfo->uidstr);
+	free(cinfo->keyalias);
+	free(cinfo->thishost);
+	free(cinfo->host_arg);
+	free(cinfo->portstr);
+	free(cinfo->remhost);
+	free(cinfo->remuser);
+	free(cinfo->homedir);
+	free(cinfo->locuser);
+	free(cinfo);
+}
+
 /*
  * Main program for the ssh client.
  */
@@ -668,7 +675,7 @@ main(int ac, char **av)
 	struct ssh *ssh = NULL;
 	int i, r, opt, exit_status, use_syslog, direct, timeout_ms;
 	int was_addr, config_test = 0, opt_terminated = 0, want_final_pass = 0;
-	char *p, *cp, *line, *argv0, *logfile;
+	char *p, *cp, *line, *argv0, *logfile, *host_arg;
 #ifdef USE_OPENSSL_ENGINE
 	char *engconfig = NULL;
 #endif
@@ -679,6 +686,7 @@ main(int ac, char **av)
 	extern char *optarg;
 	struct Forward fwd;
 	struct addrinfo *addrs = NULL;
+	struct ssh_conn_info *cinfo = NULL;
 
 	ssh_malloc_init();	/* must be called before any mallocs */
 	/* Ensure that fds 0, 1 and 2 are open or directed to /dev/null */
@@ -1467,17 +1475,26 @@ main(int ac, char **av)
 	}
 
 	/* Set up strings used to percent_expand() arguments */
+	cinfo = xcalloc(1, sizeof(*cinfo));
+{	char thishost[NI_MAXHOST];
 	if (gethostname(thishost, sizeof(thishost)) == -1)
 		fatal("gethostname: %s", strerror(errno));
-	strlcpy(shorthost, thishost, sizeof(shorthost));
-	shorthost[strcspn(thishost, ".")] = '\0';
-	snprintf(portstr, sizeof(portstr), "%d", options.port);
-	snprintf(uidstr, sizeof(uidstr), "%llu",
+	cinfo->thishost = xstrdup(thishost);
+	thishost[strcspn(thishost, ".")] = '\0';
+	cinfo->shorthost = xstrdup(thishost);
+}
+	xasprintf(&cinfo->portstr, "%d", options.port);
+	xasprintf(&cinfo->uidstr, "%llu",
 	    (unsigned long long)pw->pw_uid);
-	keyalias = options.host_key_alias ? options.host_key_alias : host_arg;
-
-	conn_hash_hex = ssh_connection_hash(thishost, host, portstr,
-	    options.user);
+	cinfo->keyalias = xstrdup(options.host_key_alias ?
+	    options.host_key_alias : host_arg);
+	cinfo->host_arg = host_arg;
+	cinfo->remhost = xstrdup(host);
+	cinfo->remuser = xstrdup(options.user);
+	cinfo->homedir = xstrdup(pw->pw_dir);
+	cinfo->locuser = xstrdup(pw->pw_name);
+	cinfo->conn_hash_hex = ssh_connection_hash(cinfo->thishost,
+	    cinfo->remhost, cinfo->portstr, cinfo->remuser);
 
 	/*
 	 * Expand tokens in arguments. NB. LocalCommand is expanded later,
@@ -1487,8 +1504,8 @@ main(int ac, char **av)
 	if (options.remote_command != NULL) {
 		debug3("expanding RemoteCommand: %s", options.remote_command);
 		cp = options.remote_command;
-		options.remote_command = default_client_percent_expand(cp,
-		    pw->pw_dir, host, options.user, pw->pw_name);
+		options.remote_command =
+		    default_client_percent_expand(cp, cinfo);
 		debug3("expanded RemoteCommand: %s", options.remote_command);
 		free(cp);
 		if ((r = sshbuf_put(command, options.remote_command,
@@ -1499,8 +1516,8 @@ main(int ac, char **av)
 	if (options.control_path != NULL) {
 		cp = tilde_expand_filename(options.control_path, getuid());
 		free(options.control_path);
-		options.control_path = default_client_percent_dollar_expand(cp,
-		    pw->pw_dir, host, options.user, pw->pw_name);
+		options.control_path =
+		    default_client_percent_dollar_expand(cp, cinfo);
 		free(cp);
 	}
 
@@ -1509,8 +1526,8 @@ main(int ac, char **av)
 	    strcmp(options.identity_agent, "none") != 0) {
 		cp = tilde_expand_filename(options.identity_agent, getuid());
 		free(options.identity_agent);
-		options.identity_agent = default_client_percent_dollar_expand(cp,
-		    pw->pw_dir, host, options.user, pw->pw_name);
+		options.identity_agent =
+		    default_client_percent_dollar_expand(cp, cinfo);
 		free(cp);
 	}
 
@@ -1519,8 +1536,8 @@ main(int ac, char **av)
 		cp = tilde_expand_filename(options.forward_agent_sock_path,
 		    getuid());
 		free(options.forward_agent_sock_path);
-		options.forward_agent_sock_path = default_client_percent_dollar_expand(cp,
-		    pw->pw_dir, host, options.user, pw->pw_name);
+		options.forward_agent_sock_path =
+		    default_client_percent_dollar_expand(cp, cinfo);
 		free(cp);
 	}
 
@@ -1529,8 +1546,7 @@ main(int ac, char **av)
 			p = options.user_hostfiles[i];
 			cp = tilde_expand_filename(p, getuid());
 			options.user_hostfiles[i] =
-			    default_client_percent_dollar_expand(cp,
-			    pw->pw_dir, host, options.user, pw->pw_name);
+			    default_client_percent_dollar_expand(cp, cinfo);
 			if (strcmp(options.user_hostfiles[i], p) != 0)
 				debug3("expanded UserKnownHostsFile path "
 				    "'%s' -> '%s'", p, options.user_hostfiles[i]);
@@ -1543,8 +1559,7 @@ main(int ac, char **av)
 		if (options.local_forwards[i].listen_path != NULL) {
 			cp = options.local_forwards[i].listen_path;
 			p = options.local_forwards[i].listen_path =
-			    default_client_percent_expand(cp,
-			    pw->pw_dir, host, options.user, pw->pw_name);
+			    default_client_percent_expand(cp, cinfo);
 			if (strcmp(cp, p) != 0)
 				debug3("expanded LocalForward listen path "
 				    "'%s' -> '%s'", cp, p);
@@ -1553,8 +1568,7 @@ main(int ac, char **av)
 		if (options.local_forwards[i].connect_path != NULL) {
 			cp = options.local_forwards[i].connect_path;
 			p = options.local_forwards[i].connect_path =
-			    default_client_percent_expand(cp,
-			    pw->pw_dir, host, options.user, pw->pw_name);
+			    default_client_percent_expand(cp, cinfo);
 			if (strcmp(cp, p) != 0)
 				debug3("expanded LocalForward connect path "
 				    "'%s' -> '%s'", cp, p);
@@ -1566,8 +1580,7 @@ main(int ac, char **av)
 		if (options.remote_forwards[i].listen_path != NULL) {
 			cp = options.remote_forwards[i].listen_path;
 			p = options.remote_forwards[i].listen_path =
-			    default_client_percent_expand(cp,
-			    pw->pw_dir, host, options.user, pw->pw_name);
+			    default_client_percent_expand(cp, cinfo);
 			if (strcmp(cp, p) != 0)
 				debug3("expanded RemoteForward listen path "
 				    "'%s' -> '%s'", cp, p);
@@ -1576,8 +1589,7 @@ main(int ac, char **av)
 		if (options.remote_forwards[i].connect_path != NULL) {
 			cp = options.remote_forwards[i].connect_path;
 			p = options.remote_forwards[i].connect_path =
-			    default_client_percent_expand(cp,
-			    pw->pw_dir, host, options.user, pw->pw_name);
+			    default_client_percent_expand(cp, cinfo);
 			if (strcmp(cp, p) != 0)
 				debug3("expanded RemoteForward connect path "
 				    "'%s' -> '%s'", cp, p);
@@ -1678,7 +1690,7 @@ main(int ac, char **av)
 	}
 
 	/* load options.identity_files */
-	load_public_identity_files(pw);
+	load_public_identity_files(cinfo);
 
 	/* optionally set the SSH_AUTHSOCKET_ENV_NAME variable */
 	if (options.identity_agent &&
@@ -1769,7 +1781,8 @@ main(int ac, char **av)
 	}
 
  skip_connect:
-	exit_status = ssh_session2(ssh, pw);
+	exit_status = ssh_session2(ssh, cinfo);
+	ssh_conn_info_free(cinfo);
 	(void)ssh_packet_close(ssh);
 	free(ssh);
 
@@ -2160,7 +2173,7 @@ ssh_session2_open(struct ssh *ssh)
 }
 
 static int
-ssh_session2(struct ssh *ssh, struct passwd *pw)
+ssh_session2(struct ssh *ssh, const struct ssh_conn_info *cinfo)
 {
 	int r, id = -1;
 	char *cp, *tun_fwd_ifname = NULL;
@@ -2175,11 +2188,7 @@ ssh_session2(struct ssh *ssh, struct passwd *pw)
 		debug3("expanding LocalCommand: %s", options.local_command);
 		cp = options.local_command;
 		options.local_command = percent_expand(cp,
-		    DEFAULT_CLIENT_PERCENT_EXPAND_ARGS,
-		    "d", pw->pw_dir,
-		    "h", host,
-		    "r", options.user,
-		    "u", pw->pw_name,
+		    DEFAULT_CLIENT_PERCENT_EXPAND_ARGS(cinfo),
 		    "T", tun_fwd_ifname == NULL ? "NONE" : tun_fwd_ifname,
 		    (char *)NULL);
 		debug3("expanded LocalCommand: %s", options.local_command);
@@ -2270,7 +2279,7 @@ ssh_session2(struct ssh *ssh, struct passwd *pw)
 
 /* Loads all IdentityFile and CertificateFile keys */
 static void
-load_public_identity_files(struct passwd *pw)
+load_public_identity_files(const struct ssh_conn_info *cinfo)
 {
 	char *filename, *cp;
 	struct sshkey *public;
@@ -2327,8 +2336,7 @@ load_public_identity_files(struct passwd *pw)
 			continue;
 		}
 		cp = tilde_expand_filename(options.identity_files[i], getuid());
-		filename = default_client_percent_dollar_expand(cp,
-		    pw->pw_dir, host, options.user, pw->pw_name);
+		filename = default_client_percent_dollar_expand(cp, cinfo);
 		free(cp);
 		check_load(sshkey_load_public(filename, &public, NULL),
 		    filename, "pubkey");
@@ -2377,8 +2385,7 @@ load_public_identity_files(struct passwd *pw)
 	for (i = 0; i < options.num_certificate_files; i++) {
 		cp = tilde_expand_filename(options.certificate_files[i],
 		    getuid());
-		filename = default_client_percent_dollar_expand(cp,
-		    pw->pw_dir, host, options.user, pw->pw_name);
+		filename = default_client_percent_dollar_expand(cp, cinfo);
 		free(cp);
 
 		check_load(sshkey_load_public(filename, &public, NULL),
