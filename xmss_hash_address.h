@@ -4,7 +4,7 @@
 hash_address.h version 20160722
 Andreas Hülsing
 Joost Rijneveld
-Public domain.
+CC0 1.0 Universal Public Domain Dedication.
 */
 
 #ifdef HAVE_STDINT_H

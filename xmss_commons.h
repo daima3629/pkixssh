@@ -4,7 +4,7 @@
 xmss_commons.h 20160722
 Andreas Hülsing
 Joost Rijneveld
-Public domain.
+CC0 1.0 Universal Public Domain Dedication.
 */
 #ifndef XMSS_COMMONS_H
 #define XMSS_COMMONS_H

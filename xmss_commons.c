@@ -3,7 +3,7 @@
 xmss_commons.c 20160722
 Andreas Hülsing
 Joost Rijneveld
-Public domain.
+CC0 1.0 Universal Public Domain Dedication.
 */
 
 #include "includes.h"
