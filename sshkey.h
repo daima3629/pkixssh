@@ -336,7 +336,19 @@ int ssh_xmss_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 int ssh_xmss_verify(const struct sshkey *key,
     const u_char *signature, size_t signaturelen,
     const u_char *data, size_t datalen, u_int compat);
-#endif
+
+# ifdef WITH_OPENSSL
+int	sshbuf_write_pub_rsa(struct sshbuf *buf, const struct sshkey *key);
+int	sshbuf_write_pub_rsa_inv(struct sshbuf *buf, const struct sshkey *key);
+int	sshbuf_write_priv_rsa(struct sshbuf *buf, const struct sshkey *key);
+int	sshbuf_write_pub_dsa(struct sshbuf *buf, const struct sshkey *key);
+int	sshbuf_write_priv_dsa(struct sshbuf *buf, const struct sshkey *key);
+#  ifdef OPENSSL_HAS_ECC
+int	sshbuf_write_pub_ecdsa(struct sshbuf *buf, const struct sshkey *key);
+int	sshbuf_write_priv_ecdsa(struct sshbuf *buf, const struct sshkey *key);
+#  endif /* OPENSSL_HAS_ECC */
+# endif /* WITH_OPENSSL */
+#endif /* SSHKEY_INTERNAL */
 
 #if !defined(WITH_OPENSSL)
 # undef RSA

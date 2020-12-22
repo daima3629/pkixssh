@@ -82,6 +82,7 @@ LIBOPENSSH_OBJS=\
 	ssherr.o \
 	sshbuf.o \
 	sshkey.o \
+	sshkey-crypto.o \
 	sshbuf-getput-basic.o \
 	sshbuf-misc.o \
 	sshbuf-getput-crypto.o \
