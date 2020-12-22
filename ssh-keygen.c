@@ -2933,7 +2933,7 @@ main(int argc, char **argv)
 	}
 
 #ifdef OPENSSL_FIPS
-	if (FIPS_mode())
+	if (FIPS_mode()) {
 		if (private_key_format == SSHKEY_PRIVATE_OPENSSH)
 			fatal("OpenSSH proprietary key format is not allowed in FIPS mode");
 		if (private_key_format == SSHKEY_PRIVATE_PEM) {
