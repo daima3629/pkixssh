@@ -165,8 +165,6 @@ struct sshkey_sig_details {
 
 struct sshkey	*sshkey_new(int);
 void		 sshkey_free(struct sshkey *);
-int		 sshrsa_equal_public(const RSA*, const RSA*);
-int		 sshdsa_equal_public(const DSA*, const DSA*);
 int		 sshkey_equal_public(const struct sshkey *,
     const struct sshkey *);
 int		 sshkey_equal(const struct sshkey *, const struct sshkey *);
@@ -368,6 +366,13 @@ int	sshbuf_write_priv_ecdsa(struct sshbuf *buf, const struct sshkey *key);
 #  endif /* OPENSSL_HAS_ECC */
 # endif /* WITH_OPENSSL */
 #endif /* SSHKEY_INTERNAL */
+
+/*TODO internal*/
+int	sshkey_equal_public_rsa(const struct sshkey *, const struct sshkey *);
+int	sshkey_equal_public_dsa(const struct sshkey *, const struct sshkey *);
+#  ifdef OPENSSL_HAS_ECC
+int	sshkey_equal_public_ecdsa(const struct sshkey *, const struct sshkey *);
+#  endif /* OPENSSL_HAS_ECC */
 
 #if !defined(WITH_OPENSSL)
 # undef RSA

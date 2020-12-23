@@ -441,45 +441,13 @@ x509_match(const struct sshkey *key, const struct sshkey *found) {
 	 * compare by distinguished name.
 	 */
 	switch(found->type) {
-	case KEY_RSA: {
-		return sshrsa_equal_public(key->rsa, found->rsa);
-		} break;
-	case KEY_DSA: {
-		return sshdsa_equal_public(key->dsa, found->dsa);
-		} break;
+	case KEY_RSA:
+		return sshkey_equal_public_rsa(key, found);
+	case KEY_DSA:
+		return sshkey_equal_public_dsa(key, found);
 #ifdef OPENSSL_HAS_ECC
-	case KEY_ECDSA: {
-		BN_CTX *bnctx;
-
-		if (key->ecdsa == NULL ||
-		    found->ecdsa == NULL ||
-		    EC_KEY_get0_public_key(key->ecdsa) == NULL ||
-		    EC_KEY_get0_public_key(found->ecdsa) == NULL
-		)
-			return 0;
-
-		bnctx = BN_CTX_new();
-		if (bnctx == NULL) return 0;
-
-		if (EC_GROUP_cmp(
-			EC_KEY_get0_group(key->ecdsa),
-			EC_KEY_get0_group(found->ecdsa),
-			bnctx
-		    ) != 0 ||
-		    EC_POINT_cmp(
-			EC_KEY_get0_group(key->ecdsa),
-			EC_KEY_get0_public_key(key->ecdsa),
-			EC_KEY_get0_public_key(found->ecdsa),
-			bnctx
-		    ) != 0
-		) {
-			BN_CTX_free(bnctx);
-			return 0;
-		}
-
-		BN_CTX_free(bnctx);
-		return 1;
-		} break;
+	case KEY_ECDSA:
+		return sshkey_equal_public_ecdsa(key, found);
 #endif /* OPENSSL_HAS_ECC */
 	}
 

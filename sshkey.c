@@ -763,58 +763,6 @@ cert_compare(struct sshkey_cert *a, struct sshkey_cert *b)
 	return 1;
 }
 
-int
-sshrsa_equal_public(const RSA* a, const RSA* b) {
-	if (a == NULL || b == NULL)
-		return 0;
-
-{
-	const BIGNUM *a_n = NULL, *a_e = NULL;
-	const BIGNUM *b_n = NULL, *b_e = NULL;
-
-	RSA_get0_key(a, &a_n, &a_e, NULL);
-	RSA_get0_key(b, &b_n, &b_e, NULL);
-
-	if (BN_cmp(a_e, b_e) != 0 ||
-	    BN_cmp(a_n, b_n) != 0
-	)
-		return 0;
-}
-	return 1;
-}
-
-int
-sshdsa_equal_public(const DSA* a, const DSA* b) {
-	if (a == NULL || b == NULL)
-		return 0;
-
-{
-	const BIGNUM *a_p = NULL, *a_q = NULL, *a_g = NULL;
-	const BIGNUM *b_p = NULL, *b_q = NULL, *b_g = NULL;
-
-	DSA_get0_pqg(a, &a_p, &a_q, &a_g);
-	DSA_get0_pqg(b, &b_p, &b_q, &b_g);
-
-	if ((BN_cmp(a_p, b_p) != 0) ||
-	    (BN_cmp(a_q, b_q) != 0) ||
-	    (BN_cmp(a_g, b_g) != 0)
-	)
-		return 0;
-}
-{
-	const BIGNUM *a_pub_key = NULL;
-	const BIGNUM *b_pub_key = NULL;
-
-	DSA_get0_key(a, &a_pub_key, NULL);
-	DSA_get0_key(b, &b_pub_key, NULL);
-
-	if (BN_cmp(a_pub_key, b_pub_key) != 0)
-		return 0;
-}
-
-	return 1;
-}
-
 /*
  * Compare public portions of key only, allowing comparisons between
  * certificates and plain keys too.
@@ -840,24 +788,14 @@ sshkey_equal_public(const struct sshkey *a, const struct sshkey *b)
 #ifdef WITH_OPENSSL
 	case KEY_RSA_CERT:
 	case KEY_RSA:
-		return sshrsa_equal_public(a->rsa, b->rsa);
+		return sshkey_equal_public_rsa(a, b);
 	case KEY_DSA_CERT:
 	case KEY_DSA:
-		return sshdsa_equal_public(a->dsa, b->dsa);
+		return sshkey_equal_public_dsa(a, b);
 # ifdef OPENSSL_HAS_ECC
 	case KEY_ECDSA_CERT:
 	case KEY_ECDSA:
-		if (a->ecdsa == NULL || b->ecdsa == NULL ||
-		    EC_KEY_get0_public_key(a->ecdsa) == NULL ||
-		    EC_KEY_get0_public_key(b->ecdsa) == NULL)
-			return 0;
-		if (EC_GROUP_cmp(EC_KEY_get0_group(a->ecdsa),
-		    EC_KEY_get0_group(b->ecdsa), NULL) != 0 ||
-		    EC_POINT_cmp(EC_KEY_get0_group(a->ecdsa),
-		    EC_KEY_get0_public_key(a->ecdsa),
-		    EC_KEY_get0_public_key(b->ecdsa), NULL) != 0)
-			return 0;
-		return 1;
+		return sshkey_equal_public_ecdsa(a, b);
 # endif /* OPENSSL_HAS_ECC */
 #endif /* WITH_OPENSSL */
 	case KEY_ED25519:
