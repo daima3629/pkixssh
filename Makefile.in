@@ -316,7 +316,7 @@ clean:	regressclean localclean
 distclean:	regressclean localclean
 	rm -f opensshd.init openssh.xml
 	rm -f Makefile buildpkg.sh config.h config.status
-	rm -f survey.sh openbsd-compat/regress/Makefile *~ 
+	rm -f survey.sh openbsd-compat/regress/Makefile *~
 	rm -rf autom4te.cache
 	(cd openbsd-compat && $(MAKE) distclean)
 	rm -f tests/regress-env

@@ -190,8 +190,8 @@ sshkey_load_private(const char *filename, const char *passphrase,
     struct sshkey **keyp, char **commentp)
 {
 	debug3_f("filename=%s", (filename ? filename : "?!?"));
-	
-	return sshkey_load_private_type_file(KEY_UNSPEC, filename, passphrase, 
+
+	return sshkey_load_private_type_file(KEY_UNSPEC, filename, passphrase,
 	    keyp, commentp);
 }
 

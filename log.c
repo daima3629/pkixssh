@@ -381,7 +381,7 @@ get_one_crypto_error(char *buf, size_t len) {
 	return buf;
 }
 
-void 
+void
 sshlog_cryptoerr_all(const char *file, const char *func, int line,
     LogLevel level
 ) {

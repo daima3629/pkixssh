@@ -105,7 +105,6 @@ case "$1" in
 		# Create keys if necessary
 		do_rsa_keygen;
 		do_dsa_keygen;
-		
 		echo -n "Starting sshd: "
 		if [ ! -f $PID_FILE ] ; then
 			sshd $OPTIONS
