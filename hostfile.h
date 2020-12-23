@@ -1,4 +1,4 @@
-/* $OpenBSD: hostfile.h,v 1.26 2020/06/26 05:02:03 dtucker Exp $ */
+/* $OpenBSD: hostfile.h,v 1.28 2020/12/20 23:36:51 djm Exp $ */
 
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
@@ -32,7 +32,10 @@ struct hostkey_entry {
 struct hostkeys;
 
 struct hostkeys *init_hostkeys(void);
-void	 load_hostkeys(struct hostkeys *, const char *, const char *);
+void	 load_hostkeys(struct hostkeys *, const char *,
+    const char *);
+void	 load_hostkeys_file(struct hostkeys *, const char *,
+    const char *, FILE *);
 void	 free_hostkeys(struct hostkeys *);
 
 HostStatus check_key_in_hostkeys(struct hostkeys *, struct sshkey *,
@@ -103,7 +106,11 @@ struct hostkey_foreach_line {
 typedef int hostkeys_foreach_fn(struct hostkey_foreach_line *l, void *ctx);
 
 /* Iterate over a hostkeys file */
-int hostkeys_foreach(const char *path, hostkeys_foreach_fn *callback, void *ctx,
+int hostkeys_foreach(const char *path,
+    hostkeys_foreach_fn *callback, void *ctx,
+    const char *host, const char *ip, u_int options);
+int hostkeys_foreach_file(const char *path, FILE *f,
+    hostkeys_foreach_fn *callback, void *ctx,
     const char *host, const char *ip, u_int options);
 
 void hostfile_create_user_ssh_dir(const char *, int);
