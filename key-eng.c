@@ -25,6 +25,8 @@
 #include "includes.h"
 
 #include <string.h>
+#include <errno.h>
+
 #include <openssl/ui.h>
 #ifdef USE_OPENSSL_STORE2
 # include <openssl/store.h>
@@ -683,55 +685,63 @@ process_engconfig_line(char *line, const char *filename, int linenum) {
 
 	/* ignore leading whitespace */
 	s = line;
-	if (*s == '\0')
-		return(1);
+	if (*s == '\0') return 1;
 	keyword = strdelim(&s);
-	if (keyword == NULL)
-		return(1);
+	if (keyword == NULL) return 1;
 	if (*keyword == '\0')
 		keyword = strdelim(&s);
-	if (keyword == NULL)
-		return(1);
+	if (keyword == NULL) return 1;
 
 	/* ignore comments */
-	if (*keyword == '#')
-		return(1);
+	if (*keyword == '#') return 1;
 
 	if (strcasecmp(keyword, "engine") == 0) {
 		arg = strdelim(&s);
 		if (!arg || *arg == '\0') {
-			fatal("%.200s line %d: missing engine identifier"
+			error("%.200s line %d: missing engine identifier"
 			    , filename, linenum);
+			ret = 0;
 			goto done;
 		}
 
 		e = ssh_engine_setup(arg);
-		if (e == NULL)
-			fatal("%.200s line %d: cannot load engine %s",
+		if (e == NULL) {
+			error("%.200s line %d: cannot load engine %s",
 			    filename, linenum, arg);
-		if (eng_name != NULL)
-			free(eng_name);
+			ret = 0;
+			goto done;
+		}
+		free(eng_name);
 		eng_name = xstrdup(arg); /*fatal on error*/
 		r = sshbuf_put_cstring(eng_list, eng_name);
-		if (r != 0)
-			fatal_fr(r, "buffer error");
+		if (r != 0) {
+			error_fr(r, "buffer error");
+			ret = 0;
+			goto done;
+		}
 	}
 	else {
-		if (eng_name == NULL)
-			fatal("%.200s line %d: engine is not specified"
+		if (eng_name == NULL) {
+			error("%.200s line %d: engine is not specified"
 			    , filename, linenum);
+			ret = 0;
+			goto done;
+		}
 
 		e = ENGINE_by_id(eng_name);
-		if (e == NULL)
-			fatal("%.200s line %d: engine(%s) not found"
+		if (e == NULL) {
+			error("%.200s line %d: engine(%s) not found"
 			    , filename, linenum, eng_name);
+			ret = 0;
+			goto done;
+		}
 
 		arg = strdelim(&s);
 
 		ctrl_ret = ENGINE_ctrl_cmd_string(e, keyword, arg, 0);
 		if (!ctrl_ret) {
 			error_crypto("ENGINE_ctrl_cmd_string");
-			fatal("%.200s line %d: engine(%s) command fail"
+			error("%.200s line %d: engine(%s) command fail"
 			    , filename, linenum, eng_name);
 			ret = 0;
 		}
@@ -741,11 +751,13 @@ process_engconfig_line(char *line, const char *filename, int linenum) {
 
 done:
 	/* check that there is no garbage at end of line */
-	if ((arg = strdelim(&s)) != NULL && *arg != '\0')
-		fatal("%.200s line %d: garbage at end of line - '%.200s'.",
+	if ((arg = strdelim(&s)) != NULL && *arg != '\0') {
+		error("%.200s line %d: garbage at end of line - '%.200s'.",
 		    filename, linenum, arg);
+		ret = 0;
+	}
 
-	return(ret);
+	return ret;
 }
 
 
@@ -755,10 +767,10 @@ done:
  */
 int/*bool*/
 process_engconfig_file(const char *filename) {
+	int ret = 1; /*true on empty file*/
 	FILE *f;
-	char line[1024];
-	int linenum;
-	int flag = 1;
+
+	debug3("reading engine configuration options from '%s'", filename);
 
 	f = fopen(filename, "r");
 	if (f == NULL) return 0;
@@ -766,26 +778,28 @@ process_engconfig_file(const char *filename) {
 	{/*always check permissions on user engine file*/
 		char errmsg[1024];
 		if (safe_usr_fileno(fileno(f), filename,
-		    errmsg, sizeof(errmsg)) == -1)
-			fatal("%s", errmsg);
+		    errmsg, sizeof(errmsg)) == -1) {
+			error("%s", errmsg);
+			ret = 0;
+			goto done;
+		}
 	}
 
-	debug("reading engine configuration options '%s'",
-	    filename);
-
-	linenum = 0;
-	while (fgets(line, sizeof(line), f)) {
+{	char line[1024];
+	int linenum = 0;
+	while (fgets(line, sizeof(line), f) != NULL) {
 		linenum++;
-		flag = process_engconfig_line(line, filename, linenum);
-		if (!flag) break;
+		ret = process_engconfig_line(line, filename, linenum);
+		if (!ret) break;
 	}
+}
 
+done:
+{	int oerrno = errno;
 	fclose(f);
-	if (!flag)
-		fatal("%s: terminating, bad engine option on line %d",
-		    filename, linenum);
-
-	return 1;
+	errno = oerrno;
+}
+	return ret;
 }
 #endif /*def USE_OPENSSL_ENGINE*/
 
