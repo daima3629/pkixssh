@@ -1316,6 +1316,24 @@ match_cfg_line(char **condition, int line, struct connection_info *ci)
 	return result;
 }
 
+static int
+parse_time(const char *arg, const char *filename, int linenum)
+{
+	long t = convtime(arg);
+
+	if (t == -1) {
+		error("%s line %d: invalid time value.", filename, linenum);
+		return -1;
+	}
+#if SIZEOF_LONG_INT > SIZEOF_INT
+	if (t > INT_MAX) {
+		error("%s line %d: time value too high.", filename, linenum);
+		return -1;
+	}
+#endif
+	return (int)t; /*save cast*/
+}
+
 #define WHITESPACE " \t\r\n"
 
 /* Multistate option parsing */
@@ -1612,17 +1630,8 @@ parse_string:
 		if (!arg || *arg == '\0')
 			fatal("%s line %d: missing time value.",
 			    filename, linenum);
-	{	long t = convtime(arg);
-		if (t == -1)
-			fatal("%s line %d: invalid time value.",
-			    filename, linenum);
-	#if SIZEOF_LONG_INT > SIZEOF_INT
-		if (t > INT_MAX)
-			fatal("%s line %d: time value too high.",
-			    filename, linenum);
-	#endif
-		value = (int)t; /*save cast*/
-	}
+		value = parse_time(arg, filename, linenum);
+		if (value == -1) return -1;
 		if (*activep && *intptr == -1)
 			*intptr = value;
 		break;

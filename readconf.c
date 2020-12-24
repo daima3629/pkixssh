@@ -792,6 +792,24 @@ parse_token(const char *cp, const char *filename, int linenum,
 	return oBadOption;
 }
 
+static int
+parse_time(const char *arg, const char *filename, int linenum)
+{
+	long t = convtime(arg);
+
+	if (t == -1) {
+		error("%s line %d: invalid time value.", filename, linenum);
+		return -1;
+	}
+#if SIZEOF_LONG_INT > SIZEOF_INT
+	if (t > INT_MAX) {
+		error("%s line %d: too high time value.", filename, linenum);
+		return -1;
+	}
+#endif
+	return (int)t;  /*save cast*/
+}
+
 /* Multistate option parsing */
 struct multistate {
 	char *key;
@@ -1127,16 +1145,8 @@ parse_time:
 		if (strcmp(arg, "none") == 0)
 			value = -1;
 		else {
-			long t = convtime(arg);
-			if (t == -1)
-				fatal("%s line %d: invalid time value.",
-				    filename, linenum);
-		#if SIZEOF_LONG_INT > SIZEOF_INT
-			if (t > INT_MAX)
-				fatal("%s line %d: too high time value.",
-				    filename, linenum);
-		#endif
-			value = (int)t;  /*save cast*/
+			value = parse_time(arg, filename, linenum);
+			if (value == -1) return -1;
 		}
 		if (*activep && *intptr == -1)
 			*intptr = value;
@@ -1722,17 +1732,9 @@ parse_keytypes:
 		     multistate_flag);
 		value2 = 0;	/* timeout */
 		if (value == -1) {
-			long t = convtime(arg);
-			if (t == -1)
-				fatal("%s line %d: bad ControlPersist time value.",
-				    filename, linenum);
-		#if SIZEOF_LONG_INT > SIZEOF_INT
-			if (t > INT_MAX)
-				fatal("%s line %d: too high ControlPersist time value.",
-				    filename, linenum);
-		#endif
 			value = 1;
-			value2 = (int)t; /*save cast*/
+			value2 = parse_time(arg, filename, linenum);
+			if (value2 == -1) return -1;
 		}
 		if (*activep && *intptr == -1) {
 			*intptr = value;
@@ -1986,29 +1988,13 @@ parse_keytypes:
 		     multistate_yesnoaskconfirm);
 		value2 = 0; /* unlimited lifespan by default */
 		if (value == 3 && arg2 != NULL) {
-			long t = convtime(arg2);
 			/* allow "AddKeysToAgent confirm 5m" */
-			if (t == -1)
-				fatal("%s line %d: invalid time value.",
-				    filename, linenum);
-		#if SIZEOF_LONG_INT > SIZEOF_INT
-			if (t > INT_MAX)
-				fatal("%s line %d: time value too high.",
-				    filename, linenum);
-		#endif
-			value2 = (int)t; /*save cast*/
+			value2 = parse_time(arg2, filename, linenum);
+			if (value2 == -1) return -1;
 		} else if (value == -1 && arg2 == NULL) {
-			long t = convtime(arg);
-			if (t == -1)
-				fatal("%s line %d: unsupported option",
-				    filename, linenum);
-		#if SIZEOF_LONG_INT > SIZEOF_INT
-			if (t > INT_MAX)
-				fatal("%s line %d: time value too high",
-				    filename, linenum);
-		#endif
-			value = 1;
-			value2 = (int)t; /*save cast*/
+			value2 = parse_time(arg, filename, linenum);
+			if (value2 == -1) return -1;
+			value = 1; /* yes */
 		} else if (value == -1 || arg2 != NULL) {
 			fatal("%s line %d: unsupported option",
 			    filename, linenum);
