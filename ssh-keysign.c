@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keysign.c,v 1.65 2020/10/18 11:32:02 djm Exp $ */
+/* $OpenBSD: ssh-keysign.c,v 1.66 2020/12/17 23:10:27 djm Exp $ */
 /*
  * Copyright (c) 2002 Markus Friedl.  All rights reserved.
  * Copyright (c) 2011-2020 Roumen Petrov.  All rights reserved.
@@ -292,7 +292,7 @@ main(int argc, char **argv)
 	initialize_options(&options);
 	(void)read_config_file(_PATH_HOST_CONFIG_FILE, pw, "", "",
 	    &options, 0, NULL);
-	fill_default_options(&options);
+	(void)fill_default_options(&options);
 	if (options.enable_ssh_keysign != 1)
 		fatal("%s: ssh-keysign not enabled in %s", __progname,
 		    _PATH_HOST_CONFIG_FILE);

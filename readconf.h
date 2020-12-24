@@ -1,4 +1,4 @@
-/* $OpenBSD: readconf.h,v 1.135 2020/10/16 13:26:13 djm Exp $ */
+/* $OpenBSD: readconf.h,v 1.136 2020/12/17 23:10:27 djm Exp $ */
 
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
@@ -243,8 +243,8 @@ typedef struct {
 
 char	*ssh_connection_hash(const char *thishost, const char *host,
     const char *portstr, const char *user);
-void     initialize_options(Options *);
-void     fill_default_options(Options *);
+void	 initialize_options(Options *);
+int	 fill_default_options(Options *);
 void	 fill_default_options_for_canonicalization(Options *);
 int	 process_config_line(Options *, struct passwd *, const char *,
     const char *, char *, const char *, int, int *, int);

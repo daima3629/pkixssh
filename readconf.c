@@ -2292,7 +2292,7 @@ fill_default_options_for_canonicalization(Options *options)
  * Called after processing other sources of option data, this fills those
  * options for which no value has been specified with their default values.
  */
-void
+int
 fill_default_options(Options * options)
 {
 	int r;
@@ -2454,26 +2454,26 @@ fill_default_options(Options * options)
 #define ASSEMBLE(what, defaults, all) \
 	do { \
 		char *def = match_filter_allowlist(defaults, all); \
-		if ((r = kex_assemble_names(&options->what, def, all)) != 0) \
-			fatal_fr(r, "%s", #what); \
+		r = kex_assemble_names(&options->what, def, all); \
 		free(def); \
+		free(all); \
+		if (r != 0) { \
+			error_fr(r, "%s", #what); \
+			return -1; \
+		} \
 	} while (0)
 
 	all = cipher_alg_list(',', 0);
 	ASSEMBLE(ciphers, KEX_CLIENT_ENCRYPT, all);
-	free(all);
 
 	all = mac_alg_list(',');
 	ASSEMBLE(macs, KEX_CLIENT_MAC, all);
-	free(all);
 
 	all = kex_alg_list(',');
 	ASSEMBLE(kex_algorithms, KEX_CLIENT_KEX, all);
-	free(all);
 
 	all = sshkey_alg_list(0, 1, 1, ',');
 	ASSEMBLE(ca_sign_algorithms, SSH_ALLOWED_CA_SIGALGS, all);
-	free(all);
 #undef ASSEMBLE
 }
 
@@ -2522,26 +2522,34 @@ fill_default_options(Options * options)
 		char *arg = options->hostkeyalgorithms;
 		if (*arg != '-' &&
 		    !sshkey_names_valid2(*arg == '+' || *arg == '^' ?
-		    arg + 1 : arg, 1))
-			fatal("Bad protocol 2 hostkey algorithms '%s'.",
+		    arg + 1 : arg, 1)) {
+			error("Bad protocol 2 hostkey algorithms '%s'.",
 			    options->hostkeyalgorithms);
+			return -1;
+		}
 	}
 
 	if (options->hostbased_algorithms != NULL) {
-		if (!sshkey_names_valid2(options->hostbased_algorithms, 1))
-			fatal("Bad protocol 2 hostbased key algorithms '%s'.",
+		if (!sshkey_names_valid2(options->hostbased_algorithms, 1)) {
+			error("Bad protocol 2 hostbased key algorithms '%s'.",
 			    options->hostbased_algorithms);
+			return -1;
+		}
 	} else
 		options->hostbased_algorithms = xstrdup("*");
 	options->hostbased_key_types = xstrdup(options->hostbased_algorithms); /* for compatibility */
 
 	if (options->pubkey_algorithms != NULL) {
-		if (!sshkey_names_valid2(options->pubkey_algorithms, 1))
-			fatal("Bad protocol 2 public key algorithms '%s'.",
+		if (!sshkey_names_valid2(options->pubkey_algorithms, 1)) {
+			error("Bad protocol 2 public key algorithms '%s'.",
 			    options->pubkey_algorithms);
+			return -1;
+		}
 	} else
 		options->pubkey_algorithms = xstrdup("*");
 	options->pubkey_key_types = xstrdup(options->pubkey_algorithms); /* for compatibility */
+
+	return 0;
 }
 
 struct fwdarg {
