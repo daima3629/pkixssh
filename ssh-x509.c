@@ -2109,43 +2109,24 @@ xkey_validate_cert(const struct sshkey *k) {
 u_int
 ssh_x509_key_size(const struct sshkey *key) {
 	EVP_PKEY *pkey;
-	int k = 0;
+	int k = 0, key_id;
 
 	if (!X509KEY_CHECK(key)) goto done;
 
 	pkey = X509_get_pubkey(key->x509_data->cert);
 	if (pkey == NULL) goto done;
 
-	/* NOTE BN_num_bits returns int! */
-	switch(EVP_PKEY_base_id(pkey)) {
-	case EVP_PKEY_RSA: {
-		RSA *rsa;
-		const BIGNUM *n;
-
-		rsa = EVP_PKEY_get0_RSA(pkey);
-		RSA_get0_key(rsa, &n, NULL, NULL);
-		k = BN_num_bits(n);
-		} break;
-	case EVP_PKEY_DSA: {
-		DSA *dsa;
-		const BIGNUM *p;
-
-		dsa = EVP_PKEY_get0_DSA(pkey);
-		DSA_get0_pqg(dsa, &p, NULL, NULL);
-		k = BN_num_bits(p);
-		} break;
+	key_id = EVP_PKEY_base_id(pkey);
+	switch (key_id) {
+	case EVP_PKEY_RSA:
+	case EVP_PKEY_DSA:
 #ifdef OPENSSL_HAS_ECC
-	case EVP_PKEY_EC: {
-		int     ecdsa_nid;
-		{
-			EC_KEY *ecdsa = EVP_PKEY_get0_EC_KEY(pkey);
-			ecdsa_nid = sshkey_ecdsa_key_to_nid(ecdsa);
-		}
-		k = sshkey_curve_nid_to_bits(ecdsa_nid);
-		} break;
+	case EVP_PKEY_EC:
 #endif
+		k = EVP_PKEY_bits(pkey);
+		break;
 	default:
-		fatal_f("unsupported EVP_PKEY type %d", EVP_PKEY_base_id(pkey));
+		fatal_f("unsupported EVP_PKEY type %d", key_id);
 		/*unreachable code*/
 	}
 	EVP_PKEY_free(pkey);
