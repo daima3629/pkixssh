@@ -2823,12 +2823,27 @@ parse_jump(const char *s, Options *o, int active)
 int
 parse_ssh_uri(const char *uri, char **userp, char **hostp, int *portp)
 {
-	char *path;
-	int r;
+	char *user = NULL, *host = NULL, *path = NULL;
+	int r, port;
 
-	r = parse_uri("ssh", uri, userp, hostp, portp, &path);
+	r = parse_uri("ssh", uri, &user, &host, &port, &path);
 	if (r == 0 && path != NULL)
 		r = -1;		/* path not allowed */
+	if (r == 0) {
+		if (userp != NULL) {
+			*userp = user;
+			user = NULL;
+		}
+		if (hostp != NULL) {
+			*hostp = host;
+			host = NULL;
+		}
+		if (portp != NULL)
+			*portp = port;
+	}
+	free(user);
+	free(host);
+	free(path);
 	return r;
 }
 
