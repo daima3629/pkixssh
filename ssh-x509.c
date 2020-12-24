@@ -951,24 +951,35 @@ done:
 
 
 static int
-x509key_check(const char* method, const struct sshkey *key) {
+x509key_check(const char *file, const char *func, int line,
+	const struct sshkey *key
+) {
 	SSH_X509 *xd;
 
-	if (key == NULL)
-		{ error("%.50s: no key", method); return 0; }
-
-	if (!sshkey_is_x509(key))
-		{ error("%.50s: cannot handle key type %d", method, key->type); return 0; }
+	if (key == NULL) {
+		sshlog_f(file, func, line, SYSLOG_LEVEL_ERROR,
+		    "no key");
+		return 0;
+	}
 
 	xd = key->x509_data;
-	if (xd == NULL)
-		{ error("%.50s: no X.509 identity", method); return 0; }
+	if (xd == NULL) {
+		sshlog_f(file, func, line, SYSLOG_LEVEL_ERROR,
+		    "no X.509 identity");
+		return 0;
+	}
 
-	if (xd->cert == NULL)
-		{ error("%.50s: no X.509 certificate", method); return 0; }
+	if (xd->cert == NULL) {
+		sshlog_f(file, func, line, SYSLOG_LEVEL_ERROR,
+		    "no X.509 certificate");
+		return 0;
+	}
 
 	return 1;
 }
+
+#define X509KEY_CHECK(key) \
+	x509key_check(__FILE__, __func__, __LINE__, key)
 
 
 static int
@@ -1085,7 +1096,7 @@ x509key_move_identity(struct sshkey *from, struct sshkey *to) {
 	 * plain public key.
 	 * NOTE X.509 certificate may contain only distinguished name!
 	 */
-	if (!x509key_check("move_identity", from)) return;
+	if (!X509KEY_CHECK(from)) return;
 
 	SSH_X509_free(to->x509_data);
 	to->x509_data = from->x509_data;
@@ -1103,7 +1114,7 @@ x509key_copy_identity(const struct sshkey *from, struct sshkey *to) {
 
 	if (!sshkey_is_x509(from)) return;
 
-	if (!x509key_check("copy_identity", from))
+	if (!X509KEY_CHECK(from))
 		fatal_f("no X.509 identity");
 
 	xd = to->x509_data;
@@ -1166,7 +1177,7 @@ xkey_to_buf2(const SSHX509KeyAlgs *xkalg, const struct sshkey *key, struct sshbu
 	int   r;
 	u_int n;
 
-	if (!x509key_check("xkey_to_buf2", key)) return 0;
+	if (!X509KEY_CHECK(key)) return 0;
 
 	if (!check_rsa2048_sha256(xkalg, key))
 		return SSH_ERR_KEY_LENGTH;
@@ -1225,7 +1236,7 @@ char*
 x509key_subject(const struct sshkey *key) {
 	X509_NAME *dn;
 
-	if (!x509key_check("x509key_subject", key)) return NULL;
+	if (!X509KEY_CHECK(key)) return NULL;
 
 	/* match format used in Xkey_write_subject */
 	dn = X509_get_subject_name(key->x509_data->cert);
@@ -1262,7 +1273,7 @@ int
 Xkey_write_subject(const char *pkalg, const struct sshkey *key, FILE *f) {
 	BIO  *out;
 
-	if (!x509key_check("Xkey_write_subject", key)) return 0;
+	if (!X509KEY_CHECK(key)) return 0;
 
 	if (pkalg == NULL) pkalg = sshkey_ssh_name(key);
 
@@ -1489,7 +1500,7 @@ x509key_write_identity_bio_pem(
 	STACK_OF(X509) *chain;
 	int k;
 
-	if (!x509key_check("save_identity_pem", key)) return 0;
+	if (!X509KEY_CHECK(key)) return 0;
 
 	x = key->x509_data->cert;
 	flag = x509key_write_bio_cert(bio, x);
@@ -1523,8 +1534,8 @@ ssh_x509_equal(const struct sshkey *a, const struct sshkey *b) {
 	X509 *xa;
 	X509 *xb;
 
-	if (!x509key_check("ssh_x509_equal", a)) return 1;
-	if (!x509key_check("ssh_x509_equal", b)) return -1;
+	if (!X509KEY_CHECK(a)) return 1;
+	if (!X509KEY_CHECK(b)) return -1;
 
 	xa = a->x509_data->cert;
 	xb = b->x509_data->cert;
@@ -2079,7 +2090,7 @@ Xkey_verify(ssh_verify_ctx *ctx,
 
 int
 xkey_validate_cert(const struct sshkey *k) {
-	if (!x509key_check("verify_cert", k))
+	if (!X509KEY_CHECK(k))
 		return SSH_ERR_INVALID_ARGUMENT;
 
 	if (pssh_x509store_verify_cert == NULL) {
@@ -2100,7 +2111,7 @@ ssh_x509_key_size(const struct sshkey *key) {
 	EVP_PKEY *pkey;
 	int k = 0;
 
-	if (!x509key_check("key_size", key)) goto done;
+	if (!X509KEY_CHECK(key)) goto done;
 
 	pkey = X509_get_pubkey(key->x509_data->cert);
 	if (pkey == NULL) goto done;
@@ -2187,8 +2198,8 @@ done:
 int
 ssh_x509_cmp_cert(const struct sshkey *key1, const struct sshkey *key2) {
 	/* only dns.c call this function so skip checks ...
-	if (!x509key_check("cmp_cert", key1)) return -1;
-	if (!x509key_check("cmp_cert", key2)) return 1;
+	if (!X509KEY_CHECK(key1)) return -1;
+	if (!X509KEY_CHECK(key2)) return 1;
 	*/
 	return X509_cmp(key1->x509_data->cert, key2->x509_data->cert);
 }
