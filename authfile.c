@@ -308,7 +308,11 @@ sshkey_load_public(const char *filename, struct sshkey **keyp, char **commentp)
 
 	free(pubfile);
 }
-	return r;
+	if (r == 0) return 0;
+
+	/* pretend missing files */
+	errno = ENOENT;
+	return SSH_ERR_SYSTEM_ERROR;
 }
 
 /* Load the certificate associated with the named private key */
