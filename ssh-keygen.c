@@ -2792,10 +2792,13 @@ main(int argc, char **argv)
 			if (strcasecmp(optarg, "RFC4716") == 0 ||
 			    strcasecmp(optarg, "ssh2") == 0) {
 				convert_format = FMT_RFC4716;
+				/*explicitly preset default key format*/
+				private_key_format = SSHKEY_PRIVATE_PKCS8;
 				break;
 			}
 			if (strcasecmp(optarg, "PKCS8") == 0) {
 				convert_format = FMT_PKCS8;
+				/*explicitly preset default key format*/
 				private_key_format = SSHKEY_PRIVATE_PKCS8;
 				break;
 			}
@@ -2805,6 +2808,8 @@ main(int argc, char **argv)
 				break;
 			}
 			if (strcasecmp(optarg, "OpenSSH") == 0) {
+				/*explicitly preset default conversion format*/
+				convert_format = FMT_RFC4716;
 				private_key_format = SSHKEY_PRIVATE_OPENSSH;
 				break;
 			}

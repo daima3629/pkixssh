@@ -26,7 +26,7 @@ check_fingerprint () {
 	rm -f $OBJ/$t-fgp
 }
 
-for fmt in RFC4716 PKCS8 PEM '' ; do
+for fmt in RFC4716 PKCS8 PEM OpenSSH ; do
 	for t in $SSH_KEYTYPES ; do
 		trace "generating $t key in '$fmt' format"
 		rm -f $OBJ/$t-key*
@@ -40,14 +40,8 @@ for fmt in RFC4716 PKCS8 PEM '' ; do
 		ssh-ed25519|*openssh.com) $customfmt || continue ;;
 		esac
 		comment="foo bar"
-		fmtarg=
-		if test -z "$fmt" ; then
-		  fmtarg="-o"
-		else
-		  fmtarg="-m $fmt"
-		fi
-		$SSHKEYGEN $fmtarg -N '' -C "$comment" \
-		    -t $t -f $OBJ/$t-key >/dev/null 2>&1 || \
+		$SSHKEYGEN -m $fmt -N '' -C "$comment" \
+		    -t $t -f $OBJ/$t-key >/dev/null || \
 			fatal "keygen of $t in format $fmt failed"
 		check_fingerprint $OBJ/$t-key "$comment"
 		check_fingerprint $OBJ/$t-key.pub "$comment"
