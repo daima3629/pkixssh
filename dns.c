@@ -504,6 +504,7 @@ next:
  */
 int
 verify_host_key_dns(const char *hostname, struct sockaddr *address,
+    const struct ssh_conn_info *cinfo,
     struct sshkey *hostkey, int *flags)
 {
 	u_int counter;
@@ -521,6 +522,7 @@ verify_host_key_dns(const char *hostname, struct sockaddr *address,
 	size_t dnskey_digest_len;
 
 	UNUSED(address);
+	UNUSED(cinfo);
 	*flags = 0;
 
 	debug3_f("...");

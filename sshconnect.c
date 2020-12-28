@@ -1,4 +1,4 @@
-/* $OpenBSD: sshconnect.c,v 1.347 2020/12/20 23:38:00 djm Exp $ */
+/* $OpenBSD: sshconnect.c,v 1.348 2020/12/20 23:40:19 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -751,7 +751,8 @@ path_in_hostfiles(const char *path, char **hostfiles, u_int num_hostfiles)
 #define RDONLY	1
 #define ROQUIET	2
 static int
-check_host_key(char *hostname, struct sockaddr *hostaddr, u_short port,
+check_host_key(char *hostname, const struct ssh_conn_info *cinfo,
+    struct sockaddr *hostaddr, u_short port,
     struct sshkey *host_key, int readonly,
     char **user_hostfiles, u_int num_user_hostfiles,
     char **system_hostfiles, u_int num_system_hostfiles)
@@ -901,8 +902,9 @@ check_host_key(char *hostname, struct sockaddr *hostaddr, u_short port,
 		if (options.host_key_alias == NULL && port != 0 &&
 		    port != SSH_DEFAULT_PORT) {
 			debug("checking without port identifier");
-			if (check_host_key(hostname, hostaddr, 0, host_key,
-			    ROQUIET, user_hostfiles, num_user_hostfiles,
+			if (check_host_key(hostname, cinfo, hostaddr, 0,
+			    host_key, ROQUIET,
+			    user_hostfiles, num_user_hostfiles,
 			    system_hostfiles, num_system_hostfiles) == 0) {
 				debug("found matching key w/out port");
 				break;
@@ -1216,7 +1218,8 @@ fail:
 /* returns 0 if key verifies or -1 if key does NOT verify */
 int
 verify_host_key(char *host, struct sockaddr *hostaddr,
-    char *hostkey_alg, struct sshkey *host_key)
+    char *hostkey_alg, struct sshkey *host_key,
+    const struct ssh_conn_info *cinfo)
 {
 	u_int i;
 	int r = -1, flags = 0;
@@ -1298,7 +1301,7 @@ verify_host_key(char *host, struct sockaddr *hostaddr,
 			goto out;
 		if (sshkey_is_cert(plain))
 			sshkey_drop_cert(plain);
-		if (verify_host_key_dns(host, hostaddr, plain, &flags) == 0) {
+		if (verify_host_key_dns(host, hostaddr, cinfo, plain, &flags) == 0) {
 			if (flags & DNS_VERIFY_FOUND) {
 				if (options.verify_host_key_dns == 1 &&
 				    flags & DNS_VERIFY_MATCH &&
@@ -1319,8 +1322,8 @@ verify_host_key(char *host, struct sockaddr *hostaddr,
 			}
 		}
 	}
-	r = check_host_key(host, hostaddr, options.port, host_key, RDRW,
-	    options.user_hostfiles, options.num_user_hostfiles,
+	r = check_host_key(host, cinfo, hostaddr, options.port, host_key,
+	    RDRW, options.user_hostfiles, options.num_user_hostfiles,
 	    options.system_hostfiles, options.num_system_hostfiles);
 
 out:
@@ -1344,7 +1347,8 @@ out:
  */
 void
 ssh_login(struct ssh *ssh, Sensitive *sensitive, const char *orighost,
-    struct sockaddr *hostaddr, u_short port, struct passwd *pw, int timeout_ms)
+    struct sockaddr *hostaddr, u_short port, struct passwd *pw, int timeout_ms,
+    const struct ssh_conn_info *cinfo)
 {
 	char *host;
 	char *server_user, *local_user;
@@ -1370,7 +1374,7 @@ ssh_login(struct ssh *ssh, Sensitive *sensitive, const char *orighost,
 	/* key exchange */
 	/* authenticate user */
 	debug("Authenticating to %s:%d as '%s'", host, port, server_user);
-	ssh_kex2(ssh, host, hostaddr, port);
+	ssh_kex2(ssh, host, hostaddr, port, cinfo);
 	ssh_userauth2(ssh, local_user, server_user, host, sensitive);
 	free(local_user);
 	/* do not free "host" as in ssh_kex2() (from sshconnect2.c)

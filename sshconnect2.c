@@ -1,4 +1,4 @@
-/* $OpenBSD: sshconnect2.c,v 1.336 2020/11/13 07:30:44 djm Exp $ */
+/* $OpenBSD: sshconnect2.c,v 1.338 2020/12/20 23:40:19 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Damien Miller.  All rights reserved.
@@ -88,21 +88,24 @@ extern Options options;
 u_char *session_id2 = NULL;
 u_int session_id2_len = 0;
 
-char *xxx_host;
-struct sockaddr *xxx_hostaddr;
+static char *xxx_host;
+static struct sockaddr *xxx_hostaddr;
+static const struct ssh_conn_info *xxx_conn_info;
 
 static int
 verify_host_key_callback(struct sshkey *hostkey, struct ssh *ssh)
 {
 	struct kex *kex = ssh->kex;
 
-	if (verify_host_key(xxx_host, xxx_hostaddr, kex->hostkey_alg, hostkey) == -1)
+	if (verify_host_key(xxx_host, xxx_hostaddr, kex->hostkey_alg, hostkey,
+	    xxx_conn_info) == -1)
 		fatal("Host key verification failed.");
 	return 0;
 }
 
 static char *
-order_hostkeyalgs(char *host, struct sockaddr *hostaddr, u_short port)
+order_hostkeyalgs(char *host, struct sockaddr *hostaddr, u_short port,
+    const struct ssh_conn_info *cinfo)
 {
 	char *oavail, *avail, *first, *last, *alg, *hostname, *ret;
 	size_t maxlen;
@@ -110,6 +113,7 @@ order_hostkeyalgs(char *host, struct sockaddr *hostaddr, u_short port)
 	int ktype;
 	u_int i;
 
+	UNUSED(cinfo);
 	/* Find all hostkeys for this hostname */
 	get_hostfile_hostname_ipaddr(host, hostaddr, port, &hostname, NULL);
 	hostkeys = init_hostkeys();
@@ -171,7 +175,8 @@ order_hostkeyalgs(char *host, struct sockaddr *hostaddr, u_short port)
 }
 
 void
-ssh_kex2(struct ssh *ssh, char *host, struct sockaddr *hostaddr, u_short port)
+ssh_kex2(struct ssh *ssh, char *host, struct sockaddr *hostaddr, u_short port,
+    const struct ssh_conn_info *cinfo)
 {
 	char *myproposal[PROPOSAL_MAX] = { KEX_CLIENT };
 	char *s;
@@ -180,6 +185,7 @@ ssh_kex2(struct ssh *ssh, char *host, struct sockaddr *hostaddr, u_short port)
 
 	xxx_host = host;
 	xxx_hostaddr = hostaddr;
+	xxx_conn_info = cinfo;
 
 	if ((s = kex_names_cat(options.kex_algorithms, "ext-info-c")) == NULL)
 		fatal_f("kex_names_cat");
@@ -220,7 +226,7 @@ ssh_kex2(struct ssh *ssh, char *host, struct sockaddr *hostaddr, u_short port)
 		/* Prefer algorithms that we already have keys for */
 		myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS] =
 		    compat_pkalg_proposal(
-		    order_hostkeyalgs(host, hostaddr, port));
+		    order_hostkeyalgs(host, hostaddr, port, cinfo));
 }
 
 	if (options.rekey_limit || options.rekey_interval)

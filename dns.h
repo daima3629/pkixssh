@@ -29,6 +29,8 @@
 #ifndef DNS_H
 #define DNS_H
 
+struct ssh_conn_info;
+
 enum sshfp_types {
 	SSHFP_KEY_RESERVED = 0,
 	SSHFP_KEY_RSA = 1,
@@ -82,7 +84,7 @@ enum dns_key_algo {
 #define DNS_VERIFY_SECURE	0x00000004
 
 int	verify_host_key_dns(const char *, struct sockaddr *,
-    struct sshkey *, int *);
+    const struct ssh_conn_info *, struct sshkey *, int *);
 int	export_dns_rr(const char *, struct sshkey *, FILE *, int);
 
 #endif /* DNS_H */
