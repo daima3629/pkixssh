@@ -59,7 +59,7 @@ sshdsa_verify_length(int bits) {
 
 /* caller must free result */
 static DSA_SIG*
-ssh_dss_pkey_sign(DSA *dsa, const u_char *data, u_int datalen)
+ssh_dss_sign_pkey(const struct sshkey *key, const u_char *data, u_int datalen)
 {
 	DSA_SIG *sig = NULL;
 
@@ -74,7 +74,7 @@ ssh_dss_pkey_sign(DSA *dsa, const u_char *data, u_int datalen)
 		return NULL;
 	}
 
-	EVP_PKEY_set1_DSA(pkey, dsa);
+	EVP_PKEY_set1_DSA(pkey, key->dsa);
 
 	slen = EVP_PKEY_size(pkey);
 	tsig = xmalloc(slen);	/*fatal on error*/
@@ -157,7 +157,7 @@ ssh_dss_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 	if (dlen == 0)
 		return SSH_ERR_INTERNAL_ERROR;
 
-	sig = ssh_dss_pkey_sign(key->dsa, data, datalen);
+	sig = ssh_dss_sign_pkey(key, data, datalen);
 	if (sig == NULL) {
 		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto out;
@@ -204,7 +204,7 @@ ssh_dss_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 
 
 static int
-ssh_dss_pkey_verify(DSA *dsa, DSA_SIG *sig, const u_char *data, u_int datalen)
+ssh_dss_verify_pkey(const struct sshkey *key, DSA_SIG *sig, const u_char *data, u_int datalen)
 {
 	int ret;
 	u_char *tsig = NULL;
@@ -226,7 +226,7 @@ ssh_dss_pkey_verify(DSA *dsa, DSA_SIG *sig, const u_char *data, u_int datalen)
 		ret = SSH_ERR_ALLOC_FAIL;
 		goto done;
 	}
-	EVP_PKEY_set1_DSA(pkey, dsa);
+	EVP_PKEY_set1_DSA(pkey, key->dsa);
 
 { /* now verify signature */
 	int ok;
@@ -356,7 +356,7 @@ parse_out:
 	}
 }
 
-	ret = ssh_dss_pkey_verify(key->dsa, sig, data, datalen);
+	ret = ssh_dss_verify_pkey(key, sig, data, datalen);
 
  out:
 	DSA_SIG_free(sig);
