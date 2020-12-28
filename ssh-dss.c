@@ -51,6 +51,12 @@
 #define INTBLOB_LEN	20
 #define SIGBLOB_LEN	(2*INTBLOB_LEN)
 
+int
+sshdsa_verify_length(int bits) {
+	return bits != SSH_DSA_BITS
+	    ? SSH_ERR_KEY_LENGTH : 0;
+}
+
 /* caller must free result */
 static DSA_SIG*
 ssh_dss_pkey_sign(DSA *dsa, const u_char *data, u_int datalen)

@@ -53,6 +53,7 @@
 #endif /* WITH_OPENSSL */
 
 #define SSH_RSA_MINIMUM_MODULUS_SIZE	1024
+#define SSH_DSA_BITS			1024
 #define SSH_KEY_MAX_SIGN_DATA_SIZE	(1 << 20)
 
 struct sshbuf;
@@ -294,6 +295,7 @@ int	sshkey_private_to_bio(struct sshkey *key, BIO *bio,
 
 int	sshrsa_verify_length(int bits);
 int	sshrsa_check_length(const RSA *rsa);
+int	sshdsa_verify_length(int bits);
 
 /* XXX should be internal, but defined in ssh-rsa.c
  * and used by ssh-keygen.c and sshkey.c */

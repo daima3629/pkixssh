@@ -230,8 +230,8 @@ type_bits_valid(int type, const char *name, u_int32_t *bitsp)
 #ifdef WITH_OPENSSL
 	switch (type) {
 	case KEY_DSA:
-		if (*bitsp != 1024)
-			fatal("Invalid DSA key length: must be 1024 bits");
+		if (*bitsp != SSH_DSA_BITS)
+			fatal("Invalid DSA key length: must be %d bits", SSH_DSA_BITS);
 		break;
 	case KEY_RSA:
 		if (*bitsp < SSH_RSA_MINIMUM_MODULUS_SIZE)

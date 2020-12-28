@@ -1672,8 +1672,8 @@ dsa_generate_private_key(u_int bits, DSA **dsap)
 
 	if (dsap == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;
-	if (bits != 1024)
-		return SSH_ERR_KEY_LENGTH;
+	ret = sshdsa_verify_length(bits);
+	if (ret != 0) return ret;
 	if ((private = DSA_new()) == NULL) {
 		ret = SSH_ERR_ALLOC_FAIL;
 		goto out;
