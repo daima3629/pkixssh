@@ -1887,6 +1887,10 @@ ssh_x509_verify(
 	debug3_f("compatibility: { 0x%08x, 0x%08x }",
 	    ctx->compat->datafellows, ctx->compat->extra);
 
+	if (dlen > INT_MAX)
+		return SSH_ERR_INVALID_ARGUMENT;
+	datalen = dlen;
+
 	loc = ssh_xkalg_nameind(ctx->alg, &xkalg, -1);
 	if (loc < 0) {
 		error_f("cannot handle algorithm"
@@ -1900,10 +1904,6 @@ ssh_x509_verify(
 		error_f("no 'X.509 public-key'");
 		return SSH_ERR_INVALID_ARGUMENT;
 	}
-
-	if (dlen > INT_MAX)
-		return SSH_ERR_INVALID_ARGUMENT;
-	datalen = dlen;
 
 	/* process signature */
 {	struct sshbuf *buf;
