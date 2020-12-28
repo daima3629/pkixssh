@@ -5489,7 +5489,6 @@ AC_CHECK_FUNCS([ \
   EVP_CIPHER_CTX_iv \
   EVP_CIPHER_meth_new \
   EVP_MD_CTX_new \
-  EVP_PKEY_get0_EC_KEY \
   RSA_meth_new \
   RSA_PKCS1_OpenSSL \
   X509_CRL_get0_lastUpdate \

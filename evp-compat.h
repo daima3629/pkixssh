@@ -778,16 +778,6 @@ EVP_PKEY_base_id(const EVP_PKEY *pkey) {
 #endif /*ndef HAVE_EVP_PKEY_BASE_ID */
 
 
-#ifndef HAVE_EVP_PKEY_GET0_EC_KEY
-/* OpenSSL >= 1.1 by commit "Add EVP_PKEY_get0_* functions." */
-#ifdef OPENSSL_HAS_ECC
-static inline EC_KEY* EVP_PKEY_get0_EC_KEY(const EVP_PKEY *pkey) { return pkey->pkey.ec ; }
-#endif
-static inline DSA*    EVP_PKEY_get0_DSA   (const EVP_PKEY *pkey) { return pkey->pkey.dsa; }
-static inline RSA*    EVP_PKEY_get0_RSA   (const EVP_PKEY *pkey) { return pkey->pkey.rsa; }
-#endif /*ndef HAVE_EVP_PKEY_GET0_EC_KEY*/
-
-
 #ifndef HAVE_EC_POINT_GET_AFFINE_COORDINATES		/* OpenSSL < 1.1.1 */
 #ifdef OPENSSL_HAS_ECC
 /* Functions are available even in 0.9.7* but EC is not activated
