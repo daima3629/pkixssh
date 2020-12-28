@@ -1839,7 +1839,11 @@ is set to
 .Cm ask ,
 then the user is asked to confirm the modifications to the known_hosts file.
 Confirmation is currently incompatible with
+.Cm BatchMode ,
 .Cm ControlPersist ,
+if hostkey is found in
+.Cm GlobalKnownHostsFile ,
+.Cm RemoteCommand ,
 and will be disabled if it is enabled.
 .Pp
 Presently, only
