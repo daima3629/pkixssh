@@ -345,6 +345,12 @@ void	sshkey_free_dsa(struct sshkey *key);
 void	sshkey_free_ecdsa(struct sshkey *key);
 #  endif /* OPENSSL_HAS_ECC */
 
+int	sshkey_dup_pub_rsa(const struct sshkey *from, struct sshkey *to);
+int	sshkey_dup_pub_dsa(const struct sshkey *from, struct sshkey *to);
+#  ifdef OPENSSL_HAS_ECC
+int	sshkey_dup_pub_ecdsa(const struct sshkey *from, struct sshkey *to);
+#  endif /* OPENSSL_HAS_ECC */
+
 int	sshbuf_read_pub_rsa(struct sshbuf *buf, struct sshkey *key);
 int	sshbuf_read_pub_rsa_inv(struct sshbuf *buf, struct sshkey *key);
 int	sshbuf_read_priv_rsa(struct sshbuf *buf, struct sshkey *key);

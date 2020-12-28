@@ -41,7 +41,7 @@ sshkey_new_rsa(struct sshkey *key) {
 		return NULL;
 	}
 	key->rsa = rsa;
- 	return key;
+	return key;
 }
 
 struct sshkey*
@@ -52,7 +52,7 @@ sshkey_new_dsa(struct sshkey *key) {
 		return NULL;
 	}
 	key->dsa = dsa;
- 	return key;
+	return key;
 }
 
 
@@ -76,7 +76,101 @@ sshkey_free_ecdsa(struct sshkey *key) {
 }
 #endif /* OPENSSL_HAS_ECC */
 
- 
+
+int
+sshkey_dup_pub_rsa(const struct sshkey *from, struct sshkey *to) {
+	int r;
+	const BIGNUM *k_n, *k_e;
+	BIGNUM *n_n = NULL, *n_e = NULL;
+
+	RSA_get0_key(from->rsa, &k_n, &k_e, NULL);
+
+	if ((n_n = BN_dup(k_n)) == NULL ||
+	    (n_e = BN_dup(k_e)) == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto out;
+	}
+	if (!RSA_set0_key(to->rsa, n_n, n_e, NULL)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto out;
+	}
+	n_n = n_e = NULL; /* transferred */
+
+	/* success */
+	r = 0;
+
+out:
+	BN_clear_free(n_n);
+	BN_clear_free(n_e);
+
+	return r;
+}
+
+int
+sshkey_dup_pub_dsa(const struct sshkey *from, struct sshkey *to) {
+	int r;
+	const BIGNUM *k_p, *k_q, *k_g, *k_pub_key;
+	BIGNUM *n_p = NULL, *n_q = NULL, *n_g = NULL, *n_pub_key = NULL;
+
+	DSA_get0_pqg(from->dsa, &k_p, &k_q, &k_g);
+	DSA_get0_key(from->dsa, &k_pub_key, NULL);
+
+	if ((n_p = BN_dup(k_p)) == NULL ||
+	    (n_q = BN_dup(k_q)) == NULL ||
+	    (n_g = BN_dup(k_g)) == NULL ||
+	    (n_pub_key = BN_dup(k_pub_key)) == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto out;
+	}
+	if (!DSA_set0_pqg(to->dsa, n_p, n_q, n_g)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto out;
+	}
+	n_p = n_q = n_g = NULL; /* transferred */
+	if (!DSA_set0_key(to->dsa, n_pub_key, NULL)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto out;
+	}
+	n_pub_key = NULL; /* transferred */
+
+	/* success */
+	r = 0;
+
+out:
+	BN_clear_free(n_p);
+	BN_clear_free(n_q);
+	BN_clear_free(n_g);
+	BN_clear_free(n_pub_key);
+
+	return r;
+}
+
+#ifdef OPENSSL_HAS_ECC
+int
+sshkey_dup_pub_ecdsa(const struct sshkey *from, struct sshkey *to) {
+	int r;
+
+	to->ecdsa_nid = from->ecdsa_nid;
+	to->ecdsa = EC_KEY_new_by_curve_name(from->ecdsa_nid);
+	if (to->ecdsa == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto out;
+	}
+	if (EC_KEY_set_public_key(to->ecdsa,
+	    EC_KEY_get0_public_key(from->ecdsa)) != 1) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto out;
+	}
+
+	/* success */
+	r = 0;
+
+out:
+	return r;
+}
+#endif /* OPENSSL_HAS_ECC */
+
+
 int/*bool*/
 sshkey_equal_public_rsa(const struct sshkey *ka, const struct sshkey *kb) {
 	const RSA *a, *b;

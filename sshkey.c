@@ -1902,83 +1902,20 @@ sshkey_from_private(const struct sshkey *k, struct sshkey **pkp)
 #ifdef WITH_OPENSSL
 	case KEY_DSA:
 	case KEY_DSA_CERT:
-		{
-		const BIGNUM *k_p = NULL, *k_q = NULL, *k_g = NULL, *k_pub_key = NULL;
-		BIGNUM *n_p = NULL, *n_q = NULL, *n_g = NULL, *n_pub_key = NULL;
-
-		DSA_get0_pqg(k->dsa, &k_p, &k_q, &k_g);
-		DSA_get0_key(k->dsa, &k_pub_key, NULL);
-
-		if ((n_p = BN_dup(k_p)) == NULL ||
-		    (n_q = BN_dup(k_q)) == NULL ||
-		    (n_g = BN_dup(k_g)) == NULL ||
-		    (n_pub_key = BN_dup(k_pub_key)) == NULL) {
-			r = SSH_ERR_ALLOC_FAIL;
-			goto clear_dsa;
-		}
-		if (!DSA_set0_pqg(n->dsa, n_p, n_q, n_g)) {
-			r = SSH_ERR_LIBCRYPTO_ERROR;
-			goto clear_dsa;
-		}
-		n_p = n_q = n_g = NULL; /* transferred */
-		if (!DSA_set0_key(n->dsa, n_pub_key, NULL)) {
-			r = SSH_ERR_LIBCRYPTO_ERROR;
-			goto clear_dsa;
-		}
-		/* n_pub_key = NULL; transferred */
-		break;
-
-		clear_dsa:
-			BN_clear_free(n_p);
-			BN_clear_free(n_q);
-			BN_clear_free(n_g);
-			BN_clear_free(n_pub_key);
-
-		goto out;
-		}
+		r = sshkey_dup_pub_dsa(k, n);
+		if (r != 0) goto out;
 		break;
 # ifdef OPENSSL_HAS_ECC
 	case KEY_ECDSA:
 	case KEY_ECDSA_CERT:
-		n->ecdsa_nid = k->ecdsa_nid;
-		n->ecdsa = EC_KEY_new_by_curve_name(k->ecdsa_nid);
-		if (n->ecdsa == NULL) {
-			r = SSH_ERR_ALLOC_FAIL;
-			goto out;
-		}
-		if (EC_KEY_set_public_key(n->ecdsa,
-		    EC_KEY_get0_public_key(k->ecdsa)) != 1) {
-			r = SSH_ERR_LIBCRYPTO_ERROR;
-			goto out;
-		}
+		r = sshkey_dup_pub_ecdsa(k, n);
+		if (r != 0) goto out;
 		break;
 # endif /* OPENSSL_HAS_ECC */
 	case KEY_RSA:
 	case KEY_RSA_CERT:
-		{
-		const BIGNUM *k_n = NULL, *k_e = NULL;
-		BIGNUM *n_n = NULL, *n_e = NULL;
-
-		RSA_get0_key(k->rsa, &k_n, &k_e, NULL);
-
-		if ((n_n = BN_dup(k_n)) == NULL ||
-		    (n_e = BN_dup(k_e)) == NULL) {
-			r = SSH_ERR_ALLOC_FAIL;
-			goto clear_rsa;
-		}
-		if (!RSA_set0_key(n->rsa, n_n, n_e, NULL)) {
-			r = SSH_ERR_LIBCRYPTO_ERROR;
-			goto clear_rsa;
-		}
-		/* n_n = n_e = NULL; transferred */
-		break;
-
-		clear_rsa:
-			BN_clear_free(n_n);
-			BN_clear_free(n_e);
-
-		goto out;
-		}
+		r = sshkey_dup_pub_rsa(k, n);
+		if (r != 0) goto out;
 		break;
 #endif /* WITH_OPENSSL */
 	case KEY_ED25519:
