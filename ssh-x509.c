@@ -623,7 +623,7 @@ x509_to_key(X509 *x509) {
 		key->type = KEY_RSA;
 		(void)ssh_x509_set_cert(key, x509, NULL);
 #ifdef DEBUG_PK
-		RSA_print_fp(stderr, key->rsa, 8);
+		sshkey_dump(key);
 #endif
 		break;
 
@@ -633,7 +633,7 @@ x509_to_key(X509 *x509) {
 		key->type = KEY_DSA;
 		(void)ssh_x509_set_cert(key, x509, NULL);
 #ifdef DEBUG_PK
-		DSA_print_fp(stderr, key->dsa, 8);
+		sshkey_dump(key);
 #endif
 		break;
 
@@ -660,7 +660,7 @@ x509_to_key(X509 *x509) {
 		}
 		(void)ssh_x509_set_cert(key, x509, NULL);
 #ifdef DEBUG_PK
-		sshkey_dump_ec_point(EC_KEY_get0_group(key->ecdsa), q);
+		sshkey_dump(key);
 #endif
 		} break;
 #endif /*def OPENSSL_HAS_ECC*/

@@ -211,7 +211,7 @@ sshkey_from_EVP_PKEY_RSA(EVP_PKEY *pk, struct sshkey *ret) {
 	ret->rsa = EVP_PKEY_get1_RSA(pk);
 	ret->type = KEY_RSA;
 #ifdef DEBUG_PK
-	RSA_print_fp(stderr, ret->rsa, 8);
+	sshkey_dump(ret);
 #endif
 	if (RSA_blinding_on(ret->rsa, NULL) != 1) {
 		error_f("RSA_blinding_on failed");
@@ -238,7 +238,7 @@ sshkey_from_EVP_PKEY_DSA(EVP_PKEY *pk, struct sshkey *ret) {
 	ret->dsa = EVP_PKEY_get1_DSA(pk);
 	ret->type = KEY_DSA;
 #ifdef DEBUG_PK
-	DSA_print_fp(stderr, ret->dsa, 8);
+	sshkey_dump(ret);
 #endif
 
 	return ret;
@@ -266,9 +266,6 @@ sshkey_from_EVP_PKEY_EC(EVP_PKEY *pk, struct sshkey *ret) {
 	}
 
 {	const EC_POINT *q = EC_KEY_get0_public_key(ret->ecdsa);
-#ifdef DEBUG_PK
-	sshkey_dump_ec_point(EC_KEY_get0_group(ret->ecdsa), q);
-#endif
 	if (q == NULL) {
 		error_f("cannot get public ec key");
 		goto err;
@@ -281,6 +278,9 @@ sshkey_from_EVP_PKEY_EC(EVP_PKEY *pk, struct sshkey *ret) {
 	}
 }
 }
+#ifdef DEBUG_PK
+	sshkey_dump(ret);
+#endif
 
 	return ret;
 

@@ -336,6 +336,10 @@ int ssh_xmss_verify(const struct sshkey *key,
     const u_char *data, size_t datalen, u_int compat);
 
 # ifdef WITH_OPENSSL
+#  ifdef DEBUG_PK
+void sshkey_dump(const struct sshkey *key);
+#  endif /* DEBUG_PK */
+
 struct sshkey*	sshkey_new_rsa(struct sshkey *key);
 struct sshkey*	sshkey_new_dsa(struct sshkey *key);
 

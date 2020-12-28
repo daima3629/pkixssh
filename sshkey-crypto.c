@@ -33,6 +33,26 @@
 #include "ssherr.h"
 
 
+#ifdef DEBUG_PK
+void
+sshkey_dump(const struct sshkey *key) {
+	switch (sshkey_type_plain(key->type)) {
+	case KEY_RSA:
+		RSA_print_fp(stderr, key->rsa, 0);
+		break;
+	case KEY_DSA:
+		DSA_print_fp(stderr, key->dsa, 0);
+		break;
+#ifdef OPENSSL_HAS_ECC
+	case KEY_ECDSA:
+		sshkey_dump_ec_key(key->ecdsa);
+		break;
+	}
+#endif /* OPENSSL_HAS_ECC */
+}
+#endif /* DEBUG_PK */
+
+
 struct sshkey*
 sshkey_new_rsa(struct sshkey *key) {
 	RSA *rsa = RSA_new();

@@ -1475,7 +1475,7 @@ noblob:
 		ret->rsa = k->rsa;
 		k->rsa = NULL;
 #ifdef DEBUG_PK
-		RSA_print_fp(stderr, ret->rsa, 8);
+		sshkey_dump(ret);
 #endif
 		break;
 	case KEY_DSA:
@@ -1483,7 +1483,7 @@ noblob:
 		ret->dsa = k->dsa;
 		k->dsa = NULL;
 #ifdef DEBUG_PK
-		DSA_print_fp(stderr, ret->dsa, 8);
+		sshkey_dump(ret);
 #endif
 		break;
 # ifdef OPENSSL_HAS_ECC
@@ -1494,7 +1494,7 @@ noblob:
 		k->ecdsa = NULL;
 		k->ecdsa_nid = -1;
 #ifdef DEBUG_PK
-		sshkey_dump_ec_key(ret->ecdsa);
+		sshkey_dump(ret);
 #endif
 		break;
 # endif /* OPENSSL_HAS_ECC */
@@ -2361,7 +2361,7 @@ sshkey_from_blob_internal(struct sshbuf *b, struct sshkey **keyp,
 		if ((ret = sshrsa_check_length(key->rsa)) != 0)
 			goto out;
 #ifdef DEBUG_PK
-		RSA_print_fp(stderr, key->rsa, 8);
+		sshkey_dump(key);
 #endif
 		break;
 	case KEY_DSA_CERT:
@@ -2379,7 +2379,7 @@ sshkey_from_blob_internal(struct sshbuf *b, struct sshkey **keyp,
 		ret = sshbuf_read_pub_dsa(b, key);
 		if (ret != 0) goto out;
 #ifdef DEBUG_PK
-		DSA_print_fp(stderr, key->dsa, 8);
+		sshkey_dump(key);
 #endif
 		break;
 # ifdef OPENSSL_HAS_ECC
@@ -2407,7 +2407,7 @@ sshkey_from_blob_internal(struct sshbuf *b, struct sshkey **keyp,
 			goto out;
 		}
 #ifdef DEBUG_PK
-		sshkey_dump_ec_point(EC_KEY_get0_group(key->ecdsa), q);
+		sshkey_dump(key);
 #endif
 		break;
 # endif /* OPENSSL_HAS_ECC */
@@ -4126,7 +4126,7 @@ sshkey_parse_private_pem_fileblob(struct sshbuf *blob, int type,
 		prv->rsa = EVP_PKEY_get1_RSA(pk);
 		prv->type = KEY_RSA;
 #ifdef DEBUG_PK
-		RSA_print_fp(stderr, prv->rsa, 8);
+		sshkey_dump(prv);
 #endif
 		if (RSA_blinding_on(prv->rsa, NULL) != 1) {
 			r = SSH_ERR_LIBCRYPTO_ERROR;
@@ -4143,7 +4143,7 @@ sshkey_parse_private_pem_fileblob(struct sshbuf *blob, int type,
 		prv->dsa = EVP_PKEY_get1_DSA(pk);
 		prv->type = KEY_DSA;
 #ifdef DEBUG_PK
-		DSA_print_fp(stderr, prv->dsa, 8);
+		sshkey_dump(prv);
 #endif
 #ifdef OPENSSL_HAS_ECC
 	} else if (EVP_PKEY_base_id(pk) == EVP_PKEY_EC &&
@@ -4164,8 +4164,7 @@ sshkey_parse_private_pem_fileblob(struct sshbuf *blob, int type,
 			goto out;
 		}
 # ifdef DEBUG_PK
-		if (prv != NULL && prv->ecdsa != NULL)
-			sshkey_dump_ec_key(prv->ecdsa);
+		sshkey_dump(prv);
 # endif
 #endif /* OPENSSL_HAS_ECC */
 	} else {
