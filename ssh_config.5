@@ -855,6 +855,9 @@ host key database, separated by whitespace.
 The default is
 .Pa /etc/ssh/ssh_known_hosts ,
 .Pa /etc/ssh/ssh_known_hosts2 .
+Setting the value to
+.Cm none
+disables the use of global host key database.
 .It Cm GSSAPIAuthentication
 Specifies whether user authentication based on GSSAPI is allowed.
 The default is
@@ -1891,6 +1894,9 @@ Specifies one or more files to use for the user
 host key database, separated by whitespace.
 Each file may use tilde notation to refer to the user's home directory,
 the tokens described in the
+Setting the value to
+.Cm none
+disables the use of user host key database.
 .Sx TOKENS
 section and environment variables as described in the
 .Sx ENVIRONMENT VARIABLES
