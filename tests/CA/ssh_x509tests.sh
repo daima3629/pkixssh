@@ -1,5 +1,5 @@
 #! /bin/sh
-# Copyright (c) 2002-2018 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2002-2020 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -73,11 +73,16 @@ SSH_ALGS_X509_DSA=
 SSH_EC_CURVES=
 SSH_EC_ALGS_PLAIN=
 SSH_ALGS_X509_EC=
+HAVE_EVP_SHA256=false
 
 for a in `$TEST_SSH_SSH -Q key` ; do
   case $a in
   x509v3-*-rsa)
     SSH_ALGS_X509_RSA="$SSH_ALGS_X509_RSA $a"
+    ;;
+  x509v3-rsa2048-sha256)
+    # TODO: SSH_ALGS_X509_RSA="$SSH_ALGS_X509_RSA $a"
+    HAVE_EVP_SHA256=:
     ;;
   x509v3-*-dss)
     SSH_ALGS_X509_DSA="$SSH_ALGS_X509_DSA $a"

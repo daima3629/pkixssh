@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2011-2018 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2011-2020 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -75,9 +75,17 @@ EOF
     # To read authorized keys we has to know other algorithms,
     # so let describe all of them with fake signature.
     case $alg in
-    x509v3-sign-rsa*) echo "X509KeyAlgorithm x509v3-ssh-rsa,rsa-sha1,fake-ssh-rsa"  ;;
+    x509v3-sign-rsa*) echo "X509KeyAlgorithm x509v3-ssh-rsa,rsa-sha1,fake-ssh-rsa"
+      if $HAVE_EVP_SHA256 ; then
+        echo "X509KeyAlgorithm x509v3-rsa2048-sha256,rsa2048-sha256,fake-ssh-rsa2"
+      fi
+    ;;
+    x509v3-ssh-rsa*)  echo "X509KeyAlgorithm x509v3-sign-rsa,rsa-sha1,fake-sign-rsa"
+      if $HAVE_EVP_SHA256 ; then
+        echo "X509KeyAlgorithm x509v3-rsa2048-sha256,rsa2048-sha256,fake-ssh-rsa2"
+      fi
+    ;;
     x509v3-sign-dss*) echo "X509KeyAlgorithm x509v3-ssh-dss,dss-raw,fake-ssh-dss"   ;;
-    x509v3-ssh-rsa*)  echo "X509KeyAlgorithm x509v3-sign-rsa,rsa-sha1,fake-sign-rsa";;
     x509v3-ssh-dss*)  echo "X509KeyAlgorithm x509v3-sign-dss,dss-raw,fake-sign-dss" ;;
     esac
 ) >> "$SSHD_CFG"
