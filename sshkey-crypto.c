@@ -31,6 +31,7 @@
 #include "sshkey.h"
 #include "sshbuf.h"
 #include "ssherr.h"
+#include "log.h"
 
 
 #ifdef DEBUG_PK
@@ -93,6 +94,88 @@ void
 sshkey_free_ecdsa(struct sshkey *key) {
 	EC_KEY_free(key->ecdsa);
 	key->ecdsa = NULL;
+}
+#endif /* OPENSSL_HAS_ECC */
+
+
+int
+sshkey_from_pkey_rsa(EVP_PKEY *pk, struct sshkey **keyp) {
+	int r;
+	struct sshkey* key;
+
+	key = sshkey_new(KEY_UNSPEC);
+	if (key == NULL)
+		return SSH_ERR_ALLOC_FAIL;
+
+	key->type = KEY_RSA;
+	key->rsa = EVP_PKEY_get1_RSA(pk);
+	if (key->rsa == NULL) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	*keyp = key;
+	return 0;
+
+err:
+	sshkey_free(key);
+	return r;
+}
+
+int
+sshkey_from_pkey_dsa(EVP_PKEY *pk, struct sshkey **keyp) {
+	int r;
+	struct sshkey* key;
+
+	key = sshkey_new(KEY_UNSPEC);
+	if (key == NULL)
+		return SSH_ERR_ALLOC_FAIL;
+
+	key->type = KEY_DSA;
+	key->dsa = EVP_PKEY_get1_DSA(pk);
+	if (key->dsa == NULL) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	*keyp = key;
+	return 0;
+
+err:
+	sshkey_free(key);
+	return r;
+}
+#ifdef OPENSSL_HAS_ECC
+
+int
+sshkey_from_pkey_ecdsa(EVP_PKEY *pk, struct sshkey **keyp) {
+	int r;
+	struct sshkey* key;
+
+	key = sshkey_new(KEY_UNSPEC);
+	if (key == NULL)
+		return SSH_ERR_ALLOC_FAIL;
+
+	key->type = KEY_ECDSA;
+	key->ecdsa = EVP_PKEY_get1_EC_KEY(pk);
+	if (key->ecdsa == NULL) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	key->ecdsa_nid = sshkey_ecdsa_key_to_nid(key->ecdsa);
+	if (key->ecdsa_nid < 0) {
+		error_f("unsupported elliptic curve");
+		r = SSH_ERR_EC_CURVE_INVALID;
+		goto err;
+	}
+
+	*keyp = key;
+	return 0;
+
+err:
+	sshkey_free(key);
+	return r;
 }
 #endif /* OPENSSL_HAS_ECC */
 

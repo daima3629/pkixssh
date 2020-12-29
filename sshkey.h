@@ -351,6 +351,12 @@ void	sshkey_free_dsa(struct sshkey *key);
 void	sshkey_free_ecdsa(struct sshkey *key);
 #  endif /* OPENSSL_HAS_ECC */
 
+int	sshkey_from_pkey_rsa(EVP_PKEY *pk, struct sshkey **keyp);
+int	sshkey_from_pkey_dsa(EVP_PKEY *pk, struct sshkey **keyp);
+#  ifdef OPENSSL_HAS_ECC
+int	sshkey_from_pkey_ecdsa(EVP_PKEY *pk, struct sshkey **keyp);
+#  endif /* OPENSSL_HAS_ECC */
+
 int	sshkey_dup_pub_rsa(const struct sshkey *from, struct sshkey *to);
 int	sshkey_dup_pub_dsa(const struct sshkey *from, struct sshkey *to);
 #  ifdef OPENSSL_HAS_ECC

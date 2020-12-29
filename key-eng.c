@@ -22,6 +22,7 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#define SSHKEY_INTERNAL
 #include "includes.h"
 
 #include <string.h>
@@ -199,17 +200,12 @@ destroy_ssh_ui_method() {
 
 
 static struct sshkey*
-sshkey_from_EVP_PKEY_RSA(EVP_PKEY *pk, struct sshkey *ret) {
-	int allocated = 0;
+sshkey_from_EVP_PKEY_RSA(EVP_PKEY *pk) {
+	struct sshkey *ret;
 
-	if (ret == NULL) {
-		ret = sshkey_new(KEY_UNSPEC);
-		if (ret == NULL) return NULL;
-		allocated = 1;
-	}
+	if (sshkey_from_pkey_rsa(pk, &ret) != 0)
+		return NULL;
 
-	ret->rsa = EVP_PKEY_get1_RSA(pk);
-	ret->type = KEY_RSA;
 #ifdef DEBUG_PK
 	sshkey_dump(ret);
 #endif
@@ -221,22 +217,19 @@ sshkey_from_EVP_PKEY_RSA(EVP_PKEY *pk, struct sshkey *ret) {
 	return ret;
 
 err:
-	if (allocated) sshkey_free(ret);
+	sshkey_free(ret);
 
 	return NULL;
 }
 
 
 static struct sshkey*
-sshkey_from_EVP_PKEY_DSA(EVP_PKEY *pk, struct sshkey *ret) {
+sshkey_from_EVP_PKEY_DSA(EVP_PKEY *pk) {
+	struct sshkey *ret;
 
-	if (ret == NULL) {
-		ret = sshkey_new(KEY_UNSPEC);
-		if (ret == NULL) return NULL;
-	}
+	if (sshkey_from_pkey_dsa(pk, &ret) != 0)
+		return NULL;
 
-	ret->dsa = EVP_PKEY_get1_DSA(pk);
-	ret->type = KEY_DSA;
 #ifdef DEBUG_PK
 	sshkey_dump(ret);
 #endif
@@ -247,23 +240,11 @@ sshkey_from_EVP_PKEY_DSA(EVP_PKEY *pk, struct sshkey *ret) {
 
 #ifdef OPENSSL_HAS_ECC
 static struct sshkey *
-sshkey_from_EVP_PKEY_EC(EVP_PKEY *pk, struct sshkey *ret) {
-	int allocated = 0;
+sshkey_from_EVP_PKEY_EC(EVP_PKEY *pk) {
+	struct sshkey *ret;
 
-	if (ret == NULL) {
-		ret = sshkey_new(KEY_UNSPEC);
-		if (ret == NULL) return NULL;
-		allocated = 1;
-	}
-
-	ret->type = KEY_ECDSA;
-	ret->ecdsa = EVP_PKEY_get1_EC_KEY(pk);
-
-	ret->ecdsa_nid = sshkey_ecdsa_key_to_nid(ret->ecdsa);
-	if (ret->ecdsa_nid < 0) {
-		error_f("unsupported elliptic curve");
-		goto err;
-	}
+	if (sshkey_from_pkey_ecdsa(pk, &ret) != 0)
+		return NULL;
 
 {	const EC_POINT *q = EC_KEY_get0_public_key(ret->ecdsa);
 	if (q == NULL) {
@@ -285,7 +266,7 @@ sshkey_from_EVP_PKEY_EC(EVP_PKEY *pk, struct sshkey *ret) {
 	return ret;
 
 err:
-	if (allocated) sshkey_free(ret);
+	sshkey_free(ret);
 
 	return NULL;
 }
@@ -298,18 +279,17 @@ sshkey_from_EVP_PKEY(int type, EVP_PKEY *pk, struct sshkey **keyp) {
 	struct sshkey *ret;
 
 	evp_id = EVP_PKEY_base_id(pk);
-	ret = *keyp;
 
 	/* NOTE do not set flags |= SSHKEY_FLAG_EXT !!! */
 	if (evp_id == EVP_PKEY_RSA && (type == KEY_UNSPEC || type == KEY_RSA)) {
-		ret = sshkey_from_EVP_PKEY_RSA(pk, ret);
+		ret = sshkey_from_EVP_PKEY_RSA(pk);
 	} else
 	if (evp_id == EVP_PKEY_DSA && (type == KEY_UNSPEC || type == KEY_DSA)) {
-		ret = sshkey_from_EVP_PKEY_DSA(pk, ret);
+		ret = sshkey_from_EVP_PKEY_DSA(pk);
 #ifdef OPENSSL_HAS_ECC
 	} else
 	if (evp_id == EVP_PKEY_EC && (type == KEY_UNSPEC || type == KEY_ECDSA)) {
-		ret = sshkey_from_EVP_PKEY_EC(pk, ret);
+		ret = sshkey_from_EVP_PKEY_EC(pk);
 #endif /*def OPENSSL_HAS_ECC*/
 	} else {
 		error_f("mismatch or unknown EVP_PKEY type %d", evp_id);

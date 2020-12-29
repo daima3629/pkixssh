@@ -22,6 +22,7 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#define SSHKEY_INTERNAL
 #include "ssh-x509.h"
 #include <ctype.h>
 #include <string.h>
@@ -618,9 +619,8 @@ x509_to_key(X509 *x509) {
 
 	switch (EVP_PKEY_base_id(env_pkey)) {
 	case EVP_PKEY_RSA:
-		key = sshkey_new(KEY_UNSPEC);
-		key->rsa = EVP_PKEY_get1_RSA(env_pkey);
-		key->type = KEY_RSA;
+		if (sshkey_from_pkey_rsa(env_pkey, &key) != 0)
+			goto err;
 		(void)ssh_x509_set_cert(key, x509, NULL);
 #ifdef DEBUG_PK
 		sshkey_dump(key);
@@ -628,9 +628,8 @@ x509_to_key(X509 *x509) {
 		break;
 
 	case EVP_PKEY_DSA:
-		key = sshkey_new(KEY_UNSPEC);
-		key->dsa = EVP_PKEY_get1_DSA(env_pkey);
-		key->type = KEY_DSA;
+		if (sshkey_from_pkey_dsa(env_pkey, &key) != 0)
+			goto err;
 		(void)ssh_x509_set_cert(key, x509, NULL);
 #ifdef DEBUG_PK
 		sshkey_dump(key);
@@ -641,14 +640,9 @@ x509_to_key(X509 *x509) {
 	case EVP_PKEY_EC: {
 		const EC_POINT *q = NULL;
 
-		key = sshkey_new(KEY_UNSPEC);
-		key->ecdsa = EVP_PKEY_get1_EC_KEY(env_pkey);
-		key->type = KEY_ECDSA;
-		key->ecdsa_nid = sshkey_ecdsa_key_to_nid(key->ecdsa);
-		if (key->ecdsa_nid < 0) {
-			error_f("unsupported elliptic curve");
+		if (sshkey_from_pkey_ecdsa(env_pkey, &key) != 0)
 			goto err;
-		}
+
 		q = EC_KEY_get0_public_key(key->ecdsa);
 		if (q == NULL) {
 			error_f("cannot get public ec key ");

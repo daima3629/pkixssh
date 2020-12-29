@@ -4097,7 +4097,7 @@ sshkey_parse_private_pem_fileblob(struct sshbuf *blob, int type,
 	EVP_PKEY *pk = NULL;
 	struct sshkey *prv = NULL;
 	BIO *bio = NULL;
-	int r;
+	int r, evp_id;
 
 	if (keyp != NULL)
 		*keyp = NULL;
@@ -4117,14 +4117,10 @@ sshkey_parse_private_pem_fileblob(struct sshbuf *blob, int type,
 		r = SSH_ERR_KEY_WRONG_PASSPHRASE;
 		goto out;
 	}
-	if (EVP_PKEY_base_id(pk) == EVP_PKEY_RSA &&
-	    (type == KEY_UNSPEC || type == KEY_RSA)) {
-		if ((prv = sshkey_new(KEY_UNSPEC)) == NULL) {
-			r = SSH_ERR_ALLOC_FAIL;
-			goto out;
-		}
-		prv->rsa = EVP_PKEY_get1_RSA(pk);
-		prv->type = KEY_RSA;
+	evp_id = EVP_PKEY_base_id(pk);
+	if (evp_id == EVP_PKEY_RSA && (type == KEY_UNSPEC || type == KEY_RSA)) {
+		r = sshkey_from_pkey_rsa(pk, &prv);
+		if (r != 0) goto out;
 #ifdef DEBUG_PK
 		sshkey_dump(prv);
 #endif
@@ -4134,30 +4130,19 @@ sshkey_parse_private_pem_fileblob(struct sshbuf *blob, int type,
 		}
 		if ((r = sshrsa_check_length(prv->rsa)) != 0)
 			goto out;
-	} else if (EVP_PKEY_base_id(pk) == EVP_PKEY_DSA &&
-	    (type == KEY_UNSPEC || type == KEY_DSA)) {
-		if ((prv = sshkey_new(KEY_UNSPEC)) == NULL) {
-			r = SSH_ERR_ALLOC_FAIL;
-			goto out;
-		}
-		prv->dsa = EVP_PKEY_get1_DSA(pk);
-		prv->type = KEY_DSA;
+	} else
+	if (evp_id == EVP_PKEY_DSA && (type == KEY_UNSPEC || type == KEY_DSA)) {
+		r = sshkey_from_pkey_dsa(pk, &prv);
+		if (r != 0) goto out;
 #ifdef DEBUG_PK
 		sshkey_dump(prv);
 #endif
 #ifdef OPENSSL_HAS_ECC
-	} else if (EVP_PKEY_base_id(pk) == EVP_PKEY_EC &&
-	    (type == KEY_UNSPEC || type == KEY_ECDSA)) {
-		if ((prv = sshkey_new(KEY_UNSPEC)) == NULL) {
-			r = SSH_ERR_ALLOC_FAIL;
-			goto out;
-		}
-		prv->ecdsa = EVP_PKEY_get1_EC_KEY(pk);
-		prv->type = KEY_ECDSA;
-		prv->ecdsa_nid = sshkey_ecdsa_key_to_nid(prv->ecdsa);
-		if (prv->ecdsa_nid == -1 ||
-		    sshkey_curve_nid_to_name(prv->ecdsa_nid) == NULL ||
-		    sshkey_ec_validate_public(EC_KEY_get0_group(prv->ecdsa),
+	} else
+	if (evp_id == EVP_PKEY_EC && (type == KEY_UNSPEC || type == KEY_ECDSA)) {
+		r = sshkey_from_pkey_ecdsa(pk, &prv);
+		if (r != 0) goto out;
+		if (sshkey_ec_validate_public(EC_KEY_get0_group(prv->ecdsa),
 		    EC_KEY_get0_public_key(prv->ecdsa)) != 0 ||
 		    sshkey_ec_validate_private(prv->ecdsa) != 0) {
 			r = SSH_ERR_INVALID_FORMAT;

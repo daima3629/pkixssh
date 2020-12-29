@@ -34,6 +34,7 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#define SSHKEY_INTERNAL
 #include "includes.h"
 
 #include <sys/types.h>
@@ -722,9 +723,12 @@ static void
 do_convert_from_pkcs8(struct sshkey **k, int *private)
 {
 	EVP_PKEY *pubkey;
-	FILE *fp;
+	struct sshkey* key;
+	int r, evp_id;
 
 	UNUSED(private);
+{
+	FILE *fp;
 	if ((fp = fopen(identity_file, "r")) == NULL)
 		fatal("%s: %s: %s", __progname, identity_file, strerror(errno));
 	if ((pubkey = PEM_read_PUBKEY(fp, NULL, NULL, NULL)) == NULL) {
@@ -732,32 +736,26 @@ do_convert_from_pkcs8(struct sshkey **k, int *private)
 		    identity_file);
 	}
 	fclose(fp);
-	switch (EVP_PKEY_base_id(pubkey)) {
+}
+	evp_id = EVP_PKEY_base_id(pubkey);
+	switch (evp_id) {
 	case EVP_PKEY_RSA:
-		if ((*k = sshkey_new(KEY_UNSPEC)) == NULL)
-			fatal("sshkey_new failed");
-		(*k)->type = KEY_RSA;
-		(*k)->rsa = EVP_PKEY_get1_RSA(pubkey);
+		r = sshkey_from_pkey_rsa(pubkey, &key);
 		break;
 	case EVP_PKEY_DSA:
-		if ((*k = sshkey_new(KEY_UNSPEC)) == NULL)
-			fatal("sshkey_new failed");
-		(*k)->type = KEY_DSA;
-		(*k)->dsa = EVP_PKEY_get1_DSA(pubkey);
+		r = sshkey_from_pkey_dsa(pubkey, &key);
 		break;
 #ifdef OPENSSL_HAS_ECC
 	case EVP_PKEY_EC:
-		if ((*k = sshkey_new(KEY_UNSPEC)) == NULL)
-			fatal("sshkey_new failed");
-		(*k)->type = KEY_ECDSA;
-		(*k)->ecdsa = EVP_PKEY_get1_EC_KEY(pubkey);
-		(*k)->ecdsa_nid = sshkey_ecdsa_key_to_nid((*k)->ecdsa);
+		r = sshkey_from_pkey_ecdsa(pubkey, &key);
 		break;
 #endif
 	default:
-		fatal_f("unsupported pubkey type %d",
-		    EVP_PKEY_base_id(pubkey));
+		fatal_f("unsupported evp pkey type %d", evp_id);
 	}
+	if (r != 0)
+		fatal_r(r , "creation from evp pkey failed");
+	*k = key;
 	EVP_PKEY_free(pubkey);
 	return;
 }
