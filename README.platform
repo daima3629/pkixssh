@@ -1,7 +1,7 @@
 This file contains notes about OpenSSH on specific platforms.
 
 AIX
----
+===
 Beginning with OpenSSH 3.8p1, sshd will honour an account's password
 expiry settings, where prior to that it did not.  Because of this,
 it's possible for sites that have used OpenSSH's sshd exclusively to
@@ -41,14 +41,14 @@ than the default of cc.
 
 
 Cygwin
-------
+======
 To build on Cygwin, OpenSSH requires the following packages:
 gcc, gcc-mingw-core, mingw-runtime, binutils, make, openssl,
 openssl-devel, zlib, minres, minires-devel.
 
 
 Darwin and MacOS X
-------------------
+==================
 Darwin does not provide a tun(4) driver required for OpenSSH-based
 virtual private networks. The BSD manpage still exists, but the driver
 has been removed in recent releases of Darwin and MacOS X.
@@ -60,7 +60,7 @@ using a third party driver. More information is available at:
 
 
 Linux
------
+=====
 Some Linux distributions (including Red Hat/Fedora/CentOS) include
 headers and library links in the -devel RPMs rather than the main
 binary RPMs. If you get an error about headers, or complaining about a
@@ -71,7 +71,7 @@ libssl-dev, libz-dev and libpam-dev.
 
 
 Solaris
--------
+=======
 If you enable BSM auditing on Solaris, you need to update audit_event(4)
 for praudit(1m) to give sensible output.  The following line needs to be
 added to /etc/security/audit_event:
@@ -86,7 +86,7 @@ by configure'ing --with-cflags=-DAUE_openssh=32801 then rebuilding.
 
 
 Platforms using PAM
--------------------
+===================
 As of OpenSSH 4.3p1, sshd will no longer check /etc/nologin itself when
 PAM is enabled.  To maintain existing behaviour, pam_nologin should be
 added to sshd's session stack which will prevent users from starting shell
