@@ -157,6 +157,9 @@ ssh_dss_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 	if (dlen == 0)
 		return SSH_ERR_INTERNAL_ERROR;
 
+	ret = sshkey_validate_public_dsa(key);
+	if (ret != 0) return ret;
+
 	sig = ssh_dss_sign_pkey(key, data, datalen);
 	if (sig == NULL) {
 		ret = SSH_ERR_LIBCRYPTO_ERROR;
@@ -305,6 +308,9 @@ ssh_dss_verify(const struct sshkey *key,
 		return SSH_ERR_INVALID_ARGUMENT;
 	if (dlen == 0)
 		return SSH_ERR_INTERNAL_ERROR;
+
+	ret = sshkey_validate_public_dsa(key);
+	if (ret != 0) return ret;
 
 	/* fetch signature */
 	if ((b = sshbuf_from(signature, signaturelen)) == NULL)

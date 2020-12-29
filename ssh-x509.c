@@ -631,23 +631,11 @@ x509_to_key(X509 *x509) {
 		break;
 
 #ifdef OPENSSL_HAS_ECC
-	case EVP_PKEY_EC: {
-		const EC_POINT *q = NULL;
-
+	case EVP_PKEY_EC:
 		if (sshkey_from_pkey_ecdsa(env_pkey, &key) != 0)
 			goto err;
-
-		q = EC_KEY_get0_public_key(key->ecdsa);
-		if (q == NULL) {
-			error_f("cannot get public ec key ");
-			goto err;
-		}
-		if (sshkey_ec_validate_public(EC_KEY_get0_group(key->ecdsa), q) != 0) {
-			debug3_f("cannot validate public ec key ");
-			goto err;
-		}
 		(void)ssh_x509_set_cert(key, x509, NULL);
-		} break;
+		break;
 #endif /*def OPENSSL_HAS_ECC*/
 
 	default:
@@ -1710,16 +1698,22 @@ ssh_x509_sign(
 	}
 	r = SSH_ERR_SUCCESS;
 
-	if (key->rsa)
+	if (key->rsa) {
+		r = sshkey_validate_public_rsa(key);
+		if (r != 0) goto done;
 		res = EVP_PKEY_set1_RSA(privkey, key->rsa);
-	else if (key->dsa)
+	} else if (key->dsa) {
+		r = sshkey_validate_public_dsa(key);
+		if (r != 0) goto done;
 		res = EVP_PKEY_set1_DSA(privkey, key->dsa);
 #ifdef OPENSSL_HAS_ECC
-	else if (key->ecdsa)
+	} else if (key->ecdsa) {
+		r = sshkey_validate_public_ecdsa(key);
+		if (r != 0) goto done;
 		res = EVP_PKEY_set1_EC_KEY(privkey, key->ecdsa);
 #endif
-	else {
-		error_f("missing private key");
+	} else {
+		error_f("missing key component");
 		r = SSH_ERR_INVALID_ARGUMENT;
 		goto end_sign_pkey;
 	}
@@ -1883,6 +1877,20 @@ ssh_x509_verify(
 		    ctx->alg, key->type, key->ecdsa_nid);
 		return SSH_ERR_INVALID_ARGUMENT;
 	}
+
+	if (key->rsa)
+		r = sshkey_validate_public_rsa(key);
+	else if (key->dsa)
+		r = sshkey_validate_public_dsa(key);
+#ifdef OPENSSL_HAS_ECC
+	else if (key->ecdsa)
+		r = sshkey_validate_public_ecdsa(key);
+#endif
+	else {
+		error_f("missing key component");
+		r = SSH_ERR_INVALID_ARGUMENT;
+	}
+	if (r != 0) return r;
 
 	pubkey = X509_get_pubkey(key->x509_data->cert);
 	if (pubkey == NULL) {

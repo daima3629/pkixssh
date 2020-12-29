@@ -115,13 +115,6 @@ sshrsa_verify_length(int bits) {
 	    ? SSH_ERR_KEY_LENGTH : 0;
 }
 
-int
-sshrsa_check_length(const RSA *rsa) {
-	const BIGNUM *n = NULL;
-	RSA_get0_key(rsa, &n, NULL, NULL);
-	return sshrsa_verify_length(BN_num_bits(n));
-}
-
 #ifndef BN_FLG_CONSTTIME
 #  define BN_FLG_CONSTTIME 0x0 /* OpenSSL < 0.9.8 */
 #endif
@@ -215,7 +208,7 @@ ssh_rsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 	if (hash_alg == -1)
 		return SSH_ERR_INVALID_ARGUMENT;
 
-	ret = sshrsa_check_length(key->rsa);
+	ret = sshkey_validate_public_rsa(key);
 	if (ret != 0) return ret;
 
 	/* hash the data */
@@ -341,7 +334,7 @@ ssh_rsa_verify(const struct sshkey *key,
 	    sig == NULL || siglen == 0)
 		return SSH_ERR_INVALID_ARGUMENT;
 
-	ret = sshrsa_check_length(key->rsa);
+	ret = sshkey_validate_public_rsa(key);
 	if (ret != 0) return ret;
 
 	if ((b = sshbuf_from(sig, siglen)) == NULL)

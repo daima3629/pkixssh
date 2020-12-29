@@ -294,7 +294,6 @@ int	sshkey_private_to_bio(struct sshkey *key, BIO *bio,
     const char *passphrase, int format);
 
 int	sshrsa_verify_length(int bits);
-int	sshrsa_check_length(const RSA *rsa);
 int	sshdsa_verify_length(int bits);
 
 /* XXX should be internal, but defined in ssh-rsa.c
@@ -386,6 +385,13 @@ int	sshkey_equal_public_rsa(const struct sshkey *, const struct sshkey *);
 int	sshkey_equal_public_dsa(const struct sshkey *, const struct sshkey *);
 #  ifdef OPENSSL_HAS_ECC
 int	sshkey_equal_public_ecdsa(const struct sshkey *, const struct sshkey *);
+#  endif /* OPENSSL_HAS_ECC */
+
+int	sshkey_validate_public_rsa(const struct sshkey *key);
+int	sshkey_validate_public_dsa(const struct sshkey *key);
+#  ifdef OPENSSL_HAS_ECC
+int	sshkey_validate_public_ecdsa(const struct sshkey *key);
+int	sshkey_validate_private_ecdsa(const struct sshkey *key);
 #  endif /* OPENSSL_HAS_ECC */
 
 #if !defined(WITH_OPENSSL)

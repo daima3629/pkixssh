@@ -123,6 +123,9 @@ sshkey_from_pkey_rsa(EVP_PKEY *pk, struct sshkey **keyp) {
 		goto err;
 	}
 
+	r = sshkey_validate_public_rsa(key);
+	if (r != 0) goto err;
+
 	if (RSA_blinding_on(key->rsa, NULL) != 1) {
 		r = SSH_ERR_LIBCRYPTO_ERROR;
 		goto err;
@@ -152,6 +155,9 @@ sshkey_from_pkey_dsa(EVP_PKEY *pk, struct sshkey **keyp) {
 		r = SSH_ERR_LIBCRYPTO_ERROR;
 		goto err;
 	}
+
+	r = sshkey_validate_public_dsa(key);
+	if (r != 0) goto err;
 
 	SSHKEY_DUMP(key);
 	*keyp = key;
@@ -185,6 +191,18 @@ sshkey_from_pkey_ecdsa(EVP_PKEY *pk, struct sshkey **keyp) {
 		r = SSH_ERR_EC_CURVE_INVALID;
 		goto err;
 	}
+
+	r = sshkey_validate_public_ecdsa(key);
+	if (r != 0) goto err;
+
+{	/* private part is not required */
+	const BIGNUM *exponent = EC_KEY_get0_private_key(key->ecdsa);
+	if (exponent == NULL) goto skip_private;
+
+	r = sshkey_validate_private_ecdsa(key);
+	if (r != 0) goto err;
+}
+skip_private:
 
 	SSHKEY_DUMP(key);
 	*keyp = key;
@@ -377,6 +395,61 @@ sshkey_equal_public_ecdsa(const struct sshkey *ka, const struct sshkey *kb) {
 
 
 int
+sshkey_validate_public_rsa(const struct sshkey *key) {
+	int r;
+
+{	const BIGNUM *n = NULL;
+	RSA_get0_key(key->rsa, &n, NULL, NULL);
+	r = sshrsa_verify_length(BN_num_bits(n));
+	if (r != 0) return r;
+}
+
+	/* other checks ? */
+	return 0;
+}
+
+int
+sshkey_validate_public_dsa(const struct sshkey *key) {
+	int r;
+
+{	const BIGNUM *p = NULL;
+	DSA_get0_pqg(key->dsa, &p, NULL, NULL);
+	r = sshdsa_verify_length(BN_num_bits(p));
+	if (r != 0) return r;
+}
+
+	/* other checks ? */
+	return 0;
+}
+
+#ifdef OPENSSL_HAS_ECC
+int
+sshkey_validate_public_ecdsa(const struct sshkey *key) {
+	int r;
+
+	r = sshkey_ec_validate_public(EC_KEY_get0_group(key->ecdsa),
+	    EC_KEY_get0_public_key(key->ecdsa));
+	if (r != 0) return r;
+
+	/* other checks ? */
+	return 0;
+}
+
+
+int
+sshkey_validate_private_ecdsa(const struct sshkey *key) {
+	int r;
+
+	r = sshkey_ec_validate_private(key->ecdsa);
+	if (r != 0) return r;
+
+	/* other checks ? */
+	return 0;
+}
+#endif /* OPENSSL_HAS_ECC */
+
+
+int
 sshbuf_read_pub_rsa(struct sshbuf *buf, struct sshkey *key) {
 	int r;
 	BIGNUM *n = NULL, *e = NULL;
@@ -390,6 +463,9 @@ sshbuf_read_pub_rsa(struct sshbuf *buf, struct sshkey *key) {
 		goto out;
 	}
 	n = e = NULL; /* transferred */
+
+	r = sshkey_validate_public_rsa(key);
+	if (r != 0) goto out;
 
 	if (RSA_blinding_on(key->rsa, NULL) != 1) {
 		r = SSH_ERR_LIBCRYPTO_ERROR;
@@ -434,6 +510,9 @@ sshbuf_read_pub_rsa_inv(struct sshbuf *buf, struct sshkey *key) {
 		goto out;
 	}
 	n = e = NULL; /* transferred */
+
+	r = sshkey_validate_public_rsa(key);
+	if (r != 0) goto out;
 
 	if (RSA_blinding_on(key->rsa, NULL) != 1) {
 		r = SSH_ERR_LIBCRYPTO_ERROR;
@@ -543,6 +622,9 @@ sshbuf_read_pub_dsa(struct sshbuf *buf, struct sshkey *key) {
 	}
 	pub_key = NULL; /* transferred */
 
+	r = sshkey_validate_public_dsa(key);
+	if (r != 0) goto out;
+
 	SSHKEY_DUMP(key);
 
 out:
@@ -627,6 +709,9 @@ sshbuf_read_pub_ecdsa(struct sshbuf *buf, struct sshkey *key) {
 	r = sshbuf_get_eckey(buf, key->ecdsa);
 	if (r != 0) goto out;
 
+	r = sshkey_validate_public_ecdsa(key);
+	if (r != 0) goto out;
+
 	SSHKEY_DUMP(key);
 
 out:
@@ -660,10 +745,7 @@ sshbuf_read_priv_ecdsa(struct sshbuf *buf, struct sshkey *key) {
 	}
 	exponent = NULL; /* transferred */
 
-	if ((r = sshkey_ec_validate_public(EC_KEY_get0_group(key->ecdsa),
-	    EC_KEY_get0_public_key(key->ecdsa))) != 0)
-		goto out;
-	r = sshkey_ec_validate_private(key->ecdsa);
+	r = sshkey_validate_private_ecdsa(key);
 	if (r != 0) goto out;
 
 	SSHKEY_DUMP(key);

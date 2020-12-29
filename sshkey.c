@@ -2348,9 +2348,6 @@ sshkey_from_blob_internal(struct sshbuf *b, struct sshkey **keyp,
 		}
 		ret = sshbuf_read_pub_rsa_inv(b, key);
 		if (ret != 0) goto out;
-
-		if ((ret = sshrsa_check_length(key->rsa)) != 0)
-			goto out;
 		break;
 	case KEY_DSA_CERT:
 		/* Skip nonce */
@@ -2385,12 +2382,6 @@ sshkey_from_blob_internal(struct sshbuf *b, struct sshkey **keyp,
 
 		ret = sshbuf_read_pub_ecdsa(b, key);
 		if (ret != 0) goto out;
-
-		if (sshkey_ec_validate_public(EC_KEY_get0_group(key->ecdsa),
-		    EC_KEY_get0_public_key(key->ecdsa)) != 0) {
-			ret = SSH_ERR_KEY_INVALID_EC_VALUE;
-			goto out;
-		}
 		break;
 # endif /* OPENSSL_HAS_ECC */
 #endif /* WITH_OPENSSL */
@@ -3264,9 +3255,6 @@ sshkey_private_deserialize(struct sshbuf *buf, struct sshkey **kp)
 	case KEY_RSA_CERT:
 		r = sshbuf_read_priv_rsa(buf, k);
 		if (r != 0) goto out;
-
-		if ((r = sshrsa_check_length(k->rsa)) != 0)
-			goto out;
 		break;
 #endif /* WITH_OPENSSL */
 	case KEY_ED25519:
@@ -4094,8 +4082,6 @@ sshkey_parse_private_pem_fileblob(struct sshbuf *blob, int type,
 	if (evp_id == EVP_PKEY_RSA && (type == KEY_UNSPEC || type == KEY_RSA)) {
 		r = sshkey_from_pkey_rsa(pk, &prv);
 		if (r != 0) goto out;
-		if ((r = sshrsa_check_length(prv->rsa)) != 0)
-			goto out;
 	} else
 	if (evp_id == EVP_PKEY_DSA && (type == KEY_UNSPEC || type == KEY_DSA)) {
 		r = sshkey_from_pkey_dsa(pk, &prv);
@@ -4105,12 +4091,6 @@ sshkey_parse_private_pem_fileblob(struct sshbuf *blob, int type,
 	if (evp_id == EVP_PKEY_EC && (type == KEY_UNSPEC || type == KEY_ECDSA)) {
 		r = sshkey_from_pkey_ecdsa(pk, &prv);
 		if (r != 0) goto out;
-		if (sshkey_ec_validate_public(EC_KEY_get0_group(prv->ecdsa),
-		    EC_KEY_get0_public_key(prv->ecdsa)) != 0 ||
-		    sshkey_ec_validate_private(prv->ecdsa) != 0) {
-			r = SSH_ERR_INVALID_FORMAT;
-			goto out;
-		}
 #endif /* OPENSSL_HAS_ECC */
 	} else {
 		r = SSH_ERR_INVALID_FORMAT;

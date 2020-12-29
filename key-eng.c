@@ -199,89 +199,30 @@ destroy_ssh_ui_method() {
 }
 
 
-static struct sshkey*
-sshkey_from_EVP_PKEY_RSA(EVP_PKEY *pk) {
-	struct sshkey *ret;
-
-	if (sshkey_from_pkey_rsa(pk, &ret) != 0)
-		return NULL;
-
-	return ret;
-
-err:
-	sshkey_free(ret);
-
-	return NULL;
-}
-
-
-static struct sshkey*
-sshkey_from_EVP_PKEY_DSA(EVP_PKEY *pk) {
-	struct sshkey *ret;
-
-	if (sshkey_from_pkey_dsa(pk, &ret) != 0)
-		return NULL;
-
-	return ret;
-}
-
-
-#ifdef OPENSSL_HAS_ECC
-static struct sshkey *
-sshkey_from_EVP_PKEY_EC(EVP_PKEY *pk) {
-	struct sshkey *ret;
-
-	if (sshkey_from_pkey_ecdsa(pk, &ret) != 0)
-		return NULL;
-
-{	const EC_POINT *q = EC_KEY_get0_public_key(ret->ecdsa);
-	if (q == NULL) {
-		error_f("cannot get public ec key");
-		goto err;
-	}
-
-{	int r = sshkey_ec_validate_public(EC_KEY_get0_group(ret->ecdsa), q);
-	if (r != SSH_ERR_SUCCESS) {
-		debug3_f("cannot validate public ec key");
-		goto err;
-	}
-}
-}
-
-	return ret;
-
-err:
-	sshkey_free(ret);
-
-	return NULL;
-}
-#endif /*def OPENSSL_HAS_ECC*/
-
-
 static int
 sshkey_from_EVP_PKEY(int type, EVP_PKEY *pk, struct sshkey **keyp) {
-	int evp_id;
+	int r, evp_id;
 	struct sshkey *ret;
 
 	evp_id = EVP_PKEY_base_id(pk);
 
 	/* NOTE do not set flags |= SSHKEY_FLAG_EXT !!! */
 	if (evp_id == EVP_PKEY_RSA && (type == KEY_UNSPEC || type == KEY_RSA)) {
-		ret = sshkey_from_EVP_PKEY_RSA(pk);
+		r = sshkey_from_pkey_rsa(pk, &ret);
 	} else
 	if (evp_id == EVP_PKEY_DSA && (type == KEY_UNSPEC || type == KEY_DSA)) {
-		ret = sshkey_from_EVP_PKEY_DSA(pk);
+		r = sshkey_from_pkey_dsa(pk, &ret);
 #ifdef OPENSSL_HAS_ECC
 	} else
 	if (evp_id == EVP_PKEY_EC && (type == KEY_UNSPEC || type == KEY_ECDSA)) {
-		ret = sshkey_from_EVP_PKEY_EC(pk);
+		r = sshkey_from_pkey_ecdsa(pk, &ret);
 #endif /*def OPENSSL_HAS_ECC*/
 	} else {
 		error_f("mismatch or unknown EVP_PKEY type %d", evp_id);
 		return SSH_ERR_KEY_TYPE_UNKNOWN;
 	}
 
-	if (ret == NULL) return SSH_ERR_ALLOC_FAIL;
+	if (r != 0) return r;
 
 	*keyp = ret;
 	return SSH_ERR_SUCCESS;
