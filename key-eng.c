@@ -206,11 +206,6 @@ sshkey_from_EVP_PKEY_RSA(EVP_PKEY *pk) {
 	if (sshkey_from_pkey_rsa(pk, &ret) != 0)
 		return NULL;
 
-	if (RSA_blinding_on(ret->rsa, NULL) != 1) {
-		error_f("RSA_blinding_on failed");
-		goto err;
-	}
-
 	return ret;
 
 err:

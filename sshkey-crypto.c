@@ -123,6 +123,11 @@ sshkey_from_pkey_rsa(EVP_PKEY *pk, struct sshkey **keyp) {
 		goto err;
 	}
 
+	if (RSA_blinding_on(key->rsa, NULL) != 1) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
 	SSHKEY_DUMP(key);
 	*keyp = key;
 	return 0;
@@ -386,6 +391,11 @@ sshbuf_read_pub_rsa(struct sshbuf *buf, struct sshkey *key) {
 	}
 	n = e = NULL; /* transferred */
 
+	if (RSA_blinding_on(key->rsa, NULL) != 1) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto out;
+	}
+
 	SSHKEY_DUMP(key);
 
 out:
@@ -424,6 +434,11 @@ sshbuf_read_pub_rsa_inv(struct sshbuf *buf, struct sshkey *key) {
 		goto out;
 	}
 	n = e = NULL; /* transferred */
+
+	if (RSA_blinding_on(key->rsa, NULL) != 1) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto out;
+	}
 
 	SSHKEY_DUMP(key);
 

@@ -3287,18 +3287,6 @@ sshkey_private_deserialize(struct sshbuf *buf, struct sshkey **kp)
 	}
 	r = X509key_decode_identity(tname, buf, k);
 	if (r != SSH_ERR_SUCCESS) goto out;
-#ifdef WITH_OPENSSL
-	/* enable blinding */
-	switch (k->type) {
-	case KEY_RSA:
-	case KEY_RSA_CERT:
-		if (RSA_blinding_on(k->rsa, NULL) != 1) {
-			r = SSH_ERR_LIBCRYPTO_ERROR;
-			goto out;
-		}
-		break;
-	}
-#endif /* WITH_OPENSSL */
 	/* success */
 	r = 0;
 	if (kp != NULL) {
@@ -4103,10 +4091,6 @@ sshkey_parse_private_pem_fileblob(struct sshbuf *blob, int type,
 	if (evp_id == EVP_PKEY_RSA && (type == KEY_UNSPEC || type == KEY_RSA)) {
 		r = sshkey_from_pkey_rsa(pk, &prv);
 		if (r != 0) goto out;
-		if (RSA_blinding_on(prv->rsa, NULL) != 1) {
-			r = SSH_ERR_LIBCRYPTO_ERROR;
-			goto out;
-		}
 		if ((r = sshrsa_check_length(prv->rsa)) != 0)
 			goto out;
 	} else
