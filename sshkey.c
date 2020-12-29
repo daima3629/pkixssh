@@ -3378,6 +3378,7 @@ sshkey_ec_validate_public(const EC_GROUP *group, const EC_POINT *public)
 int
 sshkey_ec_validate_private(const EC_KEY *key)
 {
+	const BIGNUM *exponent;
 	BIGNUM *order = NULL, *tmp = NULL;
 	int ret = SSH_ERR_KEY_INVALID_EC_VALUE;
 
@@ -3386,13 +3387,15 @@ sshkey_ec_validate_private(const EC_KEY *key)
 		goto out;
 	}
 
+	exponent = EC_KEY_get0_private_key(key);
+	if (exponent == NULL) goto out;
+
 	/* log2(private) > log2(order)/2 */
 	if (EC_GROUP_get_order(EC_KEY_get0_group(key), order, NULL) != 1) {
 		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto out;
 	}
-	if (BN_num_bits(EC_KEY_get0_private_key(key)) <=
-	    BN_num_bits(order) / 2)
+	if (BN_num_bits(exponent) <= BN_num_bits(order) / 2)
 		goto out;
 
 	/* private < order - 1 */
@@ -3400,7 +3403,7 @@ sshkey_ec_validate_private(const EC_KEY *key)
 		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto out;
 	}
-	if (BN_cmp(EC_KEY_get0_private_key(key), tmp) >= 0)
+	if (BN_cmp(exponent, tmp) >= 0)
 		goto out;
 	ret = 0;
  out:
@@ -3459,7 +3462,7 @@ sshkey_dump_ec_key(const EC_KEY *key)
 	if ((exponent = EC_KEY_get0_private_key(key)) == NULL)
 		fputs("(NULL)", stderr);
 	else
-		BN_print_fp(stderr, EC_KEY_get0_private_key(key));
+		BN_print_fp(stderr, exponent);
 	fputs("\n", stderr);
 }
 #endif /* WITH_OPENSSL && OPENSSL_HAS_ECC */
