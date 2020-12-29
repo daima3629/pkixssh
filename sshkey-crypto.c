@@ -35,8 +35,9 @@
 
 
 #ifdef DEBUG_PK
-void
-sshkey_dump(const struct sshkey *key) {
+static void
+sshkey_dump(const char *func, const struct sshkey *key) {
+	fprintf(stderr, "dump key %s():\n", func);
 	switch (sshkey_type_plain(key->type)) {
 	case KEY_RSA:
 		RSA_print_fp(stderr, key->rsa, 0);
@@ -51,7 +52,15 @@ sshkey_dump(const struct sshkey *key) {
 	}
 #endif /* OPENSSL_HAS_ECC */
 }
+#else
+static inline void
+sshkey_dump(const char *func, const struct sshkey *key) {
+	UNUSED(func);
+	UNUSED(key);
+}
 #endif /* DEBUG_PK */
+
+#define SSHKEY_DUMP(...)	sshkey_dump(__func__, __VA_ARGS__)
 
 
 struct sshkey*
@@ -114,6 +123,7 @@ sshkey_from_pkey_rsa(EVP_PKEY *pk, struct sshkey **keyp) {
 		goto err;
 	}
 
+	SSHKEY_DUMP(key);
 	*keyp = key;
 	return 0;
 
@@ -138,6 +148,7 @@ sshkey_from_pkey_dsa(EVP_PKEY *pk, struct sshkey **keyp) {
 		goto err;
 	}
 
+	SSHKEY_DUMP(key);
 	*keyp = key;
 	return 0;
 
@@ -170,6 +181,7 @@ sshkey_from_pkey_ecdsa(EVP_PKEY *pk, struct sshkey **keyp) {
 		goto err;
 	}
 
+	SSHKEY_DUMP(key);
 	*keyp = key;
 	return 0;
 
@@ -374,6 +386,8 @@ sshbuf_read_pub_rsa(struct sshbuf *buf, struct sshkey *key) {
 	}
 	n = e = NULL; /* transferred */
 
+	SSHKEY_DUMP(key);
+
 out:
 	BN_clear_free(n);
 	BN_clear_free(e);
@@ -410,6 +424,8 @@ sshbuf_read_pub_rsa_inv(struct sshbuf *buf, struct sshkey *key) {
 		goto out;
 	}
 	n = e = NULL; /* transferred */
+
+	SSHKEY_DUMP(key);
 
 out:
 	BN_clear_free(n);
@@ -456,6 +472,9 @@ sshbuf_read_priv_rsa(struct sshbuf *buf, struct sshkey *key) {
 	p = q = NULL; /* transferred */
 
 	r = sshrsa_complete_crt_parameters(key, iqmp);
+	if (r != 0) goto out;
+
+	SSHKEY_DUMP(key);
 
 out:
 	BN_clear_free(d);
@@ -509,6 +528,8 @@ sshbuf_read_pub_dsa(struct sshbuf *buf, struct sshkey *key) {
 	}
 	pub_key = NULL; /* transferred */
 
+	SSHKEY_DUMP(key);
+
 out:
 	BN_clear_free(p);
 	BN_clear_free(q);
@@ -551,6 +572,8 @@ sshbuf_read_priv_dsa(struct sshbuf *buf, struct sshkey *key) {
 	}
 	priv_key = NULL; /* transferred */
 
+	SSHKEY_DUMP(key);
+
 out:
 	BN_clear_free(priv_key);
 
@@ -587,6 +610,9 @@ sshbuf_read_pub_ecdsa(struct sshbuf *buf, struct sshkey *key) {
 	}
 
 	r = sshbuf_get_eckey(buf, key->ecdsa);
+	if (r != 0) goto out;
+
+	SSHKEY_DUMP(key);
 
 out:
 	free(curve);
@@ -623,6 +649,9 @@ sshbuf_read_priv_ecdsa(struct sshbuf *buf, struct sshkey *key) {
 	    EC_KEY_get0_public_key(key->ecdsa))) != 0)
 		goto out;
 	r = sshkey_ec_validate_private(key->ecdsa);
+	if (r != 0) goto out;
+
+	SSHKEY_DUMP(key);
 
 out:
 	BN_clear_free(exponent);

@@ -1474,17 +1474,11 @@ noblob:
 		RSA_free(ret->rsa);
 		ret->rsa = k->rsa;
 		k->rsa = NULL;
-#ifdef DEBUG_PK
-		sshkey_dump(ret);
-#endif
 		break;
 	case KEY_DSA:
 		DSA_free(ret->dsa);
 		ret->dsa = k->dsa;
 		k->dsa = NULL;
-#ifdef DEBUG_PK
-		sshkey_dump(ret);
-#endif
 		break;
 # ifdef OPENSSL_HAS_ECC
 	case KEY_ECDSA:
@@ -1493,9 +1487,6 @@ noblob:
 		ret->ecdsa_nid = k->ecdsa_nid;
 		k->ecdsa = NULL;
 		k->ecdsa_nid = -1;
-#ifdef DEBUG_PK
-		sshkey_dump(ret);
-#endif
 		break;
 # endif /* OPENSSL_HAS_ECC */
 #endif /* WITH_OPENSSL */
@@ -2360,9 +2351,6 @@ sshkey_from_blob_internal(struct sshbuf *b, struct sshkey **keyp,
 
 		if ((ret = sshrsa_check_length(key->rsa)) != 0)
 			goto out;
-#ifdef DEBUG_PK
-		sshkey_dump(key);
-#endif
 		break;
 	case KEY_DSA_CERT:
 		/* Skip nonce */
@@ -2378,9 +2366,6 @@ sshkey_from_blob_internal(struct sshbuf *b, struct sshkey **keyp,
 		}
 		ret = sshbuf_read_pub_dsa(b, key);
 		if (ret != 0) goto out;
-#ifdef DEBUG_PK
-		sshkey_dump(key);
-#endif
 		break;
 # ifdef OPENSSL_HAS_ECC
 	case KEY_ECDSA_CERT:
@@ -2406,9 +2391,6 @@ sshkey_from_blob_internal(struct sshbuf *b, struct sshkey **keyp,
 			ret = SSH_ERR_KEY_INVALID_EC_VALUE;
 			goto out;
 		}
-#ifdef DEBUG_PK
-		sshkey_dump(key);
-#endif
 		break;
 # endif /* OPENSSL_HAS_ECC */
 #endif /* WITH_OPENSSL */
@@ -4121,9 +4103,6 @@ sshkey_parse_private_pem_fileblob(struct sshbuf *blob, int type,
 	if (evp_id == EVP_PKEY_RSA && (type == KEY_UNSPEC || type == KEY_RSA)) {
 		r = sshkey_from_pkey_rsa(pk, &prv);
 		if (r != 0) goto out;
-#ifdef DEBUG_PK
-		sshkey_dump(prv);
-#endif
 		if (RSA_blinding_on(prv->rsa, NULL) != 1) {
 			r = SSH_ERR_LIBCRYPTO_ERROR;
 			goto out;
@@ -4134,9 +4113,6 @@ sshkey_parse_private_pem_fileblob(struct sshbuf *blob, int type,
 	if (evp_id == EVP_PKEY_DSA && (type == KEY_UNSPEC || type == KEY_DSA)) {
 		r = sshkey_from_pkey_dsa(pk, &prv);
 		if (r != 0) goto out;
-#ifdef DEBUG_PK
-		sshkey_dump(prv);
-#endif
 #ifdef OPENSSL_HAS_ECC
 	} else
 	if (evp_id == EVP_PKEY_EC && (type == KEY_UNSPEC || type == KEY_ECDSA)) {
@@ -4148,9 +4124,6 @@ sshkey_parse_private_pem_fileblob(struct sshbuf *blob, int type,
 			r = SSH_ERR_INVALID_FORMAT;
 			goto out;
 		}
-# ifdef DEBUG_PK
-		sshkey_dump(prv);
-# endif
 #endif /* OPENSSL_HAS_ECC */
 	} else {
 		r = SSH_ERR_INVALID_FORMAT;

@@ -622,18 +622,12 @@ x509_to_key(X509 *x509) {
 		if (sshkey_from_pkey_rsa(env_pkey, &key) != 0)
 			goto err;
 		(void)ssh_x509_set_cert(key, x509, NULL);
-#ifdef DEBUG_PK
-		sshkey_dump(key);
-#endif
 		break;
 
 	case EVP_PKEY_DSA:
 		if (sshkey_from_pkey_dsa(env_pkey, &key) != 0)
 			goto err;
 		(void)ssh_x509_set_cert(key, x509, NULL);
-#ifdef DEBUG_PK
-		sshkey_dump(key);
-#endif
 		break;
 
 #ifdef OPENSSL_HAS_ECC
@@ -653,9 +647,6 @@ x509_to_key(X509 *x509) {
 			goto err;
 		}
 		(void)ssh_x509_set_cert(key, x509, NULL);
-#ifdef DEBUG_PK
-		sshkey_dump(key);
-#endif
 		} break;
 #endif /*def OPENSSL_HAS_ECC*/
 
