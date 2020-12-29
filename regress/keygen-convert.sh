@@ -3,6 +3,41 @@
 
 tid="convert keys"
 
+do_test() {
+	fmt=$1
+	msg=$2
+	sfx=$3
+
+	case $fmt in
+	PKCS8)
+	  case $t in
+	  rsa|ec_p*|dsa);;
+	  *) return;;
+	  esac
+	  ;;
+	esac
+
+	trace "export $t private to $msg public"
+	${SSHKEYGEN} -q -e -m $fmt -f $OBJ/$t-key >$OBJ/$t-key-$sfx || \
+	    fail "export $t private to rfc4716 public"
+
+	trace "export $t public to $msg public"
+	${SSHKEYGEN} -q -e -m $fmt -f $OBJ/$t-key.only-pub >$OBJ/$t-key-$sfx.pub || \
+	    fail "$t public to $msg public"
+
+	cmp $OBJ/$t-key-$sfx $OBJ/$t-key-$sfx.pub || \
+	    fail "$t $msg exports differ between public and private"
+
+	trace "import $t $msg public"
+	${SSHKEYGEN} -q -i -m $fmt -f $OBJ/$t-key-$sfx >$OBJ/$t-$sfx-imported || \
+	    fail "$t import $msg public"
+
+	cmp $OBJ/$t-key-nocomment.pub $OBJ/$t-$sfx-imported || \
+	    fail "$t $msg imported differs from original"
+
+	rm -f $OBJ/$t-key-$sfx $OBJ/$t-key-$sfx.pub $OBJ/$t-$sfx-imported
+}
+
 for i in ${SSH_KEYTYPES}; do
 	case "$i" in
 	ssh-rsa)		t=rsa;     type="-t rsa" ;;
@@ -18,26 +53,11 @@ for i in ${SSH_KEYTYPES}; do
 	trace "generating $t key"
 	rm -f $OBJ/$t-key
 	${SSHKEYGEN} -q -N "" $type -f $OBJ/$t-key
+	mv $OBJ/$t-key.pub $OBJ/$t-key.only-pub
+	cut -f1,2 -d " " $OBJ/$t-key.only-pub >$OBJ/$t-key-nocomment.pub
 
-	trace "export $t private to rfc4716 public"
-	${SSHKEYGEN} -q -e -f $OBJ/$t-key >$OBJ/$t-key-rfc || \
-	    fail "export $t private to rfc4716 public"
+	do_test RFC4716 "rfc4716" rfc
+	do_test PKCS8 "pkcs#8" pk8
 
-	trace "export $t public to rfc4716 public"
-	${SSHKEYGEN} -q -e -f $OBJ/$t-key.pub >$OBJ/$t-key-rfc.pub || \
-	    fail "$t public to rfc4716 public"
-
-	cmp $OBJ/$t-key-rfc $OBJ/$t-key-rfc.pub || \
-	    fail "$t rfc4716 exports differ between public and private"
-
-	trace "import $t rfc4716 public"
-	${SSHKEYGEN} -q -i -f $OBJ/$t-key-rfc >$OBJ/$t-rfc-imported || \
-	    fail "$t import rfc4716 public"
-
-	cut -f1,2 -d " " $OBJ/$t-key.pub >$OBJ/$t-key-nocomment.pub
-	cmp $OBJ/$t-key-nocomment.pub $OBJ/$t-rfc-imported || \
-	    fail "$t imported differs from original"
-
-	rm -f $OBJ/$t-key $OBJ/$t-key.pub $OBJ/$t-key-rfc $OBJ/$t-key-rfc.pub \
-	    $OBJ/$t-rfc-imported $OBJ/$t-key-nocomment.pub
+	rm -f $OBJ/$t-key $OBJ/$t-key.only-pub $OBJ/$t-key-nocomment.pub
 done
