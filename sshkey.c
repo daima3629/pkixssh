@@ -4096,15 +4096,15 @@ sshkey_parse_private_pem_fileblob(struct sshbuf *blob, int type,
 		r = SSH_ERR_INVALID_FORMAT;
 		goto out;
 	}
-	if (prv) {
-		BIO_free(bio);
-		bio = BIO_new_mem_buf(sshbuf_mutable_ptr(blob), sshbuf_len(blob));
-		if (bio != NULL) {
-			x509key_parse_cert(prv, pk, bio);
-		} else {
-			r = SSH_ERR_ALLOC_FAIL;
-		}
+
+	BIO_free(bio);
+	bio = BIO_new_mem_buf(sshbuf_mutable_ptr(blob), sshbuf_len(blob));
+	if (bio == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto out;
 	}
+	x509key_parse_cert(prv, pk, bio);
+
 	r = 0;
 	if (keyp != NULL) {
 		*keyp = prv;
