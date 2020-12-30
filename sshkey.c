@@ -1471,22 +1471,14 @@ noblob:
 	switch (sshkey_type_plain(ret->type)) {
 #ifdef WITH_OPENSSL
 	case KEY_RSA:
-		RSA_free(ret->rsa);
-		ret->rsa = k->rsa;
-		k->rsa = NULL;
+		sshkey_move_rsa(k, ret);
 		break;
 	case KEY_DSA:
-		DSA_free(ret->dsa);
-		ret->dsa = k->dsa;
-		k->dsa = NULL;
+		sshkey_move_dsa(k, ret);
 		break;
 # ifdef OPENSSL_HAS_ECC
 	case KEY_ECDSA:
-		EC_KEY_free(ret->ecdsa);
-		ret->ecdsa = k->ecdsa;
-		ret->ecdsa_nid = k->ecdsa_nid;
-		k->ecdsa = NULL;
-		k->ecdsa_nid = -1;
+		sshkey_move_ecdsa(k, ret);
 		break;
 # endif /* OPENSSL_HAS_ECC */
 #endif /* WITH_OPENSSL */

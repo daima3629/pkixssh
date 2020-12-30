@@ -309,6 +309,32 @@ out:
 #endif /* OPENSSL_HAS_ECC */
 
 
+void
+sshkey_move_rsa(struct sshkey *from, struct sshkey *to) {
+	RSA_free(to->rsa);
+	to->rsa = from->rsa;
+	from->rsa = NULL;
+}
+
+void
+sshkey_move_dsa(struct sshkey *from, struct sshkey *to) {
+	DSA_free(to->dsa);
+	to->dsa = from->dsa;
+	from->dsa = NULL;
+}
+
+#ifdef OPENSSL_HAS_ECC
+void
+sshkey_move_ecdsa(struct sshkey *from, struct sshkey *to) {
+	EC_KEY_free(to->ecdsa);
+	to->ecdsa = from->ecdsa;
+	from->ecdsa = NULL;
+	to->ecdsa_nid = from->ecdsa_nid;
+	from->ecdsa_nid = -1;
+}
+#endif /* OPENSSL_HAS_ECC */
+
+
 int/*bool*/
 sshkey_equal_public_rsa(const struct sshkey *ka, const struct sshkey *kb) {
 	const RSA *a, *b;
