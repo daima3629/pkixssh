@@ -364,6 +364,12 @@ void	sshkey_move_dsa(struct sshkey *from, struct sshkey *to);
 void	sshkey_move_ecdsa(struct sshkey *from, struct sshkey *to);
 #  endif /* OPENSSL_HAS_ECC */
 
+int	sshkey_generate_rsa(u_int bits, struct sshkey *key);
+int	sshkey_generate_dsa(u_int bits, struct sshkey *key);
+#  ifdef OPENSSL_HAS_ECC
+int	sshkey_generate_ecdsa(u_int bits, struct sshkey *key);
+#  endif /* OPENSSL_HAS_ECC */
+
 int	sshbuf_read_pub_rsa(struct sshbuf *buf, struct sshkey *key);
 int	sshbuf_read_pub_rsa_inv(struct sshbuf *buf, struct sshkey *key);
 int	sshbuf_read_priv_rsa(struct sshbuf *buf, struct sshkey *key);

@@ -1615,66 +1615,6 @@ sshkey_cert_type(const struct sshkey *k)
 }
 
 #ifdef WITH_OPENSSL
-static int
-rsa_generate_private_key(u_int bits, RSA **rsap)
-{
-	RSA *private = NULL;
-	BIGNUM *f4 = NULL;
-	int ret = SSH_ERR_INTERNAL_ERROR;
-
-	if (rsap == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
-	ret = sshrsa_verify_length(bits);
-	if (ret != 0) return ret;
-	if (bits > SSHBUF_MAX_BIGNUM * 8)
-		return SSH_ERR_KEY_LENGTH;
-	*rsap = NULL;
-	if ((private = RSA_new()) == NULL || (f4 = BN_new()) == NULL) {
-		ret = SSH_ERR_ALLOC_FAIL;
-		goto out;
-	}
-	if (!BN_set_word(f4, RSA_F4) ||
-	    !RSA_generate_key_ex(private, bits, f4, NULL)) {
-		ret = SSH_ERR_LIBCRYPTO_ERROR;
-		goto out;
-	}
-	*rsap = private;
-	private = NULL;
-	ret = 0;
- out:
-	RSA_free(private);
-	BN_free(f4);
-	return ret;
-}
-
-static int
-dsa_generate_private_key(u_int bits, DSA **dsap)
-{
-	DSA *private;
-	int ret = SSH_ERR_INTERNAL_ERROR;
-
-	if (dsap == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
-	ret = sshdsa_verify_length(bits);
-	if (ret != 0) return ret;
-	if ((private = DSA_new()) == NULL) {
-		ret = SSH_ERR_ALLOC_FAIL;
-		goto out;
-	}
-	*dsap = NULL;
-	if (!DSA_generate_parameters_ex(private, bits, NULL, 0, NULL,
-	    NULL, NULL) || !DSA_generate_key(private)) {
-		ret = SSH_ERR_LIBCRYPTO_ERROR;
-		goto out;
-	}
-	*dsap = private;
-	private = NULL;
-	ret = 0;
- out:
-	DSA_free(private);
-	return ret;
-}
-
 # ifdef OPENSSL_HAS_ECC
 int
 sshkey_ecdsa_key_to_nid(EC_KEY *k)
@@ -1719,34 +1659,6 @@ sshkey_ecdsa_key_to_nid(EC_KEY *k)
 	}
 	return nids[i];
 }
-
-static int
-ecdsa_generate_private_key(u_int bits, int *nid, EC_KEY **ecdsap)
-{
-	EC_KEY *private;
-	int ret = SSH_ERR_INTERNAL_ERROR;
-
-	if (nid == NULL || ecdsap == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
-	if ((*nid = sshkey_ecdsa_bits_to_nid(bits)) == -1)
-		return SSH_ERR_KEY_LENGTH;
-	*ecdsap = NULL;
-	if ((private = EC_KEY_new_by_curve_name(*nid)) == NULL) {
-		ret = SSH_ERR_ALLOC_FAIL;
-		goto out;
-	}
-	if (EC_KEY_generate_key(private) != 1) {
-		ret = SSH_ERR_LIBCRYPTO_ERROR;
-		goto out;
-	}
-	EC_KEY_set_asn1_flag(private, OPENSSL_EC_NAMED_CURVE);
-	*ecdsap = private;
-	private = NULL;
-	ret = 0;
- out:
-	EC_KEY_free(private);
-	return ret;
-}
 # endif /* OPENSSL_HAS_ECC */
 #endif /* WITH_OPENSSL */
 
@@ -1778,16 +1690,15 @@ sshkey_generate(int type, u_int bits, struct sshkey **keyp)
 #endif /* WITH_XMSS */
 #ifdef WITH_OPENSSL
 	case KEY_DSA:
-		ret = dsa_generate_private_key(bits, &k->dsa);
+		ret = sshkey_generate_dsa(bits, k);
 		break;
 # ifdef OPENSSL_HAS_ECC
 	case KEY_ECDSA:
-		ret = ecdsa_generate_private_key(bits, &k->ecdsa_nid,
-		    &k->ecdsa);
+		ret = sshkey_generate_ecdsa(bits, k);
 		break;
 # endif /* OPENSSL_HAS_ECC */
 	case KEY_RSA:
-		ret = rsa_generate_private_key(bits, &k->rsa);
+		ret = sshkey_generate_rsa(bits, k);
 		break;
 #endif /* WITH_OPENSSL */
 	default:

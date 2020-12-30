@@ -476,6 +476,99 @@ sshkey_validate_private_ecdsa(const struct sshkey *key) {
 
 
 int
+sshkey_generate_rsa(u_int bits, struct sshkey *key) {
+	RSA *private = NULL;
+	BIGNUM *f4 = NULL;
+	int r;
+
+	r = sshrsa_verify_length(bits);
+	if (r != 0) return r;
+
+	if (bits > SSHBUF_MAX_BIGNUM * 8)
+		return SSH_ERR_KEY_LENGTH;
+
+	if ((private = RSA_new()) == NULL || (f4 = BN_new()) == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto out;
+	}
+	if (!BN_set_word(f4, RSA_F4) ||
+	    !RSA_generate_key_ex(private, bits, f4, NULL)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto out;
+	}
+
+	key->rsa = private;
+	private = NULL;
+	r = 0;
+
+out:
+	RSA_free(private);
+	BN_free(f4);
+	return r;
+}
+
+int
+sshkey_generate_dsa(u_int bits, struct sshkey *key) {
+	DSA *private;
+	int r;
+
+	r = sshdsa_verify_length(bits);
+	if (r != 0) return r;
+
+	if ((private = DSA_new()) == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto out;
+	}
+
+	if (!DSA_generate_parameters_ex(private, bits, NULL, 0, NULL, NULL, NULL) ||
+	    !DSA_generate_key(private)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto out;
+	}
+
+	key->dsa = private;
+	private = NULL;
+	r = 0;
+
+out:
+	DSA_free(private);
+	return r;
+}
+
+#ifdef OPENSSL_HAS_ECC
+int
+sshkey_generate_ecdsa(u_int bits, struct sshkey *key) {
+	EC_KEY *private;
+	int r, nid;
+
+	nid = sshkey_ecdsa_bits_to_nid(bits);
+	if (nid == -1) return SSH_ERR_KEY_LENGTH;
+
+	if ((private = EC_KEY_new_by_curve_name(nid)) == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto out;
+	}
+
+	if (EC_KEY_generate_key(private) != 1) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto out;
+	}
+
+	EC_KEY_set_asn1_flag(private, OPENSSL_EC_NAMED_CURVE);
+
+	key->ecdsa = private;
+	key->ecdsa_nid = nid;
+	private = NULL;
+	r = 0;
+
+out:
+	EC_KEY_free(private);
+	return r;
+}
+#endif /* OPENSSL_HAS_ECC */
+
+
+int
 sshbuf_read_pub_rsa(struct sshbuf *buf, struct sshkey *key) {
 	int r;
 	BIGNUM *n = NULL, *e = NULL;
