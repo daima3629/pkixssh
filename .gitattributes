@@ -1,4 +1,4 @@
 .gitattributes export-ignore
 .gitignore export-ignore
 
-/README.platform gitlab-language=asciidoc
+/README.* gitlab-language=markdown
