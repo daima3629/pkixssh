@@ -1,5 +1,5 @@
 #! /bin/sh
-# Copyright (c) 2011-2018 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2011-2020 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -30,5 +30,5 @@ SCRIPTDIR=`echo $0 | sed 's/2-cre_key.sh$//'`
 
 test "x$TEST_SSH_SSHKEYGEN" = "x" && { echo "${warn}Please define ${attn}TEST_SSH_SSHKEYGEN${norm}" >&2 ; exit 1; }
 
-# X.509 keys require portable PEM format instead proprietary
-$TEST_SSH_SSHKEYGEN -m PEM ${1+"$@"}
+# X.509 keys require portable PKCS#8 format instead proprietary
+$TEST_SSH_SSHKEYGEN -m PKCS8 ${1+"$@"}
