@@ -352,9 +352,9 @@ engine_load_private_type(int type, const char *filename,
 	const char *passphrase, struct sshkey **keyp, char **commentp
 ) {
 	int ret;
-	char *engkeyid = NULL;
-	const char *name = "<no key>";
 	ENGINE *e = NULL;
+	char *key_id = NULL;
+	const char *e_id;
 	EVP_PKEY *pk = NULL;
 	struct sshkey *prv = NULL;
 
@@ -362,15 +362,16 @@ engine_load_private_type(int type, const char *filename,
 	if (keyp != NULL) *keyp = NULL;
 	if (commentp != NULL) *commentp = NULL;
 
-	e = split_eng_keyid(filename, &engkeyid);
+	e = split_eng_keyid(filename, &key_id);
 	if (e == NULL) {
 		ret = SSH_ERR_INVALID_ARGUMENT;
 		goto done;
 	}
+	e_id = ENGINE_get_id(e);
 
-	pk = ENGINE_load_private_key(e, engkeyid, ssh_ui_method, NULL);
+	pk = ENGINE_load_private_key(e, key_id, ssh_ui_method, NULL);
 	if (pk == NULL) {
-		error_crypto_fmt("ENGINE_load_private_key", "engine %s", ENGINE_get_id(e));
+		error_crypto_fmt("ENGINE_load_private_key", "engine %s", e_id);
 		ret = SSH_ERR_KEY_NOT_FOUND;
 		goto done;
 	}
@@ -378,26 +379,26 @@ engine_load_private_type(int type, const char *filename,
 	ret = sshkey_from_EVP_PKEY(type, pk, &prv);
 	if (ret != SSH_ERR_SUCCESS) goto done;
 
-	switch (prv->type) {
-	case KEY_RSA: name = "rsa(nss)"; break;
-	case KEY_DSA: name = "dsa(nss)"; break;
-#ifdef OPENSSL_HAS_ECC
-	case KEY_ECDSA: name = "ecdsa(nss)"; break;
-#endif /*def OPENSSL_HAS_ECC*/
-	}
-
-	eng_try_load_cert(e, engkeyid, pk, prv);
+	eng_try_load_cert(e, key_id, pk, prv);
 	debug3("ENGINE private key type: %s", sshkey_type(prv));
 
-done:
-	if (keyp != NULL) *keyp = prv;
-	if (commentp != NULL) *commentp = xstrdup(name);
+	if (commentp != NULL)
+		xasprintf(commentp, "engine:%s:%s", e_id, key_id);
 
+	if (keyp != NULL) {
+		*keyp = prv;
+		prv = NULL;
+	}
+
+done:
 	EVP_PKEY_free(pk);
-	free(engkeyid);
-	if (e != NULL)
+	free(key_id);
+	if (e != NULL) {
+		/* check for NULL to avoid openssl error*/
 		ENGINE_free(e);
+	}
 	debug("read ENGINE private key done: type %s", (prv ? sshkey_type(prv) : "<not found>"));
+	sshkey_free(prv);
 	return ret;
 }
 
@@ -405,36 +406,34 @@ done:
 int
 engine_try_load_public(const char *filename, struct sshkey **keyp, char **commentp) {
 	int ret = SSH_ERR_INTERNAL_ERROR;
-	char *keyid = NULL;
-	char *engkeyid = NULL;
+	const char *url = NULL;
 	ENGINE *e = NULL;
+	char *key_id = NULL;
 	EVP_PKEY *pk = NULL;
 	struct sshkey *k = NULL;
 
 	debug3_f("filename=%s", filename);
-	if (keyp != NULL)
-		*keyp = NULL;
-	if (commentp != NULL)
-		*commentp = NULL;
+	if (keyp != NULL) *keyp = NULL;
+	if (commentp != NULL) *commentp = NULL;
 
-	keyid = ignore_suffixes(filename);
+	url = ignore_suffixes(filename);
 /* NOTE: For external keys simulate "missing" file.
  * This suppress extra messages due to faulty load control in ssh.c
  */
-	if (keyid == NULL) {
+	if (url == NULL) {
 		errno = ENOENT;
 		return SSH_ERR_SYSTEM_ERROR;
 	}
 
-	debug3_f("keyid=%s", keyid);
+	debug3_f("url=%s", url);
 
-	e = split_eng_keyid(keyid, &engkeyid);
+	e = split_eng_keyid(url, &key_id);
 	if (e == NULL) {
 		ret = SSH_ERR_INVALID_ARGUMENT;
 		goto done;
 	}
 
-	pk = ENGINE_load_public_key(e, engkeyid, ssh_ui_method, NULL);
+	pk = ENGINE_load_public_key(e, key_id, ssh_ui_method, NULL);
 	if (pk == NULL) {
 		error_crypto_fmt("ENGINE_load_public_key", "engine %s", ENGINE_get_id(e));
 		/* fatal here to avoid PIN lock, for instance
@@ -450,21 +449,26 @@ engine_try_load_public(const char *filename, struct sshkey **keyp, char **commen
 	ret = sshkey_from_EVP_PKEY(KEY_UNSPEC, pk, &k);
 	if (ret != SSH_ERR_SUCCESS) goto done;
 
-	eng_try_load_cert(e, engkeyid, pk, k);
+	eng_try_load_cert(e, key_id, pk, k);
 	debug3("ENGINE public key type: %s", sshkey_type(k));
 
-	if (commentp != NULL) *commentp = xstrdup(engkeyid);
+	if (commentp != NULL)
+		xasprintf(commentp, "engine:%s", url);
 
-	*keyp = k;
-	k = NULL;
+	if (keyp != NULL) {
+		*keyp = k;
+		k = NULL;
+	}
 
 done:
 	sshkey_free(k);
 	EVP_PKEY_free(pk);
-	free(engkeyid);
-	free(keyid);
-	if (e != NULL)
+	free(key_id);
+	free((void*)url);
+	if (e != NULL) {
+		/* check for NULL to avoid openssl error*/
 		ENGINE_free(e);
+	}
 	return(ret);
 }
 
@@ -817,11 +821,11 @@ store_load_private_type(int type, const char *filename,
 ) {
 	int ret;
 	const char *url = filename;
-	const char *name = "<no key>";
 	STORE_KEY_DATA *kd = NULL;
 	struct sshkey *prv = NULL;
 
 	UNUSED(passphrase);
+	debug3_f("filename=%s", filename);
 	if (keyp != NULL) *keyp = NULL;
 	if (commentp != NULL) *commentp = NULL;
 
@@ -834,22 +838,19 @@ store_load_private_type(int type, const char *filename,
 	ret = sshkey_from_EVP_PKEY(type, kd->pk, &prv);
 	if (ret != SSH_ERR_SUCCESS) goto done;
 
-	switch (prv->type) {
-	case KEY_RSA: name = "rsa(store)"; break;
-	case KEY_DSA: name = "dsa(store)"; break;
-#ifdef OPENSSL_HAS_ECC
-	case KEY_ECDSA: name = "ecdsa(store)"; break;
-#endif /*def OPENSSL_HAS_ECC*/
-	}
-
 	store_set_key_certs(kd, prv);
 
+	if (commentp != NULL)
+		xasprintf(commentp, "store:%s", url);
+
+	if (keyp != NULL) {
+		*keyp = prv;
+		prv = NULL;
+	}
+
 done:
-	if (keyp != NULL) *keyp = prv;
-	if (commentp != NULL) *commentp = xstrdup(name);
-
+	sshkey_free(prv);
 	STORE_KEY_DATA_free(kd);
-
 	return ret;
 }
 
@@ -862,10 +863,8 @@ store_try_load_public(const char *filename, struct sshkey **keyp, char **comment
 	struct sshkey *k = NULL;
 
 	debug3_f("filename=%s", filename);
-	if (keyp != NULL)
-		*keyp = NULL;
-	if (commentp != NULL)
-		*commentp = NULL;
+	if (keyp != NULL) *keyp = NULL;
+	if (commentp != NULL) *commentp = NULL;
 
 	url = ignore_suffixes(filename);
 /* NOTE: For external keys simulate "missing" file.
@@ -889,10 +888,13 @@ store_try_load_public(const char *filename, struct sshkey **keyp, char **comment
 
 	store_set_key_certs(kd, k);
 
-	if (commentp != NULL) *commentp = xstrdup(url);
+	if (commentp != NULL)
+		xasprintf(commentp, "store:%s", url);
 
-	*keyp = k;
-	k = NULL;
+	if (keyp != NULL) {
+		*keyp = k;
+		k = NULL;
+	}
 
 done:
 	sshkey_free(k);
