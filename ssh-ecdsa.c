@@ -25,56 +25,60 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#define SSHKEY_INTERNAL
 #include "includes.h"
 
 #if defined(WITH_OPENSSL) && defined(OPENSSL_HAS_ECC)
 
 #include <sys/types.h>
 
-#include <openssl/bn.h>
-#include <openssl/ec.h>
-#include <openssl/ecdsa.h>
-#include <openssl/evp.h>
 #include "evp-compat.h"
+#include <openssl/bn.h>
 
 #include <string.h>
 
+#include "sshkey.h"
 #include "sshbuf.h"
 #include "ssherr.h"
-#include "digest.h"
-#define SSHKEY_INTERNAL
-#include "sshkey.h"
+#include "log.h"
+#include "xmalloc.h"
 
-#if 1
-# define USE_EC_PKEY_SIGN
-#endif
-#if 1
-# define USE_EC_PKEY_VERIFY
-#endif
 
-#if defined(USE_EC_PKEY_SIGN) || defined(USE_EC_PKEY_VERIFY)
-# include "log.h"
-# include "xmalloc.h"
-#endif
+static const EVP_MD*
+ssh_ecdsa_evp_md(const struct sshkey *key)
+{
+	switch (key->ecdsa_nid) {
+	case NID_X9_62_prime256v1: return ssh_ecdsa_EVP_sha256();
+	case NID_secp384r1:	   return ssh_ecdsa_EVP_sha384();
+#ifdef OPENSSL_HAS_NISTP521
+	case NID_secp521r1:	   return ssh_ecdsa_EVP_sha512();
+#endif /* OPENSSL_HAS_NISTP521 */
+	}
+	return NULL;
+}
 
-#ifdef USE_EC_PKEY_SIGN
 /* caller must free result */
-static ECDSA_SIG*
-ssh_ecdsa_pkey_sign(EC_KEY *ec, const EVP_MD *type, const u_char *data, u_int datalen) {
+static int
+ssh_ecdsa_sign_pkey(const struct sshkey *key,
+    ECDSA_SIG **sigp, const u_char *data, u_int datalen
+) {
 	ECDSA_SIG *sig = NULL;
-
+	const EVP_MD *type;
 	EVP_PKEY *pkey = NULL;
 	u_char *tsig = NULL;
 	u_int slen, len;
 	int ret;
 
+	type = ssh_ecdsa_evp_md(key);
+	if (type == NULL) return SSH_ERR_INTERNAL_ERROR;
+
 	pkey = EVP_PKEY_new();
 	if (pkey == NULL) {
 		error_f("out of memory");
-		return NULL;
+		return SSH_ERR_ALLOC_FAIL;
 	}
 
-	EVP_PKEY_set1_EC_KEY(pkey, ec);
+	EVP_PKEY_set1_EC_KEY(pkey, key->ecdsa);
 
 	slen = EVP_PKEY_size(pkey);
 	tsig = xmalloc(slen);	/*fatal on error*/
@@ -131,19 +135,21 @@ clean:
 
 	if (pkey != NULL) EVP_PKEY_free(pkey);
 
-	return sig;
+	if (sig == NULL)
+		return SSH_ERR_LIBCRYPTO_ERROR;
+
+	*sigp = sig;
+	return 0;
 }
-#endif /*def USE_EC_PKEY_SIGN*/
 
 int
 ssh_ecdsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
     const u_char *data, size_t datalen, u_int compat)
 {
 	ECDSA_SIG *sig = NULL;
-	int hash_alg;
 	size_t len;
 	struct sshbuf *b = NULL, *bb = NULL;
-	int ret = SSH_ERR_INTERNAL_ERROR;
+	int ret;
 
 	UNUSED(compat);
 	if (lenp != NULL)
@@ -155,43 +161,8 @@ ssh_ecdsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 	    sshkey_type_plain(key->type) != KEY_ECDSA)
 		return SSH_ERR_INVALID_ARGUMENT;
 
-#ifndef USE_EC_PKEY_SIGN
-{
-	u_char digest[SSH_DIGEST_MAX_LENGTH];
-	size_t dlen;
-
-	if ((hash_alg = sshkey_ec_nid_to_hash_alg(key->ecdsa_nid)) == -1 ||
-	    (dlen = ssh_digest_bytes(hash_alg)) == 0)
-		return SSH_ERR_INTERNAL_ERROR;
-	if ((ret = ssh_digest_memory(hash_alg, data, datalen,
-	    digest, sizeof(digest))) != 0)
-		goto out;
-
-	if ((sig = ECDSA_do_sign(digest, dlen, key->ecdsa)) == NULL) {
-		ret = SSH_ERR_LIBCRYPTO_ERROR;
-		explicit_bzero(digest, sizeof(digest));
-		goto out;
-	}
-	explicit_bzero(digest, sizeof(digest));
-}
-#else
-{
-	const EVP_MD *md;
-
-	hash_alg = sshkey_ec_nid_to_hash_alg(key->ecdsa_nid);
-	switch (hash_alg) {
-	case SSH_DIGEST_SHA256: md = ssh_ecdsa_EVP_sha256(); break;
-	case SSH_DIGEST_SHA384: md = ssh_ecdsa_EVP_sha384(); break;
-	case SSH_DIGEST_SHA512: md = ssh_ecdsa_EVP_sha512(); break;
-	default:
-		return SSH_ERR_INTERNAL_ERROR;
-	}
-	if ((sig = ssh_ecdsa_pkey_sign(key->ecdsa, md, data, datalen)) == NULL) {
-		ret = SSH_ERR_LIBCRYPTO_ERROR;
-		goto out;
-	}
-}
-#endif
+	ret = ssh_ecdsa_sign_pkey(key, &sig, data, datalen);
+	if (ret != 0) goto out;
 
 	if ((bb = sshbuf_new()) == NULL || (b = sshbuf_new()) == NULL) {
 		ret = SSH_ERR_ALLOC_FAIL;
@@ -225,15 +196,18 @@ ssh_ecdsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 	return ret;
 }
 
-#ifdef USE_EC_PKEY_VERIFY
 static int
-ssh_ecdsa_pkey_verify(EC_KEY *ec, const EVP_MD *type,
+ssh_ecdsa_verify_pkey(const struct sshkey *key,
     ECDSA_SIG *sig, const u_char *data, u_int datalen)
 {
 	int ret;
 	u_char *tsig = NULL;
 	u_int len;
+	const EVP_MD *type;
 	EVP_PKEY *pkey = NULL;
+
+	type = ssh_ecdsa_evp_md(key);
+	if (type == NULL) return SSH_ERR_INTERNAL_ERROR;
 
 	/* Sig is in ECDSA_SIG structure, convert to encoded buffer */
 	len = i2d_ECDSA_SIG(sig, NULL);
@@ -250,7 +224,7 @@ ssh_ecdsa_pkey_verify(EC_KEY *ec, const EVP_MD *type,
 		ret = SSH_ERR_ALLOC_FAIL;
 		goto done;
 	}
-	EVP_PKEY_set1_EC_KEY(pkey, ec);
+	EVP_PKEY_set1_EC_KEY(pkey, key->ecdsa);
 
 { /* now verify signature */
 	int ok;
@@ -308,7 +282,6 @@ done:
 
 	return ret;
 }
-#endif
 
 int
 ssh_ecdsa_verify(const struct sshkey *key,
@@ -316,21 +289,15 @@ ssh_ecdsa_verify(const struct sshkey *key,
     const u_char *data, size_t datalen, u_int compat)
 {
 	ECDSA_SIG *sig = NULL;
-	int hash_alg;
-	size_t dlen;
-	int ret = SSH_ERR_INTERNAL_ERROR;
 	struct sshbuf *b = NULL, *sigbuf = NULL;
 	char *ktype = NULL;
+	int ret;
 
 	UNUSED(compat);
 	if (key == NULL || key->ecdsa == NULL ||
 	    sshkey_type_plain(key->type) != KEY_ECDSA ||
 	    signature == NULL || signaturelen == 0)
 		return SSH_ERR_INVALID_ARGUMENT;
-
-	if ((hash_alg = sshkey_ec_nid_to_hash_alg(key->ecdsa_nid)) == -1 ||
-	    (dlen = ssh_digest_bytes(hash_alg)) == 0)
-		return SSH_ERR_INTERNAL_ERROR;
 
 	/* fetch signature */
 	if ((b = sshbuf_from(signature, signaturelen)) == NULL)
@@ -380,43 +347,7 @@ parse_out:
 		ret = SSH_ERR_UNEXPECTED_TRAILING_DATA;
 		goto out;
 	}
-#ifndef USE_EC_PKEY_VERIFY
-{
-	u_char digest[SSH_DIGEST_MAX_LENGTH];
-
-	if ((ret = ssh_digest_memory(hash_alg, data, datalen,
-	    digest, sizeof(digest))) != 0)
-		goto out;
-
-	switch (ECDSA_do_verify(digest, dlen, sig, key->ecdsa)) {
-	case 1:
-		ret = 0;
-		break;
-	case 0:
-		ret = SSH_ERR_SIGNATURE_INVALID;
-		break;
-	default:
-		ret = SSH_ERR_LIBCRYPTO_ERROR;
-		break;
-	}
-	explicit_bzero(digest, sizeof(digest));
-}
-#else
-{
-	const EVP_MD *md;
-
-	switch (hash_alg) {
-	case SSH_DIGEST_SHA256: md = ssh_ecdsa_EVP_sha256(); break;
-	case SSH_DIGEST_SHA384: md = ssh_ecdsa_EVP_sha384(); break;
-	case SSH_DIGEST_SHA512: md = ssh_ecdsa_EVP_sha512(); break;
-	default: {
-		ret = SSH_ERR_INTERNAL_ERROR;
-		goto out;
-		}
-	}
-	ret = ssh_ecdsa_pkey_verify(key->ecdsa, md, sig, data, datalen);
-}
-#endif
+	ret = ssh_ecdsa_verify_pkey(key, sig, data, datalen);
 
  out:
 	sshbuf_free(sigbuf);
