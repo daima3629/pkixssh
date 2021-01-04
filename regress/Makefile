@@ -130,7 +130,7 @@ CLEANFILES=	*.core actual agent-key.* authkeys_orig \
 		scp-ssh-wrapper.scp sftp-server.log \
 		sftp-server.sh sftp.log ssh-log-wrapper.sh ssh.log \
 		ssh-rsa_oldfmt \
-		ssh_config ssh_config.* ssh_proxy ssh_proxy_bak \
+		ssh_config ssh_config.* ssh_proxy ssh_proxy.orig ssh_proxy_bak \
 		ssh_proxy_envpass sshd.log sshd_config sshd_config_minimal \
 		sshd_config.* sshd_proxy sshd_proxy.* sshd_proxy_bak \
 		sshd_proxy_orig t10.out t10.out.pub t12.out t12.out.pub \

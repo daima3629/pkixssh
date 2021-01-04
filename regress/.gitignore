@@ -76,6 +76,7 @@ ssh.log
 ssh_config
 ssh_config.*
 ssh_proxy
+ssh_proxy.orig
 ssh_proxy_bak
 ssh_proxy_envpass
 sshd.log
