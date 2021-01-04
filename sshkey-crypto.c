@@ -885,6 +885,11 @@ sshbuf_read_pub_ecdsa(struct sshbuf *buf, struct sshkey *key) {
 		r = SSH_ERR_LIBCRYPTO_ERROR;
 		goto out;
 	}
+#if defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x10100000L) || \
+    defined(LIBRESSL_VERSION_NUMBER)
+	/* Note OpenSSL 1.1.0 uses named curve parameter encoding by default. */
+	EC_KEY_set_asn1_flag(key->ecdsa, OPENSSL_EC_NAMED_CURVE);
+#endif
 
 	r = sshbuf_get_eckey(buf, key->ecdsa);
 	if (r != 0) goto out;
