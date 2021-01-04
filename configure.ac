@@ -191,7 +191,8 @@ if test "$GCC" = "yes" || test "$GCC" = "egcs"; then
 	OSSH_CHECK_CFLAG_COMPILE([-Wpointer-sign], [-Wno-pointer-sign])
 	OSSH_CHECK_CFLAG_COMPILE([-Wunused-parameter], [-Wno-unused-parameter])
 	OSSH_CHECK_CFLAG_COMPILE([-Wunused-result], [-Wno-unused-result])
-	OSSH_CHECK_CFLAG_COMPILE([-Wimplicit-fallthrough])
+	#ignore bogus warnings on some compilers...
+	#OSSH_CHECK_CFLAG_COMPILE([-Wimplicit-fallthrough])
 	OSSH_CHECK_CFLAG_COMPILE([-fno-strict-aliasing])
     if $use_toolchain_hardening ; then
 	OSSH_CHECK_CFLAG_COMPILE([-mretpoline]) # clang
