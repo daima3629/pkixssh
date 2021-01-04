@@ -199,36 +199,6 @@ destroy_ssh_ui_method() {
 }
 
 
-static int
-sshkey_from_EVP_PKEY(int type, EVP_PKEY *pk, struct sshkey **keyp) {
-	int r, evp_id;
-	struct sshkey *ret;
-
-	evp_id = EVP_PKEY_base_id(pk);
-
-	/* NOTE do not set flags |= SSHKEY_FLAG_EXT !!! */
-	if (evp_id == EVP_PKEY_RSA && (type == KEY_UNSPEC || type == KEY_RSA)) {
-		r = sshkey_from_pkey_rsa(pk, &ret);
-	} else
-	if (evp_id == EVP_PKEY_DSA && (type == KEY_UNSPEC || type == KEY_DSA)) {
-		r = sshkey_from_pkey_dsa(pk, &ret);
-#ifdef OPENSSL_HAS_ECC
-	} else
-	if (evp_id == EVP_PKEY_EC && (type == KEY_UNSPEC || type == KEY_ECDSA)) {
-		r = sshkey_from_pkey_ecdsa(pk, &ret);
-#endif /*def OPENSSL_HAS_ECC*/
-	} else {
-		error_f("mismatch or unknown EVP_PKEY type %d", evp_id);
-		return SSH_ERR_KEY_TYPE_UNKNOWN;
-	}
-
-	if (r != 0) return r;
-
-	*keyp = ret;
-	return SSH_ERR_SUCCESS;
-}
-
-
 static char*
 ignore_suffixes(const char *filename) {
 	char* keyid;
@@ -376,11 +346,14 @@ engine_load_private_type(int type, const char *filename,
 		goto done;
 	}
 
-	ret = sshkey_from_EVP_PKEY(type, pk, &prv);
+	ret = EVP_PKEY_to_sshkey_type(type, pk, &prv);
 	if (ret != SSH_ERR_SUCCESS) goto done;
 
+	/* TODO: use EVP_PKEY from sshkey */
 	eng_try_load_cert(e, key_id, pk, prv);
 	debug3("ENGINE private key type: %s", sshkey_type(prv));
+
+	pk = NULL; /* transferred */
 
 	if (commentp != NULL)
 		xasprintf(commentp, "engine:%s:%s", e_id, key_id);
@@ -446,11 +419,14 @@ engine_try_load_public(const char *filename, struct sshkey **keyp, char **commen
 		goto done;
 	}
 
-	ret = sshkey_from_EVP_PKEY(KEY_UNSPEC, pk, &k);
+	ret = sshkey_from_pkey(pk, &k);
 	if (ret != SSH_ERR_SUCCESS) goto done;
 
+	/* TODO: use EVP_PKEY from sshkey */
 	eng_try_load_cert(e, key_id, pk, k);
 	debug3("ENGINE public key type: %s", sshkey_type(k));
+
+	pk = NULL; /* transferred */
 
 	if (commentp != NULL)
 		xasprintf(commentp, "engine:%s", url);
@@ -835,10 +811,13 @@ store_load_private_type(int type, const char *filename,
 		goto done;
 	}
 
-	ret = sshkey_from_EVP_PKEY(type, kd->pk, &prv);
+	ret = EVP_PKEY_to_sshkey_type(type, kd->pk, &prv);
 	if (ret != SSH_ERR_SUCCESS) goto done;
 
 	store_set_key_certs(kd, prv);
+	debug3("STORE private key type: %s", sshkey_type(prv));
+
+	kd->pk = NULL; /* transferred */
 
 	if (commentp != NULL)
 		xasprintf(commentp, "store:%s", url);
@@ -883,10 +862,13 @@ store_try_load_public(const char *filename, struct sshkey **keyp, char **comment
 		goto done;
 	}
 
-	ret = sshkey_from_EVP_PKEY(KEY_UNSPEC, kd->pk, &k);
+	ret = sshkey_from_pkey(kd->pk, &k);
 	if (ret != SSH_ERR_SUCCESS) goto done;
 
 	store_set_key_certs(kd, k);
+	debug3("STORE public key type: %s", sshkey_type(k));
+
+	kd->pk = NULL; /* transferred */
 
 	if (commentp != NULL)
 		xasprintf(commentp, "store:%s", url);

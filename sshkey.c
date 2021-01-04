@@ -637,6 +637,7 @@ sshkey_new(int type)
 	if ((k = calloc(1, sizeof(*k))) == NULL)
 		return NULL;
 	k->type = type;
+	k->pk = NULL;
 	k->ecdsa = NULL;
 	k->ecdsa_nid = -1;
 	k->dsa = NULL;
@@ -3961,7 +3962,7 @@ sshkey_parse_private_pem_fileblob(struct sshbuf *blob, int type,
 	EVP_PKEY *pk = NULL;
 	struct sshkey *prv = NULL;
 	BIO *bio = NULL;
-	int r, evp_id;
+	int r;
 
 	if (keyp != NULL)
 		*keyp = NULL;
@@ -3981,32 +3982,20 @@ sshkey_parse_private_pem_fileblob(struct sshbuf *blob, int type,
 		r = SSH_ERR_KEY_WRONG_PASSPHRASE;
 		goto out;
 	}
-	evp_id = EVP_PKEY_base_id(pk);
-	if (evp_id == EVP_PKEY_RSA && (type == KEY_UNSPEC || type == KEY_RSA)) {
-		r = sshkey_from_pkey_rsa(pk, &prv);
-		if (r != 0) goto out;
-	} else
-	if (evp_id == EVP_PKEY_DSA && (type == KEY_UNSPEC || type == KEY_DSA)) {
-		r = sshkey_from_pkey_dsa(pk, &prv);
-		if (r != 0) goto out;
-#ifdef OPENSSL_HAS_ECC
-	} else
-	if (evp_id == EVP_PKEY_EC && (type == KEY_UNSPEC || type == KEY_ECDSA)) {
-		r = sshkey_from_pkey_ecdsa(pk, &prv);
-		if (r != 0) goto out;
-#endif /* OPENSSL_HAS_ECC */
-	} else {
-		r = SSH_ERR_INVALID_FORMAT;
-		goto out;
-	}
+	r = EVP_PKEY_to_sshkey_type(type, pk, &prv);
+	if (r != 0) goto out;
 
 	BIO_free(bio);
 	bio = BIO_new_mem_buf(sshbuf_mutable_ptr(blob), sshbuf_len(blob));
 	if (bio == NULL) {
 		r = SSH_ERR_ALLOC_FAIL;
+		pk = NULL; /* transferred */
 		goto out;
 	}
+	/* TODO: use EVP_PKEY from sshkey */
 	x509key_parse_cert(prv, pk, bio);
+
+	pk = NULL; /* transferred */
 
 	r = 0;
 	if (keyp != NULL) {

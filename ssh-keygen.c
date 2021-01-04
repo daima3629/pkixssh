@@ -723,8 +723,7 @@ static void
 do_convert_from_pkcs8(struct sshkey **k, int *private)
 {
 	EVP_PKEY *pubkey;
-	struct sshkey* key;
-	int r, evp_id;
+	int r;
 
 	UNUSED(private);
 {
@@ -737,27 +736,10 @@ do_convert_from_pkcs8(struct sshkey **k, int *private)
 	}
 	fclose(fp);
 }
-	evp_id = EVP_PKEY_base_id(pubkey);
-	switch (evp_id) {
-	case EVP_PKEY_RSA:
-		r = sshkey_from_pkey_rsa(pubkey, &key);
-		break;
-	case EVP_PKEY_DSA:
-		r = sshkey_from_pkey_dsa(pubkey, &key);
-		break;
-#ifdef OPENSSL_HAS_ECC
-	case EVP_PKEY_EC:
-		r = sshkey_from_pkey_ecdsa(pubkey, &key);
-		break;
-#endif
-	default:
-		fatal_f("unsupported evp pkey type %d", evp_id);
-	}
+
+	r = sshkey_from_pkey(pubkey, k);
 	if (r != 0)
 		fatal_r(r , "creation from evp pkey failed");
-	*k = key;
-	EVP_PKEY_free(pubkey);
-	return;
 }
 
 static void

@@ -90,12 +90,18 @@ void
 sshkey_free_rsa(struct sshkey *key) {
 	RSA_free(key->rsa);
 	key->rsa = NULL;
+
+	EVP_PKEY_free(key->pk);
+	key->pk = NULL;
 }
 
 void
 sshkey_free_dsa(struct sshkey *key) {
 	DSA_free(key->dsa);
 	key->dsa = NULL;
+
+	EVP_PKEY_free(key->pk);
+	key->pk = NULL;
 }
 
 #ifdef OPENSSL_HAS_ECC
@@ -103,11 +109,14 @@ void
 sshkey_free_ecdsa(struct sshkey *key) {
 	EC_KEY_free(key->ecdsa);
 	key->ecdsa = NULL;
+
+	EVP_PKEY_free(key->pk);
+	key->pk = NULL;
 }
 #endif /* OPENSSL_HAS_ECC */
 
 
-int
+static int
 sshkey_from_pkey_rsa(EVP_PKEY *pk, struct sshkey **keyp) {
 	int r;
 	struct sshkey* key;
@@ -140,7 +149,7 @@ err:
 	return r;
 }
 
-int
+static int
 sshkey_from_pkey_dsa(EVP_PKEY *pk, struct sshkey **keyp) {
 	int r;
 	struct sshkey* key;
@@ -167,9 +176,9 @@ err:
 	sshkey_free(key);
 	return r;
 }
-#ifdef OPENSSL_HAS_ECC
 
-int
+#ifdef OPENSSL_HAS_ECC
+static int
 sshkey_from_pkey_ecdsa(EVP_PKEY *pk, struct sshkey **keyp) {
 	int r;
 	struct sshkey* key;
@@ -213,6 +222,58 @@ err:
 	return r;
 }
 #endif /* OPENSSL_HAS_ECC */
+
+int
+sshkey_from_pkey(EVP_PKEY *pk, struct sshkey **keyp) {
+	int r, evp_id;
+
+	/* NOTE do not set flags |= SSHKEY_FLAG_EXT !!! */
+	evp_id = EVP_PKEY_base_id(pk);
+	switch (evp_id) {
+	case EVP_PKEY_RSA:
+		r = sshkey_from_pkey_rsa(pk, keyp);
+		break;
+	case EVP_PKEY_DSA:
+		r = sshkey_from_pkey_dsa(pk, keyp);
+		break;
+#ifdef OPENSSL_HAS_ECC
+	case EVP_PKEY_EC:
+		r = sshkey_from_pkey_ecdsa(pk, keyp);
+		break;
+#endif /*def OPENSSL_HAS_ECC*/
+	default:
+		error_f("unsupported pkey type %d", evp_id);
+		r = SSH_ERR_KEY_TYPE_UNKNOWN;
+	}
+
+	if (r == 0)
+		(*keyp)->pk = pk;
+	return r;
+}
+
+
+int
+EVP_PKEY_to_sshkey_type(int type, EVP_PKEY *pk, struct sshkey **keyp) {
+	int evp_id;
+
+	if (type == KEY_UNSPEC) goto load;
+
+	evp_id = EVP_PKEY_base_id(pk);
+	if (
+	    (evp_id == EVP_PKEY_RSA && type == KEY_RSA) ||
+#ifdef OPENSSL_HAS_ECC
+	    (evp_id == EVP_PKEY_EC && type == KEY_ECDSA) ||
+#endif /*def OPENSSL_HAS_ECC*/
+	    (evp_id == EVP_PKEY_DSA && type == KEY_DSA)
+	)
+		goto load;
+
+	return SSH_ERR_KEY_TYPE_MISMATCH;
+
+load:
+/* called function sets SSH_ERR_KEY_TYPE_UNKNOWN if evp id is not supported */
+	return sshkey_from_pkey(pk, keyp);
+}
 
 
 int

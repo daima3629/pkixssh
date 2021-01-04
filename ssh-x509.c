@@ -606,43 +606,19 @@ static struct sshkey*
 x509_to_key(X509 *x509) {
 	struct sshkey *key = NULL;
 	EVP_PKEY *env_pkey;
+	int r;
 
 	env_pkey = X509_get_pubkey(x509);
 	if (env_pkey == NULL) {
 		error_crypto("X509_get_pubkey");
 		return NULL;
 	}
-#if 0
-	/*else*/
-	debug3_f("X509_get_pubkey done!");
-#endif
 
-	switch (EVP_PKEY_base_id(env_pkey)) {
-	case EVP_PKEY_RSA:
-		if (sshkey_from_pkey_rsa(env_pkey, &key) != 0)
-			goto err;
-		(void)ssh_x509_set_cert(key, x509, NULL);
-		break;
+	r = sshkey_from_pkey(env_pkey, &key);
+	if (r != 0) goto err;
 
-	case EVP_PKEY_DSA:
-		if (sshkey_from_pkey_dsa(env_pkey, &key) != 0)
-			goto err;
-		(void)ssh_x509_set_cert(key, x509, NULL);
-		break;
+	(void)ssh_x509_set_cert(key, x509, NULL);
 
-#ifdef OPENSSL_HAS_ECC
-	case EVP_PKEY_EC:
-		if (sshkey_from_pkey_ecdsa(env_pkey, &key) != 0)
-			goto err;
-		(void)ssh_x509_set_cert(key, x509, NULL);
-		break;
-#endif /*def OPENSSL_HAS_ECC*/
-
-	default:
-		error_f("unsupported EVP_PKEY type %d", EVP_PKEY_base_id(env_pkey));
-	}
-
-	EVP_PKEY_free(env_pkey);
 	return key;
 
 err:
