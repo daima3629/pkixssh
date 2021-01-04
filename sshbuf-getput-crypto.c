@@ -170,4 +170,45 @@ sshbuf_put_eckey(struct sshbuf *buf, const EC_KEY *v)
 	    EC_KEY_get0_group(v));
 }
 #endif /* OPENSSL_HAS_ECC */
+
+/* method used localy only in ssh-keygen.c */
+extern int
+sshbuf_get_bignum1x(struct sshbuf *buf, BIGNUM **valp);
+
+/*
+ * This is almost exactly the bignum1 encoding, but with 32 bit for length
+ * instead of 16.
+ */
+int
+sshbuf_get_bignum1x(struct sshbuf *buf, BIGNUM **valp) {
+	int r;
+	u_int32_t bignum_bits;
+	int bytes;
+	BIGNUM *val;
+
+	if ((r = sshbuf_get_u32(buf, &bignum_bits)) != 0)
+		return r;
+
+	bytes = (bignum_bits + 7) / 8;
+	if (sshbuf_len(buf) < (size_t)bytes)
+		return SSH_ERR_NO_BUFFER_SPACE;
+
+	val = BN_bin2bn(sshbuf_ptr(buf), bytes, NULL);
+	if (val == NULL)
+		return SSH_ERR_ALLOC_FAIL;
+
+	if ((r = sshbuf_consume(buf, bytes)) != 0) {
+		r = SSH_ERR_INTERNAL_ERROR;
+		goto out;
+	}
+
+	/* success */
+	*valp = val;
+	val = NULL;
+	r = 0;
+
+out:
+	BN_clear_free(val);
+	return r;
+}
 #endif /* WITH_OPENSSL */

@@ -487,38 +487,22 @@ do_convert_to(struct passwd *pw)
 	exit(0);
 }
 
-/*
- * This is almost exactly the bignum1 encoding, but with 32 bit for length
- * instead of 16.
- */
-static void
-buffer_get_bignum_bits(struct sshbuf *b, BIGNUM *value)
-{
-	u_int bytes, bignum_bits;
-	int r;
+/* defined in sshkey-crypto.c but used only localy here */
+extern int
+sshbuf_read_custom_rsa(struct sshbuf *buf, struct sshkey *key);
+extern int
+sshbuf_read_custom_dsa(struct sshbuf *buf, struct sshkey *key);
 
-	if ((r = sshbuf_get_u32(b, &bignum_bits)) != 0)
-		fatal_fr(r, "parse");
-	bytes = (bignum_bits + 7) / 8;
-	if (sshbuf_len(b) < bytes)
-		fatal_f("input buffer too small: need %d have %zu",
-		    bytes, sshbuf_len(b));
-	if (BN_bin2bn(sshbuf_ptr(b), bytes, value) == NULL)
-		fatal_f("BN_bin2bn failed");
-	if ((r = sshbuf_consume(b, bytes)) != 0)
-		fatal_fr(r, "consume");
-}
 
 static struct sshkey *
 do_convert_private_ssh2(struct sshbuf *b)
 {
 	struct sshkey *key = NULL;
 	char *type, *cipher;
-	u_char e1, e2, e3, *sig = NULL, data[] = "abcde12345";
+	u_char *sig = NULL, data[] = "abcde12345";
 	int r, rlen, ktype;
 	u_int magic, i1, i2, i3, i4;
 	size_t slen;
-	u_long e;
 
 	if ((r = sshbuf_get_u32(b, &magic)) != 0)
 		fatal_fr(r, "parse magic");
@@ -558,72 +542,14 @@ do_convert_private_ssh2(struct sshbuf *b)
 
 	switch (key->type) {
 	case KEY_DSA:
-		{
-		BIGNUM *p = NULL, *q = NULL, *g = NULL;
-		BIGNUM *pub_key = NULL, *priv_key = NULL;
-
-		if ((p = BN_new()) == NULL ||
-		    (q = BN_new()) == NULL ||
-		    (g = BN_new()) == NULL ||
-		    (pub_key = BN_new()) == NULL ||
-		    (priv_key = BN_new()) == NULL)
-			fatal_f("BN_new");
-		buffer_get_bignum_bits(b, p);
-		buffer_get_bignum_bits(b, g);
-		buffer_get_bignum_bits(b, q);
-		buffer_get_bignum_bits(b, pub_key);
-		buffer_get_bignum_bits(b, priv_key);
-		if (!DSA_set0_pqg(key->dsa, p, q, g))
-			fatal_f("DSA_set0_pqg failed");
-		if (!DSA_set0_key(key->dsa, pub_key, priv_key))
-			fatal_f("DSA_set0_key failed");
-		}
+		r = sshbuf_read_custom_dsa(b, key);
+		if (r != 0)
+			fatal_fr(r, "custom dsa failed");
 		break;
 	case KEY_RSA:
-		{
-		BIGNUM *n = NULL, *rsa_e = NULL, *d = NULL;
-		BIGNUM *iqmp = NULL, *p = NULL, *q = NULL;
-
-		if ((r = sshbuf_get_u8(b, &e1)) != 0 ||
-		    (e1 < 30 && (r = sshbuf_get_u8(b, &e2)) != 0) ||
-		    (e1 < 30 && (r = sshbuf_get_u8(b, &e3)) != 0))
-			fatal_fr(r, "parse RSA");
-		e = e1;
-		debug("e %lx", e);
-		if (e < 30) {
-			e <<= 8;
-			e += e2;
-			debug("e %lx", e);
-			e <<= 8;
-			e += e3;
-			debug("e %lx", e);
-		}
-		if ((rsa_e = BN_new()) == NULL)
-			fatal_f("BN_new");
-		if (!BN_set_word(rsa_e, e)) {
-			BN_clear_free(rsa_e);
-			sshkey_free(key);
-			return NULL;
-		}
-		if ((n = BN_new()) == NULL ||
-		    (d = BN_new()) == NULL ||
-		    (p = BN_new()) == NULL ||
-		    (q = BN_new()) == NULL ||
-		    (iqmp = BN_new()) == NULL)
-			fatal_f("BN_new");
-		buffer_get_bignum_bits(b, d);
-		buffer_get_bignum_bits(b, n);
-		buffer_get_bignum_bits(b, iqmp);
-		buffer_get_bignum_bits(b, q);
-		buffer_get_bignum_bits(b, p);
-		if (!RSA_set0_key(key->rsa, n, rsa_e, d))
-			fatal_f("RSA_set0_key failed");
-		if (!RSA_set0_factors(key->rsa, p, q))
-			fatal_f("RSA_set0_factors failed");
-		if ((r = sshrsa_complete_crt_parameters(key, iqmp)) != 0)
-			fatal_fr(r, "generate RSA parameters");
-		BN_clear_free(iqmp);
-		}
+		r = sshbuf_read_custom_rsa(b, key);
+		if (r != 0)
+			fatal_fr(r, "custom rsa failed");
 		break;
 	}
 	rlen = sshbuf_len(b);

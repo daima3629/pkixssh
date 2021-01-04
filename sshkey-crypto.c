@@ -942,6 +942,132 @@ sshbuf_write_priv_ecdsa(struct sshbuf *buf, const struct sshkey *key) {
 }
 #endif /* OPENSSL_HAS_ECC */
 
+
+/* methods used localy only in ssh-keygen.c */
+extern int
+sshbuf_get_bignum1x(struct sshbuf *buf, BIGNUM **valp);
+
+extern int
+sshbuf_read_custom_rsa(struct sshbuf *buf, struct sshkey *key);
+extern int
+sshbuf_read_custom_dsa(struct sshbuf *buf, struct sshkey *key);
+
+int
+sshbuf_read_custom_rsa(struct sshbuf *buf, struct sshkey *key) {
+	int r;
+	BIGNUM *n = NULL, *e;
+	BIGNUM *d = NULL, *iqmp = NULL, *p = NULL, *q = NULL;
+
+{	BN_ULONG rsa_e;
+	u_char e1, e2, e3;
+
+	if ((r = sshbuf_get_u8(buf, &e1)) != 0 ||
+	    (e1 < 30 && (r = sshbuf_get_u8(buf, &e2)) != 0) ||
+	    (e1 < 30 && (r = sshbuf_get_u8(buf, &e3)) != 0))
+		return SSH_ERR_INVALID_FORMAT;
+
+	rsa_e = e1;
+	debug3("e %lx", rsa_e);
+	if (rsa_e < 30) {
+		rsa_e <<= 8;
+		rsa_e += e2;
+		debug3("e %lx", rsa_e);
+		rsa_e <<= 8;
+		rsa_e += e3;
+		debug3("e %lx", rsa_e);
+	}
+
+	if ((e = BN_new()) == NULL)
+		return SSH_ERR_ALLOC_FAIL;
+	if (!BN_set_word(e, rsa_e)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto out;
+	}
+}
+
+	if ((r = sshbuf_get_bignum1x(buf, &d)) != 0 ||
+	    (r = sshbuf_get_bignum1x(buf, &n)) != 0 ||
+	    (r = sshbuf_get_bignum1x(buf, &iqmp)) != 0 ||
+	    (r = sshbuf_get_bignum1x(buf, &q)) != 0 ||
+	    (r = sshbuf_get_bignum1x(buf, &p)) != 0)
+		goto out;
+
+	if (!RSA_set0_key(key->rsa, n, e, d)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto out;
+	}
+	n = e = d = NULL; /* transferred */
+
+	if (!RSA_set0_factors(key->rsa, p, q)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto out;
+	}
+	p = q = NULL; /* transferred */
+
+	r = sshrsa_complete_crt_parameters(key, iqmp);
+	if (r != 0) goto out;
+
+	r = sshkey_validate_public_rsa(key);
+	if (r != 0) goto out;
+
+	if (RSA_blinding_on(key->rsa, NULL) != 1) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto out;
+	}
+
+	SSHKEY_DUMP(key);
+
+out:
+	BN_clear_free(n);
+	BN_clear_free(e);
+	BN_clear_free(d);
+	BN_clear_free(p);
+	BN_clear_free(q);
+	BN_clear_free(iqmp);
+
+	return r;
+}
+
+int
+sshbuf_read_custom_dsa(struct sshbuf *buf, struct sshkey *key) {
+	int r;
+	BIGNUM *p = NULL, *q = NULL, *g = NULL;
+	BIGNUM *pub_key = NULL, *priv_key = NULL;
+
+	if ((r = sshbuf_get_bignum1x(buf, &p)) != 0 ||
+	    (r = sshbuf_get_bignum1x(buf, &g)) != 0 ||
+	    (r = sshbuf_get_bignum1x(buf, &q)) != 0 ||
+	    (r = sshbuf_get_bignum1x(buf, &pub_key)) != 0 ||
+	    (r = sshbuf_get_bignum1x(buf, &priv_key)) != 0)
+		goto out;
+
+	if (!DSA_set0_pqg(key->dsa, p, q, g)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto out;
+	}
+	p = q = g = NULL; /* transferred */
+
+	if (!DSA_set0_key(key->dsa, pub_key, priv_key)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto out;
+	}
+	pub_key = priv_key = NULL; /* transferred */
+
+	r = sshkey_validate_public_dsa(key);
+	if (r != 0) goto out;
+
+	SSHKEY_DUMP(key);
+
+out:
+	BN_clear_free(p);
+	BN_clear_free(q);
+	BN_clear_free(g);
+	BN_clear_free(pub_key);
+	BN_clear_free(priv_key);
+
+	return r;
+}
+
 #else
 
 typedef int sshkey_crypto_empty_translation_unit;
