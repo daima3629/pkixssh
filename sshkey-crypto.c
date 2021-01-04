@@ -275,6 +275,42 @@ load:
 	return sshkey_from_pkey(pk, keyp);
 }
 
+int
+sshkey_complete_pkey(struct sshkey *key) {
+	int r = 0, ok = 0;
+	EVP_PKEY *pk;
+
+	if (key->pk != NULL) fatal_f("TESTING");
+
+	pk = EVP_PKEY_new();
+	if (pk == NULL)
+		return SSH_ERR_ALLOC_FAIL;
+
+	if (key->rsa != NULL)
+		ok = EVP_PKEY_set1_RSA(pk, key->rsa);
+#ifdef OPENSSL_HAS_ECC
+	else if (key->ecdsa != NULL)
+		ok = EVP_PKEY_set1_EC_KEY(pk, key->ecdsa);
+#endif /* OPENSSL_HAS_ECC */
+	else if (key->dsa != NULL)
+		ok = EVP_PKEY_set1_DSA(pk, key->dsa);
+	else {
+		r = SSH_ERR_INTERNAL_ERROR;
+		goto err;
+	}
+	if (!ok) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	key->pk = pk;
+	return 0;
+
+err:
+	EVP_PKEY_free(pk);
+	return r;
+}
+
 
 int
 sshkey_dup_pub_rsa(const struct sshkey *from, struct sshkey *to) {
@@ -295,8 +331,7 @@ sshkey_dup_pub_rsa(const struct sshkey *from, struct sshkey *to) {
 	}
 	n_n = n_e = NULL; /* transferred */
 
-	/* success */
-	r = 0;
+	r = sshkey_complete_pkey(to);
 
 out:
 	BN_clear_free(n_n);
@@ -332,8 +367,7 @@ sshkey_dup_pub_dsa(const struct sshkey *from, struct sshkey *to) {
 	}
 	n_pub_key = NULL; /* transferred */
 
-	/* success */
-	r = 0;
+	r = sshkey_complete_pkey(to);
 
 out:
 	BN_clear_free(n_p);
@@ -361,8 +395,7 @@ sshkey_dup_pub_ecdsa(const struct sshkey *from, struct sshkey *to) {
 		goto out;
 	}
 
-	/* success */
-	r = 0;
+	r = sshkey_complete_pkey(to);
 
 out:
 	return r;
@@ -370,8 +403,16 @@ out:
 #endif /* OPENSSL_HAS_ECC */
 
 
+static void
+sshkey_move_pk(struct sshkey *from, struct sshkey *to) {
+	EVP_PKEY_free(to->pk);
+	to->pk = from->pk;
+	from->pk = NULL;
+}
+
 void
 sshkey_move_rsa(struct sshkey *from, struct sshkey *to) {
+	sshkey_move_pk(from, to);
 	RSA_free(to->rsa);
 	to->rsa = from->rsa;
 	from->rsa = NULL;
@@ -379,6 +420,7 @@ sshkey_move_rsa(struct sshkey *from, struct sshkey *to) {
 
 void
 sshkey_move_dsa(struct sshkey *from, struct sshkey *to) {
+	sshkey_move_pk(from, to);
 	DSA_free(to->dsa);
 	to->dsa = from->dsa;
 	from->dsa = NULL;
@@ -387,6 +429,7 @@ sshkey_move_dsa(struct sshkey *from, struct sshkey *to) {
 #ifdef OPENSSL_HAS_ECC
 void
 sshkey_move_ecdsa(struct sshkey *from, struct sshkey *to) {
+	sshkey_move_pk(from, to);
 	EC_KEY_free(to->ecdsa);
 	to->ecdsa = from->ecdsa;
 	from->ecdsa = NULL;
@@ -560,7 +603,8 @@ sshkey_generate_rsa(u_int bits, struct sshkey *key) {
 
 	key->rsa = private;
 	private = NULL;
-	r = 0;
+
+	r = sshkey_complete_pkey(key);
 
 out:
 	RSA_free(private);
@@ -589,7 +633,8 @@ sshkey_generate_dsa(u_int bits, struct sshkey *key) {
 
 	key->dsa = private;
 	private = NULL;
-	r = 0;
+
+	r = sshkey_complete_pkey(key);
 
 out:
 	DSA_free(private);
@@ -620,7 +665,8 @@ sshkey_generate_ecdsa(u_int bits, struct sshkey *key) {
 	key->ecdsa = private;
 	key->ecdsa_nid = nid;
 	private = NULL;
-	r = 0;
+
+	r = sshkey_complete_pkey(key);
 
 out:
 	EC_KEY_free(private);
@@ -651,6 +697,9 @@ sshbuf_read_pub_rsa(struct sshbuf *buf, struct sshkey *key) {
 		r = SSH_ERR_LIBCRYPTO_ERROR;
 		goto out;
 	}
+
+	r = sshkey_complete_pkey(key);
+	if (r != 0) goto out;
 
 	SSHKEY_DUMP(key);
 
@@ -698,6 +747,9 @@ sshbuf_read_pub_rsa_inv(struct sshbuf *buf, struct sshkey *key) {
 		r = SSH_ERR_LIBCRYPTO_ERROR;
 		goto out;
 	}
+
+	r = sshkey_complete_pkey(key);
+	if (r != 0) goto out;
 
 	SSHKEY_DUMP(key);
 
@@ -805,6 +857,9 @@ sshbuf_read_pub_dsa(struct sshbuf *buf, struct sshkey *key) {
 	r = sshkey_validate_public_dsa(key);
 	if (r != 0) goto out;
 
+	r = sshkey_complete_pkey(key);
+	if (r != 0) goto out;
+
 	SSHKEY_DUMP(key);
 
 out:
@@ -895,6 +950,9 @@ sshbuf_read_pub_ecdsa(struct sshbuf *buf, struct sshkey *key) {
 	if (r != 0) goto out;
 
 	r = sshkey_validate_public_ecdsa(key);
+	if (r != 0) goto out;
+
+	r = sshkey_complete_pkey(key);
 	if (r != 0) goto out;
 
 	SSHKEY_DUMP(key);
@@ -1020,6 +1078,9 @@ sshbuf_read_custom_rsa(struct sshbuf *buf, struct sshkey *key) {
 		goto out;
 	}
 
+	r = sshkey_complete_pkey(key);
+	if (r != 0) goto out;
+
 	SSHKEY_DUMP(key);
 
 out:
@@ -1059,6 +1120,9 @@ sshbuf_read_custom_dsa(struct sshbuf *buf, struct sshkey *key) {
 	pub_key = priv_key = NULL; /* transferred */
 
 	r = sshkey_validate_public_dsa(key);
+	if (r != 0) goto out;
+
+	r = sshkey_complete_pkey(key);
 	if (r != 0) goto out;
 
 	SSHKEY_DUMP(key);
