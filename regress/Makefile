@@ -106,7 +106,11 @@ EXTRA_TESTS=	agent-pkcs11
 #EXTRA_TESTS+=	cipher-speed
 
 USERNAME=		${LOGNAME}
+CLEAN_KEYGEN_CONVERT=	*-key *-key.only-pub *-key-nocomment.pub \
+		*-key-rfc *-key-rfc.pub *-rfc-imported \
+		*-key-pk8 *-key-pk8.pub *-pk8-imported
 CLEANFILES=	*.core actual agent-key.* authkeys_orig \
+		$(CLEAN_KEYGEN_CONVERT) \
 		authorized_keys_${USERNAME}* \
 		authorized_principals_${USERNAME} \
 		banner.in banner.out cert_host_key* cert_user_key* \

@@ -25,14 +25,14 @@ do_test() {
 	${SSHKEYGEN} -q -e -m $fmt -f $OBJ/$t-key.only-pub >$OBJ/$t-key-$sfx.pub || \
 	    fail "$t public to $msg public"
 
-	cmp $OBJ/$t-key-$sfx $OBJ/$t-key-$sfx.pub || \
+	cmp $OBJ/$t-key-$sfx $OBJ/$t-key-$sfx.pub > /dev/null || \
 	    fail "$t $msg exports differ between public and private"
 
 	trace "import $t $msg public"
 	${SSHKEYGEN} -q -i -m $fmt -f $OBJ/$t-key-$sfx >$OBJ/$t-$sfx-imported || \
 	    fail "$t import $msg public"
 
-	cmp $OBJ/$t-key-nocomment.pub $OBJ/$t-$sfx-imported || \
+	cmp $OBJ/$t-key-nocomment.pub $OBJ/$t-$sfx-imported > /dev/null || \
 	    fail "$t $msg imported differs from original"
 
 	rm -f $OBJ/$t-key-$sfx $OBJ/$t-key-$sfx.pub $OBJ/$t-$sfx-imported

@@ -105,6 +105,17 @@ user_*key*
 user_ca*
 user_key*
 
+# keygen-convert (may left if terminated)
+*-key
+*-key.only-pub
+*-key-nocomment.pub
+*-key-rfc
+*-key-rfc.pub
+*-rfc-imported
+*-key-pk8
+*-key-pk8.pub
+*-pk8-imported
+
 # regression test helpers
 *.o
 check-perm
