@@ -2,7 +2,7 @@
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2010 Damien Miller.  All rights reserved.
- * Copyright (c) 2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2020-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -64,7 +64,6 @@ ssh_ecdsa_sign_pkey(const struct sshkey *key,
 ) {
 	ECDSA_SIG *sig = NULL;
 	const EVP_MD *type;
-	EVP_PKEY *pkey = NULL;
 	u_char *tsig = NULL;
 	u_int slen, len;
 	int ret;
@@ -72,15 +71,7 @@ ssh_ecdsa_sign_pkey(const struct sshkey *key,
 	type = ssh_ecdsa_evp_md(key);
 	if (type == NULL) return SSH_ERR_INTERNAL_ERROR;
 
-	pkey = EVP_PKEY_new();
-	if (pkey == NULL) {
-		error_f("out of memory");
-		return SSH_ERR_ALLOC_FAIL;
-	}
-
-	EVP_PKEY_set1_EC_KEY(pkey, key->ecdsa);
-
-	slen = EVP_PKEY_size(pkey);
+	slen = EVP_PKEY_size(key->pk);
 	tsig = xmalloc(slen);	/*fatal on error*/
 
 {
@@ -109,7 +100,7 @@ ssh_ecdsa_sign_pkey(const struct sshkey *key,
 		goto clean;
 	}
 
-	ret = EVP_SignFinal(md, tsig, &len, pkey);
+	ret = EVP_SignFinal(md, tsig, &len, key->pk);
 	if (ret <= 0) {
 #ifdef TRACE_EVP_ERROR
 		error_crypto("EVP_SignFinal");
@@ -132,8 +123,6 @@ clean:
 		memset(tsig, 'd', slen);
 		free(tsig);
 	}
-
-	if (pkey != NULL) EVP_PKEY_free(pkey);
 
 	if (sig == NULL)
 		return SSH_ERR_LIBCRYPTO_ERROR;
@@ -160,6 +149,9 @@ ssh_ecdsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 	if (key == NULL || key->ecdsa == NULL ||
 	    sshkey_type_plain(key->type) != KEY_ECDSA)
 		return SSH_ERR_INVALID_ARGUMENT;
+
+	ret = sshkey_validate_public_ecdsa(key);
+	if (ret != 0) return ret;
 
 	ret = ssh_ecdsa_sign_pkey(key, &sig, data, datalen);
 	if (ret != 0) goto out;
@@ -204,7 +196,6 @@ ssh_ecdsa_verify_pkey(const struct sshkey *key,
 	u_char *tsig = NULL;
 	u_int len;
 	const EVP_MD *type;
-	EVP_PKEY *pkey = NULL;
 
 	type = ssh_ecdsa_evp_md(key);
 	if (type == NULL) return SSH_ERR_INTERNAL_ERROR;
@@ -217,14 +208,6 @@ ssh_ecdsa_verify_pkey(const struct sshkey *key,
 		u_char *psig = tsig;
 		i2d_ECDSA_SIG(sig, &psig);
 	}
-
-	pkey = EVP_PKEY_new();
-	if (pkey == NULL) {
-		error_f("out of memory");
-		ret = SSH_ERR_ALLOC_FAIL;
-		goto done;
-	}
-	EVP_PKEY_set1_EC_KEY(pkey, key->ecdsa);
 
 { /* now verify signature */
 	int ok;
@@ -255,7 +238,7 @@ ssh_ecdsa_verify_pkey(const struct sshkey *key,
 		goto clean;
 	}
 
-	ok = EVP_VerifyFinal(md, tsig, len, pkey);
+	ok = EVP_VerifyFinal(md, tsig, len, key->pk);
 	if (ok < 0) {
 #ifdef TRACE_EVP_ERROR
 		error_crypto("EVP_VerifyFinal");
@@ -270,9 +253,6 @@ ssh_ecdsa_verify_pkey(const struct sshkey *key,
 clean:
 	EVP_MD_CTX_free(md);
 }
-
-done:
-	if (pkey != NULL) EVP_PKEY_free(pkey);
 
 	if (tsig != NULL) {
 		/* clean up */

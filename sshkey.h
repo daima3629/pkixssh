@@ -2,7 +2,7 @@
 
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -404,6 +404,7 @@ int	sshkey_validate_public_dsa(const struct sshkey *key);
 int	sshkey_validate_public_ecdsa(const struct sshkey *key);
 int	sshkey_validate_private_ecdsa(const struct sshkey *key);
 #  endif /* OPENSSL_HAS_ECC */
+int	sshkey_validate_public(const struct sshkey *key);
 
 #if !defined(WITH_OPENSSL)
 # undef RSA

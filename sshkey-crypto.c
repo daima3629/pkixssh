@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2020-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -565,7 +565,6 @@ sshkey_validate_public_ecdsa(const struct sshkey *key) {
 	return 0;
 }
 
-
 int
 sshkey_validate_private_ecdsa(const struct sshkey *key) {
 	int r;
@@ -577,6 +576,20 @@ sshkey_validate_private_ecdsa(const struct sshkey *key) {
 	return 0;
 }
 #endif /* OPENSSL_HAS_ECC */
+
+int
+sshkey_validate_public(const struct sshkey *key) {
+	int evp_id = EVP_PKEY_base_id(key->pk);
+
+	switch (evp_id) {
+	case EVP_PKEY_RSA:	return sshkey_validate_public_rsa(key);
+	case EVP_PKEY_DSA:	return sshkey_validate_public_dsa(key);
+#ifdef OPENSSL_HAS_ECC
+	case EVP_PKEY_EC:	return sshkey_validate_public_ecdsa(key);
+#endif
+	}
+	return SSH_ERR_KEY_TYPE_UNKNOWN;
+}
 
 
 int

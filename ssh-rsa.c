@@ -2,7 +2,7 @@
 /*
  * Copyright (c) 2000, 2003 Markus Friedl <markus@openbsd.org>
  * Copyright (c) 2011 Dr. Stephen Henson.  All rights reserved.
- * Copyright (c) 2011-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2021 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -216,7 +216,6 @@ ssh_rsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 
 {	/* EVP_Sign... */
 	const EVP_MD *evp_md;
-	EVP_PKEY *pkey = NULL;
 	int ok = -1;
 
 	sig = NULL;
@@ -227,16 +226,7 @@ ssh_rsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 		goto out;
 	}
 
-	pkey = EVP_PKEY_new();
-	if (pkey == NULL) {
-		error_f("out of memory");
-		ret = SSH_ERR_ALLOC_FAIL;
-		goto evp_end;
-	}
-
-	EVP_PKEY_set1_RSA(pkey, key->rsa);
-
-	slen = EVP_PKEY_size(pkey);
+	slen = EVP_PKEY_size(key->pk);
 	debug3_f("slen=%ld", (long)slen);
 	sig = xmalloc(slen);	/*fatal on error*/
 
@@ -265,7 +255,7 @@ ssh_rsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 		goto evp_md_end;
 	}
 
-	ok = EVP_SignFinal(md, sig, &len, pkey);
+	ok = EVP_SignFinal(md, sig, &len, key->pk);
 	if (ok <= 0) {
 #ifdef TRACE_EVP_ERROR
 		error_crypto("EVP_SignFinal");
@@ -279,7 +269,6 @@ evp_md_end:
 	EVP_MD_CTX_free(md);
 }
 evp_end:
-	EVP_PKEY_free(pkey);
 
 	if (ret != SSH_ERR_SUCCESS) goto out;
 }
@@ -324,7 +313,6 @@ ssh_rsa_verify(const struct sshkey *key,
 {
 	char *sigtype = NULL;
 	int hash_alg, ret;
-	EVP_PKEY *pkey = NULL;
 	size_t len = 0, diff, modlen;
 	struct sshbuf *b = NULL;
 	u_char *osigblob, *sigblob = NULL;
@@ -371,13 +359,8 @@ ssh_rsa_verify(const struct sshkey *key,
 		ret = SSH_ERR_UNEXPECTED_TRAILING_DATA;
 		goto out;
 	}
-	pkey = EVP_PKEY_new();
-	if (pkey == NULL) {
-		ret = SSH_ERR_ALLOC_FAIL;
-		goto out;
-	}
-	EVP_PKEY_set1_RSA(pkey, key->rsa);
-	modlen = EVP_PKEY_size(pkey);
+
+	modlen = EVP_PKEY_size(key->pk);
 	if (len > modlen) {
 		ret = SSH_ERR_KEY_BITS_MISMATCH;
 		goto out;
@@ -431,7 +414,7 @@ ssh_rsa_verify(const struct sshkey *key,
 		goto evp_md_end;
 	}
 
-	ok = EVP_VerifyFinal(md, sigblob, len, pkey);
+	ok = EVP_VerifyFinal(md, sigblob, len, key->pk);
 	if (ok < 0) {
 #ifdef TRACE_EVP_ERROR
 		error_crypto("EVP_VerifyFinal");
@@ -448,7 +431,6 @@ evp_md_end:
 }
 
  out:
-	EVP_PKEY_free(pkey);
 	freezero(sigblob, len);
 	free(sigtype);
 	sshbuf_free(b);

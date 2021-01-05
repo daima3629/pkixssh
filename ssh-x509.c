@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -1663,50 +1663,16 @@ ssh_x509_sign(
 	debug3_f("compatibility: { 0x%08x, 0x%08x }",
 	    ctx->compat->datafellows, ctx->compat->extra);
 
-{	/* compute signature */
-	EVP_PKEY *privkey = EVP_PKEY_new();
-	int res = -1;
+	r = sshkey_validate_public(key);
+	if (r != 0) return r;
 
-	if (privkey == NULL) {
-		error_f("out of memory - EVP_PKEY_new");
-		r = SSH_ERR_ALLOC_FAIL;
-		goto done;
-	}
-	r = SSH_ERR_SUCCESS;
-
-	if (key->rsa) {
-		r = sshkey_validate_public_rsa(key);
-		if (r != 0) goto done;
-		res = EVP_PKEY_set1_RSA(privkey, key->rsa);
-	} else if (key->dsa) {
-		r = sshkey_validate_public_dsa(key);
-		if (r != 0) goto done;
-		res = EVP_PKEY_set1_DSA(privkey, key->dsa);
-#ifdef OPENSSL_HAS_ECC
-	} else if (key->ecdsa) {
-		r = sshkey_validate_public_ecdsa(key);
-		if (r != 0) goto done;
-		res = EVP_PKEY_set1_EC_KEY(privkey, key->ecdsa);
-#endif
-	} else {
-		error_f("missing key component");
-		r = SSH_ERR_INVALID_ARGUMENT;
-		goto end_sign_pkey;
-	}
-
-	if (!res) { /*EVP_PKEY_set1_... returns boolean*/
-		error_f("EVP_PKEY_set1_XXX: fail");
-		do_log_crypto_errors(SYSLOG_LEVEL_ERROR);
-		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto end_sign_pkey;
-	}
-
-	keylen = EVP_PKEY_size(privkey);
+	/* compute signature */
+	keylen = EVP_PKEY_size(key->pk);
 	if (keylen <= 0) {
 		error_f("cannot get key size");
 		do_log_crypto_errors(SYSLOG_LEVEL_ERROR);
 		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto end_sign_pkey;
+		goto done;
 	}
 
 	/* NOTE:
@@ -1718,26 +1684,21 @@ ssh_x509_sign(
 	debug3_f("alg=%.50s, md=%.30s", xkalg->name, xkalg->dgst.name);
 
 {	u_int len = datalen;
+	ssh_x509_md dgst;
 
 	if ((size_t)len != datalen) {
-		r = SSH_ERR_INVALID_FORMAT;
-		goto end_sign_pkey;
+		r = SSH_ERR_INVALID_ARGUMENT;
+		goto done;
 	}
-{	ssh_x509_md dgst;
+
 	ssh_xkalg_dgst_compat(&dgst, &xkalg->dgst, ctx->compat);
 
-	res = ssh_x509_EVP_PKEY_sign(privkey, &dgst, sigret, &siglen, data, len);
-}
-	if (res <= 0) {
+	if (ssh_x509_EVP_PKEY_sign(key->pk, &dgst, sigret, &siglen, data, len) <= 0) {
 		do_log_crypto_errors(SYSLOG_LEVEL_ERROR);
 		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto done;
 	}
 }
-
-end_sign_pkey:
-	EVP_PKEY_free(privkey);
-}
-	if (r != SSH_ERR_SUCCESS) goto done;
 
 {	/* create ssh signature blob */
 	struct sshbuf *buf;
