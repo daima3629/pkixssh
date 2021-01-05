@@ -1,4 +1,4 @@
-/* 	$OpenBSD: test_kex.c,v 1.4 2019/01/21 12:35:20 djm Exp $ */
+/* 	$OpenBSD: test_kex.c,v 1.5 2020/12/29 01:02:15 djm Exp $ */
 /*
  * Regress test KEX
  *
@@ -155,7 +155,7 @@ do_kex_with_key(char *kex, int keytype, int bits)
 #endif /* WITH_OPENSSL */
 #ifdef HAVE_EVP_SHA256
 	server2->kex->kex[KEX_C25519_SHA256] = kex_gen_server;
-	server2->kex->kex[KEX_KEM_SNTRUP4591761X25519_SHA512] = kex_gen_server;
+	server2->kex->kex[KEX_KEM_SNTRUP761X25519_SHA512] = kex_gen_server;
 #endif /*def HAVE_EVP_SHA256*/
 	server2->kex->find_host_public_key = server->kex->find_host_public_key;
 	server2->kex->find_host_private_key = server->kex->find_host_private_key;
@@ -209,9 +209,9 @@ kex_tests(void)
 #ifdef HAVE_EVP_SHA256
 	do_kex("diffie-hellman-group-exchange-sha256");
 #endif /*def HAVE_EVP_SHA256*/
-#ifdef ENABLE_KEX_SNTRUP4591761X25519
-	do_kex("sntrup4591761x25519-sha512@tinyssh.org");
-#endif /*def ENABLE_KEX_SNTRUP4591761X25519*/
+#ifdef ENABLE_KEX_SNTRUP761X25519
+	do_kex("sntrup761x25519-sha512@openssh.com");
+#endif /*def ENABLE_KEX_SNTRUP761X25519*/
 	do_kex("diffie-hellman-group-exchange-sha1");
 	do_kex("diffie-hellman-group14-sha1");
 	do_kex("diffie-hellman-group1-sha1");

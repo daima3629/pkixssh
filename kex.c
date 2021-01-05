@@ -1,4 +1,4 @@
-/* $OpenBSD: kex.c,v 1.162 2020/12/04 02:27:57 djm Exp $ */
+/* $OpenBSD: kex.c,v 1.163 2020/12/29 00:59:15 djm Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2014-2020 Roumen Petrov.  All rights reserved.
@@ -122,9 +122,9 @@ static const struct kexalg kexalgs[] = {
 	    KEX_C25519_SHA256, 0, SSH_DIGEST_SHA256 },
 	{ "curve25519-sha256@libssh.org",
 	    KEX_C25519_SHA256, 0, SSH_DIGEST_SHA256 },
-#ifdef ENABLE_KEX_SNTRUP4591761X25519
-	{ "sntrup4591761x25519-sha512@tinyssh.org",
-	    KEX_KEM_SNTRUP4591761X25519_SHA512, 0, SSH_DIGEST_SHA512 },
+#ifdef ENABLE_KEX_SNTRUP761X25519
+	{ "sntrup761x25519-sha512@openssh.com",
+	    KEX_KEM_SNTRUP761X25519_SHA512, 0, SSH_DIGEST_SHA512 },
 #endif
 #endif /* HAVE_EVP_SHA256 || !WITH_OPENSSL */
 	{ NULL, 0, -1, -1},

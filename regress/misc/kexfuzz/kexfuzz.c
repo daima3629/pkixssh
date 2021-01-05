@@ -285,7 +285,7 @@ do_kex_with_key(const char *kex, struct sshkey *prvkey, int *c2s, int *s2c,
 # endif
 #endif
 	server2->kex->kex[KEX_C25519_SHA256] = kex_gen_server;
-	server2->kex->kex[KEX_KEM_SNTRUP4591761X25519_SHA512] = kex_gen_server;
+	server2->kex->kex[KEX_KEM_SNTRUP761X25519_SHA512] = kex_gen_server;
 	server2->kex->find_host_public_key = server->kex->find_host_public_key;
 	server2->kex->find_host_private_key = server->kex->find_host_private_key;
 	server2->kex->xsign = server->kex->xsign;
