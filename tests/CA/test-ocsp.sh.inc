@@ -249,7 +249,8 @@ EOF
 # ===
 
 do_test () {
-  if $SSH_OCSP_ENABLED ; then
+  if $SSH_OCSP_ENABLED ; then :
+  else
     echo "* ${extd}OCSP${norm} is ${attn}disabled${norm}"
     return 1
   fi

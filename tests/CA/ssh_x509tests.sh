@@ -141,15 +141,15 @@ USERKNOWNHOSTSFILE="${USERDIR}/known_hosts-certTests"
 
 if $SSH_LDAP_ENABLED ; then
   echo "LDAP: enabled"
-  SSH_X509TESTS=`echo "${SSH_X509TESTS}" | sed -e 's|by_ldap||g'`
 else
   echo "LDAP: disabled"
+  SSH_X509TESTS=`echo "${SSH_X509TESTS}" | sed -e 's|by_ldap||g'`
 fi
 if $SSH_OCSP_ENABLED ; then
   echo "OCSP: enabled"
-  SSH_X509TESTS=`echo "${SSH_X509TESTS}" | sed -e 's|ocsp||g'`
 else
   echo "OCSP: disabled"
+  SSH_X509TESTS=`echo "${SSH_X509TESTS}" | sed -e 's|ocsp||g'`
 fi
 echo SSH_X509TESTS: $SSH_X509TESTS
 
