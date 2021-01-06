@@ -1,6 +1,6 @@
 #
 # Copyright (c) 1999-2004 Damien Miller
-# Copyright (c) 2002-2020 Roumen Petrov
+# Copyright (c) 2002-2021 Roumen Petrov
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -6011,7 +6011,7 @@ LDFLAGS="${LDFLAGS} ${LDFLAGS_AFTER}"
 AC_EXEEXT
 AC_CONFIG_FILES([Makefile buildpkg.sh opensshd.init openssh.xml \
 	openbsd-compat/Makefile openbsd-compat/regress/Makefile \
-	tests/regress-env tests/CA/Makefile tests/CA/env \
+	tests/env tests/CA/Makefile \
 	survey.sh])
 if test yes = $OPENSSL_FIPS_MODE; then
   if test -n "$FIPSLD_CC"; then

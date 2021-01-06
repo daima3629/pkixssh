@@ -139,33 +139,19 @@ USERKNOWNHOSTSFILE="${USERDIR}/known_hosts-certTests"
 # ===
 # remove unsupported tests
 
-cat > "$SSHD_CFG" <<EOF
-CACertificateFile /file/not/found
-CAldapURL ${LDAPD_URL}
-VAType none
-EOF
-
-"$TEST_SSH_SSHD" -t -f "${SSHD_CFG}" > "${SSHD_LOG}" 2>&1
-if grep 'Unsupported.*CAldapURL' "${SSHD_LOG}" > /dev/null; then
-  SSH_LDAP_ENABLED="no"
-else
-  SSH_LDAP_ENABLED="yes"
-fi
-if grep 'Unsupported.*VAType' "${SSHD_LOG}" > /dev/null; then
-  SSH_OCSP_ENABLED="no"
-else
-  SSH_OCSP_ENABLED="yes"
-fi
-
-echo SSH_LDAP_ENABLED=${SSH_LDAP_ENABLED}
-if test "x${SSH_LDAP_ENABLED}" = "xno"; then
+if $SSH_LDAP_ENABLED ; then
+  echo "LDAP: enabled"
   SSH_X509TESTS=`echo "${SSH_X509TESTS}" | sed -e 's|by_ldap||g'`
+else
+  echo "LDAP: disabled"
 fi
-echo SSH_OCSP_ENABLED=${SSH_OCSP_ENABLED}
-if test "x${SSH_OCSP_ENABLED}" = "xno"; then
+if $SSH_OCSP_ENABLED ; then
+  echo "OCSP: enabled"
   SSH_X509TESTS=`echo "${SSH_X509TESTS}" | sed -e 's|ocsp||g'`
+else
+  echo "OCSP: disabled"
 fi
-echo SSH_X509TESTS=$SSH_X509TESTS
+echo SSH_X509TESTS: $SSH_X509TESTS
 
 
 # ===

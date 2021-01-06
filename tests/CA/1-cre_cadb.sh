@@ -92,7 +92,7 @@ EOF
 # args:
 #   none
 echo_CA_ocsp_options () {
-if test "x$SSH_OCSP" = "xyes"; then
+if $SSH_OCSP_ENABLED ; then
 cat << EOF
 
 # OCSP Validator(Responder) URI
@@ -347,7 +347,7 @@ echo_CA_ocsp_options >> "$1"
 
 
 # X.509 extensions: OCSP Validator certificates
-if test "x$SSH_OCSP" = "xyes"; then
+if $SSH_OCSP_ENABLED ; then
 cat << EOF >> "$1"
 
 

@@ -82,7 +82,7 @@ while test -n "$1"; do
           SSH_X509V3_EXTENSIONS=self_cert
           ;;
         ocsp)
-          if test "x$SSH_OCSP" = "xyes"; then
+          if $SSH_OCSP_ENABLED ; then
             SSH_X509V3_EXTENSIONS="ocsp_cert"
           else
             echo "${warn}unsupported type${norm}" >&2

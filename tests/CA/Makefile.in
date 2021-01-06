@@ -1,7 +1,5 @@
 SHELL=@SHELL@
 srcdir=@srcdir@
-@OCSP_ON@SSH_OCSP=yes
-@OCSP_OFF@SSH_OCSP=no
 
 
 all:
@@ -19,7 +17,6 @@ clean: ldap_clean
 	-rm -f sshd_x509.log
 
 distclean: clean
-	-rm -f env
 	-rm -f Makefile
 
 # ===
@@ -35,7 +32,6 @@ ca_files: ca-test/catest.config ca-test/catest-bundle.crt
 #ca-test/catest.config: $(srcdir)/config
 ca-test/catest.config:
 	@echo
-	SSH_OCSP=$(SSH_OCSP) \
 	$(SHELL) $(srcdir)/1-cre_cadb.sh
 
 ca-test/catest-bundle.crt: ca-test/catest.config
@@ -168,7 +164,6 @@ selfid_dsa:
 
 @OCSP_ON@testocsp_rsa.certstamp: testocsp_rsa ca-test/catest-bundle.crt
 @OCSP_ON@	@echo; echo "generating RSA ocsp responder certificates."
-@OCSP_ON@	SSH_OCSP=$(SSH_OCSP) \
 @OCSP_ON@	$(SHELL) $(srcdir)/3-cre_certs.sh -f testocsp_rsa -t ocsp -n "validator RSA"
 
 testocsp_rsa:
@@ -176,7 +171,6 @@ testocsp_rsa:
 
 @OCSP_ON@testocsp_dsa.certstamp: testocsp_dsa ca-test/catest-bundle.crt
 @OCSP_ON@	@echo; echo "generating DSA ocsp responder certificates."
-@OCSP_ON@	SSH_OCSP=$(SSH_OCSP) \
 @OCSP_ON@	$(SHELL) $(srcdir)/3-cre_certs.sh -f testocsp_dsa -t ocsp -n "validator DSA"
 
 testocsp_dsa:
@@ -188,7 +182,6 @@ testocsp_dsa:
 
 @OCSP_ON@testocsp_eccnistp256.certstamp: testocsp_eccnistp256 ca-test/catest-bundle.crt
 @OCSP_ON@	@echo; echo "generating RSA ocsp responder certificates."
-@OCSP_ON@	SSH_OCSP=$(SSH_OCSP) \
 @OCSP_ON@	$(SHELL) $(srcdir)/3-cre_certs.sh -f testocsp_eccnistp256 -t ocsp -n "validator ECDSA(nistp256)"
 
 testocsp_eccnistp256:
@@ -196,7 +189,6 @@ testocsp_eccnistp256:
 
 @OCSP_ON@testocsp_eccnistp384.certstamp: testocsp_eccnistp384 ca-test/catest-bundle.crt
 @OCSP_ON@	@echo; echo "generating RSA ocsp responder certificates."
-@OCSP_ON@	SSH_OCSP=$(SSH_OCSP) \
 @OCSP_ON@	$(SHELL) $(srcdir)/3-cre_certs.sh -f testocsp_eccnistp384 -t ocsp -n "validator ECDSA(nistp384)"
 
 testocsp_eccnistp384:
@@ -204,7 +196,6 @@ testocsp_eccnistp384:
 
 @OCSP_ON@testocsp_eccnistp521.certstamp: testocsp_eccnistp521 ca-test/catest-bundle.crt
 @OCSP_ON@	@echo; echo "generating RSA ocsp responder certificates."
-@OCSP_ON@	SSH_OCSP=$(SSH_OCSP) \
 @OCSP_ON@	$(SHELL) $(srcdir)/3-cre_certs.sh -f testocsp_eccnistp521 -t ocsp -n "validator ECDSA(nistp521)"
 
 testocsp_eccnistp521:
@@ -222,7 +213,7 @@ ca-test/catest-bundle.crl: testid_rsa-rsa_sha1 testid_dsa-rsa_sha1
 @LDAP_OFF@ldap_files:
 @LDAP_ON@ldap_files: ldap/slapd.conf.tmpl
 
-@LDAP_ON@ldap/slapd.conf.tmpl: env
+@LDAP_ON@ldap/slapd.conf.tmpl:
 @LDAP_ON@	@echo
 @LDAP_ON@	$(SHELL) $(srcdir)/5-cre_ldap.sh
 

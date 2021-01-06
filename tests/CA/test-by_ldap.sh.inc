@@ -313,7 +313,7 @@ trap LDAPtestBREAK HUP INT QUIT ABRT TERM || exit 1
 # ===
 
 do_test () {
-  if test "x${SSH_LDAP_ENABLED}" = "xno"; then
+  if $SSH_LDAP_ENABLED ; then
     echo "* ${extd}LDAP${norm} is ${attn}disabled${norm}"
     return 1
   fi

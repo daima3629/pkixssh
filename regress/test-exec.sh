@@ -6,10 +6,10 @@
 # Unbreak GNU head(1)
 _POSIX2_VERSION=199209
 export _POSIX2_VERSION
-TEST_SHELL=${TEST_SHELL-sh}
 
 . ../tests/CA/shell.rc
-. $OBJ/../tests/regress-env
+. ../tests/env
+TEST_SHELL=${TEST_SHELL-sh}
 
 case `uname -s 2>/dev/null` in
 OSF1*)

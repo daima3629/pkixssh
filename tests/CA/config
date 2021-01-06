@@ -23,7 +23,7 @@
 
 
 # === setup from build environment:
-. ./env
+. ../env
 
 # === main variables:
 # on some system (with pam?, AIX?, when port is below 1024, etc.) we
