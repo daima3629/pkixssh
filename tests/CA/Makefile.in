@@ -2,7 +2,6 @@ SHELL=@SHELL@
 srcdir=@srcdir@
 @OCSP_ON@SSH_OCSP=yes
 @OCSP_OFF@SSH_OCSP=no
-RSAKEYBITS=2048
 
 
 all:
@@ -51,9 +50,7 @@ ca-test/catest-bundle.crt: ca-test/catest.config
 hostkeys: testhostkey_rsa.certstamp testhostkey_dsa.certstamp
 
 testhostkey_rsa:
-	@echo
-	@echo "generating RSA 'hostkey'"
-	$(SHELL) $(srcdir)/2-cre_key.sh -t rsa -b $(RSAKEYBITS) -N "" -f $@
+	@$(SHELL) $(srcdir)/2-cre_key.sh rsa "host-key" $@
 
 testhostkey_rsa.certstamp: testhostkey_rsa ca-test/catest-bundle.crt
 	@echo
@@ -61,9 +58,7 @@ testhostkey_rsa.certstamp: testhostkey_rsa ca-test/catest-bundle.crt
 	$(SHELL) $(srcdir)/3-cre_certs.sh -f testhostkey_rsa -t server -n "localhost RSA"
 
 testhostkey_dsa:
-	@echo
-	@echo "generating DSA 'hostkey'"
-	$(SHELL) $(srcdir)/2-cre_key.sh -t dsa -N "" -f $@
+	@$(SHELL) $(srcdir)/2-cre_key.sh dsa "host-key" $@
 
 testhostkey_dsa.certstamp: testhostkey_dsa ca-test/catest-bundle.crt
 	@echo
@@ -75,9 +70,7 @@ testhostkey_dsa.certstamp: testhostkey_dsa ca-test/catest-bundle.crt
 @COMMENT_OUT_ECC521@hostkeys: testhostkey_eccnistp521.certstamp
 
 testhostkey_eccnistp256:
-	@echo
-	@echo "generating ECDSA(nistp256) 'Identity'"
-	$(SHELL) $(srcdir)/2-cre_key.sh -t ecdsa -b 256 -N "" -f $@
+	@$(SHELL) $(srcdir)/2-cre_key.sh ec256 "host-key" $@
 
 testhostkey_eccnistp256.certstamp: testhostkey_eccnistp256 ca-test/catest-bundle.crt
 	@echo
@@ -85,9 +78,7 @@ testhostkey_eccnistp256.certstamp: testhostkey_eccnistp256 ca-test/catest-bundle
 	$(SHELL) $(srcdir)/3-cre_certs.sh -f testhostkey_eccnistp256 -t server -n "localhost ECDSA(nistp256)"
 
 testhostkey_eccnistp384:
-	@echo
-	@echo "generating ECDSA(nistp384) 'Identity'"
-	$(SHELL) $(srcdir)/2-cre_key.sh -t ecdsa -b 384 -N "" -f $@
+	@$(SHELL) $(srcdir)/2-cre_key.sh ec384 "host-key" $@
 
 testhostkey_eccnistp384.certstamp: testhostkey_eccnistp384 ca-test/catest-bundle.crt
 	@echo
@@ -95,9 +86,7 @@ testhostkey_eccnistp384.certstamp: testhostkey_eccnistp384 ca-test/catest-bundle
 	$(SHELL) $(srcdir)/3-cre_certs.sh -f testhostkey_eccnistp384 -t server -n "localhost ECDSA(nistp384)"
 
 testhostkey_eccnistp521:
-	@echo
-	@echo "generating ECDSA(nistp521) 'Identity'"
-	$(SHELL) $(srcdir)/2-cre_key.sh -t ecdsa -b 521 -N "" -f $@
+	@$(SHELL) $(srcdir)/2-cre_key.sh ec521 "host-key" $@
 
 testhostkey_eccnistp521.certstamp: testhostkey_eccnistp521 ca-test/catest-bundle.crt
 	@echo
@@ -109,9 +98,7 @@ testhostkey_eccnistp521.certstamp: testhostkey_eccnistp521 ca-test/catest-bundle
 identities: testid_rsa.certstamp testid_dsa.certstamp
 
 testid_rsa:
-	@echo
-	@echo "generating RSA 'Identity'"
-	$(SHELL) $(srcdir)/2-cre_key.sh -t rsa -b $(RSAKEYBITS) -N "" -f $@
+	@$(SHELL) $(srcdir)/2-cre_key.sh rsa "'Identity'" $@
 
 testid_rsa.certstamp: testid_rsa ca-test/catest-bundle.crt
 	@echo
@@ -119,9 +106,7 @@ testid_rsa.certstamp: testid_rsa ca-test/catest-bundle.crt
 	$(SHELL) $(srcdir)/3-cre_certs.sh -f testid_rsa -t client -n "SSH RSA test certificate"
 
 testid_dsa:
-	@echo
-	@echo "generating DSA 'Identity'"
-	$(SHELL) $(srcdir)/2-cre_key.sh -t dsa -N "" -f $@
+	@$(SHELL) $(srcdir)/2-cre_key.sh dsa "'Identity'" $@
 
 testid_dsa.certstamp: testid_dsa ca-test/catest-bundle.crt
 	@echo
@@ -133,9 +118,7 @@ testid_dsa.certstamp: testid_dsa ca-test/catest-bundle.crt
 @COMMENT_OUT_ECC521@identities: testid_eccnistp521.certstamp
 
 testid_eccnistp256:
-	@echo
-	@echo "generating ECDSA(nistp256) 'Identity'"
-	$(SHELL) $(srcdir)/2-cre_key.sh -t ecdsa -b 256 -N "" -f $@
+	@$(SHELL) $(srcdir)/2-cre_key.sh ec256 "'Identity'" $@
 
 testid_eccnistp256.certstamp: testid_eccnistp256 ca-test/catest-bundle.crt
 	@echo
@@ -143,9 +126,7 @@ testid_eccnistp256.certstamp: testid_eccnistp256 ca-test/catest-bundle.crt
 	$(SHELL) $(srcdir)/3-cre_certs.sh -f testid_eccnistp256 -t client -n "SSH ECDSA(nistp256) test certificate"
 
 testid_eccnistp384:
-	@echo
-	@echo "generating ECDSA(nistp384) 'Identity'"
-	$(SHELL) $(srcdir)/2-cre_key.sh -t ecdsa -b 384 -N "" -f $@
+	@$(SHELL) $(srcdir)/2-cre_key.sh ec384 "'Identity'" $@
 
 testid_eccnistp384.certstamp: testid_eccnistp384 ca-test/catest-bundle.crt
 	@echo
@@ -153,9 +134,7 @@ testid_eccnistp384.certstamp: testid_eccnistp384 ca-test/catest-bundle.crt
 	$(SHELL) $(srcdir)/3-cre_certs.sh -f testid_eccnistp384 -t client -n "SSH ECDSA(nistp384) test certificate"
 
 testid_eccnistp521:
-	@echo
-	@echo "generating ECDSA(nistp521) 'Identity'"
-	$(SHELL) $(srcdir)/2-cre_key.sh -t ecdsa -b 521 -N "" -f $@
+	@$(SHELL) $(srcdir)/2-cre_key.sh ec521 "'Identity'" $@
 
 testid_eccnistp521.certstamp: testid_eccnistp521 ca-test/catest-bundle.crt
 	@echo
@@ -172,9 +151,7 @@ selfid_rsa.certstamp: selfid_rsa
 	$(SHELL) $(srcdir)/3-cre_certs.sh -f selfid_rsa -t self -n "SSH RSA test self-issued certificate"
 
 selfid_rsa:
-	@echo
-	@echo "generating RSA 'Identity' for self-issued"
-	$(SHELL) $(srcdir)/2-cre_key.sh -t rsa -b $(RSAKEYBITS) -N "" -f $@
+	@$(SHELL) $(srcdir)/2-cre_key.sh rsa "'Identity' for self-issued" $@
 
 selfid_dsa.certstamp: selfid_dsa
 	@echo
@@ -182,9 +159,7 @@ selfid_dsa.certstamp: selfid_dsa
 	$(SHELL) $(srcdir)/3-cre_certs.sh -f selfid_dsa -t self -n "SSH DSA test self-issued certificate"
 
 selfid_dsa:
-	@echo
-	@echo "generating DSA 'Identity' for self-issued"
-	$(SHELL) $(srcdir)/2-cre_key.sh -t dsa -N "" -f $@
+	@$(SHELL) $(srcdir)/2-cre_key.sh dsa "'Identity' for self-issued" $@
 
 
 # ===
@@ -196,18 +171,16 @@ selfid_dsa:
 @OCSP_ON@	SSH_OCSP=$(SSH_OCSP) \
 @OCSP_ON@	$(SHELL) $(srcdir)/3-cre_certs.sh -f testocsp_rsa -t ocsp -n "validator RSA"
 
-@OCSP_ON@testocsp_rsa:
-@OCSP_ON@	@echo; echo "generating RSA 'ocspkey'"
-@OCSP_ON@	$(SHELL) $(srcdir)/2-cre_key.sh -t rsa -b $(RSAKEYBITS) -N "" -f $@
+testocsp_rsa:
+	@$(SHELL) $(srcdir)/2-cre_key.sh rsa "ocsp-key" $@
 
 @OCSP_ON@testocsp_dsa.certstamp: testocsp_dsa ca-test/catest-bundle.crt
 @OCSP_ON@	@echo; echo "generating DSA ocsp responder certificates."
 @OCSP_ON@	SSH_OCSP=$(SSH_OCSP) \
 @OCSP_ON@	$(SHELL) $(srcdir)/3-cre_certs.sh -f testocsp_dsa -t ocsp -n "validator DSA"
 
-@OCSP_ON@testocsp_dsa:
-@OCSP_ON@	@echo; echo "generating DSA 'ocspkey'"
-@OCSP_ON@	$(SHELL) $(srcdir)/2-cre_key.sh -t dsa -N "" -f $@
+testocsp_dsa:
+	@$(SHELL) $(srcdir)/2-cre_key.sh dsa "ocsp-key" $@
 
 @OCSP_ON@@COMMENT_OUT_ECC256@ocsp_certs: testocsp_eccnistp256.certstamp
 @OCSP_ON@@COMMENT_OUT_ECC384@ocsp_certs: testocsp_eccnistp384.certstamp
@@ -218,27 +191,24 @@ selfid_dsa:
 @OCSP_ON@	SSH_OCSP=$(SSH_OCSP) \
 @OCSP_ON@	$(SHELL) $(srcdir)/3-cre_certs.sh -f testocsp_eccnistp256 -t ocsp -n "validator ECDSA(nistp256)"
 
-@OCSP_ON@testocsp_eccnistp256:
-@OCSP_ON@	@echo; echo "generating ECDSA(nistp256) 'ocspkey'"
-@OCSP_ON@	$(SHELL) $(srcdir)/2-cre_key.sh -t ecdsa -b 256 -N "" -f $@
+testocsp_eccnistp256:
+	@$(SHELL) $(srcdir)/2-cre_key.sh ec256 "ocsp-key" $@
 
 @OCSP_ON@testocsp_eccnistp384.certstamp: testocsp_eccnistp384 ca-test/catest-bundle.crt
 @OCSP_ON@	@echo; echo "generating RSA ocsp responder certificates."
 @OCSP_ON@	SSH_OCSP=$(SSH_OCSP) \
 @OCSP_ON@	$(SHELL) $(srcdir)/3-cre_certs.sh -f testocsp_eccnistp384 -t ocsp -n "validator ECDSA(nistp384)"
 
-@OCSP_ON@testocsp_eccnistp384:
-@OCSP_ON@	@echo; echo "generating ECDSA(nistp384) 'ocspkey'"
-@OCSP_ON@	$(SHELL) $(srcdir)/2-cre_key.sh -t ecdsa -b 384 -N "" -f $@
+testocsp_eccnistp384:
+	@$(SHELL) $(srcdir)/2-cre_key.sh ec384 "ocsp-key" $@
 
 @OCSP_ON@testocsp_eccnistp521.certstamp: testocsp_eccnistp521 ca-test/catest-bundle.crt
 @OCSP_ON@	@echo; echo "generating RSA ocsp responder certificates."
 @OCSP_ON@	SSH_OCSP=$(SSH_OCSP) \
 @OCSP_ON@	$(SHELL) $(srcdir)/3-cre_certs.sh -f testocsp_eccnistp521 -t ocsp -n "validator ECDSA(nistp521)"
 
-@OCSP_ON@testocsp_eccnistp521:
-@OCSP_ON@	@echo; echo "generating ECDSA(nistp521) 'ocspkey'"
-@OCSP_ON@	$(SHELL) $(srcdir)/2-cre_key.sh -t ecdsa -b 521 -N "" -f $@
+testocsp_eccnistp521:
+	@$(SHELL) $(srcdir)/2-cre_key.sh ec521 "ocsp-key" $@
 
 
 # ===

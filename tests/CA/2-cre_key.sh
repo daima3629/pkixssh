@@ -1,5 +1,5 @@
 #! /bin/sh
-# Copyright (c) 2011-2020 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2011-2021 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -30,5 +30,45 @@ SCRIPTDIR=`echo $0 | sed 's/2-cre_key.sh$//'`
 
 test "x$TEST_SSH_SSHKEYGEN" = "x" && { echo "${warn}Please define ${attn}TEST_SSH_SSHKEYGEN${norm}" >&2 ; exit 1; }
 
+usage() {
+  cat <<EOF
+${warn}usage${norm}: $0 keytype info filename
+EOF
+  exit 1
+}
+
+opts=
+
+test -z "$1" && usage
+case "$1" in
+rsa)	opts="$opts -t rsa -b $RSAKEYBITS"
+	typemsg="RSA"
+  ;;
+dsa)	opts="$opts -t dsa"
+	typemsg="DSA"
+  ;;
+ec256)	opts="$opts -t ecdsa -b 256"
+	typemsg="ECDSA(nistp256)"
+  ;;
+ec384)	opts="$opts -t ecdsa -b 384"
+	typemsg="ECDSA(nistp384)"
+  ;;
+ec521)	opts="$opts -t ecdsa -b 521"
+	typemsg="ECDSA(nistp521)"
+  ;;
+*)	echo "${warn}unsupported key type: ${attn}$1${norm}" >&2
+	exit 1
+  ;;
+esac
+
+shift
+test -z "$1" && usage
+msg="Generating ${extd}$typemsg${norm} ${attn}$1${norm} ..."
+
+shift
+test -z "$1" && usage
+
+echo
+echo "$msg"
 # X.509 keys require portable PKCS#8 format instead proprietary
-$TEST_SSH_SSHKEYGEN -m PKCS8 ${1+"$@"}
+$TEST_SSH_SSHKEYGEN $opts -m PKCS8 -N "" -f "$1"

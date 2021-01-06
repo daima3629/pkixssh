@@ -1,4 +1,4 @@
-# Copyright (c) 2002-2020 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2002-2021 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -185,6 +185,7 @@ SSHSERVER_LOGLEVEL=FATAL
 # === certificates:
 
 KEY_PASS="change_it"
+RSAKEYBITS=2048
 CAKEY_PREFIX="catest"
 
 SSH_CAROOT="`pwd`/ca-test"
