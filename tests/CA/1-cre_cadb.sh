@@ -1,5 +1,5 @@
 #! /bin/sh
-# Copyright (c) 2002-2020 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2002-2021 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -27,12 +27,6 @@ SCRIPTDIR=`echo $0 | sed 's/1-cre_cadb.sh$//'`
 . "${SCRIPTDIR}shell.rc"
 . "${SCRIPTDIR}functions"
 . "${SCRIPTDIR}config"
-
-if test yes = "$SSH_DN_FORCE_UTF8"; then
-  string_mask=utf8only
-else
-  string_mask=default
-fi
 
 # ===
 # args:
@@ -166,8 +160,8 @@ distinguished_name      = req_distinguished_name
 attributes              = req_attributes
 #prompt                  = no
 #string_mask             = MASK: <unsigned long> | nombstr | pkix | utf8only | default(=0xFFFFFFFFL)
-string_mask             = $string_mask
-#utf8                    = yes
+string_mask             = utf8only
+utf8                    = yes
 
 # The extensions to add to a certificate request:
 #???req_extensions          = usr_cert

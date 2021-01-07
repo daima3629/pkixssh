@@ -231,43 +231,18 @@ SSH_DN_O="SSH Test Team"
 SSH_DN_OU="SSH Testers"
 SSH_DN_EM="email@not.set"
 
-SSH_DN_UTF8_FLAG='-utf8'
-# '-utf8' flag is added in OpenSSL 0.9.7
-case $openssl_version in
-  *0.9.6*)
-    SSH_DN_UTF8_FLAG=
-    ;;
-  *);;
-esac
-if test -n "$SSH_DN_UTF8_FLAG"; then
-  SSH_DN_SUF=" cyrillic-АБВ-Яабв-я greek-ΑΒΓ-Ωαβγ-ω"
-  SSH_DN_L="$SSH_DN_L$SSH_DN_SUF"
-  SSH_DN_O="$SSH_DN_O$SSH_DN_SUF"
-  SSH_DN_OU="$SSH_DN_OU$SSH_DN_SUF"
+SSH_DN_SUF=" cyrillic-АБВ-Яабв-я greek-ΑΒΓ-Ωαβγ-ω"
+SSH_DN_L="$SSH_DN_L$SSH_DN_SUF"
+SSH_DN_O="$SSH_DN_O$SSH_DN_SUF"
+SSH_DN_OU="$SSH_DN_OU$SSH_DN_SUF"
 
-  OPENSSL_NAMEOPT="-nameopt utf8,sep_comma_plus" #ok
-  #OPENSSL_NAMEOPT="-nameopt esc_2253,esc_ctrl,esc_msb,utf8,dump_nostr,dump_der,use_quote,sep_comma_plus_space,sname" #fail - esc_msb should be removed
-  #OPENSSL_NAMEOPT="-nameopt esc_2253,esc_ctrl,utf8,dump_nostr,dump_der,use_quote,sep_comma_plus_space,sname" #ok
-  #OPENSSL_NAMEOPT="-nameopt esc_2253,esc_ctrl,-esc_msb,utf8,dump_nostr,dump_der,use_quote,sep_comma_plus_space,sname" #ok
-  #OPENSSL_NAMEOPT="-nameopt esc_2253,esc_ctrl,esc_msb,utf8,dump_nostr,dump_der,use_quote,sep_comma_plus_space,sname,-esc_msb" #ok
-  #OPENSSL_NAMEOPT="-nameopt oneline,-esc_msb,-space_eq" #ok
-  #OPENSSL_NAMEOPT="-nameopt oneline,-esc_msb" #now ok (spaces around '=')
-else
-  OPENSSL_NAMEOPT=
-fi
-
-# OpenSSL control type distinguished item type with string_mask
-# option in [req] section from configuration file.
-# By default option is set to
-# - nombstr (0.9.7x and 0.9.8x)
-# - utf8only (1.0+)
-SSH_DN_FORCE_UTF8=${SSH_DN_FORCE_UTF8-no}
-case $openssl_version in
-  *0.9.6*)
-    # not supported so override environment settings
-    SSH_DN_FORCE_UTF8=no
-    ;;
-esac
+OPENSSL_NAMEOPT="-nameopt utf8,sep_comma_plus" #ok
+#OPENSSL_NAMEOPT="-nameopt esc_2253,esc_ctrl,esc_msb,utf8,dump_nostr,dump_der,use_quote,sep_comma_plus_space,sname" #fail - esc_msb should be removed
+#OPENSSL_NAMEOPT="-nameopt esc_2253,esc_ctrl,utf8,dump_nostr,dump_der,use_quote,sep_comma_plus_space,sname" #ok
+#OPENSSL_NAMEOPT="-nameopt esc_2253,esc_ctrl,-esc_msb,utf8,dump_nostr,dump_der,use_quote,sep_comma_plus_space,sname" #ok
+#OPENSSL_NAMEOPT="-nameopt esc_2253,esc_ctrl,esc_msb,utf8,dump_nostr,dump_der,use_quote,sep_comma_plus_space,sname,-esc_msb" #ok
+#OPENSSL_NAMEOPT="-nameopt oneline,-esc_msb,-space_eq" #ok
+#OPENSSL_NAMEOPT="-nameopt oneline,-esc_msb" #now ok (spaces around '=')
 
 # === OCSP:
 # OpenSSL OCSP test responders listen on BASE, BASE+1, ...

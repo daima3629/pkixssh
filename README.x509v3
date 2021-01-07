@@ -1,6 +1,6 @@
                                                           Roumen Petrov
                                                         Sofia, Bulgaria
-                                                         Fri Jul 3 2020
+                                                         Thu Jan 7 2021
 
 How to use X.509 certificates with SSH?
 
@@ -283,10 +283,6 @@ Testing client and server with X.509 certificates finished.
     (environment)
     applicable for build with FIPS capable OpenSSL
     see notes below
-  - SSH_DN_FORCE_UTF8=yes
-    (environment)
-    force UTF8String for distinguished name items from type
-    DirectoryString. Default no
 
 3.1.2.2.) openssl:
   - OPENSSL

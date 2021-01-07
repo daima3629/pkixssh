@@ -1,4 +1,4 @@
-# Copyright (c) 2002-2018 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2002-2021 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -268,12 +268,8 @@ creX509AuthorizedKeysFile () {
 
 # ===
 utf8base64() {
-  if test -n "${SSH_DN_UTF8_FLAG}"; then
-    printf ':'
-    printf "$1" | ${OPENSSL} enc -a -e | xargs printf ' %s\n'
-  else
-    printf " $1"
-  fi
+  printf ':'
+  printf "$1" | $OPENSSL enc -a -e | xargs printf ' %s\n'
 }
 
 

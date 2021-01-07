@@ -1,5 +1,5 @@
 #! /bin/sh
-# Copyright (c) 2002-2020 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2002-2021 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -172,15 +172,12 @@ cre_root () {
   || return $?
 
   echo_SSH_CAROOT_DN "0" | \
-  $OPENSSL req \
+  $OPENSSL req -config "$SSH_CACFGFILE" \
     -new -x509 \
-    -config "$SSH_CACFGFILE" \
-    $SSH_DN_UTF8_FLAG \
     -days $SSH_CACERTDAYS \
-    -passin pass:${KEY_PASS} \
-    -key "$TMPDIR/${CAKEY_PREFIX}-root0.key" \
+    -key "$TMPDIR/$CAKEY_PREFIX-root0.key" -passin pass:$KEY_PASS \
     -sha1 \
-    -out "$TMPDIR/${CAKEY_PREFIX}-root0.crt" \
+    -out "$TMPDIR/$CAKEY_PREFIX-root0.crt" \
     -extensions ca_root_cert \
     2>> "$CA_LOG" \
   ; show_status $? "generating ${extd}TEST CA${norm} ${attn}root${norm} certificate" \
@@ -283,7 +280,10 @@ gen_ed448() {
 # ===
 cre_crt () {
 for type in $SSH_SIGN_TYPES; do
-  rm -f "$TMPDIR/$CAKEY_PREFIX"-${type}.crt 2>/dev/null
+  TMP_CRT_FILE="$TMPDIR/$CAKEY_PREFIX-$type.crt"
+  TMP_CSR_FILE="$TMPDIR/$CAKEY_PREFIX-$type.csr"
+
+  rm -f "$TMP_CRT_FILE" 2>/dev/null
 
   case $type in
       *rsa*) keyfile="$TMPDIR/$CAKEY_PREFIX"-rsa.key;;
@@ -294,24 +294,20 @@ for type in $SSH_SIGN_TYPES; do
   esac
 
   echo_SSH_CA_DN "$type" |
-  $OPENSSL req \
+  $OPENSSL req -config "$SSH_CACFGFILE" \
     -new \
-    -config "$SSH_CACFGFILE" \
-    $SSH_DN_UTF8_FLAG \
-    -key "$keyfile" \
-    -passin pass:$KEY_PASS \
-    -out "$TMPDIR/${CAKEY_PREFIX}-${type}".csr \
+    -key "$keyfile" -passin pass:$KEY_PASS \
+    -out "$TMP_CSR_FILE" \
     2>> "$CA_LOG" \
   ; show_status $? "generating ${extd}TEST CA${norm} ${attn}${type}${norm} request" \
   || return $?
 
-  $OPENSSL ca \
-    -config "$SSH_CACFGFILE" \
+  $OPENSSL ca -config "$SSH_CACFGFILE" \
     -batch \
-    -in "$TMPDIR/${CAKEY_PREFIX}-${type}".csr \
+    -in "$TMP_CSR_FILE" \
     -name "ca_test_root" \
     -passin pass:$KEY_PASS \
-    -out "$TMPDIR/${CAKEY_PREFIX}-${type}".crt \
+    -out "$TMP_CRT_FILE" \
     -extensions ca_cert \
     2>> "$CA_LOG" \
   ; show_status $? "generating ${extd}TEST CA${norm} ${attn}${type}${norm} certificate" || \
@@ -319,19 +315,19 @@ for type in $SSH_SIGN_TYPES; do
     printf '%s' "${warn}"
     grep 'ERROR:' "$CA_LOG"
     printf '%s' "${norm}"
-    rm -f "$TMPDIR/${CAKEY_PREFIX}-${type}".csr
-    rm -f "$TMPDIR/${CAKEY_PREFIX}-${type}".crt
+    rm -f "$TMP_CSR_FILE"
+    rm -f "$TMP_CRT_FILE"
     return $retval
   }
 
   sync
   $OPENSSL verify \
     -CAfile "$SSH_CAROOT/crt/$CAKEY_PREFIX-root0.crt.pem" \
-    "$TMPDIR/${CAKEY_PREFIX}-${type}".crt \
+    "$TMP_CRT_FILE" \
   ; retval=$?
   # exit code always is 0 :(
 
-  rm -f "$TMPDIR/${CAKEY_PREFIX}-${type}".csr
+  rm -f "$TMP_CSR_FILE"
 
   test $retval -ne 0 && return $retval
 done

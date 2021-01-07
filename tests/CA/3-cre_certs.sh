@@ -1,5 +1,5 @@
 #! /bin/sh
-# Copyright (c) 2002-2018 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2002-2021 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -127,7 +127,10 @@ update_file .delmy "$CA_LOG" > /dev/null || exit $?
 
 
 # ===
-cre_csr () {
+cre_crt () {
+  TMP_CRT_FILE="$TMPDIR/$SSH_X509V3_EXTENSIONS-$type$subtype.crt"
+  TMP_CSR_FILE="$TMPDIR/$SSH_X509V3_EXTENSIONS-$type$subtype.csr"
+
   echo "=== create a new CSR ===" >> "$CA_LOG"
   (
     if test "$SSH_X509V3_EXTENSIONS" != "usr_cert"; then
@@ -147,29 +150,22 @@ $SSH_DN_EM
 .
 EOF
   ) |
-  $OPENSSL req \
+  $OPENSSL req -config "$SSH_CACFGFILE" \
     -new \
-    -config "${SSH_CACFGFILE}" \
-    $SSH_DN_UTF8_FLAG \
-    -key "${SSH_BASE_KEY}" \
-    -passin pass:"" \
-    -out "${TMPDIR}/${SSH_X509V3_EXTENSIONS}-${type}${subtype}.csr" \
+    -key "$SSH_BASE_KEY" -passin pass: \
+    -out "$TMP_CSR_FILE" \
     2>> "$CA_LOG" \
-  ; show_status $? "- ${extd}CSR${norm}"
-}
+  ; show_status $? "- ${extd}CSR${norm}" ||
+    return $?
 
-
-# ===
-cre_crt () {
   echo "=== create a new CRT ===" >> "$CA_LOG"
-  $OPENSSL ca \
-    -config "${SSH_CACFGFILE}" \
+  $OPENSSL ca -config "$SSH_CACFGFILE" \
     -batch \
-    -in "${TMPDIR}/${SSH_X509V3_EXTENSIONS}-${type}${subtype}.csr" \
+    -in "$TMP_CSR_FILE" \
     -name "ca_test_$type" \
     -passin pass:$KEY_PASS \
-    -out "${TMPDIR}/${SSH_X509V3_EXTENSIONS}-${type}${subtype}.crt" \
-    -extensions ${SSH_X509V3_EXTENSIONS} \
+    -out "$TMP_CRT_FILE" \
+    -extensions $SSH_X509V3_EXTENSIONS \
     2>> "$CA_LOG" \
   ; show_status $? "- ${extd}CRT${norm}" ||
   { retval=$?
@@ -182,15 +178,18 @@ cre_crt () {
   sync
   $OPENSSL verify \
     -CAfile "$SSH_CAROOT/$CACERTFILE" \
-    "${TMPDIR}/${SSH_X509V3_EXTENSIONS}-${type}${subtype}.crt" &&
-  rm -f "${TMPDIR}/${SSH_X509V3_EXTENSIONS}-${type}${subtype}.csr" ||
-    return $?
+    "$TMP_CRT_FILE" ||
+  { retval=$?
+    rm -f "$TMP_CSR_FILE"
+    return $retval
+  }
+  rm -f "$TMP_CSR_FILE"
 
   # openssl verify exit always with zero :(
 
   printf '%s' '- ' &&
   update_file \
-    "$TMPDIR/$SSH_X509V3_EXTENSIONS-$type$subtype.crt" \
+    "$TMP_CRT_FILE" \
     "$SSH_BASE_KEY-$type$subtype.crt" ||
     return $?
 
@@ -207,6 +206,8 @@ cre_crt () {
 
 # ===
 cre_self () {
+  TMP_CRT_FILE="$TMPDIR/$SSH_X509V3_EXTENSIONS-$type.crt"
+
   echo "=== create a new self-CRT ===" >> "$CA_LOG"
   (
     cat <<EOF
@@ -222,22 +223,19 @@ $SSH_DN_EM
 .
 EOF
   ) |
-  $OPENSSL req \
+  $OPENSSL req -config "$SSH_CACFGFILE" \
     -new -x509 \
-    -config "$SSH_CACFGFILE" \
-    $SSH_DN_UTF8_FLAG \
-    -key "$SSH_BASE_KEY" \
     -days $SSH_CACERTDAYS \
-    -passin pass:"" \
-    -out "$TMPDIR/${SSH_X509V3_EXTENSIONS}-${type}".crt \
+    -key "$SSH_BASE_KEY" -passin pass: \
+    -out "$TMP_CRT_FILE" \
     -extensions $SSH_X509V3_EXTENSIONS \
     2>> "$CA_LOG" \
   ; show_status $? "- ${extd}self-CRT${norm}" \
   || return $?
 
   update_file \
-    "$TMPDIR/${SSH_X509V3_EXTENSIONS}-${type}".crt \
-    "${SSH_BASE_KEY}-${type}".crt
+    "$TMP_CRT_FILE" \
+    "$SSH_BASE_KEY-$type.crt"
 }
 
 
@@ -284,11 +282,10 @@ cre_p12 () {
 revoke_crt () {
   echo "=== revoke a CRT ===" >> "$CA_LOG"
   printf '%s' "- ${extd}revoke${norm} certificate"
-  $OPENSSL ca \
-    -config "${SSH_CACFGFILE}" \
+  $OPENSSL ca -config "$SSH_CACFGFILE" \
     -name "ca_test_$type" \
     -passin pass:$KEY_PASS \
-    -revoke "${SSH_BASE_KEY}-${type}${subtype}.crt" \
+    -revoke "$SSH_BASE_KEY-$type$subtype.crt" \
     2>> "$CA_LOG" \
   ; show_status $?
 }
@@ -302,7 +299,6 @@ cre_all2 () {
   if test "$SSH_SELFCERT" = "yes"; then
     cre_self
   else
-    cre_csr &&
     cre_crt
   fi || return $?
 
