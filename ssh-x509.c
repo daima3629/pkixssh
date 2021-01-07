@@ -1815,18 +1815,7 @@ ssh_x509_verify(
 		return SSH_ERR_INVALID_ARGUMENT;
 	}
 
-	if (key->rsa)
-		r = sshkey_validate_public_rsa(key);
-	else if (key->dsa)
-		r = sshkey_validate_public_dsa(key);
-#ifdef OPENSSL_HAS_ECC
-	else if (key->ecdsa)
-		r = sshkey_validate_public_ecdsa(key);
-#endif
-	else {
-		error_f("missing key component");
-		r = SSH_ERR_INVALID_ARGUMENT;
-	}
+	r = sshkey_validate_public(key);
 	if (r != 0) return r;
 
 	pubkey = X509_get_pubkey(key->x509_data->cert);
