@@ -28,7 +28,7 @@ AC_CANONICAL_HOST
 
 AC_PROG_CC_C99
 if test "x$ac_cv_prog_cc_c99" = "xno" ; then
-	AC_MSG_ERROR([*** PKIX-SSH requires a C99 capable compiler ***])
+	AC_MSG_ERROR([*** $PACKAGE_NAME requires a C99 capable compiler ***])
 fi
 AC_C_BIGENDIAN
 
@@ -3346,9 +3346,9 @@ elif test ! -z "$OPENSSL_SEEDS_ITSELF" ; then
 		[Define if you want the OpenSSL internally seeded PRNG only])
 	RAND_MSG="OpenSSL internal ONLY"
 elif test "x$openssl" = "xno" ; then
-	AC_MSG_WARN([PKIX-SSH will use /dev/urandom as a source of random numbers. It will fail if this device is not supported or accessible])
+	AC_MSG_WARN([$PACKAGE_NAME will use /dev/urandom as a source of random numbers. It will fail if this device is not supported or accessible])
 else
-	AC_MSG_ERROR([PKIX-SSH has no source of random numbers. Please configure OpenSSL with an entropy source or re-run configure using one of the --with-prngd-port or --with-prngd-socket options])
+	AC_MSG_ERROR([$PACKAGE_NAME has no source of random numbers. Please configure OpenSSL with an entropy source or re-run configure using one of the --with-prngd-port or --with-prngd-socket options])
 fi
 
 # Check for PAM libs
@@ -4172,7 +4172,7 @@ AC_CHECK_TYPES([struct timespec])
 if test "x$ac_cv_have_int64_t" = "xno" && \
 	test "x$ac_cv_sizeof_long_int" != "x8" && \
 	test "x$ac_cv_sizeof_long_long_int" = "x0" ; then
-	AC_MSG_ERROR([*** SSH_PACKAGE requires int64_t support.
+	AC_MSG_ERROR([*** $PACKAGE_NAME requires int64_t support.
 	Contact your vendor or install an alternative compiler (I.E., GCC) before continuing.
 	])
 fi
@@ -4205,7 +4205,7 @@ if test $ssh_cv_func_snprintf_long_string != yes ; then
 fi
 fi
 
-dnl SSH_PACKAGE depend on vsnprintf returning the right thing on overflow:
+dnl package depend on vsnprintf returning the right thing on overflow:
 dnl the number of characters it tried to create (as per SUSv3)
 if test "x$ac_cv_func_vsnprintf" = "xyes" && test "x$ssh_snprintf_broken" != xyes ; then
 AC_CACHE_CHECK(
@@ -6036,7 +6036,7 @@ I=`eval echo ${user_path}` ; I=`eval echo ${I}`
 J=`eval echo ${superuser_path}` ; J=`eval echo ${J}`
 
 echo ""
-echo "PKIX-SSH has been configured with the following options:"
+echo "$PACKAGE_NAME has been configured with the following options:"
 echo "                     User binaries: $B"
 echo "                   System binaries: $C"
 echo "               Configuration files: $D"
