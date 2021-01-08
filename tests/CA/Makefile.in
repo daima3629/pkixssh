@@ -42,13 +42,13 @@ ca-test/catest-bundle.crt: ca-test/catest.config
 hostkeys: testhostkey_rsa.certstamp testhostkey_dsa.certstamp
 
 testhostkey_rsa:
-	@$(SHELL) $(srcdir)/2-cre_key.sh rsa "host-key" $@
+	@$(SHELL) $(srcdir)/2-cre_key.sh rsa server $@
 
 testhostkey_rsa.certstamp: testhostkey_rsa ca-test/catest-bundle.crt
 	@$(SHELL) $(srcdir)/3-cre_certs.sh rsa server testhostkey_rsa
 
 testhostkey_dsa:
-	@$(SHELL) $(srcdir)/2-cre_key.sh dsa "host-key" $@
+	@$(SHELL) $(srcdir)/2-cre_key.sh dsa server $@
 
 testhostkey_dsa.certstamp: testhostkey_dsa ca-test/catest-bundle.crt
 	@$(SHELL) $(srcdir)/3-cre_certs.sh dsa server testhostkey_dsa
@@ -58,19 +58,19 @@ testhostkey_dsa.certstamp: testhostkey_dsa ca-test/catest-bundle.crt
 @COMMENT_OUT_ECC521@hostkeys: testhostkey_eccnistp521.certstamp
 
 testhostkey_eccnistp256:
-	@$(SHELL) $(srcdir)/2-cre_key.sh ec256 "host-key" $@
+	@$(SHELL) $(srcdir)/2-cre_key.sh ec256 server $@
 
 testhostkey_eccnistp256.certstamp: testhostkey_eccnistp256 ca-test/catest-bundle.crt
 	@$(SHELL) $(srcdir)/3-cre_certs.sh ec256 server testhostkey_eccnistp256
 
 testhostkey_eccnistp384:
-	@$(SHELL) $(srcdir)/2-cre_key.sh ec384 "host-key" $@
+	@$(SHELL) $(srcdir)/2-cre_key.sh ec384 server $@
 
 testhostkey_eccnistp384.certstamp: testhostkey_eccnistp384 ca-test/catest-bundle.crt
 	@$(SHELL) $(srcdir)/3-cre_certs.sh ec384 server testhostkey_eccnistp384
 
 testhostkey_eccnistp521:
-	@$(SHELL) $(srcdir)/2-cre_key.sh ec521 "host-key" $@
+	@$(SHELL) $(srcdir)/2-cre_key.sh ec521 server $@
 
 testhostkey_eccnistp521.certstamp: testhostkey_eccnistp521 ca-test/catest-bundle.crt
 	@$(SHELL) $(srcdir)/3-cre_certs.sh ec521 server testhostkey_eccnistp521
@@ -80,13 +80,13 @@ testhostkey_eccnistp521.certstamp: testhostkey_eccnistp521 ca-test/catest-bundle
 identities: testid_rsa.certstamp testid_dsa.certstamp
 
 testid_rsa:
-	@$(SHELL) $(srcdir)/2-cre_key.sh rsa "'Identity'" $@
+	@$(SHELL) $(srcdir)/2-cre_key.sh rsa client $@
 
 testid_rsa.certstamp: testid_rsa ca-test/catest-bundle.crt
 	@$(SHELL) $(srcdir)/3-cre_certs.sh rsa client testid_rsa
 
 testid_dsa:
-	@$(SHELL) $(srcdir)/2-cre_key.sh dsa "'Identity'" $@
+	@$(SHELL) $(srcdir)/2-cre_key.sh dsa client $@
 
 testid_dsa.certstamp: testid_dsa ca-test/catest-bundle.crt
 	@$(SHELL) $(srcdir)/3-cre_certs.sh dsa client testid_dsa
@@ -96,19 +96,19 @@ testid_dsa.certstamp: testid_dsa ca-test/catest-bundle.crt
 @COMMENT_OUT_ECC521@identities: testid_eccnistp521.certstamp
 
 testid_eccnistp256:
-	@$(SHELL) $(srcdir)/2-cre_key.sh ec256 "'Identity'" $@
+	@$(SHELL) $(srcdir)/2-cre_key.sh ec256 client $@
 
 testid_eccnistp256.certstamp: testid_eccnistp256 ca-test/catest-bundle.crt
 	@$(SHELL) $(srcdir)/3-cre_certs.sh ec256 client testid_eccnistp256
 
 testid_eccnistp384:
-	@$(SHELL) $(srcdir)/2-cre_key.sh ec384 "'Identity'" $@
+	@$(SHELL) $(srcdir)/2-cre_key.sh ec384 client $@
 
 testid_eccnistp384.certstamp: testid_eccnistp384 ca-test/catest-bundle.crt
 	@$(SHELL) $(srcdir)/3-cre_certs.sh ec384 client testid_eccnistp384
 
 testid_eccnistp521:
-	@$(SHELL) $(srcdir)/2-cre_key.sh ec521 "'Identity'" $@
+	@$(SHELL) $(srcdir)/2-cre_key.sh ec521 client $@
 
 testid_eccnistp521.certstamp: testid_eccnistp521 ca-test/catest-bundle.crt
 	@$(SHELL) $(srcdir)/3-cre_certs.sh ec521 client testid_eccnistp521
@@ -121,13 +121,13 @@ selfid_rsa.certstamp: selfid_rsa
 	@$(SHELL) $(srcdir)/3-cre_certs.sh rsa self selfid_rsa
 
 selfid_rsa:
-	@$(SHELL) $(srcdir)/2-cre_key.sh rsa "'Identity' for self-issued" $@
+	@$(SHELL) $(srcdir)/2-cre_key.sh rsa self $@
 
 selfid_dsa.certstamp: selfid_dsa
 	@$(SHELL) $(srcdir)/3-cre_certs.sh dsa self selfid_dsa
 
 selfid_dsa:
-	@$(SHELL) $(srcdir)/2-cre_key.sh dsa "'Identity' for self-issued" $@
+	@$(SHELL) $(srcdir)/2-cre_key.sh dsa self $@
 
 
 # ===
@@ -138,13 +138,13 @@ testocsp_rsa.certstamp: testocsp_rsa ca-test/catest-bundle.crt
 	@$(SHELL) $(srcdir)/3-cre_certs.sh rsa ocsp testocsp_rsa
 
 testocsp_rsa:
-	@$(SHELL) $(srcdir)/2-cre_key.sh rsa "ocsp-key" $@
+	@$(SHELL) $(srcdir)/2-cre_key.sh rsa ocsp $@
 
 testocsp_dsa.certstamp: testocsp_dsa ca-test/catest-bundle.crt
 	@$(SHELL) $(srcdir)/3-cre_certs.sh dsa ocsp testocsp_dsa
 
 testocsp_dsa:
-	@$(SHELL) $(srcdir)/2-cre_key.sh dsa "ocsp-key" $@
+	@$(SHELL) $(srcdir)/2-cre_key.sh dsa ocsp $@
 
 @OCSP_ON@@COMMENT_OUT_ECC256@ocsp_certs: testocsp_eccnistp256.certstamp
 @OCSP_ON@@COMMENT_OUT_ECC384@ocsp_certs: testocsp_eccnistp384.certstamp
@@ -154,19 +154,19 @@ testocsp_eccnistp256.certstamp: testocsp_eccnistp256 ca-test/catest-bundle.crt
 	@$(SHELL) $(srcdir)/3-cre_certs.sh ec256 ocsp testocsp_eccnistp256
 
 testocsp_eccnistp256:
-	@$(SHELL) $(srcdir)/2-cre_key.sh ec256 "ocsp-key" $@
+	@$(SHELL) $(srcdir)/2-cre_key.sh ec256 ocsp $@
 
 testocsp_eccnistp384.certstamp: testocsp_eccnistp384 ca-test/catest-bundle.crt
 	@$(SHELL) $(srcdir)/3-cre_certs.sh ec384 ocsp testocsp_eccnistp384
 
 testocsp_eccnistp384:
-	@$(SHELL) $(srcdir)/2-cre_key.sh ec384 "ocsp-key" $@
+	@$(SHELL) $(srcdir)/2-cre_key.sh ec384 ocsp $@
 
 testocsp_eccnistp521.certstamp: testocsp_eccnistp521 ca-test/catest-bundle.crt
 	@$(SHELL) $(srcdir)/3-cre_certs.sh ec521 ocsp testocsp_eccnistp521
 
 testocsp_eccnistp521:
-	@$(SHELL) $(srcdir)/2-cre_key.sh ec521 "ocsp-key" $@
+	@$(SHELL) $(srcdir)/2-cre_key.sh ec521 ocsp $@
 
 
 # ===

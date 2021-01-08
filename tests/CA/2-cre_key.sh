@@ -32,7 +32,7 @@ test "x$TEST_SSH_SSHKEYGEN" = "x" && { echo "${warn}Please define ${attn}TEST_SS
 
 usage() {
   cat <<EOF
-${warn}usage${norm}: $0 keytype info filename
+${warn}usage${norm}: $0 keytype category filename
 EOF
   exit 1
 }
@@ -63,12 +63,36 @@ esac
 
 shift
 test -z "$1" && usage
-msg="Generating ${extd}$typemsg${norm} ${attn}$1${norm} ..."
+case $1 in
+client)
+  infomsg="'Identity'"
+  ;;
+server)
+  infomsg="host-key"
+  ;;
+self)
+  infomsg="'Identity' for self-issued"
+  ;;
+ocsp)
+  if $SSH_OCSP_ENABLED ; then :
+  else
+    echo "${warn}unsupported category: ${attn}$1${norm}" >&2
+    usage
+  fi
+  infomsg="ocsp-key"
+  ;;
+*)
+  echo "${warn}wrong category: ${attn}$1${norm}" >&2
+  usage
+  ;;
+esac
 
 shift
 test -z "$1" && usage
 
+
 echo
-echo "$msg"
+echo "Generating ${extd}$typemsg${norm} ${attn}$infomsg${norm} ..."
+
 # X.509 keys require portable PKCS#8 format instead proprietary
 $TEST_SSH_SSHKEYGEN $opts -m PKCS8 -N "" -f "$1"
