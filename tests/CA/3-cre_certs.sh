@@ -30,100 +30,71 @@ SCRIPTDIR=`echo $0 | sed 's/3-cre_certs.sh$//'`
 
 usage () {
   cat <<EOF
-usage: $0 <options>
-  -f[ile]	[ssh]key_file_name
-  -t[ype]	certificate type: client, server, ocsp(if enabled)
-  -n[ame]	"base" common name
+${warn}usage${norm}: $0 keytype category filename
 EOF
   exit 1
 }
 
 test "x$TEST_SSH_SSHKEYGEN" = "x" && { echo "${warn}Please define ${attn}TEST_SSH_SSHKEYGEN${norm}" >&2 ; exit 1; }
+
+
 test -z "$1" && usage
+case "$1" in
+rsa)	key_type_name="RSA";;
+dsa)	key_type_name="DSA";;
+ec256)	key_type_name="ECDSA(nistp256)";;
+ec384)	key_type_name="ECDSA(nistp384)";;
+ec521)	key_type_name="ECDSA(nistp521)";;
+*)	echo "${warn}unsupported key type: ${attn}$1${norm}" >&2
+	exit 1
+  ;;
+esac
+msg="${extd}$key_type_name${norm}"
 
-
+shift
+test -z "$1" && usage
 SSH_SELFCERT=no
+case $1 in
+client)
+  SSH_X509V3_EXTENSIONS=usr_cert
+  SSH_BASE_DN_CN="SSH $key_type_name test certificate"
+  msg="$msg ${attn}client${norm}"
+  ;;
+server)
+  SSH_X509V3_EXTENSIONS=srv_cert
+  SSH_BASE_DN_CN="localhost $key_type_name"
+  msg="$msg ${attn}server${norm}"
+  ;;
+self)
+  SSH_SELFCERT=yes
+  SSH_X509V3_EXTENSIONS=self_cert
+  SSH_BASE_DN_CN="SSH $key_type_name test self-issued certificate"
+  msg="$msg ${attn}client self-issued${norm}"
+  ;;
+ocsp)
+  if $SSH_OCSP_ENABLED ; then :
+  else
+    echo "${warn}unsupported category: ${attn}$1${norm}" >&2
+    usage
+  fi
+  SSH_X509V3_EXTENSIONS=ocsp_cert
+  SSH_BASE_DN_CN="validator $key_type_name"
+  msg="$msg ${attn}ocsp responder${norm}"
+  ;;
+*)
+  echo "${warn}wrong category: ${attn}$1${norm}" >&2
+  usage
+  ;;
+esac
 
-while test -n "$1"; do
-  case $1 in
-    -f|\
-    -file)
-      shift
-      if test -z "$1"; then
-        usage
-      fi
-      if test -n "${SSH_BASE_KEY}"; then
-        usage
-      fi
-      SSH_BASE_KEY="$1"
-      shift
-      ;;
-
-    -t|\
-    -type)
-      shift
-      if test -z "$1"; then
-        usage
-      fi
-      if test -n "$SSH_CERT_TYPE"; then
-        usage
-      fi
-      SSH_CERT_TYPE="$1"
-      shift
-      case $SSH_CERT_TYPE in
-        client)
-          SSH_X509V3_EXTENSIONS="usr_cert"
-          ;;
-        server)
-          SSH_X509V3_EXTENSIONS="srv_cert"
-          ;;
-        self)
-          SSH_SELFCERT=yes
-          SSH_X509V3_EXTENSIONS=self_cert
-          ;;
-        ocsp)
-          if $SSH_OCSP_ENABLED ; then
-            SSH_X509V3_EXTENSIONS="ocsp_cert"
-          else
-            echo "${warn}unsupported type${norm}" >&2
-            usage
-          fi
-          ;;
-        *)
-          echo "${warn}wrong type${norm}" >&2
-          usage
-          ;;
-      esac
-      ;;
-
-    -n|\
-    -name)
-      shift
-      if test -z "$1"; then
-        usage
-      fi
-      if test -n "${SSH_BASE_DN_CN}"; then
-        usage
-      fi
-      SSH_BASE_DN_CN="$1"
-      shift
-      ;;
-
-    *)
-      usage
-      ;;
-  esac
-done
-
-test -z "${SSH_BASE_KEY}" && usage
+shift
+test -z "$1" && usage
+SSH_BASE_KEY="$1"
 test ! -r "${SSH_BASE_KEY}" && { error_file_not_readable; exit 1; }
-test -z "${SSH_BASE_DN_CN}" && usage
-test -z "${SSH_CERT_TYPE}" && usage
 
 
 CA_LOG="$CWD/ca-3.$SSH_BASE_KEY.$SSH_X509V3_EXTENSIONS.log"
-create_empty_file .delmy &&
-update_file .delmy "$CA_LOG" > /dev/null || exit $?
+create_empty_file "$CA_LOG" > /dev/null || exit $?
 
 
 # ===
@@ -293,7 +264,6 @@ revoke_crt () {
 
 # ===
 cre_all2 () {
-  echo
   printf '%s\n' "creating ${extd}${SSH_X509V3_EXTENSIONS}${norm} for ${extd}${SSH_BASE_DN_CN}${norm}(${attn}${type}${norm}${warn}${subtype}${norm}) ..."
 
   if test "$SSH_SELFCERT" = "yes"; then
@@ -347,8 +317,10 @@ cre_all () {
 }
 
 # ===
+echo
+echo "Generating $msg certificates, keys, etc..."
 
 cre_all; retval=$?
 
+show_status $retval "Creation of ${extd}$SSH_BASE_DN_CN${norm} certificates, keys, etc."
 echo
-show_status $retval "${extd}Creating${norm} ${attn}${SSH_BASE_DN_CN}${norm} group of ${warn}test${norm} certificates"
