@@ -19,6 +19,7 @@ m4_include([version.m4])
 
 AC_INIT([SSH_PACKAGE], [SSH_VERSION], [SSH_BUGREPORT], [openssh], [SSH_URL])
 AC_CONFIG_SRCDIR([ssh.c])
+m4_include([m4/c.m4])
 m4_include([m4/local.m4])
 m4_include([m4/ldap.m4])
 
@@ -26,10 +27,10 @@ AC_CONFIG_HEADERS([config.h])
 
 AC_CANONICAL_HOST
 
-AC_PROG_CC_C99
-if test "x$ac_cv_prog_cc_c99" = "xno" ; then
+SSH_AC_PROG_CC
+AS_IF([test "x$ac_cv_prog_cc_c99" = "xno"], [
 	AC_MSG_ERROR([*** $PACKAGE_NAME requires a C99 capable compiler ***])
-fi
+])
 AC_C_BIGENDIAN
 
 # Checks for programs.
