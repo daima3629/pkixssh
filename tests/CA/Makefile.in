@@ -39,10 +39,6 @@ ca-test/catest-bundle.crt: ca-test/catest.config
 	$(SHELL) $(srcdir)/2-cre_cakeys.sh
 
 # ===
-#some versions of ksh fail to expand ${1+"$@"} if last argument is
-#empty string. so use ... -N "" -f $@ instead ... -f $@ -N ""
-
-
 hostkeys: testhostkey_rsa.certstamp testhostkey_dsa.certstamp
 
 testhostkey_rsa:
