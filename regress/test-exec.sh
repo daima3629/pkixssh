@@ -8,7 +8,7 @@ _POSIX2_VERSION=199209
 export _POSIX2_VERSION
 
 . ../tests/CA/shell.rc
-. ../tests/env
+. $OBJ/../tests/env
 TEST_SHELL=${TEST_SHELL-sh}
 
 case `uname -s 2>/dev/null` in
