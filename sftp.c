@@ -1,4 +1,4 @@
-/* $OpenBSD: sftp.c,v 1.205 2020/12/04 02:41:10 djm Exp $ */
+/* $OpenBSD: sftp.c,v 1.206 2021/01/08 02:44:14 djm Exp $ */
 /*
  * Copyright (c) 2001-2004 Damien Miller <djm@openbsd.org>
  *
@@ -71,6 +71,8 @@ typedef void EditLine;
 
 #define DEFAULT_COPY_BUFLEN	32768	/* Size of buffer for up/download */
 #define DEFAULT_NUM_REQUESTS	64	/* # concurrent outstanding requests */
+
+#define NCMP(a,b) (a == b ? 0 : (a < b ? -1 : 1))
 
 /* File to read commands from */
 FILE* infile;
@@ -826,7 +828,6 @@ sdirent_comp(const void *aa, const void *bb)
 	SFTP_DIRENT *b = *(SFTP_DIRENT **)bb;
 	int rmul = sort_flag & LS_REVERSE_SORT ? -1 : 1;
 
-#define NCMP(a,b) (a == b ? 0 : (a < b ? 1 : -1))
 	if (sort_flag & LS_NAME_SORT)
 		return (rmul * strcmp(a->filename, b->filename));
 	else if (sort_flag & LS_TIME_SORT)
@@ -923,30 +924,41 @@ do_ls_dir(struct sftp_conn *conn, const char *path,
 	return (0);
 }
 
+static inline int
+ssh_ts_cmp(const struct timespec *t1, const struct timespec *t2)
+{
+	if (t1->tv_sec == t2->tv_sec)
+		return NCMP(t1->tv_nsec, t2->tv_nsec);
+	else
+		return (t1->tv_sec < t2->tv_sec) ? -1: 1;
+}
+
 static int
 sglob_comp(const void *aa, const void *bb)
 {
 	u_int a = *(const u_int *)aa;
 	u_int b = *(const u_int *)bb;
-	const char *ap = sort_glob->gl_pathv[a];
-	const char *bp = sort_glob->gl_pathv[b];
-	const struct stat *as = sort_glob->gl_statv[a];
-	const struct stat *bs = sort_glob->gl_statv[b];
 	int rmul = sort_flag & LS_REVERSE_SORT ? -1 : 1;
 
-#define NCMP(a,b) (a == b ? 0 : (a < b ? 1 : -1))
-	if (sort_flag & LS_NAME_SORT)
+	if (sort_flag & LS_NAME_SORT) {
+		const char *ap = sort_glob->gl_pathv[a];
+		const char *bp = sort_glob->gl_pathv[b];
 		return (rmul * strcmp(ap, bp));
-	else if (sort_flag & LS_TIME_SORT) {
+	} else if (sort_flag & LS_TIME_SORT) {
+		const struct stat *as = sort_glob->gl_statv[a];
+		const struct stat *bs = sort_glob->gl_statv[b];
 #if defined(HAVE_STRUCT_STAT_ST_MTIM)
-		return (rmul * timespeccmp(&as->st_mtim, &bs->st_mtim, <));
+		return (rmul * ssh_ts_cmp(&as->st_mtim, &bs->st_mtim));
 #elif defined(HAVE_STRUCT_STAT_ST_MTIME)
 		return (rmul * NCMP(as->st_mtime, bs->st_mtime));
 #else
 	return rmul * 1;
 #endif
-	} else if (sort_flag & LS_SIZE_SORT)
+	} else if (sort_flag & LS_SIZE_SORT) {
+		const struct stat *as = sort_glob->gl_statv[a];
+		const struct stat *bs = sort_glob->gl_statv[b];
 		return (rmul * NCMP(as->st_size, bs->st_size));
+	}
 
 	fatal("Unknown ls sort type");
 }
