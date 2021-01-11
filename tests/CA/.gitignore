@@ -1,5 +1,4 @@
 Makefile
-env
 ca-test/
 ldap/
 testid_*
