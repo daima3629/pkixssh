@@ -4155,18 +4155,12 @@ if test "x$ac_cv_have_struct_addrinfo" = "xyes" ; then
 		[define if you have struct addrinfo data type])
 fi
 
-AC_CACHE_CHECK([for struct timeval], ac_cv_have_struct_timeval, [
-	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[ #include <sys/time.h> ]],
-	[[ struct timeval tv; tv.tv_sec = 1;]])],
-	[ ac_cv_have_struct_timeval="yes" ],
-	[ ac_cv_have_struct_timeval="no"
-	])
-])
-if test "x$ac_cv_have_struct_timeval" = "xyes" ; then
-	AC_DEFINE([HAVE_STRUCT_TIMEVAL], [1], [define if you have struct timeval])
-	have_struct_timeval=1
-fi
-
+# useless checks as progmam code uses time* structures unconditionally
+AC_CHECK_TYPES([struct timeval], [], [], [[
+#ifdef HAVE_SYS_TIME_H
+# include <sys/time.h>
+#endif
+]])
 AC_CHECK_TYPES([struct timespec])
 
 # We need int64_t or else certain parts of the compile will fail.

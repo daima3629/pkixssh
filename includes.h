@@ -94,7 +94,7 @@
 # include <sys/sysmacros.h> /* For MIN, MAX, etc */
 #endif
 #ifdef HAVE_SYS_TIME_H
-# include <sys/time.h> /* for timespeccmp if present */
+# include <sys/time.h> /* for struct timeval if present */
 #endif
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h> /* for MAP_ANONYMOUS */
