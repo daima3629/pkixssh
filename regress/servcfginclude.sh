@@ -2,6 +2,13 @@
 
 tid="server config include"
 
+# cross-project configuration
+if test "$sshd_type" = "pkix" ; then
+  unset_arg=''
+else
+  unset_arg=none
+fi
+
 cat > $OBJ/sshd_config.i << _EOF
 HostKey $OBJ/host.ssh-ed25519
 Match host a
@@ -103,7 +110,7 @@ trial e /ee
 trial f /fff
 trial m /xxxx
 trial n /xxxx
-trial x ''
+trial x $unset_arg
 
 # Prepare an included config with an error.
 

@@ -4,6 +4,16 @@
 tid="simple agent test"
 PLAIN_TYPES=`echo "$SSH_KEYTYPES" | sed 's/ssh-xmss@openssh.com//'` # TODO
 
+# cross-project configuration
+if test "$sshd_type" != "pkix" ; then
+mv $OBJ/sshd_proxy $OBJ/sshd_proxy.orig
+(
+	grep -v "PubkeyAcceptedKeyTypes"  $OBJ/sshd_proxy.orig
+	echo "PubkeyAcceptedKeyTypes *,ssh-dss*"
+) > $OBJ/sshd_proxy
+fi
+
+
 SSH_AUTH_SOCK=/nonexistent ${SSHADD} -l > /dev/null 2>&1
 if [ $? -ne 2 ]; then
 	fail "ssh-add -l did not fail with exit code 2"

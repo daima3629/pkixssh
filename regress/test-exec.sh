@@ -254,6 +254,12 @@ REAL_SSH="$SSH"
 REAL_SSHD="$SSHD"
 SSH="$SSHLOGWRAP"
 
+if "$REAL_SSHD" -? 2>&1 | grep 'PKIX-SSH' > /dev/null; then
+  sshd_type=pkix
+else
+  sshd_type=other
+fi
+
 # Some test data.  We make a copy because some tests will overwrite it.
 # The tests may assume that $DATA exists and is writable and $COPY does
 # not exist.  Tests requiring larger data files can call increase_datafile_size
