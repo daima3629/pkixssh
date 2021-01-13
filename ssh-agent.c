@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-agent.c,v 1.267 2020/11/08 22:37:24 djm Exp $ */
+/* $OpenBSD: ssh-agent.c,v 1.268 2021/01/11 02:12:58 dtucker Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -12,7 +12,7 @@
  * called by a name other than "ssh" or "Secure Shell".
  *
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -162,7 +162,25 @@ u_char lock_salt[LOCK_SALT_SIZE];
 extern char *__progname;
 
 /* Default lifetime in seconds (0 == forever) */
-static long lifetime = 0;
+static u_int lifetime = 0;
+static int/*bool*/
+set_lifetime(const char *val)
+{	long t = convtime(val);
+	if (t == -1) {
+		fprintf(stderr, "Invalid lifetime\n");
+		return 0;
+	}
+/* Note u_int32_t is size used in communication to agent
+ * (see SSH_AGENT_CONSTRAIN_LIFETIME). */
+#if SIZEOF_LONG_INT > SIZEOF_INT
+	if (t > UINT32_MAX) {
+		fprintf(stderr, "Lifetime too high\n");
+		return 0;
+	}
+#endif
+	lifetime = (u_int)t; /*save cast*/
+	return 1;
+}
 
 static int fingerprint_hash = SSH_FP_HASH_DEFAULT;
 
@@ -434,7 +452,7 @@ process_add_identity(SocketEntry *e)
 {
 	Identity *id;
 	int success = 0, confirm = 0;
-	u_int seconds, maxsign;
+	u_int32_t seconds, maxsign;
 	char *comment = NULL, *ext_name = NULL, *sk_provider = NULL;
 	time_t death = 0;
 	struct sshkey *k = NULL;
@@ -458,7 +476,12 @@ process_add_identity(SocketEntry *e)
 				error_fr(r, "parse lifetime constraint");
 				goto err;
 			}
-			death = monotime() + seconds;
+			death = monotime();
+			if (death > (death + seconds)) {
+				error_f("lifetime constrain too high");
+				goto err;
+			}
+			death += seconds;
 			break;
 		case SSH_AGENT_CONSTRAIN_CONFIRM:
 			confirm = 1;
@@ -513,8 +536,15 @@ process_add_identity(SocketEntry *e)
 	}
 
 	success = 1;
-	if (lifetime && !death)
-		death = monotime() + lifetime;
+	if (lifetime && !death) {
+		death = monotime();
+		if (death > (death + lifetime)) {
+			debug3_f("now lifetime is too high");
+			/* forever */
+			death = 0;
+		} else
+			death += lifetime;
+	}
 	if ((id = lookup_identity(k)) == NULL) {
 		id = xcalloc(1, sizeof(Identity));
 		TAILQ_INSERT_TAIL(&idtab->idlist, id, next);
@@ -607,7 +637,7 @@ process_add_smartcard_key(SocketEntry *e)
 {
 	char *provider = NULL, *pin = NULL, canonical_provider[PATH_MAX];
 	int r, success = 0, confirm = 0;
-	u_int seconds;
+	u_int32_t seconds;
 	time_t death = 0;
 	u_char type;
 
@@ -628,7 +658,12 @@ process_add_smartcard_key(SocketEntry *e)
 				error_fr(r, "parse lifetime");
 				goto send;
 			}
-			death = monotime() + seconds;
+			death = monotime();
+			if (death > (death + seconds)) {
+				error_f("lifetime constrain too high");
+				goto send;
+			}
+			death += seconds;
 			break;
 		case SSH_AGENT_CONSTRAIN_CONFIRM:
 			confirm = 1;
@@ -649,8 +684,15 @@ process_add_smartcard_key(SocketEntry *e)
 		goto send;
 	}
 	debug_f("add %.100s", canonical_provider);
-	if (lifetime && !death)
-		death = monotime() + lifetime;
+	if (lifetime && !death) {
+		death = monotime();
+		if (death > (death + lifetime)) {
+			debug3_f("now lifetime is too high");
+			/* forever */
+			death = 0;
+		} else
+			death += lifetime;
+	}
 
 {
 	int i, count;
@@ -1235,8 +1277,7 @@ main(int ac, char **av)
 			agentsocket = optarg;
 			break;
 		case 't':
-			if ((lifetime = convtime(optarg)) == -1) {
-				fprintf(stderr, "Invalid lifetime\n");
+			if (!set_lifetime(optarg)) {
 				usage();
 			}
 			break;

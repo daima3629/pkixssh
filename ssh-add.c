@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-add.c,v 1.158 2020/10/18 11:32:02 djm Exp $ */
+/* $OpenBSD: ssh-add.c,v 1.159 2021/01/11 02:12:58 dtucker Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -13,7 +13,7 @@
  *
  * SSH2 implementation,
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -94,6 +94,24 @@ static int fingerprint_hash = SSH_FP_HASH_DEFAULT;
 
 /* Default lifetime (0 == forever) */
 static u_int lifetime = 0;
+static int/*bool*/
+set_lifetime(const char *val)
+{	long t = convtime(val);
+	if (t == -1) {
+		fprintf(stderr, "Invalid lifetime\n");
+		return 0;
+	}
+/* Note u_int32_t is size used in communication to agent
+ * (see SSH_AGENT_CONSTRAIN_LIFETIME). */
+#if SIZEOF_LONG_INT > SIZEOF_INT
+	if (t > UINT32_MAX) {
+		fprintf(stderr, "Lifetime too high\n");
+		return 0;
+	}
+#endif
+	lifetime = (u_int)t; /*save cast*/
+	return 1;
+}
 
 /* User has to confirm key use */
 static int confirm = 0;
@@ -716,21 +734,10 @@ main(int argc, char **argv)
 			pkcs11provider = optarg;
 			break;
 		case 't':
-		{	long t = convtime(optarg);
-			if (t == -1) {
-				fprintf(stderr, "Invalid lifetime\n");
+			if (!set_lifetime(optarg)) {
 				ret = 1;
 				goto done;
 			}
-		#if SIZEOF_LONG_INT > SIZEOF_INT
-			if (t > UINT32_MAX) {
-				fprintf(stderr, "Lifetime too high\n");
-				ret = 1;
-				goto done;
-			}
-		#endif
-			lifetime = (u_int)t; /*save cast*/
-		}
 			break;
 		case 'T':
 			Tflag = 1;
