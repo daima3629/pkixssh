@@ -2,6 +2,7 @@
 
 /*
  * Copyright (c) 2004-2008 Damien Miller <djm@mindrot.org>
+ * Copyright (c) 2021 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -30,7 +31,7 @@
 
 #include "addr.h"
 
-int
+static int
 addr_unicast_masklen(int af)
 {
 	switch (af) {
@@ -54,6 +55,47 @@ masklen_valid(int af, u_int masklen)
 	default:
 		return -1;
 	}
+}
+
+static int
+addr_xaddr_to_sa(const struct xaddr *xa, struct sockaddr *sa, socklen_t *len,
+    u_int16_t port)
+{
+	if (xa == NULL || sa == NULL || len == NULL)
+		return -1;
+
+	switch (xa->af) {
+	case AF_INET: {
+		struct sockaddr_in *in4 = (struct sockaddr_in *)sa;
+		if (*len < sizeof(*in4))
+			return -1;
+		memset(in4, '\0', sizeof(*in4));
+		*len = sizeof(*in4);
+#ifdef SOCK_HAS_LEN
+		in4->sin_len = sizeof(*in4);
+#endif
+		in4->sin_family = AF_INET;
+		in4->sin_port = htons(port);
+		memcpy(&in4->sin_addr, &xa->v4, sizeof(in4->sin_addr));
+		} break;
+	case AF_INET6: {
+		struct sockaddr_in6 *in6 = (struct sockaddr_in6 *)sa;
+		if (*len < sizeof(*in6))
+			return -1;
+		memset(in6, '\0', sizeof(*in6));
+		*len = sizeof(*in6);
+#ifdef SOCK_HAS_LEN
+		in6->sin6_len = sizeof(*in6);
+#endif
+		in6->sin6_family = AF_INET6;
+		in6->sin6_port = htons(port);
+		memcpy(&in6->sin6_addr, &xa->v6, sizeof(in6->sin6_addr));
+		in6->sin6_scope_id = xa->scope_id;
+		} break;
+	default:
+		return -1;
+	}
+	return 0;
 }
 
 /*
@@ -95,7 +137,7 @@ addr_sa_to_xaddr(struct sockaddr *sa, socklen_t slen, struct xaddr *xa)
  * Perform bitwise negation of address
  * Returns 0 on success, -1 on failure.
  */
-int
+static int
 addr_invert(struct xaddr *n)
 {
 	int i;
@@ -150,7 +192,7 @@ addr_netmask(int af, u_int l, struct xaddr *n)
 	}
 }
 
-int
+static int
 addr_hostmask(int af, u_int l, struct xaddr *n)
 {
 	if (addr_netmask(af, l, n) == -1 || addr_invert(n) == -1)
@@ -218,7 +260,7 @@ addr_cmp(const struct xaddr *a, const struct xaddr *b)
  * Test whether address 'a' is all zeros (i.e. 0.0.0.0 or ::)
  * Returns 0 on if address is all-zeros, -1 if not all zeros or on failure.
  */
-int
+static int
 addr_is_all0s(const struct xaddr *a)
 {
 	int i;
@@ -242,7 +284,7 @@ addr_is_all0s(const struct xaddr *a)
  * Returns 0 on if host portion of address is all-zeros,
  * -1 if not all zeros or on failure.
  */
-int
+static int
 addr_host_is_all0s(const struct xaddr *a, u_int masklen)
 {
 	struct xaddr tmp_addr, tmp_mask, tmp_result;
@@ -287,6 +329,30 @@ addr_pton(const char *p, struct xaddr *n)
  out:
 	freeaddrinfo(ai);
 	return ret;
+}
+
+/*
+ * Convert address n into string 'p'
+ * Returns 0 on success, -1 on failure.
+ */
+int
+addr_ntop(const struct xaddr *n, char *p, size_t len)
+{
+	struct sockaddr_storage ss;
+	struct sockaddr *sa;
+	socklen_t slen;
+
+	if (n == NULL || p == NULL || len == 0)
+		return -1;
+
+	sa = (struct sockaddr*)&ss;
+	slen = sizeof(ss);
+
+	if (addr_xaddr_to_sa(n, sa, &slen, 0) == -1)
+		return -1;
+
+	return getnameinfo(sa, slen, p, len, NULL, 0, NI_NUMERICHOST) != 0
+		? -1 : 0;
 }
 
 /*
