@@ -449,8 +449,9 @@ Specifies which algorithms are allowed for signing of custom certificates
 by custom certificate authorities (CAs).
 The default is:
 .Bd -literal -offset indent
+ssh-ed25519,
 ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ecdsa-sha2-nistp521,
-ssh-ed25519,rsa-sha2-512,rsa-sha2-256,ssh-rsa
+rsa-sha2-512,rsa-sha2-256,ssh-rsa
 .Ed
 .Pp
 .Xr ssh 1
@@ -929,14 +930,14 @@ The default for this option depend from
 By default it contain unique list build from names of X509KeyAlgorithm
 defined for ECDSA, RSA and DSA keys, followed by
 .Bd -literal -offset 3n
+ssh-ed25519-cert-v01@openssh.com,
 ecdsa-sha2-nistp256-cert-v01@openssh.com,
 ecdsa-sha2-nistp384-cert-v01@openssh.com,
 ecdsa-sha2-nistp521-cert-v01@openssh.com,
-ssh-ed25519-cert-v01@openssh.com,
 rsa-sha2-256-cert-v01@openssh.com,rsa-sha2-512-cert-v01@openssh.com,
 ssh-rsa-cert-v01@openssh.com,
-ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ecdsa-sha2-nistp521,
 ssh-ed25519,
+ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ecdsa-sha2-nistp521,
 rsa-sha2-256,rsa-sha2-512,ssh-rsa,
 ssh-dss
 .Ed
@@ -1491,8 +1492,9 @@ i.e. the option allow all specified by
 plus
 .Dq plain
 key algorithms like
+ssh-ed25519,
 ecdsa-sha2-nistp256, ecdsa-sha2-nistp384, ecdsa-sha2-nistp521,
-ssh-ed25519, ssh-rsa and ssh-dss.
+ssh-rsa and ssh-dss.
 If a X.509 certificate is used as identity
 but corresponding algorithms are not allowed
 the client will try plain key algorithm
