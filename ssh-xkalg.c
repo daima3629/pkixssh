@@ -355,6 +355,13 @@ logit("TRACE_XKALG add_default_xkalg:");
 # endif
 
 	/* RSA public key algorithm: */
+	/* - RFC6187 */
+#ifdef HAVE_EVP_SHA256
+	if (ssh_add_x509key_alg("x509v3-rsa2048-sha256,rsa2048-sha256,rsa2048-sha256") < 0)
+		fatal_f("oops");
+#endif
+	if (ssh_add_x509key_alg("x509v3-ssh-rsa,rsa-sha1,ssh-rsa") < 0)
+		fatal_f("oops");
 	/* - draft-ietf-secsh-transport-NN.txt where NN <= 12
 	 * does not define explicitly signature format.
 	 * - starting from version 7.1 first is rsa-sha1
@@ -366,16 +373,12 @@ logit("TRACE_XKALG add_default_xkalg:");
 #endif
 	if (ssh_add_x509key_alg("x509v3-sign-rsa,rsa-md5") < 0)
 		fatal_f("oops");
-	/* - RFC6187 */
-	if (ssh_add_x509key_alg("x509v3-ssh-rsa,rsa-sha1,ssh-rsa") < 0)
-		fatal_f("oops");
-#ifdef HAVE_EVP_SHA256
-	if (ssh_add_x509key_alg("x509v3-rsa2048-sha256,rsa2048-sha256,rsa2048-sha256") < 0)
-		fatal_f("oops");
-#endif
 
 	/* DSA public key algorithm: */
-	/* - default is compatible with draft-ietf-secsh-transport-NN.txt
+	/* - RFC6187 */
+	if (ssh_add_x509key_alg("x509v3-ssh-dss,dss-raw,ssh-dss") < 0)
+		fatal_f("oops");
+	/* compatible with draft-ietf-secsh-transport-NN.txt
 	 * where NN <= 12
 	 */
 	if (ssh_add_x509key_alg("x509v3-sign-dss,dss-asn1") < 0)
@@ -384,9 +387,6 @@ logit("TRACE_XKALG add_default_xkalg:");
 	 * draft-ietf-secsh-transport-NN.txt where NN <= 12
 	 */
 	if (ssh_add_x509key_alg("x509v3-sign-dss,dss-raw") < 0)
-		fatal_f("oops");
-	/* - RFC6187 */
-	if (ssh_add_x509key_alg("x509v3-ssh-dss,dss-raw,ssh-dss") < 0)
 		fatal_f("oops");
 }
 
@@ -574,16 +574,16 @@ ssh_add_x509key_alg(const char *data) {
 		p->basetype = KEY_ECDSA;
 		p->chain = 1;
 	} else
-	if (strncmp(name, "x509v3-ssh-rsa", 14) == 0) {
-		p->basetype = KEY_RSA;
-		p->chain = 1;
-	} else
 #ifdef HAVE_EVP_SHA256
 	if (strcmp(name, "x509v3-rsa2048-sha256") == 0) {
 		p->basetype = KEY_RSA;
 		p->chain = 1;
 	} else
 #endif
+	if (strncmp(name, "x509v3-ssh-rsa", 14) == 0) {
+		p->basetype = KEY_RSA;
+		p->chain = 1;
+	} else
 	if (strncmp(name, "x509v3-sign-rsa", 15) == 0) {
 		p->basetype = KEY_RSA;
 		p->chain = 0;

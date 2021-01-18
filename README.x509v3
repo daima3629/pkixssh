@@ -1,6 +1,6 @@
                                                           Roumen Petrov
                                                         Sofia, Bulgaria
-                                                         Thu Jan 7 2021
+                                                     TBD-Thu Jan 7 2021
 
 How to use X.509 certificates with SSH?
 
@@ -21,8 +21,8 @@ File may contain extra X.509 certificates. Extra certificates along
 with certificates from X.509 store are used to build chain of X.509
 certificates leading to a trusted certificate authority if required by
 public key algorithm format. Those algorithms are defined in RFC6187.
-Supported are x509v3-ecdsa-sha2-*, x509v3-ssh-rsa,
-x509v3-rsa2048-sha256 and x509v3-ssh-dss.
+Supported are x509v3-ecdsa-sha2-*, x509v3-rsa2048-sha256,
+x509v3-ssh-rsa and x509v3-ssh-dss.
 
 
 1.) server configuration:
@@ -72,21 +72,8 @@ both in PEM format.
 1.1.4.) X509KeyAlgorithm
   The option list multiple "X509 Key Algorithms Formats"
   supported by server.
-  The format is described in sshd_config(5).
-  The default for certificates with ECDSA keys is:
-    X509KeyAlgorithm x509v3-ecdsa-sha2-nistp256,ssh-sha256,ecdsa-sha2-nistp256
-    X509KeyAlgorithm x509v3-ecdsa-sha2-nistp384,ssh-sha384,ecdsa-sha2-nistp384
-    X509KeyAlgorithm x509v3-ecdsa-sha2-nistp521,ssh-sha512,ecdsa-sha2-nistp521
-  The default for certificates with RSA key is:
-    X509KeyAlgorithm x509v3-sign-rsa,rsa-sha1
-    X509KeyAlgorithm x509v3-sign-rsa,rsa-md5
-    X509KeyAlgorithm x509v3-ssh-rsa,rsa-sha1,ssh-rsa
-    X509KeyAlgorithm x509v3-rsa2048-sha256,rsa2048-sha256,rsa2048-sha256
-  The default for certificates with DSA key is:
-    X509KeyAlgorithm x509v3-sign-dss,dss-asn1
-    X509KeyAlgorithm x509v3-sign-dss,dss-raw
-    X509KeyAlgorithm x509v3-ssh-dss,dss-raw,ssh-dss
-  The first listed format for RSA or DSA key-type is used as default in
+  The format and algorithm precedence are described in sshd_config(5).
+  Note first listed format for RSA or DSA key-type is used as default in
   signing. The server will accept all listed formats.
 
 NOTES:
@@ -161,18 +148,6 @@ $ cat A_SSH_IDENTITY_FILE.pub \
 NOTES:
 - adjust user authorized_keys file ownership - user must have at least
 read access.
-- SecSH X.509 key algorithms
-  for ECDSA keys:
-    "x509v3-ecdsa-sha2-nistp256",
-    "x509v3-ecdsa-sha2-nistp384" or
-    "x509v3-ecdsa-sha2-nistp521"
-  for RSA keys:
-    "x509v3-sign-rsa" or
-    "x509v3-ssh-rsa" or
-    "x509v3-rsa2048-sha256"
-  for DSA keys:
-    "x509v3-sign-dss" or
-    "x509v3-ssh-dss".
 
 - When SSH is build with "--disable-x509store" YOU CANNOT USE
 "Distinguished Name" format. You should use ONLY "blob" format.

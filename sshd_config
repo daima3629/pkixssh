@@ -19,23 +19,23 @@
 #HostKey /etc/ssh/ssh_host_ecdsa_key
 #HostKey /etc/ssh/ssh_host_ed25519_key
 
-# "key type names" for X.509 certificates with EC key
+# algorithms for X.509 certificates with EC key
 #X509KeyAlgorithm x509v3-ecdsa-sha2-nistp256,ssh-sha256,ecdsa-sha2-nistp256
 #X509KeyAlgorithm x509v3-ecdsa-sha2-nistp384,ssh-sha384,ecdsa-sha2-nistp384
 #X509KeyAlgorithm x509v3-ecdsa-sha2-nistp521,ssh-sha512,ecdsa-sha2-nistp521
 
-# "key type names" for X.509 certificates with RSA key
+# algorithms for X.509 certificates with RSA key
 # Note first defined is used in signature operations!
+#X509KeyAlgorithm x509v3-rsa2048-sha256,rsa2048-sha256,rsa2048-sha256
+#X509KeyAlgorithm x509v3-ssh-rsa,rsa-sha1,ssh-rsa
 #X509KeyAlgorithm x509v3-sign-rsa,rsa-sha1
 #X509KeyAlgorithm x509v3-sign-rsa,rsa-md5
-#X509KeyAlgorithm x509v3-ssh-rsa,rsa-sha1,ssh-rsa
-#X509KeyAlgorithm x509v3-rsa2048-sha256,rsa2048-sha256,rsa2048-sha256
 
-# "key type names" for X.509 certificates with DSA key
+# algorithms for X.509 certificates with DSA key
 # Note first defined is used in signature operations!
+#X509KeyAlgorithm x509v3-ssh-dss,dss-raw,ssh-dss
 #X509KeyAlgorithm x509v3-sign-dss,dss-asn1
 #X509KeyAlgorithm x509v3-sign-dss,dss-raw
-#X509KeyAlgorithm x509v3-ssh-dss,dss-raw,ssh-dss
 
 # The intended use for the X509 client certificate. Without this option
 # no chain verification will be done. Currently accepted uses are case

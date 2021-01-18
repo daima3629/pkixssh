@@ -37,17 +37,18 @@ testAlgFmt () {
 
 # NOTE:
 # The default for certificates with RSA key is:
-# - draft-ietf-secsh-transport-NN.txt where NN <= 12:
-#   X509KeyAlgorithm x509v3-sign-rsa,rsa-md5
-#   X509KeyAlgorithm x509v3-sign-rsa,rsa-sha1
 # - rfc6187:
-#   X509KeyAlgorithm x509v3-ssh-rsa,sha1,ssh-rsa
+#   X509KeyAlgorithm x509v3-rsa2048-sha256,rsa2048-sha256,rsa2048-sha256
+#   X509KeyAlgorithm x509v3-ssh-rsa,rsa-sha1,ssh-rsa
+# - draft-ietf-secsh-transport-NN.txt where NN <= 12:
+#   X509KeyAlgorithm x509v3-sign-rsa,rsa-sha1
+#   X509KeyAlgorithm x509v3-sign-rsa,rsa-md5
 # The default for certificates with DSA key is:
+# - rfc6187:
+#   X509KeyAlgorithm x509v3-ssh-dss,dss-raw,ssh-dss
 # - draft-ietf-secsh-transport-NN.txt where NN <= 12:
 #   X509KeyAlgorithm x509v3-sign-dss,dss-asn1
 #   X509KeyAlgorithm x509v3-sign-dss,dss-raw
-# - rfc6187:
-#   X509KeyAlgorithm x509v3-ssh-dss,dss-raw,ssh-dss
 # Not applicable for x509v3-ecdsa-sha2-*
 
   case $alg in

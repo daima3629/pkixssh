@@ -2025,12 +2025,7 @@ The default for certificates with RSA key is:
 .It
 .Cm X509KeyAlgorithm
 .Sm off
-.Ar x509v3-sign-rsa , Ar rsa-sha1
-.Sm on
-.It
-.Cm X509KeyAlgorithm
-.Sm off
-.Ar x509v3-sign-rsa , Ar rsa-md5
+.Ar x509v3-rsa2048-sha256 , Ar rsa2048-sha256 , Ar rsa2048-sha256
 .Sm on
 .It
 .Cm X509KeyAlgorithm
@@ -2040,12 +2035,22 @@ The default for certificates with RSA key is:
 .It
 .Cm X509KeyAlgorithm
 .Sm off
-.Ar x509v3-rsa2048-sha256 , Ar rsa2048-sha256 , Ar rsa2048-sha256
+.Ar x509v3-sign-rsa , Ar rsa-sha1
+.Sm on
+.It
+.Cm X509KeyAlgorithm
+.Sm off
+.Ar x509v3-sign-rsa , Ar rsa-md5
 .Sm on
 .El
 .Pp
 The default for certificates with DSA key is:
 .Bl -item -offset indent -compact
+.It
+.Cm X509KeyAlgorithm
+.Sm off
+.Ar x509v3-ssh-dss , Ar dss-raw , Ar ssh-dss
+.Sm on
 .It
 .Cm X509KeyAlgorithm
 .Sm off
@@ -2055,11 +2060,6 @@ The default for certificates with DSA key is:
 .Cm X509KeyAlgorithm
 .Sm off
 .Ar x509v3-sign-dss , Ar dss-raw
-.Sm on
-.It
-.Cm X509KeyAlgorithm
-.Sm off
-.Ar x509v3-ssh-dss , Ar dss-raw , Ar ssh-dss
 .Sm on
 .El
 .Pp
