@@ -3984,18 +3984,15 @@ sshkey_parse_private_pem_fileblob(struct sshbuf *blob, int type,
 	}
 	r = EVP_PKEY_to_sshkey_type(type, pk, &prv);
 	if (r != 0) goto out;
+	pk = NULL; /* transferred */
 
 	BIO_free(bio);
 	bio = BIO_new_mem_buf(sshbuf_mutable_ptr(blob), sshbuf_len(blob));
 	if (bio == NULL) {
 		r = SSH_ERR_ALLOC_FAIL;
-		pk = NULL; /* transferred */
 		goto out;
 	}
-	/* TODO: use EVP_PKEY from sshkey */
-	x509key_parse_cert(prv, pk, bio);
-
-	pk = NULL; /* transferred */
+	x509key_parse_cert(prv, bio);
 
 	r = 0;
 	if (keyp != NULL) {

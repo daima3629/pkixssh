@@ -63,7 +63,7 @@ int	x509key_write(const struct sshkey *key, struct sshbuf *b);
  */
 int	Xkey_write_subject(const char *pkalg, const struct sshkey *key, FILE *f);
 
-void	x509key_parse_cert(struct sshkey *key, EVP_PKEY *pk, BIO *bio);
+void	x509key_parse_cert(struct sshkey *key, BIO *bio);
 void	x509key_load_certs(const char *pkalg, struct sshkey *key, const char *filename);
 void	x509key_build_chain(struct sshkey *key);
 void	x509key_prepare_chain(const char *pkalg, struct sshkey *key);

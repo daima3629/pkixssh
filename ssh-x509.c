@@ -1277,7 +1277,7 @@ x509key_load_certs_bio(struct sshkey *key, BIO *bio) {
 
 
 void
-x509key_parse_cert(struct sshkey *key, EVP_PKEY *pk, BIO *bio) {
+x509key_parse_cert(struct sshkey *key, BIO *bio) {
 	X509 *x;
 	SSH_X509 *xd;
 
@@ -1293,7 +1293,7 @@ x509key_parse_cert(struct sshkey *key, EVP_PKEY *pk, BIO *bio) {
 		return;
 	}
 
-	if (!X509_check_private_key(x, pk)) {
+	if (!X509_check_private_key(x, key->pk)) {
 		fatal("X.509 certificate don't match private key");
 		/*unreachable code*/
 	}
