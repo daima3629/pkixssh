@@ -146,10 +146,6 @@ ssh_ecdsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 	if (sigp != NULL)
 		*sigp = NULL;
 
-	if (key == NULL || key->ecdsa == NULL ||
-	    sshkey_type_plain(key->type) != KEY_ECDSA)
-		return SSH_ERR_INVALID_ARGUMENT;
-
 	ret = sshkey_validate_public_ecdsa(key);
 	if (ret != 0) return ret;
 
@@ -274,10 +270,11 @@ ssh_ecdsa_verify(const struct sshkey *key,
 	int ret;
 
 	UNUSED(compat);
-	if (key == NULL || key->ecdsa == NULL ||
-	    sshkey_type_plain(key->type) != KEY_ECDSA ||
-	    signature == NULL || signaturelen == 0)
+	if (signature == NULL || signaturelen == 0)
 		return SSH_ERR_INVALID_ARGUMENT;
+
+	ret = sshkey_validate_public_ecdsa(key);
+	if (ret != 0) return ret;
 
 	/* fetch signature */
 	if ((b = sshbuf_from(signature, signaturelen)) == NULL)

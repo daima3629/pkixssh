@@ -194,10 +194,6 @@ ssh_rsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 	if (sigp != NULL)
 		*sigp = NULL;
 
-	if (key == NULL || key->rsa == NULL ||
-	    sshkey_type_plain(key->type) != KEY_RSA)
-		return SSH_ERR_INVALID_ARGUMENT;
-
 	if (alg_ident == NULL || strlen(alg_ident) == 0)
 		hash_alg = SSH_DIGEST_SHA1;
 	else
@@ -317,9 +313,7 @@ ssh_rsa_verify(const struct sshkey *key,
 	struct sshbuf *b = NULL;
 	u_char *osigblob, *sigblob = NULL;
 
-	if (key == NULL || key->rsa == NULL ||
-	    sshkey_type_plain(key->type) != KEY_RSA ||
-	    sig == NULL || siglen == 0)
+	if (sig == NULL || siglen == 0)
 		return SSH_ERR_INVALID_ARGUMENT;
 
 	ret = sshkey_validate_public_rsa(key);

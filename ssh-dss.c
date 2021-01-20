@@ -139,9 +139,6 @@ ssh_dss_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 	if (sigp != NULL)
 		*sigp = NULL;
 
-	if (key == NULL || key->dsa == NULL ||
-	    sshkey_type_plain(key->type) != KEY_DSA)
-		return SSH_ERR_INVALID_ARGUMENT;
 	if (dlen == 0)
 		return SSH_ERR_INTERNAL_ERROR;
 
@@ -278,9 +275,7 @@ ssh_dss_verify(const struct sshkey *key,
 	char *ktype = NULL;
 
 	UNUSED(compat);
-	if (key == NULL || key->dsa == NULL ||
-	    sshkey_type_plain(key->type) != KEY_DSA ||
-	    signature == NULL || signaturelen == 0)
+	if (signature == NULL || signaturelen == 0)
 		return SSH_ERR_INVALID_ARGUMENT;
 	if (dlen == 0)
 		return SSH_ERR_INTERNAL_ERROR;

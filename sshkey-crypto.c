@@ -528,6 +528,10 @@ int
 sshkey_validate_public_rsa(const struct sshkey *key) {
 	int r;
 
+	if (key == NULL || key->rsa == NULL ||
+	    sshkey_type_plain(key->type) != KEY_RSA)
+		return SSH_ERR_INVALID_ARGUMENT;
+
 {	const BIGNUM *n = NULL;
 	RSA_get0_key(key->rsa, &n, NULL, NULL);
 	r = sshrsa_verify_length(BN_num_bits(n));
@@ -541,6 +545,10 @@ sshkey_validate_public_rsa(const struct sshkey *key) {
 int
 sshkey_validate_public_dsa(const struct sshkey *key) {
 	int r;
+
+	if (key == NULL || key->dsa == NULL ||
+	    sshkey_type_plain(key->type) != KEY_DSA)
+		return SSH_ERR_INVALID_ARGUMENT;
 
 {	const BIGNUM *p = NULL;
 	DSA_get0_pqg(key->dsa, &p, NULL, NULL);
@@ -556,6 +564,10 @@ sshkey_validate_public_dsa(const struct sshkey *key) {
 int
 sshkey_validate_public_ecdsa(const struct sshkey *key) {
 	int r;
+
+	if (key == NULL || key->ecdsa == NULL ||
+	    sshkey_type_plain(key->type) != KEY_ECDSA)
+		return SSH_ERR_INVALID_ARGUMENT;
 
 	r = sshkey_ec_validate_public(EC_KEY_get0_group(key->ecdsa),
 	    EC_KEY_get0_public_key(key->ecdsa));
