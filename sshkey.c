@@ -166,11 +166,11 @@ sshkey_type(const struct sshkey *k)
 	if (sshkey_is_x509(k)) {
 		switch (sshkey_type_plain(k->type)) {
 		case KEY_RSA:
-			return k->rsa ? "RSA+cert" : "X509(rsa)";
+			return k->pk ? "RSA+cert" : "X509(rsa)";
 		case KEY_ECDSA:
-			return k->ecdsa ? "ECDSA+cert" : "X509(ecdsa)";
+			return k->pk ? "ECDSA+cert" : "X509(ecdsa)";
 		case KEY_DSA:
-			return k->dsa ? "DSA+cert" : "X509(dsa)";
+			return k->pk ? "DSA+cert" : "X509(dsa)";
 		default:
 			break;
 		}
