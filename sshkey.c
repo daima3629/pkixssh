@@ -879,24 +879,18 @@ to_blob_buf(const struct sshkey *key, struct sshbuf *b, int force_plain,
 		break;
 #ifdef WITH_OPENSSL
 	case KEY_DSA:
-		if (key->dsa == NULL)
-			return SSH_ERR_INVALID_ARGUMENT;
 		if ((ret = sshbuf_put_cstring(b, typename)) != 0 ||
 		    (ret = sshbuf_write_pub_dsa(b, key)) != 0)
 			return ret;
 		break;
 # ifdef OPENSSL_HAS_ECC
 	case KEY_ECDSA:
-		if (key->ecdsa == NULL)
-			return SSH_ERR_INVALID_ARGUMENT;
 		if ((ret = sshbuf_put_cstring(b, typename)) != 0 ||
 		    (ret = sshbuf_write_pub_ecdsa(b, key)) != 0)
 			return ret;
 		break;
 # endif
 	case KEY_RSA:
-		if (key->rsa == NULL)
-			return SSH_ERR_INVALID_ARGUMENT;
 		if ((ret = sshbuf_put_cstring(b, typename)) != 0 ||
 		    (ret = sshbuf_write_pub_rsa_inv(b, key)) != 0)
 			return ret;

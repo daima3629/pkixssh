@@ -741,6 +741,9 @@ sshbuf_write_pub_rsa(struct sshbuf *buf, const struct sshkey *key) {
 	int r;
 	const BIGNUM *n = NULL, *e = NULL;
 
+	if (key->rsa == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+
 	RSA_get0_key(key->rsa, &n, &e, NULL);
 	if ((r = sshbuf_put_bignum2(buf, n)) != 0 ||
 	    (r = sshbuf_put_bignum2(buf, e)) != 0)
@@ -789,6 +792,9 @@ int
 sshbuf_write_pub_rsa_inv(struct sshbuf *buf, const struct sshkey *key) {
 	int r;
 	const BIGNUM *n = NULL, *e = NULL;
+
+	if (key->rsa == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
 
 	RSA_get0_key(key->rsa, &n, &e, NULL);
 	if ((r = sshbuf_put_bignum2(buf, e)) != 0 ||
@@ -902,6 +908,9 @@ sshbuf_write_pub_dsa(struct sshbuf *buf, const struct sshkey *key) {
 	const BIGNUM *p = NULL, *q = NULL, *g = NULL;
 	const BIGNUM *pub_key = NULL;
 
+	if (key->dsa == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+
 	DSA_get0_pqg(key->dsa, &p, &q, &g);
 	DSA_get0_key(key->dsa, &pub_key, NULL);
 
@@ -992,6 +1001,9 @@ int
 sshbuf_write_pub_ecdsa(struct sshbuf *buf, const struct sshkey *key) {
 	int r;
 	const char *curve_name = sshkey_curve_nid_to_name(key->ecdsa_nid);
+
+	if (key->ecdsa == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
 
 	if ((r = sshbuf_put_cstring(buf, curve_name)) != 0 ||
 	    (r = sshbuf_put_eckey(buf, key->ecdsa)) != 0)
