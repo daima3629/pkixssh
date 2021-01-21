@@ -75,8 +75,6 @@ int	ssh_x509_equal(const struct sshkey *a, const struct sshkey *b);
 int		ssh_x509key_type(const char *name);
 const char*	ssh_x509key_name(const struct sshkey *k);
 
-u_int	ssh_x509_key_size(const struct sshkey *key);
-
 /* NOTE caller is responsible to ensure that X.509 certificate match private key */
 int/*bool*/	ssh_x509_set_cert(struct sshkey *key, X509 *x509, STACK_OF(X509) *untrusted);
 int		ssh_x509_cmp_cert(const struct sshkey *key1, const struct sshkey *key2);

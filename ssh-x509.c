@@ -2025,35 +2025,6 @@ xkey_validate_cert(const struct sshkey *k) {
 }
 
 
-u_int
-ssh_x509_key_size(const struct sshkey *key) {
-	EVP_PKEY *pkey;
-	int k = 0, key_id;
-
-	if (!X509KEY_CHECK(key)) goto done;
-
-	pkey = X509_get_pubkey(key->x509_data->cert);
-	if (pkey == NULL) goto done;
-
-	key_id = EVP_PKEY_base_id(pkey);
-	switch (key_id) {
-	case EVP_PKEY_RSA:
-	case EVP_PKEY_DSA:
-#ifdef OPENSSL_HAS_ECC
-	case EVP_PKEY_EC:
-#endif
-		k = EVP_PKEY_bits(pkey);
-		break;
-	default:
-		fatal_f("unsupported EVP_PKEY type %d", key_id);
-		/*unreachable code*/
-	}
-	EVP_PKEY_free(pkey);
-done:
-	return (u_int) k;
-}
-
-
 int/*bool*/
 ssh_x509_set_cert(struct sshkey *key, X509 *x509, STACK_OF(X509) *untrusted) {
 	int ret = 0;

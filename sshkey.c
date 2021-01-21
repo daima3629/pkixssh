@@ -419,29 +419,11 @@ sshkey_names_valid2(const char *names, int allow_wildcard)
 u_int
 sshkey_size(const struct sshkey *k)
 {
-	if (sshkey_is_x509(k))
-		return ssh_x509_key_size(k);
-
-	switch (k->type) {
 #ifdef WITH_OPENSSL
-	case KEY_RSA:
-	case KEY_RSA_CERT:
-		{
-		const BIGNUM *n = NULL;
-		RSA_get0_key(k->rsa, &n, NULL, NULL);
-		return BN_num_bits(n);
-		}
-	case KEY_DSA:
-	case KEY_DSA_CERT:
-		{
-		const BIGNUM *p = NULL;
-		DSA_get0_pqg(k->dsa, &p, NULL, NULL);
-		return BN_num_bits(p);
-		}
-	case KEY_ECDSA:
-	case KEY_ECDSA_CERT:
-		return sshkey_curve_nid_to_bits(k->ecdsa_nid);
-#endif /* WITH_OPENSSL */
+	if (k->pk != NULL)
+		return EVP_PKEY_bits(k->pk);
+#endif
+	switch (k->type) {
 	case KEY_ED25519:
 	case KEY_ED25519_CERT:
 	case KEY_XMSS:
