@@ -27,9 +27,9 @@
 
 #ifdef WITH_OPENSSL
 #include "evp-compat.h"
+#include <openssl/pem.h>
 
-#include "sshkey.h"
-#include "sshbuf.h"
+#include "ssh-x509.h"
 #include "ssherr.h"
 #include "log.h"
 
@@ -1041,6 +1041,53 @@ sshbuf_write_priv_ecdsa(struct sshbuf *buf, const struct sshkey *key) {
 	return sshbuf_put_bignum2(buf, EC_KEY_get0_private_key(key->ecdsa));
 }
 #endif /* OPENSSL_HAS_ECC */
+
+
+/* write identity in PEM formats - PKCS#8 or Traditional */
+int
+sshkey_private_to_bio(struct sshkey *key, BIO *bio,
+    const char *passphrase, int format)
+{
+	int res;
+	int len = strlen(passphrase);
+	const EVP_CIPHER *cipher = (len > 0) ? EVP_aes_256_cbc() : NULL;
+	u_char *_passphrase = (len > 0) ? (u_char*)passphrase : NULL;
+
+	if (key->pk == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+	if (len > 0 && len <= 4)
+		return SSH_ERR_PASSPHRASE_TOO_SHORT;
+	if (len > INT_MAX)
+		return SSH_ERR_INVALID_ARGUMENT;
+
+	if (format == SSHKEY_PRIVATE_PEM) {
+		switch (key->type) {
+		case KEY_RSA:
+			res = PEM_write_bio_RSAPrivateKey(bio, key->rsa,
+			    cipher, _passphrase, len, NULL, NULL);
+			break;
+#ifdef OPENSSL_HAS_ECC
+		case KEY_ECDSA:
+			res = PEM_write_bio_ECPrivateKey(bio, key->ecdsa,
+			    cipher, _passphrase, len, NULL, NULL);
+			break;
+#endif
+		case KEY_DSA:
+			res = PEM_write_bio_DSAPrivateKey(bio, key->dsa,
+			    cipher, _passphrase, len, NULL, NULL);
+			break;
+		default:
+			return SSH_ERR_INVALID_ARGUMENT;
+		}
+	} else
+		res = PEM_write_bio_PKCS8PrivateKey(bio, key->pk, cipher,
+		    _passphrase, len, NULL, NULL);
+
+	if (res && sshkey_is_x509(key))
+		res = x509key_write_identity_bio_pem(bio, key);
+
+	return res ? 0 : SSH_ERR_LIBCRYPTO_ERROR;
+}
 
 
 /* methods used localy only in ssh-keygen.c */
