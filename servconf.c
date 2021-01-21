@@ -1,4 +1,4 @@
-/* $OpenBSD: servconf.c,v 1.371 2020/10/18 11:32:02 djm Exp $ */
+/* $OpenBSD: servconf.c,v 1.373 2021/01/11 04:48:22 dtucker Exp $ */
 /*
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
@@ -9,7 +9,7 @@
  * incompatible with the protocol description in the RFC file, it must be
  * called by a name other than "ssh" or "Secure Shell".
  *
- * Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -205,6 +205,9 @@ initialize_server_options(ServerOptions *options)
 	options->max_startups_begin = -1;
 	options->max_startups_rate = -1;
 	options->max_startups = -1;
+	options->per_source_max_startups = -1;
+	options->per_source_masklen_ipv4 = -1;
+	options->per_source_masklen_ipv6 = -1;
 	options->max_authtries = -1;
 	options->max_sessions = -1;
 	options->banner = NULL;
@@ -459,6 +462,12 @@ fill_default_server_options(ServerOptions *options)
 		options->max_startups_rate = 30;		/* 30% */
 	if (options->max_startups_begin == -1)
 		options->max_startups_begin = 10;
+	if (options->per_source_max_startups < -1)
+		options->per_source_max_startups = -1;
+	if (options->per_source_masklen_ipv4 == -1)
+		options->per_source_masklen_ipv4 = 32;
+	if (options->per_source_masklen_ipv6 == -1)
+		options->per_source_masklen_ipv6 = 128;
 	if (options->max_authtries == -1)
 		options->max_authtries = DEFAULT_AUTH_FAIL_MAX;
 	if (options->max_sessions == -1)
@@ -605,7 +614,7 @@ typedef enum {
 	sXAuthLocation, sSubsystem, sMaxStartups, sMaxAuthTries, sMaxSessions,
 	sBanner, sUseDNS, sHostbasedAuthentication,
 	sHostbasedUsesNameFromPacketOnly, sHostbasedAcceptedKeyTypes,
-	sHostKeyAlgorithms,
+	sHostKeyAlgorithms, sPerSourceMaxStartups, sPerSourceNetBlockSize,
 	sClientAliveInterval, sClientAliveCountMax, sAuthorizedKeysFile,
 	sGssAuthentication, sGssCleanupCreds, sGssStrictAcceptor,
 	sAcceptEnv, sSetEnv, sPermitTunnel,
@@ -748,6 +757,8 @@ static struct {
 	{ "gatewayports", sGatewayPorts, SSHCFG_ALL },
 	{ "subsystem", sSubsystem, SSHCFG_GLOBAL },
 	{ "maxstartups", sMaxStartups, SSHCFG_GLOBAL },
+	{ "persourcemaxstartups", sPerSourceMaxStartups, SSHCFG_GLOBAL },
+	{ "persourcenetblocksize", sPerSourceNetBlockSize, SSHCFG_GLOBAL },
 	{ "maxauthtries", sMaxAuthTries, SSHCFG_ALL },
 	{ "maxsessions", sMaxSessions, SSHCFG_ALL },
 	{ "banner", sBanner, SSHCFG_ALL },
@@ -2162,6 +2173,47 @@ parse_string:
 			options->max_startups = options->max_startups_begin;
 		break;
 
+	case sPerSourceNetBlockSize:
+		intptr = &options->per_source_masklen_ipv4;
+		arg = strdelim(&cp);
+		if (!arg || *arg == '\0')
+			fatal("%s line %d: Missing PerSourceNetBlockSize spec.",
+			    filename, linenum);
+		value2 = -1;
+		n = sscanf(arg, "%d:%d", &value, &value2);
+		if (n > 2) n = -1; /*?*/
+		if (n >= 2)
+			if (value2 < 0 || value2 > 128)
+				n = -1;
+		if (n >= 1)
+			if (value < 0 || value > 32)
+				n = -1;
+		if (n < 1)
+			fatal("%s line %d: Invalid PerSourceNetBlockSize"
+			    " spec.", filename, linenum);
+		if (*activep && *intptr == -1) {
+			*intptr = value;
+			options->per_source_masklen_ipv6 = value2;
+		}
+		break;
+
+	case sPerSourceMaxStartups:
+		intptr = &options->per_source_max_startups;
+		arg = strdelim(&cp);
+		if (!arg || *arg == '\0')
+			fatal("%s line %d: Missing PerSourceMaxStartups spec.",
+			    filename, linenum);
+		if (strcmp(arg, "none") == 0) { /* no limit */
+			value = -2;
+		} else {
+			if ((errstr = atoi_err(arg, &value)) != NULL)
+				fatal("%s line %d: integer value %s.",
+				    filename, linenum, errstr);
+		}
+		if (*activep && *intptr == -1)
+			*intptr = value;
+		break;
+
 	case sMaxAuthTries:
 		intptr = &options->max_authtries;
 		goto parse_int;
@@ -3205,6 +3257,10 @@ dump_config(ServerOptions *o)
 
 	printf("maxstartups %d:%d:%d\n", o->max_startups_begin,
 	    o->max_startups_rate, o->max_startups);
+	if (o->per_source_max_startups >= 0)
+		printf("persourcemaxstartups, %d\n", o->per_source_max_startups);
+	printf("persourcenetblocksize %d:%d\n", o->per_source_masklen_ipv4,
+	    o->per_source_masklen_ipv6);
 
 	s = NULL;
 	for (i = 0; tunmode_desc[i].val != -1; i++) {
