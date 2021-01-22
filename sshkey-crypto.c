@@ -116,6 +116,70 @@ sshkey_free_ecdsa(struct sshkey *key) {
 #endif /* OPENSSL_HAS_ECC */
 
 
+#ifndef BN_FLG_CONSTTIME
+#  define BN_FLG_CONSTTIME 0x0 /* OpenSSL < 0.9.8 */
+#endif
+static int
+sshrsa_complete_crt_parameters(struct sshkey *key, const BIGNUM *rsa_iqmp)
+{
+	BN_CTX *ctx = NULL;
+	BIGNUM *aux = NULL, *d = NULL;
+	BIGNUM *dmq1 = NULL, *dmp1 = NULL, *iqmp = NULL;
+	int r;
+
+	if (key == NULL || key->rsa == NULL ||
+	    sshkey_type_plain(key->type) != KEY_RSA)
+		return SSH_ERR_INVALID_ARGUMENT;
+
+	if ((ctx = BN_CTX_new()) == NULL)
+		return SSH_ERR_ALLOC_FAIL;
+	if ((aux = BN_new()) == NULL ||
+	    (iqmp = BN_dup(rsa_iqmp)) == NULL ||
+	    (dmq1 = BN_new()) == NULL ||
+	    (dmp1 = BN_new()) == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto out;
+	}
+	BN_set_flags(aux, BN_FLG_CONSTTIME);
+
+{	const BIGNUM *p, *q;
+	RSA *rsa = key->rsa;
+	RSA_get0_factors(rsa, &p, &q);
+	{	const BIGNUM *key_d;
+		RSA_get0_key(rsa, NULL, NULL, &key_d);
+		if ((d = BN_dup(key_d)) == NULL) {
+			r = SSH_ERR_ALLOC_FAIL;
+			goto out;
+		}
+		BN_set_flags(d, BN_FLG_CONSTTIME);
+	}
+
+	if ((BN_sub(aux, q, BN_value_one()) == 0) ||
+	    (BN_mod(dmq1, d, aux, ctx) == 0) ||
+	    (BN_sub(aux, p, BN_value_one()) == 0) ||
+	    (BN_mod(dmp1, d, aux, ctx) == 0)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto out;
+	}
+}
+	if (!RSA_set0_crt_params(key->rsa, dmp1, dmq1, iqmp)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto out;
+	}
+	dmp1 = dmq1 = iqmp = NULL; /* transferred */
+
+	r = SSH_ERR_SUCCESS;
+ out:
+	BN_clear_free(aux);
+	BN_clear_free(d);
+	BN_clear_free(dmp1);
+	BN_clear_free(dmq1);
+	BN_clear_free(iqmp);
+	BN_CTX_free(ctx);
+	return r;
+}
+
+
 static int
 sshkey_from_pkey_rsa(EVP_PKEY *pk, struct sshkey **keyp) {
 	int r;

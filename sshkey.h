@@ -297,10 +297,6 @@ int	sshkey_private_to_bio(struct sshkey *key, BIO *bio,
 int	sshrsa_verify_length(int bits);
 int	sshdsa_verify_length(int bits);
 
-/* XXX should be internal, but defined in ssh-rsa.c
- * and used by ssh-keygen.c and sshkey.c */
-int sshrsa_complete_crt_parameters(struct sshkey *key, const BIGNUM *rsa_iqmp);
-
 /* stateful keys (e.g. XMSS) */
 int	 sshkey_set_filename(struct sshkey *, const char *);
 int	 sshkey_enable_maxsign(struct sshkey *, u_int32_t);
