@@ -953,6 +953,14 @@ struct winsize {
 # endif
 #endif
 
+
+#undef USE_RSA_METHOD
+#ifndef OPENSSL_NO_RSA
+/* TODO: to decide at configuration time */
+# define USE_RSA_METHOD
+#endif
+
+
 #ifndef UNUSED
 # define UNUSED(x)	(void)(x)
 #endif

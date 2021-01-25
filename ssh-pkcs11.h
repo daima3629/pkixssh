@@ -55,6 +55,146 @@ void ERR_PKCS11_PUT_error(int function, int reason, char *file, int line, const 
 void ERR_load_PKCS11_strings(void);
 
 
+#ifdef USE_RSA_METHOD
+#ifndef HAVE_RSA_METH_NEW		/* OpenSSL < 1.1 */
+/* Partial backport of opaque RSA from OpenSSL >= 1.1 by commits
+ * "Make the RSA_METHOD structure opaque", "RSA, DSA, DH: Allow some
+ * given input to be NULL on already initialised keys" and etc.
+ */
+
+/* opaque RSA method structure */
+static inline RSA_METHOD*
+RSA_meth_new(const char *name, int flags) {
+	RSA_METHOD *meth;
+
+	meth = OPENSSL_malloc(sizeof(RSA_METHOD));
+	if (meth == NULL) return NULL;
+
+	memset(meth, 0, sizeof(*meth));
+	meth->name = BUF_strdup(name);
+	meth->flags = flags;
+
+	return(meth);
+}
+
+
+static inline void
+RSA_meth_free(RSA_METHOD *meth) {
+	if (meth == NULL) return;
+
+	if (meth->name != NULL)
+		OPENSSL_free((char*)meth->name);
+	OPENSSL_free(meth);
+}
+
+
+static inline RSA_METHOD*
+RSA_meth_dup(const RSA_METHOD *meth) {
+	RSA_METHOD *ret;
+
+	if (meth == NULL) return NULL;
+
+	ret = OPENSSL_malloc(sizeof(RSA_METHOD));
+	if (ret == NULL) return NULL;
+
+	memcpy(ret, meth, sizeof(*meth));
+	ret->name = BUF_strdup(meth->name);
+
+	return(ret);
+}
+#endif /*ndef HAVE_RSA_METH_NEW*/
+
+
+#ifndef HAVE_RSA_METH_SET1_NAME
+static inline int
+RSA_meth_set1_name(RSA_METHOD *meth, const char *name) {
+	if (meth->name != NULL)
+		OPENSSL_free((char*)meth->name);
+	meth->name = BUF_strdup(name);
+
+	return meth->name != NULL;
+}
+#endif /*ndef HAVE_RSA_METH_SET1_NAME*/
+
+
+#ifndef HAVE_RSA_METH_SET_PRIV_ENC
+typedef int (*priv_enc_f) (int flen, const unsigned char *from,
+	unsigned char *to, RSA *rsa, int padding);
+
+static inline int
+RSA_meth_set_priv_enc(RSA_METHOD *meth, priv_enc_f priv_enc) {
+	meth->rsa_priv_enc = priv_enc;
+	return 1;
+}
+
+
+typedef int (*priv_dec_f) (int flen, const unsigned char *from,
+	unsigned char *to, RSA *rsa, int padding);
+
+static inline int
+RSA_meth_set_priv_dec(RSA_METHOD *meth, priv_dec_f priv_dec) {
+	meth->rsa_priv_dec = priv_dec;
+	return 1;
+}
+#endif /*ndef HAVE_RSA_METH_SET_PRIV_ENC*/
+
+
+#ifndef HAVE_RSA_METH_GET_PUB_ENC
+typedef int (*pub_enc_f) (int flen, const unsigned char *from,
+	unsigned char *to, RSA *rsa, int padding);
+
+static inline pub_enc_f
+RSA_meth_get_pub_enc(const RSA_METHOD *meth) { return meth->rsa_pub_enc; }
+
+static inline int
+RSA_meth_set_pub_enc(RSA_METHOD *meth, pub_enc_f pub_enc) {
+	meth->rsa_pub_enc = pub_enc;
+	return 1;
+}
+
+
+typedef int (*pub_dec_f) (int flen, const unsigned char *from,
+	unsigned char *to, RSA *rsa, int padding);
+
+static inline pub_dec_f
+RSA_meth_get_pub_dec(const RSA_METHOD *meth) { return meth->rsa_pub_dec; }
+
+static inline int
+RSA_meth_set_pub_dec(RSA_METHOD *meth, pub_dec_f pub_dec) {
+	meth->rsa_pub_dec = pub_dec;
+	return 1;
+}
+
+
+typedef int (*rsa_mod_exp_f) (BIGNUM *r0, const BIGNUM *I, RSA *rsa,
+	BN_CTX *ctx);
+
+static inline rsa_mod_exp_f
+RSA_meth_get_mod_exp(const RSA_METHOD *meth) { return meth->rsa_mod_exp; }
+
+static inline int
+RSA_meth_set_mod_exp(RSA_METHOD *meth, rsa_mod_exp_f rsa_mod_exp ) {
+	meth->rsa_mod_exp = rsa_mod_exp;
+	return 1;
+}
+
+
+typedef int (*rsa_bn_mod_exp_f) (BIGNUM *r, const BIGNUM *a,
+	const BIGNUM *p, const BIGNUM *m, BN_CTX *ctx,
+	BN_MONT_CTX *m_ctx);
+
+static inline rsa_bn_mod_exp_f
+RSA_meth_get_bn_mod_exp(const RSA_METHOD *meth) { return meth->bn_mod_exp; }
+
+static inline int
+RSA_meth_set_bn_mod_exp(RSA_METHOD *meth, rsa_bn_mod_exp_f bn_mod_exp) {
+	meth->bn_mod_exp = bn_mod_exp;
+	return 1;
+}
+#endif /*ndef HAVE_RSA_METH_GET_PUB_ENC*/
+#endif /*def USE_RSA_METHOD*/
+
+
 #ifdef OPENSSL_HAS_ECC
 # ifndef HAVE_EC_KEY_METHOD_NEW	/* OpenSSL < 1.1 */
 /* mimic some ECDSA functions in OpenSSL API v1.1 style */
