@@ -571,18 +571,21 @@ err:
 
 /* redirect private key operations for rsa key to pkcs11 token */
 static int
-pkcs11_rsa_wrap(struct pkcs11_provider *provider, CK_ULONG slotidx,
-    CK_ATTRIBUTE *keyid_attrib, RSA *rsa)
+pkcs11_wrap_rsa(struct pkcs11_provider *provider, CK_ULONG slotidx,
+    CK_ATTRIBUTE *keyid_attrib, struct sshkey *key)
 {
-	RSA_METHOD *rsa_method = ssh_pkcs11_rsa_method();
-	struct pkcs11_key *k11;
+	RSA *rsa = key->rsa;
 
-	if (rsa_method == NULL) return -1;
-
+{	RSA_METHOD *meth = ssh_pkcs11_rsa_method();
+	if (meth == NULL) return -1;
+	if (!RSA_set_method(rsa, meth)) return -1;
+}
+{	struct pkcs11_key *k11;
+		/* fatal on error */
 	k11 = pkcs11_key_create(provider, slotidx, keyid_attrib);
-
-	RSA_set_method(rsa, rsa_method);
 	RSA_set_ex_data(rsa, ssh_pkcs11_rsa_ctx_index, k11);
+}
+	key->flags |= SSHKEY_FLAG_EXT;
 	return 0;
 }
 
@@ -702,18 +705,21 @@ err:
 }
 
 static int
-pkcs11_dsa_wrap(struct pkcs11_provider *provider, CK_ULONG slotidx,
-    CK_ATTRIBUTE *keyid_attrib, DSA *dsa)
+pkcs11_wrap_dsa(struct pkcs11_provider *provider, CK_ULONG slotidx,
+    CK_ATTRIBUTE *keyid_attrib,  struct sshkey *key)
 {
-	DSA_METHOD *dsa_method = ssh_pkcs11_dsa_method();
-	struct pkcs11_key *k11;
+	DSA *dsa = key->dsa;
 
-	if (dsa_method == NULL) return -1;
-
+{	DSA_METHOD *meth = ssh_pkcs11_dsa_method();
+	if (meth == NULL) return -1;
+	if (!DSA_set_method(dsa, meth)) return -1;
+}
+{	struct pkcs11_key *k11;
+		/* fatal on error */
 	k11 = pkcs11_key_create(provider, slotidx, keyid_attrib);
-
-	DSA_set_method(dsa, dsa_method);
 	DSA_set_ex_data(dsa, ssh_pkcs11_dsa_ctx_index, k11);
+}
+	key->flags |= SSHKEY_FLAG_EXT;
 	return 0;
 }
 
@@ -865,18 +871,21 @@ err:
 }
 
 static int
-pkcs11_ec_wrap(struct pkcs11_provider *provider, CK_ULONG slotidx,
-    CK_ATTRIBUTE *keyid_attrib, EC_KEY *ec)
+pkcs11_wrap_ecdsa(struct pkcs11_provider *provider, CK_ULONG slotidx,
+    CK_ATTRIBUTE *keyid_attrib, struct sshkey *key)
 {
-	EC_KEY_METHOD *ec_method = ssh_pkcs11_ec_method();
-	struct pkcs11_key *k11;
+	EC_KEY *ec = key->ecdsa;
 
-	if (ec_method == NULL) return -1;
-
+{	EC_KEY_METHOD *meth = ssh_pkcs11_ec_method();
+	if (meth == NULL) return -1;
+	if (!EC_KEY_set_method(ec, meth)) return -1;
+}
+{	struct pkcs11_key *k11;
+		/* fatal on error */
 	k11 = pkcs11_key_create(provider, slotidx, keyid_attrib);
-
-	EC_KEY_set_method(ec, ec_method);
 	EC_KEY_set_ex_data(ec, ssh_pkcs11_ec_ctx_index, k11);
+}
+	key->flags |= SSHKEY_FLAG_EXT;
 	return 0;
 }
 #endif /*def OPENSSL_HAS_ECC*/
@@ -939,6 +948,23 @@ pkcs11_open_session(struct pkcs11_provider *p, CK_ULONG slotidx, char *pin,
 	return 0;
 }
 
+static inline int
+pkcs11_wrap(struct pkcs11_provider *provider, CK_ULONG slotidx,
+    CK_ATTRIBUTE *keyid_attrib, struct sshkey *key
+) {
+	switch(key->type) {
+	case KEY_RSA:
+		return pkcs11_wrap_rsa(provider, slotidx, keyid_attrib, key);
+	case KEY_DSA:
+		return pkcs11_wrap_dsa(provider, slotidx, keyid_attrib, key);
+#ifdef OPENSSL_HAS_ECC
+	case KEY_ECDSA:
+		return pkcs11_wrap_ecdsa(provider, slotidx, keyid_attrib, key);
+#endif /*def OPENSSL_HAS_ECC*/
+	}
+	return -1;
+}
+
 static struct sshkey*
 pkcs11_get_x509key(
     struct pkcs11_provider *p, CK_ULONG slotidx,
@@ -981,7 +1007,7 @@ pkcs11_get_x509key(
 	rv = f->C_GetAttributeValue(session, obj, attribs, 3);
 	if (rv != CKR_OK) {
 		error_f("C_GetAttributeValue failed: %lu", rv);
-		goto done;
+		goto fail;
 	}
 
 {	const u_char *blob = attribs[2].pValue;
@@ -990,38 +1016,21 @@ pkcs11_get_x509key(
 
 	if (attribs[2].ulValueLen != (unsigned long) blen) {
 		debug3_f("invalid attribute length");
-		goto done;
+		goto fail;
 	}
 
 	if ((r = X509key_from_blob(blob, blen, &key)) != 0) {
 		debug3_f("X509key_from_blob fail");
+		goto fail;
+	}
+}
+
+	if (pkcs11_wrap(p, slotidx, attribs, key) == 0)
 		goto done;
-	}
-}
 
-{	int rv_wrap = -1;
-
-	switch(key->type) {
-	case KEY_RSA:
-		rv_wrap = pkcs11_rsa_wrap(p, slotidx, attribs, key->rsa);
-		break;
-	case KEY_DSA:
-		rv_wrap = pkcs11_dsa_wrap(p, slotidx, attribs, key->dsa);
-		break;
-#ifdef OPENSSL_HAS_ECC
-	case KEY_ECDSA:
-		rv_wrap = pkcs11_ec_wrap(p, slotidx, attribs, key->ecdsa);
-		break;
-#endif /*def OPENSSL_HAS_ECC*/
-	}
-
-	if (rv_wrap == 0)
-		key->flags |= SSHKEY_FLAG_EXT;
-	else {
-		sshkey_free(key);
-		key = NULL;
-	}
-}
+fail:
+	sshkey_free(key);
+	key = NULL;
 
 done:
 	for (i = 0; i < 3; i++)
@@ -1207,10 +1216,8 @@ pkcs11_get_pubkey_rsa(
 	}
 }
 
-	if (pkcs11_rsa_wrap(p, slotidx, attribs, key->rsa) == 0) {
-		key->flags |= SSHKEY_FLAG_EXT;
+	if (pkcs11_wrap_rsa(p, slotidx, attribs, key) == 0)
 		goto done;
-	}
 
 fail:
 	sshkey_free(key);
@@ -1318,10 +1325,8 @@ wrap:
 		error("couldn't get curve nid");
 		goto fail;
 	}
-	if (pkcs11_ec_wrap(p, slotidx, attribs, key->ecdsa) == 0) {
-		key->flags |= SSHKEY_FLAG_EXT;
+	if (pkcs11_wrap_ecdsa(p, slotidx, attribs, key) == 0)
 		goto done;
-	}
 
 fail:
 	sshkey_free(key);

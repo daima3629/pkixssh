@@ -319,6 +319,12 @@ ECDSA_METHOD_new(const ECDSA_METHOD *ecdsa_method)
 }
 
 static inline void
+ECDSA_METHOD_free(ECDSA_METHOD *ecdsa_method)
+{
+    OPENSSL_free(ecdsa_method);
+}
+
+static inline void
 ECDSA_METHOD_set_sign(
     ECDSA_METHOD *ecdsa_method,
     ECDSA_SIG *(*ecdsa_do_sign) (
@@ -341,6 +347,11 @@ EC_KEY_OpenSSL(void) {
 static inline EC_KEY_METHOD*
 EC_KEY_METHOD_new(const EC_KEY_METHOD *meth) {
 	return ECDSA_METHOD_new(/*ECDSA_METHOD*/meth);
+}
+
+static inline void
+EC_KEY_METHOD_free(EC_KEY_METHOD *meth) {
+	ECDSA_METHOD_free(/*ECDSA_METHOD*/meth);
 }
 
 static inline int

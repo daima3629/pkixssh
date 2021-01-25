@@ -303,15 +303,12 @@ err:
 	return NULL;
 }
 
-static int
-wrap_rsa_key(RSA *rsa)
+static inline int
+wrap_key_rsa(struct sshkey *key)
 {
-	RSA_METHOD *helper_rsa = ssh_pkcs11helper_rsa_method();
-	if (helper_rsa == NULL) return -1;
-
-	if (!RSA_set_method(rsa, helper_rsa))
-		return (-1);
-	return (0);
+	RSA_METHOD *meth = ssh_pkcs11helper_rsa_method();
+	if (meth == NULL) return -1;
+	return RSA_set_method(key->rsa, meth) ? 0 : -1;
 }
 
 #ifdef OPENSSL_HAS_ECC
@@ -337,26 +334,24 @@ ssh_pkcs11helper_ec_method(void) {
 	return meth;
 }
 
-static int
-wrap_ec_key(EC_KEY *ec)
+static inline int
+wrap_key_ecdsa(struct sshkey *key)
 {
-	EC_KEY_METHOD *helper_ec = ssh_pkcs11helper_ec_method();
-	if (helper_ec == NULL) return -1;
-
-	EC_KEY_set_method(ec, helper_ec);
-	return 0;
+	EC_KEY_METHOD *meth = ssh_pkcs11helper_ec_method();
+	if (meth == NULL) return -1;
+	return EC_KEY_set_method(key->ecdsa, meth) ? 0 : -1;
 }
 #endif /*def OPENSSL_HAS_ECC*/
 
-static int
+static inline int
 wrap_key(struct sshkey *key) {
 	switch(key->type) {
-	case KEY_RSA: return (wrap_rsa_key(key->rsa));
+	case KEY_RSA: return wrap_key_rsa(key);
 #ifdef OPENSSL_HAS_ECC
-	case KEY_ECDSA: return (wrap_ec_key(key->ecdsa));
+	case KEY_ECDSA: return wrap_key_ecdsa(key);
 #endif
-	default:      return (-1);
 	}
+	return -1;
 }
 
 static int
@@ -450,7 +445,7 @@ pkcs11_add_provider(char *name, char *pin,
 				k = NULL;
 				goto set_key;
 			}
-			if (wrap_key(k) < 0) {
+			if (wrap_key(k) != 0) {
 				sshkey_free(k);
 				k = NULL;
 			}
