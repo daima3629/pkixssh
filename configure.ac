@@ -5483,7 +5483,6 @@ AC_CHECK_FUNCS([ \
   ECDSA_SIG_set0 \
   EVP_chacha20 \
   EVP_CIPHER_CTX_iv \
-  EVP_CIPHER_meth_new \
   EVP_MD_CTX_new \
   RSA_meth_new \
   RSA_PKCS1_OpenSSL \
@@ -5500,7 +5499,6 @@ AC_CHECK_FUNCS([ \
 AC_CHECK_FUNCS([ \
   DSA_get0_key \
   DSA_meth_get_verify \
-  EVP_CIPHER_CTX_encrypting \
   OPENSSL_cleanup \
   RSA_meth_get_pub_enc \
   RSA_meth_set1_name \

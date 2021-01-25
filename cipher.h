@@ -12,7 +12,7 @@
  * called by a name other than "ssh" or "Secure Shell".
  *
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
- * Copyright (c) 2011 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -38,12 +38,53 @@
 #ifndef CIPHER_H
 #define CIPHER_H
 
+#include "includes.h"
+
 #include <sys/types.h>
 #ifdef WITH_OPENSSL
 #include <openssl/evp.h>
 #endif
 #include "cipher-chachapoly.h"
 #include "cipher-aesctr.h"
+
+
+#ifndef HAVE_EVP_CIPHER_CTX_NEW		/* OpenSSL < 0.9.8 */
+static inline EVP_CIPHER_CTX*
+EVP_CIPHER_CTX_new(void) {
+	EVP_CIPHER_CTX *ctx;
+
+	ctx = OPENSSL_malloc(sizeof(EVP_CIPHER_CTX));
+	if (ctx != NULL) {
+		EVP_CIPHER_CTX_init(ctx);
+	}
+	return(ctx);
+}
+
+
+static inline void
+EVP_CIPHER_CTX_free(EVP_CIPHER_CTX *ctx) {
+	if (ctx == NULL) return;
+
+	EVP_CIPHER_CTX_cleanup(ctx);
+	OPENSSL_free(ctx);
+}
+#endif /* ndef HAVE_EVP_CIPHER_CTX_NEW	OpenSSL < 0.9.8 */
+
+
+#ifndef HAVE_EVP_CIPHER_CTX_IV		/* OpenSSL < 1.1 */
+static inline const unsigned char*
+EVP_CIPHER_CTX_iv(const EVP_CIPHER_CTX *ctx) {
+	return(ctx->iv);
+}
+
+
+static inline unsigned char*
+EVP_CIPHER_CTX_iv_noconst(EVP_CIPHER_CTX *ctx)
+{
+	return(ctx->iv);
+}
+#endif /* ndef HAVE_EVP_CIPHER_CTX_IV	OpenSSL < 1.1 */
+
 
 #define CIPHER_ENCRYPT		1
 #define CIPHER_DECRYPT		0
