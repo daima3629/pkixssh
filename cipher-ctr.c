@@ -85,6 +85,7 @@ ssh_aes_ctr_init(EVP_CIPHER_CTX *ctx, const u_char *key, const u_char *iv,
 {
 	struct ssh_aes_ctr_ctx *c;
 
+	UNUSED(enc);
 	if ((c = EVP_CIPHER_CTX_get_app_data(ctx)) == NULL) {
 		c = xmalloc(sizeof(*c));
 		EVP_CIPHER_CTX_set_app_data(ctx, c);

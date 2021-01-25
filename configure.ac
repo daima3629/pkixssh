@@ -190,7 +190,8 @@ if test "$GCC" = "yes" || test "$GCC" = "egcs"; then
 	OSSH_CHECK_CFLAG_COMPILE([-Wformat-security])
 	OSSH_CHECK_CFLAG_COMPILE([-Wsizeof-pointer-memaccess])
 	OSSH_CHECK_CFLAG_COMPILE([-Wpointer-sign], [-Wno-pointer-sign])
-	OSSH_CHECK_CFLAG_COMPILE([-Wunused-parameter], [-Wno-unused-parameter])
+	#unused parameter must be marked explicitly
+	#OSSH_CHECK_CFLAG_COMPILE([-Wunused-parameter], [-Wno-unused-parameter])
 	OSSH_CHECK_CFLAG_COMPILE([-Wunused-result], [-Wno-unused-result])
 	#ignore bogus warnings on some compilers...
 	#OSSH_CHECK_CFLAG_COMPILE([-Wimplicit-fallthrough])

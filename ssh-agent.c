@@ -296,6 +296,8 @@ agent_recode_alg(const char *pkalg, u_int flags)
 		if (flags & SSH_AGENT_RSA_SHA2_512)
 			return "rsa-sha2-512";
 	}
+#else
+	UNUSED(flags);
 #endif /*def HAVE_EVP_SHA256*/
 	return pkalg;
 }

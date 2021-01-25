@@ -1161,6 +1161,7 @@ static void HashConfirm(unsigned char *h,const unsigned char *r,const unsigned c
   for (i = 0;i < Inputs_bytes;++i) x[i] = r[i];
   for (i = 0;i < Hash_bytes;++i) x[Inputs_bytes+i] = cache[i];
 #endif
+  UNUSED(pk); /* TODO */
   Hash_prefix(h,2,x,sizeof x);
 }
 
