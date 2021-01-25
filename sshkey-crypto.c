@@ -1166,6 +1166,9 @@ sshbuf_read_custom_dsa(struct sshbuf *buf, struct sshkey *key);
 extern int
 sshkey_public_to_fp(struct sshkey *key, FILE *fp, int format);
 
+extern int
+sshkey_public_from_fp(FILE *fp, int format, struct sshkey **key);
+
 
 int
 sshbuf_read_custom_rsa(struct sshbuf *buf, struct sshkey *key) {
@@ -1309,6 +1312,52 @@ sshkey_public_to_fp(struct sshkey *key, FILE *fp, int format) {
 		res = PEM_write_PUBKEY(fp, key->pk);
 
 	return res ? 0 : SSH_ERR_LIBCRYPTO_ERROR;
+}
+
+int
+sshkey_public_from_fp(FILE *fp, int format, struct sshkey **key) {
+	int r;
+
+	if (format == SSHKEY_PRIVATE_PKCS8) {
+		EVP_PKEY *pk = PEM_read_PUBKEY(fp, NULL, NULL, NULL);
+		if (pk != NULL) {
+			r = sshkey_from_pkey(pk, key);
+			if (r == 0)
+				pk = NULL; /* transferred */
+		} else
+		    r = SSH_ERR_INVALID_FORMAT;
+		EVP_PKEY_free(pk);
+		return r;
+	}
+
+	if (format != SSHKEY_PRIVATE_PEM)
+		return SSH_ERR_INVALID_ARGUMENT;
+
+{	/* Traditional PEM is available only for RSA */
+	RSA *rsa;
+	struct sshkey *k;
+
+	rsa = PEM_read_RSAPublicKey(fp, NULL, NULL, NULL);
+	if (rsa == NULL) return SSH_ERR_INVALID_FORMAT;
+
+	k = sshkey_new(KEY_UNSPEC);
+	if (k == NULL) return SSH_ERR_ALLOC_FAIL;
+
+	k->type = KEY_RSA;
+	k->rsa = rsa;
+	rsa = NULL;
+
+	r = sshkey_complete_pkey(k);
+	if (r != 0) goto err;
+
+	*key = k;
+	return 0;
+
+err:
+	RSA_free(rsa);
+	sshkey_free(k);
+	return r;
+}
 }
 
 #else

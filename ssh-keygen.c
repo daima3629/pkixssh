@@ -604,47 +604,24 @@ do_convert_from_ssh2(struct sshkey **k, int *private)
 	fclose(fp);
 }
 
+/* defined in sshkey-crypto.c but used only localy here */
+extern int
+sshkey_public_from_fp(FILE *fp, int format, struct sshkey **key);
+
 static void
-do_convert_from_pkcs8(struct sshkey **k, int *private)
+do_convert_from_file(struct sshkey **k, int format)
 {
-	EVP_PKEY *pubkey;
 	int r;
 
-	UNUSED(private);
-{
-	FILE *fp;
-	if ((fp = fopen(identity_file, "r")) == NULL)
+{	FILE *fp = fopen(identity_file, "r");
+	if (fp == NULL)
 		fatal("%s: %s: %s", __progname, identity_file, strerror(errno));
-	if ((pubkey = PEM_read_PUBKEY(fp, NULL, NULL, NULL)) == NULL) {
-		fatal_f("%s is not a recognised public key format",
-		    identity_file);
-	}
+	r = sshkey_public_from_fp(fp, format, k);
 	fclose(fp);
 }
+	if (r == 0) return;
 
-	r = sshkey_from_pkey(pubkey, k);
-	if (r != 0)
-		fatal_r(r , "creation from evp pkey failed");
-}
-
-static void
-do_convert_from_pem(struct sshkey **k, int *private)
-{
-	FILE *fp;
-	RSA *rsa;
-
-	UNUSED(private);
-	if ((fp = fopen(identity_file, "r")) == NULL)
-		fatal("%s: %s: %s", __progname, identity_file, strerror(errno));
-	if ((rsa = PEM_read_RSAPublicKey(fp, NULL, NULL, NULL)) != NULL) {
-		if ((*k = sshkey_new(KEY_UNSPEC)) == NULL)
-			fatal("sshkey_new failed");
-		(*k)->type = KEY_RSA;
-		(*k)->rsa = rsa;
-		fclose(fp);
-		return;
-	}
-	fatal_f("unrecognised raw private key format");
+	fatal_r(r, "%s: unrecognised public key", identity_file);
 }
 
 static void
@@ -664,10 +641,10 @@ do_convert_from(struct passwd *pw)
 		do_convert_from_ssh2(&k, &private);
 		break;
 	case FMT_PKCS8:
-		do_convert_from_pkcs8(&k, &private);
+		do_convert_from_file(&k, SSHKEY_PRIVATE_PKCS8);
 		break;
 	case FMT_PEM:
-		do_convert_from_pem(&k, &private);
+		do_convert_from_file(&k, SSHKEY_PRIVATE_PEM);
 		break;
 	default:
 		fatal_f("unknown key format %d", convert_format);
