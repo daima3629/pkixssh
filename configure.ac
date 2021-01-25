@@ -5500,7 +5500,6 @@ AC_CHECK_FUNCS([ \
 AC_CHECK_FUNCS([ \
   DSA_get0_key \
   DSA_meth_get_verify \
-  DSA_meth_set_finish \
   EVP_CIPHER_CTX_encrypting \
   OPENSSL_cleanup \
   RSA_meth_get_pub_enc \

@@ -318,15 +318,6 @@ RSA_meth_set_priv_dec(RSA_METHOD *meth, priv_dec_f priv_dec) {
 	meth->rsa_priv_dec = priv_dec;
 	return 1;
 }
-
-
-typedef int (*finish_f) (RSA *rsa);
-
-static inline int
-RSA_meth_set_finish(RSA_METHOD *meth, finish_f finish) {
-	meth->finish = finish;
-	return 1;
-}
 #endif /*ndef HAVE_RSA_METH_SET_PRIV_ENC*/
 
 
@@ -550,17 +541,6 @@ DSA_meth_set_bn_mod_exp(DSA_METHOD *meth, bn_mod_exp_f bn_mod_exp) {
 	return 1;
 }
 #endif /*ndef HAVE_DSA_METH_GET_VERIFY*/
-
-
-#ifndef HAVE_DSA_METH_SET_FINISH
-typedef int (*dsa_finish_f) (DSA*);
-
-static inline int
-DSA_meth_set_finish(DSA_METHOD *meth, dsa_finish_f finish) {
-	meth->finish = finish;
-	return 1;
-}
-#endif /*ndef HAVE_DSA_METH_SET_FINISH*/
 
 
 #ifndef HAVE_DSA_GET0_KEY
