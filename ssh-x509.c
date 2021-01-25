@@ -776,9 +776,7 @@ if ((SSHX_RFC6187_MISSING_KEY_IDENTIFIER & xcompat) == 0) {
 		}
 	} else {
 		/* check if algorithm is supported (compatibility case) */
-		if (ssh_xkalg_typeformind(key->type, key->ecdsa_nid,
-			X509FORMAT_RFC6187, &xkalg, -1) < 0
-		) {
+		if (ssh_xkalg_keyfrmind(key, X509FORMAT_RFC6187, &xkalg, -1) < 0) {
 			r = SSH_ERR_KEY_TYPE_UNKNOWN;
 			goto err;
 		}
@@ -1531,7 +1529,7 @@ ssh_x509key_name(const struct sshkey *k) {
 	}
 	if (!sshkey_is_x509(k)) return NULL;
 
-	n = ssh_xkalg_typeind(k->type, k->ecdsa_nid, &p, -1);
+	n = ssh_xkalg_keyind(k, &p, -1);
 	if (n >= 0) return p->name;
 
 	return NULL;
@@ -1556,9 +1554,9 @@ Xkey_algoriths(const struct sshkey *key) {
 	int loc;
 
 	for (
-	    loc = ssh_xkalg_typeind(key->type, key->ecdsa_nid, &xkalg, -1);
+	    loc = ssh_xkalg_keyind(key, &xkalg, -1);
 	    loc >= 0;
-	    loc = ssh_xkalg_typeind(key->type, key->ecdsa_nid, &xkalg, loc)
+	    loc = ssh_xkalg_keyind(key, &xkalg, loc)
 	) {
 		const char *s = xkalg->name;
 		int k;
@@ -2354,10 +2352,9 @@ if ((blen > 1) && (blob[0] == 0x30)) {
 	   encoded in DER format: 0x30 - SEQUENCE */
 	r = X509key_from_blob(blob, blen, keyp);
 	if ((r == SSH_ERR_SUCCESS) && (pkalgp != NULL) && (keyp != NULL)) {
-		struct sshkey *k = *keyp;
 		const SSHX509KeyAlgs *p;
 
-		if (ssh_xkalg_typeformind(k->type, k->ecdsa_nid, X509FORMAT_LEGACY, &p, -1) < 0)
+		if (ssh_xkalg_keyfrmind(*keyp, X509FORMAT_LEGACY, &p, -1) < 0)
 			return SSH_ERR_KEY_TYPE_UNKNOWN;
 
 		*pkalgp = xstrdup(p->name);

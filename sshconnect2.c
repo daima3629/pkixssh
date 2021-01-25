@@ -2,7 +2,7 @@
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Damien Miller.  All rights reserved.
- * Copyright (c) 2006-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2006-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -1688,9 +1688,9 @@ x509_cert:
 	}
 	while (frms[k] != -1) {
 		for (
-		    loc = ssh_xkalg_typeformind(kt, key->ecdsa_nid, frms[k], &xkalg, -1);
+		    loc = ssh_xkalg_keyfrmind(key, frms[k], &xkalg, -1);
 		    loc >= 0;
-		    loc = ssh_xkalg_typeformind(kt, key->ecdsa_nid, frms[k], &xkalg, loc)
+		    loc = ssh_xkalg_keyfrmind(key, frms[k], &xkalg, loc)
 		) {
 			pkalg = xkalg->name;
 

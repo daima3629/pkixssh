@@ -1,7 +1,7 @@
 #ifndef SSH_XKALG_H
 #define SSH_XKALG_H
 /*
- * Copyright (c) 2005-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2005-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -25,6 +25,8 @@
  */
 
 #include "includes.h"
+
+#include "sshkey.h"
 
 
 typedef int	(*fEVP_SignFinal)(EVP_MD_CTX *ctx, unsigned char *md, unsigned int *s, EVP_PKEY *pkey);
@@ -59,11 +61,11 @@ int	ssh_add_x509key_alg(const char *data);
 int/*bool*/	ssh_is_x509signame(const char *signame);
 
 int	ssh_xkalg_nameind(const char *name, const SSHX509KeyAlgs **q, int loc);
-int	ssh_xkalg_typeind(int type, int subtype, const SSHX509KeyAlgs **q, int loc);
+int	ssh_xkalg_keyind(const struct sshkey *key, const SSHX509KeyAlgs **q, int loc);
 #define X509FORMAT_FIRSTMATCH	1
 #define X509FORMAT_LEGACY	2
 #define X509FORMAT_RFC6187	3
-int	ssh_xkalg_typeformind(int type, int subtype, int frm, const SSHX509KeyAlgs **q, int loc);
+int	ssh_xkalg_keyfrmind(const struct sshkey *key, int frm, const SSHX509KeyAlgs **q, int loc);
 int	ssh_xkalg_ind(const SSHX509KeyAlgs **q, int loc);
 
 void	ssh_xkalg_listall(struct sshbuf *b, const char *sep);

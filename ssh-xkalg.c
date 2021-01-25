@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2005-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -671,7 +671,7 @@ ssh_xkalg_nameind(const char *name, const SSHX509KeyAlgs **q, int loc) {
 }
 
 
-int
+static int
 ssh_xkalg_typeind(int type, int subtype, const SSHX509KeyAlgs **q, int loc) {
 	int k, n;
 	const SSHX509KeyAlgs *p;
@@ -697,9 +697,15 @@ ssh_xkalg_typeind(int type, int subtype, const SSHX509KeyAlgs **q, int loc) {
 
 
 int
-ssh_xkalg_typeformind(int type, int subtype, int frm, const SSHX509KeyAlgs **q, int loc) {
+ssh_xkalg_keyind(const struct sshkey *key, const SSHX509KeyAlgs **q, int loc) {
+	return ssh_xkalg_typeind(key->type, key->ecdsa_nid, q, loc);
+}
 
-	while ((loc = ssh_xkalg_typeind(type, subtype, q, loc)) >= 0) {
+
+int
+ssh_xkalg_keyfrmind(const struct sshkey *key, int frm, const SSHX509KeyAlgs **q, int loc) {
+
+	while ((loc = ssh_xkalg_typeind(key->type, key->ecdsa_nid, q, loc)) >= 0) {
 		int found = 0;
 
 		switch (frm) {
