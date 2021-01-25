@@ -281,24 +281,33 @@ pkcs11_ecdsa_sign(int type,
 #endif /*def OPENSSL_HAS_ECC*/
 
 /* redirect the private key encrypt operation to the ssh-pkcs11-helper */
+static RSA_METHOD*
+ssh_pkcs11helper_rsa_method(void) {
+	static RSA_METHOD *meth = NULL;
+
+	if (meth != NULL) return meth;
+
+	meth = RSA_meth_dup(RSA_PKCS1_OpenSSL());
+	if (meth == NULL) return NULL;
+
+	if (!RSA_meth_set1_name(meth, "ssh-pkcs11-rsa-helper")
+	||  !RSA_meth_set_priv_enc(meth, pkcs11_rsa_private_encrypt)
+	)
+		goto err;
+
+	return meth;
+
+err:
+	RSA_meth_free(meth);
+	meth = NULL;
+	return NULL;
+}
+
 static int
 wrap_rsa_key(RSA *rsa)
 {
-	static RSA_METHOD *helper_rsa = NULL;
-
-	if (helper_rsa == NULL) {
-		helper_rsa = RSA_meth_dup(RSA_PKCS1_OpenSSL());
-		if (helper_rsa == NULL)
-			return (-1);
-
-		if (!RSA_meth_set1_name(helper_rsa, "ssh-pkcs11-helper")
-		||  !RSA_meth_set_priv_enc(helper_rsa, pkcs11_rsa_private_encrypt)
-		) {
-			RSA_meth_free(helper_rsa);
-			helper_rsa = NULL;
-			return (-1);
-		}
-	}
+	RSA_METHOD *helper_rsa = ssh_pkcs11helper_rsa_method();
+	if (helper_rsa == NULL) return -1;
 
 	if (!RSA_set_method(rsa, helper_rsa))
 		return (-1);
@@ -306,25 +315,34 @@ wrap_rsa_key(RSA *rsa)
 }
 
 #ifdef OPENSSL_HAS_ECC
+static EC_KEY_METHOD*
+ssh_pkcs11helper_ec_method(void) {
+	static EC_KEY_METHOD *meth = NULL;
+
+	if (meth != NULL) return meth;
+
+	meth = EC_KEY_METHOD_new(EC_KEY_OpenSSL());
+	if (meth == NULL) return NULL;
+
+#ifndef HAVE_EC_KEY_METHOD_NEW	/* OpenSSL < 1.1 */
+	ECDSA_METHOD_set_sign(meth,
+	    pkcs11_ecdsa_do_sign);
+#else
+	EC_KEY_METHOD_set_sign(meth,
+	    pkcs11_ecdsa_sign,
+	    NULL /* *sign_setup */,
+	    pkcs11_ecdsa_do_sign);
+#endif
+
+	return meth;
+}
+
 static int
 wrap_ec_key(EC_KEY *ec)
 {
-	static EC_KEY_METHOD *helper_ec = NULL;
+	EC_KEY_METHOD *helper_ec = ssh_pkcs11helper_ec_method();
+	if (helper_ec == NULL) return -1;
 
-	if (helper_ec == NULL) {
-		helper_ec = EC_KEY_METHOD_new(EC_KEY_OpenSSL());
-		if (helper_ec == NULL) return -1;
-
-#ifdef HAVE_EC_KEY_METHOD_NEW
-		EC_KEY_METHOD_set_sign(helper_ec,
-		    pkcs11_ecdsa_sign,
-		    NULL /* *sign_setup */,
-		    pkcs11_ecdsa_do_sign);
-#else
-		ECDSA_METHOD_set_sign(helper_ec,
-		    pkcs11_ecdsa_do_sign);
-#endif
-	}
 	EC_KEY_set_method(ec, helper_ec);
 	return 0;
 }

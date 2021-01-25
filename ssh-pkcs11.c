@@ -530,35 +530,36 @@ static RSA_METHOD*
 ssh_pkcs11_rsa_method(void)  {
 	static RSA_METHOD *meth = NULL;
 
-	if (meth == NULL) {
-		const RSA_METHOD *def = RSA_PKCS1_OpenSSL();
+	if (meth != NULL) return meth;
 
-		meth = RSA_meth_new("SSH PKCS#11 RSA method",
-		#ifdef RSA_FLAG_FIPS_METHOD
-			RSA_FLAG_FIPS_METHOD |
-		#endif
-			0);
-		if (meth == NULL) return NULL;
+	meth = RSA_meth_new("SSH PKCS#11 RSA method",
+	#ifdef RSA_FLAG_FIPS_METHOD
+		RSA_FLAG_FIPS_METHOD |
+	#endif
+		0);
+	if (meth == NULL) return NULL;
 
-		if (!RSA_meth_set_priv_enc(meth, pkcs11_rsa_private_encrypt)
-		||  !RSA_meth_set_priv_dec(meth, pkcs11_rsa_private_decrypt)
-		)
-			goto err;
+	if (!RSA_meth_set_priv_enc(meth, pkcs11_rsa_private_encrypt)
+	||  !RSA_meth_set_priv_dec(meth, pkcs11_rsa_private_decrypt)
+	)
+		goto err;
 
-		if (!RSA_meth_set_pub_enc(meth, RSA_meth_get_pub_enc(def))
-		||  !RSA_meth_set_pub_dec(meth, RSA_meth_get_pub_dec(def))
-		||  !RSA_meth_set_mod_exp(meth, RSA_meth_get_mod_exp(def))
-		||  !RSA_meth_set_bn_mod_exp(meth, RSA_meth_get_bn_mod_exp(def))
-		)
-			goto err;
-	}
+{	const RSA_METHOD *def = RSA_PKCS1_OpenSSL();
+
+	if (!RSA_meth_set_pub_enc(meth, RSA_meth_get_pub_enc(def))
+	||  !RSA_meth_set_pub_dec(meth, RSA_meth_get_pub_dec(def))
+	||  !RSA_meth_set_mod_exp(meth, RSA_meth_get_mod_exp(def))
+	||  !RSA_meth_set_bn_mod_exp(meth, RSA_meth_get_bn_mod_exp(def))
+	)
+		goto err;
+}
 
 	/* ensure RSA context index */
 	if (ssh_pkcs11_rsa_ctx_index < 0)
 		ssh_pkcs11_rsa_ctx_index = RSA_get_ex_new_index(0,
 		    NULL, NULL, NULL, CRYPTO_EX_pkcs11_rsa_free);
 	if (ssh_pkcs11_rsa_ctx_index < 0)
-		return NULL;
+		goto err;
 
 	return meth;
 
@@ -664,32 +665,33 @@ static DSA_METHOD*
 ssh_pkcs11_dsa_method(void) {
 	static DSA_METHOD *meth = NULL;
 
-	if (meth == NULL) {
-		const DSA_METHOD *def = DSA_OpenSSL();
+	if (meth != NULL) return meth;
 
-		meth = DSA_meth_new("SSH PKCS#11 DSA method",
-		#ifdef DSA_FLAG_FIPS_METHOD
-			DSA_FLAG_FIPS_METHOD |
-		#endif
-			0);
-		if (meth == NULL) return NULL;
+	meth = DSA_meth_new("SSH PKCS#11 DSA method",
+	#ifdef DSA_FLAG_FIPS_METHOD
+		DSA_FLAG_FIPS_METHOD |
+	#endif
+		0);
+	if (meth == NULL) return NULL;
 
-		if (!DSA_meth_set_sign(meth, pkcs11_dsa_do_sign))
-			goto err;
+	if (!DSA_meth_set_sign(meth, pkcs11_dsa_do_sign))
+		goto err;
 
-		if (!DSA_meth_set_verify(meth, DSA_meth_get_verify(def))
-		||  !DSA_meth_set_mod_exp(meth, DSA_meth_get_mod_exp(def))
-		||  !DSA_meth_set_bn_mod_exp(meth, DSA_meth_get_bn_mod_exp(def))
-		)
-			goto err;
-	}
+{	const DSA_METHOD *def = DSA_OpenSSL();
+
+	if (!DSA_meth_set_verify(meth, DSA_meth_get_verify(def))
+	||  !DSA_meth_set_mod_exp(meth, DSA_meth_get_mod_exp(def))
+	||  !DSA_meth_set_bn_mod_exp(meth, DSA_meth_get_bn_mod_exp(def))
+	)
+		goto err;
+}
 
 	/* ensure DSA context index */
 	if (ssh_pkcs11_dsa_ctx_index < 0)
 		ssh_pkcs11_dsa_ctx_index = DSA_get_ex_new_index(0,
 		    NULL, NULL, NULL, CRYPTO_EX_pkcs11_dsa_free);
 	if (ssh_pkcs11_dsa_ctx_index < 0)
-		return NULL;
+		goto err;
 
 	return meth;
 
@@ -830,31 +832,36 @@ static EC_KEY_METHOD*
 ssh_pkcs11_ec_method(void) {
 	static EC_KEY_METHOD *meth = NULL;
 
-	if (meth == NULL) {
-		meth = EC_KEY_METHOD_new(EC_KEY_OpenSSL());
-		if (meth == NULL) return NULL;
+	if (meth != NULL) return meth;
 
-	#ifdef HAVE_EC_KEY_METHOD_NEW
-		EC_KEY_METHOD_set_sign(meth,
-		    pkcs11_ecdsa_sign,
-		    NULL /* *sign_setup */,
-		    pkcs11_ecdsa_do_sign
-		);
-	#else
-		ECDSA_METHOD_set_sign(meth,
-		    pkcs11_ecdsa_do_sign
-		);
-	#endif
-	}
+	meth = EC_KEY_METHOD_new(EC_KEY_OpenSSL());
+	if (meth == NULL) return NULL;
+
+#ifndef HAVE_EC_KEY_METHOD_NEW	/* OpenSSL < 1.1 */
+	ECDSA_METHOD_set_sign(meth,
+	    pkcs11_ecdsa_do_sign
+	);
+#else
+	EC_KEY_METHOD_set_sign(meth,
+	    pkcs11_ecdsa_sign,
+	    NULL /* *sign_setup */,
+	    pkcs11_ecdsa_do_sign
+	);
+#endif
 
 	/* ensure EC context index */
 	if (ssh_pkcs11_ec_ctx_index < 0)
 		ssh_pkcs11_ec_ctx_index = EC_KEY_get_ex_new_index(0,
 		    NULL, NULL, NULL, CRYPTO_EX_pkcs11_ec_free);
 	if (ssh_pkcs11_ec_ctx_index < 0)
-		return NULL;
+		goto err;
 
 	return meth;
+
+err:
+	EC_KEY_METHOD_free(meth);
+	meth = NULL;
+	return NULL;
 }
 
 static int
