@@ -18,6 +18,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#define SSHKEY_INTERNAL
 #include "includes.h"
 
 #ifdef ENABLE_PKCS11
@@ -52,6 +53,7 @@
 #include "ssh-pkcs11.h"
 #include "digest.h"
 #include "xmalloc.h"
+#include "sshbuf.h"
 
 struct pkcs11_slotinfo {
 	CK_TOKEN_INFO		token;
@@ -1199,21 +1201,33 @@ pkcs11_get_pubkey_rsa(
 	}
 
 {	BIGNUM *rsa_n = NULL, *rsa_e = NULL;
+	struct sshbuf *buf = NULL;
+	int r = -1/*SSH_ERR_INTERNAL_ERROR*/;
 
 	rsa_n = BN_bin2bn(attribs[1].pValue, attribs[1].ulValueLen, NULL);
 	rsa_e = BN_bin2bn(attribs[2].pValue, attribs[2].ulValueLen, NULL);
 	if (rsa_n == NULL || rsa_e == NULL) {
-		BN_free(rsa_n);
-		BN_free(rsa_e);
 		error_f("BN_bin2bn failed");
-		goto fail;
+		goto key_done;
 	}
-	if (!RSA_set0_key(key->rsa, rsa_n, rsa_e, NULL)) {
-		BN_free(rsa_n);
-		BN_free(rsa_e);
-		error_f("RSA_set0_key failed");
-		goto fail;
+	buf = sshbuf_new();
+	if (buf == NULL) {
+		error_f("sshbuf_new failed");
+		goto key_done;
 	}
+	if ((r = sshbuf_put_bignum2(buf, rsa_n)) != 0 ||
+	    (r = sshbuf_put_bignum2(buf, rsa_e)) != 0) {
+		error_fr(r, "compose");
+		goto key_done;
+	}
+
+	r = sshbuf_read_pub_rsa(buf, key);
+
+key_done:
+	sshbuf_free(buf);
+	BN_free(rsa_n);
+	BN_free(rsa_e);
+	if (r != 0) goto fail;
 }
 
 	if (pkcs11_wrap_rsa(p, slotidx, attribs, key) == 0)
