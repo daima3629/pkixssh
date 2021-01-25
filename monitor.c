@@ -57,11 +57,6 @@
 # endif
 #endif
 
-#ifdef WITH_OPENSSL
-#include <openssl/dh.h>
-#include "evp-compat.h"
-#endif
-
 #include "openbsd-compat/sys-tree.h"
 #include "openbsd-compat/sys-queue.h"
 

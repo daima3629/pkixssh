@@ -31,15 +31,11 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <openssl/bn.h>
-#include <openssl/dh.h>
-#include "evp-compat.h"
-
+#include "dh.h"
 #include "kex.h"
 #include "sshbuf.h"
 #include "digest.h"
 #include "ssherr.h"
-#include "dh.h"
 #include "log.h"
 
 int

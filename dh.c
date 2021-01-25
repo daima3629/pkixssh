@@ -1,6 +1,7 @@
 /* $OpenBSD: dh.c,v 1.72 2020/10/18 11:32:01 djm Exp $ */
 /*
  * Copyright (c) 2000 Niels Provos.  All rights reserved.
+ * Copyright (c) 2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -34,10 +35,6 @@
 #include <string.h>
 #include <limits.h>
 
-#include <openssl/bn.h>
-#include <openssl/dh.h>
-#include "evp-compat.h"
-
 #include "dh.h"
 #include "pathnames.h"
 #include "log.h"
@@ -49,6 +46,40 @@
 #  define BN_is_negative(a) ((a)->neg != 0)
 # endif
 #endif
+
+#ifndef HAVE_DH_GET0_KEY	/* OpenSSL < 1.1 */
+/* Partial backport of opaque DH from OpenSSL >= 1.1, commits
+ * "Make DH opaque", "RSA, DSA, DH: Allow some given input to be NULL
+ * on already initialised keys" and etc.
+ */
+static int
+DH_set_length(DH *dh, long length) {
+	dh->length = length;
+	return 1;
+}
+
+static inline int
+DH_set0_pqg(DH *dh, BIGNUM *p, BIGNUM *q, BIGNUM *g) {
+/* If the fields p and g in d are NULL, the corresponding input
+ * parameters MUST be non-NULL.  q may remain NULL.
+ *
+ * It is an error to give the results from get0 on d as input
+ * parameters.
+ */
+	if (p == dh->p || (dh->q != NULL && q == dh->q) || g == dh->g)
+		return 0;
+
+	if (p != NULL) { BN_free(dh->p); dh->p = p; }
+	if (q != NULL) { BN_free(dh->q); dh->q = q; }
+	if (g != NULL) { BN_free(dh->g); dh->g = g; }
+
+	if (q != NULL)
+	        (void)DH_set_length(dh, BN_num_bits(q));
+
+	return 1;
+}
+#endif /*ndef HAVE_DH_GET0_KEY*/
+
 
 static int
 parse_prime(int linenum, char *line, struct dhgroup *dhg)

@@ -2,6 +2,7 @@
 
 /*
  * Copyright (c) 2000 Niels Provos.  All rights reserved.
+ * Copyright (c) 2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -26,7 +27,31 @@
 #ifndef DH_H
 #define DH_H
 
+#include "includes.h"
+
 #ifdef WITH_OPENSSL
+#include <openssl/bn.h>
+#include <openssl/dh.h>
+
+#ifndef HAVE_DH_GET0_KEY	/* OpenSSL < 1.1 */
+/* Partial backport of opaque DH from OpenSSL >= 1.1, commits
+ * "Make DH opaque", "RSA, DSA, DH: Allow some given input to be NULL
+ * on already initialised keys" and etc.
+ */
+static inline void
+DH_get0_key(const DH *dh, const BIGNUM **pub_key, const BIGNUM **priv_key) {
+	if (pub_key  != NULL) *pub_key  = dh->pub_key;
+	if (priv_key != NULL) *priv_key = dh->priv_key;
+}
+
+static inline void
+DH_get0_pqg(const DH *dh, const BIGNUM **p, const BIGNUM **q, const BIGNUM **g) {
+	if (p != NULL) *p = dh->p;
+	if (q != NULL) *q = dh->q;
+	if (g != NULL) *g = dh->g;
+}
+#endif /*ndef HAVE_DH_GET0_KEY*/
+
 
 struct dhgroup {
 	int size;

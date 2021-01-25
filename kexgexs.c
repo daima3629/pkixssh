@@ -35,16 +35,13 @@
 #include <string.h>
 #include <signal.h>
 
-#include <openssl/dh.h>
-
-#include "evp-compat.h"
+#include "dh.h"
 #include "sshxkey.h"
 #include "cipher.h"
 #include "digest.h"
 #include "kex.h"
 #include "log.h"
 #include "packet.h"
-#include "dh.h"
 #include "ssh2.h"
 #include "compat.h"
 #ifdef GSSAPI
