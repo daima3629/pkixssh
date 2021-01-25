@@ -1155,6 +1155,18 @@ X509_STORE_CTX_get_verify_check_time(X509_STORE_CTX *ctx) {
 }
 
 
+static inline int
+ssh_X509_cmp_time(const ASN1_TIME *s, time_t *t) {
+	/* work-arround for OpenSSL <= 0.9.8: non-const argument */
+	return X509_cmp_time((ASN1_TIME*)s, t);
+}
+
+static inline int
+ssh_ASN1_UTCTIME_print(BIO *bio, const ASN1_UTCTIME *a) {
+	/* work-arround for OpenSSL <= 0.9.8: non-const argument */
+	return ASN1_UTCTIME_print(bio, (ASN1_UTCTIME*)a);
+}
+
 static int/*bool*/
 ssh_check_crl(X509_STORE_CTX *_ctx, X509* _issuer, X509_CRL *_crl) {
 	time_t  check_time;
@@ -1184,10 +1196,10 @@ ssh_check_crl(X509_STORE_CTX *_ctx, X509* _issuer, X509_CRL *_crl) {
 		ssh_X509_NAME_print(bio, X509_CRL_get_issuer(_crl));
 
 		BIO_printf(bio, "; Last Update: ");
-		ASN1_UTCTIME_print(bio, X509_CRL_get0_lastUpdate(_crl));
+		ssh_ASN1_UTCTIME_print(bio, X509_CRL_get0_lastUpdate(_crl));
 
 		BIO_printf(bio, "; Next Update: ");
-		ASN1_UTCTIME_print(bio, X509_CRL_get0_nextUpdate(_crl));
+		ssh_ASN1_UTCTIME_print(bio, X509_CRL_get0_nextUpdate(_crl));
 
 		k = BIO_pending(bio);
 		p = xmalloc(k + 1); /*fatal on error*/
@@ -1249,7 +1261,7 @@ ssh_check_crl(X509_STORE_CTX *_ctx, X509* _issuer, X509_CRL *_crl) {
 	} else
 		pcheck_time = NULL;
 
-	k = X509_cmp_time(X509_CRL_get0_lastUpdate(_crl), pcheck_time);
+	k = ssh_X509_cmp_time(X509_CRL_get0_lastUpdate(_crl), pcheck_time);
 	if (k == 0) {
 		char *buf;
 
@@ -1269,7 +1281,7 @@ ssh_check_crl(X509_STORE_CTX *_ctx, X509* _issuer, X509_CRL *_crl) {
 		return 0;
 	}
 
-	k = X509_cmp_time(X509_CRL_get0_nextUpdate(_crl), pcheck_time);
+	k = ssh_X509_cmp_time(X509_CRL_get0_nextUpdate(_crl), pcheck_time);
 	if (k == 0) {
 		char *buf;
 
