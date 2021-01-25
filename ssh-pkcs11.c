@@ -3,7 +3,7 @@
  * Copyright (c) 2010 Markus Friedl.  All rights reserved.
  * Copyright (c) 2011 Kenneth Robinette.  All rights reserved.
  * Copyright (c) 2013 Andrew Cooke.  All rights reserved.
- * Copyright (c) 2016-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2016-2021 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -624,7 +624,7 @@ pkcs11_dsa_do_sign(const unsigned char *dgst, int dlen, DSA *dsa)
 	};
 	DSA_SIG			*sig = NULL;
 
-	debug3("pkcs11_dsa_do_sign");
+	debug3_f("...");
 
 	k11 = DSA_get_ex_data(dsa, ssh_pkcs11_dsa_ctx_index);
 	if (k11 == NULL) {
@@ -760,7 +760,7 @@ pkcs11_ecdsa_do_sign(
 	};
 	ECDSA_SIG		*sig = NULL;
 
-	debug3("pkcs11_ecdsa_do_sign");
+	debug3_f("...");
 
 	UNUSED(inv);
 	UNUSED(rp);
@@ -809,7 +809,7 @@ pkcs11_ecdsa_sign(int type,
 ) {
 	ECDSA_SIG *s;
 
-	debug3("pkcs11_ecdsa_sign");
+	debug3_f("...");
 	(void)type;
 
 	s = pkcs11_ecdsa_do_sign(dgst, dlen, inv, rp, ec);
@@ -831,19 +831,16 @@ ssh_pkcs11_ec_method(void) {
 	static EC_KEY_METHOD *meth = NULL;
 
 	if (meth == NULL) {
-	#ifdef HAVE_EC_KEY_METHOD_NEW
 		meth = EC_KEY_METHOD_new(EC_KEY_OpenSSL());
 		if (meth == NULL) return NULL;
 
+	#ifdef HAVE_EC_KEY_METHOD_NEW
 		EC_KEY_METHOD_set_sign(meth,
 		    pkcs11_ecdsa_sign,
 		    NULL /* *sign_setup */,
 		    pkcs11_ecdsa_do_sign
 		);
 	#else
-		meth = ECDSA_METHOD_new(ECDSA_OpenSSL());
-		if (meth == NULL) return NULL;
-
 		ECDSA_METHOD_set_sign(meth,
 		    pkcs11_ecdsa_do_sign
 		);

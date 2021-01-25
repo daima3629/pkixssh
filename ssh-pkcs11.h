@@ -3,7 +3,7 @@
 /* $OpenBSD: ssh-pkcs11.h,v 1.6 2020/01/25 00:03:36 djm Exp $ */
 /*
  * Copyright (c) 2010 Markus Friedl.  All rights reserved.
- * Copyright (c) 2018-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2018-2021 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -18,12 +18,15 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include "sshkey.h"
+#include "includes.h"
 
 int	pkcs11_init(int);
 void	pkcs11_terminate(void);
 
 #ifdef ENABLE_PKCS11
+#include "sshkey.h"
+#include "evp-compat.h"
+
 /* Errors for pkcs11_add_provider() */
 #define	SSH_PKCS11_ERR_GENERIC			-1
 #define	SSH_PKCS11_ERR_LOGIN_FAIL		-2
@@ -282,10 +285,63 @@ DSA_meth_set_bn_mod_exp(DSA_METHOD *meth, bn_mod_exp_f bn_mod_exp) {
 
 #ifdef OPENSSL_HAS_ECC
 # ifndef HAVE_EC_KEY_METHOD_NEW	/* OpenSSL < 1.1 */
-/* mimic some ECDSA functions in OpenSSL API v1.1 style */
 #  include <openssl/ecdsa.h>
 
+
+#ifndef HAVE_ECDSA_METHOD_NEW	/* OpenSSL < 1.0.2 */
+
+#ifndef HAVE_ECDSA_METHOD_NAME
+/*declared in some OpenSSL compatible headers*/
+struct ecdsa_method {
+    const char *name;
+    ECDSA_SIG *(*ecdsa_do_sign) (const unsigned char *dgst, int dgst_len,
+                                 const BIGNUM *inv, const BIGNUM *rp,
+                                 EC_KEY *eckey);
+    int (*ecdsa_sign_setup) (EC_KEY *eckey, BN_CTX *ctx, BIGNUM **kinv,
+                             BIGNUM **r);
+    int (*ecdsa_do_verify) (const unsigned char *dgst, int dgst_len,
+                            const ECDSA_SIG *sig, EC_KEY *eckey);
+# if 0
+    int (*init) (EC_KEY *eckey);
+    int (*finish) (EC_KEY *eckey);
+# endif
+    int flags;
+    void *app_data;
+};
+#endif /*ndef HAVE_ECDSA_METHOD_NAME*/
+
+
+static inline ECDSA_METHOD*
+ECDSA_METHOD_new(const ECDSA_METHOD *ecdsa_method)
+{
+    UNUSED(ecdsa_method);
+    return OPENSSL_malloc(sizeof(ECDSA_METHOD));
+}
+
+static inline void
+ECDSA_METHOD_set_sign(
+    ECDSA_METHOD *ecdsa_method,
+    ECDSA_SIG *(*ecdsa_do_sign) (
+        const unsigned char *dgst, int dgst_len,
+        const BIGNUM *inv, const BIGNUM *rp, EC_KEY *eckey)
+) {
+    ecdsa_method->ecdsa_do_sign = ecdsa_do_sign;
+}
+#endif /*ndef HAVE_ECDSA_METHOD_NEW	OpenSSL < 1.0.2 */
+
+
+/* mimic some ECDSA functions in OpenSSL API v1.1 style */
 typedef ECDSA_METHOD EC_KEY_METHOD;
+
+static inline const EC_KEY_METHOD*
+EC_KEY_OpenSSL(void) {
+	return /*ECDSA_METHOD*/ECDSA_OpenSSL();
+}
+
+static inline EC_KEY_METHOD*
+EC_KEY_METHOD_new(const EC_KEY_METHOD *meth) {
+	return ECDSA_METHOD_new(/*ECDSA_METHOD*/meth);
+}
 
 static inline int
 EC_KEY_set_method(EC_KEY *key, const EC_KEY_METHOD *meth) {

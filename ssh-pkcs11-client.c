@@ -1,7 +1,7 @@
 /* $OpenBSD: ssh-pkcs11-client.c,v 1.17 2020/10/18 11:32:02 djm Exp $ */
 /*
  * Copyright (c) 2010 Markus Friedl.  All rights reserved.
- * Copyright (c) 2016-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2016-2021 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -263,7 +263,7 @@ pkcs11_ecdsa_sign(int type,
 ) {
 	ECDSA_SIG *s;
 
-	debug3("pkcs11_ecdsa_sign");
+	debug3_f("...");
 	(void)type;
 
 	s = pkcs11_ecdsa_do_sign(dgst, dlen, inv, rp, ec);
@@ -312,18 +312,15 @@ wrap_ec_key(EC_KEY *ec)
 	static EC_KEY_METHOD *helper_ec = NULL;
 
 	if (helper_ec == NULL) {
-#ifdef HAVE_EC_KEY_METHOD_NEW
 		helper_ec = EC_KEY_METHOD_new(EC_KEY_OpenSSL());
 		if (helper_ec == NULL) return -1;
 
+#ifdef HAVE_EC_KEY_METHOD_NEW
 		EC_KEY_METHOD_set_sign(helper_ec,
 		    pkcs11_ecdsa_sign,
 		    NULL /* *sign_setup */,
 		    pkcs11_ecdsa_do_sign);
 #else
-		helper_ec = ECDSA_METHOD_new(ECDSA_OpenSSL());
-		if (helper_ec == NULL) return -1;
-
 		ECDSA_METHOD_set_sign(helper_ec,
 		    pkcs11_ecdsa_do_sign);
 #endif

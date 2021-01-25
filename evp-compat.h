@@ -425,53 +425,6 @@ ECDSA_SIG_set0(ECDSA_SIG *sig, BIGNUM *r, BIGNUM *s) {
 #endif /*OPENSSL_HAS_ECC*/
 
 
-#ifdef OPENSSL_HAS_ECC
-# ifndef HAVE_EC_KEY_METHOD_NEW		/* OpenSSL < 1.1 */
-#  ifndef HAVE_ECDSA_METHOD_NEW		/* OpenSSL < 1.0.2 */
-
-#   ifndef HAVE_ECDSA_METHOD_NAME
-/*declared in some OpenSSL compatible headers*/
-struct ecdsa_method {
-    const char *name;
-    ECDSA_SIG *(*ecdsa_do_sign) (const unsigned char *dgst, int dgst_len,
-                                 const BIGNUM *inv, const BIGNUM *rp,
-                                 EC_KEY *eckey);
-    int (*ecdsa_sign_setup) (EC_KEY *eckey, BN_CTX *ctx, BIGNUM **kinv,
-                             BIGNUM **r);
-    int (*ecdsa_do_verify) (const unsigned char *dgst, int dgst_len,
-                            const ECDSA_SIG *sig, EC_KEY *eckey);
-# if 0
-    int (*init) (EC_KEY *eckey);
-    int (*finish) (EC_KEY *eckey);
-# endif
-    int flags;
-    void *app_data;
-};
-#   endif /*ndef HAVE_ECDSA_METHOD_NAME*/
-
-
-static inline ECDSA_METHOD*
-ECDSA_METHOD_new(const ECDSA_METHOD *ecdsa_method)
-{
-    (void)ecdsa_method;
-    return(OPENSSL_malloc(sizeof(ECDSA_METHOD)));
-}
-
-static inline void
-ECDSA_METHOD_set_sign(
-    ECDSA_METHOD *ecdsa_method,
-    ECDSA_SIG *(*ecdsa_do_sign) (
-        const unsigned char *dgst, int dgst_len,
-        const BIGNUM *inv, const BIGNUM *rp, EC_KEY *eckey)
-) {
-    ecdsa_method->ecdsa_do_sign = ecdsa_do_sign;
-}
-
-#  endif /*ndef HAVE_ECDSA_METHOD_NEW		OpenSSL < 1.0.2 */
-# endif /*ndef HAVE_EC_KEY_METHOD_NEW		OpenSSL < 1.1 */
-#endif /*OPENSSL_HAS_ECC*/
-
-
 #ifndef HAVE_DH_GET0_KEY		/* OpenSSL < 1.1 */
 /* Partial backport of opaque DH from OpenSSL >= 1.1, commits
  * "Make DH opaque", "RSA, DSA, DH: Allow some given input to be NULL
