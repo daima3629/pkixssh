@@ -410,53 +410,10 @@ do_convert_to_ssh2(struct passwd *pw, struct sshkey *k)
 	exit(0);
 }
 
-static void
-do_convert_to_pkcs8(struct sshkey *k)
-{
-	switch (sshkey_type_plain(k->type)) {
-	case KEY_RSA:
-		if (!PEM_write_RSA_PUBKEY(stdout, k->rsa))
-			fatal("PEM_write_RSA_PUBKEY failed");
-		break;
-	case KEY_DSA:
-		if (!PEM_write_DSA_PUBKEY(stdout, k->dsa))
-			fatal("PEM_write_DSA_PUBKEY failed");
-		break;
-#ifdef OPENSSL_HAS_ECC
-	case KEY_ECDSA:
-		if (!PEM_write_EC_PUBKEY(stdout, k->ecdsa))
-			fatal("PEM_write_EC_PUBKEY failed");
-		break;
-#endif
-	default:
-		fatal_f("unsupported key type %s", sshkey_type(k));
-	}
-	exit(0);
-}
 
-static void
-do_convert_to_pem(struct sshkey *k)
-{
-	switch (sshkey_type_plain(k->type)) {
-	case KEY_RSA:
-		if (!PEM_write_RSAPublicKey(stdout, k->rsa))
-			fatal("PEM_write_RSAPublicKey failed");
-		break;
-	case KEY_DSA:
-		if (!PEM_write_DSA_PUBKEY(stdout, k->dsa))
-			fatal("PEM_write_DSA_PUBKEY failed");
-		break;
-#ifdef OPENSSL_HAS_ECC
-	case KEY_ECDSA:
-		if (!PEM_write_EC_PUBKEY(stdout, k->ecdsa))
-			fatal("PEM_write_EC_PUBKEY failed");
-		break;
-#endif
-	default:
-		fatal_f("unsupported key type %s", sshkey_type(k));
-	}
-	exit(0);
-}
+/* defined in sshkey-crypto.c but used only localy here */
+extern int
+sshkey_public_to_fp(struct sshkey *key, FILE *fp, int format);
 
 static void
 do_convert_to(struct passwd *pw)
@@ -476,10 +433,12 @@ do_convert_to(struct passwd *pw)
 		do_convert_to_ssh2(pw, k);
 		break;
 	case FMT_PKCS8:
-		do_convert_to_pkcs8(k);
+		if (sshkey_public_to_fp(k, stdout, SSHKEY_PRIVATE_PKCS8) != 0)
+			fatal_f("unsupported key type %s", sshkey_type(k));
 		break;
 	case FMT_PEM:
-		do_convert_to_pem(k);
+		if (sshkey_public_to_fp(k, stdout, SSHKEY_PRIVATE_PEM) != 0)
+			fatal_f("unsupported key type %s", sshkey_type(k));
 		break;
 	default:
 		fatal_f("unknown key format %d", convert_format);
@@ -487,12 +446,12 @@ do_convert_to(struct passwd *pw)
 	exit(0);
 }
 
+
 /* defined in sshkey-crypto.c but used only localy here */
 extern int
 sshbuf_read_custom_rsa(struct sshbuf *buf, struct sshkey *key);
 extern int
 sshbuf_read_custom_dsa(struct sshbuf *buf, struct sshkey *key);
-
 
 static struct sshkey *
 do_convert_private_ssh2(struct sshbuf *b)

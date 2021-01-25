@@ -1163,6 +1163,10 @@ sshbuf_read_custom_rsa(struct sshbuf *buf, struct sshkey *key);
 extern int
 sshbuf_read_custom_dsa(struct sshbuf *buf, struct sshkey *key);
 
+extern int
+sshkey_public_to_fp(struct sshkey *key, FILE *fp, int format);
+
+
 int
 sshbuf_read_custom_rsa(struct sshbuf *buf, struct sshkey *key) {
 	int r;
@@ -1283,6 +1287,28 @@ out:
 	BN_clear_free(priv_key);
 
 	return r;
+}
+
+
+int
+sshkey_public_to_fp(struct sshkey *key, FILE *fp, int format) {
+	int res;
+
+	if ((format != SSHKEY_PRIVATE_PEM) &&
+	    (format != SSHKEY_PRIVATE_PKCS8))
+		return SSH_ERR_INVALID_ARGUMENT;
+
+	if (key->pk == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+
+	if ((format == SSHKEY_PRIVATE_PEM) &&
+	    /* Traditional PEM is available only for RSA */
+	    (key->type == KEY_RSA))
+		res = PEM_write_RSAPublicKey(fp, key->rsa);
+	else
+		res = PEM_write_PUBKEY(fp, key->pk);
+
+	return res ? 0 : SSH_ERR_LIBCRYPTO_ERROR;
 }
 
 #else
