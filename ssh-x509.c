@@ -1583,7 +1583,7 @@ plain_alg:
 	ret = realloc(ret, sizeof(*ret) * (n + 2));
 	if (ret == NULL) return NULL;
 
-	ret[n++] = sshkey_name_from_types(key->type, key->ecdsa_nid);
+	ret[n++] = sshkey_ssh_name_plain(key);
 	ret[n] = NULL;
 
 	/* add extra algorithms */

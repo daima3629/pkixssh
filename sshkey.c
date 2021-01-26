@@ -3,7 +3,7 @@
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Alexander von Gernler.  All rights reserved.
  * Copyright (c) 2010,2011 Damien Miller.  All rights reserved.
- * Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -224,11 +224,6 @@ sshkey_ssh_name_plain(const struct sshkey *k)
 {
 	return sshkey_ssh_name_from_type_nid(sshkey_type_plain(k->type),
 	    k->ecdsa_nid);
-}
-
-const char *
-sshkey_name_from_types(int type, int subtype) {
-	return sshkey_ssh_name_from_type_nid(type, subtype);
 }
 
 int

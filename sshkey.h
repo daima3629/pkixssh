@@ -211,7 +211,6 @@ sshkey_unshield_private(struct sshkey *key) {
 
 int	 sshkey_type_from_name(const char *);
 void	 sshkey_types_from_name(const char *name, int *type, int *subtype);
-const char	*sshkey_name_from_types(int type, int subtype);
 int	 sshkey_is_cert(const struct sshkey *);
 int	 sshkey_type_is_cert(int);
 int	 sshkey_type_plain(int);
