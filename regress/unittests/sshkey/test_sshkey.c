@@ -16,12 +16,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <openssl/bn.h>
-#include <openssl/rsa.h>
-#include <openssl/dsa.h>
-#if defined(OPENSSL_HAS_ECC) && defined(OPENSSL_HAS_NISTP256)
-# include <openssl/ec.h>
-#endif
 #include "evp-compat.h"
 
 #include "../test_helper/test_helper.h"
@@ -34,6 +28,42 @@
 #include "authfile.h"
 #include "common.h"
 #include "ssh2.h"
+
+
+/* TODO: rewrite or remove direct RSA tests */
+#ifndef HAVE_RSA_GET0_KEY
+/* opaque RSA key structure */
+static inline void
+RSA_get0_key(const RSA *rsa, const BIGNUM **n, const BIGNUM **e, const BIGNUM **d) {
+	if (n != NULL) *n = rsa->n;
+	if (e != NULL) *e = rsa->e;
+	if (d != NULL) *d = rsa->d;
+}
+
+static inline void
+RSA_get0_factors(const RSA *rsa, const BIGNUM **p, const BIGNUM **q) {
+	if (p != NULL) *p = rsa->p;
+	if (q != NULL) *q = rsa->q;
+}
+#endif /*ndef HAVE_RSA_GET0_KEY*/
+
+/* TODO: rewrite or remove direct DSA tests */
+#ifndef HAVE_DSA_GET0_KEY
+/* opaque DSA key structure */
+static inline void
+DSA_get0_key(const DSA *dsa, const BIGNUM **pub_key, const BIGNUM **priv_key) {
+	if (pub_key  != NULL) *pub_key  = dsa->pub_key;
+	if (priv_key != NULL) *priv_key = dsa->priv_key;
+}
+
+static inline void
+DSA_get0_pqg(const DSA *dsa, const BIGNUM **p, const BIGNUM **q, const BIGNUM **g) {
+	if (p != NULL) *p = dsa->p;
+	if (q != NULL) *q = dsa->q;
+	if (g != NULL) *g = dsa->g;
+}
+#endif /*ndef HAVE_DSA_GET0_KEY*/
+
 
 void sshkey_tests(void);
 
