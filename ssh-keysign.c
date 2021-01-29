@@ -1,7 +1,7 @@
 /* $OpenBSD: ssh-keysign.c,v 1.66 2020/12/17 23:10:27 djm Exp $ */
 /*
  * Copyright (c) 2002 Markus Friedl.  All rights reserved.
- * Copyright (c) 2011-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -128,7 +128,7 @@ X509_LOOKUP_ldap(void) {
 
 
 static int
-valid_request(struct passwd *pw, char *host, struct sshkey **ret,
+valid_request(struct passwd *pw, char *host, struct sshkey **retkey, char **retalg,
     u_char *data, size_t datalen)
 {
 	struct sshbuf *b;
@@ -136,11 +136,13 @@ valid_request(struct passwd *pw, char *host, struct sshkey **ret,
 	u_char type, *pkblob;
 	char *p;
 	size_t blen, len;
-	char *pkalg, *luser;
+	char *pkalg = NULL, *luser;
 	int r, pktype, fail;
 
-	if (ret != NULL)
-		*ret = NULL;
+	if (retkey != NULL)
+		*retkey = NULL;
+	if (retalg != NULL)
+		*retalg = NULL;
 	fail = 0;
 
 	if ((b = sshbuf_from(data, datalen)) == NULL)
@@ -188,7 +190,6 @@ valid_request(struct passwd *pw, char *host, struct sshkey **ret,
 		fail++;
 	} else if (key->type != pktype)
 		fail++;
-	free(pkalg);
 	free(pkblob);
 
 	/* client host name, handle trailing dot */
@@ -218,10 +219,19 @@ valid_request(struct passwd *pw, char *host, struct sshkey **ret,
 
 	debug3_f("fail %d", fail);
 
-	if (fail)
-		sshkey_free(key);
-	else if (ret != NULL)
-		*ret = key;
+	if (fail == 0) {
+		if (retkey != NULL) {
+			*retkey = key;
+			key = NULL;
+		}
+		if (retalg != NULL) {
+			*retalg = pkalg;
+			pkalg= NULL;
+		}
+	}
+
+	sshkey_free(key);
+	free(pkalg);
 
 	return (fail ? -1 : 0);
 }
@@ -236,7 +246,7 @@ main(int argc, char **argv)
 	struct passwd *pw;
 	int r, key_fd[NUM_KEYTYPES], i, found, version = 2, fd;
 	u_char *signature, *data, rver;
-	char *host, *fp;
+	char *host, *fp, *alg = NULL;
 	size_t slen, dlen;
 
 	UNUSED(argc);
@@ -345,7 +355,7 @@ main(int argc, char **argv)
 
 	if ((r = sshbuf_get_string(b, &data, &dlen)) != 0)
 		fatal_r(r, "%s: buffer error", __progname);
-	if (valid_request(pw, host, &key, data, dlen) < 0)
+	if (valid_request(pw, host, &key, &alg, data, dlen) < 0)
 		fatal("%s: not a valid request", __progname);
 	free(host);
 
@@ -366,7 +376,7 @@ main(int argc, char **argv)
 	}
 
 {	ssh_compat ctx_compat = { 0, 0 }; /* TODO-Xkey_sign compat */
-	ssh_sign_ctx ctx = { NULL, keys[i], &ctx_compat, NULL, NULL };
+	ssh_sign_ctx ctx = { alg, keys[i], &ctx_compat, NULL, NULL };
 
 	if ((r = Xkey_sign(&ctx, &signature, &slen, data, dlen)) != 0)
 		fatal_r(r, "%s: Xkey_sign failed", __progname);
