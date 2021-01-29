@@ -637,7 +637,7 @@ check_host_cert(const char *host, const struct sshkey *key)
 	const char *reason;
 	int r;
 
-	if (sshkey_cert_check_authority(key, 1, 0, host, &reason) != 0) {
+	if (sshkey_cert_check_authority(key, 1, 0, 0, host, &reason) != 0) {
 		error("%s", reason);
 		return 0;
 	}
