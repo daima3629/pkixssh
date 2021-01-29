@@ -1,4 +1,4 @@
-/* $OpenBSD: sshconnect2.c,v 1.340 2020/12/29 00:59:15 djm Exp $ */
+/* $OpenBSD: sshconnect2.c,v 1.344 2021/01/26 05:32:22 dtucker Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Damien Miller.  All rights reserved.
@@ -315,8 +315,8 @@ struct cauthctxt {
 	int agent_fd;
 	/* hostbased */
 	Sensitive *sensitive;
-	char *oktypes, *ktypes;
-	const char *active_ktype;
+	char *pkalg_list;
+	const char *active_pkalg;
 	/* kbd-interactive */
 	int info_req_seen;
 	int attempt_kbdint;
@@ -430,7 +430,8 @@ ssh_userauth2(struct ssh *ssh, const char *local_user,
 	authctxt.authlist = NULL;
 	authctxt.methoddata = NULL;
 	authctxt.sensitive = sensitive;
-	authctxt.active_ktype = authctxt.oktypes = authctxt.ktypes = NULL;
+	authctxt.pkalg_list = NULL;
+	authctxt.active_pkalg = NULL;
 	authctxt.info_req_seen = 0;
 	authctxt.attempt_kbdint = 0;
 	authctxt.attempt_passwd = 0;
@@ -2049,22 +2050,38 @@ userauth_hostbased(struct ssh *ssh)
 	size_t siglen = 0, keylen = 0;
 	int i, r, success = 0;
 
-	if (authctxt->ktypes == NULL) {
-		authctxt->oktypes = xstrdup(options.hostbased_key_types);
-		authctxt->ktypes = authctxt->oktypes;
+{	/* finalize set of client option HostbasedAlgorithms */
+	char *defalgs = default_hostkey_algorithms();
+
+	if ((options.hostbased_algorithms != NULL) &&
+	    (strcmp(options.hostbased_algorithms, "*") != 0)
+	) {
+		/* Assemble */
+		char *allalgs = sshkey_alg_list(0, 0, 1, ',');
+		if (kex_assemble_names(&options.hostbased_algorithms,
+		    defalgs, allalgs) != 0)
+			fatal_f("kex_assemble_names failed");
+		free(allalgs);
+		free(defalgs);
+	} else {
+		/* Enforce default */
+		free(options.hostbased_algorithms);
+		options.hostbased_algorithms = defalgs;
 	}
+}
+	if (authctxt->pkalg_list == NULL)
+		authctxt->pkalg_list = xstrdup(options.hostbased_algorithms);
 
 	/*
-	 * Work through each listed type pattern in HostbasedKeyTypes,
-	 * trying each hostkey that matches the type in turn.
+	 * Work through each listed algorithm pattern in HostbasedAlgorithms,
+	 * trying each hostkey that matches the algorithm in turn.
 	 */
 	for (;;) {
-		if (authctxt->active_ktype == NULL)
-			authctxt->active_ktype = strsep(&authctxt->ktypes, ",");
-		if (authctxt->active_ktype == NULL ||
-		    *authctxt->active_ktype == '\0')
+		authctxt->active_pkalg = strsep(&authctxt->pkalg_list, ",");
+		if (authctxt->active_pkalg == NULL ||
+		    *authctxt->active_pkalg == '\0')
 			break;
-		debug3_f("trying key type %s", authctxt->active_ktype);
+		debug3_f("trying algorithm %s", authctxt->active_pkalg);
 
 		/* check for a useful key */
 		private = NULL;
@@ -2072,25 +2089,35 @@ userauth_hostbased(struct ssh *ssh)
 			if (authctxt->sensitive->keys[i] == NULL ||
 			    authctxt->sensitive->keys[i]->type == KEY_UNSPEC)
 				continue;
-			if (match_pattern_list(
-			    sshkey_ssh_name(authctxt->sensitive->keys[i]),
-			    authctxt->active_ktype, 0) != 1)
-				continue;
-			/* we take and free the key */
+
+			pkalg = NULL;
+		{	const char **key_algs = Xkey_algoriths(authctxt->sensitive->keys[i]);
+			const char **p;
+			for (p = key_algs; *p != NULL; p++) {
+				if (strcmp(*p, authctxt->active_pkalg) == 0) {
+					pkalg = *p;
+					break;
+				}
+			}
+			free(key_algs);
+		}
+			if (pkalg == NULL) continue;
+			if (!pkalg_match(pkalg, ssh->kex->pkalgs)) continue;
+
 			private = authctxt->sensitive->keys[i];
-			authctxt->sensitive->keys[i] = NULL;
 			break;
 		}
 		/* Found one */
 		if (private != NULL)
 			break;
 		/* No more keys of this type; advance */
-		authctxt->active_ktype = NULL;
+		authctxt->active_pkalg = NULL;
 	}
 	if (private == NULL) {
-		free(authctxt->oktypes);
-		authctxt->oktypes = authctxt->ktypes = NULL;
-		authctxt->active_ktype = NULL;
+		free(authctxt->pkalg_list);
+		authctxt->pkalg_list = NULL;
+		free((void*)authctxt->active_pkalg);
+		authctxt->active_pkalg = NULL;
 		debug("No more client hostkeys for hostbased authentication.");
 		goto out;
 	}
@@ -2100,7 +2127,6 @@ userauth_hostbased(struct ssh *ssh)
 		error_f("sshkey_fingerprint failed");
 		goto out;
 	}
-	pkalg = sshkey_ssh_name(private);
 	debug_f("trying hostkey %s %s", pkalg, fp);
 
 	/* figure out a name for the client host */
@@ -2128,7 +2154,7 @@ userauth_hostbased(struct ssh *ssh)
 	    (r = sshbuf_put_cstring(b, authctxt->server_user)) != 0 ||
 	    (r = sshbuf_put_cstring(b, authctxt->service)) != 0 ||
 	    (r = sshbuf_put_cstring(b, authctxt->method->name)) != 0 ||
-	    (r = sshbuf_put_cstring(b, sshkey_ssh_name(private))) != 0 ||
+	    (r = sshbuf_put_cstring(b, pkalg)) != 0 ||
 	    (r = sshbuf_put_string(b, keyblob, keylen)) != 0 ||
 	    (r = sshbuf_put_cstring(b, chost)) != 0 ||
 	    (r = sshbuf_put_cstring(b, authctxt->local_user)) != 0) {
@@ -2142,14 +2168,14 @@ userauth_hostbased(struct ssh *ssh)
 	if ((r = ssh_keysign(ssh, private, &sig, &siglen,
 	    sshbuf_ptr(b), sshbuf_len(b))) != 0) {
 		error("sign using hostkey %s %s failed",
-		    sshkey_ssh_name(private), fp);
+		    pkalg, fp);
 		goto out;
 	}
 	if ((r = sshpkt_start(ssh, SSH2_MSG_USERAUTH_REQUEST)) != 0 ||
 	    (r = sshpkt_put_cstring(ssh, authctxt->server_user)) != 0 ||
 	    (r = sshpkt_put_cstring(ssh, authctxt->service)) != 0 ||
 	    (r = sshpkt_put_cstring(ssh, authctxt->method->name)) != 0 ||
-	    (r = sshpkt_put_cstring(ssh, sshkey_ssh_name(private))) != 0 ||
+	    (r = sshpkt_put_cstring(ssh, pkalg)) != 0 ||
 	    (r = sshpkt_put_string(ssh, keyblob, keylen)) != 0 ||
 	    (r = sshpkt_put_cstring(ssh, chost)) != 0 ||
 	    (r = sshpkt_put_cstring(ssh, authctxt->local_user)) != 0 ||
@@ -2167,7 +2193,6 @@ userauth_hostbased(struct ssh *ssh)
 	free(lname);
 	free(fp);
 	free(chost);
-	sshkey_free(private);
 	sshbuf_free(b);
 
 	return success;
