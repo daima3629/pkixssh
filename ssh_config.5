@@ -20,7 +20,7 @@
 .\" Copyright (c) 1999,2000 Markus Friedl.  All rights reserved.
 .\" Copyright (c) 1999 Aaron Campbell.  All rights reserved.
 .\" Copyright (c) 1999 Theo de Raadt.  All rights reserved.
-.\" Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
+.\" Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
 .\"
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions
@@ -42,8 +42,8 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: ssh_config.5,v 1.342 2021/01/14 19:45:06 rob Exp $
-.Dd $Mdocdate: January 14 2021 $
+.\" $OpenBSD: ssh_config.5,v 1.345 2021/01/26 15:40:17 naddy Exp $
+.Dd $Mdocdate: January 29 2021 $
 .Dt SSH_CONFIG 5
 .Os
 .Sh NAME
@@ -884,18 +884,9 @@ Note that existing names and addresses in known hosts files
 will not be converted automatically,
 but may be manually hashed using
 .Xr ssh-keygen 1 .
-.It Cm HostbasedAuthentication
-Specifies whether to try rhosts based authentication with public key
-authentication.
-The argument must be
-.Cm yes
-or
-.Cm no
-(the default).
-.It Cm HostbasedKeyTypes
+.It Cm HostbasedAcceptedAlgorithms
 Option compatibility. See
 .Cm HostbasedAlgorithms
-.Pp
 .It Cm HostbasedAlgorithms
 Specifies the publickey algorithms that will be used in
 .Cm hostbased
@@ -910,6 +901,17 @@ Note algorithms that use X.509 certificates depend from option
 .Cm X509KeyAlgorithm .
 The list of supported algorithms may also be obtained using
 .Qq ssh -Q key .
+.It Cm HostbasedAuthentication
+Specifies whether to try rhosts based authentication with public key
+authentication.
+The argument must be
+.Cm yes
+or
+.Cm no
+(the default).
+.It Cm HostbasedKeyTypes
+Option compatibility. See
+.Cm HostbasedAlgorithms
 .It Cm HostKeyAlgorithms
 Specifies the host key algorithms
 that the client wants to use in order of preference.
@@ -1473,6 +1475,9 @@ will pass a connected file descriptor back to
 instead of continuing to execute and pass data.
 The default is
 .Cm no .
+.It Cm PubkeyAcceptedAlgorithms
+Option compatibility. See
+.Cm PubkeyAlgorithms
 .It Cm PubkeyAcceptedKeyTypes
 Option compatibility. See
 .Cm PubkeyAlgorithms

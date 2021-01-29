@@ -1,4 +1,4 @@
-/* $OpenBSD: servconf.c,v 1.373 2021/01/11 04:48:22 dtucker Exp $ */
+/* $OpenBSD: servconf.c,v 1.375 2021/01/26 05:32:21 dtucker Exp $ */
 /*
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
@@ -167,10 +167,8 @@ initialize_server_options(ServerOptions *options)
 	options->log_verbose = NULL;
 	options->hostbased_authentication = -1;
 	options->hostbased_uses_name_from_packet_only = -1;
-	options->hostbased_key_types = NULL;
 	options->hostkeyalgorithms = NULL;
 	options->pubkey_authentication = -1;
-	options->pubkey_key_types = NULL;
 	options->kerberos_authentication = -1;
 	options->kerberos_or_local_passwd = -1;
 	options->kerberos_ticket_cleanup = -1;
@@ -550,7 +548,6 @@ fill_default_server_options(ServerOptions *options)
 			    options->hostbased_algorithms);
 	} else
 		options->hostbased_algorithms = xstrdup("*");
-	options->hostbased_key_types = xstrdup(options->hostbased_algorithms); /* for compatibility */
 
 	if (options->pubkey_algorithms != NULL) {
 		if (!sshkey_names_valid2(options->pubkey_algorithms, 1))
@@ -558,7 +555,6 @@ fill_default_server_options(ServerOptions *options)
 			    options->pubkey_algorithms);
 	} else
 		options->pubkey_algorithms = xstrdup("*");
-	options->pubkey_key_types = xstrdup(options->pubkey_algorithms); /* for compatibility */
 
 	if (options->hostkeyalgorithms != NULL) {
 		if (!sshkey_names_valid2(options->hostkeyalgorithms, 1))
@@ -610,10 +606,10 @@ typedef enum {
 	sPermitUserEnvironment, sAllowTcpForwarding, sCompression,
 	sRekeyLimit, sAllowUsers, sDenyUsers, sAllowGroups, sDenyGroups,
 	sIgnoreUserKnownHosts, sCiphers, sMacs, sPidFile,
-	sGatewayPorts, sPubkeyAuthentication, sPubkeyAcceptedKeyTypes,
+	sGatewayPorts, sPubkeyAuthentication, sPubkeyAcceptedAlgorithms,
 	sXAuthLocation, sSubsystem, sMaxStartups, sMaxAuthTries, sMaxSessions,
 	sBanner, sUseDNS, sHostbasedAuthentication,
-	sHostbasedUsesNameFromPacketOnly, sHostbasedAcceptedKeyTypes,
+	sHostbasedUsesNameFromPacketOnly, sHostbasedAcceptedAlgorithms,
 	sHostKeyAlgorithms, sPerSourceMaxStartups, sPerSourceNetBlockSize,
 	sClientAliveInterval, sClientAliveCountMax, sAuthorizedKeysFile,
 	sGssAuthentication, sGssCleanupCreds, sGssStrictAcceptor,
@@ -686,11 +682,13 @@ static struct {
 	{ "rhostsrsaauthentication", sDeprecated, SSHCFG_ALL },
 	{ "hostbasedauthentication", sHostbasedAuthentication, SSHCFG_ALL },
 	{ "hostbasedusesnamefrompacketonly", sHostbasedUsesNameFromPacketOnly, SSHCFG_ALL },
-	{ "hostbasedacceptedkeytypes", sHostbasedAcceptedKeyTypes, SSHCFG_ALL },
+	{ "hostbasedacceptedkeytypes", sHostbasedAcceptedAlgorithms, SSHCFG_ALL }, /* obsolete */
+	{ "hostbasedacceptedalgorithms", sHostbasedAcceptedAlgorithms, SSHCFG_ALL },
 	{ "hostkeyalgorithms", sHostKeyAlgorithms, SSHCFG_GLOBAL },
 	{ "rsaauthentication", sDeprecated, SSHCFG_ALL },
 	{ "pubkeyauthentication", sPubkeyAuthentication, SSHCFG_ALL },
-	{ "pubkeyacceptedkeytypes", sPubkeyAcceptedKeyTypes, SSHCFG_ALL },
+	{ "pubkeyacceptedkeytypes", sPubkeyAcceptedAlgorithms, SSHCFG_ALL }, /* obsolete */
+	{ "pubkeyacceptedalgorithms", sPubkeyAcceptedAlgorithms, SSHCFG_ALL },
 	{ "dsaauthentication", sPubkeyAuthentication, SSHCFG_GLOBAL }, /* alias */
 #ifdef KRB5
 	{ "kerberosauthentication", sKerberosAuthentication, SSHCFG_ALL },
@@ -1473,7 +1471,7 @@ process_server_config_line_depth(ServerOptions *options, char *line,
 		goto parse_flag;
 
 	/* X.509 Standard Options */
-	case sHostbasedAcceptedKeyTypes:	/* for compatibility */
+	case sHostbasedAcceptedAlgorithms:	/* compatibility ;) */
 	case sHostbasedAlgorithms:
 		arg = strdelim(&cp);
 		if (!arg || *arg == '\0')
@@ -1483,7 +1481,7 @@ process_server_config_line_depth(ServerOptions *options, char *line,
 			options->hostbased_algorithms = xstrdup(arg);
 		break;
 
-	case sPubkeyAcceptedKeyTypes:		/* for compatibility */
+	case sPubkeyAcceptedAlgorithms:		/* compatibility ;) */
 	case sPubkeyAlgorithms:
 		arg = strdelim(&cp);
 		if (!arg || *arg == '\0')
@@ -1779,15 +1777,9 @@ parse_string:
 		intptr = &options->hostbased_uses_name_from_packet_only;
 		goto parse_flag;
 
-#if 0	/* already defined as sHostbasedAlgorithms */
-	case sHostbasedAcceptedKeyTypes:
-		charptr = &options->hostbased_key_types;
-		goto parse_keytypes;
-#endif
-
 	case sHostKeyAlgorithms:
 		charptr = &options->hostkeyalgorithms;
- parse_keytypes:
+ parse_key_algorithms:
 		arg = strdelim(&cp);
 		if (!arg || *arg == '\0')
 			fatal("%s line %d: Missing argument.",
@@ -1805,17 +1797,11 @@ parse_string:
 
 	case sCASignatureAlgorithms:
 		charptr = &options->ca_sign_algorithms;
-		goto parse_keytypes;
+		goto parse_key_algorithms;
 
 	case sPubkeyAuthentication:
 		intptr = &options->pubkey_authentication;
 		goto parse_flag;
-
-#if 0	/* already defined as sPubkeyAlgorithms */
-	case sPubkeyAcceptedKeyTypes:
-		charptr = &options->pubkey_key_types;
-		goto parse_keytypes;
-#endif
 
 	case sKerberosAuthentication:
 		intptr = &options->kerberos_authentication;
@@ -2883,12 +2869,6 @@ copy_set_server_options(ServerOptions *dst, ServerOptions *src, int preauth)
 
 	/* See comment in servconf.h */
 	COPY_MATCH_STRING_OPTS();
-
-	/* for compatibility */
-	free(dst->hostbased_key_types);
-	dst->hostbased_key_types = xstrdup(dst->hostbased_algorithms);
-	free(dst->pubkey_key_types);
-	dst->pubkey_key_types = xstrdup(dst->pubkey_algorithms);
 
 	/*
 	 * The only things that should be below this point are string options

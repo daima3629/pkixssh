@@ -1,5 +1,4 @@
-/* $OpenBSD: readconf.h,v 1.136 2020/12/17 23:10:27 djm Exp $ */
-
+/* $OpenBSD: readconf.h,v 1.139 2021/01/26 05:32:21 dtucker Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -12,7 +11,7 @@
  * incompatible with the protocol description in the RFC file, it must be
  * called by a name other than "ssh" or "Secure Shell".
  *
- * Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -90,7 +89,7 @@ typedef struct {
 						 * prompts. */
 	char   *ciphers;	/* SSH2 ciphers in order of preference. */
 	char   *macs;		/* SSH2 macs in order of preference. */
-	char   *hostkeyalgorithms;	/* SSH2 server key types in order of preference. */
+	char   *hostkeyalgorithms;	/* SSH2 server host-key algorithms in order of preference. */
 	char   *kex_algorithms;	/* SSH2 kex methods in order of preference. */
 	char   *ca_sign_algorithms;	/* Allowed CA signature algorithms */
 	char   *hostname;	/* Real host to connect. */
@@ -200,9 +199,6 @@ typedef struct {
 	int	 fingerprint_hash;
 
 	int	 update_hostkeys; /* one of SSH_UPDATE_HOSTKEYS_* */
-
-	char   *hostbased_key_types;
-	char   *pubkey_key_types;
 
 	char   *jump_user;
 	char   *jump_host;

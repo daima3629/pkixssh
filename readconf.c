@@ -1,4 +1,4 @@
-/* $OpenBSD: readconf.c,v 1.348 2021/01/08 04:49:13 djm Exp $ */
+/* $OpenBSD: readconf.c,v 1.350 2021/01/26 05:32:21 dtucker Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -11,7 +11,7 @@
  * incompatible with the protocol description in the RFC file, it must be
  * called by a name other than "ssh" or "Secure Shell".
  *
- * Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -206,8 +206,8 @@ typedef enum {
 	oCanonicalDomains, oCanonicalizeHostname, oCanonicalizeMaxDots,
 	oCanonicalizeFallbackLocal, oCanonicalizePermittedCNAMEs,
 	oStreamLocalBindMask, oStreamLocalBindUnlink, oRevokedHostKeys,
-	oFingerprintHash, oUpdateHostkeys, oHostbasedKeyTypes,
-	oPubkeyAcceptedKeyTypes, oCASignatureAlgorithms, oProxyJump,
+	oFingerprintHash, oUpdateHostkeys, oHostbasedAcceptedAlgorithms,
+	oPubkeyAcceptedAlgorithms, oCASignatureAlgorithms, oProxyJump,
 	oSecurityKeyProvider,
 	oIgnore, oIgnoredUnknownOption, oDeprecated, oUnsupported
 } OpCodes;
@@ -365,8 +365,10 @@ static struct {
 	{ "revokedhostkeys", oRevokedHostKeys },
 	{ "fingerprinthash", oFingerprintHash },
 	{ "updatehostkeys", oUpdateHostkeys },
-	{ "hostbasedkeytypes", oHostbasedKeyTypes },
-	{ "pubkeyacceptedkeytypes", oPubkeyAcceptedKeyTypes },
+	{ "hostbasedkeytypes", oHostbasedAcceptedAlgorithms }, /* obsolete */
+	{ "hostbasedacceptedalgorithms", oHostbasedAcceptedAlgorithms },
+	{ "pubkeyacceptedkeytypes", oPubkeyAcceptedAlgorithms }, /* obsolete */
+	{ "pubkeyacceptedalgorithms", oPubkeyAcceptedAlgorithms },
 	{ "ignoreunknown", oIgnoreUnknown },
 	{ "proxyjump", oProxyJump },
 
@@ -984,7 +986,7 @@ process_config_line_depth(Options *options, struct passwd *pw, const char *host,
 		    filename, linenum, keyword);
 		return 0;
 	/* X.509 Standard Options */
-	case oHostbasedKeyTypes:	/* for compatibility */
+	case oHostbasedAcceptedAlgorithms:	/* compatibility ;) */
 	case oHostbasedAlgorithms:
 		charptr = (char**)&options->hostbased_algorithms;
 		arg = strdelim(&s);
@@ -997,7 +999,7 @@ process_config_line_depth(Options *options, struct passwd *pw, const char *host,
 			*charptr = xstrdup(arg);
 		break;
 
-	case oPubkeyAcceptedKeyTypes:	/* for compatibility */
+	case oPubkeyAcceptedAlgorithms:		/* compatibility ;) */
 	case oPubkeyAlgorithms:
 		charptr = (char**)&options->pubkey_algorithms;
 		arg = strdelim(&s);
@@ -1543,7 +1545,7 @@ parse_int:
 
 	case oHostKeyAlgorithms:
 		charptr = &options->hostkeyalgorithms;
-parse_keytypes:
+parse_key_algorithms:
 		arg = strdelim(&s);
 		if (!arg || *arg == '\0') {
 			error("%.200s line %d: Missing argument.",
@@ -1565,7 +1567,7 @@ parse_keytypes:
 
 	case oCASignatureAlgorithms:
 		charptr = &options->ca_sign_algorithms;
-		goto parse_keytypes;
+		goto parse_key_algorithms;
 
 	case oLogLevel:
 		log_level_ptr = &options->log_level;
@@ -2096,18 +2098,6 @@ parse_keytypes:
 		multistate_ptr = multistate_yesnoask;
 		goto parse_multistate;
 
-#if 0 /* already defined as oHostbasedAlgorithms */
-	case oHostbasedKeyTypes:
-		charptr = &options->hostbased_key_types;
-		goto parse_keytypes;
-#endif
-
-#if 0 /* already defined as oPubkeyAlgorithms */
-	case oPubkeyAcceptedKeyTypes:
-		charptr = &options->pubkey_key_types;
-		goto parse_keytypes;
-#endif
-
 	case oAddKeysToAgent:
 		arg = strdelim(&s);
 		arg2 = strdelim(&s);
@@ -2406,8 +2396,6 @@ initialize_options(Options * options)
 	options->revoked_host_keys = NULL;
 	options->fingerprint_hash = -1;
 	options->update_hostkeys = -1;
-	options->hostbased_key_types = NULL;
-	options->pubkey_key_types = NULL;
 }
 
 /*
@@ -2674,7 +2662,6 @@ fill_default_options(Options * options)
 		}
 	} else
 		options->hostbased_algorithms = xstrdup("*");
-	options->hostbased_key_types = xstrdup(options->hostbased_algorithms); /* for compatibility */
 
 	if (options->pubkey_algorithms != NULL) {
 		if (!sshkey_names_valid2(options->pubkey_algorithms, 1)) {
@@ -2684,7 +2671,6 @@ fill_default_options(Options * options)
 		}
 	} else
 		options->pubkey_algorithms = xstrdup("*");
-	options->pubkey_key_types = xstrdup(options->pubkey_algorithms); /* for compatibility */
 
 	return 0;
 }

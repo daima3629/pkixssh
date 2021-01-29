@@ -20,7 +20,7 @@
 .\" Copyright (c) 1999,2000 Markus Friedl.  All rights reserved.
 .\" Copyright (c) 1999 Aaron Campbell.  All rights reserved.
 .\" Copyright (c) 1999 Theo de Raadt.  All rights reserved.
-.\" Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
+.\" Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
 .\"
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions
@@ -42,8 +42,8 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: sshd_config.5,v 1.323 2021/01/14 19:45:06 rob Exp $
-.Dd $Mdocdate: January 14 2021 $
+.\" $OpenBSD: sshd_config.5,v 1.325 2021/01/26 05:32:22 dtucker Exp $
+.Dd $Mdocdate: January 29 2021 $
 .Dt SSHD_CONFIG 5
 .Os
 .Sh NAME
@@ -762,10 +762,12 @@ machine's default store.
 This facility is provided to assist with operation on multi homed machines.
 The default is
 .Cm yes .
+.It Cm HostbasedAcceptedAlgorithms
+Option compatibility. See
+.Cm HostbasedAlgorithms
 .It Cm HostbasedAcceptedKeyTypes
 Option compatibility. See
 .Cm HostbasedAlgorithms
-.Pp
 .It Cm HostbasedAlgorithms
 Specifies the publickey algorithms that will be accepted in
 .Dq hostbased
@@ -1305,7 +1307,6 @@ Available keywords are
 .Cm ForceCommand ,
 .Cm GatewayPorts ,
 .Cm GSSAPIAuthentication ,
-.Cm HostbasedAcceptedKeyTypes ,
 .Cm HostbasedAlgorithms ,
 .Cm HostbasedAuthentication ,
 .Cm HostbasedUsesNameFromPacketOnly ,
@@ -1325,7 +1326,6 @@ Available keywords are
 .Cm PermitTTY ,
 .Cm PermitTunnel ,
 .Cm PermitUserRC ,
-.Cm PubkeyAcceptedKeyTypes ,
 .Cm PubkeyAlgorithms ,
 .Cm PubkeyAuthentication ,
 .Cm RekeyLimit ,
@@ -1594,10 +1594,12 @@ when a user logs in interactively.
 or equivalent.)
 The default is
 .Cm yes .
+.It Cm PubkeyAcceptedAlgorithms
+Option compatibility. See
+.Cm PubkeyAlgorithms
 .It Cm PubkeyAcceptedKeyTypes
 Option compatibility. See
 .Cm PubkeyAlgorithms
-.Pp
 .It Cm PubkeyAlgorithms
 Specifies the publickey algorithms that will be accepted for
 .Dq publickey

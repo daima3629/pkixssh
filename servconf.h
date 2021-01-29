@@ -1,4 +1,4 @@
-/* $OpenBSD: servconf.h,v 1.149 2021/01/09 12:10:02 dtucker Exp $ */
+/* $OpenBSD: servconf.h,v 1.151 2021/01/26 05:32:21 dtucker Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -11,7 +11,7 @@
  * incompatible with the protocol description in the RFC file, it must be
  * called by a name other than "ssh" or "Secure Shell".
  *
- * Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -140,11 +140,9 @@ typedef struct {
 	char  **log_verbose;
 	int     hostbased_authentication;	/* If true, permit ssh2 hostbased auth */
 	int     hostbased_uses_name_from_packet_only; /* experimental */
-	char   *hostbased_key_types;	/* Key types allowed for hostbased */
-	char   *hostkeyalgorithms;	/* SSH2 server key types */
+	char   *hostkeyalgorithms;	/* SSH2 allowed server host-key algorithms */
 	char   *ca_sign_algorithms;	/* Allowed CA signature algorithms */
 	int     pubkey_authentication;	/* If true, permit ssh2 pubkey authentication. */
-	char   *pubkey_key_types;	/* Key types allowed for public key */
 	int     kerberos_authentication;	/* If true, permit Kerberos
 						 * authentication. */
 	int     kerberos_or_local_passwd;	/* If true, permit kerberos
