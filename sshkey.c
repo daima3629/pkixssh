@@ -1,4 +1,4 @@
-/* $OpenBSD: sshkey.c,v 1.113 2021/01/15 04:31:25 dtucker Exp $ */
+/* $OpenBSD: sshkey.c,v 1.114 2021/01/26 00:49:30 djm Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Alexander von Gernler.  All rights reserved.
@@ -2835,6 +2835,28 @@ sshkey_cert_check_authority(const struct sshkey *k,
 			    "principal";
 			return SSH_ERR_KEY_CERT_INVALID;
 		}
+	}
+	return 0;
+}
+
+int
+sshkey_cert_check_host(const struct sshkey *key, const char *host,
+    int wildcard_principals, const char *ca_sign_algorithms,
+    const char **reason)
+{
+	int r;
+
+	if ((r = sshkey_cert_check_authority(key, 1, 0, wildcard_principals,
+	    host, reason)) != 0)
+		return r;
+	if (sshbuf_len(key->cert->critical) != 0) {
+		*reason = "Certificate contains unsupported critical options";
+		return SSH_ERR_KEY_CERT_INVALID;
+	}
+	if (ca_sign_algorithms != NULL &&
+	    (r = sshkey_check_cert_sigtype(key, ca_sign_algorithms)) != 0) {
+		*reason = "Certificate signed with disallowed algorithm";
+		return SSH_ERR_KEY_CERT_INVALID;
 	}
 	return 0;
 }
