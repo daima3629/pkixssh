@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh.c,v 1.546 2020/12/20 23:40:19 djm Exp $ */
+/* $OpenBSD: ssh.c,v 1.548 2021/01/26 05:32:22 dtucker Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -1689,16 +1689,16 @@ main(int ac, char **av)
 } while (0)
 
 		if (options.hostbased_authentication == 1) {
+			L_CERT(_PATH_HOST_ED25519_KEY_FILE, 0);
 #ifdef OPENSSL_HAS_ECC
-			L_CERT(_PATH_HOST_ECDSA_KEY_FILE, 0);
+			L_CERT(_PATH_HOST_ECDSA_KEY_FILE, 1);
 #endif
-			L_CERT(_PATH_HOST_ED25519_KEY_FILE, 1);
 			L_CERT(_PATH_HOST_RSA_KEY_FILE, 2);
 			L_CERT(_PATH_HOST_DSA_KEY_FILE, 3);
+			L_PUBKEY(_PATH_HOST_ED25519_KEY_FILE, 4);
 #ifdef OPENSSL_HAS_ECC
-			L_PUBKEY(_PATH_HOST_ECDSA_KEY_FILE, 4);
+			L_PUBKEY(_PATH_HOST_ECDSA_KEY_FILE, 5);
 #endif
-			L_PUBKEY(_PATH_HOST_ED25519_KEY_FILE, 5);
 			L_PUBKEY(_PATH_HOST_RSA_KEY_FILE, 6);
 			L_PUBKEY(_PATH_HOST_DSA_KEY_FILE, 7);
 #ifdef WITH_XMSS
