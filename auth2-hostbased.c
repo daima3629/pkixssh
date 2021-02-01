@@ -94,7 +94,6 @@ userauth_hostbased(struct ssh *ssh)
 	size_t alen, blen, slen;
 	int r, pktype, authenticated = 0;
 
-	/* XXX use sshkey_froms() */
 	if ((r = sshpkt_get_cstring(ssh, &pkalg, &alen)) != 0 ||
 	    (r = sshpkt_get_string(ssh, &pkblob, &blen)) != 0 ||
 	    (r = sshpkt_get_cstring(ssh, &chost, NULL)) != 0 ||
@@ -115,6 +114,7 @@ userauth_hostbased(struct ssh *ssh)
 		goto done;
 	}
 	if (!hostbased_algorithm_allowed(pkalg)) {
+		debug_f("disallowed hostbased algorithm: %s", pkalg);
 		goto done;
 	}
 	if ((r = Xkey_from_blob(pkalg, pkblob, blen, &key)) != 0) {
