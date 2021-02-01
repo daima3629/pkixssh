@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-agent.c,v 1.269 2021/01/26 00:47:47 djm Exp $ */
+/* $OpenBSD: ssh-agent.c,v 1.270 2021/01/26 00:53:31 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -235,15 +235,16 @@ lookup_identity(struct sshkey *key)
 
 /* Check confirmation of keysign request */
 static int
-confirm_key(Identity *id)
+confirm_key(Identity *id, const char *extra)
 {
 	char *p;
 	int ret = -1;
 
 	p = sshkey_fingerprint(id->key, fingerprint_hash, SSH_FP_DEFAULT);
 	if (p != NULL &&
-	    ask_permission("Allow use of key %s?\nKey fingerprint %s.",
-	    id->comment, p))
+	    ask_permission("Allow use of key %s?\nKey fingerprint %s.%s%s",
+	    id->comment, p,
+	    extra == NULL ? "" : "\n", extra == NULL ? "" : extra))
 		ret = 0;
 	free(p);
 
@@ -345,7 +346,7 @@ process_sign_request2(SocketEntry *e)
 		error_f("%s key not found", sshkey_type(key));
 		goto send;
 	}
-	if (id->confirm && confirm_key(id) != 0) {
+	if (id->confirm && confirm_key(id, NULL) != 0) {
 		debug_f("user refused key");
 		goto send;
 	}
