@@ -224,10 +224,7 @@ struct {
 static volatile sig_atomic_t received_sighup = 0;
 static volatile sig_atomic_t received_sigterm = 0;
 
-/* session identifier, used by RSA-auth */
-u_char session_id[16];
-
-/* same for ssh2 */
+/* ssh2 session identifier */
 u_char *session_id2 = NULL;
 u_int session_id2_len = 0;
 
