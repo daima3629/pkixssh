@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-agent.c,v 1.268 2021/01/11 02:12:58 dtucker Exp $ */
+/* $OpenBSD: ssh-agent.c,v 1.269 2021/01/26 00:47:47 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -188,11 +188,12 @@ static void
 close_socket(SocketEntry *e)
 {
 	close(e->fd);
-	e->fd = -1;
-	e->type = AUTH_UNUSED;
 	sshbuf_free(e->input);
 	sshbuf_free(e->output);
 	sshbuf_free(e->request);
+	memset(e, '\0', sizeof(*e));
+	e->fd = -1;
+	e->type = AUTH_UNUSED;
 }
 
 static void
@@ -898,7 +899,8 @@ new_socket(sock_type type, int fd)
 		}
 	old_alloc = sockets_alloc;
 	new_alloc = sockets_alloc + 10;
-	sockets = xreallocarray(sockets, new_alloc, sizeof(sockets[0]));
+	sockets = xrecallocarray(sockets, old_alloc, new_alloc,
+	    sizeof(sockets[0]));
 	for (i = old_alloc; i < new_alloc; i++)
 		sockets[i].type = AUTH_UNUSED;
 	sockets_alloc = new_alloc;
