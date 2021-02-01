@@ -1,4 +1,4 @@
-/* $OpenBSD: channels.c,v 1.403 2020/10/18 11:32:01 djm Exp $ */
+/* $OpenBSD: channels.c,v 1.404 2021/01/27 09:26:53 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -17,7 +17,7 @@
  * Copyright (c) 1999, 2000, 2001, 2002 Markus Friedl.  All rights reserved.
  * Copyright (c) 1999 Dug Song.  All rights reserved.
  * Copyright (c) 1999 Theo de Raadt.  All rights reserved.
- * Copyright (c) 2015-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2015-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -3023,7 +3023,7 @@ channel_input_extended_data(int type, u_int32_t seq, struct ssh *ssh)
 		return 0;
 	}
 	if (c->flags & CHAN_EOF_RCVD) {
-		if (datafellows & SSH_BUG_EXTEOF)
+		if (ssh_compat_fellows(ssh, SSH_BUG_EXTEOF))
 			debug("channel %d: accepting ext data after eof",
 			    c->self);
 		else
@@ -3286,7 +3286,7 @@ channel_fwd_bind_addr(struct ssh *ssh, const char *listen_addr, int *wildcardp,
 		if (fwd_opts->gateway_ports)
 			wildcard = 1;
 	} else if (fwd_opts->gateway_ports || is_client) {
-		if (((datafellows & SSH_OLD_FORWARD_ADDR) &&
+		if ((ssh_compat_fellows(ssh, SSH_OLD_FORWARD_ADDR) &&
 		    strcmp(listen_addr, "0.0.0.0") == 0 && is_client == 0) ||
 		    *listen_addr == '\0' || strcmp(listen_addr, "*") == 0 ||
 		    (!is_client && fwd_opts->gateway_ports == 1)) {
@@ -3475,7 +3475,7 @@ channel_setup_fwd_listener_tcpip(struct ssh *ssh, int type,
 		c->host_port = fwd->connect_port;
 		c->listening_addr = addr == NULL ? NULL : xstrdup(addr);
 		if (fwd->listen_port == 0 && allocated_listen_port != NULL &&
-		    !(datafellows & SSH_BUG_DYNAMIC_RPORT))
+		    !ssh_compat_fellows(ssh, SSH_BUG_DYNAMIC_RPORT))
 			c->listening_port = *allocated_listen_port;
 		else
 			c->listening_port = fwd->listen_port;
@@ -4113,7 +4113,7 @@ channel_update_permission(struct ssh *ssh, int idx, int newport)
 		fwd_perm_clear(&pset->permitted_user[idx]);
 	else {
 		pset->permitted_user[idx].listen_port =
-		    (datafellows & SSH_BUG_DYNAMIC_RPORT) ? 0 : newport;
+		    ssh_compat_fellows(ssh, SSH_BUG_DYNAMIC_RPORT) ? 0 : newport;
 	}
 }
 

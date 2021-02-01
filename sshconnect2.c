@@ -1,4 +1,4 @@
-/* $OpenBSD: sshconnect2.c,v 1.344 2021/01/26 05:32:22 dtucker Exp $ */
+/* $OpenBSD: sshconnect2.c,v 1.345 2021/01/27 09:26:54 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Damien Miller.  All rights reserved.
@@ -189,11 +189,11 @@ ssh_kex2(struct ssh *ssh, char *host, struct sockaddr *hostaddr, u_short port,
 
 	if ((s = kex_names_cat(options.kex_algorithms, "ext-info-c")) == NULL)
 		fatal_f("kex_names_cat");
-	myproposal[PROPOSAL_KEX_ALGS] = compat_kex_proposal(s);
+	myproposal[PROPOSAL_KEX_ALGS] = compat_kex_proposal(ssh, s);
 	myproposal[PROPOSAL_ENC_ALGS_CTOS] =
-	    compat_cipher_proposal(options.ciphers);
+	    compat_cipher_proposal(ssh, options.ciphers);
 	myproposal[PROPOSAL_ENC_ALGS_STOC] =
-	    compat_cipher_proposal(options.ciphers);
+	    compat_cipher_proposal(ssh, options.ciphers);
 	myproposal[PROPOSAL_COMP_ALGS_CTOS] =
 	    myproposal[PROPOSAL_COMP_ALGS_STOC] =
 	    (char *)compression_alg_list(options.compression);
@@ -221,11 +221,11 @@ ssh_kex2(struct ssh *ssh, char *host, struct sockaddr *hostaddr, u_short port,
 	}
 	if (user_prefered)
 		myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS] =
-		    compat_pkalg_proposal(options.hostkeyalgorithms);
+		    compat_pkalg_proposal(ssh, options.hostkeyalgorithms);
 	else
 		/* Prefer algorithms that we already have keys for */
 		myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS] =
-		    compat_pkalg_proposal(
+		    compat_pkalg_proposal(ssh,
 		    order_hostkeyalgs(host, hostaddr, port, cinfo));
 }
 
@@ -257,7 +257,7 @@ ssh_kex2(struct ssh *ssh, char *host, struct sockaddr *hostaddr, u_short port,
 
 	/* remove ext-info from the KEX proposals for rekeying */
 	myproposal[PROPOSAL_KEX_ALGS] =
-	    compat_kex_proposal(options.kex_algorithms);
+	    compat_kex_proposal(ssh, options.kex_algorithms);
 	if ((r = kex_prop2buf(kex->my, myproposal)) != 0)
 		fatal_fr(r, "kex_prop2buf");
 
@@ -1260,7 +1260,7 @@ sign_and_send_pubkey(struct ssh *ssh, Identity *id)
 	while (1) { /*synchronize indent*/
 		if ((b = sshbuf_new()) == NULL)
 			fatal_f("sshbuf_new failed");
-		if (datafellows & SSH_OLD_SESSIONID) {
+		if (ssh_compat_fellows(ssh, SSH_OLD_SESSIONID)) {
 			if ((r = sshbuf_put(b, session_id2,
 			    session_id2_len)) != 0)
 				fatal_fr(r, "sshbuf_put");
@@ -1711,7 +1711,7 @@ x509_cert:
 plain:	/* try "plain" key algorithm */
 	kt = sshkey_type_plain(kt);
 	if (kt == KEY_RSA &&
-	    (datafellows & SSH_BUG_RSASIGMD5) != 0) {
+	    ssh_compat_fellows(ssh, SSH_BUG_RSASIGMD5)) {
 		debug("Skipped %s key %s for RSA/MD5 server",
 		    sshkey_type(key), id->filename);
 		return (0);

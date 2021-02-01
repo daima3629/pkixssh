@@ -1,4 +1,4 @@
-/* $OpenBSD: sshd.c,v 1.567 2021/01/09 12:10:02 dtucker Exp $ */
+/* $OpenBSD: sshd.c,v 1.568 2021/01/27 09:26:54 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -20,7 +20,7 @@
  *
  * Copyright (c) 2000, 2001, 2002 Markus Friedl.  All rights reserved.
  * Copyright (c) 2002 Niels Provos.  All rights reserved.
- * Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -2536,11 +2536,11 @@ do_ssh2_kex(struct ssh *ssh)
 	struct kex *kex;
 	int r;
 
-	myproposal[PROPOSAL_KEX_ALGS] = compat_kex_proposal(
+	myproposal[PROPOSAL_KEX_ALGS] = compat_kex_proposal(ssh,
 	    options.kex_algorithms);
-	myproposal[PROPOSAL_ENC_ALGS_CTOS] = compat_cipher_proposal(
+	myproposal[PROPOSAL_ENC_ALGS_CTOS] = compat_cipher_proposal(ssh,
 	    options.ciphers);
-	myproposal[PROPOSAL_ENC_ALGS_STOC] = compat_cipher_proposal(
+	myproposal[PROPOSAL_ENC_ALGS_STOC] = compat_cipher_proposal(ssh,
 	    options.ciphers);
 	myproposal[PROPOSAL_MAC_ALGS_CTOS] =
 	    myproposal[PROPOSAL_MAC_ALGS_STOC] = options.macs;
@@ -2555,7 +2555,7 @@ do_ssh2_kex(struct ssh *ssh)
 		    options.rekey_interval);
 
 	myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS] = compat_pkalg_proposal(
-	    list_hostkey_types());
+	    ssh, list_hostkey_types());
 
 	/* start key exchange */
 	if ((r = kex_setup(ssh, myproposal)) != 0)

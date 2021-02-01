@@ -1,10 +1,10 @@
-/* $OpenBSD: monitor.c,v 1.219 2020/12/29 00:59:15 djm Exp $ */
+/* $OpenBSD: monitor.c,v 1.222 2021/01/27 09:26:54 djm Exp $ */
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * Copyright 2002 Markus Friedl <markus@openbsd.org>
  * All rights reserved.
  *
- * Copyright (c) 2014-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2014-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -623,7 +623,6 @@ mm_answer_sign(struct ssh *ssh, int sock, struct sshbuf *m)
 	size_t datlen, siglen, alglen;
 	int r, is_proof = 0;
 	u_int32_t keyid;
-	ssh_compat compat = { datafellows, xcompat };
 	const char proof_req[] = "hostkeys-prove-00@openssh.com";
 
 	debug3_f("entering");
@@ -631,8 +630,9 @@ mm_answer_sign(struct ssh *ssh, int sock, struct sshbuf *m)
 	if ((r = sshbuf_get_u32(m, &keyid)) != 0 ||
 	    (r = sshbuf_get_string(m, &p, &datlen)) != 0 ||
 	    (r = sshbuf_get_cstring(m, &alg, &alglen)) != 0 ||
-	    (r = sshbuf_get_compat(m, &compat)) != 0)
+	    (r = sshbuf_get_compat(m, &ssh->compat)) != 0)
 		fatal_fr(r, "parse");
+	xcompat = ssh->compat.extra; /* TODO */
 	if (keyid > INT32_MAX)
 		fatal_f("invalid key ID");
 
@@ -679,12 +679,12 @@ mm_answer_sign(struct ssh *ssh, int sock, struct sshbuf *m)
 	}
 
 	if ((key = get_hostkey_by_index(keyid)) != NULL) {
-		ssh_sign_ctx ctx = { alg, key, &compat, NULL, NULL };
+		ssh_sign_ctx ctx = { alg, key, &ssh->compat, NULL, NULL };
 		if ((r = Xkey_sign(&ctx, &signature, &siglen, p, datlen)) != 0)
 			fatal_fr(r, "sign");
 	} else if ((key = get_hostkey_public_by_index(keyid, ssh)) != NULL &&
 	    auth_sock > 0) {
-		ssh_sign_ctx ctx = { alg, key, &compat, NULL, NULL };
+		ssh_sign_ctx ctx = { alg, key, &ssh->compat, NULL, NULL };
 		if ((r = Xssh_agent_sign(auth_sock, &ctx, &signature, &siglen,
 		    p, datlen)) != 0)
 			fatal_fr(r, "agent sign");
@@ -1175,13 +1175,12 @@ mm_answer_keyallowed(struct ssh *ssh, int sock, struct sshbuf *m)
 
 	debug3_f("Xkey_from_blob: %s %p", pkalg, (void*)key);
 
-{	ssh_compat ctx_compat = { datafellows, xcompat };
-	ssh_verify_ctx ctx = { pkalg, key, &ctx_compat, NULL };
+{	ssh_verify_ctx ctx = { pkalg, key, &ssh->compat, NULL };
 
 	if (key != NULL && authctxt->valid) {
 		/* These should not make it past the privsep child */
 		if (sshkey_type_plain(key->type) == KEY_RSA &&
-		    (datafellows & SSH_BUG_RSASIGMD5) != 0)
+		    ssh_compat_fellows(ssh, SSH_BUG_RSASIGMD5) != 0)
 			fatal_f("passed a SSH_BUG_RSASIGMD5 key");
 
 		switch (type) {
@@ -1261,7 +1260,7 @@ mm_answer_keyallowed(struct ssh *ssh, int sock, struct sshbuf *m)
 }
 
 static int
-monitor_valid_userblob(const u_char *data, size_t datalen)
+monitor_valid_userblob(struct ssh *ssh, const u_char *data, size_t datalen)
 {
 	struct sshbuf *b;
 	const u_char *p;
@@ -1273,7 +1272,7 @@ monitor_valid_userblob(const u_char *data, size_t datalen)
 	if ((b = sshbuf_from(data, datalen)) == NULL)
 		fatal_f("sshbuf_from");
 
-	if (datafellows & SSH_OLD_SESSIONID) {
+	if (ssh_compat_fellows(ssh, SSH_OLD_SESSIONID)) {
 		p = sshbuf_ptr(b);
 		len = sshbuf_len(b);
 		if ((session_id2 == NULL) ||
@@ -1419,7 +1418,7 @@ mm_answer_keyverify(struct ssh *ssh, int sock, struct sshbuf *m)
 
 	switch (key_blobtype) {
 	case MM_USERKEY:
-		valid_data = monitor_valid_userblob(data, datalen);
+		valid_data = monitor_valid_userblob(ssh, data, datalen);
 		auth_method = "publickey";
 		break;
 	case MM_HOSTKEY:
@@ -1434,8 +1433,7 @@ mm_answer_keyverify(struct ssh *ssh, int sock, struct sshbuf *m)
 	if (!valid_data)
 		fatal_f("bad signature data blob");
 
-{	ssh_compat ctx_compat = { datafellows, xcompat };
-	ssh_verify_ctx ctx = { pkalg, key, &ctx_compat, NULL };
+{	ssh_verify_ctx ctx = { pkalg, key, &ssh->compat, NULL };
 
 	ret = Xkey_verify(&ctx, signature, signaturelen, data, datalen);
 	debug3_f("%s %p signature %s%s%s", auth_method, (void*)key,

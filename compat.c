@@ -1,9 +1,7 @@
-/* $OpenBSD: compat.c,v 1.116 2020/10/18 11:32:01 djm Exp $ */
+/* $OpenBSD: compat.c,v 1.117 2021/01/27 09:26:54 djm Exp $ */
 /*
  * Copyright (c) 1999, 2000, 2001, 2002 Markus Friedl.  All rights reserved.
- *
- * X.509 certificates support:
- * Copyright (c) 2017-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2017-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -40,8 +38,6 @@
 #include "log.h"
 #include "match.h"
 #include "kex.h"
-
-int datafellows = 0;
 
 /* datafellows bug compatibility */
 static u_int
@@ -151,7 +147,6 @@ compat_datafellows(const char *version)
 		if (match_pattern_list(version, check[i].pat, 0) == 1) {
 			debug("match: %s pat %s compat 0x%08x",
 			    version, check[i].pat, check[i].bugs);
-			datafellows = check[i].bugs;	/* XXX for now */
 			return check[i].bugs;
 		}
 	}
@@ -160,9 +155,9 @@ compat_datafellows(const char *version)
 }
 
 char *
-compat_cipher_proposal(char *cipher_prop)
+compat_cipher_proposal(struct ssh *ssh, char *cipher_prop)
 {
-	if (!(datafellows & SSH_BUG_BIGENDIANAES))
+	if (!ssh_compat_fellows(ssh, SSH_BUG_BIGENDIANAES))
 		return cipher_prop;
 	debug2_f("original cipher proposal: %s", cipher_prop);
 	if ((cipher_prop = match_filter_denylist(cipher_prop, "aes*")) == NULL)
@@ -174,9 +169,9 @@ compat_cipher_proposal(char *cipher_prop)
 }
 
 char *
-compat_pkalg_proposal(char *pkalg_prop)
+compat_pkalg_proposal(struct ssh *ssh, char *pkalg_prop)
 {
-	if (!(datafellows & SSH_BUG_RSASIGMD5))
+	if (!ssh_compat_fellows(ssh, SSH_BUG_RSASIGMD5))
 		return pkalg_prop;
 	debug2_f("original public key proposal: %s", pkalg_prop);
 	if ((pkalg_prop = match_filter_denylist(pkalg_prop, "ssh-rsa")) == NULL)
@@ -188,16 +183,16 @@ compat_pkalg_proposal(char *pkalg_prop)
 }
 
 char *
-compat_kex_proposal(char *p)
+compat_kex_proposal(struct ssh *ssh, char *p)
 {
-	if ((datafellows & (SSH_BUG_CURVE25519PAD|SSH_OLD_DHGEX)) == 0)
+	if (!ssh_compat_fellows(ssh, (SSH_BUG_CURVE25519PAD|SSH_OLD_DHGEX)))
 		return p;
 	debug2_f("original KEX proposal: %s", p);
-	if ((datafellows & SSH_BUG_CURVE25519PAD) != 0)
+	if (ssh_compat_fellows(ssh, SSH_BUG_CURVE25519PAD))
 		if ((p = match_filter_denylist(p,
 		    "curve25519-sha256@libssh.org")) == NULL)
 			fatal("match_filter_denylist failed");
-	if ((datafellows & SSH_OLD_DHGEX) != 0) {
+	if (ssh_compat_fellows(ssh, SSH_OLD_DHGEX)) {
 		if ((p = match_filter_denylist(p,
 		    "diffie-hellman-group-exchange-sha256,"
 		    "diffie-hellman-group-exchange-sha1")) == NULL)

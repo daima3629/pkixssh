@@ -1,4 +1,4 @@
-/* $OpenBSD: clientloop.c,v 1.355 2020/10/29 02:47:23 djm Exp $ */
+/* $OpenBSD: clientloop.c,v 1.357 2021/01/27 09:26:54 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -13,7 +13,7 @@
  *
  *
  * Copyright (c) 1999 Theo de Raadt.  All rights reserved.
- * Copyright (c) 2017-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2017-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -1025,7 +1025,7 @@ process_escapes(struct ssh *ssh, Channel *c,
 				continue;
 
 			case 'R':
-				if (datafellows & SSH_BUG_NOREKEY)
+				if (ssh_compat_fellows(ssh, SSH_BUG_NOREKEY))
 					logit("Server does not "
 					    "support re-keying");
 				else
