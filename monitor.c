@@ -1689,27 +1689,28 @@ monitor_apply_keystate(struct ssh *ssh)
 	sshbuf_free(child_state);
 	child_state = NULL;
 
-	if ((kex = ssh->kex) != NULL) {
-		/* XXX set callbacks */
+	kex = ssh->kex;
+	if (kex == NULL) return;
+
+	/* XXX set callbacks */
 #ifdef WITH_OPENSSL
-		kex->kex[KEX_DH_GRP1_SHA1] = kex_gen_server;
-		kex->kex[KEX_DH_GRP14_SHA1] = kex_gen_server;
-		kex->kex[KEX_DH_GRP14_SHA256] = kex_gen_server;
-		kex->kex[KEX_DH_GRP16_SHA512] = kex_gen_server;
-		kex->kex[KEX_DH_GRP18_SHA512] = kex_gen_server;
-		kex->kex[KEX_DH_GEX_SHA1] = kexgex_server;
-		kex->kex[KEX_DH_GEX_SHA256] = kexgex_server;
+	kex->kex[KEX_DH_GRP1_SHA1] = kex_gen_server;
+	kex->kex[KEX_DH_GRP14_SHA1] = kex_gen_server;
+	kex->kex[KEX_DH_GRP14_SHA256] = kex_gen_server;
+	kex->kex[KEX_DH_GRP16_SHA512] = kex_gen_server;
+	kex->kex[KEX_DH_GRP18_SHA512] = kex_gen_server;
+	kex->kex[KEX_DH_GEX_SHA1] = kexgex_server;
+	kex->kex[KEX_DH_GEX_SHA256] = kexgex_server;
 # ifdef OPENSSL_HAS_ECC
-		kex->kex[KEX_ECDH_SHA2] = kex_gen_server;
+	kex->kex[KEX_ECDH_SHA2] = kex_gen_server;
 # endif
 #endif /* WITH_OPENSSL */
-		kex->kex[KEX_C25519_SHA256] = kex_gen_server;
-		kex->kex[KEX_KEM_SNTRUP761X25519_SHA512] = kex_gen_server;
-		kex->find_host_public_key=&get_hostkey_public_by_alg;
-		kex->find_host_private_key=&get_hostkey_private_by_alg;
-		kex->host_key_index=&get_hostkey_index;
-		kex->xsign = Xsshd_hostkey_sign;
-	}
+	kex->kex[KEX_C25519_SHA256] = kex_gen_server;
+	kex->kex[KEX_KEM_SNTRUP761X25519_SHA512] = kex_gen_server;
+	kex->find_host_public_key=&get_hostkey_public_by_alg;
+	kex->find_host_private_key=&get_hostkey_private_by_alg;
+	kex->host_key_index=&get_hostkey_index;
+	kex->xsign = Xsshd_hostkey_sign;
 }
 
 /* This function requires careful sanity checking */
