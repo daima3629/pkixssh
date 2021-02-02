@@ -1,8 +1,8 @@
-/* $OpenBSD: kexgexs.c,v 1.42 2019/01/23 00:30:41 djm Exp $ */
+/* $OpenBSD: kexgexs.c,v 1.43 2021/01/31 22:55:29 djm Exp $ */
 /*
  * Copyright (c) 2000 Niels Provos.  All rights reserved.
  * Copyright (c) 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2014-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2014-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -76,6 +76,8 @@ input_kex_dh_gex_request(int type, u_int32_t seq, struct ssh *ssh)
 	UNUSED(type);
 	UNUSED(seq);
 	debug("SSH2_MSG_KEX_DH_GEX_REQUEST received");
+	ssh_dispatch_set(ssh, SSH2_MSG_KEX_DH_GEX_REQUEST, &kex_protocol_error);
+
 	if ((r = sshpkt_get_u32(ssh, &min)) != 0 ||
 	    (r = sshpkt_get_u32(ssh, &nbits)) != 0 ||
 	    (r = sshpkt_get_u32(ssh, &max)) != 0 ||
@@ -137,6 +139,10 @@ input_kex_dh_gex_init(int type, u_int32_t seq, struct ssh *ssh)
 
 	UNUSED(type);
 	UNUSED(seq);
+
+	debug("SSH2_MSG_KEX_DH_GEX_INIT received");
+	ssh_dispatch_set(ssh, SSH2_MSG_KEX_DH_GEX_INIT, &kex_protocol_error);
+
 	r = kex_load_host_keys(ssh, &server_host_public, &server_host_private);
 	if (r != SSH_ERR_SUCCESS)
 		goto out;

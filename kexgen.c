@@ -1,7 +1,7 @@
-/* $OpenBSD: kexgen.c,v 1.5 2020/12/29 00:59:15 djm Exp $ */
+/* $OpenBSD: kexgen.c,v 1.6 2021/01/31 22:55:29 djm Exp $ */
 /*
  * Copyright (c) 2019 Markus Friedl.  All rights reserved.
- * Copyright (c) 2019-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2019-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -156,6 +156,9 @@ input_kex_gen_reply(int type, u_int32_t seq, struct ssh *ssh)
 	UNUSED(type);
 	UNUSED(seq);
 
+	debug("SSH2_MSG_KEX_ECDH_REPLY received");
+	ssh_dispatch_set(ssh, SSH2_MSG_KEX_ECDH_REPLY, &kex_protocol_error);
+
 	/* hostkey */
 	r = sshpkt_getb_froms(ssh, &server_host_key_blob);
 	if (r != 0) goto out;
@@ -268,6 +271,10 @@ input_kex_gen_init(int type, u_int32_t seq, struct ssh *ssh)
 
 	UNUSED(type);
 	UNUSED(seq);
+
+	debug("SSH2_MSG_KEX_ECDH_INIT received");
+	ssh_dispatch_set(ssh, SSH2_MSG_KEX_ECDH_INIT, &kex_protocol_error);
+
 	if ((r = kex_load_host_keys(ssh, &server_host_public,
 	    &server_host_private)) != 0)
 		goto out;
