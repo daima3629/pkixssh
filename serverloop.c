@@ -1,4 +1,4 @@
-/* $OpenBSD: serverloop.c,v 1.224 2020/10/18 11:32:02 djm Exp $ */
+/* $OpenBSD: serverloop.c,v 1.225 2021/01/27 10:05:28 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -13,7 +13,7 @@
  *
  * SSH2 support by Markus Friedl.
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2017-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2017-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -782,8 +782,8 @@ server_input_hostkeys_prove(struct ssh *ssh, struct sshbuf **respp)
 
 		if ((r = sshbuf_put_cstring(sigbuf,
 		    "hostkeys-prove-00@openssh.com")) != 0 ||
-		    (r = sshbuf_put_string(sigbuf,
-		    ssh->kex->session_id, ssh->kex->session_id_len)) != 0 ||
+		    (r = sshbuf_put_stringb(sigbuf,
+		        ssh->kex->session_id)) != 0 ||
 		    (r = Xkey_puts(pkalg, key, sigbuf)) != 0 ||
 		    (r = ssh->kex->xsign(ssh, &ctx, key_pub, &sig, &slen,
 		        sshbuf_ptr(sigbuf), sshbuf_len(sigbuf))) != 0 ||

@@ -1,9 +1,9 @@
-/* $OpenBSD: auth2-hostbased.c,v 1.44 2021/01/26 00:49:30 djm Exp $ */
+/* $OpenBSD: auth2-hostbased.c,v 1.46 2021/01/27 10:05:28 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  *
  * X.509 certificates support,
- * Copyright (c) 2004-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2004-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -38,6 +38,7 @@
 #include "xmalloc.h"
 #include "ssh2.h"
 #include "packet.h"
+#include "kex.h"
 #include "sshbuf.h"
 #include "log.h"
 #include "misc.h"
@@ -57,8 +58,6 @@
 
 /* import */
 extern ServerOptions options;
-extern u_char *session_id2;
-extern u_int session_id2_len;
 
 /* return 1 if given hostbased algorithm is allowed */
 static int
@@ -152,7 +151,7 @@ userauth_hostbased(struct ssh *ssh)
 	if ((b = sshbuf_new()) == NULL)
 		fatal_f("sshbuf_new failed");
 	/* reconstruct packet */
-	if ((r = sshbuf_put_string(b, session_id2, session_id2_len)) != 0 ||
+	if ((r = sshbuf_put_stringb(b, ssh->kex->session_id)) != 0 ||
 	    (r = sshbuf_put_u8(b, SSH2_MSG_USERAUTH_REQUEST)) != 0 ||
 	    (r = sshbuf_put_cstring(b, authctxt->user)) != 0 ||
 	    (r = sshbuf_put_cstring(b, authctxt->service)) != 0 ||

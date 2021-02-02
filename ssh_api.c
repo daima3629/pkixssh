@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh_api.c,v 1.24 2020/12/29 00:59:15 djm Exp $ */
+/* $OpenBSD: ssh_api.c,v 1.26 2021/01/27 10:05:28 djm Exp $ */
 /*
  * Copyright (c) 2012 Markus Friedl.  All rights reserved.
  * Copyright (c) 2014-2020 Roumen Petrov.  All rights reserved.
@@ -55,10 +55,6 @@ int	use_privsep = 0;
 #ifdef WITH_OPENSSL
 DH	*mm_choose_dh(int, int, int);
 #endif
-
-/* Define these two variables here so that they are part of the library */
-u_char *session_id2 = NULL;
-u_int session_id2_len = 0;
 
 #ifdef WITH_OPENSSL
 DH *

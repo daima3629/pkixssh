@@ -1,4 +1,4 @@
-/* $OpenBSD: monitor.c,v 1.222 2021/01/27 09:26:54 djm Exp $ */
+/* $OpenBSD: monitor.c,v 1.223 2021/01/27 10:05:28 djm Exp $ */
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * Copyright 2002 Markus Friedl <markus@openbsd.org>
@@ -160,8 +160,6 @@ static char *hostbased_cuser = NULL;
 static char *hostbased_chost = NULL;
 static char *auth_method = "unknown";
 static char *auth_submethod = NULL;
-static u_int session_id2_len = 0;
-static u_char *session_id2 = NULL;
 static pid_t monitor_child_pid;
 
 struct mon_table {
@@ -616,6 +614,7 @@ mm_answer_sign(struct ssh *ssh, int sock, struct sshbuf *m)
 {
 	extern int auth_sock;			/* XXX move to state struct? */
 	struct sshkey *key;
+	struct kex *kex = ssh->kex;
 	struct sshbuf *sigbuf = NULL;
 	u_char *p = NULL, *signature = NULL;
 	char *alg = NULL;
@@ -651,15 +650,16 @@ mm_answer_sign(struct ssh *ssh, int sock, struct sshbuf *m)
 		 * Construct expected hostkey proof and compare it to what
 		 * the client sent us.
 		 */
-		if (session_id2_len == 0) /* hostkeys is never first */
+		/* NOTE: hostkey is never first */
+		if (sshbuf_len(kex->session_id) == 0)
 			fatal_f("bad data length: %zu", datlen);
 		if ((key = get_hostkey_public_by_index(keyid, ssh)) == NULL)
 			fatal_f("no hostkey for index %d", keyid);
 		if ((sigbuf = sshbuf_new()) == NULL)
 			fatal_f("sshbuf_new");
 		if ((r = sshbuf_put_cstring(sigbuf, proof_req)) != 0 ||
-		    (r = sshbuf_put_string(sigbuf, session_id2,
-		    session_id2_len)) != 0 ||
+		    (r = sshbuf_put_stringb(sigbuf,
+			kex->session_id)) != 0 ||
 		    (r = Xkey_puts(alg, key, sigbuf)) != 0)
 			fatal_fr(r, "assemble private key proof");
 		if (datlen != sshbuf_len(sigbuf) ||
@@ -671,10 +671,10 @@ mm_answer_sign(struct ssh *ssh, int sock, struct sshbuf *m)
 	}
 
 	/* save session id, it will be passed on the first call */
-	if (session_id2_len == 0) {
-		session_id2_len = datlen;
-		session_id2 = xmalloc(session_id2_len);
-		memcpy(session_id2, p, session_id2_len);
+	if (sshbuf_len(kex->session_id) == 0) {
+		r = sshbuf_put(kex->session_id, p, datlen);
+		if (r != 0)
+			fatal_fr(r, "session_id");
 	}
 
 	if ((key = get_hostkey_by_index(keyid)) != NULL) {
@@ -1271,23 +1271,27 @@ monitor_valid_userblob(struct ssh *ssh, const u_char *data, size_t datalen)
 	if ((b = sshbuf_from(data, datalen)) == NULL)
 		fatal_f("sshbuf_from");
 
+{	struct kex *kex = ssh->kex;
 	if (ssh_compat_fellows(ssh, SSH_OLD_SESSIONID)) {
 		p = sshbuf_ptr(b);
 		len = sshbuf_len(b);
-		if ((session_id2 == NULL) ||
-		    (len < session_id2_len) ||
-		    (timingsafe_bcmp(p, session_id2, session_id2_len) != 0))
+		if ((len < sshbuf_len(kex->session_id)) ||
+		    (timingsafe_bcmp(p,
+			sshbuf_ptr(kex->session_id),
+			sshbuf_len(kex->session_id)) != 0))
 			fail++;
-		if ((r = sshbuf_consume(b, session_id2_len)) != 0)
+		if ((r = sshbuf_consume(b, sshbuf_len(kex->session_id))) != 0)
 			fatal_fr(r, "consume");
 	} else {
 		if ((r = sshbuf_get_string_direct(b, &p, &len)) != 0)
 			fatal_fr(r, "parse sessionid");
-		if ((session_id2 == NULL) ||
-		    (len != session_id2_len) ||
-		    (timingsafe_bcmp(p, session_id2, session_id2_len) != 0))
+		if ((len != sshbuf_len(kex->session_id)) ||
+		    (timingsafe_bcmp(p,
+			sshbuf_ptr(kex->session_id),
+			sshbuf_len(kex->session_id)) != 0))
 			fail++;
 	}
+}
 	if ((r = sshbuf_get_u8(b, &type)) != 0)
 		fatal_fr(r, "parse type");
 	if (type != SSH2_MSG_USERAUTH_REQUEST)
@@ -1324,7 +1328,7 @@ monitor_valid_userblob(struct ssh *ssh, const u_char *data, size_t datalen)
 }
 
 static int
-monitor_valid_hostbasedblob(const u_char *data, size_t datalen,
+monitor_valid_hostbasedblob(struct ssh *ssh, const u_char *data, size_t datalen,
     const char *cuser, const char *chost)
 {
 	struct sshbuf *b;
@@ -1339,9 +1343,10 @@ monitor_valid_hostbasedblob(const u_char *data, size_t datalen,
 	if ((r = sshbuf_get_string_direct(b, &p, &len)) != 0)
 		fatal_fr(r, "parse sessionid");
 
-	if ((session_id2 == NULL) ||
-	    (len != session_id2_len) ||
-	    (timingsafe_bcmp(p, session_id2, session_id2_len) != 0))
+	if ((len != sshbuf_len(ssh->kex->session_id)) ||
+	    (timingsafe_bcmp(p,
+		sshbuf_ptr(ssh->kex->session_id),
+		sshbuf_len(ssh->kex->session_id)) != 0))
 		fail++;
 
 	if ((r = sshbuf_get_u8(b, &type)) != 0)
@@ -1421,7 +1426,7 @@ mm_answer_keyverify(struct ssh *ssh, int sock, struct sshbuf *m)
 		auth_method = "publickey";
 		break;
 	case MM_HOSTKEY:
-		valid_data = monitor_valid_hostbasedblob(data, datalen,
+		valid_data = monitor_valid_hostbasedblob(ssh, data, datalen,
 		    hostbased_cuser, hostbased_chost);
 		auth_method = "hostbased";
 		break;
