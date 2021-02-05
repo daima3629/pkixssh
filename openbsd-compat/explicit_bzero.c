@@ -29,7 +29,15 @@
 
 #ifndef HAVE_EXPLICIT_BZERO
 
-#ifdef HAVE_MEMSET_S
+#ifdef HAVE_EXPLICIT_MEMSET
+
+void
+explicit_bzero(void *p, size_t n)
+{
+	(void)explicit_memset(p, 0, n);
+}
+
+#elif defined(HAVE_MEMSET_S)
 # if !HAVE_DECL_MEMSET_S
 void *memset_s(const void *, size_t, int, size_t);
 # endif
@@ -42,7 +50,7 @@ explicit_bzero(void *p, size_t n)
 	(void)memset_s(p, n, 0, n);
 }
 
-#else /* HAVE_MEMSET_S */
+#else
 
 #if 0
 /*
@@ -86,6 +94,6 @@ explicit_bzero(void *p, size_t n)
 }
 #endif
 
-#endif /* HAVE_MEMSET_S */
+#endif
 
 #endif /* HAVE_EXPLICIT_BZERO */
