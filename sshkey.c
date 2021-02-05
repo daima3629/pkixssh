@@ -1,4 +1,4 @@
-/* $OpenBSD: sshkey.c,v 1.114 2021/01/26 00:49:30 djm Exp $ */
+/* $OpenBSD: sshkey.c,v 1.115 2021/02/02 22:36:46 djm Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Alexander von Gernler.  All rights reserved.
@@ -3048,9 +3048,23 @@ sshkey_private_deserialize_ed25519(struct sshbuf *buf, struct sshkey *key)
 		r = SSH_ERR_INVALID_FORMAT;
 		goto out;
 	}
-	key->ed25519_pk = ed25519_pk;
+
+	/*
+	 * Several fields are redundant between custom certificate and
+	 * private key, check if they match.
+	 */
+	if (key->ed25519_pk != NULL) {
+		if (memcmp(key->ed25519_pk, ed25519_pk, pklen) != 0) {
+			r = SSH_ERR_KEY_CERT_MISMATCH;
+			goto out;
+		}
+	} else {
+		key->ed25519_pk = ed25519_pk;
+		ed25519_pk = NULL; /* transferred */
+	}
+
 	key->ed25519_sk = ed25519_sk;
-	ed25519_pk = ed25519_sk = NULL; /* transferred */
+	ed25519_sk = NULL; /* transferred */
 
 out:
 	freezero(ed25519_pk, pklen);
