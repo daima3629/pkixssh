@@ -5436,10 +5436,6 @@ if test "x$ssh_x509dn_email" = "xno"; then
 		[Define if your openssl library don't support Email in X.509 'Distinguished Name'])
 fi
 
-dnl Check for <openssl/ec.h> header is required only for 0.9.7* builds
-dnl to avoid redeclaration of EC_GROUP and EC_POINT in "sshkey.h".
-AC_CHECK_HEADERS([openssl/ec.h])
-
 # check for openssl 0.9.7+ functions ...
 AC_CHECK_FUNCS([ \
   EVP_MD_CTX_init \

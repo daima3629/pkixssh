@@ -1,7 +1,7 @@
 #ifndef EVP_COMPAT_H
 #define EVP_COMPAT_H
 /*
- * Copyright (c) 2011-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -25,11 +25,35 @@
  */
 
 #include "includes.h"
+
+#ifdef WITH_OPENSSL
+# include <openssl/rsa.h>
+# include <openssl/dsa.h>
+# if defined(OPENSSL_HAS_ECC)
+#  include <openssl/ec.h>
+#  include <openssl/ecdsa.h>
+#  if defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x00908000L)
+    /* before OpenSSL 0.9.8 */
+#   define EC_KEY	void
+#  endif
+# else /* OPENSSL_HAS_ECC */
+#  define EC_KEY	void
+#  define EC_GROUP	void
+#  define EC_POINT	void
+# endif /* OPENSSL_HAS_ECC */
+#else /* WITH_OPENSSL */
+# define BIGNUM		void
+# define EVP_PKEY	void
+# define RSA		void
+# define DSA		void
+# define EC_KEY		void
+# define EC_GROUP	void
+# define EC_POINT	void
+#endif /* WITH_OPENSSL */
+
+#ifdef WITH_OPENSSL
 #include "openbsd-compat/openssl-compat.h"
-#ifdef OPENSSL_HAS_ECC
-# include <openssl/ec.h>
-# include <openssl/ecdsa.h>
-#endif
+
 #include <string.h>	/*for memset*/
 /* Unlike OPENSSL_strdup (0.8.k+), BUF_strdup is defined in
  * all OpenSSL versions (SSLeay 0.8.1) until 1.1.0.
@@ -205,5 +229,7 @@ static inline const EVP_MD* EVP_dss1(void) { return EVP_sha1(); }
 int UTF8_getc(const unsigned char *str, int len, unsigned long *val);
 int UTF8_putc(unsigned char *str, int len, unsigned long value);
 #endif
+
+#endif /*def WITH_OPENSSL */
 
 #endif /* ndef EVP_COMPAT_H*/

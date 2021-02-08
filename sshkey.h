@@ -27,30 +27,8 @@
 #ifndef SSHKEY_H
 #define SSHKEY_H
 
-#include <sys/types.h>
+#include "evp-compat.h"
 
-#ifdef WITH_OPENSSL
-#include <openssl/rsa.h>
-#include <openssl/dsa.h>
-# if defined(OPENSSL_HAS_ECC) || defined(HAVE_OPENSSL_EC_H)
-#  include <openssl/ec.h>
-#  if defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x00908000L)
-    /* before OpenSSL 0.9.8 */
-#   define EC_KEY	void
-#  endif
-# else /* OPENSSL_HAS_ECC */
-#  define EC_KEY	void
-#  define EC_GROUP	void
-#  define EC_POINT	void
-# endif /* OPENSSL_HAS_ECC */
-#else /* WITH_OPENSSL */
-# define BIGNUM		void
-# define RSA		void
-# define DSA		void
-# define EC_KEY		void
-# define EC_GROUP	void
-# define EC_POINT	void
-#endif /* WITH_OPENSSL */
 
 #define SSH_RSA_MINIMUM_MODULUS_SIZE	1024
 #define SSH_DSA_BITS			1024
@@ -402,17 +380,5 @@ int	sshkey_validate_public_ecdsa(const struct sshkey *key);
 int	sshkey_validate_private_ecdsa(const struct sshkey *key);
 #  endif /* OPENSSL_HAS_ECC */
 int	sshkey_validate_public(const struct sshkey *key);
-
-#if !defined(WITH_OPENSSL)
-# undef RSA
-# undef DSA
-# undef EC_KEY
-# undef EC_GROUP
-# undef EC_POINT
-#elif !defined(OPENSSL_HAS_ECC)
-# undef EC_KEY
-# undef EC_GROUP
-# undef EC_POINT
-#endif
 
 #endif /* SSHKEY_H */

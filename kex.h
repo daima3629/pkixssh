@@ -26,25 +26,12 @@
 #ifndef KEX_H
 #define KEX_H
 
+#include "evp-compat.h"
+
 #include "mac.h"
 #include "crypto_api.h"
 #include "sshxkey.h"
 
-#ifdef WITH_OPENSSL
-# ifdef OPENSSL_HAS_ECC
-#  include <openssl/ec.h>
-# else /* OPENSSL_HAS_ECC */
-#  define EC_KEY	void
-#  define EC_GROUP	void
-#  define EC_POINT	void
-# endif /* OPENSSL_HAS_ECC */
-#else /* WITH_OPENSSL */
-# define DH		void
-# define BIGNUM		void
-# define EC_KEY		void
-# define EC_GROUP	void
-# define EC_POINT	void
-#endif /* WITH_OPENSSL */
 
 #define KEX_COOKIE_LEN	16
 
@@ -238,12 +225,6 @@ int	kexc25519_shared_key_ext(const u_char key[CURVE25519_SIZE],
 #if defined(DEBUG_KEX) || defined(DEBUG_KEXDH) || defined(DEBUG_KEXECDH)
 void	dump_digest(const char *, const u_char *, size_t);
 void	dump_digestb(const char *, const struct sshbuf *);
-#endif
-
-#if !defined(WITH_OPENSSL) || !defined(OPENSSL_HAS_ECC)
-# undef EC_KEY
-# undef EC_GROUP
-# undef EC_POINT
 #endif
 
 #endif

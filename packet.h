@@ -4,7 +4,7 @@
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
- * Copyright (c) 2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2019-2021 Roumen Petrov.  All rights reserved.
  * Interface for the packet protocol functions.
  *
  * As far as I am concerned, the code I have written for this software
@@ -18,24 +18,9 @@
 #define PACKET_H
 
 #include <termios.h>
-
-#ifdef WITH_OPENSSL
-# include <openssl/bn.h>
-# ifdef OPENSSL_HAS_ECC
-#  include <openssl/ec.h>
-# else /* OPENSSL_HAS_ECC */
-#  define EC_KEY	void
-#  define EC_GROUP	void
-#  define EC_POINT	void
-# endif /* OPENSSL_HAS_ECC */
-#else /* WITH_OPENSSL */
-# define BIGNUM		void
-# define EC_KEY		void
-# define EC_GROUP	void
-# define EC_POINT	void
-#endif /* WITH_OPENSSL */
-
 #include <signal.h>
+
+#include "evp-compat.h"
 #include "openbsd-compat/sys-queue.h"
 
 struct kex;
@@ -222,16 +207,5 @@ int	sshpkt_get_bignum2(struct ssh *ssh, BIGNUM **valp);
 int	sshpkt_get_end(struct ssh *ssh);
 void	sshpkt_fmt_connection_id(struct ssh *ssh, char *s, size_t l);
 const u_char	*sshpkt_ptr(struct ssh *, size_t *lenp);
-
-#if !defined(WITH_OPENSSL)
-# undef BIGNUM
-# undef EC_KEY
-# undef EC_GROUP
-# undef EC_POINT
-#elif !defined(OPENSSL_HAS_ECC)
-# undef EC_KEY
-# undef EC_GROUP
-# undef EC_POINT
-#endif
 
 #endif				/* PACKET_H */
