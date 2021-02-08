@@ -33,6 +33,12 @@
 %global enable_openssl_fips 0
 %endif
 
+%global use_fipscheck 1
+%if 0%{?fedora} >= 33
+%undefine use_fipscheck
+%global use_fipscheck 0
+%endif
+
 
 # norootforbuild
 
@@ -54,7 +60,7 @@ BuildRequires:	openldap-devel openldap openldap-clients
 %if %{enable_ldap_test}
 BuildRequires: openldap-servers
 %endif
-%if %{enable_openssl_fips}
+%if %{enable_openssl_fips} && %{use_fipscheck}
 BuildRequires:	fipscheck-devel fipscheck
 %endif
 %if 0%{?centos_version} && 0%{?centos_version} < 700
@@ -170,7 +176,7 @@ install -m744 contrib/redhat/sshd.init %{buildroot}/etc/rc.d/init.d/sshd
 %attr(0600,root,root) %config(noreplace) %{ssh_sysconfdir}/moduli
 %attr(0644,root,root) %config(noreplace) /etc/pam.d/sshd
 %attr(0755,root,root) %config /etc/rc.d/init.d/sshd
-%if %{enable_openssl_fips}
+%if %{use_fipscheck}
 # TODO: installation into fipscheck "lib" directory
 %attr(0644,root,root) %{_bindir}/.ssh.hmac
 %attr(0644,root,root) %{_bindir}/.ssh-agent.hmac
