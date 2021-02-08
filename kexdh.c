@@ -43,17 +43,17 @@ kex_dh_keygen(struct kex *kex)
 {
 	switch (kex->kex_type) {
 	case KEX_DH_GRP1_SHA1:
-		kex->dh = dh_new_group1();
+		kex->dh = dh_new_group_num(1);
 		break;
 	case KEX_DH_GRP14_SHA1:
 	case KEX_DH_GRP14_SHA256:
-		kex->dh = dh_new_group14();
+		kex->dh = dh_new_group_num(14);
 		break;
 	case KEX_DH_GRP16_SHA512:
-		kex->dh = dh_new_group16();
+		kex->dh = dh_new_group_num(16);
 		break;
 	case KEX_DH_GRP18_SHA512:
-		kex->dh = dh_new_group18();
+		kex->dh = dh_new_group_num(18);
 		break;
 	default:
 		return SSH_ERR_INVALID_ARGUMENT;

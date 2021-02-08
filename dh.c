@@ -81,6 +81,9 @@ DH_set0_pqg(DH *dh, BIGNUM *p, BIGNUM *q, BIGNUM *g) {
 #endif /*ndef HAVE_DH_GET0_KEY*/
 
 
+static DH *dh_new_group_fallback(int);
+
+
 static int
 parse_prime(int linenum, char *line, struct dhgroup *dhg)
 {
@@ -372,26 +375,19 @@ dh_new_group(BIGNUM *gen, BIGNUM *modulus)
 	return dh;
 }
 
-/* rfc2409 "Second Oakley Group" (1024 bits) */
-DH *
-dh_new_group1(void)
-{
-	static char *gen = "2", *group1 =
+DH*
+dh_new_group_num(int num) {
+	switch (num) {
+	/* rfc2409 "Second Oakley Group" (1024 bits) */
+	case 1: return dh_new_group_asc("2",
 	    "FFFFFFFF" "FFFFFFFF" "C90FDAA2" "2168C234" "C4C6628B" "80DC1CD1"
 	    "29024E08" "8A67CC74" "020BBEA6" "3B139B22" "514A0879" "8E3404DD"
 	    "EF9519B3" "CD3A431B" "302B0A6D" "F25F1437" "4FE1356D" "6D51C245"
 	    "E485B576" "625E7EC6" "F44C42E9" "A637ED6B" "0BFF5CB6" "F406B7ED"
 	    "EE386BFB" "5A899FA5" "AE9F2411" "7C4B1FE6" "49286651" "ECE65381"
-	    "FFFFFFFF" "FFFFFFFF";
-
-	return (dh_new_group_asc(gen, group1));
-}
-
-/* rfc3526 group 14 "2048-bit MODP Group" */
-DH *
-dh_new_group14(void)
-{
-	static char *gen = "2", *group14 =
+	    "FFFFFFFF" "FFFFFFFF");
+	/* rfc3526 group 14 "2048-bit MODP Group" */
+	case 14: return dh_new_group_asc("2",
 	    "FFFFFFFF" "FFFFFFFF" "C90FDAA2" "2168C234" "C4C6628B" "80DC1CD1"
 	    "29024E08" "8A67CC74" "020BBEA6" "3B139B22" "514A0879" "8E3404DD"
 	    "EF9519B3" "CD3A431B" "302B0A6D" "F25F1437" "4FE1356D" "6D51C245"
@@ -402,16 +398,9 @@ dh_new_group14(void)
 	    "670C354E" "4ABC9804" "F1746C08" "CA18217C" "32905E46" "2E36CE3B"
 	    "E39E772C" "180E8603" "9B2783A2" "EC07A28F" "B5C55DF0" "6F4C52C9"
 	    "DE2BCBF6" "95581718" "3995497C" "EA956AE5" "15D22618" "98FA0510"
-	    "15728E5A" "8AACAA68" "FFFFFFFF" "FFFFFFFF";
-
-	return (dh_new_group_asc(gen, group14));
-}
-
-/* rfc3526 group 16 "4096-bit MODP Group" */
-DH *
-dh_new_group16(void)
-{
-	static char *gen = "2", *group16 =
+	    "15728E5A" "8AACAA68" "FFFFFFFF" "FFFFFFFF");
+	/* rfc3526 group 16 "4096-bit MODP Group" */
+	case 16: return dh_new_group_asc("2",
 	    "FFFFFFFF" "FFFFFFFF" "C90FDAA2" "2168C234" "C4C6628B" "80DC1CD1"
 	    "29024E08" "8A67CC74" "020BBEA6" "3B139B22" "514A0879" "8E3404DD"
 	    "EF9519B3" "CD3A431B" "302B0A6D" "F25F1437" "4FE1356D" "6D51C245"
@@ -433,16 +422,9 @@ dh_new_group16(void)
 	    "287C5947" "4E6BC05D" "99B2964F" "A090C3A2" "233BA186" "515BE7ED"
 	    "1F612970" "CEE2D7AF" "B81BDD76" "2170481C" "D0069127" "D5B05AA9"
 	    "93B4EA98" "8D8FDDC1" "86FFB7DC" "90A6C08F" "4DF435C9" "34063199"
-	    "FFFFFFFF" "FFFFFFFF";
-
-	return (dh_new_group_asc(gen, group16));
-}
-
-/* rfc3526 group 18 "8192-bit MODP Group" */
-DH *
-dh_new_group18(void)
-{
-	static char *gen = "2", *group18 =
+	    "FFFFFFFF" "FFFFFFFF");
+	/* rfc3526 group 18 "8192-bit MODP Group" */
+	case 18: return dh_new_group_asc("2",
 	    "FFFFFFFF" "FFFFFFFF" "C90FDAA2" "2168C234" "C4C6628B" "80DC1CD1"
 	    "29024E08" "8A67CC74" "020BBEA6" "3B139B22" "514A0879" "8E3404DD"
 	    "EF9519B3" "CD3A431B" "302B0A6D" "F25F1437" "4FE1356D" "6D51C245"
@@ -485,9 +467,9 @@ dh_new_group18(void)
 	    "B1D510BD" "7EE74D73" "FAF36BC3" "1ECFA268" "359046F4" "EB879F92"
 	    "4009438B" "481C6CD7" "889A002E" "D5EE382B" "C9190DA6" "FC026E47"
 	    "9558E447" "5677E9AA" "9E3050E2" "765694DF" "C81F56E8" "80B96E71"
-	    "60C980DD" "98EDD3DF" "FFFFFFFF" "FFFFFFFF";
-
-	return (dh_new_group_asc(gen, group18));
+	    "60C980DD" "98EDD3DF" "FFFFFFFF" "FFFFFFFF");
+	}
+	return NULL;
 }
 
 /* Select fallback group used by DH-GEX if moduli file cannot be read. */
@@ -497,13 +479,13 @@ dh_new_group_fallback(int max)
 	debug3_f("requested max size %d", max);
 	if (max < 3072) {
 		debug3("using 2k bit group 14");
-		return dh_new_group14();
+		return dh_new_group_num(14);
 	} else if (max < 6144) {
 		debug3("using 4k bit group 16");
-		return dh_new_group16();
+		return dh_new_group_num(16);
 	}
 	debug3("using 8k bit group 18");
-	return dh_new_group18();
+	return dh_new_group_num(18);
 }
 
 /*
