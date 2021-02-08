@@ -148,7 +148,7 @@ int deny_severity;
 extern char *__progname;
 
 /* used in ssh-x509.c */
-extern int (*pssh_x509store_verify_cert)(X509 *cert, STACK_OF(X509) *_chain);
+extern int (*pssh_x509store_verify_cert)(X509 *cert, STACK_OF(X509) *untrusted);
 extern STACK_OF(X509)* (*pssh_x509store_build_certchain)(X509 *cert, STACK_OF(X509) *untrusted);
 
 /* Server configuration options. */

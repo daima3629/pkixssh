@@ -43,7 +43,7 @@
 #endif
 
 /* pointer to x509store function to minimize build dependencies */
-int (*pssh_x509store_verify_cert)(X509 *_cert, STACK_OF(X509) *_chain) = NULL;
+int (*pssh_x509store_verify_cert)(X509 *cert, STACK_OF(X509) *untrusted) = NULL;
 STACK_OF(X509)* (*pssh_x509store_build_certchain)(X509 *cert, STACK_OF(X509) *untrusted) = NULL;
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -922,17 +922,17 @@ ssh_verify_cert(X509_STORE_CTX *_csc) {
 
 
 int
-ssh_x509store_verify_cert(X509 *_cert, STACK_OF(X509) *_chain) {
+ssh_x509store_verify_cert(X509 *cert, STACK_OF(X509) *untrusted) {
 	int ret = 1;
 	X509_STORE_CTX *csc;
 
-	if (_cert == NULL) {
+	if (cert == NULL) {
 		/*already checked but ...*/
 		error_f("cert is NULL");
 		ret = -1;
 		goto done;
 	}
-	/* _chain could be NULL */
+	/* untrusted chain could be NULL */
 	if (x509store == NULL) {
 		error_f("context is NULL");
 		ret = -1;
@@ -941,7 +941,7 @@ ssh_x509store_verify_cert(X509 *_cert, STACK_OF(X509) *_chain) {
 
 	if (get_log_level() >= SYSLOG_LEVEL_DEBUG3) {
 		char *buf;
-		buf = ssh_X509_NAME_oneline(X509_get_subject_name(_cert)); /*fatal on error*/
+		buf = ssh_X509_NAME_oneline(X509_get_subject_name(cert)); /*fatal on error*/
 		debug3_f("for '%s'", buf);
 		free(buf);
 	}
@@ -953,7 +953,7 @@ ssh_x509store_verify_cert(X509 *_cert, STACK_OF(X509) *_chain) {
 		goto done;
 	}
 
-	if (X509_STORE_CTX_init(csc, x509store, _cert, _chain) <= 0) {
+	if (X509_STORE_CTX_init(csc, x509store, cert, untrusted) <= 0) {
 		/*memory allocation error*/
 		error_f("cannot initialize x509store context");
 		ret = -1;
@@ -1006,7 +1006,7 @@ donecsc:
  * Therefore instead to send OCSP request in ssh_x509revoked_cb()
  * we do this here.
  */
-		ret = ssh_ocsp_validate(_cert, x509store);
+		ret = ssh_ocsp_validate(cert, x509store);
 	}
 #endif /*def SSH_OCSP_ENABLED*/
 

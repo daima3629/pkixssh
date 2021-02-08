@@ -19,7 +19,7 @@
  * Modified to work with SSLeay by Niels Provos <provos@citi.umich.edu>
  * in Canada (German citizen).
  *
- * Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -133,7 +133,7 @@ static char **saved_av;
 #endif
 
 /* used in ssh-x509.c */
-extern int (*pssh_x509store_verify_cert)(X509 *_cert, STACK_OF(X509) *_chain);
+extern int (*pssh_x509store_verify_cert)(X509 *cert, STACK_OF(X509) *untrusted);
 extern STACK_OF(X509)* (*pssh_x509store_build_certchain)(X509 *cert, STACK_OF(X509) *untrusted);
 
 /* Flag indicating whether debug mode is on.  May be set on the command line. */

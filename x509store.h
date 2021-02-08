@@ -1,7 +1,7 @@
 #ifndef X509STORE_H
 #define X509STORE_H
 /*
- * Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -50,9 +50,9 @@ ssh_ASN1_STRING_get0_data(const ASN1_STRING *a,
 }
 
 
-int ssh_x509store_verify_cert(X509 *_cert, STACK_OF(X509) *_chain);
+int ssh_x509store_verify_cert(X509 *cert, STACK_OF(X509) *untrusted);
 
-STACK_OF(X509)* ssh_x509store_build_certchain(X509 *_cert, STACK_OF(X509) *_untrusted);
+STACK_OF(X509)* ssh_x509store_build_certchain(X509 *cert, STACK_OF(X509) *untrusted);
 
 
 typedef struct {
