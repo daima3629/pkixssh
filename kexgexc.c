@@ -93,7 +93,6 @@ input_kex_dh_gex_group(int type, u_int32_t seq, struct ssh *ssh)
 {
 	struct kex *kex = ssh->kex;
 	BIGNUM *p = NULL, *g = NULL;
-	const BIGNUM *pub_key;
 	int r, bits;
 
 	UNUSED(type);
@@ -120,11 +119,13 @@ input_kex_dh_gex_group(int type, u_int32_t seq, struct ssh *ssh)
 	/* generate and send 'e', client DH public key */
 	if ((r = dh_gen_key(kex->dh, kex->we_need * 8)) != 0)
 		goto out;
+{	const BIGNUM *pub_key;
 	DH_get0_key(kex->dh, &pub_key, NULL);
 	if ((r = sshpkt_start(ssh, SSH2_MSG_KEX_DH_GEX_INIT)) != 0 ||
 	    (r = sshpkt_put_bignum2(ssh, pub_key)) != 0 ||
 	    (r = sshpkt_send(ssh)) != 0)
 		goto out;
+}
 	debug("SSH2_MSG_KEX_DH_GEX_INIT sent");
 #ifdef DEBUG_KEXDH
 	DHparams_print_fp(stderr, kex->dh);
@@ -146,7 +147,6 @@ input_kex_dh_gex_reply(int type, u_int32_t seq, struct ssh *ssh)
 {
 	struct kex *kex = ssh->kex;
 	BIGNUM *dh_server_pub = NULL;
-	const BIGNUM *pub_key, *dh_p, *dh_g;
 	struct sshbuf *shared_secret = NULL;
 	struct sshbuf *server_host_key_blob = NULL;
 	struct sshkey *server_host_key = NULL;
@@ -188,22 +188,9 @@ input_kex_dh_gex_reply(int type, u_int32_t seq, struct ssh *ssh)
 		kex->min = kex->max = -1;
 
 	/* calc and verify H */
-	DH_get0_key(kex->dh, &pub_key, NULL);
-	DH_get0_pqg(kex->dh, &dh_p, NULL, &dh_g);
 	hashlen = sizeof(hash);
-	if ((r = kexgex_hash(
-	    kex->hash_alg,
-	    kex->client_version,
-	    kex->server_version,
-	    kex->my,
-	    kex->peer,
-	    server_host_key_blob,
-	    kex->min, kex->nbits, kex->max,
-	    dh_p, dh_g,
-	    pub_key,
-	    dh_server_pub,
-	    sshbuf_ptr(shared_secret), sshbuf_len(shared_secret),
-	    hash, &hashlen)) != 0)
+	if ((r = kexgex_hash_client(kex, server_host_key_blob, dh_server_pub,
+		shared_secret, hash, &hashlen)) != 0)
 		goto out;
 
 {	ssh_verify_ctx ctx = { kex->hostkey_alg, server_host_key, &ssh->compat, NULL };

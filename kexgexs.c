@@ -71,7 +71,6 @@ input_kex_dh_gex_request(int type, u_int32_t seq, struct ssh *ssh)
 	struct kex *kex = ssh->kex;
 	int r;
 	u_int min = 0, max = 0, nbits = 0;
-	const BIGNUM *dh_p, *dh_g;
 
 	UNUSED(type);
 	UNUSED(seq);
@@ -105,12 +104,14 @@ input_kex_dh_gex_request(int type, u_int32_t seq, struct ssh *ssh)
 		goto out;
 	}
 	debug("SSH2_MSG_KEX_DH_GEX_GROUP sent");
+{	const BIGNUM *dh_p, *dh_g;
 	DH_get0_pqg(kex->dh, &dh_p, NULL, &dh_g);
 	if ((r = sshpkt_start(ssh, SSH2_MSG_KEX_DH_GEX_GROUP)) != 0 ||
 	    (r = sshpkt_put_bignum2(ssh, dh_p)) != 0 ||
 	    (r = sshpkt_put_bignum2(ssh, dh_g)) != 0 ||
 	    (r = sshpkt_send(ssh)) != 0)
 		goto out;
+}
 
 	/* Compute our exchange value in parallel with the client */
 	if ((r = dh_gen_key(kex->dh, kex->we_need * 8)) != 0)
@@ -128,7 +129,6 @@ input_kex_dh_gex_init(int type, u_int32_t seq, struct ssh *ssh)
 {
 	struct kex *kex = ssh->kex;
 	BIGNUM *dh_client_pub = NULL;
-	const BIGNUM *pub_key, *dh_p, *dh_g;
 	struct sshbuf *shared_secret = NULL;
 	struct sshbuf *server_host_key_blob = NULL;
 	struct sshkey *server_host_public, *server_host_private;
@@ -169,22 +169,9 @@ input_kex_dh_gex_init(int type, u_int32_t seq, struct ssh *ssh)
 #endif
 
 	/* calc H */
-	DH_get0_key(kex->dh, &pub_key, NULL);
-	DH_get0_pqg(kex->dh, &dh_p, NULL, &dh_g);
 	hashlen = sizeof(hash);
-	if ((r = kexgex_hash(
-	    kex->hash_alg,
-	    kex->client_version,
-	    kex->server_version,
-	    kex->peer,
-	    kex->my,
-	    server_host_key_blob,
-	    kex->min, kex->nbits, kex->max,
-	    dh_p, dh_g,
-	    dh_client_pub,
-	    pub_key,
-	    sshbuf_ptr(shared_secret), sshbuf_len(shared_secret),
-	    hash, &hashlen)) != 0)
+	if ((r = kexgex_hash_server(kex, server_host_key_blob, dh_client_pub,
+	    shared_secret, hash, &hashlen )) != 0)
 		goto out;
 
 	/* sign H */
@@ -196,12 +183,15 @@ input_kex_dh_gex_init(int type, u_int32_t seq, struct ssh *ssh)
 }
 
 	/* send server hostkey, DH pubkey 'f' and signed H */
+{	const BIGNUM *pub_key;
+	DH_get0_key(kex->dh, &pub_key, NULL);
 	if ((r = sshpkt_start(ssh, SSH2_MSG_KEX_DH_GEX_REPLY)) != 0 ||
 	    (r = sshpkt_put_stringb(ssh, server_host_key_blob)) != 0 ||
 	    (r = sshpkt_put_bignum2(ssh, pub_key)) != 0 ||     /* f */
 	    (r = sshpkt_put_string(ssh, signature, slen)) != 0 ||
 	    (r = sshpkt_send(ssh)) != 0)
 		goto out;
+}
 
 	if ((r = kex_derive_keys(ssh, hash, hashlen, shared_secret)) == 0)
 		r = kex_send_newkeys(ssh);

@@ -218,6 +218,16 @@ int	 kexgex_hash(int, const struct sshbuf *, const struct sshbuf *,
     const BIGNUM *, const u_char *, size_t,
     u_char *, size_t *);
 
+int	kexgex_hash_client(const struct kex *kex,
+    const struct sshbuf *key_blob, const BIGNUM *peer_pub,
+    const struct sshbuf *shared_secret,
+    u_char *hash, size_t *hashlen);
+
+int	kexgex_hash_server(const struct kex *kex,
+    const struct sshbuf *key_blob, const BIGNUM *peer_pub,
+    const struct sshbuf *shared_secret,
+    u_char *hash, size_t *hashlen);
+
 void	kexc25519_keygen(u_char key[CURVE25519_SIZE], u_char pub[CURVE25519_SIZE])
 	__attribute__((__bounded__(__minbytes__, 1, CURVE25519_SIZE)))
 	__attribute__((__bounded__(__minbytes__, 2, CURVE25519_SIZE)));
