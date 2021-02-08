@@ -107,46 +107,43 @@ static struct sshbuf *child_state;
 
 /* Functions on the monitor that answer unprivileged requests */
 
-int mm_answer_moduli(struct ssh *, int, struct sshbuf *);
-int mm_answer_sign(struct ssh *, int, struct sshbuf *);
-int mm_answer_pwnamallow(struct ssh *, int, struct sshbuf *);
-int mm_answer_auth2_read_banner(struct ssh *, int, struct sshbuf *);
-int mm_answer_authserv(struct ssh *, int, struct sshbuf *);
-int mm_answer_authpassword(struct ssh *, int, struct sshbuf *);
-int mm_answer_bsdauthquery(struct ssh *, int, struct sshbuf *);
-int mm_answer_bsdauthrespond(struct ssh *, int, struct sshbuf *);
-int mm_answer_skeyquery(struct ssh *, int, struct sshbuf *);
-int mm_answer_skeyrespond(struct ssh *, int, struct sshbuf *);
-int mm_answer_keyallowed(struct ssh *, int, struct sshbuf *);
-int mm_answer_keyverify(struct ssh *, int, struct sshbuf *);
-int mm_answer_pty(struct ssh *, int, struct sshbuf *);
-int mm_answer_pty_cleanup(struct ssh *, int, struct sshbuf *);
-int mm_answer_term(struct ssh *, int, struct sshbuf *);
-int mm_answer_rsa_keyallowed(struct ssh *, int, struct sshbuf *);
-int mm_answer_rsa_challenge(struct ssh *, int, struct sshbuf *);
-int mm_answer_rsa_response(struct ssh *, int, struct sshbuf *);
-int mm_answer_sesskey(struct ssh *, int, struct sshbuf *);
-int mm_answer_sessid(struct ssh *, int, struct sshbuf *);
+#ifdef WITH_OPENSSL
+static int mm_answer_moduli(struct ssh *, int, struct sshbuf *);
+#endif
+static int mm_answer_sign(struct ssh *, int, struct sshbuf *);
+static int mm_answer_pwnamallow(struct ssh *, int, struct sshbuf *);
+static int mm_answer_auth2_read_banner(struct ssh *, int, struct sshbuf *);
+static int mm_answer_authserv(struct ssh *, int, struct sshbuf *);
+static int mm_answer_authpassword(struct ssh *, int, struct sshbuf *);
+#ifdef BSD_AUTH
+static int mm_answer_bsdauthquery(struct ssh *, int, struct sshbuf *);
+static int mm_answer_bsdauthrespond(struct ssh *, int, struct sshbuf *);
+#endif
+static int mm_answer_keyallowed(struct ssh *, int, struct sshbuf *);
+static int mm_answer_keyverify(struct ssh *, int, struct sshbuf *);
+static int mm_answer_pty(struct ssh *, int, struct sshbuf *);
+static int mm_answer_pty_cleanup(struct ssh *, int, struct sshbuf *);
+static int mm_answer_term(struct ssh *, int, struct sshbuf *);
 
 #ifdef USE_PAM
-int mm_answer_pam_start(struct ssh *, int, struct sshbuf *);
-int mm_answer_pam_account(struct ssh *, int, struct sshbuf *);
-int mm_answer_pam_init_ctx(struct ssh *, int, struct sshbuf *);
-int mm_answer_pam_query(struct ssh *, int, struct sshbuf *);
-int mm_answer_pam_respond(struct ssh *, int, struct sshbuf *);
-int mm_answer_pam_free_ctx(struct ssh *, int, struct sshbuf *);
+static int mm_answer_pam_start(struct ssh *, int, struct sshbuf *);
+static int mm_answer_pam_account(struct ssh *, int, struct sshbuf *);
+static int mm_answer_pam_init_ctx(struct ssh *, int, struct sshbuf *);
+static int mm_answer_pam_query(struct ssh *, int, struct sshbuf *);
+static int mm_answer_pam_respond(struct ssh *, int, struct sshbuf *);
+static int mm_answer_pam_free_ctx(struct ssh *, int, struct sshbuf *);
 #endif
 
 #ifdef GSSAPI
-int mm_answer_gss_setup_ctx(struct ssh *, int, struct sshbuf *);
-int mm_answer_gss_accept_ctx(struct ssh *, int, struct sshbuf *);
-int mm_answer_gss_userok(struct ssh *, int, struct sshbuf *);
-int mm_answer_gss_checkmic(struct ssh *, int, struct sshbuf *);
+static int mm_answer_gss_setup_ctx(struct ssh *, int, struct sshbuf *);
+static int mm_answer_gss_accept_ctx(struct ssh *, int, struct sshbuf *);
+static int mm_answer_gss_userok(struct ssh *, int, struct sshbuf *);
+static int mm_answer_gss_checkmic(struct ssh *, int, struct sshbuf *);
 #endif
 
 #ifdef SSH_AUDIT_EVENTS
-int mm_answer_audit_event(struct ssh *, int, struct sshbuf *);
-int mm_answer_audit_command(struct ssh *, int, struct sshbuf *);
+static int mm_answer_audit_event(struct ssh *, int, struct sshbuf *);
+static int mm_answer_audit_command(struct ssh *, int, struct sshbuf *);
 #endif
 
 static Authctxt *authctxt;
