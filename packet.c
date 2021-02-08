@@ -2509,6 +2509,11 @@ sshpkt_put_bignum2(struct ssh *ssh, const BIGNUM *v)
 {
 	return sshbuf_put_bignum2(ssh->state->outgoing_packet, v);
 }
+
+int
+sshpkt_write_dh_group(struct ssh *ssh, EVP_PKEY *pk) {
+	return sshbuf_kex_write_dh_group(ssh->state->outgoing_packet, pk);
+}
 #endif /* WITH_OPENSSL */
 
 /* fetch data from the incoming packet */

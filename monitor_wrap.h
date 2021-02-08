@@ -4,7 +4,7 @@
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * All rights reserved.
  *
- * Copyright (c) 2017-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2017-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -30,6 +30,8 @@
 #ifndef _MM_WRAP_H_
 #define _MM_WRAP_H_
 
+#include "evp-compat.h"
+
 extern int use_privsep;
 #define PRIVSEP(x)	(use_privsep ? mm_##x : x)
 
@@ -44,11 +46,7 @@ struct sshauthopt;
 void mm_log_handler(const char *file, const char *func, int line,
     LogLevel level, const char *msg, void *ctx);
 int mm_is_monitor(void);
-#ifdef WITH_OPENSSL
-  /* for "typedef struct dh_st DH;" in OpenSSL before 0.9.8 */
-# include <openssl/dh.h>
-DH *mm_choose_dh(int, int, int);
-#endif
+EVP_PKEY*	mm_kex_new_dh_group_bits(int, int, int);
 int mm_Xkey_sign(struct ssh *ssh, ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
     const u_char *data, size_t datalen);
 void mm_inform_authserv(char *, char *);

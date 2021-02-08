@@ -4,7 +4,7 @@
  * Copyright 2002 Markus Friedl <markus@openbsd.org>
  * All rights reserved.
  *
- * Copyright (c) 2007-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2007-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -49,9 +49,6 @@
 #include "openbsd-compat/sys-queue.h"
 #include "xmalloc.h"
 #include "ssh.h"
-#ifdef WITH_OPENSSL
-#include "dh.h"
-#endif
 #include "ssh-x509.h"
 #include "cipher.h"
 #include "kex.h"
@@ -182,10 +179,9 @@ mm_request_receive_expect(int sock, enum monitor_reqtype type, struct sshbuf *m)
 }
 
 #ifdef WITH_OPENSSL
-DH *
-mm_choose_dh(int min, int nbits, int max)
+EVP_PKEY*
+mm_kex_new_dh_group_bits(int min, int nbits, int max)
 {
-	BIGNUM *p, *g;
 	int r;
 	u_char success = 0;
 	struct sshbuf *m;
@@ -207,6 +203,8 @@ mm_choose_dh(int min, int nbits, int max)
 	if (success == 0)
 		fatal_f("MONITOR_ANS_MODULI failed");
 
+{	BIGNUM *p, *g;
+
 	if ((r = sshbuf_get_bignum2(m, &p)) != 0 ||
 	    (r = sshbuf_get_bignum2(m, &g)) != 0)
 		fatal_fr(r, "parse group");
@@ -214,7 +212,8 @@ mm_choose_dh(int min, int nbits, int max)
 	debug3_f("remaining %zu", sshbuf_len(m));
 	sshbuf_free(m);
 
-	return (dh_new_group(g, p));
+	return kex_new_dh_group(p, g);
+}
 }
 #endif
 

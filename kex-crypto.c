@@ -30,6 +30,116 @@
 
 #include "kex.h"
 #include "dh.h"
+#include "ssherr.h"
+
+#ifndef HAVE_DH_GET0_KEY	/* OpenSSL < 1.1 */
+/* Partial backport of opaque DH from OpenSSL >= 1.1, commits
+ * "Make DH opaque", "RSA, DSA, DH: Allow some given input to be NULL
+ * on already initialised keys" and etc.
+ */
+static int
+DH_set_length(DH *dh, long length) {
+	dh->length = length;
+	return 1;
+}
+
+static inline int
+DH_set0_pqg(DH *dh, BIGNUM *p, BIGNUM *q, BIGNUM *g) {
+/* If the fields p and g in d are NULL, the corresponding input
+ * parameters MUST be non-NULL.  q may remain NULL.
+ *
+ * It is an error to give the results from get0 on d as input
+ * parameters.
+ */
+	if (p == dh->p || (dh->q != NULL && q == dh->q) || g == dh->g)
+		return 0;
+
+	if (p != NULL) { BN_free(dh->p); dh->p = p; }
+	if (q != NULL) { BN_free(dh->q); dh->q = q; }
+	if (g != NULL) { BN_free(dh->g); dh->g = g; }
+
+	if (q != NULL)
+	        (void)DH_set_length(dh, BN_num_bits(q));
+
+	return 1;
+}
+#endif /*ndef HAVE_DH_GET0_KEY*/
+
+
+/* TODO: internal */
+extern DH* _choose_dh(int, int, int);
+
+EVP_PKEY*
+kex_new_dh_group_bits(int min, int wantbits, int max) {
+	EVP_PKEY *pk;
+	DH *dh = NULL;
+
+	dh = _choose_dh(min, wantbits, max);
+	if (dh == NULL) return NULL;
+
+	pk = EVP_PKEY_new();
+	if (pk == NULL) goto done;
+
+	if (!EVP_PKEY_set1_DH(pk, dh)) {
+		EVP_PKEY_free(pk);
+		pk = NULL;
+	}
+
+done:
+	DH_free(dh);
+	return pk;
+}
+
+EVP_PKEY*
+kex_new_dh_group(BIGNUM *modulus, BIGNUM *gen) {
+	EVP_PKEY *pk = NULL;
+	DH *dh = NULL;
+
+	dh = DH_new();
+	if (dh == NULL) return NULL;
+
+	if (!DH_set0_pqg(dh, modulus, NULL, gen))
+		goto done;
+
+	pk = EVP_PKEY_new();
+	if (pk == NULL) goto done;
+
+	if (!EVP_PKEY_set1_DH(pk, dh)) {
+		EVP_PKEY_free(pk);
+		pk = NULL;
+	}
+
+done:
+	DH_free(dh);
+	return pk;
+}
+
+
+int
+sshbuf_kex_write_dh_group(struct sshbuf *buf, EVP_PKEY *pk) {
+	int r;
+	DH *dh;
+
+	dh = EVP_PKEY_get1_DH(pk);
+	if (dh == NULL) {
+		r = SSH_ERR_INVALID_ARGUMENT;
+		goto done;
+	}
+
+{	const BIGNUM *p = NULL, *g = NULL;
+	DH_get0_pqg(dh, &p, NULL, &g);
+
+	if ((r = sshbuf_put_bignum2(buf, p)) != 0 ||
+	    (r = sshbuf_put_bignum2(buf, g)) != 0)
+		goto done;
+}
+
+	/* success */
+
+done:
+	DH_free(dh);
+	return r;
+}
 
 
 int

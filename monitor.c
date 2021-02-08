@@ -68,7 +68,6 @@
 #include "auth.h"
 #include "cipher.h"
 #include "kex.h"
-#include "dh.h"
 #include "auth-pam.h"
 #include "packet.h"
 #include "auth-options.h"
@@ -566,7 +565,6 @@ monitor_reset_key_state(void)
 int
 mm_answer_moduli(struct ssh *ssh, int sock, struct sshbuf *m)
 {
-	DH *dh;
 	int r;
 	u_int32_t min, want, max;
 
@@ -584,25 +582,24 @@ mm_answer_moduli(struct ssh *ssh, int sock, struct sshbuf *m)
 
 	sshbuf_reset(m);
 
-	dh = choose_dh(min, want, max);
-	if (dh == NULL) {
+{	EVP_PKEY *pk;
+
+	pk = kex_new_dh_group_bits(min, want, max);
+	if (pk == NULL) {
 		if ((r = sshbuf_put_u8(m, 0)) != 0)
 			fatal_fr(r, "assemble empty");
-		return (0);
+		return 0;
 	} else {
-		const BIGNUM *dh_p = NULL, *dh_g = NULL;
-
-		/* Send first bignum */
-		DH_get0_pqg(dh, &dh_p, NULL, &dh_g);
+		/* send first bignum */
 		if ((r = sshbuf_put_u8(m, 1)) != 0 ||
-		    (r = sshbuf_put_bignum2(m, dh_p)) != 0 ||
-		    (r = sshbuf_put_bignum2(m, dh_g)) != 0)
+		    (r = sshbuf_kex_write_dh_group(m, pk)) != 0)
 			fatal_fr(r, "assemble");
 
-		DH_free(dh);
+		EVP_PKEY_free(pk);
 	}
+}
 	mm_request_send(sock, MONITOR_ANS_MODULI, m);
-	return (0);
+	return 0;
 }
 #endif
 

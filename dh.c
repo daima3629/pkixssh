@@ -182,8 +182,11 @@ parse_prime(int linenum, char *line, struct dhgroup *dhg)
 	return 0;
 }
 
+/* TODO: internal */
+extern DH* _choose_dh(int, int, int);
+
 DH *
-choose_dh(int min, int wantbits, int max)
+_choose_dh(int min, int wantbits, int max)
 {
 	FILE *f;
 	char *line = NULL;

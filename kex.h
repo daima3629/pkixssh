@@ -130,7 +130,8 @@ struct kex {
 	    u_char **sigp, size_t *lenp, const u_char *data, size_t datalen);
 	int	(*kex[KEX_MAX])(struct ssh *);
 	/* kex specific state */
-	DH	*dh;			/* DH */
+	EVP_PKEY	*pk;
+	DH      *dh;                    /* DH */
 	u_int	min, max, nbits;	/* GEX */
 	EC_KEY	*ec_client_key;		/* ECDH */
 	u_char c25519_client_key[CURVE25519_SIZE]; /* 25519 + KEM */
@@ -221,6 +222,13 @@ int	kexc25519_shared_key_ext(const u_char key[CURVE25519_SIZE],
     const u_char pub[CURVE25519_SIZE], struct sshbuf *out, int)
 	__attribute__((__bounded__(__minbytes__, 1, CURVE25519_SIZE)))
 	__attribute__((__bounded__(__minbytes__, 2, CURVE25519_SIZE)));
+
+
+EVP_PKEY*	kex_new_dh_group_bits(int min, int wantbits, int max);
+EVP_PKEY*	kex_new_dh_group(BIGNUM *modulus, BIGNUM *gen);
+
+int	sshbuf_kex_write_dh_group(struct sshbuf *buf, EVP_PKEY *pk);
+
 
 #if defined(DEBUG_KEX) || defined(DEBUG_KEXDH) || defined(DEBUG_KEXECDH)
 void	dump_digest(const char *, const u_char *, size_t);

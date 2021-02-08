@@ -765,6 +765,7 @@ kex_free(struct kex *kex)
 		return;
 
 #ifdef WITH_OPENSSL
+	EVP_PKEY_free(kex->pk);
 	DH_free(kex->dh);
 #ifdef OPENSSL_HAS_ECC
 	EC_KEY_free(kex->ec_client_key);

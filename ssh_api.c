@@ -1,7 +1,7 @@
 /* $OpenBSD: ssh_api.c,v 1.26 2021/01/27 10:05:28 djm Exp $ */
 /*
  * Copyright (c) 2012 Markus Friedl.  All rights reserved.
- * Copyright (c) 2014-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2014-2021 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -53,15 +53,16 @@ struct sshkey *_ssh_host_private_key(const char*, struct ssh *);
 int	use_privsep = 0;
 
 #ifdef WITH_OPENSSL
-DH	*mm_choose_dh(int, int, int);
-#endif
+/* fake implementation for client objects.
+ * real for daemon is in monitor_wrap.
+ */
+EVP_PKEY*	mm_kex_new_dh_group_bits(int, int, int);
 
-#ifdef WITH_OPENSSL
-DH *
-mm_choose_dh(int min, int nbits, int max)
+EVP_PKEY*
+mm_kex_new_dh_group_bits(int min, int nbits, int max)
 {
 	UNUSED(min); UNUSED(nbits); UNUSED(max);
-	return (NULL);
+	return NULL;
 }
 #endif
 
