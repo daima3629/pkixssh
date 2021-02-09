@@ -1,6 +1,7 @@
 /* $OpenBSD: kexdh.c,v 1.33 2020/05/08 05:13:14 djm Exp $ */
 /*
  * Copyright (c) 2019 Markus Friedl.  All rights reserved.
+ * Copyright (c) 2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -159,8 +160,7 @@ kex_dh_enc(struct kex *kex, const struct sshbuf *client_blob,
 	*server_blobp = server_blob;
 	server_blob = NULL;
  out:
-	DH_free(kex->dh);
-	kex->dh = NULL;
+	kex_reset_crypto_keys(kex);
 	sshbuf_free(server_blob);
 	return r;
 }
@@ -189,8 +189,7 @@ kex_dh_dec(struct kex *kex, const struct sshbuf *dh_blob,
 	buf = NULL;
  out:
 	BN_free(dh_pub);
-	DH_free(kex->dh);
-	kex->dh = NULL;
+	kex_reset_crypto_keys(kex);
 	sshbuf_free(buf);
 	return r;
 }

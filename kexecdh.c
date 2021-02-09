@@ -2,6 +2,7 @@
 /*
  * Copyright (c) 2010 Damien Miller.  All rights reserved.
  * Copyright (c) 2019 Markus Friedl.  All rights reserved.
+ * Copyright (c) 2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -206,8 +207,7 @@ kex_ecdh_dec(struct kex *kex, const struct sshbuf *server_blob,
 	group = EC_KEY_get0_group(kex->ec_client_key);
 	r = kex_ecdh_dec_key_group(kex, server_blob, kex->ec_client_key,
 	    group, shared_secretp);
-	EC_KEY_free(kex->ec_client_key);
-	kex->ec_client_key = NULL;
+	kex_reset_crypto_keys(kex);
 	return r;
 }
 #endif /* defined(WITH_OPENSSL) && defined(OPENSSL_HAS_ECC) */

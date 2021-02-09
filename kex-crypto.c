@@ -66,6 +66,21 @@ DH_set0_pqg(DH *dh, BIGNUM *p, BIGNUM *q, BIGNUM *g) {
 #endif /*ndef HAVE_DH_GET0_KEY*/
 
 
+void
+kex_reset_crypto_keys(struct kex *kex) {
+	EVP_PKEY_free(kex->pk);
+	kex->pk = NULL;
+
+	DH_free(kex->dh);
+	kex->dh = NULL;
+
+#ifdef OPENSSL_HAS_ECC
+	EC_KEY_free(kex->ec_client_key);
+	kex->ec_client_key = NULL;
+#endif /* OPENSSL_HAS_ECC */
+}
+
+
 /* TODO: internal */
 extern DH* _choose_dh(int, int, int);
 

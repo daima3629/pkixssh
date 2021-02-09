@@ -152,6 +152,7 @@ int	 kex_ready(struct ssh *, char *[PROPOSAL_MAX]);
 int	 kex_setup(struct ssh *, char *[PROPOSAL_MAX]);
 void	 kex_free_newkeys(struct newkeys *);
 void	 kex_free(struct kex *);
+void	 kex_reset_crypto_keys(struct kex *);
 
 int	 kex_buf2prop(struct sshbuf *, int *, char ***);
 int	 kex_prop2buf(struct sshbuf *, char *proposal[PROPOSAL_MAX]);
