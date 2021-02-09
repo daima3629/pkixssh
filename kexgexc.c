@@ -110,11 +110,17 @@ input_kex_dh_gex_group(int type, u_int32_t seq, struct ssh *ssh)
 		r = SSH_ERR_DH_GEX_OUT_OF_RANGE;
 		goto out;
 	}
-	if ((kex->dh = dh_new_group(g, p)) == NULL) {
+	kex->pk = kex_new_dh_group(p, g);
+	if (kex->pk == NULL) {
 		r = SSH_ERR_ALLOC_FAIL;
 		goto out;
 	}
-	p = g = NULL; /* belong to kex->dh now */
+	p = g = NULL; /* belong to kex->pk[dh] now */
+	kex->dh = EVP_PKEY_get1_DH(kex->pk); /* TODO */
+	if (kex->dh == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto out;
+	}
 
 	/* generate and send 'e', client DH public key */
 	if ((r = dh_gen_key(kex->dh, kex->we_need * 8)) != 0)

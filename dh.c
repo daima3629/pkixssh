@@ -82,6 +82,7 @@ DH_set0_pqg(DH *dh, BIGNUM *p, BIGNUM *q, BIGNUM *g) {
 
 
 static DH *dh_new_group_fallback(int);
+static DH *dh_new_group(BIGNUM *, BIGNUM *);
 
 
 static int

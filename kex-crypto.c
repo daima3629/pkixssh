@@ -113,16 +113,19 @@ kex_new_dh_group(BIGNUM *modulus, BIGNUM *gen) {
 	dh = DH_new();
 	if (dh == NULL) return NULL;
 
-	if (!DH_set0_pqg(dh, modulus, NULL, gen))
+	pk = EVP_PKEY_new();
+	if (pk == NULL)
 		goto done;
 
-	pk = EVP_PKEY_new();
-	if (pk == NULL) goto done;
+	if (!EVP_PKEY_set1_DH(pk, dh))
+		goto err;
 
-	if (!EVP_PKEY_set1_DH(pk, dh)) {
-		EVP_PKEY_free(pk);
-		pk = NULL;
-	}
+	if (DH_set0_pqg(dh, modulus, NULL, gen))
+		goto done;
+
+err:
+	EVP_PKEY_free(pk);
+	pk = NULL;
 
 done:
 	DH_free(dh);

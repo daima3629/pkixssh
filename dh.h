@@ -60,7 +60,6 @@ struct dhgroup {
 };
 
 DH	*dh_new_group_asc(const char *, const char *);
-DH	*dh_new_group(BIGNUM *, BIGNUM *);
 DH	*dh_new_group_num(int);
 
 int	 dh_gen_key(DH *, int);
