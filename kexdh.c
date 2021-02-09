@@ -42,26 +42,42 @@
 int
 kex_dh_keygen(struct kex *kex)
 {
+	DH *dh;
+
 	switch (kex->kex_type) {
 	case KEX_DH_GRP1_SHA1:
-		kex->dh = dh_new_group_num(1);
+		dh = dh_new_group_num(1);
 		break;
 	case KEX_DH_GRP14_SHA1:
 	case KEX_DH_GRP14_SHA256:
-		kex->dh = dh_new_group_num(14);
+		dh = dh_new_group_num(14);
 		break;
 	case KEX_DH_GRP16_SHA512:
-		kex->dh = dh_new_group_num(16);
+		dh = dh_new_group_num(16);
 		break;
 	case KEX_DH_GRP18_SHA512:
-		kex->dh = dh_new_group_num(18);
+		dh = dh_new_group_num(18);
 		break;
 	default:
 		return SSH_ERR_INVALID_ARGUMENT;
 	}
-	if (kex->dh == NULL)
+	if (dh == NULL) return SSH_ERR_ALLOC_FAIL;
+
+{	EVP_PKEY *pk = EVP_PKEY_new();
+	if (pk == NULL) {
+		DH_free(dh);
 		return SSH_ERR_ALLOC_FAIL;
-	return (dh_gen_key(kex->dh, kex->we_need * 8));
+	}
+	if (!EVP_PKEY_set1_DH(pk, dh)) {
+		DH_free(dh);
+		EVP_PKEY_free(pk);
+		return SSH_ERR_ALLOC_FAIL;
+	}
+	kex->pk = pk;
+}
+	kex->dh = dh; /* TODO */
+
+	return dh_gen_key(dh, kex->we_need * 8);
 }
 
 int
