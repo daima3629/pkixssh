@@ -121,20 +121,16 @@ sshbuf_kex_write_dh_group(struct sshbuf *buf, EVP_PKEY *pk) {
 	DH *dh;
 
 	dh = EVP_PKEY_get1_DH(pk);
-	if (dh == NULL) {
-		r = SSH_ERR_INVALID_ARGUMENT;
-		goto done;
-	}
+	if (dh == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
 
 {	const BIGNUM *p = NULL, *g = NULL;
 	DH_get0_pqg(dh, &p, NULL, &g);
 
-	if ((r = sshbuf_put_bignum2(buf, p)) != 0 ||
-	    (r = sshbuf_put_bignum2(buf, g)) != 0)
+	if ((r = sshbuf_put_bignum2(buf, p)) != 0)
 		goto done;
+	r = sshbuf_put_bignum2(buf, g);
 }
-
-	/* success */
 
 done:
 	DH_free(dh);
