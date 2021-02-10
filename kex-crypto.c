@@ -65,6 +65,49 @@ DH_set0_pqg(DH *dh, BIGNUM *p, BIGNUM *q, BIGNUM *g) {
 }
 #endif /*ndef HAVE_DH_GET0_KEY*/
 
+extern DH* _dh_new_group_num(int);
+
+
+int
+kex_key_init_dh(struct kex *kex) {
+	DH *dh;
+
+	switch (kex->kex_type) {
+	case KEX_DH_GRP1_SHA1:
+		dh = _dh_new_group_num(1);
+		break;
+	case KEX_DH_GRP14_SHA1:
+	case KEX_DH_GRP14_SHA256:
+		dh = _dh_new_group_num(14);
+		break;
+	case KEX_DH_GRP16_SHA512:
+		dh = _dh_new_group_num(16);
+		break;
+	case KEX_DH_GRP18_SHA512:
+		dh = _dh_new_group_num(18);
+		break;
+	default:
+		return SSH_ERR_INVALID_ARGUMENT;
+	}
+	if (dh == NULL) return SSH_ERR_ALLOC_FAIL;
+
+{	EVP_PKEY *pk = EVP_PKEY_new();
+	if (pk == NULL) {
+		DH_free(dh);
+		return SSH_ERR_ALLOC_FAIL;
+	}
+	if (!EVP_PKEY_set1_DH(pk, dh)) {
+		DH_free(dh);
+		EVP_PKEY_free(pk);
+		return SSH_ERR_ALLOC_FAIL;
+	}
+	kex->pk = pk;
+}
+	kex->dh = dh; /* TODO */
+
+	return 0;
+}
+
 
 void
 kex_reset_crypto_keys(struct kex *kex) {

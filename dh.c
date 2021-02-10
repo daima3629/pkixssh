@@ -83,6 +83,7 @@ DH_set0_pqg(DH *dh, BIGNUM *p, BIGNUM *q, BIGNUM *g) {
 
 static DH *dh_new_group_fallback(int);
 static DH *dh_new_group(BIGNUM *, BIGNUM *);
+extern DH *_dh_new_group_num(int);
 
 
 static int
@@ -380,7 +381,7 @@ dh_new_group(BIGNUM *gen, BIGNUM *modulus)
 }
 
 DH*
-dh_new_group_num(int num) {
+_dh_new_group_num(int num) {
 	switch (num) {
 	/* rfc2409 "Second Oakley Group" (1024 bits) */
 	case 1: return dh_new_group_asc("2",
@@ -483,12 +484,12 @@ dh_new_group_fallback(int max)
 	debug3_f("requested max size %d", max);
 	if (max < 3072) {
 		debug3("using 2k bit group 14");
-		return dh_new_group_num(14);
+		return _dh_new_group_num(14);
 	} else if (max < 6144) {
 		debug3("using 4k bit group 16");
-		return dh_new_group_num(16);
+		return _dh_new_group_num(16);
 	}
 	debug3("using 8k bit group 18");
-	return dh_new_group_num(18);
+	return _dh_new_group_num(18);
 }
 #endif /* WITH_OPENSSL */
