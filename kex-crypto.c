@@ -38,10 +38,23 @@
  * "Make DH opaque", "RSA, DSA, DH: Allow some given input to be NULL
  * on already initialised keys" and etc.
  */
-static int
+static inline void
+DH_get0_key(const DH *dh, const BIGNUM **pub_key, const BIGNUM **priv_key) {
+	if (pub_key  != NULL) *pub_key  = dh->pub_key;
+	if (priv_key != NULL) *priv_key = dh->priv_key;
+}
+
+static inline int
 DH_set_length(DH *dh, long length) {
 	dh->length = length;
 	return 1;
+}
+
+static inline void
+DH_get0_pqg(const DH *dh, const BIGNUM **p, const BIGNUM **q, const BIGNUM **g) {
+	if (p != NULL) *p = dh->p;
+	if (q != NULL) *q = dh->q;
+	if (g != NULL) *g = dh->g;
 }
 
 static inline int

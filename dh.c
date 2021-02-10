@@ -58,6 +58,13 @@ DH_set_length(DH *dh, long length) {
 	return 1;
 }
 
+static inline void
+DH_get0_pqg(const DH *dh, const BIGNUM **p, const BIGNUM **q, const BIGNUM **g) {
+	if (p != NULL) *p = dh->p;
+	if (q != NULL) *q = dh->q;
+	if (g != NULL) *g = dh->g;
+}
+
 static inline int
 DH_set0_pqg(DH *dh, BIGNUM *p, BIGNUM *q, BIGNUM *g) {
 /* If the fields p and g in d are NULL, the corresponding input
@@ -81,9 +88,17 @@ DH_set0_pqg(DH *dh, BIGNUM *p, BIGNUM *q, BIGNUM *g) {
 #endif /*ndef HAVE_DH_GET0_KEY*/
 
 
+struct dhgroup {
+	int size;
+	BIGNUM *g;
+	BIGNUM *p;
+};
+
+
 static DH *dh_new_group_fallback(int);
 static DH *dh_new_group(BIGNUM *, BIGNUM *);
 extern DH *_dh_new_group_num(int);
+extern DH* _choose_dh(int, int, int);
 
 
 static int
@@ -184,8 +199,6 @@ parse_prime(int linenum, char *line, struct dhgroup *dhg)
 	return 0;
 }
 
-/* TODO: internal */
-extern DH* _choose_dh(int, int, int);
 
 DH *
 _choose_dh(int min, int wantbits, int max)
