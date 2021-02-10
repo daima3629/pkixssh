@@ -1340,7 +1340,7 @@ parse_time(const char *arg, const char *filename, int linenum)
 		return -1;
 	}
 #endif
-	return (int)t; /*save cast*/
+	return (int)t; /*safe cast*/
 }
 
 #define WHITESPACE " \t\r\n"

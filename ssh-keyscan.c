@@ -692,7 +692,7 @@ main(int argc, char **argv)
 				exit(1);
 			}
 		#endif
-			timeout = (int)t; /*save cast*/
+			timeout = (int)t; /*safe cast*/
 		}	break;
 		case 'v':
 			if (!debug_flag) {

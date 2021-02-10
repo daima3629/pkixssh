@@ -109,7 +109,7 @@ set_lifetime(const char *val)
 		return 0;
 	}
 #endif
-	lifetime = (u_int)t; /*save cast*/
+	lifetime = (u_int)t; /*safe cast*/
 	return 1;
 }
 

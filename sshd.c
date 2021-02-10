@@ -1793,7 +1793,7 @@ main(int ac, char **av)
 				exit(1);
 			}
 		#endif
-			options.login_grace_time = (int)t; /*save cast*/
+			options.login_grace_time = (int)t; /*safe cast*/
 		}	break;
 		case 'k':
 			/* protocol 1, ignored */

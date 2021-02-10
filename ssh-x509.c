@@ -2152,8 +2152,7 @@ xkey_to_blob(const char *pkalg, const struct sshkey *key, u_char **blobp, u_int 
 	if (r != SSH_ERR_SUCCESS) return 0;
 }
 
-	/*cast from size_t to u_int is save*/
-	if (lenp != NULL) *lenp = len;
+	if (lenp != NULL) *lenp = len; /*safe cast*/
 
 	return len;
 }
