@@ -52,38 +52,11 @@
  * "Make DH opaque", "RSA, DSA, DH: Allow some given input to be NULL
  * on already initialised keys" and etc.
  */
-static int
-DH_set_length(DH *dh, long length) {
-	dh->length = length;
-	return 1;
-}
-
 static inline void
 DH_get0_pqg(const DH *dh, const BIGNUM **p, const BIGNUM **q, const BIGNUM **g) {
 	if (p != NULL) *p = dh->p;
 	if (q != NULL) *q = dh->q;
 	if (g != NULL) *g = dh->g;
-}
-
-static inline int
-DH_set0_pqg(DH *dh, BIGNUM *p, BIGNUM *q, BIGNUM *g) {
-/* If the fields p and g in d are NULL, the corresponding input
- * parameters MUST be non-NULL.  q may remain NULL.
- *
- * It is an error to give the results from get0 on d as input
- * parameters.
- */
-	if (p == dh->p || (dh->q != NULL && q == dh->q) || g == dh->g)
-		return 0;
-
-	if (p != NULL) { BN_free(dh->p); dh->p = p; }
-	if (q != NULL) { BN_free(dh->q); dh->q = q; }
-	if (g != NULL) { BN_free(dh->g); dh->g = g; }
-
-	if (q != NULL)
-	        (void)DH_set_length(dh, BN_num_bits(q));
-
-	return 1;
 }
 #endif /*ndef HAVE_DH_GET0_KEY*/
 
@@ -96,8 +69,9 @@ struct dhgroup {
 
 
 static DH *dh_new_group_fallback(int);
-static DH *dh_new_group(BIGNUM *, BIGNUM *);
-extern DH *_dh_new_group_num(int);
+extern DH* _dh_new_group(BIGNUM *, BIGNUM *);
+extern DH* _dh_new_group_asc(const char *, const char *);
+extern DH* _dh_new_group_num(int);
 extern DH* _choose_dh(int, int, int);
 
 
@@ -271,7 +245,7 @@ _choose_dh(int min, int wantbits, int max)
 		return (dh_new_group_fallback(max));
 	}
 
-	return (dh_new_group(dhg.g, dhg.p));
+	return _dh_new_group(dhg.p, dhg.g);
 }
 
 /* diffie-hellman-groupN-sha1 */
@@ -324,51 +298,11 @@ dh_pub_is_valid(const DH *dh, const BIGNUM *dh_pub)
 	return 1;
 }
 
-DH *
-dh_new_group_asc(const char *gen, const char *modulus)
-{
-	DH *dh;
-	BIGNUM *dh_p = NULL, *dh_g = NULL;
-
-	if ((dh = DH_new()) == NULL)
-		return NULL;
-	if (BN_hex2bn(&dh_p, modulus) == 0 ||
-	    BN_hex2bn(&dh_g, gen) == 0)
-		goto fail;
-	if (!DH_set0_pqg(dh, dh_p, NULL, dh_g))
-		goto fail;
-	return dh;
- fail:
-	DH_free(dh);
-	BN_clear_free(dh_p);
-	BN_clear_free(dh_g);
-	return NULL;
-}
-
-/*
- * This just returns the group, we still need to generate the exchange
- * value.
- */
-DH *
-dh_new_group(BIGNUM *gen, BIGNUM *modulus)
-{
-	DH *dh;
-
-	if ((dh = DH_new()) == NULL)
-		return NULL;
-	if (!DH_set0_pqg(dh, modulus, NULL, gen)) {
-		DH_free(dh);
-		return NULL;
-	}
-
-	return dh;
-}
-
 DH*
 _dh_new_group_num(int num) {
 	switch (num) {
 	/* rfc2409 "Second Oakley Group" (1024 bits) */
-	case 1: return dh_new_group_asc("2",
+	case 1: return _dh_new_group_asc("2",
 	    "FFFFFFFF" "FFFFFFFF" "C90FDAA2" "2168C234" "C4C6628B" "80DC1CD1"
 	    "29024E08" "8A67CC74" "020BBEA6" "3B139B22" "514A0879" "8E3404DD"
 	    "EF9519B3" "CD3A431B" "302B0A6D" "F25F1437" "4FE1356D" "6D51C245"
@@ -376,7 +310,7 @@ _dh_new_group_num(int num) {
 	    "EE386BFB" "5A899FA5" "AE9F2411" "7C4B1FE6" "49286651" "ECE65381"
 	    "FFFFFFFF" "FFFFFFFF");
 	/* rfc3526 group 14 "2048-bit MODP Group" */
-	case 14: return dh_new_group_asc("2",
+	case 14: return _dh_new_group_asc("2",
 	    "FFFFFFFF" "FFFFFFFF" "C90FDAA2" "2168C234" "C4C6628B" "80DC1CD1"
 	    "29024E08" "8A67CC74" "020BBEA6" "3B139B22" "514A0879" "8E3404DD"
 	    "EF9519B3" "CD3A431B" "302B0A6D" "F25F1437" "4FE1356D" "6D51C245"
@@ -389,7 +323,7 @@ _dh_new_group_num(int num) {
 	    "DE2BCBF6" "95581718" "3995497C" "EA956AE5" "15D22618" "98FA0510"
 	    "15728E5A" "8AACAA68" "FFFFFFFF" "FFFFFFFF");
 	/* rfc3526 group 16 "4096-bit MODP Group" */
-	case 16: return dh_new_group_asc("2",
+	case 16: return _dh_new_group_asc("2",
 	    "FFFFFFFF" "FFFFFFFF" "C90FDAA2" "2168C234" "C4C6628B" "80DC1CD1"
 	    "29024E08" "8A67CC74" "020BBEA6" "3B139B22" "514A0879" "8E3404DD"
 	    "EF9519B3" "CD3A431B" "302B0A6D" "F25F1437" "4FE1356D" "6D51C245"
@@ -413,7 +347,7 @@ _dh_new_group_num(int num) {
 	    "93B4EA98" "8D8FDDC1" "86FFB7DC" "90A6C08F" "4DF435C9" "34063199"
 	    "FFFFFFFF" "FFFFFFFF");
 	/* rfc3526 group 18 "8192-bit MODP Group" */
-	case 18: return dh_new_group_asc("2",
+	case 18: return _dh_new_group_asc("2",
 	    "FFFFFFFF" "FFFFFFFF" "C90FDAA2" "2168C234" "C4C6628B" "80DC1CD1"
 	    "29024E08" "8A67CC74" "020BBEA6" "3B139B22" "514A0879" "8E3404DD"
 	    "EF9519B3" "CD3A431B" "302B0A6D" "F25F1437" "4FE1356D" "6D51C245"

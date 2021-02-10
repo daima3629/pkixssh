@@ -79,9 +79,48 @@ DH_set0_pqg(DH *dh, BIGNUM *p, BIGNUM *q, BIGNUM *g) {
 }
 #endif /*ndef HAVE_DH_GET0_KEY*/
 
+extern DH* _dh_new_group(BIGNUM *, BIGNUM *);
+extern DH* _dh_new_group_asc(const char *, const char *);
 extern DH* _dh_new_group_num(int);
 extern int _dh_gen_key(DH *dh, int need);
 
+
+/*
+ * This just returns the group, we still need to generate the exchange
+ * value.
+ */
+DH*
+_dh_new_group(BIGNUM *modulus, BIGNUM *gen)
+{
+	DH *dh;
+
+	dh = DH_new();
+	if (dh == NULL) return NULL;
+
+	if (!DH_set0_pqg(dh, modulus, NULL, gen)) {
+		DH_free(dh);
+		return NULL;
+	}
+
+	return dh;
+}
+
+DH*
+_dh_new_group_asc(const char *gen, const char *modulus)
+{
+	BIGNUM *p = NULL, *g = NULL;
+
+	if (BN_hex2bn(&p, modulus) == 0 ||
+	    BN_hex2bn(&g, gen) == 0)
+		goto err;
+
+	return _dh_new_group(p, g);
+
+err:
+	BN_clear_free(p);
+	BN_clear_free(g);
+	return NULL;
+}
 
 int
 _dh_gen_key(DH *dh, int need)

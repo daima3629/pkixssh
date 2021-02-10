@@ -34,8 +34,6 @@
 #include <openssl/dh.h>
 
 
-DH	*dh_new_group_asc(const char *, const char *);
-
 int	 dh_pub_is_valid(const DH *, const BIGNUM *);
 
 /*
