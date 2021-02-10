@@ -29,28 +29,19 @@
 
 #ifdef WITH_OPENSSL
 
-
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include <signal.h>
 
-#include "dh.h"
-#include "sshxkey.h"
-#include "cipher.h"
-#include "digest.h"
 #include "kex.h"
-#include "log.h"
-#include "packet.h"
+#include "dh.h"
 #include "ssh2.h"
-#include "compat.h"
-#ifdef GSSAPI
-#include "ssh-gss.h"
-#endif
-#include "monitor_wrap.h"
-#include "dispatch.h"
+#include "packet.h"
 #include "ssherr.h"
-#include "sshbuf.h"
+#include "log.h"
+#include "monitor_wrap.h"
+#include "digest.h"
 #include "misc.h"
 
 static int input_kex_dh_gex_request(int, u_int32_t, struct ssh *);
@@ -116,7 +107,7 @@ input_kex_dh_gex_request(int type, u_int32_t seq, struct ssh *ssh)
 		goto out;
 
 	/* Compute our exchange value in parallel with the client */
-	if ((r = dh_gen_key(kex->dh, kex->we_need * 8)) != 0)
+	if ((r = kex_key_gen_dh(kex)) != 0)
 		goto out;
 
 	debug("expecting SSH2_MSG_KEX_DH_GEX_INIT");

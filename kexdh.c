@@ -34,18 +34,16 @@
 
 #include "dh.h"
 #include "kex.h"
-#include "sshbuf.h"
-#include "digest.h"
 #include "ssherr.h"
-#include "log.h"
+#include "misc.h"
+
+extern int _dh_gen_key(DH *dh, int need);
+
 
 int
-kex_dh_keygen(struct kex *kex)
+kex_key_gen_dh(struct kex *kex)
 {
-	int r = kex_key_init_dh(kex);
-	if (r != 0) return r;
-
-	return dh_gen_key(kex->dh, kex->we_need * 8);
+	return _dh_gen_key(kex->dh, kex->we_need * 8);
 }
 
 int
@@ -97,7 +95,8 @@ kex_dh_keypair(struct kex *kex)
 	struct sshbuf *buf = NULL;
 	int r;
 
-	if ((r = kex_dh_keygen(kex)) != 0)
+	if ((r = kex_key_init_dh(kex)) != 0 ||
+	    (r = kex_key_gen_dh(kex)) != 0)
 		return r;
 	DH_get0_key(kex->dh, &pub_key, NULL);
 	if ((buf = sshbuf_new()) == NULL)
@@ -129,7 +128,8 @@ kex_dh_enc(struct kex *kex, const struct sshbuf *client_blob,
 	*server_blobp = NULL;
 	*shared_secretp = NULL;
 
-	if ((r = kex_dh_keygen(kex)) != 0)
+	if ((r = kex_key_init_dh(kex)) != 0 ||
+	    (r = kex_key_gen_dh(kex)) != 0)
 		goto out;
 	DH_get0_key(kex->dh, &pub_key, NULL);
 	if ((server_blob = sshbuf_new()) == NULL) {

@@ -36,18 +36,13 @@
 #include <string.h>
 #include <signal.h>
 
-#include "dh.h"
-#include "sshxkey.h"
-#include "cipher.h"
-#include "digest.h"
 #include "kex.h"
-#include "log.h"
-#include "packet.h"
+#include "dh.h"
 #include "ssh2.h"
-#include "compat.h"
-#include "dispatch.h"
+#include "packet.h"
 #include "ssherr.h"
-#include "sshbuf.h"
+#include "log.h"
+#include "digest.h"
 #include "misc.h"
 
 static int input_kex_dh_gex_group(int, u_int32_t, struct ssh *);
@@ -140,7 +135,7 @@ input_kex_dh_gex_group(int type, u_int32_t seq, struct ssh *ssh)
 	}
 
 	/* generate and send 'e', client DH public key */
-	if ((r = dh_gen_key(kex->dh, kex->we_need * 8)) != 0)
+	if ((r = kex_key_gen_dh(kex)) != 0)
 		goto out;
 {	const BIGNUM *pub_key;
 	DH_get0_key(kex->dh, &pub_key, NULL);

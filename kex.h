@@ -197,7 +197,7 @@ int	 kex_kem_sntrup761x25519_dec(struct kex *, const struct sshbuf *,
     struct sshbuf **);
 
 int	 kex_key_init_dh(struct kex *);
-int	 kex_dh_keygen(struct kex *);
+int	 kex_key_gen_dh(struct kex *);
 int	 kex_dh_compute_key(struct kex *, BIGNUM *, struct sshbuf *);
 
 int	 kexgex_hash(int, const struct sshbuf *, const struct sshbuf *,
