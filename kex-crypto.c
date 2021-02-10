@@ -233,6 +233,30 @@ done:
 	return r;
 }
 
+int
+sshbuf_kex_write_dh_pub(struct sshbuf *buf, EVP_PKEY *pk) {
+	int r;
+	DH *dh;
+
+	dh = EVP_PKEY_get1_DH(pk);
+	if (dh == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+
+{	const BIGNUM *pub_key;
+	DH_get0_key(dh, &pub_key, NULL);
+#ifdef DEBUG_KEXDH
+	fprintf(stderr, "dh pub: ");
+	BN_print_fp(stderr, pub_key);
+	fprintf(stderr, "\n");
+	DHparams_print_fp(stderr, dh);
+#endif
+
+	r = sshbuf_put_bignum2(buf, pub_key);
+}
+	DH_free(dh);
+	return r;
+}
+
 
 int
 kexgex_hash_client(const struct kex *kex,

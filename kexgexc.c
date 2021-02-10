@@ -135,22 +135,12 @@ input_kex_dh_gex_group(int type, u_int32_t seq, struct ssh *ssh)
 	}
 
 	/* generate and send 'e', client DH public key */
-	if ((r = kex_key_gen_dh(kex)) != 0)
-		goto out;
-{	const BIGNUM *pub_key;
-	DH_get0_key(kex->dh, &pub_key, NULL);
-	if ((r = sshpkt_start(ssh, SSH2_MSG_KEX_DH_GEX_INIT)) != 0 ||
-	    (r = sshpkt_put_bignum2(ssh, pub_key)) != 0 ||
+	if ((r = kex_key_gen_dh(kex)) != 0 ||
+	    (r = sshpkt_start(ssh, SSH2_MSG_KEX_DH_GEX_INIT)) != 0 ||
+	    (r = sshpkt_write_dh_pub(ssh, kex->pk)) != 0 ||
 	    (r = sshpkt_send(ssh)) != 0)
 		goto out;
-}
-	debug("SSH2_MSG_KEX_DH_GEX_INIT sent");
-#ifdef DEBUG_KEXDH
-	DHparams_print_fp(stderr, kex->dh);
-	fprintf(stderr, "pub= ");
-	BN_print_fp(stderr, pub_key);
-	fprintf(stderr, "\n");
-#endif
+
 	debug("expecting SSH2_MSG_KEX_DH_GEX_REPLY");
 	ssh_dispatch_set(ssh, SSH2_MSG_KEX_DH_GEX_REPLY, &input_kex_dh_gex_reply);
 	r = 0;

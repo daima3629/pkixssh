@@ -230,6 +230,7 @@ EVP_PKEY*	kex_new_dh_group_bits(int min, int wantbits, int max);
 EVP_PKEY*	kex_new_dh_group(BIGNUM *modulus, BIGNUM *gen);
 
 int	sshbuf_kex_write_dh_group(struct sshbuf *buf, EVP_PKEY *pk);
+int	sshbuf_kex_write_dh_pub(struct sshbuf *buf, EVP_PKEY *pk);
 
 
 #if defined(DEBUG_KEX) || defined(DEBUG_KEXDH) || defined(DEBUG_KEXECDH)

@@ -91,25 +91,17 @@ kex_dh_compute_key(struct kex *kex, BIGNUM *dh_pub, struct sshbuf *out)
 int
 kex_dh_keypair(struct kex *kex)
 {
-	const BIGNUM *pub_key;
 	struct sshbuf *buf = NULL;
 	int r;
 
 	if ((r = kex_key_init_dh(kex)) != 0 ||
 	    (r = kex_key_gen_dh(kex)) != 0)
 		return r;
-	DH_get0_key(kex->dh, &pub_key, NULL);
 	if ((buf = sshbuf_new()) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
-	if ((r = sshbuf_put_bignum2(buf, pub_key)) != 0 ||
+	if ((r = sshbuf_kex_write_dh_pub(buf, kex->pk)) != 0 ||
 	    (r = sshbuf_get_u32(buf, NULL)) != 0)
 		goto out;
-#ifdef DEBUG_KEXDH
-	DHparams_print_fp(stderr, kex->dh);
-	fprintf(stderr, "pub= ");
-	BN_print_fp(stderr, pub_key);
-	fprintf(stderr, "\n");
-#endif
 	kex->client_pub = buf;
 	buf = NULL;
  out:
@@ -121,7 +113,6 @@ int
 kex_dh_enc(struct kex *kex, const struct sshbuf *client_blob,
     struct sshbuf **server_blobp, struct sshbuf **shared_secretp)
 {
-	const BIGNUM *pub_key;
 	struct sshbuf *server_blob = NULL;
 	int r;
 
@@ -131,12 +122,11 @@ kex_dh_enc(struct kex *kex, const struct sshbuf *client_blob,
 	if ((r = kex_key_init_dh(kex)) != 0 ||
 	    (r = kex_key_gen_dh(kex)) != 0)
 		goto out;
-	DH_get0_key(kex->dh, &pub_key, NULL);
 	if ((server_blob = sshbuf_new()) == NULL) {
 		r = SSH_ERR_ALLOC_FAIL;
 		goto out;
 	}
-	if ((r = sshbuf_put_bignum2(server_blob, pub_key)) != 0 ||
+	if ((r = sshbuf_kex_write_dh_pub(server_blob, kex->pk)) != 0 ||
 	    (r = sshbuf_get_u32(server_blob, NULL)) != 0)
 		goto out;
 	if ((r = kex_dh_dec(kex, client_blob, shared_secretp)) != 0)

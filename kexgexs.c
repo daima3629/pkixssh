@@ -176,15 +176,12 @@ input_kex_dh_gex_init(int type, u_int32_t seq, struct ssh *ssh)
 }
 
 	/* send server hostkey, DH pubkey 'f' and signed H */
-{	const BIGNUM *pub_key;
-	DH_get0_key(kex->dh, &pub_key, NULL);
 	if ((r = sshpkt_start(ssh, SSH2_MSG_KEX_DH_GEX_REPLY)) != 0 ||
 	    (r = sshpkt_put_stringb(ssh, server_host_key_blob)) != 0 ||
-	    (r = sshpkt_put_bignum2(ssh, pub_key)) != 0 ||     /* f */
+	    (r = sshpkt_write_dh_pub(ssh, kex->pk)) != 0 ||
 	    (r = sshpkt_put_string(ssh, signature, slen)) != 0 ||
 	    (r = sshpkt_send(ssh)) != 0)
 		goto out;
-}
 
 	if ((r = kex_derive_keys(ssh, hash, hashlen, shared_secret)) == 0)
 		r = kex_send_newkeys(ssh);

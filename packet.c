@@ -2514,6 +2514,11 @@ int
 sshpkt_write_dh_group(struct ssh *ssh, EVP_PKEY *pk) {
 	return sshbuf_kex_write_dh_group(ssh->state->outgoing_packet, pk);
 }
+
+int
+sshpkt_write_dh_pub(struct ssh *ssh, EVP_PKEY *pk) {
+	return sshbuf_kex_write_dh_pub(ssh->state->outgoing_packet, pk);
+}
 #endif /* WITH_OPENSSL */
 
 /* fetch data from the incoming packet */
