@@ -53,6 +53,23 @@
 static int input_kex_dh_gex_group(int, u_int32_t, struct ssh *);
 static int input_kex_dh_gex_reply(int, u_int32_t, struct ssh *);
 
+
+/*
+ * Estimates the group order for a Diffie-Hellman group that has an
+ * attack complexity approximately the same as O(2**bits).
+ * Values from NIST Special Publication 800-57: Recommendation for Key
+ * Management Part 1 (rev 3) limited by the recommended maximum value
+ * from RFC4419 section 3.
+ */
+static inline u_int
+dh_estimate(int bits)
+{
+	if (bits <= 112) return 2048;
+	if (bits <= 128) return 3072;
+	if (bits <= 192) return 7680;
+	return 8192;
+}
+
 int
 kexgex_client(struct ssh *ssh)
 {

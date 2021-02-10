@@ -65,8 +65,6 @@ DH	*dh_new_group_num(int);
 int	 dh_gen_key(DH *, int);
 int	 dh_pub_is_valid(const DH *, const BIGNUM *);
 
-u_int	 dh_estimate(int);
-
 /*
  * Max value from RFC4419.
  * Min value from RFC8270.
