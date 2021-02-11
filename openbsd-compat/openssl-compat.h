@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2005 Darren Tucker <dtucker@zip.com.au>
- * Copyright (c) 2011-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2021 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -88,6 +88,11 @@ int RSA_generate_key_ex(RSA *, int, BIGNUM *, void *);
 #ifndef HAVE_DSA_GENERATE_PARAMETERS_EX
 int DSA_generate_parameters_ex(DSA *, int, const unsigned char *, int, int *,
     unsigned long *, void *);
+#endif
+
+#ifndef HAVE_EVP_PKEY_PRINT_PARAMS
+int EVP_PKEY_print_params(BIO *out, const EVP_PKEY *pkey,
+    int indent, /*ASN1_PCTX*/void *pctx);
 #endif
 
 extern int  ssh_FIPS_mode(int onoff);

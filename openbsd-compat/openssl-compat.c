@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2005 Darren Tucker <dtucker@zip.com.au>
- * Copyright (c) 2011-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2021 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -30,7 +30,7 @@
 
 #include "log.h"
 
-#include "openssl-compat.h"
+#include "evp-compat.h"
 
 #ifndef HAVE_RSA_GENERATE_KEY_EX
 int
@@ -75,6 +75,39 @@ DSA_generate_parameters_ex(DSA *dsa, int bits, const unsigned char *seed,
 	*new_dsa = tmp_dsa;
 	DSA_free(new_dsa);
 	return 1;
+}
+#endif
+
+#ifndef HAVE_EVP_PKEY_PRINT_PARAMS
+int
+EVP_PKEY_print_params(BIO *out, const EVP_PKEY *pkey,
+    int indent, /*ASN1_PCTX*/void *pctx)
+{
+	int ret;
+	int evp_id = -1;
+
+	UNUSED(indent);
+	UNUSED(pctx);
+	if (pkey == NULL) goto err;
+
+	evp_id = EVP_PKEY_base_id(pkey);
+	switch (evp_id) {
+	case EVP_PKEY_DH: {
+		DH *dh = EVP_PKEY_get1_DH((EVP_PKEY*/*safe cast*/)pkey);
+		if (dh == NULL) goto err;
+		ret = DHparams_print(out, dh);
+		DH_free(dh);
+		} break;
+	/*TODO*/
+	default:
+		goto err;
+	}
+
+	return ret;
+
+err:
+	BIO_printf(out, "cannot print parameters for pkey type %d", evp_id);
+	return -1;
 }
 #endif
 

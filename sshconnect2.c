@@ -258,10 +258,10 @@ ssh_kex2(struct ssh *ssh, char *host, struct sockaddr *hostaddr, u_short port,
 	if ((r = kex_prop2buf(kex->my, myproposal)) != 0)
 		fatal_fr(r, "kex_prop2buf");
 
-#ifdef DEBUG_KEXDH
+#ifdef DEBUG_KEX
 	/* send 1st encrypted/maced/compressed message */
 	if ((r = sshpkt_start(ssh, SSH2_MSG_IGNORE)) != 0 ||
-	    (r = sshpkt_put_cstring(ssh, "markus")) != 0 ||
+	    (r = sshpkt_put_cstring(ssh, "roumen")) != 0 ||
 	    (r = sshpkt_send(ssh)) != 0 ||
 	    (r = ssh_packet_write_wait(ssh)) != 0)
 		fatal_fr(r, "send packet");

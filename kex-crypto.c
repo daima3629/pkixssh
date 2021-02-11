@@ -300,7 +300,11 @@ sshbuf_kex_write_dh_pub(struct sshbuf *buf, EVP_PKEY *pk) {
 	fprintf(stderr, "dh pub: ");
 	BN_print_fp(stderr, pub_key);
 	fprintf(stderr, "\n");
-	DHparams_print_fp(stderr, dh);
+	fprintf(stderr, "bits %d\n", BN_num_bits(pub_key));
+{	BIO *err = BIO_new_fp(stderr, BIO_NOCLOSE);
+	EVP_PKEY_print_params(err, pk, 0, NULL);
+	BIO_free_all(err);
+}
 #endif
 
 	r = sshbuf_put_bignum2(buf, pub_key);

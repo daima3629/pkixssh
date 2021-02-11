@@ -55,12 +55,14 @@ kex_dh_compute_key(struct kex *kex, BIGNUM *dh_pub, struct sshbuf *out)
 	int kout, r;
 
 #ifdef DEBUG_KEXDH
-	fprintf(stderr, "dh_pub= ");
+	fprintf(stderr, "dh pub: ");
 	BN_print_fp(stderr, dh_pub);
 	fprintf(stderr, "\n");
-	debug("bits %d", BN_num_bits(dh_pub));
-	DHparams_print_fp(stderr, kex->dh);
-	fprintf(stderr, "\n");
+	fprintf(stderr, "bits %d\n", BN_num_bits(dh_pub));
+{	BIO *err = BIO_new_fp(stderr, BIO_NOCLOSE);
+	EVP_PKEY_print_params(err, kex->pk, 0, NULL);
+	BIO_free_all(err);
+}
 #endif
 
 	if (!dh_pub_is_valid(kex->dh, dh_pub)) {

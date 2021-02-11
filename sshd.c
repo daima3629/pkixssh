@@ -2574,7 +2574,7 @@ do_ssh2_kex(struct ssh *ssh)
 
 	ssh_dispatch_run_fatal(ssh, DISPATCH_BLOCK, &kex->done);
 
-#ifdef DEBUG_KEXDH
+#ifdef DEBUG_KEX
 	/* send 1st encrypted/maced/compressed message */
 	if ((r = sshpkt_start(ssh, SSH2_MSG_IGNORE)) != 0 ||
 	    (r = sshpkt_put_cstring(ssh, "roumen")) != 0 ||

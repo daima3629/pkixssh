@@ -2,6 +2,7 @@
 /*
  * Copyright (c) 2000 Niels Provos.  All rights reserved.
  * Copyright (c) 2001 Markus Friedl.  All rights reserved.
+ * Copyright (c) 2018-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -82,7 +83,7 @@ kexgex_hash(
 		sshbuf_free(b);
 		return r;
 	}
-#ifdef DEBUG_KEXDH
+#ifdef DEBUG_KEX
 	sshbuf_dump(b, stderr);
 #endif
 	if (ssh_digest_buffer(hash_alg, b, hash, *hashlen) != 0) {
@@ -91,7 +92,7 @@ kexgex_hash(
 	}
 	sshbuf_free(b);
 	*hashlen = ssh_digest_bytes(hash_alg);
-#ifdef DEBUG_KEXDH
+#ifdef DEBUG_KEX
 	dump_digest("hash", hash, *hashlen);
 #endif
 	return 0;
