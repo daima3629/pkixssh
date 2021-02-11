@@ -37,14 +37,6 @@
 #include "ssherr.h"
 #include "misc.h"
 
-extern int _dh_gen_key(DH *dh, int need);
-
-
-int
-kex_key_gen_dh(struct kex *kex)
-{
-	return _dh_gen_key(kex->dh, kex->we_need * 8);
-}
 
 int
 kex_dh_compute_key(struct kex *kex, BIGNUM *dh_pub, struct sshbuf *out)

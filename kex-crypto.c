@@ -82,7 +82,6 @@ DH_set0_pqg(DH *dh, BIGNUM *p, BIGNUM *q, BIGNUM *g) {
 extern DH* _dh_new_group(BIGNUM *, BIGNUM *);
 extern DH* _dh_new_group_asc(const char *, const char *);
 extern DH* _dh_new_group_num(int);
-extern int _dh_gen_key(DH *dh, int need);
 
 
 /*
@@ -122,36 +121,67 @@ err:
 	return NULL;
 }
 
+
 int
-_dh_gen_key(DH *dh, int need)
+kex_key_gen_dh(struct kex *kex)
 {
-	int pbits;
-	const BIGNUM *dh_p, *pub_key;
+	int r, need, pbits;
+	DH *dh;
 
-	DH_get0_pqg(dh, &dh_p, NULL, NULL);
-
-	if (need < 0 || dh_p == NULL ||
-	    (pbits = BN_num_bits(dh_p)) <= 0 ||
-	    need > INT_MAX / 2 ||
-	    2 * need > pbits)
+	if (kex->pk == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;
+
+	need = kex->we_need * 8; /*may overflow*/
+	if (need < 0)
+		return SSH_ERR_INVALID_ARGUMENT;
+
+	dh = EVP_PKEY_get1_DH(kex->pk);
+	if (dh == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+
+{	const BIGNUM *dh_p;
+	DH_get0_pqg(dh, &dh_p, NULL, NULL);
+	if (dh_p == NULL) {
+		r = SSH_ERR_INVALID_ARGUMENT;
+		goto done;
+	}
+	pbits = BN_num_bits(dh_p);
+}
+
+	if (pbits <= 0 || need > INT_MAX / 2 || (2 * need) > pbits) {
+		r = SSH_ERR_INVALID_ARGUMENT;
+		goto done;
+	}
 
 	if (need < 256) need = 256;
 	/*
 	 * Pollard Rho, Big step/Little Step attacks are O(sqrt(n)),
 	 * so double requested need here.
 	 */
-	if (!DH_set_length(dh, MINIMUM(need * 2, pbits - 1)))
-		return SSH_ERR_LIBCRYPTO_ERROR;
+	if (!DH_set_length(dh, MINIMUM(need * 2, pbits - 1))) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto done;
+	}
 
-	if (DH_generate_key(dh) == 0)
-		return SSH_ERR_LIBCRYPTO_ERROR;
+	if (DH_generate_key(dh) == 0) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto done;
+	}
 
+{	const BIGNUM *pub_key;
 	DH_get0_key(dh, &pub_key, NULL);
-	if (!dh_pub_is_valid(dh, pub_key))
-		return SSH_ERR_INVALID_FORMAT;
+	if (!dh_pub_is_valid(dh, pub_key)) {
+		r = SSH_ERR_INVALID_FORMAT;
+		goto done;
+	}
+}
 
-	return 0;
+	/* success */
+	r = 0;
+
+done:
+	DH_free(dh);
+	return r;
 }
 
 
