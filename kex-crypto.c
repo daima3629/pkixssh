@@ -32,6 +32,13 @@
 #include "dh.h"
 #include "ssherr.h"
 #include "misc.h"
+#include "log.h"
+
+#ifndef HAVE_BN_IS_NEGATIVE	/*macro before OpenSSL 1.1*/
+# ifndef BN_is_negative		/*not defined before OpenSSL 0.9.8*/
+#  define BN_is_negative(a) ((a)->neg != 0)
+# endif
+#endif
 
 #ifndef HAVE_DH_GET0_KEY	/* OpenSSL < 1.1 */
 /* Partial backport of opaque DH from OpenSSL >= 1.1, commits
@@ -122,6 +129,76 @@ err:
 }
 
 
+static int
+_dh_pub_is_valid(const DH *dh, const BIGNUM *dh_pub)
+{
+	int i;
+	int n = BN_num_bits(dh_pub);
+	int bits_set = 0;
+	BIGNUM *tmp;
+	const BIGNUM *dh_p;
+
+	DH_get0_pqg(dh, &dh_p, NULL, NULL);
+
+	if (BN_is_negative(dh_pub)) {
+		error("invalid public DH value: negative");
+		return 0;
+	}
+	if (BN_cmp(dh_pub, BN_value_one()) != 1) {	/* pub_exp <= 1 */
+		error("invalid public DH value: <= 1");
+		return 0;
+	}
+
+	if ((tmp = BN_new()) == NULL) {
+		error_f("BN_new failed");
+		return 0;
+	}
+	if (!BN_sub(tmp, dh_p, BN_value_one()) ||
+	    BN_cmp(dh_pub, tmp) != -1) {		/* pub_exp > p-2 */
+		BN_clear_free(tmp);
+		error("invalid public DH value: >= p-1");
+		return 0;
+	}
+	BN_clear_free(tmp);
+
+	for (i = 0; i <= n; i++)
+		if (BN_is_bit_set(dh_pub, i))
+			bits_set++;
+
+	/* used in dhgex regression test */
+	debug2("bits set: %d/%d", bits_set, BN_num_bits(dh_p));
+
+	/*
+	 * if g==2 and bits_set==1 then computing log_g(dh_pub) is trivial
+	 */
+	if (bits_set < 4) {
+		error("invalid public DH value (%d/%d)",
+		   bits_set, BN_num_bits(dh_p));
+		return 0;
+	}
+	return 1;
+}
+
+int
+kex_key_validate_public_dh(struct kex *kex, const BIGNUM *pub_key) {
+	int r;
+	DH *dh;
+
+	if (kex->pk == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+
+	dh = EVP_PKEY_get1_DH(kex->pk);
+	if (dh == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+
+	r = _dh_pub_is_valid(dh, pub_key)
+	    ? 0 : SSH_ERR_INVALID_ARGUMENT;
+
+	DH_free(dh);
+	return r;
+}
+
+
 int
 kex_key_gen_dh(struct kex *kex)
 {
@@ -170,7 +247,7 @@ kex_key_gen_dh(struct kex *kex)
 
 {	const BIGNUM *pub_key;
 	DH_get0_key(dh, &pub_key, NULL);
-	if (!dh_pub_is_valid(dh, pub_key)) {
+	if (kex_key_validate_public_dh(kex, pub_key) < 0) {
 		r = SSH_ERR_INVALID_FORMAT;
 		goto done;
 	}

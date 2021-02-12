@@ -35,30 +35,14 @@
 #include <string.h>
 #include <limits.h>
 
+#include <openssl/bn.h>
+#include <openssl/dh.h>
+
 #include "dh.h"
 #include "pathnames.h"
 #include "log.h"
 #include "misc.h"
 #include "ssherr.h"
-
-#ifndef HAVE_BN_IS_NEGATIVE	/*macro before OpenSSL 1.1*/
-# ifndef BN_is_negative		/*not defined before OpenSSL 0.9.8*/
-#  define BN_is_negative(a) ((a)->neg != 0)
-# endif
-#endif
-
-#ifndef HAVE_DH_GET0_KEY	/* OpenSSL < 1.1 */
-/* Partial backport of opaque DH from OpenSSL >= 1.1, commits
- * "Make DH opaque", "RSA, DSA, DH: Allow some given input to be NULL
- * on already initialised keys" and etc.
- */
-static inline void
-DH_get0_pqg(const DH *dh, const BIGNUM **p, const BIGNUM **q, const BIGNUM **g) {
-	if (p != NULL) *p = dh->p;
-	if (q != NULL) *q = dh->q;
-	if (g != NULL) *g = dh->g;
-}
-#endif /*ndef HAVE_DH_GET0_KEY*/
 
 
 struct dhgroup {
@@ -249,54 +233,6 @@ _choose_dh(int min, int wantbits, int max)
 }
 
 /* diffie-hellman-groupN-sha1 */
-
-int
-dh_pub_is_valid(const DH *dh, const BIGNUM *dh_pub)
-{
-	int i;
-	int n = BN_num_bits(dh_pub);
-	int bits_set = 0;
-	BIGNUM *tmp;
-	const BIGNUM *dh_p;
-
-	DH_get0_pqg(dh, &dh_p, NULL, NULL);
-
-	if (BN_is_negative(dh_pub)) {
-		logit("invalid public DH value: negative");
-		return 0;
-	}
-	if (BN_cmp(dh_pub, BN_value_one()) != 1) {	/* pub_exp <= 1 */
-		logit("invalid public DH value: <= 1");
-		return 0;
-	}
-
-	if ((tmp = BN_new()) == NULL) {
-		error_f("BN_new failed");
-		return 0;
-	}
-	if (!BN_sub(tmp, dh_p, BN_value_one()) ||
-	    BN_cmp(dh_pub, tmp) != -1) {		/* pub_exp > p-2 */
-		BN_clear_free(tmp);
-		logit("invalid public DH value: >= p-1");
-		return 0;
-	}
-	BN_clear_free(tmp);
-
-	for (i = 0; i <= n; i++)
-		if (BN_is_bit_set(dh_pub, i))
-			bits_set++;
-	debug2("bits set: %d/%d", bits_set, BN_num_bits(dh_p));
-
-	/*
-	 * if g==2 and bits_set==1 then computing log_g(dh_pub) is trivial
-	 */
-	if (bits_set < 4) {
-		logit("invalid public DH value (%d/%d)",
-		   bits_set, BN_num_bits(dh_p));
-		return 0;
-	}
-	return 1;
-}
 
 DH*
 _dh_new_group_num(int num) {

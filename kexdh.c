@@ -32,7 +32,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "dh.h"
 #include "kex.h"
 #include "ssherr.h"
 #include "misc.h"
@@ -57,7 +56,7 @@ kex_dh_compute_key(struct kex *kex, BIGNUM *dh_pub, struct sshbuf *out)
 }
 #endif
 
-	if (!dh_pub_is_valid(kex->dh, dh_pub)) {
+	if (kex_key_validate_public_dh(kex, dh_pub) < 0) {
 		r = SSH_ERR_MESSAGE_INCOMPLETE;
 		goto out;
 	}

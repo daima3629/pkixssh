@@ -27,15 +27,6 @@
 #ifndef DH_H
 #define DH_H
 
-#include "includes.h"
-
-#ifdef WITH_OPENSSL
-#include <openssl/bn.h>
-#include <openssl/dh.h>
-
-
-int	 dh_pub_is_valid(const DH *, const BIGNUM *);
-
 /*
  * Max value from RFC4419.
  * Min value from RFC8270.
@@ -65,7 +56,5 @@ int	 dh_pub_is_valid(const DH *, const BIGNUM *);
 #define MODULI_TESTS_MILLER_RABIN	(0x04)
 #define MODULI_TESTS_JACOBI		(0x08)
 #define MODULI_TESTS_ELLIPTIC		(0x10)
-
-#endif /* WITH_OPENSSL */
 
 #endif /* DH_H */
