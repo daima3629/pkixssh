@@ -471,11 +471,13 @@ kex_send_newkeys(struct ssh *ssh)
 	    (r = sshpkt_send(ssh)) != 0)
 		return r;
 	debug("SSH2_MSG_NEWKEYS sent");
-	ssh_dispatch_set(ssh, SSH2_MSG_NEWKEYS, &kex_input_newkeys);
-	if (ssh->kex->ext_info_c && (ssh->kex->flags & KEX_INITIAL) != 0)
-		if ((r = kex_send_ext_info(ssh)) != 0)
-			return r;
+
 	debug("expecting SSH2_MSG_NEWKEYS");
+	ssh_dispatch_set(ssh, SSH2_MSG_NEWKEYS, &kex_input_newkeys);
+
+	if (ssh->kex->ext_info_c && (ssh->kex->flags & KEX_INITIAL) != 0)
+		return kex_send_ext_info(ssh);
+
 	return 0;
 }
 
@@ -529,8 +531,10 @@ kex_input_ext_info(int type, u_int32_t seq, struct ssh *ssh)
 
 	UNUSED(type);
 	UNUSED(seq);
+
 	debug("SSH2_MSG_EXT_INFO received");
 	ssh_dispatch_set(ssh, SSH2_MSG_EXT_INFO, &kex_protocol_error);
+
 	if ((r = sshpkt_get_u32(ssh, &ninfo)) != 0)
 		return r;
 	for (i = 0; i < ninfo; i++) {
@@ -591,9 +595,11 @@ kex_input_newkeys(int type, u_int32_t seq, struct ssh *ssh)
 
 	UNUSED(type);
 	UNUSED(seq);
+
 	debug("SSH2_MSG_NEWKEYS received");
 	ssh_dispatch_set(ssh, SSH2_MSG_NEWKEYS, &kex_protocol_error);
 	ssh_dispatch_set(ssh, SSH2_MSG_KEXINIT, &kex_input_kexinit);
+
 	if ((r = sshpkt_get_end(ssh)) != 0)
 		return r;
 	if ((r = ssh_set_newkeys(ssh, MODE_IN)) != 0)
@@ -661,12 +667,14 @@ kex_input_kexinit(int type, u_int32_t seq, struct ssh *ssh)
 
 	UNUSED(type);
 	UNUSED(seq);
+
 	debug("SSH2_MSG_KEXINIT received");
 	if (kex == NULL) {
 		error_f("no kex");
 		return SSH_ERR_INTERNAL_ERROR;
 	}
 	ssh_dispatch_set(ssh, SSH2_MSG_KEXINIT, NULL);
+
 	ptr = sshpkt_ptr(ssh, &dlen);
 	if ((r = sshbuf_put(kex->peer, ptr, dlen)) != 0)
 		return r;

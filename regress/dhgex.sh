@@ -29,9 +29,9 @@ ssh_test_dhgex()
 		fail "ssh failed ($@)"
 	fi
 	# check what we request
-	grep "SSH2_MSG_KEX_DH_GEX_REQUEST($groupsz) sent" ${LOG} >/dev/null
+	grep "SSH2_MSG_KEX_DH_GEX_REQUEST sent: $groupsz" ${LOG} >/dev/null
 	if [ $? != 0 ]; then
-		got=`egrep "SSH2_MSG_KEX_DH_GEX_REQUEST(.*) sent" ${LOG}`
+		got=`egrep "SSH2_MSG_KEX_DH_GEX_REQUEST sent: (.*)" ${LOG}`
 		fail "$tid unexpected GEX sizes, expected $groupsz, got $got"
 	fi
 	# check what we got.

@@ -86,12 +86,10 @@ kexgex_client(struct ssh *ssh)
 	    (r = sshpkt_put_u32(ssh, kex->max)) != 0 ||
 	    (r = sshpkt_send(ssh)) != 0)
 		goto out;
-	debug("SSH2_MSG_KEX_DH_GEX_REQUEST(%u<%u<%u) sent",
+	/* used in dhgex regression test */
+	debug("SSH2_MSG_KEX_DH_GEX_REQUEST sent: %u<%u<%u",
 	    kex->min, kex->nbits, kex->max);
-#ifdef DEBUG_KEXDH
-	fprintf(stderr, "\nmin = %d, nbits = %d, max = %d\n",
-	    kex->min, kex->nbits, kex->max);
-#endif
+
 	debug("expecting SSH2_MSG_KEX_DH_GEX_GROUP");
 	ssh_dispatch_set(ssh, SSH2_MSG_KEX_DH_GEX_GROUP,
 	    &input_kex_dh_gex_group);
@@ -135,6 +133,7 @@ input_kex_dh_gex_group(int type, u_int32_t seq, struct ssh *ssh)
 	    (r = sshpkt_write_dh_pub(ssh, kex->pk)) != 0 ||
 	    (r = sshpkt_send(ssh)) != 0)
 		goto out;
+	debug("SSH2_MSG_KEX_DH_GEX_INIT sent");
 
 	debug("expecting SSH2_MSG_KEX_DH_GEX_REPLY");
 	ssh_dispatch_set(ssh, SSH2_MSG_KEX_DH_GEX_REPLY, &input_kex_dh_gex_reply);
