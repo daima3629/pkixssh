@@ -38,50 +38,6 @@
 
 
 int
-kex_dh_compute_key(struct kex *kex, BIGNUM *dh_pub, struct sshbuf *out)
-{
-	BIGNUM *shared_secret = NULL;
-	u_char *kbuf = NULL;
-	size_t klen = 0;
-	int kout, r;
-
-#ifdef DEBUG_KEXDH
-	fprintf(stderr, "dh pub: ");
-	BN_print_fp(stderr, dh_pub);
-	fprintf(stderr, "\n");
-	fprintf(stderr, "bits %d\n", BN_num_bits(dh_pub));
-{	BIO *err = BIO_new_fp(stderr, BIO_NOCLOSE);
-	EVP_PKEY_print_params(err, kex->pk, 0, NULL);
-	BIO_free_all(err);
-}
-#endif
-
-	if (kex_key_validate_public_dh(kex, dh_pub) < 0) {
-		r = SSH_ERR_MESSAGE_INCOMPLETE;
-		goto out;
-	}
-	klen = DH_size(kex->dh);
-	if ((kbuf = malloc(klen)) == NULL ||
-	    (shared_secret = BN_new()) == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto out;
-	}
-	if ((kout = DH_compute_key(kbuf, dh_pub, kex->dh)) < 0 ||
-	    BN_bin2bn(kbuf, kout, shared_secret) == NULL) {
-		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto out;
-	}
-#ifdef DEBUG_KEXDH
-	dump_digest("shared secret", kbuf, kout);
-#endif
-	r = sshbuf_put_bignum2(out, shared_secret);
- out:
-	freezero(kbuf, klen);
-	BN_clear_free(shared_secret);
-	return r;
-}
-
-int
 kex_dh_keypair(struct kex *kex)
 {
 	struct sshbuf *buf = NULL;
