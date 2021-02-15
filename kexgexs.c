@@ -94,12 +94,7 @@ input_kex_dh_gex_request(int type, u_int32_t seq, struct ssh *ssh)
 		r = SSH_ERR_ALLOC_FAIL;
 		goto out;
 	}
-	kex->dh = EVP_PKEY_get1_DH(kex->pk); /* TODO */
-	if (kex->dh == NULL) {
-		sshpkt_disconnect(ssh, "no matching DH grp found");
-		r = SSH_ERR_ALLOC_FAIL;
-		goto out;
-	}
+
 	debug("SSH2_MSG_KEX_DH_GEX_GROUP sent");
 	if ((r = sshpkt_start(ssh, SSH2_MSG_KEX_DH_GEX_GROUP)) != 0 ||
 	    (r = sshpkt_write_dh_group(ssh, kex->pk)) != 0 ||

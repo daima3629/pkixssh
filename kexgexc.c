@@ -128,11 +128,6 @@ input_kex_dh_gex_group(int type, u_int32_t seq, struct ssh *ssh)
 		goto out;
 	}
 	p = g = NULL; /* belong to kex->pk[dh] now */
-	kex->dh = EVP_PKEY_get1_DH(kex->pk); /* TODO */
-	if (kex->dh == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto out;
-	}
 
 	/* generate and send 'e', client DH public key */
 	if ((r = kex_key_gen_dh(kex)) != 0 ||
