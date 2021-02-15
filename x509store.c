@@ -249,18 +249,16 @@ ssh_x509store_lookup(X509_STORE *store, int type, X509_NAME *name, X509_OBJECT *
 		error_crypto("X509_STORE_CTX_new");
 		return -1;
 	}
-
 	if (X509_STORE_CTX_init(csc, store, NULL, NULL) <= 0) {
 		/*memory allocation error*/
 		error_f("cannot initialize x509store context");
 		goto done;
 	}
+
 	ret = X509_STORE_CTX_get_by_subject(csc, type, name, xobj);
-	X509_STORE_CTX_cleanup(csc);
 
 done:
 	X509_STORE_CTX_free(csc);
-
 	return ret;
 }
 
@@ -924,7 +922,6 @@ ssh_verify_cert(X509_STORE_CTX *_csc) {
 int
 ssh_x509store_verify_cert(X509 *cert, STACK_OF(X509) *untrusted) {
 	int ret = 1;
-	X509_STORE_CTX *csc;
 
 	if (cert == NULL) {
 		/*already checked but ...*/
@@ -946,23 +943,24 @@ ssh_x509store_verify_cert(X509 *cert, STACK_OF(X509) *untrusted) {
 		free(buf);
 	}
 
-	csc = X509_STORE_CTX_new();
+{	X509_STORE_CTX *csc = X509_STORE_CTX_new();
 	if (csc == NULL) {
 		error_crypto("X509_STORE_CTX_new");
 		ret = -1;
 		goto done;
 	}
-
 	if (X509_STORE_CTX_init(csc, x509store, cert, untrusted) <= 0) {
 		/*memory allocation error*/
 		error_f("cannot initialize x509store context");
 		ret = -1;
 		goto donecsc;
 	}
+
 	ret = ssh_verify_cert(csc);
-	X509_STORE_CTX_cleanup(csc);
+
 donecsc:
 	X509_STORE_CTX_free(csc);
+}
 #ifdef SSH_OCSP_ENABLED
 	if (ret > 0) {
 /*
