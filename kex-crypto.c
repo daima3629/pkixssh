@@ -306,11 +306,6 @@ void
 kex_reset_crypto_keys(struct kex *kex) {
 	EVP_PKEY_free(kex->pk);
 	kex->pk = NULL;
-
-#ifdef OPENSSL_HAS_ECC
-	EC_KEY_free(kex->ec_client_key);
-	kex->ec_client_key = NULL;
-#endif /* OPENSSL_HAS_ECC */
 }
 
 

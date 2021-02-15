@@ -78,8 +78,18 @@ kex_ecdh_keypair(struct kex *kex)
 	fputs("client private key:\n", stderr);
 	sshkey_dump_ec_key(client_key);
 #endif
-	kex->ec_client_key = client_key;
+{	EVP_PKEY *pk = EVP_PKEY_new();
+	if (pk == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto out;
+	}
+	if (!EVP_PKEY_set1_EC_KEY(pk, client_key)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto out;
+	}
 	client_key = NULL;	/* owned by the kex */
+	kex->pk = pk;
+}
 	kex->client_pub = buf;
 	buf = NULL;
  out:
@@ -202,12 +212,23 @@ kex_ecdh_dec(struct kex *kex, const struct sshbuf *server_blob,
     struct sshbuf **shared_secretp)
 {
 	int r;
-	const EC_GROUP *group;
+	EC_KEY *ec;
 
-	group = EC_KEY_get0_group(kex->ec_client_key);
-	r = kex_ecdh_dec_key_group(kex, server_blob, kex->ec_client_key,
-	    group, shared_secretp);
+	ec = EVP_PKEY_get1_EC_KEY(kex->pk);
+	if (ec == NULL) return SSH_ERR_INVALID_ARGUMENT;
+
+{	const EC_GROUP *group = EC_KEY_get0_group(ec);
+	if (group == NULL) {
+		r = SSH_ERR_INTERNAL_ERROR;
+		goto done;
+	}
+
+	r = kex_ecdh_dec_key_group(kex, server_blob, ec, group, shared_secretp);
 	kex_reset_crypto_keys(kex);
+}
+
+done:
+	EC_KEY_free(ec);
 	return r;
 }
 #endif /* defined(WITH_OPENSSL) && defined(OPENSSL_HAS_ECC) */
