@@ -96,13 +96,17 @@ sshkey_file_tests(void)
 	c = load_bignum("rsa_1.param.q");
 {
 	const BIGNUM *n = NULL, *p = NULL, *q = NULL;
+	RSA *rsa = EVP_PKEY_get1_RSA(k1->pk);
 
-	RSA_get0_key(k1->rsa, &n, NULL, NULL);
-	RSA_get0_factors(k1->rsa, &p, &q);
+	ASSERT_PTR_NE(rsa, NULL);
+	RSA_get0_key(rsa, &n, NULL, NULL);
+	RSA_get0_factors(rsa, &p, &q);
 
 	ASSERT_BIGNUM_EQ(n, a);
 	ASSERT_BIGNUM_EQ(p, b);
 	ASSERT_BIGNUM_EQ(q, c);
+
+	RSA_free(rsa);
 }
 	BN_free(a);
 	BN_free(b);
@@ -218,13 +222,17 @@ sshkey_file_tests(void)
 	c = load_bignum("dsa_1.param.pub");
 {
 	const BIGNUM *g = NULL, *pub_key = NULL, *priv_key = NULL;
+	DSA *dsa = EVP_PKEY_get1_DSA(k1->pk);
 
-	DSA_get0_pqg(k1->dsa, NULL, NULL, &g);
-	DSA_get0_key(k1->dsa, &pub_key, &priv_key);
+	ASSERT_PTR_NE(dsa, NULL);
+	DSA_get0_pqg(dsa, NULL, NULL, &g);
+	DSA_get0_key(dsa, &pub_key, &priv_key);
 
 	ASSERT_BIGNUM_EQ(g, a);
 	ASSERT_BIGNUM_EQ(priv_key, b);
 	ASSERT_BIGNUM_EQ(pub_key, c);
+
+	DSA_free(dsa);
 }
 	BN_free(a);
 	BN_free(b);
@@ -322,12 +330,22 @@ sshkey_file_tests(void)
 	sshbuf_free(buf);
 	a = load_bignum("ecdsa_1.param.priv");
 	b = load_bignum("ecdsa_1.param.pub");
-	c = EC_POINT_point2bn(EC_KEY_get0_group(k1->ecdsa),
-	    EC_KEY_get0_public_key(k1->ecdsa), POINT_CONVERSION_UNCOMPRESSED,
-	    NULL, NULL);
+{
+	const EC_GROUP *ec_group;
+	const EC_POINT *ec_pub;
+	const BIGNUM *ec_priv;
+	EC_KEY *ec = EVP_PKEY_get1_EC_KEY(k1->pk);
+
+	ASSERT_PTR_NE(ec, NULL);
+	ec_group = EC_KEY_get0_group(ec);
+	ec_pub = EC_KEY_get0_public_key(ec);
+	ec_priv = EC_KEY_get0_private_key(ec);
+
+	c = EC_POINT_point2bn(ec_group, ec_pub, POINT_CONVERSION_UNCOMPRESSED, NULL, NULL);
 	ASSERT_PTR_NE(c, NULL);
-	ASSERT_BIGNUM_EQ(EC_KEY_get0_private_key(k1->ecdsa), a);
+	ASSERT_BIGNUM_EQ(ec_priv, a);
 	ASSERT_BIGNUM_EQ(b, c);
+}
 	BN_free(a);
 	BN_free(b);
 	BN_free(c);
