@@ -252,20 +252,6 @@ tilde_expand_paths(char **paths, u_int num_paths)
 	}
 }
 
-/* default argument for client percent expansions */
-#define DEFAULT_CLIENT_PERCENT_EXPAND_ARGS(conn_info) \
-	"C", conn_info->conn_hash_hex, \
-	"L", conn_info->shorthost, \
-	"i", conn_info->uidstr, \
-	"k", conn_info->keyalias, \
-	"l", conn_info->thishost, \
-	"n", conn_info->host_arg, \
-	"p", conn_info->portstr, \
-	"d", conn_info->homedir, \
-	"h", conn_info->remhost, \
-	"r", conn_info->remuser, \
-	"u", conn_info->locuser
-
 /*
  * Expands the set of percent_expand options used by the majority of keywords
  * in the client that support percent expansion.
