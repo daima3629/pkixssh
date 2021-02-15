@@ -1,5 +1,4 @@
-/* $OpenBSD: misc.h,v 1.88 2020/10/03 09:22:26 djm Exp $ */
-
+/* $OpenBSD: misc.h,v 1.92 2021/01/11 02:12:57 dtucker Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -21,6 +20,7 @@
 #endif
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <stdio.h>
 
 /* Data structure for representing a forwarding request. */
 struct Forward {
@@ -101,6 +101,16 @@ void	 sock_set_v6only(int);
 
 struct passwd *pwcopy(struct passwd *);
 const char *ssh_gai_strerror(int);
+
+typedef void privdrop_fn(struct passwd *);
+typedef void privrestore_fn(void);
+
+#define	SSH_SUBPROCESS_STDOUT_DISCARD	(1)     /* Discard stdout */
+#define	SSH_SUBPROCESS_STDOUT_CAPTURE	(1<<1)  /* Redirect stdout */
+#define	SSH_SUBPROCESS_STDERR_DISCARD	(1<<2)  /* Discard stderr */
+pid_t	subprocess(const char *tag, const char *command,
+    int ac, char **av, FILE **child, u_int flags,
+    struct passwd *pw, privdrop_fn *drop_privs, privrestore_fn *restore_privs);
 
 typedef struct arglist arglist;
 struct arglist {
