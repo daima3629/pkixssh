@@ -2476,7 +2476,7 @@ fill_default_options(Options * options)
 	if (options->tcp_keep_alive == -1)
 		options->tcp_keep_alive = 1;
 	if (options->port == -1)
-		options->port = 0;	/* Filled in ssh_connect. */
+		options->port = 0;	/* filled in ssh client */
 	if (options->address_family == -1)
 		options->address_family = AF_UNSPEC;
 	if (options->connection_attempts == -1)
