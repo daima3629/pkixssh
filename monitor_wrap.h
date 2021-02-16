@@ -1,5 +1,6 @@
+#ifndef _MM_WRAP_H_
+#define _MM_WRAP_H_
 /* $OpenBSD: monitor_wrap.h,v 1.46 2020/10/16 13:24:45 djm Exp $ */
-
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * All rights reserved.
@@ -27,10 +28,12 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _MM_WRAP_H_
-#define _MM_WRAP_H_
+#include "includes.h"
 
 #include "evp-compat.h"
+#ifdef GSSAPI
+#include "ssh-gss.h"
+#endif
 
 extern int use_privsep;
 #define PRIVSEP(x)	(use_privsep ? mm_##x : x)
