@@ -377,7 +377,6 @@ int	sshkey_validate_public_rsa(const struct sshkey *key);
 int	sshkey_validate_public_dsa(const struct sshkey *key);
 #  ifdef OPENSSL_HAS_ECC
 int	sshkey_validate_public_ecdsa(const struct sshkey *key);
-int	sshkey_validate_private_ecdsa(const struct sshkey *key);
 #  endif /* OPENSSL_HAS_ECC */
 int	sshkey_validate_public(const struct sshkey *key);
 
