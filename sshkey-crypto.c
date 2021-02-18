@@ -1340,16 +1340,24 @@ sshkey_public_from_fp(FILE *fp, int format, struct sshkey **key);
 int
 sshbuf_read_custom_rsa(struct sshbuf *buf, struct sshkey *key) {
 	int r;
+	EVP_PKEY *pk = NULL;
+	RSA *rsa = NULL;
 	BIGNUM *n = NULL, *e;
 	BIGNUM *d = NULL, *iqmp = NULL, *p = NULL, *q = NULL;
+
+	e = BN_new();
+	if (e == NULL)
+		return SSH_ERR_ALLOC_FAIL;
 
 {	BN_ULONG rsa_e;
 	u_char e1, e2, e3;
 
 	if ((r = sshbuf_get_u8(buf, &e1)) != 0 ||
 	    (e1 < 30 && (r = sshbuf_get_u8(buf, &e2)) != 0) ||
-	    (e1 < 30 && (r = sshbuf_get_u8(buf, &e3)) != 0))
-		return SSH_ERR_INVALID_FORMAT;
+	    (e1 < 30 && (r = sshbuf_get_u8(buf, &e3)) != 0)) {
+		r = SSH_ERR_INVALID_FORMAT;
+		goto err;
+	}
 
 	rsa_e = e1;
 	debug3("e %lx", rsa_e);
@@ -1362,11 +1370,9 @@ sshbuf_read_custom_rsa(struct sshbuf *buf, struct sshkey *key) {
 		debug3("e %lx", rsa_e);
 	}
 
-	if ((e = BN_new()) == NULL)
-		return SSH_ERR_ALLOC_FAIL;
 	if (!BN_set_word(e, rsa_e)) {
 		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto out;
+		goto err;
 	}
 }
 
@@ -1375,44 +1381,64 @@ sshbuf_read_custom_rsa(struct sshbuf *buf, struct sshkey *key) {
 	    (r = sshbuf_get_bignum1x(buf, &iqmp)) != 0 ||
 	    (r = sshbuf_get_bignum1x(buf, &q)) != 0 ||
 	    (r = sshbuf_get_bignum1x(buf, &p)) != 0)
-		goto out;
+		goto err;
 
-	if (!RSA_set0_key(key->rsa, n, e, d)) {
+	/* key attribute allocation */
+	pk = EVP_PKEY_new();
+	if (pk == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto err;
+	}
+	rsa = RSA_new();
+	if (rsa == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto err;
+	}
+	if (!EVP_PKEY_set1_RSA(pk, rsa)) {
 		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto out;
+		goto err;
+	}
+
+	/* transfer to key */
+	if (!RSA_set0_key(rsa, n, e, d)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
 	}
 	n = e = d = NULL; /* transferred */
 
-	if (!RSA_set0_factors(key->rsa, p, q)) {
+	if (!RSA_set0_factors(rsa, p, q)) {
 		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto out;
+		goto err;
 	}
 	p = q = NULL; /* transferred */
 
-	r = sshrsa_complete_crt_parameters(key->rsa, iqmp);
-	if (r != 0) goto out;
+	r = sshrsa_complete_crt_parameters(rsa, iqmp);
+	if (r != 0) goto err;
 
-	r = sshkey_validate_public_rsa(key);
-	if (r != 0) goto out;
+	r = sshkey_validate_rsa_pub(rsa);
+	if (r != 0) goto err;
 
-	if (RSA_blinding_on(key->rsa, NULL) != 1) {
+	if (RSA_blinding_on(rsa, NULL) != 1) {
 		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto out;
+		goto err;
 	}
 
-	r = sshkey_complete_pkey(key);
-	if (r != 0) goto out;
-
+	/* success */
+	RSA_free(key->rsa); /* TODO use of unspecified type */
+	key->pk = pk;
+	key->rsa = rsa; /* TODO */
 	SSHKEY_DUMP(key);
+	return 0;
 
-out:
+err:
 	BN_clear_free(n);
 	BN_clear_free(e);
 	BN_clear_free(d);
 	BN_clear_free(p);
 	BN_clear_free(q);
 	BN_clear_free(iqmp);
-
+	RSA_free(rsa);
+	EVP_PKEY_free(pk);
 	return r;
 }
 
