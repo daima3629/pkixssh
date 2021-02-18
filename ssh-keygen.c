@@ -457,10 +457,9 @@ static struct sshkey *
 do_convert_private_ssh2(struct sshbuf *b)
 {
 	struct sshkey *key = NULL;
-	char *type, *cipher;
 	u_char *sig = NULL, data[] = "abcde12345";
 	int r, rlen, ktype;
-	u_int magic, i1, i2, i3, i4;
+	u_int32_t magic;
 	size_t slen;
 
 	if ((r = sshbuf_get_u32(b, &magic)) != 0)
@@ -471,6 +470,10 @@ do_convert_private_ssh2(struct sshbuf *b)
 		    SSH_COM_PRIVATE_KEY_MAGIC);
 		return NULL;
 	}
+
+{	char *type, *cipher;
+	u_int32_t i1, i2, i3, i4;
+
 	if ((r = sshbuf_get_u32(b, &i1)) != 0 ||
 	    (r = sshbuf_get_cstring(b, &type, NULL)) != 0 ||
 	    (r = sshbuf_get_cstring(b, &cipher, NULL)) != 0 ||
@@ -495,11 +498,13 @@ do_convert_private_ssh2(struct sshbuf *b)
 		free(type);
 		return NULL;
 	}
-	if ((key = sshkey_new(ktype)) == NULL)
-		fatal("sshkey_new failed");
 	free(type);
+}
 
-	switch (key->type) {
+	key = sshkey_new(KEY_UNSPEC);
+	if (key == NULL)
+		fatal("sshkey_new failed");
+	switch (ktype) {
 	case KEY_DSA:
 		r = sshbuf_read_custom_dsa(b, key);
 		if (r != 0)

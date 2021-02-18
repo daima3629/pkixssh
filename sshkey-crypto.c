@@ -1424,7 +1424,7 @@ sshbuf_read_custom_rsa(struct sshbuf *buf, struct sshkey *key) {
 	}
 
 	/* success */
-	RSA_free(key->rsa); /* TODO use of unspecified type */
+	key->type = KEY_RSA;
 	key->pk = pk;
 	key->rsa = rsa; /* TODO */
 	SSHKEY_DUMP(key);
@@ -1490,7 +1490,7 @@ sshbuf_read_custom_dsa(struct sshbuf *buf, struct sshkey *key) {
 	if (r != 0) goto err;
 
 	/* success */
-	DSA_free(key->dsa); /* TODO use of unspecified type */
+	key->type = KEY_DSA;
 	key->pk = pk;
 	key->dsa = dsa; /* TODO */
 	SSHKEY_DUMP(key);
