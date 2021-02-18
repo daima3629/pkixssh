@@ -309,37 +309,34 @@ sshkey_free_ecdsa(struct sshkey *key) {
 #ifndef BN_FLG_CONSTTIME
 #  define BN_FLG_CONSTTIME 0x0 /* OpenSSL < 0.9.8 */
 #endif
+/* TODO: new method compatible with OpenSSL 3.0 API */
 static int
-sshrsa_complete_crt_parameters(struct sshkey *key, const BIGNUM *rsa_iqmp)
+sshrsa_complete_crt_parameters(RSA *rsa, const BIGNUM *rsa_iqmp)
 {
-	BN_CTX *ctx = NULL;
+	BN_CTX *ctx;
 	BIGNUM *aux = NULL, *d = NULL;
 	BIGNUM *dmq1 = NULL, *dmp1 = NULL, *iqmp = NULL;
 	int r;
 
-	if (key == NULL || key->rsa == NULL ||
-	    sshkey_type_plain(key->type) != KEY_RSA)
-		return SSH_ERR_INVALID_ARGUMENT;
-
-	if ((ctx = BN_CTX_new()) == NULL)
+	ctx = BN_CTX_new();
+	if (ctx == NULL)
 		return SSH_ERR_ALLOC_FAIL;
 	if ((aux = BN_new()) == NULL ||
 	    (iqmp = BN_dup(rsa_iqmp)) == NULL ||
 	    (dmq1 = BN_new()) == NULL ||
 	    (dmp1 = BN_new()) == NULL) {
 		r = SSH_ERR_ALLOC_FAIL;
-		goto out;
+		goto err;
 	}
 	BN_set_flags(aux, BN_FLG_CONSTTIME);
 
 {	const BIGNUM *p, *q;
-	RSA *rsa = key->rsa;
 	RSA_get0_factors(rsa, &p, &q);
 	{	const BIGNUM *key_d;
 		RSA_get0_key(rsa, NULL, NULL, &key_d);
 		if ((d = BN_dup(key_d)) == NULL) {
 			r = SSH_ERR_ALLOC_FAIL;
-			goto out;
+			goto err;
 		}
 		BN_set_flags(d, BN_FLG_CONSTTIME);
 	}
@@ -349,17 +346,19 @@ sshrsa_complete_crt_parameters(struct sshkey *key, const BIGNUM *rsa_iqmp)
 	    (BN_sub(aux, p, BN_value_one()) == 0) ||
 	    (BN_mod(dmp1, d, aux, ctx) == 0)) {
 		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto out;
+		goto err;
 	}
 }
-	if (!RSA_set0_crt_params(key->rsa, dmp1, dmq1, iqmp)) {
+	if (!RSA_set0_crt_params(rsa, dmp1, dmq1, iqmp)) {
 		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto out;
+		goto err;
 	}
-	dmp1 = dmq1 = iqmp = NULL; /* transferred */
+	/* dmp1 = dmq1 = iqmp = NULL; transferred */
 
-	r = SSH_ERR_SUCCESS;
- out:
+	/* success */
+	return 0;
+
+err:
 	BN_clear_free(aux);
 	BN_clear_free(d);
 	BN_clear_free(dmp1);
@@ -1060,7 +1059,7 @@ sshbuf_read_priv_rsa(struct sshbuf *buf, struct sshkey *key) {
 	}
 	p = q = NULL; /* transferred */
 
-	r = sshrsa_complete_crt_parameters(key, iqmp);
+	r = sshrsa_complete_crt_parameters(key->rsa, iqmp);
 	if (r != 0) goto out;
 
 	SSHKEY_DUMP(key);
@@ -1390,7 +1389,7 @@ sshbuf_read_custom_rsa(struct sshbuf *buf, struct sshkey *key) {
 	}
 	p = q = NULL; /* transferred */
 
-	r = sshrsa_complete_crt_parameters(key, iqmp);
+	r = sshrsa_complete_crt_parameters(key->rsa, iqmp);
 	if (r != 0) goto out;
 
 	r = sshkey_validate_public_rsa(key);
