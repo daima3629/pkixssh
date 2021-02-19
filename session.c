@@ -1335,16 +1335,20 @@ do_nologin(struct passwd *pw)
 	if (login_getcapbool(lc, "ignorenologin", 0) || pw->pw_uid == 0)
 		return;
 	nl = login_getcapstr(lc, "nologin", def_nl, def_nl);
+	/* Do not free string returned by login_getcapstr(3)!
+	Some BSD variants require the caller to free strings returned by the
+	login_* functions. Others like FreeBSD require that callers do not.
+
+	Note it is harmless memory leak as the process is about to exec the
+	shell/command.
+	*/
 #else
 	if (pw->pw_uid == 0)
 		return;
 	nl = def_nl;
 #endif
-	if (stat(nl, &sb) == -1) {
-		if (nl != def_nl)
-			free(nl);
+	if (stat(nl, &sb) == -1)
 		return;
-	}
 
 	/* /etc/nologin exists.  Print its contents if we can and exit. */
 	logit("User %.100s not allowed because %s exists", pw->pw_name, nl);
