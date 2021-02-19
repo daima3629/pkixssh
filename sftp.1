@@ -1,4 +1,4 @@
-.\" $OpenBSD: sftp.1,v 1.134 2021/01/22 02:44:58 dtucker Exp $
+.\" $OpenBSD: sftp.1,v 1.137 2021/02/12 03:49:09 djm Exp $
 .\"
 .\" Copyright (c) 2001 Damien Miller.  All rights reserved.
 .\"
@@ -30,7 +30,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: January 22 2021 $
+.Dd $Mdocdate: February 12 2021 $
 .Dt SFTP 1
 .Os
 .Sh NAME
@@ -293,15 +293,18 @@ Change group of file
 .Ar path
 to
 .Ar grp .
-If the
-.Fl h
-flag is specified, then symlinks will not be followed.
 .Ar path
 may contain
 .Xr glob 7
 characters and may match multiple files.
 .Ar grp
 must be a numeric GID.
+.Pp
+If the
+.Fl h
+flag is specified, then symlinks will not be followed.
+Note that this is only supported by servers that implement
+the "lsetstat@openssh.com" extension.
 .It Xo Ic chmod
 .Op Fl h
 .Ar mode
@@ -311,13 +314,16 @@ Change permissions of file
 .Ar path
 to
 .Ar mode .
-If the
-.Fl h
-flag is specified, then symlinks will not be followed.
 .Ar path
 may contain
 .Xr glob 7
 characters and may match multiple files.
+.Pp
+If the
+.Fl h
+flag is specified, then symlinks will not be followed.
+Note that this is only supported by servers that implement
+the "lsetstat@openssh.com" extension.
 .It Xo Ic chown
 .Op Fl h
 .Ar own
@@ -327,15 +333,18 @@ Change owner of file
 .Ar path
 to
 .Ar own .
-If the
-.Fl h
-flag is specified, then symlinks will not be followed.
 .Ar path
 may contain
 .Xr glob 7
 characters and may match multiple files.
 .Ar own
 must be a numeric UID.
+.Pp
+If the
+.Fl h
+flag is specified, then symlinks will not be followed.
+Note that this is only supported by servers that implement
+the "lsetstat@openssh.com" extension.
 .It Xo Ic df
 .Op Fl hi
 .Op Ar path
