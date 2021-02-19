@@ -1591,7 +1591,6 @@ sshkey_cert_type(const struct sshkey *k)
 int
 sshkey_ecdsa_key_to_nid(EC_KEY *k)
 {
-	EC_GROUP *eg;
 	int nids[] = {
 		NID_X9_62_prime256v1,
 		NID_secp384r1,
@@ -1600,7 +1599,6 @@ sshkey_ecdsa_key_to_nid(EC_KEY *k)
 #  endif /* OPENSSL_HAS_NISTP521 */
 		-1
 	};
-	int nid;
 	u_int i;
 	const EC_GROUP *g = EC_KEY_get0_group(k);
 
@@ -1612,8 +1610,16 @@ sshkey_ecdsa_key_to_nid(EC_KEY *k)
 	 * it out for the other case by comparing against all the groups that
 	 * are supported.
 	 */
-	if ((nid = EC_GROUP_get_curve_name(g)) > 0)
-		return nid;
+{	int nid = EC_GROUP_get_curve_name(g);
+	if (nid > 0) {
+		for (i = 0; nids[i] != -1; i++) {
+			if (nid == nids[i])
+				return nid;
+		}
+		return -1;
+	}
+}
+{	EC_GROUP *eg;
 	for (i = 0; nids[i] != -1; i++) {
 		if ((eg = EC_GROUP_new_by_curve_name(nids[i])) == NULL)
 			return -1;
@@ -1629,6 +1635,7 @@ sshkey_ecdsa_key_to_nid(EC_KEY *k)
 			return -1;
 		}
 	}
+}
 	return nids[i];
 }
 # endif /* OPENSSL_HAS_ECC */
