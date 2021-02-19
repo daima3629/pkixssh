@@ -1085,37 +1085,44 @@ sshbuf_write_pub_rsa_inv(struct sshbuf *buf, const struct sshkey *key) {
 int
 sshbuf_read_priv_rsa(struct sshbuf *buf, struct sshkey *key) {
 	int r;
+	RSA *rsa = NULL;
 	BIGNUM *d = NULL, *iqmp = NULL, *p = NULL, *q = NULL;
 
 	if ((r = sshbuf_get_bignum2(buf, &d)) != 0 ||
 	    (r = sshbuf_get_bignum2(buf, &iqmp)) != 0 ||
 	    (r = sshbuf_get_bignum2(buf, &p)) != 0 ||
 	    (r = sshbuf_get_bignum2(buf, &q)) != 0)
-		goto out;
+		goto err;
 
-	if (!RSA_set0_key(key->rsa, NULL, NULL, d)) {
+	rsa = EVP_PKEY_get1_RSA(key->pk);
+	if (rsa == NULL) {
+		r = SSH_ERR_INVALID_ARGUMENT;
+		goto err;
+	}
+
+	if (!RSA_set0_key(rsa, NULL, NULL, d)) {
 		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto out;
+		goto err;
 	}
 	d = NULL; /* transferred */
 
-	if (!RSA_set0_factors(key->rsa, p, q)) {
+	if (!RSA_set0_factors(rsa, p, q)) {
 		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto out;
+		goto err;
 	}
 	p = q = NULL; /* transferred */
 
-	r = sshrsa_complete_crt_parameters(key->rsa, iqmp);
-	if (r != 0) goto out;
+	r = sshrsa_complete_crt_parameters(rsa, iqmp);
+	if (r != 0) goto err;
 
 	SSHKEY_DUMP(key);
 
-out:
+err:
 	BN_clear_free(d);
 	BN_clear_free(p);
 	BN_clear_free(q);
 	BN_clear_free(iqmp);
-
+	RSA_free(rsa);
 	return r;
 }
 
@@ -1124,10 +1131,14 @@ sshbuf_write_priv_rsa(struct sshbuf *buf, const struct sshkey *key) {
 	int r;
 	const BIGNUM *d = NULL, *iqmp = NULL, *p = NULL, *q = NULL;
 
-	RSA_get0_key(key->rsa, NULL, NULL, &d);
-	RSA_get0_crt_params(key->rsa, NULL, NULL, &iqmp);
-	RSA_get0_factors(key->rsa, &p, &q);
-
+{	RSA *rsa = EVP_PKEY_get1_RSA(key->pk);
+	if (rsa == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+	RSA_get0_key(rsa, NULL, NULL, &d);
+	RSA_get0_crt_params(rsa, NULL, NULL, &iqmp);
+	RSA_get0_factors(rsa, &p, &q);
+	RSA_free(rsa);
+}
 	if ((r = sshbuf_put_bignum2(buf, d)) != 0 ||
 	    (r = sshbuf_put_bignum2(buf, iqmp)) != 0 ||
 	    (r = sshbuf_put_bignum2(buf, p)) != 0 ||
