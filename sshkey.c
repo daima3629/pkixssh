@@ -828,6 +828,16 @@ sshbuf_write_ec_curve(struct sshbuf *buf, const struct sshkey *key) {
 #endif /*def OPENSSL_HAS_ECC*/
 
 static int
+sshbuf_write_pub_ed25519(struct sshbuf *buf, const struct sshkey *key) {
+	return sshbuf_put_string(buf, key->ed25519_pk, ED25519_PK_SZ);
+}
+
+static int
+sshbuf_write_priv_ed25519(struct sshbuf *buf, const struct sshkey *key) {
+	return sshbuf_put_string(buf, key->ed25519_sk, ED25519_SK_SZ);
+}
+
+static int
 to_blob_buf(const struct sshkey *key, struct sshbuf *b, int force_plain,
   enum sshkey_serialize_rep opts)
 {
@@ -886,8 +896,7 @@ to_blob_buf(const struct sshkey *key, struct sshbuf *b, int force_plain,
 		if (key->ed25519_pk == NULL)
 			return SSH_ERR_INVALID_ARGUMENT;
 		if ((ret = sshbuf_put_cstring(b, typename)) != 0 ||
-		    (ret = sshbuf_put_string(b,
-		    key->ed25519_pk, ED25519_PK_SZ)) != 0)
+		    (ret = sshbuf_write_pub_ed25519(b, key)) != 0)
 			return ret;
 		break;
 #ifdef WITH_XMSS
@@ -2705,8 +2714,7 @@ sshkey_certify_custom(struct sshkey *k, struct sshkey *ca, const char *alg,
 		break;
 #endif /* WITH_OPENSSL */
 	case KEY_ED25519_CERT:
-		if ((ret = sshbuf_put_string(cert,
-		    k->ed25519_pk, ED25519_PK_SZ)) != 0)
+		if ((ret = sshbuf_write_pub_ed25519(cert, k)) != 0)
 			goto out;
 		break;
 #ifdef WITH_XMSS
@@ -2992,18 +3000,14 @@ sshkey_private_serialize_opt(struct sshkey *key, struct sshbuf *buf,
 # endif /* OPENSSL_HAS_ECC */
 #endif /* WITH_OPENSSL */
 	case KEY_ED25519:
-		if ((r = sshbuf_put_string(b, key->ed25519_pk,
-		    ED25519_PK_SZ)) != 0 ||
-		    (r = sshbuf_put_string(b, key->ed25519_sk,
-		    ED25519_SK_SZ)) != 0)
+		if ((r = sshbuf_write_pub_ed25519(b, key)) != 0 ||
+		    (r = sshbuf_write_priv_ed25519(b, key)) != 0)
 			goto out;
 		break;
 	case KEY_ED25519_CERT:
 		if ((r = sshbuf_put_stringb(b, key->cert->certblob)) != 0 ||
-		    (r = sshbuf_put_string(b, key->ed25519_pk,
-		    ED25519_PK_SZ)) != 0 ||
-		    (r = sshbuf_put_string(b, key->ed25519_sk,
-		    ED25519_SK_SZ)) != 0)
+		    (r = sshbuf_write_pub_ed25519(b, key)) != 0 ||
+		    (r = sshbuf_write_priv_ed25519(b, key)) != 0)
 			goto out;
 		break;
 #ifdef WITH_XMSS
@@ -3061,18 +3065,17 @@ sshkey_private_serialize(struct sshkey *key, struct sshbuf *b)
 }
 
 static int
-sshkey_private_deserialize_ed25519(struct sshbuf *buf, struct sshkey *key)
-{
+sshbuf_read_pub_ed25519(struct sshbuf *buf, struct sshkey *key) {
 	int r;
-	u_char *ed25519_pk = NULL, *ed25519_sk = NULL;
-	size_t pklen = 0, sklen = 0;
+	u_char *ed25519_pk = NULL;
+	size_t pklen = 0;
 
-	if ((r = sshbuf_get_string(buf, &ed25519_pk, &pklen)) != 0 ||
-	    (r = sshbuf_get_string(buf, &ed25519_sk, &sklen)) != 0)
-		goto out;
-	if (pklen != ED25519_PK_SZ || sklen != ED25519_SK_SZ) {
+	r = sshbuf_get_string(buf, &ed25519_pk, &pklen);
+	if (r != 0) goto err;
+
+	if (pklen != ED25519_PK_SZ) {
 		r = SSH_ERR_INVALID_FORMAT;
-		goto out;
+		goto err;
 	}
 
 	/*
@@ -3082,20 +3085,37 @@ sshkey_private_deserialize_ed25519(struct sshbuf *buf, struct sshkey *key)
 	if (key->ed25519_pk != NULL) {
 		if (memcmp(key->ed25519_pk, ed25519_pk, pklen) != 0) {
 			r = SSH_ERR_KEY_CERT_MISMATCH;
-			goto out;
+			goto err;
 		}
 	} else {
 		key->ed25519_pk = ed25519_pk;
 		ed25519_pk = NULL; /* transferred */
 	}
 
+err:
+	freezero(ed25519_pk, pklen);
+	return r;
+}
+
+static int
+sshbuf_read_priv_ed25519(struct sshbuf *buf, struct sshkey *key) {
+	int r;
+	u_char *ed25519_sk = NULL;
+	size_t sklen = 0;
+
+	r = sshbuf_get_string(buf, &ed25519_sk, &sklen);
+	if (r != 0) goto err;
+
+	if (sklen != ED25519_SK_SZ) {
+		r = SSH_ERR_INVALID_FORMAT;
+		goto err;
+	}
+
 	key->ed25519_sk = ed25519_sk;
 	ed25519_sk = NULL; /* transferred */
 
-out:
-	freezero(ed25519_pk, pklen);
+err:
 	freezero(ed25519_sk, sklen);
-
 	return r;
 }
 
@@ -3202,8 +3222,9 @@ sshkey_private_deserialize(struct sshbuf *buf, struct sshkey **kp)
 #endif /* WITH_OPENSSL */
 	case KEY_ED25519:
 	case KEY_ED25519_CERT:
-		r = sshkey_private_deserialize_ed25519(buf, k);
-		if (r != 0) goto out;
+		if ((r = sshbuf_read_pub_ed25519(buf, k)) != 0 ||
+		    (r = sshbuf_read_priv_ed25519(buf, k)) != 0)
+			goto out;
 		break;
 #ifdef WITH_XMSS
 	case KEY_XMSS:
