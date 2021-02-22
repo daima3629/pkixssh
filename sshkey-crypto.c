@@ -1345,7 +1345,6 @@ sshbuf_read_pub_ecdsa(struct sshbuf *buf, struct sshkey *key) {
 	int r;
 	EVP_PKEY *pk = NULL;
 	EC_KEY *ec;
-	char *curve = NULL;
 
 	ec = EC_KEY_new_by_curve_name(key->ecdsa_nid);
 	if (ec  == NULL)
@@ -1355,13 +1354,6 @@ sshbuf_read_pub_ecdsa(struct sshbuf *buf, struct sshkey *key) {
 	/* Note OpenSSL 1.1.0 uses named curve parameter encoding by default. */
 	EC_KEY_set_asn1_flag(ec, OPENSSL_EC_NAMED_CURVE);
 #endif
-
-	if ((r = sshbuf_get_cstring(buf, &curve, NULL)) != 0)
-		goto err;
-	if (key->ecdsa_nid != sshkey_curve_name_to_nid(curve)) {
-		r = SSH_ERR_EC_CURVE_MISMATCH;
-		goto err;
-	}
 
 	r = sshbuf_get_eckey(buf, ec);
 	if (r != 0) goto err;
@@ -1387,7 +1379,6 @@ sshbuf_read_pub_ecdsa(struct sshbuf *buf, struct sshkey *key) {
 	return 0;
 
 err:
-	free(curve);
 	EC_KEY_free(ec);
 	EVP_PKEY_free(pk);
 	return r;
@@ -1396,19 +1387,14 @@ err:
 int
 sshbuf_write_pub_ecdsa(struct sshbuf *buf, const struct sshkey *key) {
 	int r;
-	const char *curve_name = sshkey_curve_nid_to_name(key->ecdsa_nid);
 	EC_KEY *ec;
 
 	ec = EVP_PKEY_get1_EC_KEY(key->pk);
 	if (ec == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;
 
-	if ((r = sshbuf_put_cstring(buf, curve_name)) != 0)
-		goto err;
-
 	r = sshbuf_put_eckey(buf, ec);
 
-err:
 	EC_KEY_free(ec);
 	return r;
 }

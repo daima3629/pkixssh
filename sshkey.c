@@ -819,6 +819,14 @@ sshkey_match_pkalg(struct sshkey *key, const char* pkalg) {
 	);
 }
 
+#ifdef OPENSSL_HAS_ECC
+static inline int
+sshbuf_write_ec_curve(struct sshbuf *buf, const struct sshkey *key) {
+	const char *curve_name = sshkey_curve_nid_to_name(key->ecdsa_nid);
+	return sshbuf_put_cstring(buf, curve_name);
+}
+#endif /*def OPENSSL_HAS_ECC*/
+
 static int
 to_blob_buf(const struct sshkey *key, struct sshbuf *b, int force_plain,
   enum sshkey_serialize_rep opts)
@@ -863,6 +871,7 @@ to_blob_buf(const struct sshkey *key, struct sshbuf *b, int force_plain,
 # ifdef OPENSSL_HAS_ECC
 	case KEY_ECDSA:
 		if ((ret = sshbuf_put_cstring(b, typename)) != 0 ||
+		    (ret = sshbuf_write_ec_curve(b, key)) != 0 ||
 		    (ret = sshbuf_write_pub_ecdsa(b, key)) != 0)
 			return ret;
 		break;
@@ -2182,6 +2191,32 @@ cert_parse(struct sshbuf *b, struct sshkey *key, struct sshbuf *certbuf)
 	return ret;
 }
 
+#ifdef OPENSSL_HAS_ECC
+static int
+sshbuf_read_ec_curve(struct sshbuf *buf, const char *pkalg, struct sshkey *key) {
+	int r, nid;
+
+	nid = sshkey_ecdsa_nid_from_name(pkalg);
+	debug3_f("pkalg/nid: %s/%d", pkalg, nid);
+	if (nid == -1)
+		return SSH_ERR_INVALID_ARGUMENT;
+
+{	char *curve;
+
+	r = sshbuf_get_cstring(buf, &curve, NULL);
+	if (r != 0) return r;
+
+	if (nid != sshkey_curve_name_to_nid(curve))
+		r = SSH_ERR_EC_CURVE_MISMATCH;
+
+	free(curve);
+}
+	if (r == 0)
+		key->ecdsa_nid = nid;
+	return r;
+}
+#endif /*def OPENSSL_HAS_ECC*/
+
 static int
 sshkey_from_blob_internal(struct sshbuf *b, struct sshkey **keyp,
     int allow_cert)
@@ -2259,11 +2294,9 @@ sshkey_from_blob_internal(struct sshbuf *b, struct sshkey **keyp,
 			ret = SSH_ERR_ALLOC_FAIL;
 			goto out;
 		}
-		key->ecdsa_nid = sshkey_ecdsa_nid_from_name(ktype);
-		debug3_f("ktype/nid=%.50s / %d", ktype, key->ecdsa_nid);
-
-		ret = sshbuf_read_pub_ecdsa(b, key);
-		if (ret != 0) goto out;
+		if ((ret = sshbuf_read_ec_curve(b, ktype, key)) != 0 ||
+		    (ret = sshbuf_read_pub_ecdsa(b, key)) != 0)
+			goto out;
 		break;
 # endif /* OPENSSL_HAS_ECC */
 #endif /* WITH_OPENSSL */
@@ -2677,7 +2710,8 @@ sshkey_certify_custom(struct sshkey *k, struct sshkey *ca, const char *alg,
 		break;
 # ifdef OPENSSL_HAS_ECC
 	case KEY_ECDSA_CERT:
-		if ((ret = sshbuf_write_pub_ecdsa(cert, k)) != 0)
+		if ((ret = sshbuf_write_ec_curve(cert, k)) != 0 ||
+		    (ret = sshbuf_write_pub_ecdsa(cert, k)) != 0)
 			goto out;
 		break;
 # endif /* OPENSSL_HAS_ECC */
@@ -2961,7 +2995,8 @@ sshkey_private_serialize_opt(struct sshkey *key, struct sshbuf *buf,
 		break;
 # ifdef OPENSSL_HAS_ECC
 	case KEY_ECDSA:
-		if ((r = sshbuf_write_pub_ecdsa(b, key)) != 0 ||
+		if ((r = sshbuf_write_ec_curve(b, key)) != 0 ||
+		    (r = sshbuf_write_pub_ecdsa(b, key)) != 0 ||
 		    (r = sshbuf_write_priv_ecdsa(b, key)) != 0)
 			goto out;
 		break;
@@ -3163,12 +3198,9 @@ sshkey_private_deserialize(struct sshbuf *buf, struct sshkey **kp)
 		break;
 # ifdef OPENSSL_HAS_ECC
 	case KEY_ECDSA:
-		if ((k->ecdsa_nid = sshkey_ecdsa_nid_from_name(tname)) == -1) {
-			r = SSH_ERR_INVALID_ARGUMENT;
+		if ((r = sshbuf_read_ec_curve(buf, tname, k)) != 0 ||
+		    (r = sshbuf_read_pub_ecdsa(buf, k)) != 0)
 			goto out;
-		}
-		r = sshbuf_read_pub_ecdsa(buf, k);
-		if (r != 0) goto out;
 		/* FALLTHROUGH */
 	case KEY_ECDSA_CERT:
 		r = sshbuf_read_priv_ecdsa(buf, k);
