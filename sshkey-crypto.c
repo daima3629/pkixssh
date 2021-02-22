@@ -149,7 +149,7 @@ DSA_get0_pqg(const DSA *dsa, const BIGNUM **p, const BIGNUM **q, const BIGNUM **
 	if (g != NULL) *g = dsa->g;
 }
 
-static inline int
+static /*inline*/ int
 DSA_set0_pqg(DSA *dsa, BIGNUM *p, BIGNUM *q, BIGNUM *g) {
 	/* If the fields in d are NULL, the corresponding input
 	 * parameters MUST be non-NULL.
@@ -1152,6 +1152,8 @@ sshbuf_write_priv_rsa(struct sshbuf *buf, const struct sshkey *key) {
 int
 sshbuf_read_pub_dsa(struct sshbuf *buf, struct sshkey *key) {
 	int r;
+	EVP_PKEY *pk = NULL;
+	DSA *dsa = NULL;
 	BIGNUM *p = NULL, *q = NULL, *g = NULL;
 	BIGNUM *pub_key = NULL;
 
@@ -1159,34 +1161,53 @@ sshbuf_read_pub_dsa(struct sshbuf *buf, struct sshkey *key) {
 	    (r = sshbuf_get_bignum2(buf, &q)) != 0 ||
 	    (r = sshbuf_get_bignum2(buf, &g)) != 0 ||
 	    (r = sshbuf_get_bignum2(buf, &pub_key)) != 0)
-		goto out;
+		goto err;
 
-	if (!DSA_set0_pqg(key->dsa, p, q, g)) {
+	/* key attribute allocation */
+	pk = EVP_PKEY_new();
+	if (pk == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto err;
+	}
+	dsa = DSA_new();
+	if (dsa == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto err;
+	}
+	if (!EVP_PKEY_set1_DSA(pk, dsa)) {
 		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto out;
+		goto err;
+	}
+
+	/* transfer to key */
+	if (!DSA_set0_pqg(dsa, p, q, g)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
 	}
 	p = q = g = NULL; /* transferred */
 
-	if (!DSA_set0_key(key->dsa, pub_key, NULL)) {
+	if (!DSA_set0_key(dsa, pub_key, NULL)) {
 		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto out;
+		goto err;
 	}
 	pub_key = NULL; /* transferred */
 
-	r = sshkey_validate_public_dsa(key);
-	if (r != 0) goto out;
+	r = sshkey_validate_dsa_pub(dsa);
+	if (r != 0) goto err;
 
-	r = sshkey_complete_pkey(key);
-	if (r != 0) goto out;
-
+	/* success */
+	key->pk = pk;
+	DSA_free(key->dsa); key->dsa = dsa; /* TODO */
 	SSHKEY_DUMP(key);
+	return 0;
 
-out:
+err:
 	BN_clear_free(p);
 	BN_clear_free(q);
 	BN_clear_free(g);
 	BN_clear_free(pub_key);
-
+	DSA_free(dsa);
+	EVP_PKEY_free(pk);
 	return r;
 }
 
@@ -1196,12 +1217,13 @@ sshbuf_write_pub_dsa(struct sshbuf *buf, const struct sshkey *key) {
 	const BIGNUM *p = NULL, *q = NULL, *g = NULL;
 	const BIGNUM *pub_key = NULL;
 
-	if (key->dsa == NULL)
+{	DSA *dsa = EVP_PKEY_get1_DSA(key->pk);
+	if (dsa == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;
-
-	DSA_get0_pqg(key->dsa, &p, &q, &g);
-	DSA_get0_key(key->dsa, &pub_key, NULL);
-
+	DSA_get0_pqg(dsa, &p, &q, &g);
+	DSA_get0_key(dsa, &pub_key, NULL);
+	DSA_free(dsa);
+}
 	if ((r = sshbuf_put_bignum2(buf, p)) != 0 ||
 	    (r = sshbuf_put_bignum2(buf, q)) != 0 ||
 	    (r = sshbuf_put_bignum2(buf, g)) != 0 ||
@@ -1215,22 +1237,29 @@ sshbuf_write_pub_dsa(struct sshbuf *buf, const struct sshkey *key) {
 int
 sshbuf_read_priv_dsa(struct sshbuf *buf, struct sshkey *key) {
 	int r;
+	DSA *dsa = NULL;
 	BIGNUM *priv_key = NULL;
 
 	if ((r = sshbuf_get_bignum2(buf, &priv_key)) != 0)
-		goto out;
+		goto err;
 
-	if (!DSA_set0_key(key->dsa, NULL, priv_key)) {
+	dsa = EVP_PKEY_get1_DSA(key->pk);
+	if (dsa == NULL) {
+		r = SSH_ERR_INVALID_ARGUMENT;
+		goto err;
+	}
+
+	if (!DSA_set0_key(dsa, NULL, priv_key)) {
 		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto out;
+		goto err;
 	}
 	priv_key = NULL; /* transferred */
 
 	SSHKEY_DUMP(key);
 
-out:
+err:
 	BN_clear_free(priv_key);
-
+	DSA_free(dsa);
 	return r;
 }
 
@@ -1238,7 +1267,12 @@ int
 sshbuf_write_priv_dsa(struct sshbuf *buf, const struct sshkey *key) {
 	const BIGNUM *priv_key = NULL;
 
-	DSA_get0_key(key->dsa, NULL, &priv_key);
+{	DSA *dsa = EVP_PKEY_get1_DSA(key->pk);
+	if (dsa == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+	DSA_get0_key(dsa, NULL, &priv_key);
+	DSA_free(dsa);
+}
 	return sshbuf_put_bignum2(buf, priv_key);
 }
 
