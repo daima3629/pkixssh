@@ -1,4 +1,4 @@
-/* $OpenBSD: servconf.c,v 1.375 2021/01/26 05:32:21 dtucker Exp $ */
+/* $OpenBSD: servconf.c,v 1.376 2021/02/15 20:36:35 markus Exp $ */
 /*
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
@@ -273,39 +273,13 @@ assemble_algorithms(ServerOptions *o)
 #undef ASSEMBLE
 }
 
-static void
-array_append2(const char *file, const int line, const char *directive,
-    char ***array, int **iarray, u_int *lp, const char *s, int i)
-{
-
-	if (*lp >= INT_MAX)
-		fatal("%s line %d: Too many %s entries", file, line, directive);
-
-	if (iarray != NULL) {
-		*iarray = xrecallocarray(*iarray, *lp, *lp + 1,
-		    sizeof(**iarray));
-		(*iarray)[*lp] = i;
-	}
-
-	*array = xrecallocarray(*array, *lp, *lp + 1, sizeof(**array));
-	(*array)[*lp] = xstrdup(s);
-	(*lp)++;
-}
-
-static void
-array_append(const char *file, const int line, const char *directive,
-    char ***array, u_int *lp, const char *s)
-{
-	array_append2(file, line, directive, array, NULL, lp, s, 0);
-}
-
 void
 servconf_add_hostkey(const char *file, const int line,
     ServerOptions *options, const char *path, int userprovided)
 {
 	char *apath = derelativise_path(path);
 
-	array_append2(file, line, "HostKey",
+	opt_array_append2(file, line, "HostKey",
 	    &options->host_key_files, &options->host_key_file_userprovided,
 	    &options->num_host_key_files, apath, userprovided);
 	free(apath);
@@ -317,7 +291,7 @@ servconf_add_hostcert(const char *file, const int line,
 {
 	char *apath = derelativise_path(path);
 
-	array_append(file, line, "HostCertificate",
+	opt_array_append(file, line, "HostCertificate",
 	    &options->host_cert_files, &options->num_host_cert_files, apath);
 	free(apath);
 }
@@ -477,11 +451,11 @@ fill_default_server_options(ServerOptions *options)
 	if (options->client_alive_count_max == -1)
 		options->client_alive_count_max = 3;
 	if (options->num_authkeys_files == 0) {
-		array_append("[default]", 0, "AuthorizedKeysFiles",
+		opt_array_append("[default]", 0, "AuthorizedKeysFiles",
 		    &options->authorized_keys_files,
 		    &options->num_authkeys_files,
 		    _PATH_SSH_USER_PERMITTED_KEYS);
-		array_append("[default]", 0, "AuthorizedKeysFiles",
+		opt_array_append("[default]", 0, "AuthorizedKeysFiles",
 		    &options->authorized_keys_files,
 		    &options->num_authkeys_files,
 		    _PATH_SSH_USER_PERMITTED_KEYS2);
@@ -1987,7 +1961,7 @@ parse_string:
 		while ((arg = strdelim(&cp)) && *arg != '\0') {
 			if (!*activep)
 				continue;
-			array_append(filename, linenum, "oLogVerbose",
+			opt_array_append(filename, linenum, "oLogVerbose",
 			    &options->log_verbose, &options->num_log_verbose,
 			    arg);
 		}
@@ -2023,7 +1997,7 @@ parse_string:
 				    "\"%.100s\"", filename, linenum, arg);
 			if (!*activep)
 				continue;
-			array_append(filename, linenum, "AllowUsers",
+			opt_array_append(filename, linenum, "AllowUsers",
 			    &options->allow_users, &options->num_allow_users,
 			    arg);
 		}
@@ -2036,7 +2010,7 @@ parse_string:
 				    "\"%.100s\"", filename, linenum, arg);
 			if (!*activep)
 				continue;
-			array_append(filename, linenum, "DenyUsers",
+			opt_array_append(filename, linenum, "DenyUsers",
 			    &options->deny_users, &options->num_deny_users,
 			    arg);
 		}
@@ -2046,7 +2020,7 @@ parse_string:
 		while ((arg = strdelim(&cp)) && *arg != '\0') {
 			if (!*activep)
 				continue;
-			array_append(filename, linenum, "AllowGroups",
+			opt_array_append(filename, linenum, "AllowGroups",
 			    &options->allow_groups, &options->num_allow_groups,
 			    arg);
 		}
@@ -2056,7 +2030,7 @@ parse_string:
 		while ((arg = strdelim(&cp)) && *arg != '\0') {
 			if (!*activep)
 				continue;
-			array_append(filename, linenum, "DenyGroups",
+			opt_array_append(filename, linenum, "DenyGroups",
 			    &options->deny_groups, &options->num_deny_groups,
 			    arg);
 		}
@@ -2222,7 +2196,7 @@ parse_string:
 		if (*activep && options->num_authkeys_files == 0) {
 			while ((arg = strdelim(&cp)) && *arg != '\0') {
 				arg = tilde_expand_filename(arg, getuid());
-				array_append(filename, linenum,
+				opt_array_append(filename, linenum,
 				    "AuthorizedKeysFile",
 				    &options->authorized_keys_files,
 				    &options->num_authkeys_files, arg);
@@ -2260,7 +2234,7 @@ parse_string:
 				    filename, linenum);
 			if (!*activep)
 				continue;
-			array_append(filename, linenum, "AcceptEnv",
+			opt_array_append(filename, linenum, "AcceptEnv",
 			    &options->accept_env, &options->num_accept_env,
 			    arg);
 		}
@@ -2274,7 +2248,7 @@ parse_string:
 				    filename, linenum);
 			if (!*activep || uvalue != 0)
 				continue;
-			array_append(filename, linenum, "SetEnv",
+			opt_array_append(filename, linenum, "SetEnv",
 			    &options->setenv, &options->num_setenv, arg);
 		}
 		break;
@@ -2453,7 +2427,7 @@ parse_string:
 				    lookup_opcode_name(opcode));
 			}
 			if (*activep && uvalue == 0) {
-				array_append(filename, linenum,
+				opt_array_append(filename, linenum,
 				    lookup_opcode_name(opcode),
 				    chararrayptr, uintptr, arg2);
 			}
@@ -2600,7 +2574,7 @@ parse_string:
 				value2 = 1;
 				if (!*activep)
 					continue;
-				array_append(filename, linenum,
+				opt_array_append(filename, linenum,
 				    "AuthenticationMethods",
 				    &options->auth_methods,
 				    &options->num_auth_methods, arg);

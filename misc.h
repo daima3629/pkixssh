@@ -1,4 +1,4 @@
-/* $OpenBSD: misc.h,v 1.92 2021/01/11 02:12:57 dtucker Exp $ */
+/* $OpenBSD: misc.h,v 1.93 2021/02/15 20:36:35 markus Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -200,6 +200,13 @@ int	opt_flag(const char *opt, int allow_negate, const char **optsp);
 char	*opt_dequote(const char **sp, const char **errstrp);
 int	opt_match(const char **opts, const char *term);
 
+/* readconf/servconf option lists */
+void	opt_array_append(const char *file, const int line,
+	    const char *directive, char ***array, u_int *lp, const char *s);
+void	opt_array_append2(const char *file, const int line,
+	    const char *directive, char ***array, int **iarray, u_int *lp,
+	    const char *s, int i);
+
 /* readpass.c */
 
 #define RP_ECHO			0x0001
@@ -216,4 +223,5 @@ int	 ask_permission(const char *, ...) __attribute__((format(printf, 1, 2)));
 
 typedef void (*sshsig_t)(int);
 sshsig_t ssh_signal(int, sshsig_t);
+
 #endif /* _MISC_H */
