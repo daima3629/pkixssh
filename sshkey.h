@@ -220,7 +220,6 @@ int		 sshkey_ecdsa_bits_to_nid(int);
 int		 sshkey_ecdsa_key_to_nid(EC_KEY *);
 int		 sshkey_ec_nid_to_hash_alg(int nid);
 int		 sshkey_ec_validate_public(const EC_GROUP *, const EC_POINT *);
-int		 sshkey_ec_validate_private(const EC_KEY *);
 const char	*sshkey_ssh_name(const struct sshkey *);
 const char	*sshkey_ssh_name_plain(const struct sshkey *);
 int		 sshkey_names_valid2(const char *, int);

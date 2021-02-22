@@ -3290,43 +3290,6 @@ sshkey_ec_validate_public(const EC_GROUP *group, const EC_POINT *public)
 	return ret;
 }
 
-int
-sshkey_ec_validate_private(const EC_KEY *key)
-{
-	const BIGNUM *exponent;
-	BIGNUM *order = NULL, *tmp = NULL;
-	int ret = SSH_ERR_KEY_INVALID_EC_VALUE;
-
-	if ((order = BN_new()) == NULL || (tmp = BN_new()) == NULL) {
-		ret = SSH_ERR_ALLOC_FAIL;
-		goto out;
-	}
-
-	exponent = EC_KEY_get0_private_key(key);
-	if (exponent == NULL) goto out;
-
-	/* log2(private) > log2(order)/2 */
-	if (EC_GROUP_get_order(EC_KEY_get0_group(key), order, NULL) != 1) {
-		ret = SSH_ERR_LIBCRYPTO_ERROR;
-		goto out;
-	}
-	if (BN_num_bits(exponent) <= BN_num_bits(order) / 2)
-		goto out;
-
-	/* private < order - 1 */
-	if (!BN_sub(tmp, order, BN_value_one())) {
-		ret = SSH_ERR_LIBCRYPTO_ERROR;
-		goto out;
-	}
-	if (BN_cmp(exponent, tmp) >= 0)
-		goto out;
-	ret = 0;
- out:
-	BN_clear_free(order);
-	BN_clear_free(tmp);
-	return ret;
-}
-
 void
 sshkey_dump_ec_point(const EC_GROUP *group, const EC_POINT *point)
 {

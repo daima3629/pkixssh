@@ -200,7 +200,7 @@ sshkey_dump(const char *func, const struct sshkey *key) {
 
 /* TODO: validation of deprecated in OpenSSL 3.0 elementary keys */
 static int
-sshkey_validate_rsa_pub(RSA *rsa) {
+sshkey_validate_rsa_pub(const RSA *rsa) {
 	int r;
 	const BIGNUM *n = NULL;
 
@@ -214,7 +214,7 @@ sshkey_validate_rsa_pub(RSA *rsa) {
 }
 
 static int
-sshkey_validate_dsa_pub(DSA *dsa) {
+sshkey_validate_dsa_pub(const DSA *dsa) {
 	int r;
 	const BIGNUM *p = NULL;
 
@@ -229,7 +229,7 @@ sshkey_validate_dsa_pub(DSA *dsa) {
 
 #ifdef OPENSSL_HAS_ECC
 static int
-sshkey_validate_ec_pub(EC_KEY *ec) {
+sshkey_validate_ec_pub(const EC_KEY *ec) {
 	int r;
 
 	r = sshkey_ec_validate_public(EC_KEY_get0_group(ec),
@@ -241,14 +241,58 @@ sshkey_validate_ec_pub(EC_KEY *ec) {
 }
 
 static int
-sshkey_validate_ec_priv(EC_KEY *ec) {
+sshkey_validate_ec_priv(const EC_KEY *ec) {
 	int r;
+	const BIGNUM *exponent;
+	BIGNUM *order = NULL, *tmp = NULL;
 
-	r = sshkey_ec_validate_private(ec);
-	if (r != 0) return r;
+	exponent = EC_KEY_get0_private_key(ec);
+	if (exponent == NULL) {
+		r = SSH_ERR_INVALID_ARGUMENT;
+		goto err;
+	}
+
+	order = BN_new();
+	if (order == NULL)  {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto err;
+	}
+
+	if (EC_GROUP_get_order(EC_KEY_get0_group(ec), order, NULL) != 1) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	/* log2(private) > log2(order)/2 */
+	if (BN_num_bits(exponent) <= BN_num_bits(order) / 2) {
+		r = SSH_ERR_KEY_INVALID_EC_VALUE;
+		goto err;
+	}
+
+	tmp = BN_new();
+	if (tmp == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto err;
+	}
+
+	/* private < order - 1 */
+	if (!BN_sub(tmp, order, BN_value_one())) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+	if (BN_cmp(exponent, tmp) >= 0) {
+		r = SSH_ERR_KEY_INVALID_EC_VALUE;
+		goto err;
+	}
 
 	/* other checks ? */
-	return 0;
+
+	r = 0;
+
+err:
+	BN_clear_free(order);
+	BN_clear_free(tmp);
+	return r;
 }
 #endif
 
@@ -791,32 +835,50 @@ sshkey_equal_public_ecdsa(const struct sshkey *ka, const struct sshkey *kb) {
 
 int
 sshkey_validate_public_rsa(const struct sshkey *key) {
-	if (key == NULL || key->rsa == NULL ||
-	    sshkey_type_plain(key->type) != KEY_RSA)
-		return SSH_ERR_INVALID_ARGUMENT;
+	int r;
 
-	return sshkey_validate_rsa_pub(key->rsa); /* TODO */
+	if (key == NULL) return SSH_ERR_INVALID_ARGUMENT;
+
+{	RSA *rsa = EVP_PKEY_get1_RSA(key->pk);
+	if (rsa == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+	r = sshkey_validate_rsa_pub(rsa);
+	RSA_free(rsa);
+}
+	return r;
 }
 
 
 int
 sshkey_validate_public_dsa(const struct sshkey *key) {
-	if (key == NULL || key->dsa == NULL ||
-	    sshkey_type_plain(key->type) != KEY_DSA)
-		return SSH_ERR_INVALID_ARGUMENT;
+	int r;
 
-	return sshkey_validate_dsa_pub(key->dsa); /* TODO */
+	if (key == NULL) return SSH_ERR_INVALID_ARGUMENT;
+
+{	DSA *dsa = EVP_PKEY_get1_DSA(key->pk);
+	if (dsa == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+	r = sshkey_validate_dsa_pub(dsa);
+	DSA_free(dsa);
+}
+	return r;
 }
 
 
 #ifdef OPENSSL_HAS_ECC
 int
 sshkey_validate_public_ecdsa(const struct sshkey *key) {
-	if (key == NULL || key->ecdsa == NULL ||
-	    sshkey_type_plain(key->type) != KEY_ECDSA)
-		return SSH_ERR_INVALID_ARGUMENT;
+	int r;
 
-	return sshkey_validate_ec_pub(key->ecdsa); /* TODO */
+	if (key == NULL) return SSH_ERR_INVALID_ARGUMENT;
+
+{	EC_KEY *ec = EVP_PKEY_get1_EC_KEY(key->pk);
+	if (ec == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+	r = sshkey_validate_ec_pub(ec);
+	EC_KEY_free(ec);
+}
+	return r;
 }
 #endif /* OPENSSL_HAS_ECC */
 
