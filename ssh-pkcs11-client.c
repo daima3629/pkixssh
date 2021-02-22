@@ -166,8 +166,12 @@ pkcs11_rsa_private_encrypt(int flen, const u_char *from, u_char *to, RSA *rsa,
 		goto done;
 	}
 	key->type = KEY_RSA;
-	RSA_up_ref(rsa);
-	key->rsa = rsa;
+	key->pk = EVP_PKEY_new();
+	if (key->pk == NULL)
+		goto done;
+	if (!EVP_PKEY_set1_RSA(key->pk, rsa))
+		goto done;
+	RSA_up_ref(rsa); key->rsa = rsa; /* TODO */
 
 	if ((msg = sshbuf_new()) == NULL)
 		fatal_f("sshbuf_new failed");
@@ -217,14 +221,18 @@ pkcs11_ecdsa_do_sign(
 		error_f("sshkey_new failed");
 		goto done;
 	}
-	key->type = KEY_ECDSA;
-	EC_KEY_up_ref(ec);
-	key->ecdsa = ec;
 	key->ecdsa_nid = sshkey_ecdsa_key_to_nid(ec);
 	if (key->ecdsa_nid < 0) {
-		error_f("unsupported curve");
+		error_f("unsupported elliptic curve");
 		goto done;
 	}
+	key->type = KEY_ECDSA;
+	key->pk = EVP_PKEY_new();
+	if (key->pk == NULL)
+		goto done;
+	if (!EVP_PKEY_set1_EC_KEY(key->pk, ec))
+		goto done;
+	EC_KEY_up_ref(ec); key->ecdsa = ec; /* TODO */
 
 	if ((msg = sshbuf_new()) == NULL)
 		fatal_f("sshbuf_new failed");
@@ -303,14 +311,6 @@ err:
 	return NULL;
 }
 
-static inline int
-wrap_key_rsa(struct sshkey *key)
-{
-	RSA_METHOD *meth = ssh_pkcs11helper_rsa_method();
-	if (meth == NULL) return -1;
-	return RSA_set_method(key->rsa, meth) ? 0 : -1;
-}
-
 #ifdef OPENSSL_HAS_ECC
 static EC_KEY_METHOD*
 ssh_pkcs11helper_ec_method(void) {
@@ -334,12 +334,35 @@ ssh_pkcs11helper_ec_method(void) {
 	return meth;
 }
 
+
+static inline int
+wrap_key_rsa(struct sshkey *key)
+{
+	int ret;
+
+	RSA_METHOD *meth = ssh_pkcs11helper_rsa_method();
+	if (meth == NULL) return -1;
+
+{	RSA *rsa = EVP_PKEY_get1_RSA(key->pk);
+	ret = RSA_set_method(rsa, meth) ? 0 : -1;
+	RSA_free(rsa);
+}
+	return ret;
+}
+
 static inline int
 wrap_key_ecdsa(struct sshkey *key)
 {
+	int ret;
+
 	EC_KEY_METHOD *meth = ssh_pkcs11helper_ec_method();
 	if (meth == NULL) return -1;
-	return EC_KEY_set_method(key->ecdsa, meth) ? 0 : -1;
+
+{	EC_KEY *ec = EVP_PKEY_get1_EC_KEY(key->pk);
+	ret = EC_KEY_set_method(ec, meth) ? 0 : -1;
+	EC_KEY_free(ec);
+}
+	return ret;
 }
 #endif /*def OPENSSL_HAS_ECC*/
 
@@ -353,6 +376,7 @@ wrap_key(struct sshkey *key) {
 	}
 	return -1;
 }
+
 
 static int
 pkcs11_start_helper(void)

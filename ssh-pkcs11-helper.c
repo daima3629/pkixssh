@@ -195,10 +195,13 @@ process_key_sign(
 
 	switch(key->type) {
 	case KEY_RSA: {
-		ret = RSA_size(key->rsa);
+		ret = EVP_PKEY_size(key->pk);
 		*signature = xmalloc(ret);
 
-		ret = RSA_private_encrypt(dlen, data, *signature, key->rsa, RSA_PKCS1_PADDING);
+	{	RSA *rsa = EVP_PKEY_get1_RSA(key->pk);
+		ret = RSA_private_encrypt(dlen, data, *signature, rsa, RSA_PKCS1_PADDING);
+		RSA_free(rsa);
+	}
 		if (ret != -1) {
 			*slen = ret;
 			ret = 0;
@@ -208,7 +211,10 @@ process_key_sign(
 	case KEY_ECDSA: {
 		ECDSA_SIG *sig = NULL;
 
-		sig = ECDSA_do_sign(data, dlen, key->ecdsa);
+	{	EC_KEY *ec = EVP_PKEY_get1_EC_KEY(key->pk);
+		sig = ECDSA_do_sign(data, dlen, ec);
+		EC_KEY_free(ec);
+	}
 		if (sig == NULL) return (-1);
 
 		/* encode ECDSA signature */

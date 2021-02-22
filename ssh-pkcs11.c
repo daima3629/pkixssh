@@ -576,11 +576,14 @@ static int
 pkcs11_wrap_rsa(struct pkcs11_provider *provider, CK_ULONG slotidx,
     CK_ATTRIBUTE *keyid_attrib, struct sshkey *key)
 {
-	RSA *rsa = key->rsa;
+	int ret;
+	RSA *rsa = EVP_PKEY_get1_RSA(key->pk);
+	if (rsa == NULL) return -1;
 
+	ret = -1;
 {	RSA_METHOD *meth = ssh_pkcs11_rsa_method();
-	if (meth == NULL) return -1;
-	if (!RSA_set_method(rsa, meth)) return -1;
+	if (meth == NULL) goto done;
+	if (!RSA_set_method(rsa, meth)) goto done;
 }
 {	struct pkcs11_key *k11;
 		/* fatal on error */
@@ -588,7 +591,10 @@ pkcs11_wrap_rsa(struct pkcs11_provider *provider, CK_ULONG slotidx,
 	RSA_set_ex_data(rsa, ssh_pkcs11_rsa_ctx_index, k11);
 }
 	key->flags |= SSHKEY_FLAG_EXT;
-	return 0;
+	ret = 0;
+done:
+	RSA_free(rsa);
+	return ret;
 }
 
 static DSA_SIG*
@@ -710,11 +716,14 @@ static int
 pkcs11_wrap_dsa(struct pkcs11_provider *provider, CK_ULONG slotidx,
     CK_ATTRIBUTE *keyid_attrib,  struct sshkey *key)
 {
-	DSA *dsa = key->dsa;
+	int ret;
+	DSA *dsa = EVP_PKEY_get1_DSA(key->pk);
+	if (dsa == NULL) return -1;
 
+	ret = -1;
 {	DSA_METHOD *meth = ssh_pkcs11_dsa_method();
-	if (meth == NULL) return -1;
-	if (!DSA_set_method(dsa, meth)) return -1;
+	if (meth == NULL) goto done;
+	if (!DSA_set_method(dsa, meth)) goto done;
 }
 {	struct pkcs11_key *k11;
 		/* fatal on error */
@@ -722,7 +731,10 @@ pkcs11_wrap_dsa(struct pkcs11_provider *provider, CK_ULONG slotidx,
 	DSA_set_ex_data(dsa, ssh_pkcs11_dsa_ctx_index, k11);
 }
 	key->flags |= SSHKEY_FLAG_EXT;
-	return 0;
+	ret = 0;
+done:
+	DSA_free(dsa);
+	return ret;
 }
 
 
@@ -876,11 +888,14 @@ static int
 pkcs11_wrap_ecdsa(struct pkcs11_provider *provider, CK_ULONG slotidx,
     CK_ATTRIBUTE *keyid_attrib, struct sshkey *key)
 {
-	EC_KEY *ec = key->ecdsa;
+	int ret;
+	EC_KEY *ec = EVP_PKEY_get1_EC_KEY(key->pk);
+	if (ec == NULL) return -1;
 
+	ret = -1;
 {	EC_KEY_METHOD *meth = ssh_pkcs11_ec_method();
-	if (meth == NULL) return -1;
-	if (!EC_KEY_set_method(ec, meth)) return -1;
+	if (meth == NULL) goto done;
+	if (!EC_KEY_set_method(ec, meth)) goto done;
 }
 {	struct pkcs11_key *k11;
 		/* fatal on error */
@@ -888,7 +903,9 @@ pkcs11_wrap_ecdsa(struct pkcs11_provider *provider, CK_ULONG slotidx,
 	EC_KEY_set_ex_data(ec, ssh_pkcs11_ec_ctx_index, k11);
 }
 	key->flags |= SSHKEY_FLAG_EXT;
-	return 0;
+	ret = 0;
+done:
+	return ret;
 }
 #endif /*def OPENSSL_HAS_ECC*/
 
@@ -1194,7 +1211,7 @@ pkcs11_get_pubkey_rsa(
 		goto done;
 	}
 
-	key = sshkey_new(KEY_RSA);
+	key = sshkey_new(KEY_UNSPEC);
 	if (key == NULL) {
 		error_f("sshkey_new failed");
 		goto done;
@@ -1290,25 +1307,33 @@ pkcs11_get_pubkey_ec(
 		goto done;
 	}
 
-	key = sshkey_new(KEY_ECDSA);
+	key = sshkey_new(KEY_UNSPEC);
 	if (key == NULL) {
 		error_f("sshkey_new failed");
 		goto done;
 	}
+	key->type = KEY_ECDSA;
+	key->pk = EVP_PKEY_new();
+	if (key->pk == NULL)
+		goto done;
 
 {	const unsigned char *q;
+	EC_KEY *ec;
 	/* DER-encoding of an ANSI X9.62 Parameters value */
 
 	q = attribs[1].pValue;
-	if (d2i_ECParameters(&key->ecdsa, &q, attribs[1].ulValueLen) == NULL) {
+	ec = d2i_ECParameters(NULL, &q, attribs[1].ulValueLen);
+	if (ec == NULL) {
 		error_f("d2i_ECParameters failed");
 		goto fail;
 	}
+	if (!EVP_PKEY_set1_EC_KEY(key->pk, ec))
+		goto fail;
 }
 {	const unsigned char *q;
 	/* "DER-encoding of ANSI X9.62 ECPoint value Q" */
 	ASN1_OCTET_STRING *point;
-	EC_KEY *ec;
+	EC_KEY *ec, *pk_ec;
 
 	rv = CKR_GENERAL_ERROR;
 
@@ -1319,26 +1344,33 @@ pkcs11_get_pubkey_ec(
 		goto fail;
 	}
 
+	pk_ec = EVP_PKEY_get1_EC_KEY(key->pk);
+	if (pk_ec == NULL) goto fail;
+
 	q = point->data;
-	ec = o2i_ECPublicKey(&key->ecdsa, &q, point->length);
-	ASN1_STRING_free(point);
-	if (ec != NULL) goto wrap;
+	ec = o2i_ECPublicKey(&pk_ec, &q, point->length);
+	if (ec == NULL)
+		error_f("o2i_ECPublicKey failed for EC point");
+	else
+		goto done_ecpub;
 
 	/* try raw data (broken PKCS#11 module) */
 	q = attribs[2].pValue;
-	ec = o2i_ECPublicKey(&key->ecdsa, &q, attribs[2].ulValueLen);
-	if (ec == NULL) {
-		error_f("o2i_ECPublicKey failed");
+	ec = o2i_ECPublicKey(&pk_ec, &q, attribs[2].ulValueLen);
+	if (ec == NULL)
+		error_f("o2i_ECPublicKey failed for raw EC point too");
+
+done_ecpub:
+	ASN1_STRING_free(point);
+	EC_KEY_free(pk_ec);
+	if (ec == NULL) goto fail;
+
+	key->ecdsa_nid  = sshkey_ecdsa_key_to_nid(ec);
+	if (key->ecdsa_nid  < 0) {
+		error("unsupported elliptic curve");
 		goto fail;
 	}
 }
-
-wrap:
-	key->ecdsa_nid  = sshkey_ecdsa_key_to_nid(key->ecdsa);
-	if (key->ecdsa_nid  < 0) {
-		error("couldn't get curve nid");
-		goto fail;
-	}
 	if (pkcs11_wrap_ecdsa(p, slotidx, attribs, key) == 0)
 		goto done;
 
