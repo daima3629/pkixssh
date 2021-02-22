@@ -1971,6 +1971,7 @@ AC_CHECK_FUNCS([ \
 	innetgr \
 	localtime_r \
 	login_getcapbool \
+	login_getpwclass \
 	md5_crypt \
 	memmem \
 	memmove \

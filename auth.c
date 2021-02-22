@@ -1,6 +1,7 @@
 /* $OpenBSD: auth.c,v 1.151 2020/12/22 00:12:22 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
+ * Copyright (c) 2016-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -76,6 +77,24 @@
 #include "ssherr.h"
 #include "compat.h"
 #include "channels.h"
+
+#ifdef HAVE_LOGIN_CAP
+/* compatibility */
+
+/* FreeBSD has login_getpwclass() that does some special magic for UID=0 */
+#ifndef HAVE_LOGIN_GETPWCLASS
+static inline login_cap_t*
+login_getpwclass(const struct passwd *pwd) {
+#ifdef HAVE_STRUCT_PASSWD_PW_CLASS
+	return login_getclass(pwd != NULL ? pwd->pw_class : NULL);
+#else
+	UNUSED(pwd);
+	return NULL;
+#endif
+}
+#endif /*ndef HAVE_LOGIN_GETPWCLASS**/
+
+#endif /*def HAVE_LOGIN_CAP*/
 
 /* import */
 extern ServerOptions options;
@@ -601,7 +620,7 @@ getpwnamallow(struct ssh *ssh, const char *user)
 	if (!allowed_user(ssh, pw))
 		return (NULL);
 #ifdef HAVE_LOGIN_CAP
-	if ((lc = login_getclass(pw->pw_class)) == NULL) {
+	if ((lc = login_getpwclass(pw)) == NULL) {
 		debug("unable to get login class: %s", user);
 		return (NULL);
 	}
