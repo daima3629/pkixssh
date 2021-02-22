@@ -2249,6 +2249,10 @@ sshkey_from_blob_internal(struct sshbuf *b, struct sshkey **keyp,
 		ret = SSH_ERR_KEY_CERT_INVALID_SIGN_KEY;
 		goto out;
 	}
+	if ((key = sshkey_new(type)) == NULL) {
+		ret = SSH_ERR_ALLOC_FAIL;
+		goto out;
+	}
 	switch (type) {
 #ifdef WITH_OPENSSL
 	case KEY_RSA_CERT:
@@ -2259,10 +2263,6 @@ sshkey_from_blob_internal(struct sshbuf *b, struct sshkey **keyp,
 		}
 		/* FALLTHROUGH */
 	case KEY_RSA:
-		if ((key = sshkey_new(type)) == NULL) {
-			ret = SSH_ERR_ALLOC_FAIL;
-			goto out;
-		}
 		ret = sshbuf_read_pub_rsa_inv(b, key);
 		if (ret != 0) goto out;
 		break;
@@ -2274,10 +2274,6 @@ sshkey_from_blob_internal(struct sshbuf *b, struct sshkey **keyp,
 		}
 		/* FALLTHROUGH */
 	case KEY_DSA:
-		if ((key = sshkey_new(type)) == NULL) {
-			ret = SSH_ERR_ALLOC_FAIL;
-			goto out;
-		}
 		ret = sshbuf_read_pub_dsa(b, key);
 		if (ret != 0) goto out;
 		break;
@@ -2290,10 +2286,6 @@ sshkey_from_blob_internal(struct sshbuf *b, struct sshkey **keyp,
 		}
 		/* FALLTHROUGH */
 	case KEY_ECDSA:
-		if ((key = sshkey_new(type)) == NULL) {
-			ret = SSH_ERR_ALLOC_FAIL;
-			goto out;
-		}
 		if ((ret = sshbuf_read_ec_curve(b, ktype, key)) != 0 ||
 		    (ret = sshbuf_read_pub_ecdsa(b, key)) != 0)
 			goto out;
@@ -2314,10 +2306,6 @@ sshkey_from_blob_internal(struct sshbuf *b, struct sshkey **keyp,
 			ret = SSH_ERR_INVALID_FORMAT;
 			goto out;
 		}
-		if ((key = sshkey_new(type)) == NULL) {
-			ret = SSH_ERR_ALLOC_FAIL;
-			goto out;
-		}
 		key->ed25519_pk = pk;
 		pk = NULL;
 		break;
@@ -2332,10 +2320,6 @@ sshkey_from_blob_internal(struct sshbuf *b, struct sshkey **keyp,
 	case KEY_XMSS:
 		if ((ret = sshbuf_get_cstring(b, &xmss_name, NULL)) != 0)
 			goto out;
-		if ((key = sshkey_new(type)) == NULL) {
-			ret = SSH_ERR_ALLOC_FAIL;
-			goto out;
-		}
 		if ((ret = sshkey_xmss_init(key, xmss_name)) != 0)
 			goto out;
 		if ((ret = sshbuf_get_string(b, &pk, &len)) != 0)
