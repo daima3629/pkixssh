@@ -1,4 +1,4 @@
-#	$OpenBSD: test-exec.sh,v 1.76 2020/04/04 23:04:41 dtucker Exp $
+#	$OpenBSD: test-exec.sh,v 1.77 2021/02/17 03:59:00 dtucker Exp $
 #	Placed in the Public Domain.
 
 #SUDO=sudo
@@ -553,45 +553,53 @@ for t in ${SSH_HOSTKEY_TYPES}; do
 done
 chmod 644 $OBJ/authorized_keys_$USER
 
+
 # Activate Twisted Conch tests if the binary is present
-REGRESS_INTEROP_CONCH=no
-if test -x "$CONCH" ; then
-	REGRESS_INTEROP_CONCH=yes
-fi
+REGRESS_INTEROP_CONCH=false
 
 # If PuTTY is present and we are running a PuTTY test, prepare keys and
 # configuration
-REGRESS_INTEROP_PUTTY=no
-if test -x "$PUTTYGEN" -a -x "$PLINK" ; then
-	REGRESS_INTEROP_PUTTY=yes
-fi
+REGRESS_INTEROP_PUTTY=false
+
 case "$SCRIPT" in
-*putty*)	;;
-*)		REGRESS_INTEROP_PUTTY=no ;;
+*conch-*)
+	if test -x "$CONCH" ; then
+		REGRESS_INTEROP_CONCH=:
+	fi
+	;;
+*putty-*)
+	if test -x "$PUTTYGEN" -a -x "$PLINK" ; then
+		REGRESS_INTEROP_PUTTY=:
+	fi
+	;;
 esac
 
-if test "$REGRESS_INTEROP_PUTTY" = "yes" ; then
+if $REGRESS_INTEROP_PUTTY ; then
+	rm -f ${OBJ}/putty.rsa2
+	if ! $PUTTYGEN -t rsa -o ${OBJ}/putty.rsa2 \
+	    --random-device=/dev/urandom \
+	    --new-passphrase /dev/null < /dev/null > /dev/null; then
+		echo "Your installed version of PuTTY is too old to support --new-passphrase, skipping test" >&2
+		exit 1
+	fi
+fi
+
+if $REGRESS_INTEROP_CONCH || $REGRESS_INTEROP_PUTTY; then
+	cp $OBJ/ssh-rsa $OBJ/ssh-rsa_pem
+	$SSHKEYGEN -p -N '' -m PEM -f $OBJ/ssh-rsa_pem >/dev/null
+fi
+
+if $REGRESS_INTEROP_PUTTY ; then
 	mkdir -p ${OBJ}/.putty
 
 	# Add a PuTTY key to authorized_keys
-	rm -f ${OBJ}/putty.rsa2
-	if ! puttygen -t rsa -o ${OBJ}/putty.rsa2 \
-	    --random-device=/dev/urandom \
-	    --new-passphrase /dev/null < /dev/null > /dev/null; then
-		echo "Your installed version of PuTTY is too old to support --new-passphrase; trying without (may require manual interaction) ..." >&2
-		puttygen -t rsa -o ${OBJ}/putty.rsa2 < /dev/null > /dev/null
-	fi
-	puttygen -O public-openssh ${OBJ}/putty.rsa2 \
+	$PUTTYGEN -O public-openssh ${OBJ}/putty.rsa2 \
 	    >> $OBJ/authorized_keys_$USER
 
-	# Convert rsa2 host key to PuTTY format
-	cp $OBJ/ssh-rsa $OBJ/ssh-rsa_oldfmt
-	${SSHKEYGEN} -p -N '' -m PEM -f $OBJ/ssh-rsa_oldfmt >/dev/null
-	${SRC}/ssh2putty.sh 127.0.0.1 $PORT $OBJ/ssh-rsa_oldfmt > \
+	${SRC}/ssh2putty.sh 127.0.0.1 $PORT $OBJ/ssh-rsa_pem > \
 	    ${OBJ}/.putty/sshhostkeys
-	${SRC}/ssh2putty.sh 127.0.0.1 22 $OBJ/ssh-rsa_oldfmt >> \
+	${SRC}/ssh2putty.sh 127.0.0.1 22 $OBJ/ssh-rsa_pem >> \
 	    ${OBJ}/.putty/sshhostkeys
-	rm -f $OBJ/ssh-rsa_oldfmt
 
 	# Setup proxied session
 	mkdir -p ${OBJ}/.putty/sessions
@@ -605,8 +613,6 @@ if test "$REGRESS_INTEROP_PUTTY" = "yes" ; then
 
 	PUTTYDIR=${OBJ}/.putty
 	export PUTTYDIR
-
-	REGRESS_INTEROP_PUTTY=yes
 fi
 
 # create a proxy version of the client config

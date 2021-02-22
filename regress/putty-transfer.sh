@@ -3,10 +3,7 @@
 
 tid="putty transfer data"
 
-if test "x$REGRESS_INTEROP_PUTTY" != "xyes" ; then
-	echo "putty interop tests not enabled"
-	exit 0
-fi
+$REGRESS_INTEROP_PUTTY || { echo "putty interop tests are not enabled" >&1;  exit 1; }
 
 if [ "`${SSH} -Q compression`" = "none" ]; then
 	comp="0"

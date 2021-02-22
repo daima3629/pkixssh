@@ -3,10 +3,7 @@
 
 tid="putty ciphers"
 
-if test "x$REGRESS_INTEROP_PUTTY" != "xyes" ; then
-	echo "putty interop tests not enabled"
-	exit 0
-fi
+$REGRESS_INTEROP_PUTTY || { echo "putty interop tests are not enabled" >&1;  exit 1; }
 
 for c in aes 3des aes128-ctr aes192-ctr aes256-ctr chacha20 ; do
 	verbose "$tid: cipher $c"

@@ -3,10 +3,7 @@
 
 tid="putty KEX"
 
-if test "x$REGRESS_INTEROP_PUTTY" != "xyes" ; then
-	echo "putty interop tests not enabled"
-	exit 0
-fi
+$REGRESS_INTEROP_PUTTY || { echo "putty interop tests are not enabled" >&1;  exit 1; }
 
 for k in dh-gex-sha1 dh-group1-sha1 dh-group14-sha1 ecdh ; do
 	verbose "$tid: kex $k"

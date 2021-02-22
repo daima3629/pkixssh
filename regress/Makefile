@@ -128,8 +128,8 @@ CLEANFILES=	*.core actual agent-key.* authkeys_orig \
 		known_hosts known_hosts-cert known_hosts.* krl-* ls.copy \
 		no_identity_config \
 		pidfile putty.rsa2 ready regress.log remote_pid \
-		revoked-* ssh-rsa-agent* ssh-rsa ssh-rsa.pub rsa_ssh2_cr.prv \
-		rsa_ssh2_crnl.prv scp-ssh-wrapper.exe \
+		revoked-* ssh-rsa-agent* ssh-rsa ssh-rsa.pub ssh-rsa_pem \
+		rsa_ssh2_cr.prv rsa_ssh2_crnl.prv scp-ssh-wrapper.exe \
 		scp-ssh-wrapper.scp sftp-server.log \
 		sftp-server.sh sftp.log ssh-log-wrapper.sh ssh.log \
 		ssh-rsa_oldfmt \
