@@ -529,7 +529,7 @@ skip_private:
 
 err:
 	EC_KEY_free(ec);
-	sshkey_free(key);
+	sshkey_free_ecdsa(key);
 	return r;
 }
 #endif /* OPENSSL_HAS_ECC */
@@ -1418,7 +1418,7 @@ sshbuf_read_priv_ecdsa(struct sshbuf *buf, struct sshkey *key) {
 		r = SSH_ERR_LIBCRYPTO_ERROR;
 		goto err;
 	}
-	exponent = NULL; /* transferred */
+	/*no! exponent = NULL; transferred */
 
 	r = sshkey_validate_ec_priv(ec);
 	if (r != 0) goto err;
