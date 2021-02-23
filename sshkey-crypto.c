@@ -322,8 +322,7 @@ sshkey_new_dsa(struct sshkey *key) {
 
 void
 sshkey_free_rsa(struct sshkey *key) {
-	RSA_free(key->rsa);
-	key->rsa = NULL;
+	RSA_free(key->rsa); key->rsa = NULL; /* TODO */
 
 	EVP_PKEY_free(key->pk);
 	key->pk = NULL;
@@ -397,10 +396,10 @@ sshrsa_complete_crt_parameters(RSA *rsa, const BIGNUM *rsa_iqmp)
 		r = SSH_ERR_LIBCRYPTO_ERROR;
 		goto err;
 	}
-	/* dmp1 = dmq1 = iqmp = NULL; transferred */
+	dmp1 = dmq1 = iqmp = NULL; /* transferred */
 
 	/* success */
-	return 0;
+	r = 0;
 
 err:
 	BN_clear_free(aux);
@@ -414,18 +413,53 @@ err:
 
 
 static int
-sshkey_from_pkey_rsa(EVP_PKEY *pk, struct sshkey **keyp) {
+sshkey_init_pub_rsa(struct sshkey *key, BIGNUM *n, BIGNUM *e, BIGNUM *d) {
 	int r;
-	struct sshkey* key;
-	RSA *rsa;
+	EVP_PKEY *pk = NULL;
+	RSA *rsa = NULL;
 
-	key = sshkey_new(KEY_UNSPEC);
-	if (key == NULL)
-		return SSH_ERR_ALLOC_FAIL;
+	pk = EVP_PKEY_new();
+	if (pk == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto err;
+	}
+	rsa = RSA_new();
+	if (rsa == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto err;
+	}
+
+	if (!EVP_PKEY_set1_RSA(pk, rsa)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	/* transfer to key must be last operation -
+	   if fail then caller could free arguments */
+	if (!RSA_set0_key(rsa, n, e, d)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	/* success */
+	key->pk = pk;
+	RSA_free(key->rsa); key->rsa = rsa; /* TODO */
+	return 0;
+
+err:
+	RSA_free(rsa);
+	EVP_PKEY_free(pk);
+	return r;
+}
+
+static int
+ssh_EVP_PKEY_complete_pub_rsa(EVP_PKEY *pk) {
+	int r;
+	RSA *rsa;
 
 	rsa = EVP_PKEY_get1_RSA(pk);
 	if (rsa == NULL)
-		return SSH_ERR_LIBCRYPTO_ERROR;
+		return SSH_ERR_INVALID_ARGUMENT;
 
 	r = sshkey_validate_rsa_pub(rsa);
 	if (r != 0) goto err;
@@ -436,16 +470,36 @@ sshkey_from_pkey_rsa(EVP_PKEY *pk, struct sshkey **keyp) {
 	}
 
 	/* success */
+	r = 0;
+err:
+	RSA_free(rsa);
+	return r;
+}
+
+
+static int
+sshkey_from_pkey_rsa(EVP_PKEY *pk, struct sshkey **keyp) {
+	int r;
+	struct sshkey* key;
+
+	r = ssh_EVP_PKEY_complete_pub_rsa(pk);
+	if (r != 0) return r;
+
+	key = sshkey_new(KEY_UNSPEC);
+	if (key == NULL)
+		return SSH_ERR_ALLOC_FAIL;
+
 	key->type = KEY_RSA;
 	key->pk = pk;
-	key->rsa = rsa; /*TODO */
+	key->rsa = EVP_PKEY_get1_RSA(pk); /*TODO */
+	if (key->rsa == NULL) goto err;
 
+	/* success */
 	SSHKEY_DUMP(key);
 	*keyp = key;
 	return 0;
 
 err:
-	RSA_free(rsa);
 	sshkey_free(key);
 	return r;
 }
@@ -621,31 +675,33 @@ err:
 }
 
 
+extern int sshkey_copy_pub_rsa(const struct sshkey *from, struct sshkey *to);
+
 int
-sshkey_dup_pub_rsa(const struct sshkey *from, struct sshkey *to) {
+sshkey_copy_pub_rsa(const struct sshkey *from, struct sshkey *to) {
 	int r;
 	const BIGNUM *k_n, *k_e;
 	BIGNUM *n_n = NULL, *n_e = NULL;
 
-	RSA_get0_key(from->rsa, &k_n, &k_e, NULL);
-
+{	RSA *rsa = EVP_PKEY_get1_RSA(from->pk);
+	if (rsa == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+	RSA_get0_key(rsa, &k_n, &k_e, NULL);
+	RSA_free(rsa);
+}
 	if ((n_n = BN_dup(k_n)) == NULL ||
 	    (n_e = BN_dup(k_e)) == NULL) {
 		r = SSH_ERR_ALLOC_FAIL;
-		goto out;
+		goto err;
 	}
-	if (!RSA_set0_key(to->rsa, n_n, n_e, NULL)) {
-		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto out;
-	}
-	n_n = n_e = NULL; /* transferred */
 
-	r = sshkey_complete_pkey(to);
+	r = sshkey_init_pub_rsa(to, n_n, n_e, NULL);
+	if (r == 0)
+		return 0;
 
-out:
+err:
 	BN_clear_free(n_n);
 	BN_clear_free(n_e);
-
 	return r;
 }
 
@@ -722,9 +778,7 @@ sshkey_move_pk(struct sshkey *from, struct sshkey *to) {
 void
 sshkey_move_rsa(struct sshkey *from, struct sshkey *to) {
 	sshkey_move_pk(from, to);
-	RSA_free(to->rsa);
-	to->rsa = from->rsa;
-	from->rsa = NULL;
+	RSA_free(to->rsa); to->rsa = from->rsa; from->rsa = NULL;  /* TODO */
 }
 
 void
@@ -996,8 +1050,6 @@ out:
 int
 sshbuf_read_pub_rsa(struct sshbuf *buf, struct sshkey *key) {
 	int r;
-	EVP_PKEY *pk = NULL;
-	RSA *rsa = NULL;
 	BIGNUM *n = NULL, *e = NULL;
 
 	if ((r = sshbuf_get_bignum2(buf, &n)) != 0 ||
@@ -1005,47 +1057,21 @@ sshbuf_read_pub_rsa(struct sshbuf *buf, struct sshkey *key) {
 		goto err;
 
 	/* key attribute allocation */
-	pk = EVP_PKEY_new();
-	if (pk == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto err;
-	}
-	rsa = RSA_new();
-	if (rsa == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto err;
-	}
-	if (!EVP_PKEY_set1_RSA(pk, rsa)) {
-		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto err;
-	}
-
-	/* transfer to key */
-	if (!RSA_set0_key(rsa, n, e, NULL)) {
-		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto err;
-	}
+	r = sshkey_init_pub_rsa(key, n, e, NULL);
+	if (r != 0) goto err;
 	n = e = NULL; /* transferred */
 
-	r = sshkey_validate_rsa_pub(rsa);
+	r = ssh_EVP_PKEY_complete_pub_rsa(key->pk);
 	if (r != 0) goto err;
 
-	if (RSA_blinding_on(rsa, NULL) != 1) {
-		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto err;
-	}
-
 	/* success */
-	key->pk = pk;
-	RSA_free(key->rsa); key->rsa = rsa; /* TODO */
 	SSHKEY_DUMP(key);
 	return 0;
 
 err:
 	BN_clear_free(n);
 	BN_clear_free(e);
-	RSA_free(rsa);
-	EVP_PKEY_free(pk);
+	sshkey_free_rsa(key);
 	return r;
 }
 
@@ -1072,8 +1098,6 @@ sshbuf_write_pub_rsa(struct sshbuf *buf, const struct sshkey *key) {
 int
 sshbuf_read_pub_rsa_inv(struct sshbuf *buf, struct sshkey *key) {
 	int r;
-	EVP_PKEY *pk = NULL;
-	RSA *rsa = NULL;
 	BIGNUM *n = NULL, *e = NULL;
 
 	if ((r = sshbuf_get_bignum2(buf, &e)) != 0 ||
@@ -1081,48 +1105,21 @@ sshbuf_read_pub_rsa_inv(struct sshbuf *buf, struct sshkey *key) {
 		goto err;
 
 	/* key attribute allocation */
-	pk = EVP_PKEY_new();
-	if (pk == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto err;
-	}
-	rsa = RSA_new();
-	if (rsa == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto err;
-	}
-	if (!EVP_PKEY_set1_RSA(pk, rsa)) {
-		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto err;
-	}
-
-	/* transfer to key */
-	if (!RSA_set0_key(rsa, n, e, NULL)) {
-		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto err;
-	}
+	r = sshkey_init_pub_rsa(key, n, e, NULL);
+	if (r != 0) goto err;
 	n = e = NULL; /* transferred */
 
-	r = sshkey_validate_rsa_pub(rsa);
+	r = ssh_EVP_PKEY_complete_pub_rsa(key->pk);
 	if (r != 0) goto err;
 
-	if (RSA_blinding_on(rsa, NULL) != 1) {
-		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto err;
-	}
-
 	/* success */
-	/* key->type = KEY_RSA; TODO custom certificates */
-	key->pk = pk;
-	RSA_free(key->rsa); key->rsa = rsa; /* TODO */
 	SSHKEY_DUMP(key);
 	return 0;
 
 err:
 	BN_clear_free(n);
 	BN_clear_free(e);
-	RSA_free(rsa);
-	EVP_PKEY_free(pk);
+	sshkey_free_rsa(key);
 	return r;
 }
 
@@ -1512,7 +1509,6 @@ sshkey_public_from_fp(FILE *fp, int format, struct sshkey **key);
 int
 sshbuf_read_custom_rsa(struct sshbuf *buf, struct sshkey *key) {
 	int r;
-	EVP_PKEY *pk = NULL;
 	RSA *rsa = NULL;
 	BIGNUM *n = NULL, *e;
 	BIGNUM *d = NULL, *iqmp = NULL, *p = NULL, *q = NULL;
@@ -1556,27 +1552,18 @@ sshbuf_read_custom_rsa(struct sshbuf *buf, struct sshkey *key) {
 		goto err;
 
 	/* key attribute allocation */
-	pk = EVP_PKEY_new();
-	if (pk == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto err;
-	}
-	rsa = RSA_new();
+	r = sshkey_init_pub_rsa(key, n, e, d);
+	if (r != 0) goto err;
+	n = e = d = NULL; /* transferred */
+
+	r = ssh_EVP_PKEY_complete_pub_rsa(key->pk);
+	if (r != 0) goto err;
+
+	rsa = EVP_PKEY_get1_RSA(key->pk);
 	if (rsa == NULL) {
 		r = SSH_ERR_ALLOC_FAIL;
 		goto err;
 	}
-	if (!EVP_PKEY_set1_RSA(pk, rsa)) {
-		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto err;
-	}
-
-	/* transfer to key */
-	if (!RSA_set0_key(rsa, n, e, d)) {
-		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto err;
-	}
-	n = e = d = NULL; /* transferred */
 
 	if (!RSA_set0_factors(rsa, p, q)) {
 		r = SSH_ERR_LIBCRYPTO_ERROR;
@@ -1587,20 +1574,10 @@ sshbuf_read_custom_rsa(struct sshbuf *buf, struct sshkey *key) {
 	r = sshrsa_complete_crt_parameters(rsa, iqmp);
 	if (r != 0) goto err;
 
-	r = sshkey_validate_rsa_pub(rsa);
-	if (r != 0) goto err;
-
-	if (RSA_blinding_on(rsa, NULL) != 1) {
-		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto err;
-	}
-
 	/* success */
 	key->type = KEY_RSA;
-	key->pk = pk;
-	key->rsa = rsa; /* TODO */
 	SSHKEY_DUMP(key);
-	return 0;
+	r = 0;
 
 err:
 	BN_clear_free(n);
@@ -1610,7 +1587,8 @@ err:
 	BN_clear_free(q);
 	BN_clear_free(iqmp);
 	RSA_free(rsa);
-	EVP_PKEY_free(pk);
+	if (r != 0)
+		sshkey_free_rsa(key);
 	return r;
 }
 
