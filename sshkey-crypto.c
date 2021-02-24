@@ -413,7 +413,7 @@ err:
 
 
 static int
-sshkey_init_pub_rsa(struct sshkey *key, BIGNUM *n, BIGNUM *e, BIGNUM *d) {
+sshkey_init_rsa_key(struct sshkey *key, BIGNUM *n, BIGNUM *e, BIGNUM *d) {
 	int r;
 	EVP_PKEY *pk = NULL;
 	RSA *rsa = NULL;
@@ -492,16 +492,15 @@ sshkey_from_pkey_rsa(EVP_PKEY *pk, struct sshkey **keyp) {
 	key->type = KEY_RSA;
 	key->pk = pk;
 	key->rsa = EVP_PKEY_get1_RSA(pk); /*TODO */
-	if (key->rsa == NULL) goto err;
+	if (key->rsa == NULL) {
+		sshkey_free(key);
+		return SSH_ERR_LIBCRYPTO_ERROR;
+	}
 
 	/* success */
 	SSHKEY_DUMP(key);
 	*keyp = key;
 	return 0;
-
-err:
-	sshkey_free(key);
-	return r;
 }
 
 static int
@@ -680,28 +679,34 @@ extern int sshkey_copy_pub_rsa(const struct sshkey *from, struct sshkey *to);
 int
 sshkey_copy_pub_rsa(const struct sshkey *from, struct sshkey *to) {
 	int r;
-	const BIGNUM *k_n, *k_e;
-	BIGNUM *n_n = NULL, *n_e = NULL;
+	BIGNUM *n = NULL, *e = NULL;
 
 {	RSA *rsa = EVP_PKEY_get1_RSA(from->pk);
+	const BIGNUM *k_n, *k_e;
+
 	if (rsa == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;
 	RSA_get0_key(rsa, &k_n, &k_e, NULL);
 	RSA_free(rsa);
-}
-	if ((n_n = BN_dup(k_n)) == NULL ||
-	    (n_e = BN_dup(k_e)) == NULL) {
+
+	if ((n = BN_dup(k_n)) == NULL ||
+	    (e = BN_dup(k_e)) == NULL) {
 		r = SSH_ERR_ALLOC_FAIL;
 		goto err;
 	}
+}
 
-	r = sshkey_init_pub_rsa(to, n_n, n_e, NULL);
-	if (r == 0)
-		return 0;
+	r = sshkey_init_rsa_key(to, n, e, NULL);
+	if (r != 0) goto err;
+	/* n = e = NULL; transferred */
+
+	/* success */
+	return 0;
 
 err:
-	BN_clear_free(n_n);
-	BN_clear_free(n_e);
+	BN_clear_free(n);
+	BN_clear_free(e);
+	sshkey_free_rsa(to);
 	return r;
 }
 
@@ -1057,7 +1062,7 @@ sshbuf_read_pub_rsa(struct sshbuf *buf, struct sshkey *key) {
 		goto err;
 
 	/* key attribute allocation */
-	r = sshkey_init_pub_rsa(key, n, e, NULL);
+	r = sshkey_init_rsa_key(key, n, e, NULL);
 	if (r != 0) goto err;
 	n = e = NULL; /* transferred */
 
@@ -1105,7 +1110,7 @@ sshbuf_read_pub_rsa_inv(struct sshbuf *buf, struct sshkey *key) {
 		goto err;
 
 	/* key attribute allocation */
-	r = sshkey_init_pub_rsa(key, n, e, NULL);
+	r = sshkey_init_rsa_key(key, n, e, NULL);
 	if (r != 0) goto err;
 	n = e = NULL; /* transferred */
 
@@ -1174,7 +1179,11 @@ sshbuf_read_priv_rsa(struct sshbuf *buf, struct sshkey *key) {
 	r = sshrsa_complete_crt_parameters(rsa, iqmp);
 	if (r != 0) goto err;
 
+	/* success */
 	SSHKEY_DUMP(key);
+	BN_clear_free(iqmp);
+	RSA_free(rsa);
+	return 0;
 
 err:
 	BN_clear_free(d);
@@ -1552,7 +1561,7 @@ sshbuf_read_custom_rsa(struct sshbuf *buf, struct sshkey *key) {
 		goto err;
 
 	/* key attribute allocation */
-	r = sshkey_init_pub_rsa(key, n, e, d);
+	r = sshkey_init_rsa_key(key, n, e, d);
 	if (r != 0) goto err;
 	n = e = d = NULL; /* transferred */
 
@@ -1577,7 +1586,9 @@ sshbuf_read_custom_rsa(struct sshbuf *buf, struct sshkey *key) {
 	/* success */
 	key->type = KEY_RSA;
 	SSHKEY_DUMP(key);
-	r = 0;
+	BN_clear_free(iqmp);
+	RSA_free(rsa);
+	return 0;
 
 err:
 	BN_clear_free(n);
@@ -1587,8 +1598,7 @@ err:
 	BN_clear_free(q);
 	BN_clear_free(iqmp);
 	RSA_free(rsa);
-	if (r != 0)
-		sshkey_free_rsa(key);
+	sshkey_free_rsa(key);
 	return r;
 }
 
