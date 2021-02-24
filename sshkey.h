@@ -325,7 +325,6 @@ int	sshkey_from_pkey(EVP_PKEY *pk, struct sshkey **keyp);
 int 	EVP_PKEY_to_sshkey_type(int type, EVP_PKEY *pk, struct sshkey **keyp);
 int	sshkey_complete_pkey(struct sshkey *key);
 
-int	sshkey_dup_pub_dsa(const struct sshkey *from, struct sshkey *to);
 #  ifdef OPENSSL_HAS_ECC
 int	sshkey_dup_pub_ecdsa(const struct sshkey *from, struct sshkey *to);
 #  endif /* OPENSSL_HAS_ECC */

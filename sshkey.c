@@ -1780,6 +1780,7 @@ sshkey_cert_copy(const struct sshkey *from_key, struct sshkey *to_key)
 }
 
 extern int sshkey_copy_pub_rsa(const struct sshkey *from, struct sshkey *to);
+extern int sshkey_copy_pub_dsa(const struct sshkey *from, struct sshkey *to);
 
 int
 sshkey_from_private(const struct sshkey *k, struct sshkey **pkp)
@@ -1795,7 +1796,7 @@ sshkey_from_private(const struct sshkey *k, struct sshkey **pkp)
 #ifdef WITH_OPENSSL
 	case KEY_DSA:
 	case KEY_DSA_CERT:
-		r = sshkey_dup_pub_dsa(k, n);
+		r = sshkey_copy_pub_dsa(k, n);
 		if (r != 0) goto out;
 		break;
 # ifdef OPENSSL_HAS_ECC
