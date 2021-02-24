@@ -345,6 +345,7 @@ sshkey_file_tests(void)
 	ASSERT_PTR_NE(c, NULL);
 	ASSERT_BIGNUM_EQ(ec_priv, a);
 	ASSERT_BIGNUM_EQ(b, c);
+	EC_KEY_free(ec);
 }
 	BN_free(a);
 	BN_free(b);

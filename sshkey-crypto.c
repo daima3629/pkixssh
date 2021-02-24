@@ -339,8 +339,7 @@ sshkey_free_dsa(struct sshkey *key) {
 #ifdef OPENSSL_HAS_ECC
 void
 sshkey_free_ecdsa(struct sshkey *key) {
-	EC_KEY_free(key->ecdsa);
-	key->ecdsa = NULL;
+	EC_KEY_free(key->ecdsa); key->ecdsa = NULL; /* TODO */
 
 	EVP_PKEY_free(key->pk);
 	key->pk = NULL;
@@ -552,6 +551,73 @@ err:
 }
 
 
+#ifdef OPENSSL_HAS_ECC
+static int
+sshkey_init_ecdsa_curve(struct sshkey *key, int nid) {
+	int r;
+	EVP_PKEY *pk;
+	EC_KEY *ec;
+
+	pk = EVP_PKEY_new();
+	if (pk == NULL)
+		return SSH_ERR_ALLOC_FAIL;
+
+	ec = EC_KEY_new_by_curve_name(nid);
+	if (ec == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto err;
+	}
+#if defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x10100000L) || \
+    defined(LIBRESSL_VERSION_NUMBER)
+	/* Note since 1.1.0 OpenSSL uses named curve parameter encoding by default.
+	 * It seems to me default is changed in upcomming 3.0 but key is marked
+	 * properly when created by nid.
+	 */
+	EC_KEY_set_asn1_flag(ec, OPENSSL_EC_NAMED_CURVE);
+#endif
+
+	if (!EVP_PKEY_set1_EC_KEY(pk, ec)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	/* success */
+	key->ecdsa_nid = nid;
+	key->pk = pk;
+	EC_KEY_free(key->ecdsa); key->ecdsa = ec; /* TODO */
+	return 0;
+
+err:
+	EC_KEY_free(ec);
+	EVP_PKEY_free(pk);
+	return r;
+}
+
+static int
+ssh_EVP_PKEY_complete_pub_ecdsa(EVP_PKEY *pk) {
+	int r, nid;
+	EC_KEY *ec;
+
+	ec = EVP_PKEY_get1_EC_KEY(pk);
+	if (ec == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+
+	nid = sshkey_ecdsa_key_to_nid(ec);
+	if (nid < 0) {
+		error_f("unsupported elliptic curve");
+		r = SSH_ERR_EC_CURVE_INVALID;
+		goto err;
+	}
+
+	r = sshkey_validate_ec_pub(ec);
+
+err:
+	EC_KEY_free(ec);
+	return r;
+}
+#endif /*def OPENSSL_HAS_ECC*/
+
+
 static int
 sshkey_from_pkey_rsa(EVP_PKEY *pk, struct sshkey **keyp) {
 	int r;
@@ -610,25 +676,29 @@ sshkey_from_pkey_ecdsa(EVP_PKEY *pk, struct sshkey **keyp) {
 	int r;
 	struct sshkey* key;
 	EC_KEY *ec;
-	int nid;
+
+	r = ssh_EVP_PKEY_complete_pub_ecdsa(pk);
+	if (r != 0) return r;
 
 	key = sshkey_new(KEY_UNSPEC);
 	if (key == NULL)
 		return SSH_ERR_ALLOC_FAIL;
 
-	ec = EVP_PKEY_get1_EC_KEY(pk);
-	if (ec == NULL)
-		return SSH_ERR_LIBCRYPTO_ERROR;
+	key->type = KEY_ECDSA;
+	key->pk = pk;
 
-	nid = sshkey_ecdsa_key_to_nid(ec);
-	if (nid < 0) {
-		error_f("unsupported elliptic curve");
-		r = SSH_ERR_EC_CURVE_INVALID;
+	ec = EVP_PKEY_get1_EC_KEY(key->pk);
+	if (ec == NULL) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
 		goto err;
 	}
+	key->ecdsa = ec; /* TODO */
 
-	r = sshkey_validate_ec_pub(ec);
-	if (r != 0) goto err;
+{	/* indirectly set in sshkey_ecdsa_key_to_nid(if needed)
+	   when pkey is completed */
+	const EC_GROUP *g = EC_KEY_get0_group(ec);
+	key->ecdsa_nid = EC_GROUP_get_curve_name(g);
+}
 
 {	/* private part is not required */
 	const BIGNUM *exponent = EC_KEY_get0_private_key(ec);
@@ -640,18 +710,14 @@ sshkey_from_pkey_ecdsa(EVP_PKEY *pk, struct sshkey **keyp) {
 skip_private:
 
 	/* success */
-	key->type = KEY_ECDSA;
-	key->ecdsa_nid = nid;
-	key->pk = pk;
-	key->ecdsa = ec; /* TODO */
-
 	SSHKEY_DUMP(key);
 	*keyp = key;
+	/* EC_KEY_free(ec); TODO */
 	return 0;
 
 err:
 	EC_KEY_free(ec);
-	sshkey_free_ecdsa(key);
+	sshkey_free(key);
 	return r;
 }
 #endif /* OPENSSL_HAS_ECC */
@@ -825,25 +891,34 @@ err:
 }
 
 #ifdef OPENSSL_HAS_ECC
+extern int sshkey_copy_pub_ecdsa(const struct sshkey *from, struct sshkey *to);
+
 int
-sshkey_dup_pub_ecdsa(const struct sshkey *from, struct sshkey *to) {
+sshkey_copy_pub_ecdsa(const struct sshkey *from, struct sshkey *to) {
 	int r;
+	EC_KEY *ec, *from_ec = NULL;
 
-	to->ecdsa_nid = from->ecdsa_nid;
-	to->ecdsa = EC_KEY_new_by_curve_name(from->ecdsa_nid);
-	if (to->ecdsa == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto out;
-	}
-	if (EC_KEY_set_public_key(to->ecdsa,
-	    EC_KEY_get0_public_key(from->ecdsa)) != 1) {
+	r = sshkey_init_ecdsa_curve(to, from->ecdsa_nid);
+	if (r != 0) return r;
+
+	ec = EVP_PKEY_get1_EC_KEY(to->pk);
+	if (ec == NULL) {
 		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto out;
+		goto err;
 	}
 
-	r = sshkey_complete_pkey(to);
+	from_ec = EVP_PKEY_get1_EC_KEY(from->pk);
+	if (from_ec == NULL) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
 
-out:
+	if (EC_KEY_set_public_key(ec, EC_KEY_get0_public_key(from_ec)) != 1)
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+
+err:
+	EC_KEY_free(from_ec);
+	EC_KEY_free(ec);
 	return r;
 }
 #endif /* OPENSSL_HAS_ECC */
@@ -872,9 +947,7 @@ sshkey_move_dsa(struct sshkey *from, struct sshkey *to) {
 void
 sshkey_move_ecdsa(struct sshkey *from, struct sshkey *to) {
 	sshkey_move_pk(from, to);
-	EC_KEY_free(to->ecdsa);
-	to->ecdsa = from->ecdsa;
-	from->ecdsa = NULL;
+	EC_KEY_free(to->ecdsa); to->ecdsa = from->ecdsa; from->ecdsa = NULL; /* TODO */
 	to->ecdsa_nid = from->ecdsa_nid;
 	from->ecdsa_nid = -1;
 }
@@ -1390,17 +1463,14 @@ sshbuf_write_priv_dsa(struct sshbuf *buf, const struct sshkey *key) {
 int
 sshbuf_read_pub_ecdsa(struct sshbuf *buf, struct sshkey *key) {
 	int r;
-	EVP_PKEY *pk = NULL;
 	EC_KEY *ec;
 
-	ec = EC_KEY_new_by_curve_name(key->ecdsa_nid);
-	if (ec  == NULL)
+	r = sshkey_init_ecdsa_curve(key, key->ecdsa_nid);
+	if (r != 0) return r;
+
+	ec = EVP_PKEY_get1_EC_KEY(key->pk);
+	if (ec == NULL)
 		return SSH_ERR_LIBCRYPTO_ERROR;
-#if defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x10100000L) || \
-    defined(LIBRESSL_VERSION_NUMBER)
-	/* Note OpenSSL 1.1.0 uses named curve parameter encoding by default. */
-	EC_KEY_set_asn1_flag(ec, OPENSSL_EC_NAMED_CURVE);
-#endif
 
 	r = sshbuf_get_eckey(buf, ec);
 	if (r != 0) goto err;
@@ -1408,26 +1478,11 @@ sshbuf_read_pub_ecdsa(struct sshbuf *buf, struct sshkey *key) {
 	r = sshkey_validate_ec_pub(ec);
 	if (r != 0) goto err;
 
-	/* key attribute allocation */
-	pk = EVP_PKEY_new();
-	if (pk == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto err;
-	}
-	if (!EVP_PKEY_set1_EC_KEY(pk, ec)) {
-		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto err;
-	}
-
 	/* success */
-	key->pk = pk;
-	EC_KEY_free(key->ecdsa); key->ecdsa = ec; /* TODO */
 	SSHKEY_DUMP(key);
-	return 0;
 
 err:
 	EC_KEY_free(ec);
-	EVP_PKEY_free(pk);
 	return r;
 }
 

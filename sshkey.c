@@ -1781,6 +1781,9 @@ sshkey_cert_copy(const struct sshkey *from_key, struct sshkey *to_key)
 
 extern int sshkey_copy_pub_rsa(const struct sshkey *from, struct sshkey *to);
 extern int sshkey_copy_pub_dsa(const struct sshkey *from, struct sshkey *to);
+#ifdef OPENSSL_HAS_ECC
+extern int sshkey_copy_pub_ecdsa(const struct sshkey *from, struct sshkey *to);
+#endif
 
 int
 sshkey_from_private(const struct sshkey *k, struct sshkey **pkp)
@@ -1802,7 +1805,7 @@ sshkey_from_private(const struct sshkey *k, struct sshkey **pkp)
 # ifdef OPENSSL_HAS_ECC
 	case KEY_ECDSA:
 	case KEY_ECDSA_CERT:
-		r = sshkey_dup_pub_ecdsa(k, n);
+		r = sshkey_copy_pub_ecdsa(k, n);
 		if (r != 0) goto out;
 		break;
 # endif /* OPENSSL_HAS_ECC */
