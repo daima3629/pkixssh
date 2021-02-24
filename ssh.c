@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh.c,v 1.548 2021/01/26 05:32:22 dtucker Exp $ */
+/* $OpenBSD: ssh.c,v 1.552 2021/02/23 00:05:31 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -1525,6 +1525,12 @@ main(int ac, char **av)
 		free(options.forward_agent_sock_path);
 		options.forward_agent_sock_path =
 		    default_client_percent_dollar_expand(cp, cinfo);
+		if (stat(options.forward_agent_sock_path, &st) == -1) {
+			error("Cannot forward agent socket path \"%s\": %s",
+			    options.forward_agent_sock_path, strerror(errno));
+			if (options.exit_on_forward_failure)
+				cleanup_exit(255);
+		}
 		free(cp);
 	}
 
