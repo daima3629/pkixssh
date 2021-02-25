@@ -1597,20 +1597,26 @@ sshkey_private_to_bio(struct sshkey *key, BIO *bio,
 
 	if (format == SSHKEY_PRIVATE_PEM) {
 		switch (key->type) {
-		case KEY_RSA:
-			res = PEM_write_bio_RSAPrivateKey(bio, key->rsa,
+		case KEY_RSA: {
+			RSA *rsa = EVP_PKEY_get1_RSA(key->pk);
+			res = PEM_write_bio_RSAPrivateKey(bio, rsa,
 			    cipher, _passphrase, len, NULL, NULL);
-			break;
+			RSA_free(rsa);
+			} break;
 #ifdef OPENSSL_HAS_ECC
-		case KEY_ECDSA:
-			res = PEM_write_bio_ECPrivateKey(bio, key->ecdsa,
+		case KEY_ECDSA: {
+			EC_KEY *ec = EVP_PKEY_get1_EC_KEY(key->pk);
+			res = PEM_write_bio_ECPrivateKey(bio, ec,
 			    cipher, _passphrase, len, NULL, NULL);
-			break;
+			EC_KEY_free(ec);
+			} break;
 #endif
-		case KEY_DSA:
-			res = PEM_write_bio_DSAPrivateKey(bio, key->dsa,
+		case KEY_DSA: {
+			DSA *dsa = EVP_PKEY_get1_DSA(key->pk);
+			res = PEM_write_bio_DSAPrivateKey(bio, dsa,
 			    cipher, _passphrase, len, NULL, NULL);
-			break;
+			DSA_free(dsa);
+			} break;
 		default:
 			return SSH_ERR_INVALID_ARGUMENT;
 		}
