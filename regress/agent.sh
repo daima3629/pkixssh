@@ -1,4 +1,4 @@
-#	$OpenBSD: agent.sh,v 1.19 2020/07/15 04:55:47 dtucker Exp $
+#	$OpenBSD: agent.sh,v 1.20 2021/02/25 03:27:34 djm Exp $
 #	Placed in the Public Domain.
 
 tid="simple agent test"
@@ -6,11 +6,13 @@ PLAIN_TYPES=`echo "$SSH_KEYTYPES" | sed 's/ssh-xmss@openssh.com//'` # TODO
 
 # cross-project configuration
 if test "$sshd_type" != "pkix" ; then
-mv $OBJ/sshd_proxy $OBJ/sshd_proxy.orig
-(
-	grep -v "PubkeyAcceptedKeyTypes"  $OBJ/sshd_proxy.orig
-	echo "PubkeyAcceptedKeyTypes *,ssh-dss*"
-) > $OBJ/sshd_proxy
+	for t in '' d ; do
+		mv $OBJ/ssh${t}_proxy $OBJ/ssh${t}_proxy.orig
+		(
+		grep -v "PubkeyAcceptedAlgorithms"  $OBJ/ssh${t}_proxy.orig
+		echo "PubkeyAcceptedAlgorithms *,ssh-dss*"
+		) > $OBJ/ssh${t}_proxy
+	done
 fi
 
 
