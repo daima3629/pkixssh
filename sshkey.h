@@ -319,7 +319,6 @@ void	sshkey_free_ecdsa(struct sshkey *key);
 
 int	sshkey_from_pkey(EVP_PKEY *pk, struct sshkey **keyp);
 int 	EVP_PKEY_to_sshkey_type(int type, EVP_PKEY *pk, struct sshkey **keyp);
-int	sshkey_complete_pkey(struct sshkey *key);
 
 void	sshkey_move_rsa(struct sshkey *from, struct sshkey *to);
 void	sshkey_move_dsa(struct sshkey *from, struct sshkey *to);

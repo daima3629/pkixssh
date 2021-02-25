@@ -581,6 +581,24 @@ err:
 
 
 #ifdef OPENSSL_HAS_ECC
+static inline EC_KEY*
+ssh_EC_KEY_new_by_curve_name(int nid) {
+	EC_KEY *ec;
+
+	ec = EC_KEY_new_by_curve_name(nid);
+	if (ec == NULL) return NULL;
+
+#if defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x10100000L) || \
+    defined(LIBRESSL_VERSION_NUMBER)
+	/* Note since 1.1.0 OpenSSL uses named curve parameter encoding by default.
+	 * It seems to me default is changed in upcomming 3.0 but key is marked
+	 * properly when created by nid.
+	 */
+	EC_KEY_set_asn1_flag(ec, OPENSSL_EC_NAMED_CURVE);
+#endif
+	return ec;
+}
+
 static int
 sshkey_init_ecdsa_curve(struct sshkey *key, int nid) {
 	int r;
@@ -591,19 +609,11 @@ sshkey_init_ecdsa_curve(struct sshkey *key, int nid) {
 	if (pk == NULL)
 		return SSH_ERR_ALLOC_FAIL;
 
-	ec = EC_KEY_new_by_curve_name(nid);
+	ec = ssh_EC_KEY_new_by_curve_name(nid);
 	if (ec == NULL) {
 		r = SSH_ERR_ALLOC_FAIL;
 		goto err;
 	}
-#if defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x10100000L) || \
-    defined(LIBRESSL_VERSION_NUMBER)
-	/* Note since 1.1.0 OpenSSL uses named curve parameter encoding by default.
-	 * It seems to me default is changed in upcomming 3.0 but key is marked
-	 * properly when created by nid.
-	 */
-	EC_KEY_set_asn1_flag(ec, OPENSSL_EC_NAMED_CURVE);
-#endif
 
 	if (!EVP_PKEY_set1_EC_KEY(pk, ec)) {
 		r = SSH_ERR_LIBCRYPTO_ERROR;
@@ -799,42 +809,6 @@ EVP_PKEY_to_sshkey_type(int type, EVP_PKEY *pk, struct sshkey **keyp) {
 load:
 /* called function sets SSH_ERR_KEY_TYPE_UNKNOWN if evp id is not supported */
 	return sshkey_from_pkey(pk, keyp);
-}
-
-int
-sshkey_complete_pkey(struct sshkey *key) {
-	int r = 0, ok = 0;
-	EVP_PKEY *pk;
-
-	if (key->pk != NULL) fatal_f("TESTING");
-
-	pk = EVP_PKEY_new();
-	if (pk == NULL)
-		return SSH_ERR_ALLOC_FAIL;
-
-	if (key->rsa != NULL)
-		ok = EVP_PKEY_set1_RSA(pk, key->rsa);
-#ifdef OPENSSL_HAS_ECC
-	else if (key->ecdsa != NULL)
-		ok = EVP_PKEY_set1_EC_KEY(pk, key->ecdsa);
-#endif /* OPENSSL_HAS_ECC */
-	else if (key->dsa != NULL)
-		ok = EVP_PKEY_set1_DSA(pk, key->dsa);
-	else {
-		r = SSH_ERR_INTERNAL_ERROR;
-		goto err;
-	}
-	if (!ok) {
-		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto err;
-	}
-
-	key->pk = pk;
-	return 0;
-
-err:
-	EVP_PKEY_free(pk);
-	return r;
 }
 
 
@@ -1135,6 +1109,7 @@ sshkey_validate_public(const struct sshkey *key) {
 
 int
 sshkey_generate_rsa(u_int bits, struct sshkey *key) {
+	EVP_PKEY *pk;
 	RSA *private = NULL;
 	BIGNUM *f4 = NULL;
 	int r;
@@ -1145,22 +1120,31 @@ sshkey_generate_rsa(u_int bits, struct sshkey *key) {
 	if (bits > SSHBUF_MAX_BIGNUM * 8)
 		return SSH_ERR_KEY_LENGTH;
 
-	if ((private = RSA_new()) == NULL || (f4 = BN_new()) == NULL) {
+	;
+	if ((pk = EVP_PKEY_new()) == NULL ||
+	    (private = RSA_new()) == NULL ||
+	    (f4 = BN_new()) == NULL
+	) {
 		r = SSH_ERR_ALLOC_FAIL;
-		goto out;
+		goto err;
 	}
 	if (!BN_set_word(f4, RSA_F4) ||
 	    !RSA_generate_key_ex(private, bits, f4, NULL)) {
 		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto out;
+		goto err;
 	}
 
-	key->rsa = private;
-	private = NULL;
+	if (!EVP_PKEY_set1_RSA(pk, private)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
 
-	r = sshkey_complete_pkey(key);
+	key->pk = pk;
+	pk = NULL;
+	key->rsa = private; private = NULL; /* TODO */
 
-out:
+err:
+	EVP_PKEY_free(pk);
 	RSA_free(private);
 	BN_free(f4);
 	return r;
@@ -1168,29 +1152,37 @@ out:
 
 int
 sshkey_generate_dsa(u_int bits, struct sshkey *key) {
-	DSA *private;
+	EVP_PKEY *pk;
+	DSA *private = NULL;
 	int r;
 
 	r = sshdsa_verify_length(bits);
 	if (r != 0) return r;
 
-	if ((private = DSA_new()) == NULL) {
+	if ((pk = EVP_PKEY_new()) == NULL ||
+	    (private = DSA_new()) == NULL
+	) {
 		r = SSH_ERR_ALLOC_FAIL;
-		goto out;
+		goto err;
 	}
 
 	if (!DSA_generate_parameters_ex(private, bits, NULL, 0, NULL, NULL, NULL) ||
 	    !DSA_generate_key(private)) {
 		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto out;
+		goto err;
 	}
 
-	key->dsa = private;
-	private = NULL;
+	if (!EVP_PKEY_set1_DSA(pk, private)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
 
-	r = sshkey_complete_pkey(key);
+	key->pk = pk;
+	pk = NULL;
+	key->dsa = private; private = NULL; /* TODO */
 
-out:
+err:
+	EVP_PKEY_free(pk);
 	DSA_free(private);
 	return r;
 }
@@ -1198,31 +1190,37 @@ out:
 #ifdef OPENSSL_HAS_ECC
 int
 sshkey_generate_ecdsa(u_int bits, struct sshkey *key) {
-	EC_KEY *private;
-	int r, nid;
+	EVP_PKEY *pk;
+	EC_KEY *private = NULL;
+	int r = 0, nid;
 
 	nid = sshkey_ecdsa_bits_to_nid(bits);
 	if (nid == -1) return SSH_ERR_KEY_LENGTH;
 
-	if ((private = EC_KEY_new_by_curve_name(nid)) == NULL) {
+	if ((pk = EVP_PKEY_new()) == NULL ||
+	    (private = ssh_EC_KEY_new_by_curve_name(nid)) == NULL
+	) {
 		r = SSH_ERR_ALLOC_FAIL;
-		goto out;
+		goto err;
 	}
 
 	if (EC_KEY_generate_key(private) != 1) {
 		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto out;
+		goto err;
 	}
 
-	EC_KEY_set_asn1_flag(private, OPENSSL_EC_NAMED_CURVE);
+	if (!EVP_PKEY_set1_EC_KEY(pk, private)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
 
-	key->ecdsa = private;
+	key->pk = pk;
+	pk = NULL;
 	key->ecdsa_nid = nid;
-	private = NULL;
+	key->ecdsa = private; private = NULL; /* TODO */
 
-	r = sshkey_complete_pkey(key);
-
-out:
+err:
+	EVP_PKEY_free(pk);
 	EC_KEY_free(private);
 	return r;
 }
@@ -1817,25 +1815,37 @@ sshkey_public_from_fp(FILE *fp, int format, struct sshkey **key) {
 
 {	/* Traditional PEM is available only for RSA */
 	RSA *rsa;
-	struct sshkey *k;
+	EVP_PKEY *pk = NULL;
+	struct sshkey *k = NULL;
 
 	rsa = PEM_read_RSAPublicKey(fp, NULL, NULL, NULL);
 	if (rsa == NULL) return SSH_ERR_INVALID_FORMAT;
 
+	pk = EVP_PKEY_new();
+	if (pk == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto err;
+	}
+	if (!EVP_PKEY_set1_RSA(pk, rsa)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
 	k = sshkey_new(KEY_UNSPEC);
-	if (k == NULL) return SSH_ERR_ALLOC_FAIL;
+	if (k == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto err;
+	}
 
 	k->type = KEY_RSA;
-	k->rsa = rsa;
-	rsa = NULL;
-
-	r = sshkey_complete_pkey(k);
-	if (r != 0) goto err;
+	k->pk = pk;
+	k->rsa = rsa; rsa = NULL; /* TODO */
 
 	*key = k;
 	return 0;
 
 err:
+	EVP_PKEY_free(pk);
 	RSA_free(rsa);
 	sshkey_free(k);
 	return r;
