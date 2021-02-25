@@ -3332,60 +3332,6 @@ sshkey_ec_validate_public(const EC_GROUP *group, const EC_POINT *public)
 	EC_POINT_free(nq);
 	return ret;
 }
-
-void
-sshkey_dump_ec_point(const EC_GROUP *group, const EC_POINT *point)
-{
-	BIGNUM *x = NULL, *y = NULL;
-
-	if (point == NULL) {
-		fputs("point=(NULL)\n", stderr);
-		return;
-	}
-	if ((x = BN_new()) == NULL || (y = BN_new()) == NULL) {
-		fprintf(stderr, "%s: BN_new failed\n", __func__);
-		goto out;
-	}
-	if (EC_GROUP_get_field_type(group) !=
-	    NID_X9_62_prime_field) {
-		fprintf(stderr, "%s: group is not a prime field\n", __func__);
-		goto out;
-	}
-	if (EC_POINT_get_affine_coordinates(group, point, x, y,
-	    NULL) != 1) {
-		fprintf(stderr, "%s: EC_POINT_get_affine_coordinates\n",
-		    __func__);
-		goto out;
-	}
-	fputs("x=", stderr);
-	BN_print_fp(stderr, x);
-	fputs("\ny=", stderr);
-	BN_print_fp(stderr, y);
-	fputs("\n", stderr);
- out:
-	BN_clear_free(x);
-	BN_clear_free(y);
-}
-
-void
-sshkey_dump_ec_key(const EC_KEY *key)
-{
-	const BIGNUM *exponent;
-
-	if (key == NULL) {
-		fputs("(NULL)", stderr);
-		return;
-	}
-
-	sshkey_dump_ec_point(EC_KEY_get0_group(key),
-	    EC_KEY_get0_public_key(key));
-	fputs("exponent=", stderr);
-	if ((exponent = EC_KEY_get0_private_key(key)) == NULL)
-		fputs("(NULL)", stderr);
-	else
-		BN_print_fp(stderr, exponent);
-	fputs("\n", stderr);
-}
 #endif /* WITH_OPENSSL && OPENSSL_HAS_ECC */
 
 static int

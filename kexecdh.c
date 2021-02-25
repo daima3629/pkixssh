@@ -47,6 +47,46 @@ static int
 kex_ecdh_dec_key_group(struct kex *, const struct sshbuf *, EC_KEY *key,
     const EC_GROUP *, struct sshbuf **);
 
+#ifdef DEBUG_KEXECDH
+static void
+sshkey_dump_ec_point(const EC_GROUP *g, const EC_POINT *p)
+{
+	BIGNUM *x, *y = NULL;
+
+	if (p == NULL) {
+		fputs("point=(NULL)\n", stderr);
+		return;
+	}
+	if (EC_GROUP_get_field_type(g) != NID_X9_62_prime_field) {
+		fprintf(stderr, "%s: group is not a prime field\n", __func__);
+		return;
+	}
+
+	x = BN_new();
+	y = BN_new();
+	if (x == NULL || y == NULL) {
+		fprintf(stderr, "%s: BN_new failed\n", __func__);
+		goto err;
+	}
+	if (EC_POINT_get_affine_coordinates(g, p, x, y, NULL) != 1) {
+		fprintf(stderr, "%s: EC_POINT_get_affine_coordinates\n", __func__);
+		goto err;
+	}
+
+	fputs("x=", stderr);
+	BN_print_fp(stderr, x);
+	fputs("\n", stderr);
+
+	fputs("y=", stderr);
+	BN_print_fp(stderr, y);
+	fputs("\n", stderr);
+
+err:
+	BN_clear_free(x);
+	BN_clear_free(y);
+}
+#endif
+
 int
 kex_ecdh_keypair(struct kex *kex)
 {
@@ -76,7 +116,7 @@ kex_ecdh_keypair(struct kex *kex)
 		goto out;
 #ifdef DEBUG_KEXECDH
 	fputs("client private key:\n", stderr);
-	sshkey_dump_ec_key(client_key);
+	EC_KEY_print_fp(stderr, client_key, 0);
 #endif
 {	EVP_PKEY *pk = EVP_PKEY_new();
 	if (pk == NULL) {
@@ -123,7 +163,7 @@ kex_ecdh_enc(struct kex *kex, const struct sshbuf *client_blob,
 
 #ifdef DEBUG_KEXECDH
 	fputs("server private key:\n", stderr);
-	sshkey_dump_ec_key(server_key);
+	EC_KEY_print_fp(stderr, server_key, 0);
 #endif
 	pub_key = EC_KEY_get0_public_key(server_key);
 	if ((server_blob = sshbuf_new()) == NULL) {

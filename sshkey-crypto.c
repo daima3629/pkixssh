@@ -171,21 +171,50 @@ DSA_set0_pqg(DSA *dsa, BIGNUM *p, BIGNUM *q, BIGNUM *g) {
 
 #ifdef DEBUG_PK
 static void
+ssh_EVP_PKEY_print_fp(FILE *fp, const EVP_PKEY *pkey) {
+#ifdef HAVE_EVP_PKEY_PRINT_PARAMS /* OpenSSL 1.0.0+ */
+{	/* OpenSSL lacks print to file stream */
+	BIO *bio = BIO_new_fp(fp, BIO_NOCLOSE);
+#ifdef VMS
+	{	BIO *tmpbio = BIO_new(BIO_f_linebuffer());
+		bio = BIO_push(tmpbio, bio);
+	}
+#endif
+
+	EVP_PKEY_print_private(bio, pkey, 0, NULL);
+	BIO_free_all(bio);
+}
+#else
+{
+	int evp_id = EVP_PKEY_base_id(pkey);
+
+	switch (evp_id) {
+	case EVP_PKEY_RSA: {
+		RSA *rsa = EVP_PKEY_get1_RSA(pkey);
+		RSA_print_fp(fp, rsa, 0);
+		RSA_free(rsa);
+		} break;
+#ifdef OPENSSL_HAS_ECC
+	case EVP_PKEY_EC: {
+		EC_KEY *ec = EVP_PKEY_get1_EC_KEY(pkey);
+		EC_KEY_print_fp(fp, ec, 0);
+		EC_KEY_free(ec);
+		} break;
+#endif /* OPENSSL_HAS_ECC */
+	case EVP_PKEY_DSA: {
+		DSA *dsa = EVP_PKEY_get1_DSA(pkey);
+		DSA_print_fp(fp, dsa, 0);
+		DSA_free(dsa);
+		} break;
+	}
+}
+#endif /*ndef HAVE_EVP_PKEY_PRINT_PARAMS*/
+}
+
+static void
 sshkey_dump(const char *func, const struct sshkey *key) {
 	fprintf(stderr, "dump key %s():\n", func);
-	switch (sshkey_type_plain(key->type)) {
-	case KEY_RSA:
-		RSA_print_fp(stderr, key->rsa, 0);
-		break;
-	case KEY_DSA:
-		DSA_print_fp(stderr, key->dsa, 0);
-		break;
-#ifdef OPENSSL_HAS_ECC
-	case KEY_ECDSA:
-		sshkey_dump_ec_key(key->ecdsa);
-		break;
-	}
-#endif /* OPENSSL_HAS_ECC */
+	ssh_EVP_PKEY_print_fp(stderr, key->pk);
 }
 #else
 static inline void
@@ -929,6 +958,7 @@ sshkey_move_pk(struct sshkey *from, struct sshkey *to) {
 	EVP_PKEY_free(to->pk);
 	to->pk = from->pk;
 	from->pk = NULL;
+	SSHKEY_DUMP(to);
 }
 
 void

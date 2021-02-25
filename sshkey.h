@@ -250,10 +250,6 @@ int	 sshkey_verify(const struct sshkey *, const u_char *, size_t,
 int	 sshkey_check_sigtype(const u_char *, size_t, const char *);
 const char *sshkey_sigalg_by_name(const char *);
 
-/* for debug */
-void	sshkey_dump_ec_point(const EC_GROUP *, const EC_POINT *);
-void	sshkey_dump_ec_key(const EC_KEY *);
-
 /* private key parsing and serialisation */
 int	sshkey_private_serialize(struct sshkey *key, struct sshbuf *buf);
 int	sshkey_private_serialize_opt(struct sshkey *key, struct sshbuf *buf,
