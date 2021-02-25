@@ -439,18 +439,7 @@ x509_match(const struct sshkey *key, const struct sshkey *found) {
 	 * Code is same as sshkey_equal_public but without
 	 * compare by distinguished name.
 	 */
-	switch(found->type) {
-	case KEY_RSA:
-		return sshkey_equal_public_rsa(key, found);
-	case KEY_DSA:
-		return sshkey_equal_public_dsa(key, found);
-#ifdef OPENSSL_HAS_ECC
-	case KEY_ECDSA:
-		return sshkey_equal_public_ecdsa(key, found);
-#endif /* OPENSSL_HAS_ECC */
-	}
-
-	return 0;
+	return sshkey_equal_public_pkey(key, found);
 }
 
 /*

@@ -766,14 +766,14 @@ sshkey_equal_public(const struct sshkey *a, const struct sshkey *b)
 #ifdef WITH_OPENSSL
 	case KEY_RSA_CERT:
 	case KEY_RSA:
-		return sshkey_equal_public_rsa(a, b);
+		return sshkey_equal_public_pkey(a, b);
 	case KEY_DSA_CERT:
 	case KEY_DSA:
-		return sshkey_equal_public_dsa(a, b);
+		return sshkey_equal_public_pkey(a, b);
 # ifdef OPENSSL_HAS_ECC
 	case KEY_ECDSA_CERT:
 	case KEY_ECDSA:
-		return sshkey_equal_public_ecdsa(a, b);
+		return sshkey_equal_public_pkey(a, b);
 # endif /* OPENSSL_HAS_ECC */
 #endif /* WITH_OPENSSL */
 	case KEY_ED25519:

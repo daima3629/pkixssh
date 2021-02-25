@@ -958,91 +958,6 @@ sshkey_move_ecdsa(struct sshkey *from, struct sshkey *to) {
 #endif /* OPENSSL_HAS_ECC */
 
 
-int/*bool*/
-sshkey_equal_public_rsa(const struct sshkey *ka, const struct sshkey *kb) {
-	const RSA *a, *b;
-	const BIGNUM *a_n, *a_e;
-	const BIGNUM *b_n, *b_e;
-
-	if (ka == NULL || kb == NULL)
-		return 0;
-
-	a = ka->rsa;
-	b = kb->rsa;
-	if (a == NULL || b == NULL)
-		return 0;
-
-	RSA_get0_key(a, &a_n, &a_e, NULL);
-	RSA_get0_key(b, &b_n, &b_e, NULL);
-
-	return
-	    BN_cmp(a_n, b_n) == 0 &&
-	    BN_cmp(a_e, b_e) == 0;
-}
-
-int/*bool*/
-sshkey_equal_public_dsa(const struct sshkey *ka, const struct sshkey *kb) {
-	const DSA *a, *b;
-	const BIGNUM *a_p, *a_q, *a_g, *a_pub_key;
-	const BIGNUM *b_p, *b_q, *b_g, *b_pub_key;
-
-	if (ka == NULL || kb == NULL)
-		return 0;
-
-	a = ka->dsa;
-	b = kb->dsa;
-	if (a == NULL || b == NULL)
-		return 0;
-
-	DSA_get0_pqg(a, &a_p, &a_q, &a_g);
-	DSA_get0_key(a, &a_pub_key, NULL);
-
-	DSA_get0_pqg(b, &b_p, &b_q, &b_g);
-	DSA_get0_key(b, &b_pub_key, NULL);
-
-	return
-	    BN_cmp(a_p, b_p) == 0 &&
-	    BN_cmp(a_q, b_q) == 0 &&
-	    BN_cmp(a_g, b_g) == 0 &&
-	    BN_cmp(a_pub_key, b_pub_key) == 0;
-}
-
-#ifdef OPENSSL_HAS_ECC
-int/*bool*/
-sshkey_equal_public_ecdsa(const struct sshkey *ka, const struct sshkey *kb) {
-	const EC_KEY *a, *b;
-	const EC_POINT *pa, *pb;
-	const EC_GROUP *g;
-	BN_CTX *bnctx;
-	int ret;
-
-	if (ka == NULL || kb == NULL)
-		return 0;
-
-	a = ka->ecdsa;
-	b = kb->ecdsa;
-	if (a == NULL || b == NULL)
-		return 0;
-
-	pa = EC_KEY_get0_public_key(a);
-	pb = EC_KEY_get0_public_key(b);
-	if (pa == NULL || pb == NULL)
-		return 0;
-
-	bnctx = BN_CTX_new();
-	if (bnctx == NULL) return 0;
-
-	g = EC_KEY_get0_group(a);
-
-	ret = EC_GROUP_cmp(g, EC_KEY_get0_group(b), bnctx) == 0 &&
-	    EC_POINT_cmp(g, pa, pb, bnctx) == 0;
-
-	BN_CTX_free(bnctx);
-	return ret;
-}
-#endif /* OPENSSL_HAS_ECC */
-
-
 int
 sshkey_validate_public_rsa(const struct sshkey *key) {
 	int r;
@@ -1104,6 +1019,23 @@ sshkey_validate_public(const struct sshkey *key) {
 #endif
 	}
 	return SSH_ERR_KEY_TYPE_UNKNOWN;
+}
+
+
+int/*bool*/
+sshkey_equal_public_pkey(const struct sshkey *ka, const struct sshkey *kb) {
+	const EVP_PKEY *a, *b;
+
+	if (ka == NULL) return 0;
+	if (kb == NULL) return 0;
+
+	a = ka->pk;
+	if (a == NULL) return 0;
+
+	b = kb->pk;
+	if (b == NULL) return 0;
+
+	return EVP_PKEY_cmp(a, b) == 1;
 }
 
 

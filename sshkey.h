@@ -355,17 +355,13 @@ int	sshbuf_write_priv_ecdsa(struct sshbuf *buf, const struct sshkey *key);
 #endif /* SSHKEY_INTERNAL */
 
 /*TODO internal*/
-int	sshkey_equal_public_rsa(const struct sshkey *, const struct sshkey *);
-int	sshkey_equal_public_dsa(const struct sshkey *, const struct sshkey *);
-#  ifdef OPENSSL_HAS_ECC
-int	sshkey_equal_public_ecdsa(const struct sshkey *, const struct sshkey *);
-#  endif /* OPENSSL_HAS_ECC */
-
 int	sshkey_validate_public_rsa(const struct sshkey *key);
 int	sshkey_validate_public_dsa(const struct sshkey *key);
 #  ifdef OPENSSL_HAS_ECC
 int	sshkey_validate_public_ecdsa(const struct sshkey *key);
 #  endif /* OPENSSL_HAS_ECC */
 int	sshkey_validate_public(const struct sshkey *key);
+
+int	sshkey_equal_public_pkey(const struct sshkey *, const struct sshkey *);
 
 #endif /* SSHKEY_H */
