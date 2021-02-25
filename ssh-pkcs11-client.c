@@ -333,6 +333,7 @@ ssh_pkcs11helper_ec_method(void) {
 
 	return meth;
 }
+#endif /*def OPENSSL_HAS_ECC*/
 
 
 static inline int
@@ -350,6 +351,7 @@ wrap_key_rsa(struct sshkey *key)
 	return ret;
 }
 
+#ifdef OPENSSL_HAS_ECC
 static inline int
 wrap_key_ecdsa(struct sshkey *key)
 {
