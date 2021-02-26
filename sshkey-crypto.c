@@ -327,17 +327,6 @@ err:
 
 
 struct sshkey*
-sshkey_new_rsa(struct sshkey *key) {
-	RSA *rsa = RSA_new();
-	if (rsa == NULL) {
-		free(key);
-		return NULL;
-	}
-	key->rsa = rsa;
-	return key;
-}
-
-struct sshkey*
 sshkey_new_dsa(struct sshkey *key) {
 	DSA *dsa = DSA_new();
 	if (dsa == NULL) {
@@ -348,14 +337,6 @@ sshkey_new_dsa(struct sshkey *key) {
 	return key;
 }
 
-
-void
-sshkey_free_rsa(struct sshkey *key) {
-	RSA_free(key->rsa); key->rsa = NULL; /* TODO */
-
-	EVP_PKEY_free(key->pk);
-	key->pk = NULL;
-}
 
 void
 sshkey_free_dsa(struct sshkey *key) {
@@ -470,8 +451,8 @@ sshkey_init_rsa_key(struct sshkey *key, BIGNUM *n, BIGNUM *e, BIGNUM *d) {
 
 	/* success */
 	key->pk = pk;
-	RSA_free(key->rsa); key->rsa = rsa; /* TODO */
-	return 0;
+	pk = NULL;
+	r = 0;
 
 err:
 	RSA_free(rsa);
@@ -671,11 +652,6 @@ sshkey_from_pkey_rsa(EVP_PKEY *pk, struct sshkey **keyp) {
 
 	key->type = KEY_RSA;
 	key->pk = pk;
-	key->rsa = EVP_PKEY_get1_RSA(pk); /*TODO */
-	if (key->rsa == NULL) {
-		sshkey_free(key);
-		return SSH_ERR_LIBCRYPTO_ERROR;
-	}
 
 	/* success */
 	SSHKEY_DUMP(key);
@@ -812,6 +788,13 @@ load:
 }
 
 
+void
+sshkey_clear_pkey(struct sshkey *key) {
+	EVP_PKEY_free(key->pk);
+	key->pk = NULL;
+}
+
+
 extern int sshkey_copy_pub_rsa(const struct sshkey *from, struct sshkey *to);
 
 int
@@ -844,7 +827,7 @@ sshkey_copy_pub_rsa(const struct sshkey *from, struct sshkey *to) {
 err:
 	BN_clear_free(n);
 	BN_clear_free(e);
-	sshkey_free_rsa(to);
+	sshkey_clear_pkey(to);
 	return r;
 }
 
@@ -938,7 +921,6 @@ sshkey_move_pk(struct sshkey *from, struct sshkey *to) {
 void
 sshkey_move_rsa(struct sshkey *from, struct sshkey *to) {
 	sshkey_move_pk(from, to);
-	RSA_free(to->rsa); to->rsa = from->rsa; from->rsa = NULL;  /* TODO */
 }
 
 void
@@ -1073,7 +1055,6 @@ sshkey_generate_rsa(u_int bits, struct sshkey *key) {
 
 	key->pk = pk;
 	pk = NULL;
-	key->rsa = private; private = NULL; /* TODO */
 
 err:
 	EVP_PKEY_free(pk);
@@ -1183,7 +1164,7 @@ sshbuf_read_pub_rsa(struct sshbuf *buf, struct sshkey *key) {
 err:
 	BN_clear_free(n);
 	BN_clear_free(e);
-	sshkey_free_rsa(key);
+	sshkey_clear_pkey(key);
 	return r;
 }
 
@@ -1231,7 +1212,7 @@ sshbuf_read_pub_rsa_inv(struct sshbuf *buf, struct sshkey *key) {
 err:
 	BN_clear_free(n);
 	BN_clear_free(e);
-	sshkey_free_rsa(key);
+	sshkey_clear_pkey(key);
 	return r;
 }
 
@@ -1660,7 +1641,7 @@ err:
 	BN_clear_free(q);
 	BN_clear_free(iqmp);
 	RSA_free(rsa);
-	sshkey_free_rsa(key);
+	sshkey_clear_pkey(key);
 	return r;
 }
 
@@ -1718,9 +1699,12 @@ sshkey_public_to_fp(struct sshkey *key, FILE *fp, int format) {
 
 	if ((format == SSHKEY_PRIVATE_PEM) &&
 	    /* Traditional PEM is available only for RSA */
-	    (key->type == KEY_RSA))
-		res = PEM_write_RSAPublicKey(fp, key->rsa);
-	else
+	    (key->type == KEY_RSA)
+	) {
+		RSA *rsa = EVP_PKEY_get1_RSA(key->pk);
+		res = PEM_write_RSAPublicKey(fp, rsa);
+		RSA_free(rsa);
+	} else
 		res = PEM_write_PUBKEY(fp, key->pk);
 
 	return res ? 0 : SSH_ERR_LIBCRYPTO_ERROR;
@@ -1771,7 +1755,7 @@ sshkey_public_from_fp(FILE *fp, int format, struct sshkey **key) {
 
 	k->type = KEY_RSA;
 	k->pk = pk;
-	k->rsa = rsa; rsa = NULL; /* TODO */
+	RSA_free(rsa);
 
 	*key = k;
 	return 0;

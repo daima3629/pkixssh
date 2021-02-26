@@ -171,7 +171,6 @@ pkcs11_rsa_private_encrypt(int flen, const u_char *from, u_char *to, RSA *rsa,
 		goto done;
 	if (!EVP_PKEY_set1_RSA(key->pk, rsa))
 		goto done;
-	RSA_up_ref(rsa); key->rsa = rsa; /* TODO */
 
 	if ((msg = sshbuf_new()) == NULL)
 		fatal_f("sshbuf_new failed");

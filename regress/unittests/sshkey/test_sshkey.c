@@ -234,17 +234,7 @@ sshkey_tests(void)
 	TEST_START("new/free KEY_RSA");
 	k1 = sshkey_new(KEY_RSA);
 	ASSERT_PTR_NE(k1, NULL);
-	ASSERT_PTR_NE(k1->rsa, NULL);
-{
-	const BIGNUM *n, *e, *p;
-
-	RSA_get0_key(k1->rsa, &n, &e, NULL);
-	RSA_get0_factors(k1->rsa, &p, NULL);
-
-	ASSERT_PTR_EQ(n, NULL);
-	ASSERT_PTR_EQ(e, NULL);
-	ASSERT_PTR_EQ(p, NULL);
-}
+	ASSERT_PTR_EQ(k1->pk, NULL);
 	sshkey_free(k1);
 	TEST_DONE();
 
