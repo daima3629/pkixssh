@@ -617,7 +617,6 @@ sshkey_new(int type)
 	k->pk = NULL;
 	k->ecdsa = NULL;
 	k->ecdsa_nid = -1;
-	k->dsa = NULL;
 	k->x509_data = NULL;
 	k->cert = NULL;
 	k->ed25519_sk = NULL;
@@ -632,8 +631,7 @@ sshkey_new(int type)
 		break;
 	case KEY_DSA:
 	case KEY_DSA_CERT:
-		k = sshkey_new_dsa(k);
-		if (k == NULL) return NULL;
+		/* no need to prealloc */
 		break;
 	case KEY_ECDSA:
 	case KEY_ECDSA_CERT:
@@ -676,7 +674,7 @@ sshkey_free(struct sshkey *k)
 		break;
 	case KEY_DSA:
 	case KEY_DSA_CERT:
-		sshkey_free_dsa(k);
+		sshkey_clear_pkey(k);
 		break;
 # ifdef OPENSSL_HAS_ECC
 	case KEY_ECDSA:

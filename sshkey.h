@@ -113,7 +113,6 @@ struct sshkey {
 	int	 type;
 	int	 flags;
 	EVP_PKEY *pk;
-	DSA	*dsa;
 	int	 ecdsa_nid;	/* NID of curve */
 	EC_KEY	*ecdsa;
 	u_char	*ed25519_sk;
@@ -307,9 +306,6 @@ int ssh_xmss_verify(const struct sshkey *key,
     const u_char *data, size_t datalen, u_int compat);
 
 # ifdef WITH_OPENSSL
-struct sshkey*	sshkey_new_dsa(struct sshkey *key);
-
-void	sshkey_free_dsa(struct sshkey *key);
 #  ifdef OPENSSL_HAS_ECC
 void	sshkey_free_ecdsa(struct sshkey *key);
 #  endif /* OPENSSL_HAS_ECC */

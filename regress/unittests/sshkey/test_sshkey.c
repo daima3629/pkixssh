@@ -241,16 +241,7 @@ sshkey_tests(void)
 	TEST_START("new/free KEY_DSA");
 	k1 = sshkey_new(KEY_DSA);
 	ASSERT_PTR_NE(k1, NULL);
-	ASSERT_PTR_NE(k1->dsa, NULL);
-{
-	const BIGNUM *g, *priv_key;
-
-	DSA_get0_pqg(k1->dsa, NULL, NULL, &g);
-	DSA_get0_key(k1->dsa, NULL, &priv_key);
-
-	ASSERT_PTR_EQ(g, NULL);
-	ASSERT_PTR_EQ(priv_key, NULL);
-}
+	ASSERT_PTR_EQ(k1->pk, NULL);
 	sshkey_free(k1);
 	TEST_DONE();
 

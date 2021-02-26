@@ -326,26 +326,6 @@ err:
 #endif
 
 
-struct sshkey*
-sshkey_new_dsa(struct sshkey *key) {
-	DSA *dsa = DSA_new();
-	if (dsa == NULL) {
-		free(key);
-		return NULL;
-	}
-	key->dsa = dsa;
-	return key;
-}
-
-
-void
-sshkey_free_dsa(struct sshkey *key) {
-	DSA_free(key->dsa); key->dsa = NULL; /* TODO */
-
-	EVP_PKEY_free(key->pk);
-	key->pk = NULL;
-}
-
 #ifdef OPENSSL_HAS_ECC
 void
 sshkey_free_ecdsa(struct sshkey *key) {
@@ -515,8 +495,8 @@ sshkey_init_dsa_params(struct sshkey *key, BIGNUM *p, BIGNUM *q, BIGNUM *g) {
 
 	/* success */
 	key->pk = pk;
-	DSA_free(key->dsa); key->dsa = dsa; /* TODO */
-	return 0;
+	pk = NULL;
+	r =  0;
 
 err:
 	DSA_free(dsa);
@@ -674,11 +654,6 @@ sshkey_from_pkey_dsa(EVP_PKEY *pk, struct sshkey **keyp) {
 	/* success */
 	key->type = KEY_DSA;
 	key->pk = pk;
-	key->dsa = EVP_PKEY_get1_DSA(pk); /*TODO */
-	if (key->dsa == NULL) {
-		sshkey_free(key);
-		return SSH_ERR_LIBCRYPTO_ERROR;
-	}
 
 	SSHKEY_DUMP(key);
 	*keyp = key;
@@ -872,7 +847,7 @@ err:
 	BN_clear_free(q);
 	BN_clear_free(g);
 	BN_clear_free(pub_key);
-	sshkey_free_dsa(to);
+	sshkey_clear_pkey(to);
 	return r;
 }
 
@@ -926,7 +901,6 @@ sshkey_move_rsa(struct sshkey *from, struct sshkey *to) {
 void
 sshkey_move_dsa(struct sshkey *from, struct sshkey *to) {
 	sshkey_move_pk(from, to);
-	DSA_free(to->dsa); to->dsa = from->dsa; from->dsa = NULL; /* TODO */
 }
 
 #ifdef OPENSSL_HAS_ECC
@@ -1092,7 +1066,6 @@ sshkey_generate_dsa(u_int bits, struct sshkey *key) {
 
 	key->pk = pk;
 	pk = NULL;
-	key->dsa = private; private = NULL; /* TODO */
 
 err:
 	EVP_PKEY_free(pk);
@@ -1338,7 +1311,7 @@ err:
 	BN_clear_free(q);
 	BN_clear_free(g);
 	BN_clear_free(pub_key);
-	sshkey_free_dsa(key);
+	sshkey_clear_pkey(key);
 	return r;
 }
 
@@ -1681,7 +1654,7 @@ err:
 	BN_clear_free(g);
 	BN_clear_free(pub_key);
 	BN_clear_free(priv_key);
-	sshkey_free_dsa(key);
+	sshkey_clear_pkey(key);
 	return r;
 }
 
