@@ -1399,7 +1399,7 @@ load_identity_file(Identity *id)
 				break;
 			}
 		}
-		switch ((r = sshkey_load_private_type(KEY_UNSPEC, id->filename,
+		switch ((r = sshkey_load_private(id->filename,
 		    passphrase, &private, &comment))) {
 		case 0:
 			break;

@@ -11,7 +11,7 @@
  * incompatible with the protocol description in the RFC file, it must be
  * called by a name other than "ssh" or "Secure Shell".
  *
- * Copyright (c) 2005-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2005-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -353,7 +353,7 @@ load_identity(const char *filename, char **commentp)
 	/* NOTE: engine or store based keys use method provided
 	 * by crypto-library to get passphrase if needed.
 	 */
-	r = sshkey_load_private_type(KEY_UNSPEC, filename, "", &prv, commentp);
+	r = sshkey_load_private(filename, "", &prv, commentp);
 	if (r == 0) return prv;
 
 	if (r != SSH_ERR_KEY_WRONG_PASSPHRASE)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -318,8 +318,8 @@ done:
 
 
 int
-engine_load_private_type(int type, const char *filename,
-	const char *passphrase, struct sshkey **keyp, char **commentp
+engine_load_private(const char *name, const char *passphrase,
+	struct sshkey **keyp, char **commentp
 ) {
 	int ret;
 	ENGINE *e = NULL;
@@ -332,7 +332,7 @@ engine_load_private_type(int type, const char *filename,
 	if (keyp != NULL) *keyp = NULL;
 	if (commentp != NULL) *commentp = NULL;
 
-	e = split_eng_keyid(filename, &key_id);
+	e = split_eng_keyid(name, &key_id);
 	if (e == NULL) {
 		ret = SSH_ERR_INVALID_ARGUMENT;
 		goto done;
@@ -346,7 +346,7 @@ engine_load_private_type(int type, const char *filename,
 		goto done;
 	}
 
-	ret = EVP_PKEY_to_sshkey_type(type, pk, &prv);
+	ret = EVP_PKEY_to_sshkey_type(KEY_UNSPEC, pk, &prv);
 	if (ret != SSH_ERR_SUCCESS) goto done;
 
 	/* TODO: use EVP_PKEY from sshkey */
@@ -377,7 +377,7 @@ done:
 
 
 int
-engine_try_load_public(const char *filename, struct sshkey **keyp, char **commentp) {
+engine_try_load_public(const char *name, struct sshkey **keyp, char **commentp) {
 	int ret = SSH_ERR_INTERNAL_ERROR;
 	const char *url = NULL;
 	ENGINE *e = NULL;
@@ -385,11 +385,11 @@ engine_try_load_public(const char *filename, struct sshkey **keyp, char **commen
 	EVP_PKEY *pk = NULL;
 	struct sshkey *k = NULL;
 
-	debug3_f("filename=%s", filename);
+	debug3_f("name=%s", name);
 	if (keyp != NULL) *keyp = NULL;
 	if (commentp != NULL) *commentp = NULL;
 
-	url = ignore_suffixes(filename);
+	url = ignore_suffixes(name);
 /* NOTE: For external keys simulate "missing" file.
  * This suppress extra messages due to faulty load control in ssh.c
  */
@@ -792,26 +792,26 @@ store_set_key_certs(STORE_KEY_DATA *kd, struct sshkey *key) {
 
 
 int
-store_load_private_type(int type, const char *filename,
-    const char *passphrase, struct sshkey **keyp, char **commentp
+store_load_private(const char *name, const char *passphrase,
+	struct sshkey **keyp, char **commentp
 ) {
 	int ret;
-	const char *url = filename;
 	STORE_KEY_DATA *kd = NULL;
 	struct sshkey *prv = NULL;
 
 	UNUSED(passphrase);
-	debug3_f("filename=%s", filename);
+	debug3_f("name=%s", name);
+
 	if (keyp != NULL) *keyp = NULL;
 	if (commentp != NULL) *commentp = NULL;
 
-	kd = store_load_key(url);
+	kd = store_load_key(name);
 	if (kd == NULL) {
 		ret = SSH_ERR_KEY_NOT_FOUND;
 		goto done;
 	}
 
-	ret = EVP_PKEY_to_sshkey_type(type, kd->pk, &prv);
+	ret = EVP_PKEY_to_sshkey_type(KEY_UNSPEC, kd->pk, &prv);
 	if (ret != SSH_ERR_SUCCESS) goto done;
 
 	store_set_key_certs(kd, prv);
@@ -820,7 +820,7 @@ store_load_private_type(int type, const char *filename,
 	kd->pk = NULL; /* transferred */
 
 	if (commentp != NULL)
-		xasprintf(commentp, "store:%s", url);
+		xasprintf(commentp, "store:%s", name);
 
 	if (keyp != NULL) {
 		*keyp = prv;
@@ -835,17 +835,17 @@ done:
 
 
 int
-store_try_load_public(const char *filename, struct sshkey **keyp, char **commentp) {
+store_try_load_public(const char *name, struct sshkey **keyp, char **commentp) {
 	int ret;
 	const char *url = NULL;
 	STORE_KEY_DATA *kd = NULL;
 	struct sshkey *k = NULL;
 
-	debug3_f("filename=%s", filename);
+	debug3_f("name=%s", name);
 	if (keyp != NULL) *keyp = NULL;
 	if (commentp != NULL) *commentp = NULL;
 
-	url = ignore_suffixes(filename);
+	url = ignore_suffixes(name);
 /* NOTE: For external keys simulate "missing" file.
  * This suppress extra messages due to faulty load control in ssh.c
  */

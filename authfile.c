@@ -1,7 +1,7 @@
 /* $OpenBSD: authfile.c,v 1.141 2020/06/18 23:33:38 djm Exp $ */
 /*
  * Copyright (c) 2000, 2013 Markus Friedl.  All rights reserved.
- * Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -144,23 +144,25 @@ out:
 }
 
 int
-sshkey_load_private_type(int type, const char *filename, const char *passphrase,
+sshkey_load_private(const char *name, const char *passphrase,
     struct sshkey **keyp, char **commentp)
 {
-	debug3_f("type=%d, filename=%s", type, (filename ? filename : "?!?"));
+	if (name == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+	debug3_f("name='%s'", name);
 
 #ifdef USE_OPENSSL_STORE2
-	if (strncmp(filename, "store:", 6) == 0)
-		return store_load_private_type(type, filename + 6,
+	if (strncmp(name, "store:", 6) == 0)
+		return store_load_private(name + 6,
 			passphrase, keyp, commentp);
 #endif
 #ifdef USE_OPENSSL_ENGINE
-	if (strncmp(filename, "engine:", 7) == 0)
-		return engine_load_private_type(type, filename + 7,
+	if (strncmp(name, "engine:", 7) == 0)
+		return engine_load_private(name + 7,
 			passphrase, keyp, commentp);
 #endif
 
-	return sshkey_load_private_type_file(type, filename, passphrase,
+	return sshkey_load_private_type_file(KEY_UNSPEC, name, passphrase,
 	    keyp, commentp);
 }
 
@@ -183,16 +185,6 @@ sshkey_load_private_type_fd(int fd, int type, const char *passphrase,
  out:
 	sshbuf_free(buffer);
 	return r;
-}
-
-int
-sshkey_load_private(const char *filename, const char *passphrase,
-    struct sshkey **keyp, char **commentp)
-{
-	debug3_f("filename=%s", (filename ? filename : "?!?"));
-
-	return sshkey_load_private_type_file(KEY_UNSPEC, filename, passphrase,
-	    keyp, commentp);
 }
 
 static int
