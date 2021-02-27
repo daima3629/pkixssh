@@ -116,6 +116,8 @@ compat_init_setproctitle(int argc, char *argv[])
 	for (i = 0; envp[i] != NULL; i++)
 		environ[i] = strdup(envp[i]);
 	environ[i] = NULL;
+#else
+	UNUSED(argc); UNUSED(argv);
 #endif /* SPT_REUSEARGV */
 }
 
@@ -164,6 +166,8 @@ setproctitle(const char *fmt, ...)
 		argv_start[len] = SPT_PADCHAR;
 #endif
 
+#else
+	UNUSED(fmt);
 #endif /* SPT_NONE */
 }
 
