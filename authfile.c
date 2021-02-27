@@ -132,7 +132,7 @@ sshkey_load_private_file(const char *filename,
 	r = sshkey_perm_ok(fd, filename);
 	if (r != 0) goto out;
 
-	r = sshkey_load_private_type_fd(fd, KEY_UNSPEC, passphrase, keyp, commentp);
+	r = sshkey_load_private_fd(fd, passphrase, keyp, commentp);
 	if (r != 0) goto out;
 
 	if (keyp && *keyp)
@@ -167,7 +167,7 @@ sshkey_load_private(const char *name, const char *passphrase,
 }
 
 int
-sshkey_load_private_type_fd(int fd, int type, const char *passphrase,
+sshkey_load_private_fd(int fd, const char *passphrase,
     struct sshkey **keyp, char **commentp)
 {
 	struct sshbuf *buffer = NULL;
@@ -176,7 +176,7 @@ sshkey_load_private_type_fd(int fd, int type, const char *passphrase,
 	if (keyp != NULL)
 		*keyp = NULL;
 	if ((r = sshbuf_load_fd(fd, &buffer)) != 0 ||
-	    (r = sshkey_parse_private_fileblob_type(buffer, type,
+	    (r = sshkey_parse_private_fileblob_type(buffer, KEY_UNSPEC,
 	    passphrase, keyp, commentp)) != 0)
 		goto out;
 

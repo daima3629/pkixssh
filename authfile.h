@@ -38,7 +38,7 @@ int sshkey_save_private(struct sshkey *, const char *,
 int sshkey_load_cert(const char *, struct sshkey **);
 int sshkey_load_public(const char *, struct sshkey **, char **);
 int sshkey_load_private(const char *, const char *, struct sshkey **, char **);
-int sshkey_load_private_type_fd(int fd, int type, const char *passphrase,
+int sshkey_load_private_fd(int fd, const char *passphrase,
     struct sshkey **keyp, char **commentp);
 int sshkey_perm_ok(int, const char *);
 int sshkey_in_file(struct sshkey *, const char *, int, int);

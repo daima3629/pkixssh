@@ -411,8 +411,7 @@ main(int argc, char **argv)
 		badusage("Missing private key (-k flag)");
 	if ((fd = open(kpath, O_RDONLY)) == -1)
 		err(1, "open %s", kpath);
-	if ((r = sshkey_load_private_type_fd(fd, KEY_UNSPEC, NULL,
-	    &key, NULL)) != 0)
+	if ((r = sshkey_load_private_fd(fd, NULL, &key, NULL)) != 0)
 		errx(1, "Unable to load key %s: %s", kpath, ssh_err(r));
 	close(fd);
 	/* XXX check that it is a private key */

@@ -321,8 +321,7 @@ main(int argc, char **argv)
 		keys[i] = NULL;
 		if (key_fd[i] == -1)
 			continue;
-		r = sshkey_load_private_type_fd(key_fd[i], KEY_UNSPEC,
-		    NULL, &key, NULL);
+		r = sshkey_load_private_fd(key_fd[i], NULL, &key, NULL);
 		close(key_fd[i]);
 		if (r != 0)
 			debug_r(r, "parse key %d", i);
