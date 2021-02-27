@@ -307,11 +307,7 @@ int	sshkey_from_pkey(EVP_PKEY *pk, struct sshkey **keyp);
 
 void	sshkey_clear_pkey(struct sshkey *key);
 
-void	sshkey_move_rsa(struct sshkey *from, struct sshkey *to);
-void	sshkey_move_dsa(struct sshkey *from, struct sshkey *to);
-#  ifdef OPENSSL_HAS_ECC
-void	sshkey_move_ecdsa(struct sshkey *from, struct sshkey *to);
-#  endif /* OPENSSL_HAS_ECC */
+void	sshkey_move_pk(struct sshkey *from, struct sshkey *to);
 
 int	sshkey_generate_rsa(u_int bits, struct sshkey *key);
 int	sshkey_generate_dsa(u_int bits, struct sshkey *key);

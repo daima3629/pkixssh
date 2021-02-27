@@ -849,32 +849,13 @@ err:
 #endif /* OPENSSL_HAS_ECC */
 
 
-static void
+void
 sshkey_move_pk(struct sshkey *from, struct sshkey *to) {
 	EVP_PKEY_free(to->pk);
 	to->pk = from->pk;
 	from->pk = NULL;
 	SSHKEY_DUMP(to);
 }
-
-void
-sshkey_move_rsa(struct sshkey *from, struct sshkey *to) {
-	sshkey_move_pk(from, to);
-}
-
-void
-sshkey_move_dsa(struct sshkey *from, struct sshkey *to) {
-	sshkey_move_pk(from, to);
-}
-
-#ifdef OPENSSL_HAS_ECC
-void
-sshkey_move_ecdsa(struct sshkey *from, struct sshkey *to) {
-	sshkey_move_pk(from, to);
-	to->ecdsa_nid = from->ecdsa_nid;
-	from->ecdsa_nid = -1;
-}
-#endif /* OPENSSL_HAS_ECC */
 
 
 int
