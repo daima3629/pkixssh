@@ -26,6 +26,8 @@
 #ifndef KEX_H
 #define KEX_H
 
+#include <signal.h> /* for sig_atomic_t */
+
 #include "evp-compat.h"
 
 #include "mac.h"
