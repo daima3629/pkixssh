@@ -3702,7 +3702,7 @@ private2_check_padding(struct sshbuf *decrypted)
 }
 
 static int
-sshkey_parse_private2(struct sshbuf *blob, int type, const char *passphrase,
+sshkey_parse_private2(struct sshbuf *blob, const char *passphrase,
     struct sshkey **keyp, char **commentp)
 {
 	char *comment = NULL;
@@ -3710,7 +3710,6 @@ sshkey_parse_private2(struct sshbuf *blob, int type, const char *passphrase,
 	struct sshbuf *decoded = NULL, *decrypted = NULL;
 	struct sshkey *k = NULL, *pubkey = NULL;
 
-	UNUSED(type);
 	if (keyp != NULL)
 		*keyp = NULL;
 	if (commentp != NULL)
@@ -3721,12 +3720,6 @@ sshkey_parse_private2(struct sshbuf *blob, int type, const char *passphrase,
 	    (r = private2_decrypt(decoded, passphrase,
 	    &decrypted, &pubkey)) != 0)
 		goto out;
-
-	if (type != KEY_UNSPEC &&
-	    sshkey_type_plain(type) != sshkey_type_plain(pubkey->type)) {
-		r = SSH_ERR_KEY_TYPE_MISMATCH;
-		goto out;
-	}
 
 	/* Load the private key and comment */
 	if ((r = sshkey_private_deserialize(decrypted, &k)) != 0 ||
@@ -3844,7 +3837,7 @@ sshkey_private_to_fileblob(struct sshkey *key, struct sshbuf *blob,
 
 #ifdef WITH_OPENSSL
 static int
-sshkey_parse_private_pem_fileblob(struct sshbuf *blob, int type,
+sshkey_parse_private_pem_fileblob(struct sshbuf *blob,
     const char *passphrase, struct sshkey **keyp)
 {
 	EVP_PKEY *pk = NULL;
@@ -3870,7 +3863,7 @@ sshkey_parse_private_pem_fileblob(struct sshbuf *blob, int type,
 		r = SSH_ERR_KEY_WRONG_PASSPHRASE;
 		goto out;
 	}
-	r = EVP_PKEY_to_sshkey_type(type, pk, &prv);
+	r = EVP_PKEY_to_sshkey_type(KEY_UNSPEC, pk, &prv);
 	if (r != 0) goto out;
 	pk = NULL; /* transferred */
 
@@ -3907,14 +3900,12 @@ sshkey_parse_private_fileblob(struct sshbuf *blob,
 	if (commentp != NULL)
 		*commentp = NULL;
 
-	r = sshkey_parse_private2(blob, KEY_UNSPEC, passphrase, keyp,
-	    commentp);
+	r = sshkey_parse_private2(blob, passphrase, keyp, commentp);
 	/* Do not fallback to PEM parser if only passphrase is wrong. */
 	if (r == 0 || r == SSH_ERR_KEY_WRONG_PASSPHRASE)
 		return r;
 #ifdef WITH_OPENSSL
-	return sshkey_parse_private_pem_fileblob(blob, KEY_UNSPEC,
-	    passphrase, keyp);
+	return sshkey_parse_private_pem_fileblob(blob, passphrase, keyp);
 #else
 	return SSH_ERR_INVALID_FORMAT;
 #endif /* WITH_OPENSSL */
