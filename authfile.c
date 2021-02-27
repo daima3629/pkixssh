@@ -118,7 +118,7 @@ sshkey_perm_ok(int fd, const char *filename)
 
 
 static int
-sshkey_load_private_type_file(int type, const char *filename,
+sshkey_load_private_file(const char *filename,
     const char *passphrase, struct sshkey **keyp, char **commentp)
 {
 	int fd, r;
@@ -132,7 +132,7 @@ sshkey_load_private_type_file(int type, const char *filename,
 	r = sshkey_perm_ok(fd, filename);
 	if (r != 0) goto out;
 
-	r = sshkey_load_private_type_fd(fd, type, passphrase, keyp, commentp);
+	r = sshkey_load_private_type_fd(fd, KEY_UNSPEC, passphrase, keyp, commentp);
 	if (r != 0) goto out;
 
 	if (keyp && *keyp)
@@ -162,7 +162,7 @@ sshkey_load_private(const char *name, const char *passphrase,
 			passphrase, keyp, commentp);
 #endif
 
-	return sshkey_load_private_type_file(KEY_UNSPEC, name, passphrase,
+	return sshkey_load_private_file(name, passphrase,
 	    keyp, commentp);
 }
 
