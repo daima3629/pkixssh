@@ -257,9 +257,7 @@ int	sshkey_private_deserialize(struct sshbuf *buf,  struct sshkey **keyp);
 int	sshkey_private_to_fileblob(struct sshkey *key, struct sshbuf *blob,
     const char *passphrase, const char *comment,
     int format, const char *openssh_format_cipher, int openssh_format_rounds);
-int	sshkey_parse_private_fileblob(struct sshbuf *buffer,
-    const char *passphrase, struct sshkey **keyp, char **commentp);
-int	sshkey_parse_private_fileblob_type(struct sshbuf *blob, int type,
+int	sshkey_parse_private_fileblob(struct sshbuf *blob,
     const char *passphrase, struct sshkey **keyp, char **commentp);
 
 int	sshkey_private_to_bio(struct sshkey *key, BIO *bio,

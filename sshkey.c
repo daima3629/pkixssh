@@ -3897,7 +3897,7 @@ sshkey_parse_private_pem_fileblob(struct sshbuf *blob, int type,
 #endif /* WITH_OPENSSL */
 
 int
-sshkey_parse_private_fileblob_type(struct sshbuf *blob, int type,
+sshkey_parse_private_fileblob(struct sshbuf *blob,
     const char *passphrase, struct sshkey **keyp, char **commentp)
 {
 	int r = SSH_ERR_INTERNAL_ERROR;
@@ -3907,48 +3907,17 @@ sshkey_parse_private_fileblob_type(struct sshbuf *blob, int type,
 	if (commentp != NULL)
 		*commentp = NULL;
 
-	switch (type) {
+	r = sshkey_parse_private2(blob, KEY_UNSPEC, passphrase, keyp,
+	    commentp);
+	/* Do not fallback to PEM parser if only passphrase is wrong. */
+	if (r == 0 || r == SSH_ERR_KEY_WRONG_PASSPHRASE)
+		return r;
 #ifdef WITH_OPENSSL
-	case KEY_DSA:
-	case KEY_ECDSA:
-	case KEY_RSA:
-		return sshkey_parse_private_pem_fileblob(blob, type,
-		    passphrase, keyp);
-#endif /* WITH_OPENSSL */
-	case KEY_ED25519:
-#ifdef WITH_XMSS
-	case KEY_XMSS:
-#endif /* WITH_XMSS */
-		return sshkey_parse_private2(blob, type, passphrase,
-		    keyp, commentp);
-	case KEY_UNSPEC:
-		r = sshkey_parse_private2(blob, type, passphrase, keyp,
-		    commentp);
-		/* Do not fallback to PEM parser if only passphrase is wrong. */
-		if (r == 0 || r == SSH_ERR_KEY_WRONG_PASSPHRASE)
-			return r;
-#ifdef WITH_OPENSSL
-		return sshkey_parse_private_pem_fileblob(blob, type,
-		    passphrase, keyp);
+	return sshkey_parse_private_pem_fileblob(blob, KEY_UNSPEC,
+	    passphrase, keyp);
 #else
-		return SSH_ERR_INVALID_FORMAT;
+	return SSH_ERR_INVALID_FORMAT;
 #endif /* WITH_OPENSSL */
-	default:
-		return SSH_ERR_KEY_TYPE_UNKNOWN;
-	}
-}
-
-int
-sshkey_parse_private_fileblob(struct sshbuf *buffer, const char *passphrase,
-    struct sshkey **keyp, char **commentp)
-{
-	if (keyp != NULL)
-		*keyp = NULL;
-	if (commentp != NULL)
-		*commentp = NULL;
-
-	return sshkey_parse_private_fileblob_type(buffer, KEY_UNSPEC,
-	    passphrase, keyp, commentp);
 }
 
 #ifdef WITH_XMSS

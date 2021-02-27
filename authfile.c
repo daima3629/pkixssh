@@ -176,7 +176,7 @@ sshkey_load_private_fd(int fd, const char *passphrase,
 	if (keyp != NULL)
 		*keyp = NULL;
 	if ((r = sshbuf_load_fd(fd, &buffer)) != 0 ||
-	    (r = sshkey_parse_private_fileblob_type(buffer, KEY_UNSPEC,
+	    (r = sshkey_parse_private_fileblob(buffer,
 	    passphrase, keyp, commentp)) != 0)
 		goto out;
 
