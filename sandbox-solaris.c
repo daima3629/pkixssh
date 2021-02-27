@@ -47,6 +47,7 @@ ssh_sandbox_init(struct monitor *monitor)
 {
 	struct ssh_sandbox *box = NULL;
 
+	UNUSED(monitor);
 	box = xcalloc(1, sizeof(*box));
 
 	/* Start with "basic" and drop everything we don't need. */
@@ -108,6 +109,7 @@ ssh_sandbox_parent_finish(struct ssh_sandbox *box)
 void
 ssh_sandbox_parent_preauth(struct ssh_sandbox *box, pid_t child_pid)
 {
+	UNUSED(box); UNUSED(child_pid);
 	/* Nothing to do here */
 }
 
