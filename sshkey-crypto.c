@@ -326,17 +326,6 @@ err:
 #endif
 
 
-#ifdef OPENSSL_HAS_ECC
-void
-sshkey_free_ecdsa(struct sshkey *key) {
-	EC_KEY_free(key->ecdsa); key->ecdsa = NULL; /* TODO */
-
-	EVP_PKEY_free(key->pk);
-	key->pk = NULL;
-}
-#endif /* OPENSSL_HAS_ECC */
-
-
 #ifndef BN_FLG_CONSTTIME
 #  define BN_FLG_CONSTTIME 0x0 /* OpenSSL < 0.9.8 */
 #endif
@@ -582,10 +571,10 @@ sshkey_init_ecdsa_curve(struct sshkey *key, int nid) {
 	}
 
 	/* success */
-	key->ecdsa_nid = nid;
 	key->pk = pk;
-	EC_KEY_free(key->ecdsa); key->ecdsa = ec; /* TODO */
-	return 0;
+	pk = NULL;
+	key->ecdsa_nid = nid;
+	r = 0;
 
 err:
 	EC_KEY_free(ec);
@@ -682,7 +671,6 @@ sshkey_from_pkey_ecdsa(EVP_PKEY *pk, struct sshkey **keyp) {
 		r = SSH_ERR_LIBCRYPTO_ERROR;
 		goto err;
 	}
-	key->ecdsa = ec; /* TODO */
 
 {	/* indirectly set in sshkey_ecdsa_key_to_nid(if needed)
 	   when pkey is completed */
@@ -702,7 +690,7 @@ skip_private:
 	/* success */
 	SSHKEY_DUMP(key);
 	*keyp = key;
-	/* EC_KEY_free(ec); TODO */
+	EC_KEY_free(ec);
 	return 0;
 
 err:
@@ -907,7 +895,6 @@ sshkey_move_dsa(struct sshkey *from, struct sshkey *to) {
 void
 sshkey_move_ecdsa(struct sshkey *from, struct sshkey *to) {
 	sshkey_move_pk(from, to);
-	EC_KEY_free(to->ecdsa); to->ecdsa = from->ecdsa; from->ecdsa = NULL; /* TODO */
 	to->ecdsa_nid = from->ecdsa_nid;
 	from->ecdsa_nid = -1;
 }
@@ -1103,7 +1090,6 @@ sshkey_generate_ecdsa(u_int bits, struct sshkey *key) {
 	key->pk = pk;
 	pk = NULL;
 	key->ecdsa_nid = nid;
-	key->ecdsa = private; private = NULL; /* TODO */
 
 err:
 	EVP_PKEY_free(pk);

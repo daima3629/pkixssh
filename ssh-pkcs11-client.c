@@ -231,7 +231,6 @@ pkcs11_ecdsa_do_sign(
 		goto done;
 	if (!EVP_PKEY_set1_EC_KEY(key->pk, ec))
 		goto done;
-	EC_KEY_up_ref(ec); key->ecdsa = ec; /* TODO */
 
 	if ((msg = sshbuf_new()) == NULL)
 		fatal_f("sshbuf_new failed");

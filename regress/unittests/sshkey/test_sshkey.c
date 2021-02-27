@@ -249,7 +249,7 @@ sshkey_tests(void)
 	TEST_START("new/free KEY_ECDSA");
 	k1 = sshkey_new(KEY_ECDSA);
 	ASSERT_PTR_NE(k1, NULL);
-	ASSERT_PTR_EQ(k1->ecdsa, NULL);  /* Can't allocate without NID */
+	ASSERT_PTR_EQ(k1->pk, NULL);
 	sshkey_free(k1);
 	TEST_DONE();
 #endif

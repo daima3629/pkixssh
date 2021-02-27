@@ -615,7 +615,6 @@ sshkey_new(int type)
 		return NULL;
 	k->type = type;
 	k->pk = NULL;
-	k->ecdsa = NULL;
 	k->ecdsa_nid = -1;
 	k->x509_data = NULL;
 	k->cert = NULL;
@@ -679,7 +678,7 @@ sshkey_free(struct sshkey *k)
 # ifdef OPENSSL_HAS_ECC
 	case KEY_ECDSA:
 	case KEY_ECDSA_CERT:
-		sshkey_free_ecdsa(k);
+		sshkey_clear_pkey(k);
 		break;
 # endif /* OPENSSL_HAS_ECC */
 #endif /* WITH_OPENSSL */
