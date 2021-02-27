@@ -1017,6 +1017,7 @@ utmp_write_entry(struct logininfo *li)
 static int
 utmpx_write_library(struct logininfo *li, struct utmpx *utx)
 {
+	UNUSED(li);
 	setutxent();
 	pututxline(utx);
 
@@ -1032,6 +1033,7 @@ utmpx_write_library(struct logininfo *li, struct utmpx *utx)
 static int
 utmpx_write_direct(struct logininfo *li, struct utmpx *utx)
 {
+	UNUSED(li); UNUSED(utx);
 	error_f("not implemented!");
 	return (0);
 }
@@ -1111,6 +1113,7 @@ wtmp_write(struct logininfo *li, struct utmp *ut)
 	struct stat buf;
 	int fd, ret = 1;
 
+	UNUSED(li);
 	if ((fd = open(WTMP_FILE, O_WRONLY|O_APPEND, 0)) == -1) {
 		error_f("problem writing %s: %s",
 		    WTMP_FILE, strerror(errno));
@@ -1283,6 +1286,7 @@ wtmpx_write(struct logininfo *li, struct utmpx *utx)
 	struct stat buf;
 	int fd, ret = 1;
 
+	UNUSED(li);
 	if ((fd = open(WTMPX_FILE, O_WRONLY|O_APPEND, 0)) == -1) {
 		error_f("problem opening %s: %s",
 		    WTMPX_FILE, strerror(errno));
@@ -1300,6 +1304,7 @@ wtmpx_write(struct logininfo *li, struct utmpx *utx)
 
 	return (ret);
 #else
+	UNUSED(li);
 	updwtmpx(WTMPX_FILE, utx);
 	return (1);
 #endif
