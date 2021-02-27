@@ -3863,7 +3863,7 @@ sshkey_parse_private_pem_fileblob(struct sshbuf *blob,
 		r = SSH_ERR_KEY_WRONG_PASSPHRASE;
 		goto out;
 	}
-	r = EVP_PKEY_to_sshkey_type(KEY_UNSPEC, pk, &prv);
+	r = sshkey_from_pkey(pk, &prv);
 	if (r != 0) goto out;
 	pk = NULL; /* transferred */
 

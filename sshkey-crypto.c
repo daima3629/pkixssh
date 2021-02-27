@@ -727,30 +727,6 @@ sshkey_from_pkey(EVP_PKEY *pk, struct sshkey **keyp) {
 }
 
 
-int
-EVP_PKEY_to_sshkey_type(int type, EVP_PKEY *pk, struct sshkey **keyp) {
-	int evp_id;
-
-	if (type == KEY_UNSPEC) goto load;
-
-	evp_id = EVP_PKEY_base_id(pk);
-	if (
-	    (evp_id == EVP_PKEY_RSA && type == KEY_RSA) ||
-#ifdef OPENSSL_HAS_ECC
-	    (evp_id == EVP_PKEY_EC && type == KEY_ECDSA) ||
-#endif /*def OPENSSL_HAS_ECC*/
-	    (evp_id == EVP_PKEY_DSA && type == KEY_DSA)
-	)
-		goto load;
-
-	return SSH_ERR_KEY_TYPE_MISMATCH;
-
-load:
-/* called function sets SSH_ERR_KEY_TYPE_UNKNOWN if evp id is not supported */
-	return sshkey_from_pkey(pk, keyp);
-}
-
-
 void
 sshkey_clear_pkey(struct sshkey *key) {
 	EVP_PKEY_free(key->pk);

@@ -304,7 +304,6 @@ int ssh_xmss_verify(const struct sshkey *key,
 
 # ifdef WITH_OPENSSL
 int	sshkey_from_pkey(EVP_PKEY *pk, struct sshkey **keyp);
-int 	EVP_PKEY_to_sshkey_type(int type, EVP_PKEY *pk, struct sshkey **keyp);
 
 void	sshkey_clear_pkey(struct sshkey *key);
 

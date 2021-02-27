@@ -346,7 +346,7 @@ engine_load_private(const char *name, const char *passphrase,
 		goto done;
 	}
 
-	ret = EVP_PKEY_to_sshkey_type(KEY_UNSPEC, pk, &prv);
+	ret = sshkey_from_pkey(pk, &prv);
 	if (ret != SSH_ERR_SUCCESS) goto done;
 
 	/* TODO: use EVP_PKEY from sshkey */
@@ -811,7 +811,7 @@ store_load_private(const char *name, const char *passphrase,
 		goto done;
 	}
 
-	ret = EVP_PKEY_to_sshkey_type(KEY_UNSPEC, kd->pk, &prv);
+	ret = sshkey_from_pkey(kd->pk, &prv);
 	if (ret != SSH_ERR_SUCCESS) goto done;
 
 	store_set_key_certs(kd, prv);
