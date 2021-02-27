@@ -183,6 +183,7 @@ typedef enum {
 	oPasswordAuthentication,
 	oChallengeResponseAuthentication, oXAuthLocation,
 	oIdentityFile, oHostname, oPort, oRemoteForward, oLocalForward,
+	oPermitRemoteOpen,
 	oCertificateFile, oAddKeysToAgent, oIdentityAgent,
 	oUser, oEscapeChar, oProxyCommand,
 	oGlobalKnownHostsFile, oUserKnownHostsFile, oConnectionAttempts,
@@ -306,6 +307,7 @@ static struct {
 	{ "macs", oMacs },
 	{ "remoteforward", oRemoteForward },
 	{ "localforward", oLocalForward },
+	{ "permitremoteopen", oPermitRemoteOpen },
 	{ "user", oUser },
 	{ "host", oHost },
 	{ "match", oMatch },
@@ -374,6 +376,8 @@ static struct {
 
 	{ NULL, oBadOption }
 };
+
+static const char *lookup_opcode_name(OpCodes code);
 
 char *
 ssh_connection_hash(const char *thishost, const char *host, const char *portstr,
@@ -1663,6 +1667,55 @@ parse_key_algorithms:
 		}
 		break;
 
+	case oPermitRemoteOpen: {
+		u_int uvalue;
+
+		uintptr = &options->num_permitted_remote_opens;
+		cppptr = &options->permitted_remote_opens;
+		arg = strdelim(&s);
+		if (!arg || *arg == '\0')
+			fatal("%s line %d: missing %s specification",
+			    filename, linenum, lookup_opcode_name(opcode));
+		uvalue = *uintptr;	/* modified later */
+		if (strcmp(arg, "any") == 0 || strcmp(arg, "none") == 0) {
+			if (*activep && uvalue == 0) {
+				*uintptr = 1;
+				*cppptr = xcalloc(1, sizeof(**cppptr));
+				(*cppptr)[0] = xstrdup(arg);
+			}
+			break;
+		}
+		for (; arg != NULL && *arg != '\0'; arg = strdelim(&s)) {
+			char *p, ch;
+
+			arg2 = xstrdup(arg);
+			ch = '\0';
+			p = hpdelim2(&arg, &ch);
+			if (p == NULL || ch == '/') {
+				fatal("%s line %d: missing host in %s",
+				    filename, linenum,
+				    lookup_opcode_name(opcode));
+			}
+			p = cleanhostname(p);
+			/*
+			 * don't want to use permitopen_port to avoid
+			 * dependency on channels.[ch] here.
+			 */
+			if (arg == NULL ||
+			    (strcmp(arg, "*") != 0 && a2port(arg) <= 0)) {
+				fatal("%s line %d: bad port number in %s",
+				    filename, linenum,
+				    lookup_opcode_name(opcode));
+			}
+			if (*activep && uvalue == 0) {
+				opt_array_append(filename, linenum,
+				    lookup_opcode_name(opcode),
+				    cppptr, uintptr, arg2);
+			}
+			free(arg2);
+		}
+		} break;
+
 	case oClearAllForwardings:
 		intptr = &options->clear_forwardings;
 		goto parse_flag;
@@ -2347,6 +2400,8 @@ initialize_options(Options * options)
 	options->num_local_forwards = 0;
 	options->remote_forwards = NULL;
 	options->num_remote_forwards = 0;
+	options->permitted_remote_opens = NULL;
+	options->num_permitted_remote_opens = 0;
 	options->log_facility = SYSLOG_FACILITY_NOT_SET;
 	options->log_level = SYSLOG_LEVEL_NOT_SET;
 	options->num_log_verbose = 0;
@@ -3243,6 +3298,13 @@ dump_client_config(Options *o, const char *host)
 	    o->num_log_verbose, o->log_verbose);
 
 	/* Special cases */
+
+	/* PermitRemoteOpen */
+	if (o->num_permitted_remote_opens == 0)
+		printf("%s any\n", lookup_opcode_name(oPermitRemoteOpen));
+	else
+		dump_cfg_strarray_oneline(oPermitRemoteOpen,
+		    o->num_permitted_remote_opens, o->permitted_remote_opens);
 
 	/* AddKeysToAgent */
 	if (o->add_keys_to_agent_lifespan <= 0)
