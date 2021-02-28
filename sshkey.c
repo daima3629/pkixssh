@@ -3863,12 +3863,11 @@ sshkey_private_to_fileblob(struct sshkey *key, struct sshbuf *blob,
 	case KEY_DSA:
 	case KEY_ECDSA:
 	case KEY_RSA:
-		if (format == SSHKEY_PRIVATE_OPENSSH) {
-			return sshkey_private_to_blob2(key, blob, passphrase,
-			    comment, openssh_format_cipher, openssh_format_rounds);
-		}
-		return sshkey_private_pem_to_blob(key, blob, passphrase, format);
+		if (format != SSHKEY_PRIVATE_OPENSSH)
+			return sshkey_private_pem_to_blob(key, blob,
+			    passphrase, format);
 #endif /* WITH_OPENSSL */
+		/* FALLTHROUGH */
 	case KEY_ED25519:
 #ifdef WITH_XMSS
 	case KEY_XMSS:
