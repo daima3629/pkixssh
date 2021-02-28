@@ -376,9 +376,10 @@ check_hostkeys_by_key_or_types(struct hostkeys *hostkeys,
 	int want_cert = sshkey_is_cert(k);
 	HostkeyMarker want_marker = want_cert ? MRK_CA : MRK_NONE;
 
-	if (k)	subtype = k->ecdsa_nid;
 	if (found != NULL)
 		*found = NULL;
+	if (k != NULL)
+		subtype = k->ecdsa_nid;
 
 	for (i = 0; i < hostkeys->num_entries; i++) {
 		if (hostkeys->entries[i].marker != want_marker)
@@ -417,7 +418,7 @@ check_hostkeys_by_key_or_types(struct hostkeys *hostkeys,
 				*found = hostkeys->entries + i;
 		}
 	}
-	if (check_key_not_revoked(hostkeys, k) != 0) {
+	if (k != NULL && check_key_not_revoked(hostkeys, k) != 0) {
 		end_return = HOST_REVOKED;
 		if (found != NULL)
 			*found = NULL;
