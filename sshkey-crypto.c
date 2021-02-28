@@ -922,6 +922,72 @@ sshkey_validate_public(const struct sshkey *key) {
 }
 
 
+#ifndef HAVE_EVP_PKEY_CMP	/* OpenSSL < 0.9.8 */
+static int/*bool*/
+ssh_EVP_PKEY_cmp_rsa(const EVP_PKEY *ka, const EVP_PKEY *kb) {
+	int ret = -1;
+	RSA *a, *b;
+	const BIGNUM *a_n, *a_e;
+	const BIGNUM *b_n, *b_e;
+
+	a = EVP_PKEY_get1_RSA((EVP_PKEY*)ka);
+	b = EVP_PKEY_get1_RSA((EVP_PKEY*)kb);
+	if (a == NULL || b == NULL) goto err;
+
+	RSA_get0_key(a, &a_n, &a_e, NULL);
+	RSA_get0_key(b, &b_n, &b_e, NULL);
+
+	ret =
+	    BN_cmp(a_n, b_n) == 0 &&
+	    BN_cmp(a_e, b_e) == 0;
+
+err:
+	RSA_free(b);
+	RSA_free(a);
+	return ret;
+}
+
+static int/*bool*/
+ssh_EVP_PKEY_cmp_dsa(const EVP_PKEY *ka, const EVP_PKEY *kb) {
+	int ret = -1;
+	DSA *a, *b = NULL;
+	const BIGNUM *a_p, *a_q, *a_g, *a_pub_key;
+	const BIGNUM *b_p, *b_q, *b_g, *b_pub_key;
+
+	a = EVP_PKEY_get1_DSA((EVP_PKEY*)ka);
+	b = EVP_PKEY_get1_DSA((EVP_PKEY*)kb);
+	if (a == NULL || b == NULL) goto err;
+
+	DSA_get0_pqg(a, &a_p, &a_q, &a_g);
+	DSA_get0_key(a, &a_pub_key, NULL);
+
+	DSA_get0_pqg(b, &b_p, &b_q, &b_g);
+	DSA_get0_key(b, &b_pub_key, NULL);
+
+	ret =
+	    BN_cmp(a_p, b_p) == 0 &&
+	    BN_cmp(a_q, b_q) == 0 &&
+	    BN_cmp(a_g, b_g) == 0 &&
+	    BN_cmp(a_pub_key, b_pub_key) == 0;
+
+err:
+	DSA_free(b);
+	DSA_free(a);
+	return ret;
+}
+
+static int
+EVP_PKEY_cmp(const EVP_PKEY *a, const EVP_PKEY *b) {
+	int evp_id = EVP_PKEY_base_id(a);
+
+	switch (evp_id) {
+	case EVP_PKEY_RSA:	return ssh_EVP_PKEY_cmp_rsa(a, b);
+	case EVP_PKEY_DSA:	return ssh_EVP_PKEY_cmp_dsa(a, b);
+	}
+	return -2;
+}
+#endif /*ndef HAVE_EVP_PKEY_CMP*/
+
 int/*bool*/
 sshkey_equal_public_pkey(const struct sshkey *ka, const struct sshkey *kb) {
 	const EVP_PKEY *a, *b;

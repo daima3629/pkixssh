@@ -5448,6 +5448,7 @@ AC_CHECK_FUNCS([ \
   BN_is_prime_ex \
   DSA_generate_parameters_ex \
   EVP_CIPHER_CTX_new \
+  EVP_PKEY_cmp \
   RSA_generate_key_ex \
 ])
 
