@@ -12,6 +12,9 @@ do_test() {
 	PKCS8)
 	  case $t in
 	  rsa|ec_p*|dsa);;
+	  ed25519)
+		config_defined OPENSSL_HAS_ED25519 ||
+		return;;
 	  *) return;;
 	  esac
 	  ;;

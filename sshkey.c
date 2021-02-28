@@ -684,6 +684,9 @@ sshkey_free(struct sshkey *k)
 #endif /* WITH_OPENSSL */
 	case KEY_ED25519:
 	case KEY_ED25519_CERT:
+#ifdef OPENSSL_HAS_ED25519
+		sshkey_clear_pkey(k);
+#endif
 		freezero(k->ed25519_pk, ED25519_PK_SZ);
 		k->ed25519_pk = NULL;
 		freezero(k->ed25519_sk, ED25519_SK_SZ);
@@ -1470,6 +1473,9 @@ noblob:
 # endif /* OPENSSL_HAS_ECC */
 #endif /* WITH_OPENSSL */
 	case KEY_ED25519:
+#ifdef OPENSSL_HAS_ED25519
+		sshkey_move_pk(k, ret);
+#endif
 		freezero(ret->ed25519_pk, ED25519_PK_SZ);
 		ret->ed25519_pk = k->ed25519_pk;
 		k->ed25519_pk = NULL;
@@ -1675,6 +1681,14 @@ sshkey_generate(int type, u_int bits, struct sshkey **keyp)
 			break;
 		}
 		crypto_sign_ed25519_keypair(k->ed25519_pk, k->ed25519_sk);
+#ifdef OPENSSL_HAS_ED25519
+		k->pk = EVP_PKEY_new_raw_private_key(EVP_PKEY_ED25519, NULL,
+		    k->ed25519_sk, ED25519_SK_SZ - ED25519_PK_SZ);
+		if (k->pk == NULL) {
+			ret = SSH_ERR_LIBCRYPTO_ERROR;
+			break;
+		}
+#endif
 		ret = 0;
 		break;
 #ifdef WITH_XMSS
@@ -1820,6 +1834,14 @@ sshkey_from_private(const struct sshkey *k, struct sshkey **pkp)
 				goto out;
 			}
 			memcpy(n->ed25519_pk, k->ed25519_pk, ED25519_PK_SZ);
+#ifdef OPENSSL_HAS_ED25519
+			n->pk = EVP_PKEY_new_raw_public_key(EVP_PKEY_ED25519, NULL,
+			    n->ed25519_pk, ED25519_PK_SZ);
+			if (n->pk == NULL) {
+				r = SSH_ERR_LIBCRYPTO_ERROR;
+				break;
+			}
+#endif
 		}
 		break;
 #ifdef WITH_XMSS
@@ -2243,6 +2265,15 @@ sshbuf_read_pub_ed25519(struct sshbuf *buf, struct sshkey *key) {
 		goto err;
 	}
 
+#ifdef OPENSSL_HAS_ED25519
+{	EVP_PKEY *pk = EVP_PKEY_new_raw_public_key(EVP_PKEY_ED25519, NULL, ed25519_pk, pklen);
+	if (pk == NULL) {
+		r = SSH_ERR_INVALID_FORMAT;
+		goto err;
+	}
+	key->pk = pk;
+}
+#endif
 	key->ed25519_pk = ed25519_pk;
 	ed25519_pk = NULL; /* transferred */
 
@@ -3097,6 +3128,24 @@ sshbuf_read_priv_ed25519(struct sshbuf *buf, struct sshkey *key) {
 		goto err;
 	}
 
+#ifdef OPENSSL_HAS_ED25519
+{	EVP_PKEY *pk = EVP_PKEY_new_raw_private_key(EVP_PKEY_ED25519, NULL,
+	    ed25519_sk, sklen - ED25519_PK_SZ);
+	if (pk == NULL) {
+		r = SSH_ERR_INVALID_FORMAT;
+		goto err;
+	}
+	if (key->pk != NULL) {
+		/* TODO match public vs private ? */
+		if (EVP_PKEY_cmp(key->pk, pk) != 1) {
+			r = SSH_ERR_INVALID_ARGUMENT;
+			goto err;
+		}
+		EVP_PKEY_free(key->pk);
+	}
+	key->pk = pk;
+}
+#endif
 	key->ed25519_sk = ed25519_sk;
 	ed25519_sk = NULL; /* transferred */
 
@@ -3842,6 +3891,9 @@ sshkey_private_to_fileblob(struct sshkey *key, struct sshbuf *blob,
 	}
 
 	switch (key->type) {
+#ifdef OPENSSL_HAS_ED25519
+	case KEY_ED25519:
+#endif /*def OPENSSL_HAS_ED25519*/
 #ifdef WITH_OPENSSL
 	case KEY_DSA:
 	case KEY_ECDSA:
@@ -3851,7 +3903,9 @@ sshkey_private_to_fileblob(struct sshkey *key, struct sshbuf *blob,
 			    passphrase, format);
 #endif /* WITH_OPENSSL */
 		/* FALLTHROUGH */
+#ifndef OPENSSL_HAS_ED25519
 	case KEY_ED25519:
+#endif /*ndef OPENSSL_HAS_ED25519*/
 #ifdef WITH_XMSS
 	case KEY_XMSS:
 #endif /* WITH_XMSS */

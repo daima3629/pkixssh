@@ -487,7 +487,8 @@ Causes
 .Nm
 to save private keys using the proprietary OpenSSH format rather than
 the more compatible PKCS#8 PEM format.
-Ed25519 keys always use the proprietary key format.
+Note Ed25519 keys will use the proprietary key format
+if key is not supported by cryptographic library.
 .It Fl P Ar passphrase
 Provides the (old) passphrase.
 .It Fl p

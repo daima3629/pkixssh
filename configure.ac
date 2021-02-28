@@ -3179,6 +3179,28 @@ if test "x$openssl" = "xyes" ; then
 			ecdsa-sha2-nistp521-cert-v01@openssh.com"
 	fi
 
+	# Check for OpenSSL with ED25519
+	AC_MSG_CHECKING([whether OpenSSL has ED25519 support])
+	AC_LINK_IFELSE(
+		[AC_LANG_PROGRAM([[
+	#include <openssl/evp.h>
+		]], [[
+		unsigned char buf[64];
+		if (EVP_PKEY_new_raw_private_key(
+		    EVP_PKEY_ED25519, NULL,
+		    buf, sizeof(buf)) == NULL)
+			return 1;
+		]])],
+		[
+			AC_MSG_RESULT([yes])
+			AC_DEFINE([OPENSSL_HAS_ED25519], [1],
+			    [libcrypto has ed25519 support])
+		],
+		[
+			AC_MSG_RESULT([no])
+		]
+	)
+
 	AC_SUBST([TEST_SSH_ECC])
 	AC_SUBST([COMMENT_OUT_ECC])
 else

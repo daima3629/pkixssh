@@ -31,6 +31,7 @@
 
 #include "ssh-x509.h"
 #include "ssherr.h"
+#include "crypto_api.h" /*for some Ed25519 defines */
 #include "log.h"
 
 #ifndef HAVE_RSA_GET0_KEY
@@ -700,6 +701,66 @@ err:
 }
 #endif /* OPENSSL_HAS_ECC */
 
+#ifdef OPENSSL_HAS_ED25519
+static int
+sshkey_from_pkey_ed25519(EVP_PKEY *pk, struct sshkey **keyp) {
+	int r;
+	struct sshkey* key;
+	char *raw_pk = NULL, *raw_sk = NULL;
+	size_t len;
+
+	key = sshkey_new(KEY_UNSPEC);
+	if (key == NULL)
+		return SSH_ERR_ALLOC_FAIL;
+
+	if ((raw_pk = calloc(1, ED25519_PK_SZ)) == NULL ||
+	    (raw_sk = calloc(1, ED25519_SK_SZ)) == NULL
+	) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto err;
+	}
+
+	len = ED25519_PK_SZ;
+	if (!EVP_PKEY_get_raw_public_key(pk, raw_pk, &len)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+	if (len != ED25519_PK_SZ) {
+		r = SSH_ERR_INVALID_FORMAT;
+		goto err;
+	}
+
+	/* private part is not required */
+	len = ED25519_SK_SZ - ED25519_PK_SZ;
+	if (!EVP_PKEY_get_raw_private_key(pk, raw_sk, &len))
+		goto skip_private;
+	if (len != (ED25519_SK_SZ - ED25519_PK_SZ)) {
+		r = SSH_ERR_INVALID_FORMAT;
+		goto err;
+	}
+	/* append the public key to private to match internal format */
+	memcpy(raw_sk + len, raw_pk, ED25519_PK_SZ);
+skip_private:
+
+	key->type = KEY_ED25519;
+	key->pk = pk;
+
+	/* success */
+	SSHKEY_DUMP(key);
+	*keyp = key;
+	/* free raw values; TODO */
+	key->ed25519_pk = raw_pk;
+	key->ed25519_sk = raw_sk;
+	return 0;
+
+err:
+	free(raw_pk);
+	free(raw_sk);
+	sshkey_free(key);
+	return r;
+}
+#endif /*def OPENSSL_HAS_ED25519*/
+
 int
 sshkey_from_pkey(EVP_PKEY *pk, struct sshkey **keyp) {
 	int r, evp_id;
@@ -718,6 +779,11 @@ sshkey_from_pkey(EVP_PKEY *pk, struct sshkey **keyp) {
 		r = sshkey_from_pkey_ecdsa(pk, keyp);
 		break;
 #endif /*def OPENSSL_HAS_ECC*/
+#ifdef OPENSSL_HAS_ED25519
+	case EVP_PKEY_ED25519:
+		r = sshkey_from_pkey_ed25519(pk, keyp);
+		break;
+#endif /*def OPENSSL_HAS_ED25519*/
 	default:
 		error_f("unsupported pkey type %d", evp_id);
 		r = SSH_ERR_KEY_TYPE_UNKNOWN;
