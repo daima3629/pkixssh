@@ -37,6 +37,10 @@ elif logname >/dev/null 2>&1; then
 else
 	USER=`id -un`
 fi
+if test -z "$LOGNAME"; then
+	LOGNAME="$USER"
+	export LOGNAME
+fi
 
 OBJ=$1
 if [ "x$OBJ" = "x" ]; then
