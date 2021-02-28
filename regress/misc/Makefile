@@ -1,3 +1,3 @@
-SUBDIR=		kexfuzz
+SUBDIR=		
 
 .include <bsd.subdir.mk>

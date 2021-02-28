@@ -127,7 +127,6 @@ setuid-allowed
 # TODO
 authkeys_orig
 copy
-misc/kexfuzz/kexfuzz
 unittests/bitmap/test_bitmap
 unittests/conversion/test_conversion
 unittests/hostkeys/test_hostkeys
