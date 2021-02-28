@@ -188,6 +188,39 @@ sshkey_load_private_fd(int fd, const char *passphrase,
 }
 
 static int
+sshkey_load_pubkey_from_private(const char *filename, struct sshkey **pubkeyp)
+{
+	struct sshbuf *buffer = NULL;
+	struct sshkey *pubkey = NULL;
+	int r, fd;
+
+	if (pubkeyp != NULL)
+		*pubkeyp = NULL;
+
+	if ((fd = open(filename, O_RDONLY)) == -1)
+		return SSH_ERR_SYSTEM_ERROR;
+
+	if ((r = sshbuf_load_fd(fd, &buffer)) != 0 ||
+	    (r = sshkey_parse_pubkey_from_private_fileblob(buffer,
+		&pubkey)) != 0 ||
+	    (r = sshkey_set_filename(pubkey, filename)) != 0)
+		goto out;
+
+	/* success */
+	if (pubkeyp != NULL) {
+		*pubkeyp = pubkey;
+		pubkey = NULL;
+	}
+	r = 0;
+
+ out:
+	close(fd);
+	sshbuf_free(buffer);
+	sshkey_free(pubkey);
+	return r;
+}
+
+static int
 sshkey_try_load_public(const char *filename, struct sshkey **keyp,
     char **commentp)
 {
@@ -300,6 +333,10 @@ sshkey_load_public(const char *filename, struct sshkey **keyp, char **commentp)
 
 	free(pubfile);
 }
+	if (r == 0) return 0;
+
+	/* finally, try to extract public key from private key file */
+	r = sshkey_load_pubkey_from_private(filename, keyp);
 	if (r == 0) return 0;
 
 	/* pretend missing files */

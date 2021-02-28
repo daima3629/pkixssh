@@ -2377,3 +2377,38 @@ if ((blen > 1) && (blob[0] == 0x30)) {
 
 	return r;
 }
+
+int
+parse_x509_from_private_fileblob(struct sshbuf *blob,
+	    struct sshkey **keyp
+) {
+	int r = 0;
+	BIO *mbio;
+	X509 *x509;
+
+	if (keyp != NULL) *keyp = NULL;
+
+	mbio = BIO_new_mem_buf(sshbuf_ptr(blob), sshbuf_len(blob));
+	if (mbio == NULL) return SSH_ERR_ALLOC_FAIL;
+
+	x509 = PEM_read_bio_X509(mbio, NULL, NULL, NULL);
+	if (x509 == NULL) {
+		r = SSH_ERR_INVALID_FORMAT;
+		goto err;
+	}
+
+{	struct sshkey *key = x509_to_key(x509);
+	if (key == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto err;
+	}
+	if (keyp != NULL)
+		*keyp = key;
+	else
+		sshkey_free(key);
+}
+
+err:
+	BIO_free_all(mbio);
+	return r;
+}

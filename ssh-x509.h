@@ -87,6 +87,8 @@ int	xkey_to_blob(const char *pkalg, const struct sshkey *key, u_char **blobp, u_
 
 int	parse_key_from_blob(const u_char *blob, size_t blen,
 	    struct sshkey **keyp, char **pkalgp);
+int	parse_x509_from_private_fileblob(struct sshbuf *blob,
+	    struct sshkey **keyp);
 
 
 int	xkey_validate_cert(const struct sshkey *k);

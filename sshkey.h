@@ -259,6 +259,8 @@ int	sshkey_private_to_fileblob(struct sshkey *key, struct sshbuf *blob,
     int format, const char *openssh_format_cipher, int openssh_format_rounds);
 int	sshkey_parse_private_fileblob(struct sshbuf *blob,
     const char *passphrase, struct sshkey **keyp, char **commentp);
+int	sshkey_parse_pubkey_from_private_fileblob(struct sshbuf *blob,
+    struct sshkey **pubkeyp);
 
 int	sshkey_private_to_bio(struct sshkey *key, BIO *bio,
     const char *passphrase, int format);

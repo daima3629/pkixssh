@@ -3757,6 +3757,50 @@ sshkey_parse_private2(struct sshbuf *blob, const char *passphrase,
 	return r;
 }
 
+static int
+sshkey_parse_private2_pubkey(struct sshbuf *blob,
+    struct sshkey **keyp)
+{
+	int r = SSH_ERR_INTERNAL_ERROR;
+	struct sshbuf *decoded = NULL;
+	struct sshkey *pubkey = NULL;
+	u_int nkeys = 0;
+
+	if (keyp != NULL)
+		*keyp = NULL;
+
+	if ((r = private2_uudecode(blob, &decoded)) != 0)
+		goto out;
+	/* parse public key from unencrypted envelope */
+	if ((r = sshbuf_consume(decoded, sizeof(AUTH_MAGIC))) != 0 ||
+	    (r = sshbuf_skip_string(decoded)) != 0 || /* cipher */
+	    (r = sshbuf_skip_string(decoded)) != 0 || /* KDF alg */
+	    (r = sshbuf_skip_string(decoded)) != 0 || /* KDF hint */
+	    (r = sshbuf_get_u32(decoded, &nkeys)) != 0)
+		goto out;
+
+	if (nkeys != 1) {
+		/* XXX only one key supported at present */
+		r = SSH_ERR_INVALID_FORMAT;
+		goto out;
+	}
+
+	/* Parse the public key */
+	if ((r = sshkey_froms(decoded, &pubkey)) != 0)
+		goto out;
+
+	/* success */
+	r = 0;
+	if (keyp != NULL) {
+		*keyp = pubkey;
+		pubkey = NULL;
+	}
+ out:
+	sshbuf_free(decoded);
+	sshkey_free(pubkey);
+	return r;
+}
+
 #ifdef WITH_OPENSSL
 static int
 sshkey_private_pem_to_blob(struct sshkey *key, struct sshbuf *buf,
@@ -3836,7 +3880,6 @@ sshkey_private_to_fileblob(struct sshkey *key, struct sshbuf *blob,
 	}
 }
 
-
 #ifdef WITH_OPENSSL
 static int
 sshkey_parse_private_pem_fileblob(struct sshbuf *blob,
@@ -3911,6 +3954,17 @@ sshkey_parse_private_fileblob(struct sshbuf *blob,
 #else
 	return SSH_ERR_INVALID_FORMAT;
 #endif /* WITH_OPENSSL */
+}
+
+int
+sshkey_parse_pubkey_from_private_fileblob(struct sshbuf *blob,
+    struct sshkey **pubkeyp)
+{
+	if (parse_x509_from_private_fileblob(blob, pubkeyp) == 0)
+		return 0;
+
+	/* custom-format private keys bundle a public key inside */
+	return sshkey_parse_private2_pubkey(blob, pubkeyp);
 }
 
 #ifdef WITH_XMSS
