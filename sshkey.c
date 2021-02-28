@@ -2230,6 +2230,28 @@ sshbuf_read_ec_curve(struct sshbuf *buf, const char *pkalg, struct sshkey *key) 
 #endif /*def OPENSSL_HAS_ECC*/
 
 static int
+sshbuf_read_pub_ed25519(struct sshbuf *buf, struct sshkey *key) {
+	int r;
+	u_char *ed25519_pk = NULL;
+	size_t pklen = 0;
+
+	r = sshbuf_get_string(buf, &ed25519_pk, &pklen);
+	if (r != 0) goto err;
+
+	if (pklen != ED25519_PK_SZ) {
+		r = SSH_ERR_INVALID_FORMAT;
+		goto err;
+	}
+
+	key->ed25519_pk = ed25519_pk;
+	ed25519_pk = NULL; /* transferred */
+
+err:
+	freezero(ed25519_pk, pklen);
+	return r;
+}
+
+static int
 sshkey_from_blob_internal(struct sshbuf *b, struct sshkey **keyp,
     int allow_cert)
 {
@@ -2312,14 +2334,8 @@ sshkey_from_blob_internal(struct sshbuf *b, struct sshkey **keyp,
 		}
 		/* FALLTHROUGH */
 	case KEY_ED25519:
-		if ((ret = sshbuf_get_string(b, &pk, &len)) != 0)
+		if ((ret = sshbuf_read_pub_ed25519(b, key)) != 0)
 			goto out;
-		if (len != ED25519_PK_SZ) {
-			ret = SSH_ERR_INVALID_FORMAT;
-			goto out;
-		}
-		key->ed25519_pk = pk;
-		pk = NULL;
 		break;
 #ifdef WITH_XMSS
 	case KEY_XMSS_CERT:
@@ -3065,39 +3081,6 @@ sshkey_private_serialize(struct sshkey *key, struct sshbuf *b)
 {
 	return sshkey_private_serialize_opt(key, b,
 	    SSHKEY_SERIALIZE_DEFAULT);
-}
-
-static int
-sshbuf_read_pub_ed25519(struct sshbuf *buf, struct sshkey *key) {
-	int r;
-	u_char *ed25519_pk = NULL;
-	size_t pklen = 0;
-
-	r = sshbuf_get_string(buf, &ed25519_pk, &pklen);
-	if (r != 0) goto err;
-
-	if (pklen != ED25519_PK_SZ) {
-		r = SSH_ERR_INVALID_FORMAT;
-		goto err;
-	}
-
-	/*
-	 * Several fields are redundant between custom certificate and
-	 * private key, check if they match.
-	 */
-	if (key->ed25519_pk != NULL) {
-		if (memcmp(key->ed25519_pk, ed25519_pk, pklen) != 0) {
-			r = SSH_ERR_KEY_CERT_MISMATCH;
-			goto err;
-		}
-	} else {
-		key->ed25519_pk = ed25519_pk;
-		ed25519_pk = NULL; /* transferred */
-	}
-
-err:
-	freezero(ed25519_pk, pklen);
-	return r;
 }
 
 static int
