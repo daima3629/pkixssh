@@ -80,6 +80,7 @@ err:
  * allow 1.0.1 to work with 1.0.0). Going backwards is only allowed
  * within a patch series.
  */
+int ssh_compatible_openssl(long headerver, long libver);
 
 int
 ssh_compatible_openssl(long headerver, long libver)

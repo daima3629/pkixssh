@@ -23,16 +23,16 @@
 #include <string.h>
 
 #include <openssl/evp.h>
-
-#include "xmalloc.h"
-#include "log.h"
-
-/* compatibility with old or broken OpenSSL versions */
-#include "openbsd-compat/openssl-compat.h"
-
 #ifndef USE_BUILTIN_RIJNDAEL
 #include <openssl/aes.h>
 #endif
+
+#include "cipher.h"
+#include "xmalloc.h"
+#include "log.h"
+
+const EVP_CIPHER * evp_aes_128_ctr(void);
+void ssh_aes_ctr_iv(EVP_CIPHER_CTX *evp, int doset, u_char * iv, size_t len);
 
 struct ssh_aes_ctr_ctx
 {

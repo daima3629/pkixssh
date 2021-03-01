@@ -48,8 +48,6 @@
 #include <openssl/crypto.h>
 #include <openssl/err.h>
 
-#include "openbsd-compat/openssl-compat.h"
-
 #include "ssh.h"
 #include "misc.h"
 #include "xmalloc.h"
@@ -57,6 +55,10 @@
 #include "pathnames.h"
 #include "log.h"
 #include "sshbuf.h"
+
+#ifndef HAVE_OPENSSL_VERSION_MAJOR
+int ssh_compatible_openssl(long headerver, long libver);
+#endif
 
 /*
  * Portable OpenSSH PRNG seeding:

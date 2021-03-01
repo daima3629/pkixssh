@@ -51,10 +51,6 @@
 #include <unistd.h>
 #include <limits.h>
 
-#ifdef WITH_OPENSSL
-# include "openbsd-compat/openssl-compat.h"
-#endif
-
 #include "xmalloc.h"
 #include "ssh.h"
 #include "log.h"

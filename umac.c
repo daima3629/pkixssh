@@ -156,8 +156,8 @@ typedef unsigned int	UWORD;  /* Register */
 
 #if defined(WITH_OPENSSL) && defined(HAVE_AES_ENCRYPT)
 /* Note low level AES API is deprecated in OpenSSL 3.0.
- * We will use it for builds with OpenSSL < 3.0
- * unless globaly is requested build-in rijndael.
+ * We will not use it for builds with OpenSSL < 3.0
+ * unless build-in rijndael is requested globaly.
  */
 #  if !defined(USE_BUILTIN_RIJNDAEL) && \
       defined(HAVE_ERR_GET_ERROR_ALL)	/* new is OpenSSL 3.0 */
@@ -171,7 +171,6 @@ typedef unsigned int	UWORD;  /* Register */
 
 #ifndef USE_BUILTIN_RIJNDAEL
 /* OpenSSL's AES */
-#include "openbsd-compat/openssl-compat.h"
 #include <openssl/aes.h>
 typedef AES_KEY aes_int_key[1];
 #define aes_encryption(in,out,int_key)                  \

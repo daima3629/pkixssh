@@ -43,9 +43,26 @@
 #include <sys/types.h>
 #ifdef WITH_OPENSSL
 #include <openssl/evp.h>
+#include "evp-compat.h"
 #endif
+
 #include "cipher-chachapoly.h"
 #include "cipher-aesctr.h"
+
+
+#ifdef WITH_OPENSSL
+
+#if defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x00908000L)
+/* Workaround for bug in some openssl versions before 0.9.8f
+ * We will not use configure check as 0.9.7x define correct
+ * macro or some verdors patch their versions.
+ */
+#undef EVP_CIPHER_CTX_key_length
+#define EVP_CIPHER_CTX_key_length ssh_EVP_CIPHER_CTX_key_length
+
+static inline int
+ssh_EVP_CIPHER_CTX_key_length(const EVP_CIPHER_CTX *ctx) { return ctx->key_len; }
+#endif
 
 
 #ifndef HAVE_EVP_CIPHER_CTX_NEW		/* OpenSSL < 0.9.8 */
@@ -70,20 +87,7 @@ EVP_CIPHER_CTX_free(EVP_CIPHER_CTX *ctx) {
 }
 #endif /* ndef HAVE_EVP_CIPHER_CTX_NEW	OpenSSL < 0.9.8 */
 
-
-#ifndef HAVE_EVP_CIPHER_CTX_IV		/* OpenSSL < 1.1 */
-static inline const unsigned char*
-EVP_CIPHER_CTX_iv(const EVP_CIPHER_CTX *ctx) {
-	return(ctx->iv);
-}
-
-
-static inline unsigned char*
-EVP_CIPHER_CTX_iv_noconst(EVP_CIPHER_CTX *ctx)
-{
-	return(ctx->iv);
-}
-#endif /* ndef HAVE_EVP_CIPHER_CTX_IV	OpenSSL < 1.1 */
+#endif /*def WITH_OPENSSL*/
 
 
 #define CIPHER_ENCRYPT		1
@@ -96,9 +100,6 @@ const struct sshcipher *cipher_by_name(const char *);
 const char *cipher_warning_message(const struct sshcipher_ctx *);
 int	 ciphers_valid(const char *);
 char	*cipher_alg_list(char, int);
-#ifdef OPENSSL_FIPS
-extern char*	only_fips_valid_ciphers(const char*);
-#endif
 const char *compression_alg_list(int);
 int	 cipher_init(struct sshcipher_ctx **, const struct sshcipher *,
     const u_char *, u_int, const u_char *, u_int, int);

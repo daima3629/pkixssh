@@ -24,9 +24,6 @@
 
 #include "includes.h"
 
-/* compatibility with old or broken OpenSSL versions */
-#include "openbsd-compat/openssl-compat.h"
-
 #ifdef USE_BUILTIN_RIJNDAEL
 #include <sys/types.h>
 
@@ -35,6 +32,7 @@
 #include <stdarg.h>
 #include <string.h>
 
+#include "cipher.h"
 #include "rijndael.h"
 #include "xmalloc.h"
 #include "log.h"

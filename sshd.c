@@ -80,7 +80,6 @@
 #include <openssl/rand.h>
 #include "evp-compat.h"
 #endif
-#include "openbsd-compat/openssl-compat.h"
 
 #ifdef HAVE_FIPSCHECK_H
 #  include <fipscheck.h>

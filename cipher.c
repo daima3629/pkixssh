@@ -13,7 +13,7 @@
  *
  * Copyright (c) 1999 Niels Provos.  All rights reserved.
  * Copyright (c) 1999, 2000 Markus Friedl.  All rights reserved.
- * Copyright (c) 2011-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -53,8 +53,32 @@
 #include "digest.h"
 
 #ifdef WITH_OPENSSL
-# include "evp-compat.h"
-#else
+
+#ifndef HAVE_EVP_CIPHER_CTX_IV		/* OpenSSL < 1.1 */
+static inline const unsigned char*
+EVP_CIPHER_CTX_iv(const EVP_CIPHER_CTX *ctx) { return ctx->iv; }
+
+static inline unsigned char*
+EVP_CIPHER_CTX_iv_noconst(EVP_CIPHER_CTX *ctx) { return ctx->iv; }
+#endif
+
+#ifndef OPENSSL_HAVE_EVPCTR
+const EVP_CIPHER *evp_aes_128_ctr(void);
+void ssh_aes_ctr_iv(EVP_CIPHER_CTX *, int, u_char *, size_t);
+# define EVP_aes_128_ctr evp_aes_128_ctr
+# define EVP_aes_192_ctr evp_aes_128_ctr
+# define EVP_aes_256_ctr evp_aes_128_ctr
+#endif
+
+/* code that uses these is unreachable without GCM */
+#if !defined(OPENSSL_HAVE_EVPGCM) && !defined(EVP_CTRL_GCM_SET_IV_FIXED)
+# define EVP_CTRL_GCM_SET_IV_FIXED -1
+# define EVP_CTRL_GCM_IV_GEN -1
+# define EVP_CTRL_GCM_SET_TAG -1
+# define EVP_CTRL_GCM_GET_TAG -1
+#endif
+
+#else /*ndef WITH_OPENSSL*/
 # define EVP_CIPHER_CTX void
 #endif
 
@@ -89,9 +113,9 @@ struct sshcipher {
 
 static const struct sshcipher ciphers[] = {
 #ifdef WITH_OPENSSL
-#ifndef OPENSSL_NO_DES
+# ifndef OPENSSL_NO_DES
 	{ "3des-cbc",		8, 24, 0, 0, CFLAG_CBC, EVP_des_ede3_cbc },
-#endif
+# endif
 	{ "aes128-cbc",		16, 16, 0, 0, CFLAG_CBC, EVP_aes_128_cbc },
 	{ "aes192-cbc",		16, 24, 0, 0, CFLAG_CBC, EVP_aes_192_cbc },
 	{ "aes256-cbc",		16, 32, 0, 0, CFLAG_CBC, EVP_aes_256_cbc },

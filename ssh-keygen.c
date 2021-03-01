@@ -44,7 +44,6 @@
 #ifdef WITH_OPENSSL
 #include <openssl/evp.h>
 #include <openssl/pem.h>
-#include "openbsd-compat/openssl-compat.h"
 #include "evp-compat.h"
 #ifdef HAVE_FIPSCHECK_H
 #  include <fipscheck.h>

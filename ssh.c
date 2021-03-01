@@ -78,7 +78,6 @@
 #include <openssl/evp.h>
 #include <openssl/err.h>
 #endif
-#include "openbsd-compat/openssl-compat.h"
 
 #ifdef HAVE_FIPSCHECK_H
 #  include <fipscheck.h>
