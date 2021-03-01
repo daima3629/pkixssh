@@ -835,6 +835,23 @@ sshbuf_write_priv_ed25519(struct sshbuf *buf, const struct sshkey *key) {
 	return sshbuf_put_string(buf, key->ed25519_sk, ED25519_SK_SZ);
 }
 
+#ifdef WITH_XMSS
+static inline int
+sshbuf_write_xmss_name(struct sshbuf *buf, const struct sshkey *key) {
+	return  sshbuf_put_cstring(buf, key->xmss_name);
+}
+
+static inline int
+sshbuf_write_pub_xmss(struct sshbuf *buf, const struct sshkey *key) {
+	return sshbuf_put_string(buf, key->xmss_pk, sshkey_xmss_pklen(key));
+}
+
+static inline int
+sshbuf_write_priv_xmss(struct sshbuf *buf, const struct sshkey *key) {
+	return sshbuf_put_string(buf, key->xmss_sk, sshkey_xmss_sklen(key));
+}
+#endif /*def WITH_XMSS*/
+
 static int
 to_blob_buf(const struct sshkey *key, struct sshbuf *b, int force_plain,
   enum sshkey_serialize_rep opts)
@@ -903,9 +920,8 @@ to_blob_buf(const struct sshkey *key, struct sshbuf *b, int force_plain,
 		    sshkey_xmss_pklen(key) == 0)
 			return SSH_ERR_INVALID_ARGUMENT;
 		if ((ret = sshbuf_put_cstring(b, typename)) != 0 ||
-		    (ret = sshbuf_put_cstring(b, key->xmss_name)) != 0 ||
-		    (ret = sshbuf_put_string(b,
-		    key->xmss_pk, sshkey_xmss_pklen(key))) != 0 ||
+		    (ret = sshbuf_write_xmss_name(b, key)) != 0 ||
+		    (ret = sshbuf_write_pub_xmss(b,key)) != 0 ||
 		    (ret = sshkey_xmss_serialize_pk_info(key, b, opts)) != 0)
 			return ret;
 		break;
@@ -2323,15 +2339,66 @@ err:
 }
 
 
+#ifdef WITH_XMSS
+static int
+sshbuf_read_xmss_name(struct sshbuf *buf, struct sshkey *key) {
+	int r;
+	char *xmss_name = NULL;
+
+	r = sshbuf_get_cstring(buf, &xmss_name, NULL);
+	if (r != 0) return r;
+
+	r = sshkey_xmss_init(key, xmss_name);
+
+	free(xmss_name);
+	return r;
+}
+
+static int
+sshbuf_read_pub_xmss(struct sshbuf *buf, struct sshkey *key) {
+	int r;
+	u_char *xmss_pk = NULL;
+	size_t pklen;
+
+	r = sshbuf_get_string(buf, &xmss_pk, &pklen);
+	if (r != 0) return r;
+
+	if (pklen == 0 || pklen != sshkey_xmss_pklen(key)) {
+		freezero(xmss_pk, pklen);
+		return SSH_ERR_INVALID_FORMAT;
+	}
+
+	key->xmss_pk = xmss_pk;
+	return 0;
+}
+
+static int
+sshbuf_read_priv_xmss(struct sshbuf *buf, struct sshkey *key) {
+	int r;
+	u_char *xmss_sk = NULL;
+	size_t sklen = 0;
+
+	r = sshbuf_get_string(buf, &xmss_sk, &sklen);
+	if (r != 0) return r;
+
+	if (sklen != sshkey_xmss_sklen(key)) {
+		freezero(xmss_sk, sklen);
+		return SSH_ERR_INVALID_FORMAT;
+	}
+
+	key->xmss_sk = xmss_sk;
+	return 0;
+}
+#endif /*WITH_XMSS*/
+
+
 static int
 sshkey_from_blob_internal(struct sshbuf *b, struct sshkey **keyp,
     int allow_cert)
 {
 	int type, ret = SSH_ERR_INTERNAL_ERROR;
-	char *ktype = NULL, *xmss_name = NULL;
+	char *ktype = NULL;
 	struct sshkey *key = NULL;
-	size_t len;
-	u_char *pk = NULL;
 	struct sshbuf *copy;
 
 #ifdef DEBUG_PK /* XXX */
@@ -2418,18 +2485,9 @@ sshkey_from_blob_internal(struct sshbuf *b, struct sshkey **keyp,
 		}
 		/* FALLTHROUGH */
 	case KEY_XMSS:
-		if ((ret = sshbuf_get_cstring(b, &xmss_name, NULL)) != 0)
+		if ((ret = sshbuf_read_xmss_name(b, key)) != 0 ||
+		    (ret = sshbuf_read_pub_xmss(b, key)))
 			goto out;
-		if ((ret = sshkey_xmss_init(key, xmss_name)) != 0)
-			goto out;
-		if ((ret = sshbuf_get_string(b, &pk, &len)) != 0)
-			goto out;
-		if (len == 0 || len != sshkey_xmss_pklen(key)) {
-			ret = SSH_ERR_INVALID_FORMAT;
-			goto out;
-		}
-		key->xmss_pk = pk;
-		pk = NULL;
 		if (type != KEY_XMSS_CERT &&
 		    (ret = sshkey_xmss_deserialize_pk_info(key, b)) != 0)
 			goto out;
@@ -2457,9 +2515,7 @@ sshkey_from_blob_internal(struct sshbuf *b, struct sshkey **keyp,
  out:
 	sshbuf_free(copy);
 	sshkey_free(key);
-	free(xmss_name);
 	free(ktype);
-	free(pk);
 	return ret;
 }
 
@@ -2813,9 +2869,8 @@ sshkey_certify_custom(struct sshkey *k, struct sshkey *ca, const char *alg,
 			ret = SSH_ERR_INVALID_ARGUMENT;
 			goto out;
 		}
-		if ((ret = sshbuf_put_cstring(cert, k->xmss_name)) ||
-		    (ret = sshbuf_put_string(cert,
-		    k->xmss_pk, sshkey_xmss_pklen(k))) != 0)
+		if ((ret = sshbuf_write_xmss_name(cert, k)) ||
+		    (ret = sshbuf_write_pub_xmss(cert, k)) != 0)
 			goto out;
 		break;
 #endif /* WITH_XMSS */
@@ -3102,21 +3157,17 @@ sshkey_private_serialize_opt(struct sshkey *key, struct sshbuf *buf,
 		break;
 #ifdef WITH_XMSS
 	case KEY_XMSS:
-		if ((r = sshbuf_put_cstring(b, key->xmss_name)) != 0 ||
-		    (r = sshbuf_put_string(b, key->xmss_pk,
-		    sshkey_xmss_pklen(key))) != 0 ||
-		    (r = sshbuf_put_string(b, key->xmss_sk,
-		    sshkey_xmss_sklen(key))) != 0 ||
+		if ((r = sshbuf_write_xmss_name(b, key)) != 0 ||
+		    (r = sshbuf_write_pub_xmss(b, key)) != 0 ||
+		    (r = sshbuf_write_priv_xmss(b, key)) != 0 ||
 		    (r = sshkey_xmss_serialize_state_opt(key, b, opts)) != 0)
 			goto out;
 		break;
 	case KEY_XMSS_CERT:
 		if ((r = sshbuf_put_stringb(b, key->cert->certblob)) != 0 ||
-		    (r = sshbuf_put_cstring(b, key->xmss_name)) != 0 ||
-		    (r = sshbuf_put_string(b, key->xmss_pk,
-		    sshkey_xmss_pklen(key))) != 0 ||
-		    (r = sshbuf_put_string(b, key->xmss_sk,
-		    sshkey_xmss_sklen(key))) != 0 ||
+		    (r = sshbuf_write_xmss_name(b, key)) != 0 ||
+		    (r = sshbuf_write_pub_xmss(b, key)) != 0 ||
+		    (r = sshbuf_write_priv_xmss(b, key)) != 0 ||
 		    (r = sshkey_xmss_serialize_state_opt(key, b, opts)) != 0)
 			goto out;
 		break;
@@ -3153,41 +3204,6 @@ sshkey_private_serialize(struct sshkey *key, struct sshbuf *b)
 	return sshkey_private_serialize_opt(key, b,
 	    SSHKEY_SERIALIZE_DEFAULT);
 }
-
-#ifdef WITH_XMSS
-static int
-sshkey_private_deserialize_xmss(struct sshbuf *buf, struct sshkey *key)
-{
-	int r;
-	char *xmss_name = NULL;
-	u_char *xmss_pk = NULL, *xmss_sk = NULL;
-	size_t pklen = 0, sklen = 0;
-
-	if ((r = sshbuf_get_cstring(buf, &xmss_name, NULL)) != 0 ||
-	    (r = sshkey_xmss_init(key, xmss_name)) != 0 ||
-	    (r = sshbuf_get_string(buf, &xmss_pk, &pklen)) != 0 ||
-	    (r = sshbuf_get_string(buf, &xmss_sk, &sklen)) != 0)
-		goto out;
-	if (pklen != sshkey_xmss_pklen(key) ||
-	    sklen != sshkey_xmss_sklen(key)) {
-		r = SSH_ERR_INVALID_FORMAT;
-		goto out;
-	}
-	key->xmss_pk = xmss_pk;
-	key->xmss_sk = xmss_sk;
-	xmss_pk = xmss_sk = NULL; /* transferred */
-
-	/* optional internal state */
-	r = sshkey_xmss_deserialize_state_opt(key, buf);
-
-out:
-	free(xmss_name);
-	freezero(xmss_pk, pklen);
-	freezero(xmss_sk, sklen);
-
-	return r;
-}
-#endif /*WITH_XMSS*/
 
 int
 sshkey_private_deserialize(struct sshbuf *buf, struct sshkey **kp)
@@ -3264,8 +3280,12 @@ sshkey_private_deserialize(struct sshbuf *buf, struct sshkey **kp)
 #ifdef WITH_XMSS
 	case KEY_XMSS:
 	case KEY_XMSS_CERT:
-		r = sshkey_private_deserialize_xmss(buf, k);
-		if (r != 0) goto out;
+		if ((r = sshbuf_read_xmss_name(buf, k)) != 0 ||
+		    (r = sshbuf_read_pub_xmss(buf, k)) != 0 ||
+		    (r = sshbuf_read_priv_xmss(buf, k)) != 0 ||
+		/* optional internal state */
+		    (r = sshkey_xmss_deserialize_state_opt(k, buf) != 0))
+			goto out;
 		break;
 #endif /* WITH_XMSS */
 	default:
