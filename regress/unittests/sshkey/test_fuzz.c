@@ -20,7 +20,6 @@
 #include <unistd.h>
 
 #include <openssl/bn.h>
-#include <openssl/rsa.h>
 #include <openssl/dsa.h>
 #include <openssl/objects.h>
 #ifdef OPENSSL_HAS_NISTP256

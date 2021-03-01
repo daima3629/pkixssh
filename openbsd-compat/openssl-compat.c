@@ -32,30 +32,6 @@
 
 #include "evp-compat.h"
 
-#ifndef HAVE_RSA_GENERATE_KEY_EX
-int
-RSA_generate_key_ex(RSA *rsa, int bits, BIGNUM *bn_e, void *cb)
-{
-	RSA *new_rsa, tmp_rsa;
-	unsigned long e;
-
-	if (cb != NULL)
-		fatal_f("callback args not supported");
-	e = BN_get_word(bn_e);
-	if (e == 0xffffffffL)
-		fatal_f("value of e too large");
-	new_rsa = RSA_generate_key(bits, e, NULL, NULL);
-	if (new_rsa == NULL)
-		return 0;
-	/* swap rsa/new_rsa then free new_rsa */
-	tmp_rsa = *rsa;
-	*rsa = *new_rsa;
-	*new_rsa = tmp_rsa;
-	RSA_free(new_rsa);
-	return 1;
-}
-#endif
-
 #ifndef HAVE_DSA_GENERATE_PARAMETERS_EX
 int
 DSA_generate_parameters_ex(DSA *dsa, int bits, const unsigned char *seed,

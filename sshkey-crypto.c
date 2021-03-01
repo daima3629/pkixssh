@@ -1071,6 +1071,30 @@ sshkey_equal_public_pkey(const struct sshkey *ka, const struct sshkey *kb) {
 }
 
 
+#ifndef HAVE_RSA_GENERATE_KEY_EX	/* OpenSSL < 0.9.8 */
+static int
+RSA_generate_key_ex(RSA *rsa, int bits, BIGNUM *bn_e, void *cb)
+{
+	RSA *new_rsa, tmp_rsa;
+	unsigned long e;
+
+	if (cb != NULL)
+		fatal_f("callback args not supported");
+	e = BN_get_word(bn_e);
+	if (e == 0xffffffffL)
+		fatal_f("value of e too large");
+	new_rsa = RSA_generate_key(bits, e, NULL, NULL);
+	if (new_rsa == NULL)
+		return 0;
+	/* swap rsa/new_rsa then free new_rsa */
+	tmp_rsa = *rsa;
+	*rsa = *new_rsa;
+	*new_rsa = tmp_rsa;
+	RSA_free(new_rsa);
+	return 1;
+}
+#endif
+
 int
 sshkey_generate_rsa(u_int bits, struct sshkey *key) {
 	EVP_PKEY *pk;
