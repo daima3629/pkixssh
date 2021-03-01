@@ -825,12 +825,12 @@ sshbuf_write_ec_curve(struct sshbuf *buf, const struct sshkey *key) {
 }
 #endif /*def OPENSSL_HAS_ECC*/
 
-static int
+static inline int
 sshbuf_write_pub_ed25519(struct sshbuf *buf, const struct sshkey *key) {
 	return sshbuf_put_string(buf, key->ed25519_pk, ED25519_PK_SZ);
 }
 
-static int
+static inline int
 sshbuf_write_priv_ed25519(struct sshbuf *buf, const struct sshkey *key) {
 	return sshbuf_put_string(buf, key->ed25519_sk, ED25519_SK_SZ);
 }
@@ -2283,11 +2283,52 @@ err:
 }
 
 static int
+sshbuf_read_priv_ed25519(struct sshbuf *buf, struct sshkey *key) {
+	int r;
+	u_char *ed25519_sk = NULL;
+	size_t sklen = 0;
+
+	r = sshbuf_get_string(buf, &ed25519_sk, &sklen);
+	if (r != 0) goto err;
+
+	if (sklen != ED25519_SK_SZ) {
+		r = SSH_ERR_INVALID_FORMAT;
+		goto err;
+	}
+
+#ifdef OPENSSL_HAS_ED25519
+{	EVP_PKEY *pk = EVP_PKEY_new_raw_private_key(EVP_PKEY_ED25519, NULL,
+	    ed25519_sk, sklen - ED25519_PK_SZ);
+	if (pk == NULL) {
+		r = SSH_ERR_INVALID_FORMAT;
+		goto err;
+	}
+	if (key->pk != NULL) {
+		/* TODO match public vs private ? */
+		if (EVP_PKEY_cmp(key->pk, pk) != 1) {
+			r = SSH_ERR_INVALID_ARGUMENT;
+			goto err;
+		}
+		EVP_PKEY_free(key->pk);
+	}
+	key->pk = pk;
+}
+#endif
+	key->ed25519_sk = ed25519_sk;
+	ed25519_sk = NULL; /* transferred */
+
+err:
+	freezero(ed25519_sk, sklen);
+	return r;
+}
+
+
+static int
 sshkey_from_blob_internal(struct sshbuf *b, struct sshkey **keyp,
     int allow_cert)
 {
 	int type, ret = SSH_ERR_INTERNAL_ERROR;
-	char *ktype = NULL, *curve = NULL, *xmss_name = NULL;
+	char *ktype = NULL, *xmss_name = NULL;
 	struct sshkey *key = NULL;
 	size_t len;
 	u_char *pk = NULL;
@@ -2418,7 +2459,6 @@ sshkey_from_blob_internal(struct sshbuf *b, struct sshkey **keyp,
 	sshkey_free(key);
 	free(xmss_name);
 	free(ktype);
-	free(curve);
 	free(pk);
 	return ret;
 }
@@ -3112,46 +3152,6 @@ sshkey_private_serialize(struct sshkey *key, struct sshbuf *b)
 {
 	return sshkey_private_serialize_opt(key, b,
 	    SSHKEY_SERIALIZE_DEFAULT);
-}
-
-static int
-sshbuf_read_priv_ed25519(struct sshbuf *buf, struct sshkey *key) {
-	int r;
-	u_char *ed25519_sk = NULL;
-	size_t sklen = 0;
-
-	r = sshbuf_get_string(buf, &ed25519_sk, &sklen);
-	if (r != 0) goto err;
-
-	if (sklen != ED25519_SK_SZ) {
-		r = SSH_ERR_INVALID_FORMAT;
-		goto err;
-	}
-
-#ifdef OPENSSL_HAS_ED25519
-{	EVP_PKEY *pk = EVP_PKEY_new_raw_private_key(EVP_PKEY_ED25519, NULL,
-	    ed25519_sk, sklen - ED25519_PK_SZ);
-	if (pk == NULL) {
-		r = SSH_ERR_INVALID_FORMAT;
-		goto err;
-	}
-	if (key->pk != NULL) {
-		/* TODO match public vs private ? */
-		if (EVP_PKEY_cmp(key->pk, pk) != 1) {
-			r = SSH_ERR_INVALID_ARGUMENT;
-			goto err;
-		}
-		EVP_PKEY_free(key->pk);
-	}
-	key->pk = pk;
-}
-#endif
-	key->ed25519_sk = ed25519_sk;
-	ed25519_sk = NULL; /* transferred */
-
-err:
-	freezero(ed25519_sk, sklen);
-	return r;
 }
 
 #ifdef WITH_XMSS
