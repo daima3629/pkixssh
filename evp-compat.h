@@ -29,8 +29,8 @@
 #ifdef WITH_OPENSSL
 # include <openssl/rsa.h>
 # include <openssl/dsa.h>
+# include <openssl/ec.h>
 # if defined(OPENSSL_HAS_ECC)
-#  include <openssl/ec.h>
 #  include <openssl/ecdsa.h>
 #  if defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x00908000L)
     /* before OpenSSL 0.9.8 */
@@ -38,8 +38,6 @@
 #  endif
 # else /* OPENSSL_HAS_ECC */
 #  define EC_KEY	void
-#  define EC_GROUP	void
-#  define EC_POINT	void
 # endif /* OPENSSL_HAS_ECC */
 #else /* WITH_OPENSSL */
 # define BIGNUM		void
