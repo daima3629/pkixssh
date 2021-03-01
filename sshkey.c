@@ -3110,14 +3110,28 @@ sshkey_private_serialize_opt(struct sshkey *key, struct sshbuf *buf,
 		goto out;
 	switch (key->type) {
 #ifdef WITH_OPENSSL
+	case KEY_RSA_CERT:
+	case KEY_DSA_CERT:
+# ifdef OPENSSL_HAS_ECC
+	case KEY_ECDSA_CERT:
+# endif /* OPENSSL_HAS_ECC */
+#endif /* WITH_OPENSSL */
+	case KEY_ED25519_CERT:
+#ifdef WITH_XMSS
+	case KEY_XMSS_CERT:
+#endif /* WITH_XMSS */
+		r = sshbuf_put_stringb(b, key->cert->certblob);
+		if (r != 0) goto out;
+	}
+	switch (key->type) {
+#ifdef WITH_OPENSSL
 	case KEY_RSA:
 		if ((r = sshbuf_write_pub_rsa(b, key)) != 0 ||
 		    (r = sshbuf_write_priv_rsa(b, key)) != 0)
 			goto out;
 		break;
 	case KEY_RSA_CERT:
-		if ((r = sshbuf_put_stringb(b, key->cert->certblob)) != 0 ||
-		    (r = sshbuf_write_priv_rsa(b, key)) != 0)
+		if ((r = sshbuf_write_priv_rsa(b, key)) != 0)
 			goto out;
 		break;
 	case KEY_DSA:
@@ -3126,8 +3140,7 @@ sshkey_private_serialize_opt(struct sshkey *key, struct sshbuf *buf,
 			goto out;
 		break;
 	case KEY_DSA_CERT:
-		if ((r = sshbuf_put_stringb(b, key->cert->certblob)) != 0 ||
-		    (r = sshbuf_write_priv_dsa(b, key)) != 0)
+		if ((r = sshbuf_write_priv_dsa(b, key)) != 0)
 			goto out;
 		break;
 # ifdef OPENSSL_HAS_ECC
@@ -3138,8 +3151,7 @@ sshkey_private_serialize_opt(struct sshkey *key, struct sshbuf *buf,
 			goto out;
 		break;
 	case KEY_ECDSA_CERT:
-		if ((r = sshbuf_put_stringb(b, key->cert->certblob)) != 0 ||
-		    (r = sshbuf_write_priv_ecdsa(b, key)) != 0)
+		if ((r = sshbuf_write_priv_ecdsa(b, key)) != 0)
 			goto out;
 		break;
 # endif /* OPENSSL_HAS_ECC */
@@ -3150,8 +3162,7 @@ sshkey_private_serialize_opt(struct sshkey *key, struct sshbuf *buf,
 			goto out;
 		break;
 	case KEY_ED25519_CERT:
-		if ((r = sshbuf_put_stringb(b, key->cert->certblob)) != 0 ||
-		    (r = sshbuf_write_pub_ed25519(b, key)) != 0 ||
+		if ((r = sshbuf_write_pub_ed25519(b, key)) != 0 ||
 		    (r = sshbuf_write_priv_ed25519(b, key)) != 0)
 			goto out;
 		break;
@@ -3164,8 +3175,7 @@ sshkey_private_serialize_opt(struct sshkey *key, struct sshbuf *buf,
 			goto out;
 		break;
 	case KEY_XMSS_CERT:
-		if ((r = sshbuf_put_stringb(b, key->cert->certblob)) != 0 ||
-		    (r = sshbuf_write_xmss_name(b, key)) != 0 ||
+		if ((r = sshbuf_write_xmss_name(b, key)) != 0 ||
 		    (r = sshbuf_write_pub_xmss(b, key)) != 0 ||
 		    (r = sshbuf_write_priv_xmss(b, key)) != 0 ||
 		    (r = sshkey_xmss_serialize_state_opt(key, b, opts)) != 0)
