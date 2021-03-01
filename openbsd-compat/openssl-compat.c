@@ -32,28 +32,6 @@
 
 #include "evp-compat.h"
 
-#ifndef HAVE_DSA_GENERATE_PARAMETERS_EX
-int
-DSA_generate_parameters_ex(DSA *dsa, int bits, const unsigned char *seed,
-    int seed_len, int *counter_ret, unsigned long *h_ret, void *cb)
-{
-	DSA *new_dsa, tmp_dsa;
-
-	if (cb != NULL)
-		fatal_f("callback args not supported");
-	new_dsa = DSA_generate_parameters(bits, (unsigned char *)seed, seed_len,
-	    counter_ret, h_ret, NULL, NULL);
-	if (new_dsa == NULL)
-		return 0;
-	/* swap dsa/new_dsa then free new_dsa */
-	tmp_dsa = *dsa;
-	*dsa = *new_dsa;
-	*new_dsa = tmp_dsa;
-	DSA_free(new_dsa);
-	return 1;
-}
-#endif
-
 #ifndef HAVE_EVP_PKEY_PRINT_PARAMS
 int
 EVP_PKEY_print_params(BIO *out, const EVP_PKEY *pkey,

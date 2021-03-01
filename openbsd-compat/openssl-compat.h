@@ -24,9 +24,6 @@
 #include <openssl/opensslv.h>
 #include <openssl/crypto.h>
 #include <openssl/evp.h>
-#ifndef OPENSSL_NO_DSA
-# include <openssl/dsa.h>
-#endif
 
 int ssh_compatible_openssl(long, long);
 
@@ -54,10 +51,6 @@ ssh_EVP_CIPHER_CTX_key_length(const EVP_CIPHER_CTX *ctx) {
 # define LIBCRYPTO_EVP_INL_TYPE size_t
 #endif
 
-#ifndef OPENSSL_DSA_MAX_MODULUS_BITS
-# define OPENSSL_DSA_MAX_MODULUS_BITS	10000
-#endif
-
 #ifndef OPENSSL_HAVE_EVPCTR
 # define EVP_aes_128_ctr evp_aes_128_ctr
 # define EVP_aes_192_ctr evp_aes_128_ctr
@@ -74,11 +67,6 @@ void ssh_aes_ctr_iv(EVP_CIPHER_CTX *, int, u_char *, size_t);
 # define EVP_CTRL_GCM_GET_TAG -1
 #endif
 
-
-#ifndef HAVE_DSA_GENERATE_PARAMETERS_EX
-int DSA_generate_parameters_ex(DSA *, int, const unsigned char *, int, int *,
-    unsigned long *, void *);
-#endif
 
 #ifndef HAVE_EVP_PKEY_PRINT_PARAMS
 int EVP_PKEY_print_params(BIO *out, const EVP_PKEY *pkey,

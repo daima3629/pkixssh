@@ -21,7 +21,6 @@
 
 #ifdef WITH_OPENSSL
 #include <openssl/bn.h>
-#include <openssl/dsa.h>
 #include <openssl/objects.h>
 #ifdef OPENSSL_HAS_NISTP256
 # include <openssl/ec.h>

@@ -32,8 +32,8 @@
 #include <sys/types.h>
 
 #include <openssl/bn.h>
-#include <openssl/dsa.h>
 #include <openssl/evp.h>
+#include "evp-compat.h"
 
 #include <stdarg.h>
 #include <string.h>
@@ -44,7 +44,6 @@
 #include "digest.h"
 #define SSHKEY_INTERNAL
 #include "sshkey.h"
-#include "evp-compat.h"
 #include "xmalloc.h"
 #include "log.h"
 
