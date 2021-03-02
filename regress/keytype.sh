@@ -24,9 +24,10 @@ done
 for kt in $ktypes; do
 	rm -f $OBJ/key.$kt
 	bits=`echo ${kt} | awk -F- '{print $2}'`
-	type=`echo ${kt}  | awk -F- '{print $1}'`
+	type=`echo ${kt} | awk -F- '{print $1}'`
 	verbose "keygen $type, $bits bits"
-	${SSHKEYGEN} -b $bits -q -N '' -t $type  -f $OBJ/key.$kt ||\
+	keytype_compat $type
+	$SSHKEYGEN -b $bits -q -N '' $keytype_val -f $OBJ/key.$kt || \
 		fail "ssh-keygen for type $type, $bits bits failed"
 done
 

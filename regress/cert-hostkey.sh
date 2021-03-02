@@ -60,9 +60,11 @@ kh_revoke() {
 # RSA for testing RSA/SHA2 signatures if supported.
 ktype2=ed25519
 $has_rsa && ktype2=rsa
-${SSHKEYGEN} -q -N '' -t ed25519  -f $OBJ/host_ca_key ||\
+keytype_compat ed25519
+$SSHKEYGEN -q -N '' $keytype_val -f $OBJ/host_ca_key ||\
 	fail "ssh-keygen of host_ca_key failed"
-${SSHKEYGEN} -q -N '' -t $ktype2  -f $OBJ/host_ca_key2 ||\
+keytype_compat $ktype2
+$SSHKEYGEN -q -N '' $keytype_val -f $OBJ/host_ca_key2 ||\
 	fail "ssh-keygen of host_ca_key failed"
 
 kh_ca host_ca_key.pub host_ca_key2.pub > $OBJ/known_hosts-cert.orig
@@ -95,7 +97,8 @@ serial=1
 for ktype in $PLAIN_TYPES ; do
 	verbose "$tid: sign host ${ktype} cert"
 	# Generate and sign a host key
-	${SSHKEYGEN} -q -N '' -t ${ktype} \
+	keytype_compat $ktype
+	$SSHKEYGEN -q -N '' $keytype_val \
 	    -f $OBJ/cert_host_key_${ktype} || \
 		fatal "ssh-keygen of cert_host_key_${ktype} failed"
 	${SSHKEYGEN} -ukf $OBJ/host_krl_plain \
@@ -269,7 +272,8 @@ for ktype in $PLAIN_TYPES ; do
 	rm -f $OBJ/known_hosts-cert $OBJ/cert_host_key*
 	verbose "$tid: host ${ktype} ${v} cert downgrade to raw key"
 	# Generate and sign a host key
-	${SSHKEYGEN} -q -N '' -t ${ktype} -f $OBJ/cert_host_key_${ktype} || \
+	keytype_compat $ktype
+	$SSHKEYGEN -q -N '' $keytype_val -f $OBJ/cert_host_key_$ktype || \
 		fail "ssh-keygen of cert_host_key_${ktype} failed"
 	case $ktype in
 	rsa-sha2-*)	tflag="-t $ktype"; ca="$OBJ/host_ca_key2" ;;
@@ -304,7 +308,8 @@ for kt in $PLAIN_TYPES ; do
 	verbose "$tid: host ${kt} connect wrong cert"
 	rm -f $OBJ/cert_host_key*
 	# Self-sign key
-	${SSHKEYGEN} -q -N '' -t ${kt} -f $OBJ/cert_host_key_${kt} || \
+	keytype_compat $kt
+	$SSHKEYGEN -q -N '' $keytype_val -f $OBJ/cert_host_key_$kt || \
 		fail "ssh-keygen of cert_host_key_${kt} failed"
 	case $kt in
 	rsa-sha2-*)	tflag="-t $kt" ;;

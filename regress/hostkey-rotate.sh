@@ -23,7 +23,8 @@ trace "prepare hostkeys"
 nkeys=0
 all_algs=""
 for k in $SSH_HOSTKEY_TYPES ; do
-	${SSHKEYGEN} -qt $k -f $OBJ/hkr.$k -N '' || fatal "ssh-keygen $k"
+	keytype_compat $k
+	$SSHKEYGEN -q -N '' $keytype_val -f $OBJ/hkr.$k || fatal "ssh-keygen $k"
 	echo "Hostkey $OBJ/hkr.${k}" >> $OBJ/sshd_proxy.orig
 	nkeys=`expr $nkeys + 1`
 	test "x$all_algs" = "x" || all_algs="${all_algs},"
@@ -86,7 +87,8 @@ if [ "$primary" != "$secondary" ]; then
 	verbose "learn changed non-primary hostkey type=${secondary}"
 	mv $OBJ/hkr.${secondary}.pub $OBJ/hkr.${secondary}.pub.old
 	rm -f $OBJ/hkr.${secondary}
-	${SSHKEYGEN} -qt ${secondary} -f $OBJ/hkr.${secondary} -N '' || \
+	keytype_compat $secondary
+	$SSHKEYGEN -q -N '' $keytype_val -f $OBJ/hkr.$secondary || \
 	    fatal "ssh-keygen $secondary"
 	dossh -oStrictHostKeyChecking=yes -oHostKeyAlgorithms=$all_algs
 	# Check that the key was replaced
@@ -98,7 +100,8 @@ fi
 
 # Add new hostkey (primary type) to sshd and connect
 verbose "learn new primary hostkey"
-${SSHKEYGEN} -qt ${primary} -f $OBJ/hkr.${primary}-new -N '' || fatal "ssh-keygen ed25519"
+keytype_compat $primary
+$SSHKEYGEN -q -N '' $keytype_val -f $OBJ/hkr.${primary}-new || fatal "ssh-keygen ed25519"
 ( cat $OBJ/sshd_proxy.orig ; echo HostKey $OBJ/hkr.${primary}-new ) \
     > $OBJ/sshd_proxy
 # Check new hostkey added

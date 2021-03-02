@@ -313,6 +313,17 @@ jot() {
 	awk "BEGIN { for (i = $2; i < $2 + $1; i++) { printf \"%d\n\", i } exit }"
 }
 
+# cross-project configuration
+# $1: ssh-keygen key type
+keytype_compat() {
+	keytype_val="-t $1"
+	if test "$sshd_type" != "pkix" ; then
+		case "$1" in
+		*25519*) keytype_val="$keytype_val -m OpenSSH"
+		esac
+	fi
+}
+
 # Check whether preprocessor symbols are defined in config.h.
 config_defined ()
 {
@@ -525,7 +536,8 @@ for t in ${SSH_KEYTYPES}; do
 	if [ ! -f $OBJ/$t ] || [ ${SSHKEYGEN_BIN} -nt $OBJ/$t ]; then
 		trace "generating key type $t"
 		rm -f $OBJ/$t
-		${SSHKEYGEN} -q -N '' -t $t  -f $OBJ/$t ||\
+		keytype_compat $t
+		$SSHKEYGEN -q -N '' -t $t $keytype_val -f $OBJ/$t ||\
 			fail "ssh-keygen for $t failed"
 	else
 		trace "using cached key type $t"
