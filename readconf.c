@@ -722,18 +722,19 @@ match_cfg_line(Options *options, char **condition, struct passwd *pw,
 			keyalias = options->host_key_alias ?
 			    options->host_key_alias : host;
 
+			/* keep synchronised with sshconnect.h */
 			cmd = percent_expand(arg,
 			    "C", conn_hash_hex,
 			    "L", shorthost,
-			    "d", pw->pw_dir,
-			    "h", host,
+			    "i", uidstr,
 			    "k", keyalias,
 			    "l", thishost,
 			    "n", original_host,
 			    "p", portstr,
+			    "h", host,
 			    "r", ruser,
+			    "d", pw->pw_dir,
 			    "u", pw->pw_name,
-			    "i", uidstr,
 			    (char *)NULL);
 			free(conn_hash_hex);
 			if (result != 1) {

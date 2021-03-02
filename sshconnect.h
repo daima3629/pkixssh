@@ -45,6 +45,7 @@ struct ssh_conn_info {
 };
 
 /* default argument for client percent expansions */
+/* keep synchronised with match exec (readconf.c) */
 #define DEFAULT_CLIENT_PERCENT_EXPAND_ARGS(conn_info) \
 	"C", conn_info->conn_hash_hex, \
 	"L", conn_info->shorthost, \
