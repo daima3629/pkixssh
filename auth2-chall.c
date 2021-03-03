@@ -1,4 +1,4 @@
-/* $OpenBSD: auth2-chall.c,v 1.53 2020/02/26 13:40:09 jsg Exp $ */
+/* $OpenBSD: auth2-chall.c,v 1.54 2020/10/18 11:32:01 djm Exp $ */
 /*
  * Copyright (c) 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2001 Per Allansson.  All rights reserved.

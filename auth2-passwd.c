@@ -1,4 +1,4 @@
-/* $OpenBSD: auth2-passwd.c,v 1.18 2020/02/26 13:40:09 jsg Exp $ */
+/* $OpenBSD: auth2-passwd.c,v 1.19 2020/10/18 11:32:01 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  *

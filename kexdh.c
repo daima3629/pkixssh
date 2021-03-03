@@ -1,4 +1,4 @@
-/* $OpenBSD: kexdh.c,v 1.33 2020/05/08 05:13:14 djm Exp $ */
+/* $OpenBSD: kexdh.c,v 1.34 2020/12/04 02:29:25 djm Exp $ */
 /*
  * Copyright (c) 2019 Markus Friedl.  All rights reserved.
  * Copyright (c) 2021 Roumen Petrov.  All rights reserved.

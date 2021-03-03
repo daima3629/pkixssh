@@ -1,4 +1,4 @@
-/* $OpenBSD: sftp-client.c,v 1.138 2020/11/20 03:16:56 dtucker Exp $ */
+/* $OpenBSD: sftp-client.c,v 1.139 2020/12/04 02:41:10 djm Exp $ */
 /*
  * Copyright (c) 2001-2004 Damien Miller <djm@openbsd.org>
  *

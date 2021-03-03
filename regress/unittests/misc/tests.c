@@ -1,4 +1,4 @@
-/* 	$OpenBSD: tests.c,v 1.3 2020/05/29 04:32:26 dtucker Exp $ */
+/* 	$OpenBSD: tests.c,v 1.4 2021/01/15 02:58:11 dtucker Exp $ */
 /*
  * Regress test for misc helper functions.
  *

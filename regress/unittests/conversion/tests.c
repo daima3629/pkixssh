@@ -1,4 +1,4 @@
-/* 	$OpenBSD: tests.c,v 1.2 2019/06/14 04:03:48 djm Exp $ */
+/* 	$OpenBSD: tests.c,v 1.3 2021/01/18 11:43:34 dtucker Exp $ */
 /*
  * Regress test for conversions
  *

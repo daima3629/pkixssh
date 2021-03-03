@@ -1,5 +1,4 @@
-/* $OpenBSD: sftp-client.h,v 1.28 2019/01/16 23:23:45 djm Exp $ */
-
+/* $OpenBSD: sftp-client.h,v 1.29 2020/12/04 02:41:10 djm Exp $ */
 /*
  * Copyright (c) 2001-2004 Damien Miller <djm@openbsd.org>
  *

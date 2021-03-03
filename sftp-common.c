@@ -1,4 +1,4 @@
-/* $OpenBSD: sftp-common.c,v 1.31 2018/09/13 15:23:32 millert Exp $ */
+/* $OpenBSD: sftp-common.c,v 1.32 2020/10/18 11:32:02 djm Exp $ */
 /*
  * Copyright (c) 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2001 Damien Miller.  All rights reserved.

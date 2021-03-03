@@ -1,4 +1,4 @@
-/* $OpenBSD: sshlogin.c,v 1.34 2019/06/28 13:35:04 deraadt Exp $ */
+/* $OpenBSD: sshlogin.c,v 1.35 2020/10/18 11:32:02 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
