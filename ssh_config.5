@@ -499,11 +499,10 @@ If set to
 .Cm yes
 .Xr ssh 1
 will additionally check the host IP address in the
-.Pa known_hosts
-file.
+known hosts files.
 This allows it to detect if a host key changed due to DNS spoofing
 and will add addresses of destination hosts to
-.Pa ~/.ssh/known_hosts
+user known hosts files,
 in the process, regardless of the setting of
 .Cm StrictHostKeyChecking .
 If the option is set to
@@ -871,7 +870,7 @@ The default is
 Indicates that
 .Xr ssh 1
 should hash host names and addresses when they are added to
-.Pa ~/.ssh/known_hosts .
+the first user known hosts file.
 These hashed names may be used normally by
 .Xr ssh 1
 and
@@ -1763,34 +1762,32 @@ or
 If this flag is set to
 .Cm yes ,
 .Xr ssh 1
-will never automatically add host keys to the
-.Pa ~/.ssh/known_hosts
-file, and refuses to connect to hosts whose host key has changed.
+will never automatically add host keys to the first
+.Cm UserKnownHostsFile ,
+and refuses to connect to hosts whose host key has changed.
 This provides maximum protection against man-in-the-middle (MITM) attacks,
 though it can be annoying when the
-.Pa /etc/ssh/ssh_known_hosts
-file is poorly maintained or when connections to new hosts are
+.Cm GlobalKnownHostsFile
+files are poorly maintained or when connections to new hosts are
 frequently made.
 This option forces the user to manually
 add all new hosts.
 .Pp
 If this flag is set to
-.Dq accept-new
-then ssh will automatically add new host keys to the user
-known hosts files, but will not permit connections to hosts with
+.Cm accept-new
+then ssh will automatically add new host keys to the first user
+known hosts file, but will not permit connections to hosts with
 changed host keys.
 If this flag is set to
-.Dq no
-or
-.Dq off ,
-ssh will automatically add new host keys to the user known hosts files
+.Cm no
+ssh will automatically add new host keys to the first user known hosts file
 and allow connections to hosts with changed hostkeys to proceed,
 subject to some restrictions.
 If this flag is set to
 .Cm ask
 (the default),
 new host keys
-will be added to the user known host files only after the user
+will be added to the first user known host file only after the user
 has confirmed that is what they really want to do, and
 ssh will refuse to connect to hosts whose host key has changed.
 The host keys of
@@ -1862,8 +1859,8 @@ The default is
 .It Cm UpdateHostKeys
 Specifies whether
 .Xr ssh 1
-should accept notifications of additional hostkeys from the server sent
-after authentication has completed and add them to
+should accept notifications of additional host keys from the server sent
+after authentication has completed and add them to first
 .Cm UserKnownHostsFile .
 The argument must be
 .Cm yes ,
@@ -1886,7 +1883,7 @@ If
 .Cm UpdateHostKeys
 is set to
 .Cm ask ,
-then the user is asked to confirm the modifications to the known_hosts file.
+then the user is asked to confirm the modifications to the known hosts file.
 Confirmation is currently incompatible with
 .Cm BatchMode ,
 .Cm ControlPersist ,
