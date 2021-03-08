@@ -195,28 +195,26 @@ $ ssh-keyscan -f ssh_hosts | \e
 .Xr ssh 1 ,
 .Xr sshd 8
 .Sh CONFORMING TO
-.\" NOTE RFC 4034 obsoletes RFC 2535
-.\" .Rs
-.\" .%D 1999
-.\" .%R RFC 2535
-.\" .%T Domain Name System Security Extensions
-.\" .Re
-.\" .Pp
+.Bl -enum
+.It
 .Rs
 .%D 1999
 .%R RFC 2538
 .%T Storing Certificates in the Domain Name System (DNS)
 .Re
+.It
 .Rs
 .%D 2005
 .%R RFC 4034
 .%T Resource Records for the DNS Security Extensions
 .Re
+.It
 .Rs
 .%D 2006
 .%R RFC 4255
 .%T Using DNS to Securely Publish Secure Shell (SSH) Key Fingerprints
 .Re
+.El
 .Sh AUTHORS
 .An -nosplit
 .An David Mazieres Aq Mt dm@lcs.mit.edu
