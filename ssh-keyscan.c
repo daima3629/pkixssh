@@ -6,7 +6,7 @@
  * permitted provided that due credit is given to the author and the
  * OpenBSD project by leaving this copyright notice intact.
  *
- * Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -89,7 +89,8 @@ char *keynames_filter = NULL;
 
 int hash_hosts = 0;		/* Hash hostname on output */
 
-int print_dns_rr = 0;		/* Print DNS RR records(CERT or SSHFP) instead of known_hosts */
+static int print_dns_rr = 0;	/* Print DNS RR records(CERT or SSHFP) instead of known_hosts */
+static int print_generic = 0;	/* Use generic format for DNS RR records */
 
 int found_one = 0;		/* Successfully found a key */
 
@@ -290,7 +291,7 @@ keyprint_one(const char *host, con *c, struct sshkey *key)
 	++found_one;
 
 	if (print_dns_rr) {
-		export_dns_rr(host, key, stdout, 0);
+		export_dns_rr(host, key, stdout, print_generic);
 		return;
 	}
 
@@ -636,7 +637,7 @@ static void
 usage(void)
 {
 	fprintf(stderr,
-	    "usage: %s [-46cDHv] [-f file] [-p port] [-T timeout] [-t type]\n"
+	    "usage: %s [-46cDdHv] [-f file] [-p port] [-T timeout] [-t type]\n"
 	    "\t\t   [host | addrlist namelist]\n",
 	    __progname);
 	exit(1);
@@ -665,13 +666,18 @@ main(int argc, char **argv)
 	if (argc <= 1)
 		usage();
 
-	while ((opt = getopt(argc, argv, "DHv46p:T:t:f:")) != -1) {
+	while ((opt = getopt(argc, argv, "DdHv46p:T:t:f:")) != -1) {
 		switch (opt) {
 		case 'H':
 			hash_hosts = 1;
 			break;
 		case 'D':
 			print_dns_rr = 1;
+			print_generic = 0;
+			break;
+		case 'd':
+			print_dns_rr = 1;
+			print_generic = 1;
 			break;
 		case 'p':
 			ssh_port = a2port(optarg);

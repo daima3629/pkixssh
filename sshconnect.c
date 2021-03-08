@@ -946,7 +946,7 @@ check_host_key(char *hostname, const struct ssh_conn_info *cinfo,
 				xextendf(&msg1, "\n", "%s", ra);
 			if (options.verify_host_key_dns)
 				xextendf(&msg1, "\n",
-				    "%s host key fingerprint found in DNS.",
+				    "%s host key RR found in DNS.",
 				    matching_host_key_dns
 				    ? "Matching" : "No matching");
 			xextendf(&msg1, "\n",

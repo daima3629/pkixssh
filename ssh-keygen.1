@@ -14,7 +14,7 @@
 .\" Copyright (c) 1999,2000 Markus Friedl.  All rights reserved.
 .\" Copyright (c) 1999 Aaron Campbell.  All rights reserved.
 .\" Copyright (c) 1999 Theo de Raadt.  All rights reserved.
-.\" Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
+.\" Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
 .\"
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions
@@ -44,7 +44,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: November 27 2020 $
+.Dd $Mdocdate: March 8 2020 $
 .Dt SSH-KEYGEN 1
 .Os
 .Sh NAME
@@ -539,10 +539,10 @@ This option is useful to delete hashed hosts (see the
 .Fl H
 option above).
 .It Fl r Ar hostname
-Print the SSHFP fingerprint resource record named
+Print the CERT or SSHFP resource record named
 .Ar hostname
 for the specified public key file.
-In case of X.509 certificates print CERT resource record.
+Note CERT is printed for X.509 certificate based key.
 .It Fl s Ar ca_key
 Certify (sign) a public key using the specified CA key.
 Please see the
@@ -1118,6 +1118,14 @@ The file format is described in
 .%D May 2001
 .%R RFC 3110
 .%T RSA/SHA-1 SIGs and RSA KEYs in the Domain Name System (DNS)
+.Re
+.It
+.Rs
+.%A J. Schlyter
+.%A W. Griffin
+.%D January 2006
+.%R RFC 4255
+.%T Using DNS to Securely Publish Secure Shell (SSH) Key Fingerprints
 .Re
 .It
 .Rs

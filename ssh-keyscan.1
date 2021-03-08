@@ -6,7 +6,7 @@
 .\" permitted provided that due credit is given to the author and the
 .\" OpenBSD project by leaving this copyright notice intact.
 .\"
-.\" Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
+.\" Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
 .\"
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions
@@ -36,7 +36,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: November 30 2019 $
+.Dd $Mdocdate: March 8 2021 $
 .Dt SSH-KEYSCAN 1
 .Os
 .Sh NAME
@@ -44,7 +44,7 @@
 .Nd Gather secure shell public keys from servers
 .Sh SYNOPSIS
 .Nm ssh-keyscan
-.Op Fl 46DHv
+.Op Fl 46DdHv
 .Op Fl f Ar file
 .Op Fl p Ar port
 .Op Fl T Ar timeout
@@ -90,6 +90,8 @@ The default is to print keys in a format usable as a
 .Xr ssh 1
 .Pa known_hosts
 file.
+.It Fl d
+Print keys found as DNS Resource Records (CERT or SSHFP) in generic format.
 .It Fl f Ar file
 Read hosts or
 .Dq addrlist namelist
@@ -198,19 +200,28 @@ $ ssh-keyscan -f ssh_hosts | \e
 .Bl -enum
 .It
 .Rs
-.%D 1999
+.%A D. Eastlake
+.%A O. Gudmundsson
+.%D March 1999
 .%R RFC 2538
 .%T Storing Certificates in the Domain Name System (DNS)
 .Re
 .It
 .Rs
-.%D 2005
+.%A R. Arends
+.%A R. Austein
+.%A M. Larson
+.%A D. Massey
+.%A S. Rose
+.%D March 2005
 .%R RFC 4034
 .%T Resource Records for the DNS Security Extensions
 .Re
 .It
 .Rs
-.%D 2006
+.%A J. Schlyter
+.%A W. Griffin
+.%D January 2006
 .%R RFC 4255
 .%T Using DNS to Securely Publish Secure Shell (SSH) Key Fingerprints
 .Re
