@@ -1,4 +1,4 @@
-/* $OpenBSD: sshkey-xmss.c,v 1.9 2020/10/19 22:49:23 dtucker Exp $ */
+/* $OpenBSD: sshkey-xmss.c,v 1.10 2021/03/06 20:36:31 millert Exp $ */
 /*
  * Copyright (c) 2017 Markus Friedl.  All rights reserved.
  *
@@ -588,7 +588,7 @@ sshkey_xmss_update_state(const struct sshkey *k, int printerror)
 		goto done;
 	} else if (idx != state->idx + 1) {
 		PRINT("more than one signature happened: idx %u state %u",
-		     idx, state->idx);
+		    idx, state->idx);
 		goto done;
 	}
 	state->idx = idx;
@@ -647,8 +647,7 @@ sshkey_xmss_update_state(const struct sshkey *k, int printerror)
 		unlink(ostatefile);
 		if (link(statefile, ostatefile)) {
 			ret = SSH_ERR_SYSTEM_ERROR;
-			PRINT("backup state %s to %s", statefile,
-			    ostatefile);
+			PRINT("backup state %s to %s", statefile, ostatefile);
 			goto done;
 		}
 	}
@@ -886,7 +885,7 @@ sshkey_xmss_deserialize_state_opt(struct sshkey *k, struct sshbuf *b)
 
 int
 sshkey_xmss_encrypt_state(const struct sshkey *k, struct sshbuf *b,
-   struct sshbuf **retp)
+    struct sshbuf **retp)
 {
 	struct ssh_xmss_state *state = k->xmss_state;
 	struct sshbuf *encrypted = NULL, *encoded = NULL, *padded = NULL;
@@ -977,7 +976,7 @@ sshkey_xmss_encrypt_state(const struct sshkey *k, struct sshbuf *b,
 
 int
 sshkey_xmss_decrypt_state(const struct sshkey *k, struct sshbuf *encoded,
-   struct sshbuf **retp)
+    struct sshbuf **retp)
 {
 	struct ssh_xmss_state *state = k->xmss_state;
 	struct sshbuf *copy = NULL, *decrypted = NULL;
