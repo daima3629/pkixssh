@@ -1,5 +1,5 @@
 #! /bin/sh
-# Copyright (c) 2002-2020 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2002-2021 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -229,23 +229,25 @@ trap testEND EXIT || exit 1
 
 # ===
 creTestSSHDcfgFile() {
-  cat > "${SSHD_CFG}" <<EOF
-Port ${SSHD_PORT}
-Protocol 2
-ListenAddress ${SSHD_LISTENADDRESS}
-AuthorizedKeysFile ${AUTHORIZEDKEYSFILE}
+  cat > "$SSHD_CFG" <<EOF
+Port $SSHD_PORT
+#obsolete#Protocol 2
+ListenAddress $SSHD_LISTENADDRESS
+
+AuthorizedKeysFile $AUTHORIZEDKEYSFILE
+
 ChallengeResponseAuthentication no
 HostbasedAuthentication no
-#!NO(linux):KerberosAuthentication no
-#!NO(linux):KerberosOrLocalPasswd no
-#!NO(OpenBSD):PAMAuthenticationViaKbdInt no
-StrictModes no
 PasswordAuthentication no
 PubkeyAuthentication yes
+#conditional#GSSAPIAuthentication no
+#conditional#KerberosAuthentication no
 
-UsePrivilegeSeparation ${SSHSERVER_USEPRIVILEGESEPARATION}
+StrictModes no
 
-HostKey ${TEST_SSHD_HOSTKEY}
+UsePrivilegeSeparation $SSHSERVER_USEPRIVILEGESEPARATION
+
+HostKey $TEST_SSHD_HOSTKEY
 
 #AllowedCertPurpose sslclient
 EOF
