@@ -17,8 +17,6 @@
 #include "config.h"
 #include "includes.h"
 
-#ifdef USE_SOLARIS_PROCESS_CONTRACTS
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/param.h>
@@ -31,11 +29,13 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "log.h"
+
+#ifdef USE_SOLARIS_PROCESS_CONTRACTS
+
 #include <libcontract.h>
 #include <sys/contract/process.h>
 #include <sys/ctfs.h>
-
-#include "log.h"
 
 #define CT_TEMPLATE	CTFS_ROOT "/process/template"
 #define CT_LATEST	CTFS_ROOT "/process/latest"
@@ -229,8 +229,6 @@ solaris_set_default_project(struct passwd *pw)
 # ifdef HAVE_PRIV_H
 #  include <priv.h>
 # endif
-
-#include "log.h"
 
 priv_set_t *
 solaris_basic_privset(void)
