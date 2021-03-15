@@ -564,10 +564,9 @@ parse_key_constraints(struct sshbuf *m, struct sshkey *k,
 			r = parse_key_constraint_sk_provider(m, ext_name,
 			    &sk_provider_set, sk_providerp);
 
-			free(ext_name);
-
 			if (r == SSH_ERR_FEATURE_UNSUPPORTED)
 				error_f("unsupported constraint \"%s\"", ext_name);
+			free(ext_name);
 			if (r != 0) goto out;
 			} break;
 		default:
