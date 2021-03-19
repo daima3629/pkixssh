@@ -1,4 +1,4 @@
-/* $OpenBSD: clientloop.c,v 1.358 2021/01/27 10:05:28 djm Exp $ */
+/* $OpenBSD: clientloop.c,v 1.359 2021/03/19 02:22:34 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -1427,7 +1427,7 @@ client_loop(struct ssh *ssh, int have_pty, int escape_char_arg,
 
 	if (received_signal) {
 		verbose("Killed by signal %d.", (int) received_signal);
-		cleanup_exit(0);
+		cleanup_exit(128 + received_signal); /*shell style*/
 	}
 
 	/*
@@ -1766,6 +1766,7 @@ client_input_channel_req(int type, u_int32_t seq, struct ssh *ssh)
 		u_int32_t exitval;
 		if ((r = sshpkt_get_u32(ssh, &exitval)) != 0)
 			goto out;
+		debug3_f("remote exit with code %d", (int)exitval);
 		if (c->ctl_chan != -1) {
 			mux_exit_message(ssh, c, exitval);
 			success = 1;
