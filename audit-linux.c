@@ -74,12 +74,14 @@ void
 audit_connection_from(const char *host, int port)
 {
 	/* not implemented */
+	UNUSED(host); UNUSED(port);
 }
 
 void
 audit_run_command(const char *command)
 {
 	/* not implemented */
+	UNUSED(command);
 }
 
 void
@@ -94,6 +96,7 @@ void
 audit_session_close(struct logininfo *li)
 {
 	/* not implemented */
+	UNUSED(li);
 }
 
 void
