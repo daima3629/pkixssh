@@ -2698,6 +2698,7 @@ load_server_config(const char *filename, struct sshbuf *conf)
 		fatal_fr(r, "allocate");
 	while (getline(&line, &linesize, f) != -1) {
 		lineno++;
+#if 0
 		/*
 		 * Trim out comments and strip whitespace
 		 * NB - preserve newlines, they are needed to reproduce
@@ -2706,6 +2707,10 @@ load_server_config(const char *filename, struct sshbuf *conf)
 		if ((cp = strchr(line, '#')) != NULL)
 			memcpy(cp, "\n", 2);
 		cp = line + strspn(line, " \t\r");
+#else
+		/* avoid naive trim above */
+		cp = line;
+#endif
 		if ((r = sshbuf_put(conf, cp, strlen(cp))) != 0)
 			fatal_fr(r, "sshbuf_put");
 	}

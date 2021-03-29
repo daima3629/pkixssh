@@ -2294,6 +2294,7 @@ read_config_file_depth(const char *filename, struct passwd *pw,
 	while (getline(&line, &linesize, f) != -1) {
 		/* Update line number counter. */
 		linenum++;
+#if 0
 		/*
 		 * Trim out comments and strip whitespace.
 		 * NB - preserve newlines, they are needed to reproduce
@@ -2302,6 +2303,10 @@ read_config_file_depth(const char *filename, struct passwd *pw,
 	{	char *cp = strchr(line, '#');
 		if (cp != NULL) *cp = '\0';
 	}
+#else
+		/* avoid naive trim above */
+		cp = line;
+#endif
 		if (process_config_line_depth(options, pw, host, original_host,
 		    line, filename, linenum, activep, flags, want_final_pass,
 		    depth) != 0)
