@@ -2305,7 +2305,6 @@ read_config_file_depth(const char *filename, struct passwd *pw,
 	}
 #else
 		/* avoid naive trim above */
-		cp = line;
 #endif
 		if (process_config_line_depth(options, pw, host, original_host,
 		    line, filename, linenum, activep, flags, want_final_pass,
