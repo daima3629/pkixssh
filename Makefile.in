@@ -289,10 +289,6 @@ localclean:
 	rm -f regress/setuid-allowed$(EXEEXT) regress/setuid-allowed.o
 	rm -f regress/unittests/test_helper/*.a
 	rm -f regress/unittests/test_helper/*.o
-	rm -f regress/unittests/sshbuf/*.o
-	rm -f regress/unittests/sshbuf/test_sshbuf$(EXEEXT)
-	rm -f regress/unittests/sshkey/*.o
-	rm -f regress/unittests/sshkey/test_sshkey$(EXEEXT)
 	rm -f regress/unittests/bitmap/*.o
 	rm -f regress/unittests/bitmap/test_bitmap$(EXEEXT)
 	rm -f regress/unittests/conversion/*.o
@@ -305,6 +301,10 @@ localclean:
 	rm -f regress/unittests/match/test_match$(EXEEXT)
 	rm -f regress/unittests/misc/*.o
 	rm -f regress/unittests/misc/test_misc$(EXEEXT)
+	rm -f regress/unittests/sshbuf/*.o
+	rm -f regress/unittests/sshbuf/test_sshbuf$(EXEEXT)
+	rm -f regress/unittests/sshkey/*.o
+	rm -f regress/unittests/sshkey/test_sshkey$(EXEEXT)
 	rm -f regress/unittests/utf8/*.o
 	rm -f regress/unittests/utf8/test_utf8$(EXEEXT)
 
@@ -471,14 +471,14 @@ uninstall:
 
 regress-prep:
 	$(MKDIR_P) `pwd`/regress/unittests/test_helper
-	$(MKDIR_P) `pwd`/regress/unittests/sshbuf
-	$(MKDIR_P) `pwd`/regress/unittests/sshkey
 	$(MKDIR_P) `pwd`/regress/unittests/bitmap
 	$(MKDIR_P) `pwd`/regress/unittests/conversion
 	$(MKDIR_P) `pwd`/regress/unittests/hostkeys
 	$(MKDIR_P) `pwd`/regress/unittests/kex
 	$(MKDIR_P) `pwd`/regress/unittests/match
 	$(MKDIR_P) `pwd`/regress/unittests/misc
+	$(MKDIR_P) `pwd`/regress/unittests/sshbuf
+	$(MKDIR_P) `pwd`/regress/unittests/sshkey
 	$(MKDIR_P) `pwd`/regress/unittests/utf8
 	[ -f `pwd`/regress/Makefile ] || \
 	    ln -s `cd $(srcdir) && pwd`/regress/Makefile `pwd`/regress/Makefile
@@ -619,14 +619,14 @@ regress-binaries: regress-prep \
 	regress/netcat$(EXEEXT) \
 	regress/check-perm$(EXEEXT) \
 	regress/mkdtemp$(EXEEXT) \
-	regress/unittests/sshbuf/test_sshbuf$(EXEEXT) \
-	regress/unittests/sshkey/test_sshkey$(EXEEXT) \
 	regress/unittests/bitmap/test_bitmap$(EXEEXT) \
 	regress/unittests/conversion/test_conversion$(EXEEXT) \
 	regress/unittests/hostkeys/test_hostkeys$(EXEEXT) \
 	regress/unittests/kex/test_kex$(EXEEXT) \
 	regress/unittests/match/test_match$(EXEEXT) \
 	regress/unittests/misc/test_misc$(EXEEXT) \
+	regress/unittests/sshbuf/test_sshbuf$(EXEEXT) \
+	regress/unittests/sshkey/test_sshkey$(EXEEXT) \
 	regress/unittests/utf8/test_utf8$(EXEEXT)
 
 # Target check is more common for the projects using autoXXXX tools
