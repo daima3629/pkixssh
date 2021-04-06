@@ -2,6 +2,7 @@
 
 PROG=test_misc
 SRCS=tests.c
+SRCS+=	test_expand.c
 SRCS+=	test_parse.c
 
 # From usr.bin/ssh/Makefile.inc
