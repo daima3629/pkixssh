@@ -594,7 +594,8 @@ regress/unittests/match/test_match$(EXEEXT): \
 	    -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(LIBS)
 
 UNITTESTS_TEST_MISC_OBJS=\
-	regress/unittests/misc/tests.o
+	regress/unittests/misc/tests.o \
+	regress/unittests/misc/test_parse.o
 
 regress/unittests/misc/test_misc$(EXEEXT): \
     ${UNITTESTS_TEST_MISC_OBJS} \
