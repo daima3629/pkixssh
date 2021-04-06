@@ -1,6 +1,7 @@
-/* $OpenBSD: sftp-server.c,v 1.123 2021/03/16 06:15:43 djm Exp $ */
+/* $OpenBSD: sftp-server.c,v 1.124 2021/03/19 02:18:28 djm Exp $ */
 /*
  * Copyright (c) 2000-2004 Markus Friedl.  All rights reserved.
+ * Copyright (c) 2021 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -52,7 +53,8 @@
 #include "sftp-common.h"
 
 /* Maximum data read that we are willing to accept */
-#define SFTP_MAX_READ_LENGTH (64 * 1024)
+#define SFTP_MAX_READ_LENGTH (SFTP_MAX_MSG_LENGTH - 1024)
+#define SFTP_INIT_READ_LENGTH (SFTP_MAX_MSG_LENGTH >> 1)
 
 /* Our verbosity */
 static LogLevel log_level = SYSLOG_LEVEL_ERROR;
@@ -745,7 +747,8 @@ process_close(u_int32_t id)
 static void
 process_read(u_int32_t id)
 {
-	u_char buf[SFTP_MAX_READ_LENGTH];
+	static u_char *buf = NULL;
+	static size_t buflen;
 	u_int32_t len;
 	int r, handle, fd, ret, status = SSH2_FX_FAILURE;
 	u_int64_t off;
@@ -755,31 +758,59 @@ process_read(u_int32_t id)
 	    (r = sshbuf_get_u32(iqueue, &len)) != 0)
 		fatal_fr(r, "parse");
 
-	debug("request %u: read \"%s\" (handle %d) off %llu len %d",
-	    id, handle_to_name(handle), handle, (unsigned long long)off, len);
-	if (len > sizeof buf) {
-		len = sizeof buf;
-		debug2("read change len %d", len);
-	}
+	debug("request %u: read \"%s\" (handle %d) off %llu len %u",
+	    id, handle_to_name(handle), handle, (unsigned long long)off, (u_int)len);
+
 	fd = handle_to_fd(handle);
-	if (fd >= 0) {
-		if (lseek(fd, off, SEEK_SET) == -1) {
-			error("process_read: seek failed");
+	if (fd == -1) goto out;
+
+	if (len > SFTP_MAX_READ_LENGTH) {
+		debug2("read change len %u to %u", (u_int)len, SFTP_MAX_READ_LENGTH);
+		len = SFTP_MAX_READ_LENGTH;
+	}
+	if (buf == NULL) {
+		buf = malloc(SFTP_INIT_READ_LENGTH);
+		if (buf == NULL) fatal_f("malloc failed");
+		buflen = SFTP_INIT_READ_LENGTH;
+	}
+	if (len > buflen) {
+		debug3_f("reallocate %zu => %u", buflen, (u_int)len);
+		buf = realloc(buf, len);
+		if (buf == NULL) fatal_f("realloc failed");
+		buflen = len;
+	}
+
+	if (lseek(fd, off, SEEK_SET) == -1) {
+		status = errno_to_portable(errno);
+		error_f("seek \"%.100s\": %s", handle_to_name(handle),
+		    strerror(errno));
+		goto out;
+	}
+
+	if (len == 0) {
+		/* weird, but not strictly disallowed */
+		ret = 0;
+	} else {
+		ret = read(fd, buf, len);
+		if (ret == -1) {
 			status = errno_to_portable(errno);
-		} else {
-			ret = read(fd, buf, len);
-			if (ret == -1) {
-				status = errno_to_portable(errno);
-			} else if (ret == 0) {
-				status = SSH2_FX_EOF;
-			} else {
-				send_data(id, buf, ret);
-				status = SSH2_FX_OK;
-				handle_update_read(handle, ret);
-			}
+			error_f("read \"%.100s\": %s", handle_to_name(handle),
+			    strerror(errno));
+			goto out;
+		}
+		if (ret == 0) {
+			status = SSH2_FX_EOF;
+			goto out;
 		}
 	}
-	if (status != SSH2_FX_OK)
+	/* success */
+	status = SSH2_FX_OK;
+
+ out:
+	if (status == SSH2_FX_OK) {
+		send_data(id, buf, ret);
+		handle_update_read(handle, ret);
+	} else
 		send_status(id, status);
 }
 
