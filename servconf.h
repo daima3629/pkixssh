@@ -111,6 +111,7 @@ typedef struct {
 
 	char   *host_key_agent;		/* ssh-agent socket for host keys. */
 	char   *pid_file;		/* Where to put our pid */
+	char   *moduli_file;		/* moduli file for DH-GEX */
 	int     login_grace_time;	/* Disconnect if no auth in this time
 					 * (sec). */
 	int     permit_root_login;	/* PERMIT_*, see above */

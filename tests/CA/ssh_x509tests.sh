@@ -235,6 +235,11 @@ Port $SSHD_PORT
 ListenAddress $SSHD_LISTENADDRESS
 
 AuthorizedKeysFile $AUTHORIZEDKEYSFILE
+EOF
+  if test -n "$TEST_SSH_MODULI_FILE" ; then
+    echo "ModuliFile $TEST_SSH_MODULI_FILE" >> "$SSHD_CFG"
+  fi
+  cat >> "$SSHD_CFG" <<EOF
 
 ChallengeResponseAuthentication no
 HostbasedAuthentication no

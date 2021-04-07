@@ -146,6 +146,8 @@ int deny_severity;
 
 extern char *__progname;
 
+extern void dh_set_moduli_file(const char *);
+
 /* used in ssh-x509.c */
 extern int (*pssh_x509store_verify_cert)(X509 *cert, STACK_OF(X509) *untrusted);
 extern STACK_OF(X509)* (*pssh_x509store_build_certchain)(X509 *cert, STACK_OF(X509) *untrusted);
@@ -1893,6 +1895,11 @@ main(int ac, char **av)
 
 	parse_server_config(&options, rexeced_flag ? "rexec" : config_file_name,
 	    cfg, &includes, NULL);
+
+#ifdef WITH_OPENSSL
+	if (options.moduli_file != NULL)
+		dh_set_moduli_file(options.moduli_file);
+#endif
 
 	/* Fill in default values for those options not explicitly set. */
 	fill_default_server_options(&options);

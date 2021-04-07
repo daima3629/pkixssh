@@ -147,6 +147,7 @@ initialize_server_options(ServerOptions *options)
 	options->num_host_cert_files = 0;
 	options->host_key_agent = NULL;
 	options->pid_file = NULL;
+	options->moduli_file = NULL;
 	options->login_grace_time = -1;
 	options->permit_root_login = PERMIT_NOT_SET;
 	options->ignore_rhosts = -1;
@@ -345,6 +346,7 @@ fill_default_server_options(ServerOptions *options)
 		add_listen_addr(options, NULL, NULL, 0);
 	if (options->pid_file == NULL)
 		options->pid_file = xstrdup(_PATH_SSH_DAEMON_PID_FILE);
+	/* options->moduli_file = NULL; */
 	if (options->login_grace_time == -1)
 		options->login_grace_time = 120;
 	if (options->permit_root_login == PERMIT_NOT_SET)
@@ -579,7 +581,7 @@ typedef enum {
 	sPermitTTY, sStrictModes, sEmptyPasswd, sTCPKeepAlive,
 	sPermitUserEnvironment, sAllowTcpForwarding, sCompression,
 	sRekeyLimit, sAllowUsers, sDenyUsers, sAllowGroups, sDenyGroups,
-	sIgnoreUserKnownHosts, sCiphers, sMacs, sPidFile,
+	sIgnoreUserKnownHosts, sCiphers, sMacs, sPidFile, sModuliFile,
 	sGatewayPorts, sPubkeyAuthentication, sPubkeyAcceptedAlgorithms,
 	sXAuthLocation, sSubsystem, sMaxStartups, sMaxAuthTries, sMaxSessions,
 	sBanner, sUseDNS, sHostbasedAuthentication,
@@ -645,6 +647,7 @@ static struct {
 	{ "hostdsakey", sHostKeyFile, SSHCFG_GLOBAL },		/* alias */
 	{ "hostkeyagent", sHostKeyAgent, SSHCFG_GLOBAL },
 	{ "pidfile", sPidFile, SSHCFG_GLOBAL },
+	{ "modulifile", sModuliFile, SSHCFG_GLOBAL },
 	{ "serverkeybits", sDeprecated, SSHCFG_GLOBAL },
 	{ "logingracetime", sLoginGraceTime, SSHCFG_GLOBAL },
 	{ "keyregenerationinterval", sDeprecated, SSHCFG_GLOBAL },
@@ -1726,6 +1729,10 @@ parse_string:
 				*intptr = *intptr + 1;
 		}
 		break;
+
+	case sModuliFile:
+		charptr = &options->moduli_file;
+		goto parse_filename;
 
 	case sPermitRootLogin:
 		intptr = &options->permit_root_login;
@@ -3165,6 +3172,7 @@ dump_config(ServerOptions *o)
 
 	/* string arguments */
 	dump_cfg_string(sPidFile, o->pid_file);
+	dump_cfg_string(sModuliFile, o->moduli_file);
 	dump_cfg_string(sXAuthLocation, o->xauth_location);
 	dump_cfg_string(sCiphers, o->ciphers);
 	dump_cfg_string(sMacs, o->macs);

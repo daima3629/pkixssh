@@ -1,4 +1,4 @@
-#	$OpenBSD: test-exec.sh,v 1.77 2021/02/17 03:59:00 dtucker Exp $
+#	$OpenBSD: test-exec.sh,v 1.78 2021/03/13 01:52:16 dtucker Exp $
 #	Placed in the Public Domain.
 
 #SUDO=sudo
@@ -482,7 +482,12 @@ cat << EOF > $OBJ/sshd_config
 	Subsystem	sftp	$SFTPSERVER
 EOF
 
-if [ ! -z "$TEST_SSH_SSHD_CONFOPTS" ]; then
+if test -n "$TEST_SSH_MODULI_FILE" ; then
+	trace "adding modulifile='$TEST_SSH_MODULI_FILE' to sshd_config"
+	echo "	ModuliFile $TEST_SSH_MODULI_FILE" >> $OBJ/sshd_config
+fi
+
+if test -n "$TEST_SSH_SSHD_CONFOPTS" ; then
 	trace "adding sshd_config option $TEST_SSH_SSHD_CONFOPTS"
 	echo "$TEST_SSH_SSHD_CONFOPTS" >> $OBJ/sshd_config
 fi

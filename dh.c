@@ -1,4 +1,4 @@
-/* $OpenBSD: dh.c,v 1.72 2020/10/18 11:32:01 djm Exp $ */
+/* $OpenBSD: dh.c,v 1.74 2021/04/03 06:18:40 djm Exp $ */
 /*
  * Copyright (c) 2000 Niels Provos.  All rights reserved.
  * Copyright (c) 2021 Roumen Petrov.  All rights reserved.
@@ -57,6 +57,22 @@ extern DH* _dh_new_group(BIGNUM *, BIGNUM *);
 extern DH* _dh_new_group_asc(const char *, const char *);
 extern DH* _dh_new_group_num(int);
 extern DH* _choose_dh(int, int, int);
+
+extern void dh_set_moduli_file(const char *);
+
+
+static const char *moduli_filename = NULL;
+
+void dh_set_moduli_file(const char *filename)
+{
+	moduli_filename = filename;
+}
+
+static inline const char*
+get_moduli_filename(void)
+{
+	return moduli_filename != NULL ? moduli_filename : _PATH_DH_MODULI;
+}
 
 
 static int
@@ -167,9 +183,9 @@ _choose_dh(int min, int wantbits, int max)
 	int best, bestcount, which, linenum;
 	struct dhgroup dhg;
 
-	if ((f = fopen(_PATH_DH_MODULI, "r")) == NULL) {
+	if ((f = fopen(get_moduli_filename(), "r")) == NULL) {
 		logit("WARNING: could not open %s (%s), using fixed modulus",
-		    _PATH_DH_MODULI, strerror(errno));
+		    get_moduli_filename(), strerror(errno));
 		return (dh_new_group_fallback(max));
 	}
 
@@ -200,7 +216,8 @@ _choose_dh(int min, int wantbits, int max)
 
 	if (bestcount == 0) {
 		fclose(f);
-		logit("WARNING: no suitable primes in %s", _PATH_DH_MODULI);
+		logit("WARNING: no suitable primes in %s",
+		    get_moduli_filename());
 		return (dh_new_group_fallback(max));
 	}
 	which = arc4random_uniform(bestcount);
@@ -225,7 +242,7 @@ _choose_dh(int min, int wantbits, int max)
 	fclose(f);
 	if (bestcount != which + 1) {
 		logit("WARNING: selected prime disappeared in %s, giving up",
-		    _PATH_DH_MODULI);
+		    get_moduli_filename());
 		return (dh_new_group_fallback(max));
 	}
 

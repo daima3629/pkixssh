@@ -16,7 +16,7 @@ sysconfdir=@sysconfdir@
 sshcadir=@sshcadir@
 piddir=@piddir@
 srcdir=@srcdir@
-top_srcdir=@top_srcdir@
+abs_srcdir=@abs_srcdir@
 
 DESTDIR=
 VPATH=@srcdir@
@@ -652,6 +652,7 @@ check-core unit file-tests t-exec f-exec interop-tests: regress-binaries $(TARGE
 	TEST_SSH_SSHKEYSCAN="$${TEST_SSH_SSHKEYSCAN-$${BUILDDIR}/ssh-keyscan}"; \
 	TEST_SSH_SFTP="$${TEST_SSH_SFTP-$${BUILDDIR}/sftp}"; \
 	TEST_SSH_SFTPSERVER="$${TEST_SSH_SFTPSERVER-$${BUILDDIR}/sftp-server}"; \
+	TEST_SSH_MODULI_FILE="$(abs_srcdir)/moduli"; \
 	TEST_SSH_PLINK="$${TEST_SSH_PLINK-plink}"; \
 	TEST_SSH_PUTTYGEN="$${TEST_SSH_PUTTYGEN-puttygen}"; \
 	TEST_SSH_CONCH="$${TEST_SSH_CONCH-conch}"; \
@@ -677,6 +678,7 @@ check-core unit file-tests t-exec f-exec interop-tests: regress-binaries $(TARGE
 		TEST_SSH_SSHKEYSCAN="$${TEST_SSH_SSHKEYSCAN}" \
 		TEST_SSH_SFTP="$${TEST_SSH_SFTP}" \
 		TEST_SSH_SFTPSERVER="$${TEST_SSH_SFTPSERVER}" \
+		TEST_SSH_MODULI_FILE="$${TEST_SSH_MODULI_FILE}" \
 		TEST_SSH_PLINK="$${TEST_SSH_PLINK}" \
 		TEST_SSH_PUTTYGEN="$${TEST_SSH_PUTTYGEN}" \
 		TEST_SSH_CONCH="$${TEST_SSH_CONCH}" \
