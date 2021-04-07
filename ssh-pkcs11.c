@@ -1216,6 +1216,7 @@ pkcs11_get_pubkey_rsa(
 		error_f("sshkey_new failed");
 		goto done;
 	}
+	key->type = KEY_RSA;
 
 {	BIGNUM *rsa_n = NULL, *rsa_e = NULL;
 	struct sshbuf *buf = NULL;
