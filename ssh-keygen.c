@@ -280,7 +280,7 @@ confirm_overwrite(const char *filename)
 }
 
 static void
-ask_filename(struct passwd *pw, const char *prompt)
+ask_filename(const struct passwd *pw, const char *prompt)
 {
 	char buf[1024];
 	char *name = NULL;
@@ -380,7 +380,7 @@ load_identity(const char *filename, char **commentp)
 
 #ifdef WITH_OPENSSL
 static void
-do_convert_to_ssh2(struct passwd *pw, struct sshkey *k)
+do_convert_to_ssh2(const struct passwd *pw, struct sshkey *k)
 {
 	struct sshbuf *b;
 	char comment[61], *b64;
@@ -415,7 +415,7 @@ extern int
 sshkey_public_to_fp(struct sshkey *key, FILE *fp, int format);
 
 static void
-do_convert_to(struct passwd *pw)
+do_convert_to(const struct passwd *pw)
 {
 	struct sshkey *k;
 	struct stat st;
@@ -629,7 +629,7 @@ do_convert_from_file(struct sshkey **k, int format)
 }
 
 static void
-do_convert_from(struct passwd *pw)
+do_convert_from(const struct passwd *pw)
 {
 	struct sshkey *k = NULL;
 	int r, private = 0, ok = 0;
@@ -686,7 +686,7 @@ done:
 #endif
 
 static void
-do_print_public(struct passwd *pw)
+do_print_public(const struct passwd *pw)
 {
 	struct sshkey *prv;
 	int r;
@@ -710,14 +710,12 @@ do_print_public(struct passwd *pw)
 }
 
 static void
-do_download(struct passwd *pw)
+do_download()
 {
 #ifdef ENABLE_PKCS11
 	struct sshkey **keys;
 	char **comments;
 	int i, nkeys;
-
-	UNUSED(pw);
 
 	pkcs11_init(1);
 	nkeys = pkcs11_add_provider(pkcs11provider, NULL, &keys, &comments);
@@ -743,7 +741,6 @@ do_download(struct passwd *pw)
 	pkcs11_terminate();
 	exit(0);
 #else
-	UNUSED(pw);
 	fatal("no pkcs11 support");
 #endif /* ENABLE_PKCS11 */
 }
@@ -847,7 +844,7 @@ fingerprint_private(const char *path)
 }
 
 static void
-do_fingerprint(struct passwd *pw)
+do_fingerprint(const struct passwd *pw)
 {
 	FILE *f;
 	struct sshkey *public = NULL;
@@ -943,7 +940,7 @@ do_fingerprint(struct passwd *pw)
 }
 
 static void
-do_gen_all_hostkeys(struct passwd *pw)
+do_gen_all_hostkeys(const struct passwd *pw)
 {
 	struct {
 		char *key_type;
@@ -1189,7 +1186,7 @@ known_hosts_find_delete(struct hostkey_foreach_line *l, void *_ctx)
 }
 
 static void
-do_known_hosts(struct passwd *pw, const char *name, int find_host,
+do_known_hosts(const struct passwd *pw, const char *name, int find_host,
     int delete_host, int hash_hosts)
 {
 	char *cp, tmp[PATH_MAX], old[PATH_MAX];
@@ -1299,7 +1296,7 @@ do_known_hosts(struct passwd *pw, const char *name, int find_host,
  * for the current user.
  */
 static void
-do_change_passphrase(struct passwd *pw)
+do_change_passphrase(const struct passwd *pw)
 {
 	char *comment;
 	char *old_passphrase, *passphrase1, *passphrase2;
@@ -1376,7 +1373,7 @@ do_change_passphrase(struct passwd *pw)
  * Print the SSHFP RR.
  */
 static int
-do_print_resource_record(struct passwd *pw, char *fname, char *hname,
+do_print_resource_record(char *fname, char *hname,
     int print_generic)
 {
 	struct sshkey *public;
@@ -1384,7 +1381,6 @@ do_print_resource_record(struct passwd *pw, char *fname, char *hname,
 	struct stat st;
 	int r;
 
-	UNUSED(pw);
 	if (fname == NULL)
 		fatal_f("no filename");
 	if (stat(fname, &st) == -1) {
@@ -1404,7 +1400,7 @@ do_print_resource_record(struct passwd *pw, char *fname, char *hname,
  * Change the comment of a private key file.
  */
 static void
-do_change_comment(struct passwd *pw, const char *identity_comment)
+do_change_comment(const struct passwd *pw, const char *identity_comment)
 {
 	char new_comment[1024], *comment, *passphrase;
 	struct sshkey *private;
@@ -1634,7 +1630,7 @@ agent_signer(struct sshkey *key, u_char **sigp, size_t *lenp,
 }
 
 static void
-do_ca_sign(struct passwd *pw, const char *ca_key_path, int prefer_agent,
+do_ca_sign(const struct passwd *pw, const char *ca_key_path, int prefer_agent,
     unsigned long long cert_serial, int cert_serial_autoinc,
     int argc, char **argv)
 {
@@ -1993,7 +1989,7 @@ print_cert(struct sshkey *key)
 }
 
 static void
-do_show_cert(struct passwd *pw)
+do_show_cert(const struct passwd *pw)
 {
 	struct sshkey *key = NULL;
 	struct stat st;
@@ -2095,7 +2091,7 @@ hash_to_blob(const char *cp, u_char **blobp, size_t *lenp,
 }
 
 static void
-update_krl_from_file(struct passwd *pw, const char *file, int wild_ca,
+update_krl_from_file(const struct passwd *pw, const char *file, int wild_ca,
     const struct sshkey *ca, struct ssh_krl *krl)
 {
 	struct sshkey *key = NULL;
@@ -2259,7 +2255,7 @@ update_krl_from_file(struct passwd *pw, const char *file, int wild_ca,
 }
 
 static void
-do_gen_krl(struct passwd *pw, int updating, const char *ca_key_path,
+do_gen_krl(const struct passwd *pw, int updating, const char *ca_key_path,
     unsigned long long krl_version, const char *krl_comment,
     int argc, char **argv)
 {
@@ -2315,14 +2311,13 @@ do_gen_krl(struct passwd *pw, int updating, const char *ca_key_path,
 }
 
 static void
-do_check_krl(struct passwd *pw, int print_krl, int argc, char **argv)
+do_check_krl(int print_krl, int argc, char **argv)
 {
 	int i, r, ret = 0;
 	char *comment;
 	struct ssh_krl *krl;
 	struct sshkey *k;
 
-	UNUSED(pw);
 	if (*identity_file == '\0')
 		fatal("KRL checking requires an input file");
 	load_krl(identity_file, &krl);
@@ -2544,7 +2539,7 @@ main(int argc, char **argv)
 	char comment[1024], *passphrase;
 	char *rr_hostname = NULL, *ep, *fp, *ra;
 	struct sshkey *private, *public;
-	struct passwd *pw;
+	const struct passwd *pw;
 	int r, opt, type;
 	int change_passphrase = 0, change_comment = 0, show_cert = 0;
 	int find_host = 0, delete_host = 0, hash_hosts = 0;
@@ -2843,7 +2838,7 @@ main(int argc, char **argv)
 		return (0);
 	}
 	if (check_krl) {
-		do_check_krl(pw, print_fingerprint, argc, argv);
+		do_check_krl(print_fingerprint, argc, argv);
 		return (0);
 	}
 	if (ca_key_path != NULL) {
@@ -2862,7 +2857,7 @@ main(int argc, char **argv)
 		    delete_host, hash_hosts);
 	}
 	if (pkcs11provider != NULL)
-		do_download(pw);
+		do_download();
 	if (print_fingerprint || print_bubblebabble)
 		do_fingerprint(pw);
 	if (change_passphrase)
@@ -2884,27 +2879,27 @@ main(int argc, char **argv)
 		unsigned int n = 0;
 
 		if (have_identity) {
-			n = do_print_resource_record(pw, identity_file,
+			n = do_print_resource_record(identity_file,
 			    rr_hostname, print_generic);
 			if (n == 0)
 				fatal("%s: %s", identity_file, strerror(errno));
 			exit(0);
 		} else {
 
-			n += do_print_resource_record(pw,
+			n += do_print_resource_record(
 			    _PATH_HOST_RSA_KEY_FILE, rr_hostname,
 			    print_generic);
-			n += do_print_resource_record(pw,
+			n += do_print_resource_record(
 			    _PATH_HOST_DSA_KEY_FILE, rr_hostname,
 			    print_generic);
-			n += do_print_resource_record(pw,
+			n += do_print_resource_record(
 			    _PATH_HOST_ECDSA_KEY_FILE, rr_hostname,
 			    print_generic);
-			n += do_print_resource_record(pw,
+			n += do_print_resource_record(
 			    _PATH_HOST_ED25519_KEY_FILE, rr_hostname,
 			    print_generic);
 #ifdef WITH_XMSS
-			n += do_print_resource_record(pw,
+			n += do_print_resource_record(
 			    _PATH_HOST_XMSS_KEY_FILE, rr_hostname,
 			    print_generic);
 #endif
