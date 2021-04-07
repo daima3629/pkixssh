@@ -1085,8 +1085,10 @@ pkcs11_push_key(struct sshkey *key, char *label,
 {	struct sshkey **sp = *keysp;
 	int i;
 	for (i = 0; i < *nkeys; i++, sp++)
-		if (sshkey_equal_public(key, *sp))
+		if (sshkey_equal_public(key, *sp)) {
+			debug("exist equal key, ignoring '%s'", label);
 			return;
+		}
 }
 
 	/* expand key array and add key */
@@ -1099,7 +1101,7 @@ pkcs11_push_key(struct sshkey *key, char *label,
 	}
 
 	*nkeys = *nkeys + 1;
-	debug("have %d keys", *nkeys);
+	debug("push key #%d '%s'", *nkeys, label);
 }
 
 /*
