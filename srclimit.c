@@ -114,7 +114,7 @@ srclimit_check_allow(int sock, int id)
 	else
 		strlcpy(xas, "<unknown>", sizeof(xas));
 	debug3_f("new unauthenticated connection from %s/%d, at %d of %d",
-	     xas, bits, count, max_persource);
+	    xas, bits, count, max_persource);
 }
 
 	if (count >= max_persource)

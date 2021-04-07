@@ -1,4 +1,4 @@
-/* $OpenBSD: sshkey.c,v 1.115 2021/02/02 22:36:46 djm Exp $ */
+/* $OpenBSD: sshkey.c,v 1.116 2021/04/03 06:18:41 djm Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Alexander von Gernler.  All rights reserved.
@@ -1960,7 +1960,7 @@ sshkey_shield_private(struct sshkey *k)
 	if (sshkey_is_shielded(k) && (r = sshkey_unshield_private(k)) != 0)
 		goto out;
 	if ((r = sshkey_private_serialize_opt(k, prvbuf,
-	     SSHKEY_SERIALIZE_SHIELD)) != 0)
+	    SSHKEY_SERIALIZE_SHIELD)) != 0)
 		goto out;
 	/* pad to cipher blocksize */
 	i = 0;
@@ -3473,7 +3473,7 @@ sshkey_private_to_blob2(struct sshkey *prv, struct sshbuf *blob,
 
 	/* append private key and comment*/
 	if ((r = sshkey_private_serialize_opt(prv, encrypted,
-	     SSHKEY_SERIALIZE_FULL)) != 0 ||
+	    SSHKEY_SERIALIZE_FULL)) != 0 ||
 	    (r = sshbuf_put_cstring(encrypted, comment)) != 0)
 		goto out;
 

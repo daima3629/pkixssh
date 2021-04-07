@@ -1,4 +1,4 @@
-/* $OpenBSD: misc.h,v 1.94 2021/03/03 08:42:52 djm Exp $ */
+/* $OpenBSD: misc.h,v 1.95 2021/04/03 06:18:40 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -119,9 +119,9 @@ struct arglist {
 	u_int   nalloc;
 };
 void	 addargs(arglist *, char *, ...)
-	     __attribute__((format(printf, 2, 3)));
+	    __attribute__((format(printf, 2, 3)));
 void	 replacearg(arglist *, u_int, char *, ...)
-	     __attribute__((format(printf, 3, 4)));
+	    __attribute__((format(printf, 3, 4)));
 void	 freeargs(arglist *);
 
 int	 tun_open(int, int, char **);
@@ -177,7 +177,7 @@ char *mkdtemp_template(char *prefix);
 void mktemp_proto(char *, size_t);
 
 void	 child_set_env(char ***envp, u_int *envsizep, const char *name,
-	     const char *value);
+	    const char *value);
 
 int	 argv_split(const char *, int *, char ***);
 char	*argv_assemble(int, char **argv);
@@ -189,11 +189,11 @@ int	xrename(const char *oldpath, const char *newpath);
 
 struct stat;
 int	 safe_path(const char *, struct stat *, const char *, uid_t,
-	     char *, size_t);
+	    char *, size_t);
 int	 safe_path_fd(int, const char *, struct passwd *,
-	     char *err, size_t errlen);
+	    char *err, size_t errlen);
 int	 safe_usr_fileno(int fd, const char *filename,
-	     char *err, size_t errlen);
+	    char *err, size_t errlen);
 
 /* authorized_key-style options parsing helpers */
 int	opt_flag(const char *opt, int allow_negate, const char **optsp);

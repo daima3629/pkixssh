@@ -1,4 +1,4 @@
-/* $OpenBSD: servconf.c,v 1.377 2021/02/24 01:18:08 dtucker Exp $ */
+/* $OpenBSD: servconf.c,v 1.379 2021/04/03 06:18:40 djm Exp $ */
 /*
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
@@ -2367,7 +2367,7 @@ parse_string:
 	case sMatch:
 		if (cmdline)
 			fatal("Match directive not supported as a command-line "
-			   "option");
+			    "option");
 		value = match_cfg_line(&cp, linenum,
 		    (*inc_flags & SSHCFG_NEVERMATCH ? NULL : connectinfo));
 		if (value < 0)
@@ -2752,12 +2752,12 @@ int parse_server_match_testspec(struct connection_info *ci, char *spec)
 			ci->lport = a2port(p + 6);
 			if (ci->lport == -1) {
 				fprintf(stderr, "Invalid port '%s' in test mode"
-				   " specification %s\n", p+6, p);
+				    " specification %s\n", p+6, p);
 				return -1;
 			}
 		} else {
 			fprintf(stderr, "Invalid test mode specification %s\n",
-			   p);
+			    p);
 			return -1;
 		}
 	}
@@ -3195,9 +3195,9 @@ dump_config(ServerOptions *o)
 	dump_cfg_strarray_oneline(sAuthorizedKeysFile, o->num_authkeys_files,
 	    o->authorized_keys_files);
 	dump_cfg_strarray(sHostKeyFile, o->num_host_key_files,
-	     o->host_key_files);
+	    o->host_key_files);
 	dump_cfg_strarray(sHostCertificate, o->num_host_cert_files,
-	     o->host_cert_files);
+	    o->host_cert_files);
 	dump_cfg_strarray(sAllowUsers, o->num_allow_users, o->allow_users);
 	dump_cfg_strarray(sDenyUsers, o->num_deny_users, o->deny_users);
 	dump_cfg_strarray(sAllowGroups, o->num_allow_groups, o->allow_groups);

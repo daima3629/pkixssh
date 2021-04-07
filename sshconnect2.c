@@ -1,4 +1,4 @@
-/* $OpenBSD: sshconnect2.c,v 1.346 2021/01/27 10:05:28 djm Exp $ */
+/* $OpenBSD: sshconnect2.c,v 1.347 2021/04/03 06:18:41 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Damien Miller.  All rights reserved.
@@ -626,7 +626,7 @@ format_identity(Identity *id)
 	char *fp = NULL, *ret = NULL;
 
 	if (id->key != NULL) {
-	     fp = sshkey_fingerprint(id->key, options.fingerprint_hash,
+		fp = sshkey_fingerprint(id->key, options.fingerprint_hash,
 		    SSH_FP_DEFAULT);
 	}
 	xasprintf(&ret, "'%s' %s %s%s%s%s%s%s",

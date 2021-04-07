@@ -1,4 +1,4 @@
-/* $OpenBSD: sftp-client.c,v 1.139 2020/12/04 02:41:10 djm Exp $ */
+/* $OpenBSD: sftp-client.c,v 1.142 2021/04/03 06:18:41 djm Exp $ */
 /*
  * Copyright (c) 2001-2004 Damien Miller <djm@openbsd.org>
  *
@@ -967,7 +967,7 @@ do_hardlink(struct sftp_conn *conn, const char *oldpath, const char *newpath)
 		fatal_fr(r, "compose");
 	send_msg(conn, msg);
 	debug3("Sent message hardlink@openssh.com \"%s\" -> \"%s\"",
-	       oldpath, newpath);
+	    oldpath, newpath);
 	sshbuf_free(msg);
 
 	status = get_status(conn, id);
@@ -1684,7 +1684,7 @@ do_upload(struct sftp_conn *conn, const char *local_path,
 
 		if ((off_t)c->size >= sb.st_size) {
 			error("destination file bigger or same size as "
-			      "source file");
+			    "source file");
 			close(local_fd);
 			return -1;
 		}

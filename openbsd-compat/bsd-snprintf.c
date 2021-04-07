@@ -135,13 +135,13 @@
 #define DP_S_DONE    7
 
 /* format flags - Bits */
-#define DP_F_MINUS 	(1 << 0)
-#define DP_F_PLUS  	(1 << 1)
-#define DP_F_SPACE 	(1 << 2)
-#define DP_F_NUM   	(1 << 3)
-#define DP_F_ZERO  	(1 << 4)
-#define DP_F_UP    	(1 << 5)
-#define DP_F_UNSIGNED 	(1 << 6)
+#define DP_F_MINUS	(1 << 0)
+#define DP_F_PLUS	(1 << 1)
+#define DP_F_SPACE	(1 << 2)
+#define DP_F_NUM	(1 << 3)
+#define DP_F_ZERO	(1 << 4)
+#define DP_F_UP		(1 << 5)
+#define DP_F_UNSIGNED	(1 << 6)
 
 /* Conversion Flags */
 #define DP_C_SHORT   1
@@ -592,7 +592,7 @@ fmtint(char *buffer, size_t *currlen, size_t maxlen,
 
 #ifdef DEBUG_SNPRINTF
 	printf("zpad: %d, spad: %d, min: %d, max: %d, place: %d\n",
-	       zpadlen, spadlen, min, max, place);
+	    zpadlen, spadlen, min, max, place);
 #endif
 
 	/* Spaces */
@@ -774,7 +774,7 @@ fmtfp (char *buffer, size_t *currlen, size_t maxlen,
 		/* idx = (int) (((double)(temp*0.1) -intpart +0.05) *10.0); */
 		/* printf ("%llf, %f, %x\n", temp, intpart, idx); */
 		iconvert[iplace++] =
-			(caps? "0123456789ABCDEF":"0123456789abcdef")[idx];
+		    (caps? "0123456789ABCDEF":"0123456789abcdef")[idx];
 	} while (intpart && (iplace < 311));
 	if (iplace == 311) iplace--;
 	iconvert[iplace] = 0;
@@ -789,7 +789,7 @@ fmtfp (char *buffer, size_t *currlen, size_t maxlen,
 			/* idx = (int) ((((temp/10) -fracpart) +0.05) *10); */
 			/* printf ("%lf, %lf, %ld\n", temp, fracpart, idx ); */
 			fconvert[fplace++] =
-			(caps? "0123456789ABCDEF":"0123456789abcdef")[idx];
+			    (caps? "0123456789ABCDEF":"0123456789abcdef")[idx];
 		} while(fracpart && (fplace < 311));
 		if (fplace == 311) fplace--;
 	}

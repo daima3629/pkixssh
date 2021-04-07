@@ -173,7 +173,7 @@ _dh_pub_is_valid(const DH *dh, const BIGNUM *dh_pub)
 	 */
 	if (bits_set < 4) {
 		error("invalid public DH value (%d/%d)",
-		   bits_set, BN_num_bits(dh_p));
+		    bits_set, BN_num_bits(dh_p));
 		return 0;
 	}
 	return 1;

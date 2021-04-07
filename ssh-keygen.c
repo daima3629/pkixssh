@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keygen.c,v 1.426 2020/11/28 12:52:32 dtucker Exp $ */
+/* $OpenBSD: ssh-keygen.c,v 1.429 2021/04/03 06:18:41 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1994 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -1889,7 +1889,7 @@ add_cert_option(char *opt)
 			fatal("Invalid source-address list");
 		certflags_src_addr = xstrdup(val);
 	} else if (strncasecmp(opt, "extension:", 10) == 0 ||
-		   (iscrit = (strncasecmp(opt, "critical:", 9) == 0))) {
+		    (iscrit = (strncasecmp(opt, "critical:", 9) == 0))) {
 		val = xstrdup(strchr(opt, ':') + 1);
 		if ((cp = strchr(val, '=')) != NULL)
 			*cp++ = '\0';
