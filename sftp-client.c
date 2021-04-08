@@ -436,8 +436,6 @@ do_init(int fd_in, int fd_out, u_int transfer_buflen, u_int num_requests,
 
 	send_msg(ret, msg);
 
-	sshbuf_reset(msg);
-
 	get_msg_extended(ret, msg, 1);
 
 	/* Expecting a VERSION reply */
