@@ -1454,12 +1454,23 @@ process_extended_limits(u_int32_t id)
 	struct sshbuf *msg;
 	int r;
 	uint64_t nfiles = 0;
-	struct rlimit rlim;
 
 	debug("request %u: limits", id);
 
-	if (getrlimit(RLIMIT_NOFILE, &rlim) != -1 && rlim.rlim_cur > 5)
-		nfiles = rlim.rlim_cur - 5; /* stdio(3) + syslog + spare */
+	/*
+	 * Minimum file descriptors:
+	 * stdio (3) + syslog (1 maybe) +
+	 * a few spare for libc / stack protectors / sanitisers, etc.
+	 */
+#define SSH_SFTP_SERVER_MIN_FDS (3+1+4)
+#if defined(HAVE_GETRLIMIT) && defined(RLIMIT_NOFILE)
+{	struct rlimit rlim;
+
+	if (getrlimit(RLIMIT_NOFILE, &rlim) != -1 &&
+	    rlim.rlim_cur > SSH_SFTP_SERVER_MIN_FDS)
+		nfiles = rlim.rlim_cur - SSH_SFTP_SERVER_MIN_FDS;
+}
+#endif
 
 	if ((msg = sshbuf_new()) == NULL)
 		fatal_f("sshbuf_new failed");

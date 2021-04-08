@@ -1248,9 +1248,6 @@ main(int ac, char **av)
 	int c_flag = 0, d_flag = 0, D_flag = 0, k_flag = 0, s_flag = 0;
 	int sock, ch, result, saved_errno;
 	char *shell, *format, *pidstr, *agentsocket = NULL;
-#ifdef HAVE_SETRLIMIT
-	struct rlimit rlim;
-#endif
 	extern int optind;
 	extern char *optarg;
 	pid_t pid;
@@ -1276,11 +1273,6 @@ main(int ac, char **av)
 	platform_disable_tracing(0);	/* strict=no */
 
 	__progname = ssh_get_progname(av[0]);
-
-#ifdef RLIMIT_NOFILE
-	if (getrlimit(RLIMIT_NOFILE, &rlim) == -1)
-		fatal("%s: getrlimit: %s", __progname, strerror(errno));
-#endif
 
 	ssh_OpenSSL_startup();
 #ifdef OPENSSL_FIPS
@@ -1394,10 +1386,19 @@ main(int ac, char **av)
 	 * a few spare for libc / stack protectors / sanitisers, etc.
 	 */
 #define SSH_AGENT_MIN_FDS (3+1+1+1+4)
+#if defined(HAVE_GETRLIMIT) && defined(RLIMIT_NOFILE)
+{	struct rlimit rlim;
+
+	if (getrlimit(RLIMIT_NOFILE, &rlim) == -1)
+		fatal("%s: getrlimit RLIMIT_NOFILE: %s", __progname, strerror(errno));
 	if (rlim.rlim_cur < SSH_AGENT_MIN_FDS)
 		fatal("%s: file descriptor rlimit %lld too low (minimum %u)",
 		    __progname, (long long)rlim.rlim_cur, SSH_AGENT_MIN_FDS);
 	maxfds = rlim.rlim_cur - SSH_AGENT_MIN_FDS;
+}
+#else
+	maxfds = SSH_SYSFDMAX - SSH_AGENT_MIN_FDS;
+#endif
 
 	parent_pid = getpid();
 
@@ -1490,13 +1491,16 @@ main(int ac, char **av)
 	if (stdfd_devnull(1, 1, 1) == -1)
 		error_f("stdfd_devnull failed");
 
-#ifdef HAVE_SETRLIMIT
+#if defined(HAVE_SETRLIMIT) && defined(RLIMIT_CORE)
+{	struct rlimit rlim;
+
 	/* deny core dumps, since memory contains unencrypted private keys */
 	rlim.rlim_cur = rlim.rlim_max = 0;
 	if (setrlimit(RLIMIT_CORE, &rlim) == -1) {
 		error_f("setrlimit RLIMIT_CORE: %s", strerror(errno));
 		cleanup_exit(1);
 	}
+}
 #endif
 
 skip:
