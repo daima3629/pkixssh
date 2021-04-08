@@ -275,6 +275,9 @@ unit:
 	test "x$$UNITTEST_SSHKEY" = "xskip" || \
 		$$V ${.OBJDIR}/unittests/sshkey/test_sshkey \
 			-d ${.CURDIR}/unittests/sshkey/testdata ; \
+	test "x$$UNITTEST_AUTHOPT" = "xskip" || \
+		$$V ${.OBJDIR}/unittests/authopt/test_authopt \
+			-d ${.CURDIR}/unittests/authopt/testdata ; \
 	test "x$$UNITTEST_BITMAP" = "xskip" || \
 		$$V ${.OBJDIR}/unittests/bitmap/test_bitmap ; \
 	test "x$$UNITTEST_CONVERSION" = "xskip" || \

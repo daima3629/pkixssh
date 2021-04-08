@@ -127,6 +127,7 @@ setuid-allowed
 # TODO
 authkeys_orig
 copy
+unittests/authopt/test_authopt
 unittests/bitmap/test_bitmap
 unittests/conversion/test_conversion
 unittests/hostkeys/test_hostkeys

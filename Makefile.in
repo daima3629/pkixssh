@@ -289,6 +289,8 @@ localclean:
 	rm -f regress/setuid-allowed$(EXEEXT) regress/setuid-allowed.o
 	rm -f regress/unittests/test_helper/*.a
 	rm -f regress/unittests/test_helper/*.o
+	rm -f regress/unittests/authopt/*.o
+	rm -f regress/unittests/authopt/test_authopt$(EXEEXT)
 	rm -f regress/unittests/bitmap/*.o
 	rm -f regress/unittests/bitmap/test_bitmap$(EXEEXT)
 	rm -f regress/unittests/conversion/*.o
@@ -471,6 +473,7 @@ uninstall:
 
 regress-prep:
 	$(MKDIR_P) `pwd`/regress/unittests/test_helper
+	$(MKDIR_P) `pwd`/regress/unittests/authopt
 	$(MKDIR_P) `pwd`/regress/unittests/bitmap
 	$(MKDIR_P) `pwd`/regress/unittests/conversion
 	$(MKDIR_P) `pwd`/regress/unittests/hostkeys
@@ -552,6 +555,18 @@ regress/unittests/bitmap/test_bitmap$(EXEEXT): ${UNITTESTS_TEST_BITMAP_OBJS} \
 	    regress/unittests/test_helper/libtest_helper.a \
 	    -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(LIBS)
 
+UNITTESTS_TEST_AUTHOPT_OBJS=\
+	regress/unittests/authopt/tests.o \
+	auth-options.o \
+	$(SKOBJS)
+
+regress/unittests/authopt/test_authopt$(EXEEXT): \
+    ${UNITTESTS_TEST_AUTHOPT_OBJS} \
+    regress/unittests/test_helper/libtest_helper.a libssh.a
+	$(LD) -o $@ $(LDFLAGS) $(UNITTESTS_TEST_AUTHOPT_OBJS) \
+	    regress/unittests/test_helper/libtest_helper.a \
+	    -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(LIBS)
+
 UNITTESTS_TEST_CONVERSION_OBJS=\
 	regress/unittests/conversion/tests.o
 
@@ -622,6 +637,7 @@ regress-binaries: regress-prep \
 	regress/netcat$(EXEEXT) \
 	regress/check-perm$(EXEEXT) \
 	regress/mkdtemp$(EXEEXT) \
+	regress/unittests/authopt/test_authopt$(EXEEXT) \
 	regress/unittests/bitmap/test_bitmap$(EXEEXT) \
 	regress/unittests/conversion/test_conversion$(EXEEXT) \
 	regress/unittests/hostkeys/test_hostkeys$(EXEEXT) \
