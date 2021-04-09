@@ -1,4 +1,4 @@
-#	$OpenBSD: test-exec.sh,v 1.78 2021/03/13 01:52:16 dtucker Exp $
+#	$OpenBSD: test-exec.sh,v 1.79 2021/04/06 23:57:56 dtucker Exp $
 #	Placed in the Public Domain.
 
 #SUDO=sudo
@@ -21,8 +21,6 @@ CYGWIN*)
 	;;
 esac
 
-PORT=${TEST_SSH_PORT-4242}
-
 # wrapper to egrep program found by configure script
 egrep() {
   $EGREP ${1+"$@"}
@@ -41,6 +39,8 @@ if test -z "$LOGNAME"; then
 	LOGNAME="$USER"
 	export LOGNAME
 fi
+
+PORT=${TEST_SSH_PORT-4242}
 
 OBJ=$1
 if [ "x$OBJ" = "x" ]; then
@@ -348,6 +348,12 @@ md5 () {
 		wc -c
 	fi
 }
+
+make_tmpdir ()
+{
+	SSH_REGRESS_TMP="`$OBJ/mkdtemp ssh-regress-XXXXXXXXXX`" || \
+	    fatal "failed to create temporary directory"
+}
 # End of portable specific functions
 
 stop_sshd ()
@@ -379,12 +385,6 @@ stop_sshd ()
 			fi
 		fi
 	fi
-}
-
-make_tmpdir ()
-{
-	SSH_REGRESS_TMP="`$OBJ/mkdtemp ssh-regress-XXXXXXXXXX`" || \
-	    fatal "failed to create temporary directory"
 }
 
 # helper
