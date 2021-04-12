@@ -1104,7 +1104,7 @@ ssh_packet_send2_wrapped(struct ssh *ssh)
 		    (r = sshbuf_putb(state->outgoing_packet,
 		    state->compression_buffer)) != 0)
 			goto out;
-		DBG(debug("compression: raw %d compressed %zd", len,
+		DBG(debug("compression: raw %d compressed %zu", len,
 		    sshbuf_len(state->outgoing_packet)));
 	}
 
@@ -1650,7 +1650,7 @@ ssh_packet_read_poll2(struct ssh *ssh, u_char *typep, u_int32_t *seqnr_p)
 	    ((r = sshbuf_consume_end(state->incoming_packet, padlen)) != 0))
 		goto out;
 
-	DBG(debug("input: len before de-compress %zd",
+	DBG(debug("input: len before de-compress %zu",
 	    sshbuf_len(state->incoming_packet)));
 	if (comp && comp->enabled) {
 		sshbuf_reset(state->compression_buffer);
@@ -1661,7 +1661,7 @@ ssh_packet_read_poll2(struct ssh *ssh, u_char *typep, u_int32_t *seqnr_p)
 		if ((r = sshbuf_putb(state->incoming_packet,
 		    state->compression_buffer)) != 0)
 			goto out;
-		DBG(debug("input: len after de-compress %zd",
+		DBG(debug("input: len after de-compress %zu",
 		    sshbuf_len(state->incoming_packet)));
 	}
 	/*

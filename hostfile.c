@@ -110,7 +110,7 @@ extract_salt(const char *s, u_int l, u_char *salt, size_t salt_len)
 		return (-1);
 	}
 	if (ret != (int)ssh_hmac_bytes(SSH_DIGEST_SHA1)) {
-		debug2_f("expected salt len %zd, got %d",
+		debug2_f("expected salt len %zu, got %d",
 		    ssh_hmac_bytes(SSH_DIGEST_SHA1), ret);
 		return (-1);
 	}
