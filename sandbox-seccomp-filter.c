@@ -351,8 +351,7 @@ ssh_sandbox_init(struct monitor *monitor)
 
 #ifdef SANDBOX_SECCOMP_FILTER_DEBUG
 extern struct monitor *pmonitor;
-void mm_log_handler(const char *file, const char *func, int line,
-    LogLevel level, const char *msg, void *ctx);
+void mm_log_handler(LogLevel level, const char *msg, void *ctx);
 
 static void
 ssh_sandbox_violation(int signum, siginfo_t *info, void *void_context)
@@ -362,7 +361,7 @@ ssh_sandbox_violation(int signum, siginfo_t *info, void *void_context)
 	snprintf(msg, sizeof(msg),
 	    "%s: unexpected system call (arch:0x%x,syscall:%d @ %p)",
 	    __func__, info->si_arch, info->si_syscall, info->si_call_addr);
-	mm_log_handler(__FILE__, __func__, __LINE__, SYSLOG_LEVEL_FATAL, msg, pmonitor);
+	mm_log_handler(SYSLOG_LEVEL_FATAL, msg, pmonitor);
 	_exit(1);
 }
 

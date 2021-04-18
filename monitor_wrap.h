@@ -1,6 +1,6 @@
 #ifndef _MM_WRAP_H_
 #define _MM_WRAP_H_
-/* $OpenBSD: monitor_wrap.h,v 1.46 2020/10/16 13:24:45 djm Exp $ */
+/* $OpenBSD: monitor_wrap.h,v 1.47 2021/04/15 16:24:31 markus Exp $ */
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * All rights reserved.
@@ -46,8 +46,7 @@ struct Authctxt;
 struct sshkey;
 struct sshauthopt;
 
-void mm_log_handler(const char *file, const char *func, int line,
-    LogLevel level, const char *msg, void *ctx);
+void mm_log_handler(LogLevel level, const char *msg, void *ctx);
 int mm_is_monitor(void);
 EVP_PKEY*	mm_kex_new_dh_group_bits(int, int, int);
 int mm_Xkey_sign(struct ssh *ssh, ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,

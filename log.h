@@ -1,5 +1,4 @@
-/* $OpenBSD: log.h,v 1.30 2020/12/04 02:25:13 djm Exp $ */
-
+/* $OpenBSD: log.h,v 1.33 2021/04/15 16:24:31 markus Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -12,7 +11,7 @@
  * called by a name other than "ssh" or "Secure Shell".
  */
 /*
- * Copyright (c) 2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2020-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -73,8 +72,7 @@ typedef enum {
 	SYSLOG_LEVEL_NOT_SET = -1
 }       LogLevel;
 
-typedef void (log_handler_fn)(const char *file, const char *func, int line,
-    LogLevel level, const char *msg, void *ctx);
+typedef void (log_handler_fn)(LogLevel level, const char *msg, void *ctx);
 
 void     log_init(const char *, LogLevel, SyslogFacility, int);
 int      log_change_level(LogLevel);

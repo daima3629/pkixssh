@@ -1,4 +1,4 @@
-/* $OpenBSD: log.c,v 1.57 2021/04/03 06:18:40 djm Exp $ */
+/* $OpenBSD: log.c,v 1.58 2021/04/15 16:24:31 markus Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -12,7 +12,7 @@
  */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
- * Copyright (c) 2004-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2004-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -76,14 +76,9 @@ extern char *__progname;
 #include <android/log.h>
 
 static void
-android_log(const char *file, const char *func, int line,
-	LogLevel level, const char *msg, void *ctx
-) {
+android_log(LogLevel level, const char *msg, void *ctx) {
 	android_LogPriority a;
 
-	UNUSED(file);
-	UNUSED(func);
-	UNUSED(line);
 	UNUSED(ctx);
 
 	switch (level) {
@@ -498,9 +493,8 @@ sshlogv(const char *file, const char *func, int line,
 	char *txt = NULL;
 	int pri = LOG_INFO;
 	int saved_errno = errno;
-	log_handler_fn *tmp_handler;
 
-	if (level > log_level) {
+	if ((line > 0) && (level > log_level)) {
 		if (!forced_logging(file, func, line))
 			return;
 	}
@@ -553,9 +547,9 @@ sshlogv(const char *file, const char *func, int line,
 #endif
 	if (log_handler != NULL) {
 		/* Avoid recursion */
-		tmp_handler = log_handler;
+		log_handler_fn *tmp_handler = log_handler;
 		log_handler = NULL;
-		tmp_handler(file, func, line, level, fmtbuf, log_handler_ctx);
+		tmp_handler(level, fmtbuf, log_handler_ctx);
 		log_handler = tmp_handler;
 	} else if (log_on_stderr) {
 		snprintf(msgbuf, sizeof msgbuf, "%.*s\r\n",
