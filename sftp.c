@@ -1,6 +1,7 @@
 /* $OpenBSD: sftp.c,v 1.209 2021/04/03 06:58:30 djm Exp $ */
 /*
  * Copyright (c) 2001-2004 Damien Miller <djm@openbsd.org>
+ * Copyright (c) 2013-2021 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -2461,7 +2462,6 @@ main(int argc, char **argv)
 			break;
 		case 'v':
 			if (debug_level < 3) {
-				addargs(&args, "-v");
 				ll = SYSLOG_LEVEL_DEBUG1 + debug_level;
 			}
 			debug_level++;
@@ -2528,6 +2528,13 @@ main(int argc, char **argv)
 		default:
 			usage();
 		}
+	}
+
+	if (debug_level > 0) {
+		addargs(&args, "-v"); // ssh starts from verbose level
+		if (debug_level > 0) addargs(&args, "-v");
+		if (debug_level > 1) addargs(&args, "-v");
+		if (debug_level > 2) addargs(&args, "-v");
 	}
 
 	/* Do this last because we want the user to be able to override it */
