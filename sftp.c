@@ -70,9 +70,6 @@ typedef void EditLine;
 #include "sftp-common.h"
 #include "sftp-client.h"
 
-#define DEFAULT_COPY_BUFLEN	32768	/* Size of buffer for up/download */
-#define DEFAULT_NUM_REQUESTS	64	/* # concurrent outstanding requests */
-
 #define NCMP(a,b) (a == b ? 0 : (a < b ? -1 : 1))
 
 /* File to read commands from */
@@ -2405,8 +2402,8 @@ main(int argc, char **argv)
 	extern int optind;
 	extern char *optarg;
 	struct sftp_conn *conn;
-	size_t copy_buffer_len = DEFAULT_COPY_BUFLEN;
-	size_t num_requests = DEFAULT_NUM_REQUESTS;
+	size_t copy_buffer_len = 0;
+	size_t num_requests = 0;
 	long long limit_kbps = 0;
 
 	ssh_malloc_init();	/* must be called before any mallocs */
