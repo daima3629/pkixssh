@@ -4,7 +4,11 @@ PKG_CONFIG_LIBS = $(PKG_CONFIG) --libs
 
 
 all:
-	@echo "Valid targets: ssh-askpass-gnome ssh-askpass-gtk+2 ssh-askpass2-gtk+3"
+	@echo "Valid targets:" >&2
+	@echo "  ssh-askpass-gnome" >&2
+	@echo "  ssh-askpass-gtk+2" >&2
+	@echo "  ssh-askpass-gtk+3" >&2
+	@echo "  ssh-askpass2-gtk+3" >&2
 
 ssh-askpass-gnome: gnome-ssh-askpass1.c
 	$(CC) $(CFLAGS) `gnome-config --cflags gnome gnomeui` \
@@ -21,9 +25,14 @@ ssh-askpass-gtk+3: gnome-ssh-askpass2.c
 	  -o $@ gnome-ssh-askpass2.c \
 	  `$(PKG_CONFIG_LIBS) gtk+-3.0 x11`
 
+ssh-askpass2-gtk+3: ssh-askpass2-gtk+3.c
+	$(CC) $(CFLAGS) `$(PKG_CONFIG_CFLAGS) gtk+-3.0` \
+	  -o $@ ssh-askpass-gtk+3.c \
+	  `$(PKG_CONFIG_LIBS) gtk+-3.0 x11`
+
 clean:
 	rm -f *.o gnome-ssh-askpass gnome-ssh-askpass[123]
-	rm -f ssh-askpass-gnome ssh-askpass-gtk+[23]
+	rm -f ssh-askpass-gnome ssh-askpass-gtk+[23] ssh-askpass2-gtk+3
 
 
 #obsolete targets - still used in redhat/openssh.spec (TODO)
