@@ -40,6 +40,10 @@ if test -z "$LOGNAME"; then
 	export LOGNAME
 fi
 
+if test -n "$TEST_SSH_ELAPSED_TIME" ; then
+	STARTTIME=`date -u '+%s'`
+fi
+
 PORT=${TEST_SSH_PORT-4242}
 
 OBJ=$1
@@ -401,6 +405,11 @@ cleanup ()
 		rm -rf "$SSH_REGRESS_TMP"
 	fi
 	stop_sshd
+	if test -n "$TEST_SSH_ELAPSED_TIME" ; then
+		now=`date -u '+%s'`
+		elapsed=$(($now - $STARTTIME))
+		echo "- ${SCRIPT##*/} elapsed time: $elapsed"
+	fi
 }
 
 start_debug_log ()
