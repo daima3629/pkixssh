@@ -1,4 +1,4 @@
-/* $OpenBSD: dh.h,v 1.18 2019/09/06 05:23:55 djm Exp $ */
+/* $OpenBSD: dh.h,v 1.19 2021/03/12 04:08:19 dtucker Exp $ */
 
 /*
  * Copyright (c) 2000 Niels Provos.  All rights reserved.

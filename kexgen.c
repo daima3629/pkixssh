@@ -1,4 +1,4 @@
-/* $OpenBSD: kexgen.c,v 1.6 2021/01/31 22:55:29 djm Exp $ */
+/* $OpenBSD: kexgen.c,v 1.7 2021/04/03 06:18:40 djm Exp $ */
 /*
  * Copyright (c) 2019 Markus Friedl.  All rights reserved.
  * Copyright (c) 2019-2021 Roumen Petrov.  All rights reserved.
