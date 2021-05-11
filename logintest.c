@@ -105,7 +105,7 @@ testAPI()
 	printf("login_alloc_entry test (no host info):\n");
 
 	/* FIXME fake tty more effectively - this could upset some platforms */
-	li1 = login_alloc_entry((int)getpid(), username, NULL, ttyname(0));
+	li1 = login_alloc_entry(getpid(), username, NULL, ttyname(0));
 	strlcpy(li1->progname, "OpenSSH-logintest", sizeof(li1->progname));
 
 	if (be_verbose)

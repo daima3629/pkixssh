@@ -340,7 +340,7 @@ login_get_lastlog(struct logininfo *li, const uid_t uid)
 }
 
 /*
- * login_alloc_entry(int, char*, char*, char*)    - Allocate and initialise
+ * login_alloc_entry(pid_t, char*, char*, char*)  - Allocate and initialise
  *                                                  a logininfo structure
  *
  * This function creates a new struct logininfo, a data structure
