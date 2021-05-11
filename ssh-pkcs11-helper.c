@@ -2,7 +2,7 @@
 /*
  * Copyright (c) 2010 Markus Friedl.  All rights reserved.
  * Copyright (c) 2011 Kenneth Robinette.  All rights reserved.
- * Copyright (c) 2016-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2016-2021 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -16,6 +16,15 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
+
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
+#ifndef USE_OPENSSL_PROVIDER
+/* TODO implement OpenSSL 3.1 API */
+# define OPENSSL_SUPPRESS_DEPRECATED
+#endif
 
 #include "includes.h"
 

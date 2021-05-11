@@ -22,6 +22,15 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
+#ifndef USE_OPENSSL_PROVIDER
+/* TODO implement OpenSSL 3.1 API */
+# define OPENSSL_SUPPRESS_DEPRECATED
+#endif
+
 #define SSHKEY_INTERNAL
 #include "includes.h"
 

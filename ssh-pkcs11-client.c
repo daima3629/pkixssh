@@ -16,6 +16,15 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
+#ifndef USE_OPENSSL_PROVIDER
+/* TODO implement OpenSSL 3.1 API */
+# define OPENSSL_SUPPRESS_DEPRECATED
+#endif
+
 #include "includes.h"
 
 #ifdef ENABLE_PKCS11

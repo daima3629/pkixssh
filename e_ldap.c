@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2019-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -21,6 +21,15 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
+#ifndef USE_OPENSSL_PROVIDER
+/* TODO implement OpenSSL 3.1 API */
+# define OPENSSL_SUPPRESS_DEPRECATED
+#endif
 
 #include "ssh_ldap.h"
 
