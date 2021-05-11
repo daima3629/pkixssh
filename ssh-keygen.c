@@ -710,7 +710,7 @@ do_print_public(const struct passwd *pw)
 }
 
 static void
-do_download()
+do_download(void)
 {
 #ifdef ENABLE_PKCS11
 	struct sshkey **keys;
