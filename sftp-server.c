@@ -646,6 +646,20 @@ send_statvfs(u_int32_t id, struct statvfs *st)
 	sshbuf_free(msg);
 }
 
+/*
+ * Prepare SSH2_FXP_VERSION extension advertisement for a single extension.
+ */
+static int
+compose_extension(struct sshbuf *msg, const char *name, const char *ver)
+{
+	int r;
+
+	if ((r = sshbuf_put_cstring(msg, name)) != 0 ||
+	    (r = sshbuf_put_cstring(msg, ver)) != 0)
+		fatal_fr(r, "compose %s", name);
+	return 0;
+}
+
 /* parse incoming */
 
 static void
@@ -660,29 +674,18 @@ process_init(void)
 	if ((msg = sshbuf_new()) == NULL)
 		fatal_f("sshbuf_new failed");
 	if ((r = sshbuf_put_u8(msg, SSH2_FXP_VERSION)) != 0 ||
-	    (r = sshbuf_put_u32(msg, SSH2_FILEXFER_VERSION)) != 0 ||
-	    /* POSIX rename extension */
-	    (r = sshbuf_put_cstring(msg, "posix-rename@openssh.com")) != 0 ||
-	    (r = sshbuf_put_cstring(msg, "1")) != 0 || /* version */
-	    /* statvfs extension */
-	    (r = sshbuf_put_cstring(msg, "statvfs@openssh.com")) != 0 ||
-	    (r = sshbuf_put_cstring(msg, "2")) != 0 || /* version */
-	    /* fstatvfs extension */
-	    (r = sshbuf_put_cstring(msg, "fstatvfs@openssh.com")) != 0 ||
-	    (r = sshbuf_put_cstring(msg, "2")) != 0 || /* version */
-	    /* hardlink extension */
-	    (r = sshbuf_put_cstring(msg, "hardlink@openssh.com")) != 0 ||
-	    (r = sshbuf_put_cstring(msg, "1")) != 0 || /* version */
-	    /* fsync extension */
-	    (r = sshbuf_put_cstring(msg, "fsync@openssh.com")) != 0 ||
-	    (r = sshbuf_put_cstring(msg, "1")) != 0 || /* version */
-	    /* lsetstat extension */
-	    (r = sshbuf_put_cstring(msg, "lsetstat@openssh.com")) != 0 ||
-	    (r = sshbuf_put_cstring(msg, "1")) != 0 || /* version */
-	    /* limits extension */
-	    (r = sshbuf_put_cstring(msg, "limits@openssh.com")) != 0 ||
-	    (r = sshbuf_put_cstring(msg, "1")) != 0) /* version */
+	    (r = sshbuf_put_u32(msg, SSH2_FILEXFER_VERSION)) != 0)
 		fatal_fr(r, "compose");
+
+	 /* extension advertisments */
+	compose_extension(msg, "posix-rename@openssh.com", "1");
+	compose_extension(msg, "statvfs@openssh.com", "2");
+	compose_extension(msg, "fstatvfs@openssh.com", "2");
+	compose_extension(msg, "hardlink@openssh.com", "1");
+	compose_extension(msg, "fsync@openssh.com", "1");
+	compose_extension(msg, "lsetstat@openssh.com", "1");
+	compose_extension(msg, "limits@openssh.com", "1");
+
 	send_msg(msg);
 	sshbuf_free(msg);
 }
