@@ -1,4 +1,4 @@
-/* $OpenBSD: log.c,v 1.58 2021/04/15 16:24:31 markus Exp $ */
+/* $OpenBSD: log.c,v 1.59 2021/05/07 04:11:51 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -601,6 +601,9 @@ sshsigdie(const char *file, const char *func, int line,
 #ifdef DO_LOG_SAFE_IN_SIGHAND
 	va_list args;
 
+	/* TODO: allow log unconditionally?
+	 * NOTE: see sshd.c - it may not perform log in privsep child
+	 */
 	va_start(args, fmt);
 	sshlogv(file, func, line, SYSLOG_LEVEL_FATAL, fmt, args);
 	va_end(args);

@@ -1,4 +1,4 @@
-/* $OpenBSD: sshd.c,v 1.572 2021/04/03 06:18:41 djm Exp $ */
+/* $OpenBSD: sshd.c,v 1.573 2021/05/07 03:09:38 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -396,7 +396,9 @@ grace_alarm_handler(int sig)
 	}
 
 	/* XXX pre-format ipaddr/port so we don't need to access the_active_state */
-	/* Log error and exit. */
+	/* Log error if allowed and exit.
+	 * TODO: disallow log in privsep child? What about PAM module?
+	 */
 	sigdie("Timeout before authentication for %s port %d",
 	    ssh_remote_ipaddr(the_active_state),
 	    ssh_remote_port(the_active_state));
