@@ -421,17 +421,19 @@ channel_find_maxfd(struct ssh_channels *sc)
 }
 
 int
-channel_close_fd(struct ssh *ssh, int *fdp)
+channel_close_fd(struct ssh *ssh, Channel *c, int *fdp)
 {
 	struct ssh_channels *sc = ssh->chanctxt;
-	int ret = 0, fd = *fdp;
+	int ret, fd = *fdp;
 
-	if (fd != -1) {
-		ret = close(fd);
-		*fdp = -1;
-		if (fd == sc->channel_max_fd)
+	UNUSED(c);
+	if (fd == -1)
+		return 0;
+
+	ret = close(fd);
+	*fdp = -1;
+	if (fd == sc->channel_max_fd)
 			channel_find_maxfd(sc);
-	}
 	return ret;
 }
 
@@ -441,13 +443,13 @@ channel_close_fds(struct ssh *ssh, Channel *c)
 {
 	int sock = c->sock, rfd = c->rfd, wfd = c->wfd, efd = c->efd;
 
-	channel_close_fd(ssh, &c->sock);
+	channel_close_fd(ssh, c, &c->sock);
 	if (rfd != sock)
-		channel_close_fd(ssh, &c->rfd);
+		channel_close_fd(ssh, c, &c->rfd);
 	if (wfd != sock && wfd != rfd)
-		channel_close_fd(ssh, &c->wfd);
+		channel_close_fd(ssh, c, &c->wfd);
 	if (efd != sock && efd != rfd && efd != wfd)
-		channel_close_fd(ssh, &c->efd);
+		channel_close_fd(ssh, c, &c->efd);
 }
 
 static void
@@ -704,7 +706,7 @@ channel_stop_listening(struct ssh *ssh)
 			case SSH_CHANNEL_X11_LISTENER:
 			case SSH_CHANNEL_UNIX_LISTENER:
 			case SSH_CHANNEL_RUNIX_LISTENER:
-				channel_close_fd(ssh, &c->sock);
+				channel_close_fd(ssh, c, &c->sock);
 				channel_free(ssh, c);
 				break;
 			}
@@ -1656,7 +1658,7 @@ channel_post_x11_listener(struct ssh *ssh, Channel *c,
 	if (c->single_connection) {
 		oerrno = errno;
 		debug2("single_connection: closing X11 listener.");
-		channel_close_fd(ssh, &c->sock);
+		channel_close_fd(ssh, c, &c->sock);
 		chan_mark_dead(ssh, c);
 		errno = oerrno;
 	}
@@ -2073,7 +2075,7 @@ channel_handle_efd_write(struct ssh *ssh, Channel *c,
 		return 1;
 	if (len <= 0) {
 		debug2("channel %d: closing write-efd %d", c->self, c->efd);
-		channel_close_fd(ssh, &c->efd);
+		channel_close_fd(ssh, c, &c->efd);
 	} else {
 		if ((r = sshbuf_consume(c->extended, len)) != 0)
 			fatal_fr(r, "channel %d: consume", c->self);
@@ -2104,7 +2106,7 @@ channel_handle_efd_read(struct ssh *ssh, Channel *c,
 		return 1;
 	if (len <= 0) {
 		debug2("channel %d: closing read-efd %d", c->self, c->efd);
-		channel_close_fd(ssh, &c->efd);
+		channel_close_fd(ssh, c, &c->efd);
 	} else if (c->extended_usage == CHAN_EXTENDED_IGNORE)
 		debug3("channel %d: discard efd", c->self);
 	else if ((r = sshbuf_put(c->extended, buf, len)) != 0)

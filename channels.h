@@ -265,7 +265,7 @@ void	 channel_register_filter(struct ssh *, int, channel_infilter_fn *,
 void	 channel_register_status_confirm(struct ssh *, int,
 	    channel_confirm_cb *, channel_confirm_abandon_cb *, void *);
 void	 channel_cancel_cleanup(struct ssh *, int);
-int	 channel_close_fd(struct ssh *, int *);
+int	 channel_close_fd(struct ssh *, Channel *, int *);
 void	 channel_send_window_changes(struct ssh *);
 
 /* mux proxy support */
