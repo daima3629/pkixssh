@@ -160,6 +160,18 @@ static const struct sftp_handler extended_handlers[] = {
 	{ NULL, NULL, 0, NULL, 0 }
 };
 
+static const struct sftp_handler *
+extended_handler_byname(const char *name)
+{
+	int i;
+
+	for (i = 0; extended_handlers[i].handler != NULL; i++) {
+		if (strcmp(name, extended_handlers[i].ext_name) == 0)
+			return &extended_handlers[i];
+	}
+	return NULL;
+}
+
 static int
 request_permitted(const struct sftp_handler *h)
 {
@@ -1496,22 +1508,19 @@ static void
 process_extended(u_int32_t id)
 {
 	char *request;
-	int i, r;
+	int r;
+	const struct sftp_handler *exthand;
 
 	if ((r = sshbuf_get_cstring(iqueue, &request, NULL)) != 0)
 		fatal_fr(r, "parse");
-	for (i = 0; extended_handlers[i].handler != NULL; i++) {
-		if (strcmp(request, extended_handlers[i].ext_name) == 0) {
-			if (!request_permitted(&extended_handlers[i]))
-				send_status(id, SSH2_FX_PERMISSION_DENIED);
-			else
-				extended_handlers[i].handler(id);
-			break;
-		}
-	}
-	if (extended_handlers[i].handler == NULL) {
+	if ((exthand = extended_handler_byname(request)) == NULL) {
 		error("Unknown extended request \"%.100s\"", request);
 		send_status(id, SSH2_FX_OP_UNSUPPORTED);	/* MUST */
+	} else {
+		if (!request_permitted(exthand))
+			send_status(id, SSH2_FX_PERMISSION_DENIED);
+		else
+			exthand->handler(id);
 	}
 	free(request);
 }
