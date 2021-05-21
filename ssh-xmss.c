@@ -45,6 +45,7 @@ ssh_xmss_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 	int r, ret;
 	struct sshbuf *b = NULL;
 
+	UNUSED(compat);
 	if (lenp != NULL)
 		*lenp = 0;
 	if (sigp != NULL)
@@ -120,6 +121,7 @@ ssh_xmss_verify(const struct sshkey *key,
 	unsigned long long smlen = 0, mlen = 0;
 	int r, ret;
 
+	UNUSED(compat);
 	if (key == NULL ||
 	    sshkey_type_plain(key->type) != KEY_XMSS ||
 	    key->xmss_pk == NULL ||
