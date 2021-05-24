@@ -1377,9 +1377,9 @@ done_ecpub:
 	EC_KEY_free(pk_ec);
 	if (ec == NULL) goto fail;
 
-	key->ecdsa_nid  = sshkey_ecdsa_key_to_nid(ec);
+	key->ecdsa_nid  = ssh_EC_KEY_preserve_nid(ec);
 	if (key->ecdsa_nid  < 0) {
-		error("unsupported elliptic curve");
+		error_f("unsupported elliptic curve");
 		goto fail;
 	}
 }

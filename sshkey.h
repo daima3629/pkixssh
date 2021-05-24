@@ -217,7 +217,6 @@ int		 sshkey_curve_name_to_nid(const char *);
 const char *	 sshkey_curve_nid_to_name(int);
 u_int		 sshkey_curve_nid_to_bits(int);
 int		 sshkey_ecdsa_bits_to_nid(int);
-int		 sshkey_ecdsa_key_to_nid(EC_KEY *);
 int		 sshkey_ec_nid_to_hash_alg(int nid);
 int		 sshkey_ec_validate_public(const EC_GROUP *, const EC_POINT *);
 const char	*sshkey_ssh_name(const struct sshkey *);
@@ -338,6 +337,10 @@ int	sshbuf_write_priv_dsa(struct sshbuf *buf, const struct sshkey *key);
 #  ifdef OPENSSL_HAS_ECC
 int	sshbuf_write_pub_ecdsa(struct sshbuf *buf, const struct sshkey *key);
 int	sshbuf_write_priv_ecdsa(struct sshbuf *buf, const struct sshkey *key);
+#  endif /* OPENSSL_HAS_ECC */
+
+#  ifdef OPENSSL_HAS_ECC
+int	 ssh_EC_KEY_preserve_nid(EC_KEY *);
 #  endif /* OPENSSL_HAS_ECC */
 # endif /* WITH_OPENSSL */
 #endif /* SSHKEY_INTERNAL */

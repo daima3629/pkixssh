@@ -25,6 +25,7 @@
 # define OPENSSL_SUPPRESS_DEPRECATED
 #endif
 
+#define SSHKEY_INTERNAL
 #include "includes.h"
 
 #ifdef ENABLE_PKCS11
@@ -229,7 +230,7 @@ pkcs11_ecdsa_do_sign(
 		error_f("sshkey_new failed");
 		goto done;
 	}
-	key->ecdsa_nid = sshkey_ecdsa_key_to_nid(ec);
+	key->ecdsa_nid = ssh_EC_KEY_preserve_nid(ec);
 	if (key->ecdsa_nid < 0) {
 		error_f("unsupported elliptic curve");
 		goto done;

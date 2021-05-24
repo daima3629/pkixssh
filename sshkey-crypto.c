@@ -541,6 +541,57 @@ err:
 
 
 #ifdef OPENSSL_HAS_ECC
+int
+ssh_EC_KEY_preserve_nid(EC_KEY *ec)
+{
+	static int nids[] = {
+		NID_X9_62_prime256v1,
+		NID_secp384r1,
+#  ifdef OPENSSL_HAS_NISTP521
+		NID_secp521r1,
+#  endif /* OPENSSL_HAS_NISTP521 */
+		-1
+	};
+	int k;
+	const EC_GROUP *g = EC_KEY_get0_group(ec);
+
+	/*
+	 * The group may be stored in a ASN.1 encoded private key in one of two
+	 * ways: as a "named group", which is reconstituted by ASN.1 object ID
+	 * or explicit group parameters encoded into the key blob. Only the
+	 * "named group" case sets the group NID for us, but we can figure
+	 * it out for the other case by comparing against all the groups that
+	 * are supported.
+	 */
+{	int nid = EC_GROUP_get_curve_name(g);
+	if (nid > 0) {
+		for (k = 0; nids[k] != -1; k++) {
+			if (nid == nids[k])
+				return nid;
+		}
+		return -1;
+	}
+}
+{	EC_GROUP *eg;
+	for (k = 0; nids[k] != -1; k++) {
+		eg = EC_GROUP_new_by_curve_name(nids[k]);
+		if (eg == NULL) return -1;
+		if (EC_GROUP_cmp(g, eg, NULL) == 0)
+			break;
+		EC_GROUP_free(eg);
+	}
+	if (nids[k] == -1) return -1;
+	/* Use the group with the NID attached */
+	EC_GROUP_set_asn1_flag(eg, OPENSSL_EC_NAMED_CURVE);
+	if (EC_KEY_set_group(ec, eg) != 1) {
+		EC_GROUP_free(eg);
+		return -1;
+	}
+	EC_GROUP_free(eg);
+}
+	return nids[k];
+}
+
 static inline EC_KEY*
 ssh_EC_KEY_new_by_curve_name(int nid) {
 	EC_KEY *ec;
@@ -601,7 +652,7 @@ ssh_EVP_PKEY_complete_pub_ecdsa(EVP_PKEY *pk) {
 	if (ec == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;
 
-	nid = sshkey_ecdsa_key_to_nid(ec);
+	nid = ssh_EC_KEY_preserve_nid(ec);
 	if (nid < 0) {
 		error_f("unsupported elliptic curve");
 		r = SSH_ERR_EC_CURVE_INVALID;
