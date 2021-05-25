@@ -41,6 +41,8 @@
 #include "compat.h"
 #include "log.h"
 
+extern int channel_close_fd(struct ssh *, Channel *, int);
+
 /*
  * SSH Protocol 1.5 aka New Channel Protocol
  * Thanks to Martina, Axel and everyone who left Erlangen, leaving me bored.
@@ -385,7 +387,7 @@ chan_shutdown_write(struct ssh *ssh, Channel *c)
 			    c->istate, c->ostate, strerror(errno));
 		}
 	} else {
-		if (channel_close_fd(ssh, c, &c->wfd) < 0) {
+		if (channel_close_fd(ssh, c, SSH_CHANNEL_FD_OUTPUT) < 0) {
 			error_f("channel %d: close() failed for "
 			    "write fd %d [i%d o%d]: %.100s", c->self, c->wfd,
 			    c->istate, c->ostate, strerror(errno));
@@ -413,7 +415,7 @@ chan_shutdown_read(struct ssh *ssh, Channel *c)
 			    c->istate, c->ostate, strerror(errno));
 		}
 	} else {
-		if (channel_close_fd(ssh, c, &c->rfd) < 0) {
+		if (channel_close_fd(ssh, c, SSH_CHANNEL_FD_INPUT) < 0) {
 			error_f("channel %d: close() failed for "
 			    "read fd %d [i%d o%d]: %.100s", c->self, c->rfd,
 			    c->istate, c->ostate, strerror(errno));
@@ -432,7 +434,7 @@ chan_shutdown_extended_read(struct ssh *ssh, Channel *c)
 	debug2_f("channel %d: (i%d o%d sock %d wfd %d efd %d [%s])",
 	    c->self, c->istate, c->ostate, c->sock, c->rfd, c->efd,
 	    channel_format_extended_usage(c));
-	if (channel_close_fd(ssh, c, &c->efd) < 0) {
+	if (channel_close_fd(ssh, c, SSH_CHANNEL_FD_ERROR) < 0) {
 		error_f("channel %d: close() failed for "
 		    "extended fd %d [i%d o%d]: %.100s", c->self, c->efd,
 		    c->istate, c->ostate, strerror(errno));

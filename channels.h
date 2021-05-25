@@ -12,6 +12,7 @@
  */
 /*
  * Copyright (c) 1999, 2000, 2001, 2002 Markus Friedl.  All rights reserved.
+ * Copyright (c) 2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -36,6 +37,12 @@
 
 #ifndef CHANNEL_H
 #define CHANNEL_H
+
+/* Definitions for channel descriptors. */
+#define SSH_CHANNEL_FD_INPUT		1
+#define SSH_CHANNEL_FD_OUTPUT		2
+#define SSH_CHANNEL_FD_ERROR		3
+#define SSH_CHANNEL_FD_SOCKET		4
 
 /* Definitions for channel types. */
 #define SSH_CHANNEL_X11_LISTENER	1	/* Listening for inet X11 conn. */
@@ -265,7 +272,6 @@ void	 channel_register_filter(struct ssh *, int, channel_infilter_fn *,
 void	 channel_register_status_confirm(struct ssh *, int,
 	    channel_confirm_cb *, channel_confirm_abandon_cb *, void *);
 void	 channel_cancel_cleanup(struct ssh *, int);
-int	 channel_close_fd(struct ssh *, Channel *, int *);
 void	 channel_send_window_changes(struct ssh *);
 
 /* mux proxy support */
