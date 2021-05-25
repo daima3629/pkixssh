@@ -2217,7 +2217,7 @@ ssh_session2_open(struct ssh *ssh)
 	    window, packetmax, CHAN_EXTENDED_WRITE,
 	    "client-session", /*nonblock*/0);
 
-	debug3_f("channel_new: %d", c->self);
+	debug2_f("channel %d", c->self);
 
 	channel_send_open(ssh, c->self);
 	if (!no_shell_flag)

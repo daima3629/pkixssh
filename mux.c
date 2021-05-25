@@ -486,8 +486,7 @@ mux_master_process_new_session(struct ssh *ssh, u_int rid,
 		    client_new_escape_filter_ctx((int)escape_char));
 	}
 
-	debug2_f("channel_new: %d linked to control channel %d",
-	    nc->self, nc->ctl_chan);
+	debug2_f("channel %d, control %d", nc->self, nc->ctl_chan);
 
 	channel_send_open(ssh, nc->self);
 	channel_register_open_confirm(ssh, nc->self, mux_session_confirm, cctx);
@@ -1043,7 +1042,7 @@ mux_master_process_stdio_fwd(struct ssh *ssh, u_int rid,
 	c->remote_id = nc->self;	/* link control -> session channel */
 	c->have_remote_id = 1;
 
-	debug2_f("channel_new: %d control %d", nc->self, nc->ctl_chan);
+	debug2_f("channel %d, control %d", nc->self, nc->ctl_chan);
 
 	channel_register_cleanup(ssh, nc->self,
 	    mux_master_session_cleanup_cb, 1);
