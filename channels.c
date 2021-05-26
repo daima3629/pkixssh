@@ -1,4 +1,4 @@
-/* $OpenBSD: channels.c,v 1.406 2021/04/03 06:18:40 djm Exp $ */
+/* $OpenBSD: channels.c,v 1.407 2021/05/19 01:24:05 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -334,7 +334,21 @@ channel_register_fds(struct ssh *ssh, Channel *c, int rfd, int wfd, int efd,
 #endif
 
 	/* enable nonblocking mode */
-	if (nonblock) {
+	c->restore_block = 0;
+	if (nonblock == CHANNEL_NONBLOCK_STDIO) {
+		/*
+		 * Special handling for standard file descriptors: do not set
+		 * non-blocking mode if they are TTYs. Otherwise prepare to
+		 * restore their blocking state on exit to avoid interfering
+		 * with other programs that follow.
+		 */
+		if (rfd != -1 && !isatty(rfd) && set_nonblock(rfd) == 1)
+			c->restore_block |= CHANNEL_RESTORE_RFD;
+		if (wfd != -1 && !isatty(wfd) && set_nonblock(wfd) == 1)
+			c->restore_block |= CHANNEL_RESTORE_WFD;
+		if (efd != -1 && !isatty(efd) && set_nonblock(efd) == 1)
+			c->restore_block |= CHANNEL_RESTORE_EFD;
+	} else if (nonblock == CHANNEL_NONBLOCK_SET) {
 		if (rfd != -1)
 			set_nonblock(rfd);
 		if (wfd != -1)
@@ -426,17 +440,20 @@ int
 channel_close_fd(struct ssh *ssh, Channel *c, int id)
 {
 	struct ssh_channels *sc = ssh->chanctxt;
-	int fd, *fdp = NULL;
+	int fd, *fdp = NULL, restore_block = 0;
 
 	switch (id) {
 	case SSH_CHANNEL_FD_INPUT :
 		fdp = &c->rfd;
+		restore_block = ((c->restore_block & CHANNEL_RESTORE_RFD) != 0);
 		break;
 	case SSH_CHANNEL_FD_OUTPUT:
 		fdp = &c->wfd;
+		restore_block = ((c->restore_block & CHANNEL_RESTORE_WFD) != 0);
 		break;
 	case SSH_CHANNEL_FD_ERROR :
 		fdp = &c->efd;
+		restore_block = ((c->restore_block & CHANNEL_RESTORE_EFD) != 0);
 		break;
 	case SSH_CHANNEL_FD_SOCKET:
 		fdp = &c->sock;
@@ -446,6 +463,8 @@ channel_close_fd(struct ssh *ssh, Channel *c, int id)
 	fd = *fdp;
 	if (fd == -1) return 0;
 
+	if (restore_block)
+		unset_nonblock(fd);
 	if (close(fd) == -1) return -1;
 
 	*fdp = -1;
@@ -1516,7 +1535,8 @@ channel_decode_socks5(Channel *c, struct sshbuf *input, struct sshbuf *output)
 
 Channel *
 channel_connect_stdio_fwd(struct ssh *ssh,
-    const char *host_to_connect, u_short port_to_connect, int in, int out)
+    const char *host_to_connect, u_short port_to_connect,
+    int in, int out, int nonblock)
 {
 	Channel *c;
 
@@ -1524,7 +1544,7 @@ channel_connect_stdio_fwd(struct ssh *ssh,
 
 	c = channel_new(ssh, "stdio-forward", SSH_CHANNEL_OPENING, in, out,
 	    -1, CHAN_TCP_WINDOW_DEFAULT, CHAN_TCP_PACKET_DEFAULT,
-	    0, "stdio-forward", /*nonblock*/0);
+	    0, "stdio-forward", nonblock);
 
 	c->path = xstrdup(host_to_connect);
 	c->host_port = port_to_connect;

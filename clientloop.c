@@ -1,4 +1,4 @@
-/* $OpenBSD: clientloop.c,v 1.359 2021/03/19 02:22:34 djm Exp $ */
+/* $OpenBSD: clientloop.c,v 1.363 2021/05/19 01:24:05 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -1407,14 +1407,6 @@ client_loop(struct ssh *ssh, int have_pty, int escape_char_arg,
 	if (have_pty)
 		leave_raw_mode(options.request_tty == REQUEST_TTY_FORCE);
 
-	/* restore blocking io */
-	if (!isatty(fileno(stdin)))
-		unset_nonblock(fileno(stdin));
-	if (!isatty(fileno(stdout)))
-		unset_nonblock(fileno(stdout));
-	if (!isatty(fileno(stderr)))
-		unset_nonblock(fileno(stderr));
-
 	/*
 	 * If there was no shell or command requested, there will be no remote
 	 * exit status to be returned.  In that case, clear error code if the
@@ -1587,7 +1579,8 @@ client_request_x11(struct ssh *ssh, const char *request_type, int rchan)
 		return NULL;
 	c = channel_new(ssh, "x11",
 	    SSH_CHANNEL_X11_OPEN, sock, sock, -1,
-	    CHAN_TCP_WINDOW_DEFAULT, CHAN_X11_PACKET_DEFAULT, 0, "x11", 1);
+	    CHAN_TCP_WINDOW_DEFAULT, CHAN_X11_PACKET_DEFAULT, 0, "x11",
+	    CHANNEL_NONBLOCK_SET);
 	c->force_drain = 1;
 	return c;
 }
@@ -1619,7 +1612,7 @@ client_request_agent(struct ssh *ssh, const char *request_type, int rchan)
 	c = channel_new(ssh, "authentication agent connection",
 	    SSH_CHANNEL_OPEN, sock, sock, -1,
 	    CHAN_X11_WINDOW_DEFAULT, CHAN_TCP_PACKET_DEFAULT, 0,
-	    "authentication agent connection", 1);
+	    "authentication agent connection", CHANNEL_NONBLOCK_SET);
 	c->force_drain = 1;
 	return c;
 }
@@ -1645,7 +1638,8 @@ client_request_tun_fwd(struct ssh *ssh, int tun_mode,
 	debug("Tunnel forwarding using interface %s", ifname);
 
 	c = channel_new(ssh, "tun", SSH_CHANNEL_OPENING, fd, fd, -1,
-	    CHAN_TCP_WINDOW_DEFAULT, CHAN_TCP_PACKET_DEFAULT, 0, "tun", 1);
+	    CHAN_TCP_WINDOW_DEFAULT, CHAN_TCP_PACKET_DEFAULT, 0, "tun",
+	    CHANNEL_NONBLOCK_SET);
 	c->datagram = 1;
 
 #if defined(SSH_TUN_FILTER)

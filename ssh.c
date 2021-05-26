@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh.c,v 1.553 2021/04/03 05:40:39 djm Exp $ */
+/* $OpenBSD: ssh.c,v 1.557 2021/05/19 01:24:05 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -1995,7 +1995,8 @@ ssh_init_stdio_forwarding(struct ssh *ssh)
 	    (out = dup(STDOUT_FILENO)) == -1)
 		fatal_f("dup() in/out failed");
 	if ((c = channel_connect_stdio_fwd(ssh, options.stdio_forward_host,
-	    options.stdio_forward_port, in, out)) == NULL)
+	    options.stdio_forward_port, in, out,
+	    CHANNEL_NONBLOCK_STDIO)) == NULL)
 		fatal_f("channel_connect_stdio_fwd failed");
 	channel_register_cleanup(ssh, c->self, client_cleanup_stdio_fwd, 0);
 	channel_register_open_confirm(ssh, c->self, ssh_stdio_confirm, NULL);
@@ -2198,14 +2199,6 @@ ssh_session2_open(struct ssh *ssh)
 	if (in == -1 || out == -1 || err == -1)
 		fatal("dup() in/out/err failed");
 
-	/* enable nonblocking unless tty */
-	if (!isatty(in))
-		set_nonblock(in);
-	if (!isatty(out))
-		set_nonblock(out);
-	if (!isatty(err))
-		set_nonblock(err);
-
 	window = CHAN_SES_WINDOW_DEFAULT;
 	packetmax = CHAN_SES_PACKET_DEFAULT;
 	if (tty_flag) {
@@ -2215,7 +2208,7 @@ ssh_session2_open(struct ssh *ssh)
 	c = channel_new(ssh,
 	    "session", SSH_CHANNEL_OPENING, in, out, err,
 	    window, packetmax, CHAN_EXTENDED_WRITE,
-	    "client-session", /*nonblock*/0);
+	    "client-session", CHANNEL_NONBLOCK_STDIO);
 
 	debug2_f("channel %d", c->self);
 
