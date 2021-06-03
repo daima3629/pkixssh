@@ -98,9 +98,12 @@ SSHD_PRIVSEP=${SSHD_PRIVSEP-yes no sandbox}
 SSH_REGRESS_TMP=
 
 # Interop testing
-PLINK=plink
-PUTTYGEN=puttygen
-CONCH=conch
+PLINK=${PLINK-plink}
+PUTTYGEN=${PUTTYGEN-puttygen}
+CONCH=${CONCH-conch}
+expr $PLINK    : '*/*' > /dev/null || PLINK=`which $PLINK 2>/dev/null`
+expr $PUTTYGEN : '*/*' > /dev/null || PUTTYGEN=`which $PUTTYGEN 2>/dev/null`
+expr $CONCH    : '*/*' > /dev/null || CONCH=`which $CONCH 2>/dev/null`
 
 # Tools used by multiple tests
 NC=$OBJ/netcat
@@ -131,27 +134,6 @@ if [ "x$TEST_SSH_SFTPSERVER" != "x" ]; then
 fi
 if [ "x$TEST_SSH_SCP" != "x" ]; then
 	SCP="${TEST_SSH_SCP}"
-fi
-if [ "x$TEST_SSH_PLINK" != "x" ]; then
-	# Find real binary, if it exists
-	case "${TEST_SSH_PLINK}" in
-	/*) PLINK="${TEST_SSH_PLINK}" ;;
-	*) PLINK=`which ${TEST_SSH_PLINK} 2>/dev/null` ;;
-	esac
-fi
-if [ "x$TEST_SSH_PUTTYGEN" != "x" ]; then
-	# Find real binary, if it exists
-	case "${TEST_SSH_PUTTYGEN}" in
-	/*) PUTTYGEN="${TEST_SSH_PUTTYGEN}" ;;
-	*) PUTTYGEN=`which ${TEST_SSH_PUTTYGEN} 2>/dev/null` ;;
-	esac
-fi
-if [ "x$TEST_SSH_CONCH" != "x" ]; then
-	# Find real binary, if it exists
-	case "${TEST_SSH_CONCH}" in
-	/*) CONCH="${TEST_SSH_CONCH}" ;;
-	*) CONCH=`which ${TEST_SSH_CONCH} 2>/dev/null` ;;
-	esac
 fi
 if [ "x$TEST_SSH_SSHPKCS11HELPER" != "x" ]; then
 	SSH_PKCS11_HELPER="${TEST_SSH_SSHPKCS11HELPER}"
