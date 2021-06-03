@@ -672,9 +672,6 @@ check-core unit file-tests t-exec f-exec interop-tests: regress-binaries $(TARGE
 	TEST_SSH_PLINK="$${TEST_SSH_PLINK-plink}"; \
 	TEST_SSH_PUTTYGEN="$${TEST_SSH_PUTTYGEN-puttygen}"; \
 	TEST_SSH_CONCH="$${TEST_SSH_CONCH-conch}"; \
-	TEST_SSH_IPV6="@TEST_SSH_IPV6@" ; \
-	TEST_SSH_UTF8="@TEST_SSH_UTF8@" ; \
-	TEST_SSH_ECC="@TEST_SSH_ECC@" ; \
 	cd $(srcdir)/regress || exit $$?; \
 	$(MAKE) \
 		.OBJDIR="$${BUILDDIR}/regress" \
@@ -698,11 +695,6 @@ check-core unit file-tests t-exec f-exec interop-tests: regress-binaries $(TARGE
 		TEST_SSH_PLINK="$${TEST_SSH_PLINK}" \
 		TEST_SSH_PUTTYGEN="$${TEST_SSH_PUTTYGEN}" \
 		TEST_SSH_CONCH="$${TEST_SSH_CONCH}" \
-		TEST_SSH_IPV6="$${TEST_SSH_IPV6}" \
-		TEST_SSH_UTF8="$${TEST_SSH_UTF8}" \
-		TEST_SSH_ECC="$${TEST_SSH_ECC}" \
-		TEST_SHELL="$(TEST_SHELL)" \
-		EXEEXT="$(EXEEXT)" \
 		$@ && echo 'regress test "$@" pass'
 
 CHECKCERTSENV = \
