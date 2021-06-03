@@ -1,4 +1,4 @@
-#	$OpenBSD: test-exec.sh,v 1.79 2021/04/06 23:57:56 dtucker Exp $
+#	$OpenBSD: test-exec.sh,v 1.81 2021/06/01 23:56:20 dtucker Exp $
 #	Placed in the Public Domain.
 
 #SUDO=sudo
@@ -107,6 +107,9 @@ expr $CONCH    : '*/*' > /dev/null || CONCH=`which $CONCH 2>/dev/null`
 
 # Tools used by multiple tests
 NC=$OBJ/netcat
+OPENSSL=${OPENSSL-openssl}
+expr $OPENSSL : '*/*' > /dev/null || OPENSSL=`which $OPENSSL 2>/dev/null`
+test -n "$OPENSSL" && export OPENSSL
 
 if [ "x$TEST_SSH_SSH" != "x" ]; then
 	SSH="${TEST_SSH_SSH}"
@@ -324,8 +327,8 @@ config_defined ()
 md5 () {
 	if have_prog md5sum; then
 		md5sum
-	elif have_prog openssl; then
-		openssl md5
+	elif test -x "$OPENSSL" ; then
+		$OPENSSL md5
 	elif have_prog cksum; then
 		cksum
 	elif have_prog sum; then

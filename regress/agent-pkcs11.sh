@@ -1,4 +1,4 @@
-#	$OpenBSD: agent-pkcs11.sh,v 1.3 2017/04/30 23:34:55 djm Exp $
+#	$OpenBSD: agent-pkcs11.sh,v 1.8 2021/05/24 10:25:18 dtucker Exp $
 #	Placed in the Public Domain.
 
 tid="pkcs11 agent test"
@@ -30,9 +30,9 @@ if [ $r -ne 0 ]; then
 else
 	trace "generating key/cert"
 	rm -f $OBJ/pkcs11.key $OBJ/pkcs11.crt
-	openssl genrsa -out $OBJ/pkcs11.key 2048 > /dev/null 2>&1
+	$OPENSSL genrsa -out $OBJ/pkcs11.key 2048 > /dev/null 2>&1
 	chmod 600 $OBJ/pkcs11.key 
-	openssl req -key $OBJ/pkcs11.key -new -x509 \
+	$OPENSSL req -key $OBJ/pkcs11.key -new -x509 \
 	    -out $OBJ/pkcs11.crt -text -subj '/CN=pkcs11 test' > /dev/null
 	printf "a\ta\t$OBJ/pkcs11.crt\t$OBJ/pkcs11.key" > $SOFTPKCS11RC
 	# add to authorized keys

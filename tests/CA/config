@@ -83,13 +83,13 @@ fi
 
 # === openssl:
 
-if test -z "${OPENSSL}"; then
-  OPENSSL=`which openssl 2>/dev/null`
-  if test -z "${OPENSSL}"; then
-    echo "error: cannot find openssl is your path !" >&2
-    exit 1
-  fi
+OPENSSL=${OPENSSL-openssl}
+expr $OPENSSL : '*/*' > /dev/null || OPENSSL=`which $OPENSSL 2>/dev/null`
+if test -z "$OPENSSL"; then
+  echo "error: cannot find openssl in your path !" >&2
+  exit 1
 fi
+export OPENSSL
 
 #NOTE: environment variable OPENSSL_FIPS is used as test flag
 # in regression tests
