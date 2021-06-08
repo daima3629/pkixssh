@@ -1,4 +1,4 @@
-/* $OpenBSD: sftp-client.c,v 1.142 2021/04/03 06:18:41 djm Exp $ */
+/* $OpenBSD: sftp-client.c,v 1.143 2021/06/06 03:17:02 djm Exp $ */
 /*
  * Copyright (c) 2001-2004 Damien Miller <djm@openbsd.org>
  * Copyright (c) 2018-2021 Roumen Petrov.  All rights reserved.
@@ -471,8 +471,12 @@ do_limits(struct sftp_conn *conn, struct sftp_limits *limits)
 		return 0;
 	}
 	if (type != SSH2_FXP_EXTENDED_REPLY) {
-		fatal("Expected SSH2_FXP_EXTENDED_REPLY(%u) packet, got %u",
+		debug_f("Expected SSH2_FXP_EXTENDED_REPLY(%u) packet, got %u",
 		    SSH2_FXP_EXTENDED_REPLY, (u_int)type);
+		/* Disable the limits extension */
+		conn->exts &= ~SFTP_EXT_LIMITS;
+		sshbuf_free(msg);
+		return 0;
 	}
 
 	memset(limits, 0, sizeof(*limits));
