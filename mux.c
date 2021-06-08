@@ -1,4 +1,4 @@
-/* $OpenBSD: mux.c,v 1.88 2021/05/19 01:24:05 djm Exp $ */
+/* $OpenBSD: mux.c,v 1.89 2021/06/04 05:02:40 djm Exp $ */
 /*
  * Copyright (c) 2002-2008 Damien Miller <djm@openbsd.org>
  * Copyright (c) 2018-2020 Roumen Petrov.  All rights reserved.
@@ -1891,8 +1891,11 @@ mux_client_request_session(int fd)
 	if (stdfd_devnull(stdin_null_flag, 0, 0) == -1)
 		fatal_f("stdfd_devnull failed");
 
-	if ((term = getenv("TERM")) == NULL)
+	if ((term = lookup_env_in_list("TERM", options.setenv,
+	    options.num_setenv)) == NULL ||
+	    (term = getenv("TERM")) == NULL)
 		term = "";
+
 	echar = 0xffffffff;
 	if (options.escape_char != SSH_ESCAPECHAR_NONE)
 	    echar = (u_int32_t)options.escape_char;
