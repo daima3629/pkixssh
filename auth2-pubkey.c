@@ -565,9 +565,7 @@ match_principals_command(struct ssh *ssh, struct passwd *user_pw,
 	if (f != NULL)
 		fclose(f);
 	ssh_signal(SIGCHLD, osigchld);
-	for (i = 0; i < ac; i++)
-		free(av[i]);
-	free(av);
+	argv_free(av, ac);
 	if (uid_swapped)
 		restore_uid();
 	free(command);
@@ -1030,9 +1028,7 @@ user_key_command_allowed2(struct ssh *ssh, struct passwd *user_pw,
 	if (f != NULL)
 		fclose(f);
 	ssh_signal(SIGCHLD, osigchld);
-	for (i = 0; i < ac; i++)
-		free(av[i]);
-	free(av);
+	argv_free(av, ac);
 	if (uid_swapped)
 		restore_uid();
 	free(command);

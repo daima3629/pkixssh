@@ -1,4 +1,4 @@
-/* $OpenBSD: misc.h,v 1.96 2021/06/04 05:02:40 djm Exp $ */
+/* $OpenBSD: misc.h,v 1.97 2021/06/08 06:54:40 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -183,6 +183,8 @@ const char *lookup_env_in_list(const char *env,
 
 int	 argv_split(const char *, int *, char ***);
 char	*argv_assemble(int, char **argv);
+void	 argv_free(char **, int);
+
 int	 exited_cleanly(pid_t, const char *, const char *, int);
 int	 ssh_signame2code(char *name);
 

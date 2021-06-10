@@ -1,4 +1,4 @@
-/* $OpenBSD: misc.c,v 1.165 2021/06/04 05:02:40 djm Exp $ */
+/* $OpenBSD: misc.c,v 1.166 2021/06/08 06:54:40 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2005,2006 Damien Miller.  All rights reserved.
@@ -1982,7 +1982,6 @@ daemonized(void)
 	return 1;
 }
 
-
 /*
  * Splits 's' into an argument vector. Handles quoted string and basic
  * escape characters (\\, \", \'). Caller must free the argument vector
@@ -2015,7 +2014,8 @@ argv_split(const char *s, int *argcp, char ***argvp)
 			if (s[i] == '\\') {
 				if (s[i + 1] == '\'' ||
 				    s[i + 1] == '\"' ||
-				    s[i + 1] == '\\') {
+				    s[i + 1] == '\\' ||
+				    (quote == 0 && s[i + 1] == ' ')) {
 					i++; /* Skip '\' */
 					arg[j++] = s[i];
 				} else {
@@ -2107,6 +2107,18 @@ argv_assemble(int argc, char **argv)
 	sshbuf_free(buf);
 	sshbuf_free(arg);
 	return ret;
+}
+
+void
+argv_free(char **av, int ac)
+{
+	int i;
+
+	if (av == NULL)
+		return;
+	for (i = 0; i < ac; i++)
+		free(av[i]);
+	free(av);
 }
 
 /* Returns 0 if pid exited cleanly, non-zero otherwise */
