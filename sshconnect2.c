@@ -115,9 +115,9 @@ order_hostkeyalgs(char *host, struct sockaddr *hostaddr, u_short port,
 	get_hostfile_hostname_ipaddr(host, hostaddr, port, &hostname, NULL);
 	hostkeys = init_hostkeys();
 	for (i = 0; i < options.num_user_hostfiles; i++)
-		load_hostkeys(hostkeys, hostname, options.user_hostfiles[i]);
+		load_hostkeys(hostkeys, hostname, options.user_hostfiles[i], 0);
 	for (i = 0; i < options.num_system_hostfiles; i++)
-		load_hostkeys(hostkeys, hostname, options.system_hostfiles[i]);
+		load_hostkeys(hostkeys, hostname, options.system_hostfiles[i], 0);
 
 	oavail = avail = xstrdup(options.hostkeyalgorithms);
 	maxlen = strlen(avail) + 1;

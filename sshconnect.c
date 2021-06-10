@@ -12,7 +12,7 @@
  * incompatible with the protocol description in the RFC file, it must be
  * called by a name other than "ssh" or "Secure Shell".
  *
- * Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -789,7 +789,7 @@ hostkeys_find_by_key_hostfile(const char *file, const char *which,
 
 	r = hostkeys_foreach(file, hostkeys_find_by_key_cb,
 	    ctx, ctx->host, ctx->ip,
-	    HKF_WANT_PARSE_KEY);
+	    HKF_WANT_PARSE_KEY, 0);
 	if (r == 0) return 0;
 
 	if (r == SSH_ERR_SYSTEM_ERROR && errno == ENOENT) {
@@ -941,17 +941,17 @@ check_host_key(char *hostname, const struct ssh_conn_info *cinfo,
 
 	host_hostkeys = init_hostkeys();
 	for (i = 0; i < num_user_hostfiles; i++)
-		load_hostkeys(host_hostkeys, host, user_hostfiles[i]);
+		load_hostkeys(host_hostkeys, host, user_hostfiles[i], 0);
 	for (i = 0; i < num_system_hostfiles; i++)
-		load_hostkeys(host_hostkeys, host, system_hostfiles[i]);
+		load_hostkeys(host_hostkeys, host, system_hostfiles[i], 0);
 
 	ip_hostkeys = NULL;
 	if (!want_cert && options.check_host_ip) {
 		ip_hostkeys = init_hostkeys();
 		for (i = 0; i < num_user_hostfiles; i++)
-			load_hostkeys(ip_hostkeys, ip, user_hostfiles[i]);
+			load_hostkeys(ip_hostkeys, ip, user_hostfiles[i], 0);
 		for (i = 0; i < num_system_hostfiles; i++)
-			load_hostkeys(ip_hostkeys, ip, system_hostfiles[i]);
+			load_hostkeys(ip_hostkeys, ip, system_hostfiles[i], 0);
 	}
 
  retry:

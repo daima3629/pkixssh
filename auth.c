@@ -490,7 +490,7 @@ check_key_in_hostfiles(struct passwd *pw, struct sshkey *key, const char *host,
 	const struct hostkey_entry *found;
 
 	hostkeys = init_hostkeys();
-	load_hostkeys(hostkeys, host, sysfile);
+	load_hostkeys(hostkeys, host, sysfile, 0);
 	if (userfile != NULL) {
 		user_hostfile = tilde_expand_filename(userfile, pw->pw_uid);
 		if (options.strict_modes &&
@@ -504,7 +504,7 @@ check_key_in_hostfiles(struct passwd *pw, struct sshkey *key, const char *host,
 			    user_hostfile);
 		} else {
 			temporarily_use_uid(pw);
-			load_hostkeys(hostkeys, host, user_hostfile);
+			load_hostkeys(hostkeys, host, user_hostfile, 0);
 			restore_uid();
 		}
 		free(user_hostfile);

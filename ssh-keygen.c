@@ -1241,7 +1241,7 @@ do_known_hosts(const struct passwd *pw, const char *name, int find_host,
 	    ? known_hosts_find_delete
 	    : known_hosts_hash;
 	if ((r = hostkeys_foreach(identity_file, foreach_callback, &ctx,
-	    name, NULL, foreach_options)) != 0) {
+	    name, NULL, foreach_options, 0)) != 0) {
 		if (inplace)
 			unlink(tmp);
 		fatal_fr(r, "hostkeys_foreach");

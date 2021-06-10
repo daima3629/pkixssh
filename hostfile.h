@@ -28,14 +28,15 @@ struct hostkey_entry {
 	u_long line;
 	struct sshkey *key;
 	HostkeyMarker marker;
+	u_int note; /* caller-specific note/flag */
 };
 struct hostkeys;
 
 struct hostkeys *init_hostkeys(void);
 void	 load_hostkeys(struct hostkeys *, const char *,
-    const char *);
+    const char *, u_int);
 void	 load_hostkeys_file(struct hostkeys *, const char *,
-    const char *, FILE *);
+    const char *, FILE *, u_int);
 void	 free_hostkeys(struct hostkeys *);
 
 int/*bool*/
@@ -99,6 +100,7 @@ struct hostkey_foreach_line {
 	int keytype;	/* Type of key; KEY_UNSPEC for invalid/comment lines */
 	struct sshkey *key; /* Key, if parsed ok and HKF_WANT_MATCH_HOST set */
 	const char *comment; /* Any comment following the key */
+	u_int note;	/* caller-specified note copied from arguments */
 };
 
 /*
@@ -111,10 +113,10 @@ typedef int hostkeys_foreach_fn(struct hostkey_foreach_line *l, void *ctx);
 /* Iterate over a hostkeys file */
 int hostkeys_foreach(const char *path,
     hostkeys_foreach_fn *callback, void *ctx,
-    const char *host, const char *ip, u_int options);
+    const char *host, const char *ip, u_int options, u_int note);
 int hostkeys_foreach_file(const char *path, FILE *f,
     hostkeys_foreach_fn *callback, void *ctx,
-    const char *host, const char *ip, u_int options);
+    const char *host, const char *ip, u_int options, u_int note);
 
 void hostfile_create_user_ssh_dir(const char *, int);
 

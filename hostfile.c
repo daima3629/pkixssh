@@ -14,7 +14,7 @@
  *
  * Copyright (c) 1999, 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 1999 Niels Provos.  All rights reserved.
- * Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -269,6 +269,7 @@ record_hostkey(struct hostkey_foreach_line *l, void *_ctx)
 	hostkeys->entries[hostkeys->num_entries].key = l->key;
 	l->key = NULL; /* steal it */
 	hostkeys->entries[hostkeys->num_entries].marker = l->marker;
+	hostkeys->entries[hostkeys->num_entries].note = l->note;
 	hostkeys->num_entries++;
 	ctx->num_loaded++;
 
@@ -277,7 +278,7 @@ record_hostkey(struct hostkey_foreach_line *l, void *_ctx)
 
 void
 load_hostkeys_file(struct hostkeys *hostkeys, const char *host,
-    const char *path, FILE *f)
+    const char *path, FILE *f, u_int note)
 {
 	int r;
 	struct load_callback_ctx ctx;
@@ -287,7 +288,7 @@ load_hostkeys_file(struct hostkeys *hostkeys, const char *host,
 	ctx.hostkeys = hostkeys;
 
 	if ((r = hostkeys_foreach_file(path, f, record_hostkey, &ctx, host,
-	    NULL, HKF_WANT_MATCH|HKF_WANT_PARSE_KEY)) != 0) {
+	    NULL, HKF_WANT_MATCH|HKF_WANT_PARSE_KEY, note)) != 0) {
 		if (r != SSH_ERR_SYSTEM_ERROR && errno != ENOENT)
 			error_fr(r, "hostkeys_foreach failed for %s", path);
 	}
@@ -297,7 +298,7 @@ load_hostkeys_file(struct hostkeys *hostkeys, const char *host,
 
 void
 load_hostkeys(struct hostkeys *hostkeys, const char *host,
-    const char *path)
+    const char *path, u_int note)
 {
 	FILE *f;
 
@@ -306,7 +307,7 @@ load_hostkeys(struct hostkeys *hostkeys, const char *host,
 		return;
 	}
 
-	load_hostkeys_file(hostkeys, host, path, f);
+	load_hostkeys_file(hostkeys, host, path, f, note);
 	fclose(f);
 }
 
@@ -669,7 +670,7 @@ hostfile_replace_entries(const char *filename, const char *host, const char *ip,
 
 	/* Remove all entries for the specified host from the file */
 	if ((r = hostkeys_foreach(filename, host_delete, &ctx, host, ip,
-	    HKF_WANT_PARSE_KEY)) != 0) {
+	    HKF_WANT_PARSE_KEY, 0)) != 0) {
 		oerrno = errno;
 		error_fr(r, "hostkeys_foreach");
 		goto fail;
@@ -763,7 +764,7 @@ match_maybe_hashed(const char *host, const char *names, int *was_hashed)
 
 int
 hostkeys_foreach_file(const char *path, FILE *f, hostkeys_foreach_fn *callback,
-    void *ctx, const char *host, const char *ip, u_int options)
+    void *ctx, const char *host, const char *ip, u_int options, u_int note)
 {
 	char *line = NULL, ktype[128];
 	u_long linenum = 0;
@@ -791,6 +792,7 @@ hostkeys_foreach_file(const char *path, FILE *f, hostkeys_foreach_fn *callback,
 		lineinfo.marker = MRK_NONE;
 		lineinfo.status = HKF_STATUS_OK;
 		lineinfo.keytype = KEY_UNSPEC;
+		lineinfo.note = note;
 
 		/* Skip any leading whitespace, comments and empty lines. */
 		for (cp = line; *cp == ' ' || *cp == '\t'; cp++)
@@ -932,7 +934,7 @@ hostkeys_foreach_file(const char *path, FILE *f, hostkeys_foreach_fn *callback,
 
 int
 hostkeys_foreach(const char *path, hostkeys_foreach_fn *callback, void *ctx,
-    const char *host, const char *ip, u_int options)
+    const char *host, const char *ip, u_int options, u_int note)
 {
 	FILE *f;
 	int r;
@@ -942,7 +944,7 @@ hostkeys_foreach(const char *path, hostkeys_foreach_fn *callback, void *ctx,
 
 	debug3_f("reading file \"%s\"", path);
 	r = hostkeys_foreach_file(path, f, callback, ctx, host, ip,
-	    options);
+	    options, note);
 {	int oerrno = errno;
 	fclose(f);
 	errno = oerrno;

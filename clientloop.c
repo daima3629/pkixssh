@@ -2201,7 +2201,7 @@ client_input_hostkeys(struct ssh *ssh)
 		    ctx->ip_str ? ctx->ip_str : "(none)");
 		if ((r = hostkeys_foreach(options.user_hostfiles[i],
 		    hostkeys_find, ctx, ctx->host_str, ctx->ip_str,
-		    HKF_WANT_PARSE_KEY|HKF_WANT_MATCH)) != 0) {
+		    HKF_WANT_PARSE_KEY|HKF_WANT_MATCH, 0)) != 0) {
 			if (r == SSH_ERR_SYSTEM_ERROR && errno == ENOENT) {
 				debug_f("hostkeys file %s does not exist",
 				    options.user_hostfiles[i]);
