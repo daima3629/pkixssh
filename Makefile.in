@@ -689,6 +689,7 @@ check-core unit file-tests t-exec f-exec interop-tests: regress-binaries $(TARGE
 		TEST_SSH_SFTP="$${TEST_SSH_SFTP}" \
 		TEST_SSH_SFTPSERVER="$${TEST_SSH_SFTPSERVER}" \
 		TEST_SSH_MODULI_FILE="$${TEST_SSH_MODULI_FILE}" \
+		TEST_SHELL="$(TEST_SHELL)" \
 		$@ && echo 'regress test "$@" pass'
 
 CHECKCERTSENV = \
