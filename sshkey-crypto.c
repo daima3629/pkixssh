@@ -1734,14 +1734,14 @@ sshbuf_read_custom_rsa(struct sshbuf *buf, struct sshkey *key) {
 	}
 
 	rsa_e = e1;
-	debug3("e %lx", rsa_e);
+	debug3("e %lx", (unsigned long)rsa_e);
 	if (rsa_e < 30) {
 		rsa_e <<= 8;
 		rsa_e += e2;
-		debug3("e %lx", rsa_e);
+		debug3("e %lx", (unsigned long)rsa_e);
 		rsa_e <<= 8;
 		rsa_e += e3;
-		debug3("e %lx", rsa_e);
+		debug3("e %lx", (unsigned long)rsa_e);
 	}
 
 	if (!BN_set_word(e, rsa_e)) {

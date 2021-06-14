@@ -67,7 +67,7 @@ addr_xaddr_to_sa(const struct xaddr *xa, struct sockaddr *sa, socklen_t *len,
 	switch (xa->af) {
 	case AF_INET: {
 		struct sockaddr_in *in4 = (struct sockaddr_in *)sa;
-		if (*len < sizeof(*in4))
+		if ((size_t)*len < sizeof(*in4))
 			return -1;
 		memset(in4, '\0', sizeof(*in4));
 		*len = sizeof(*in4);
@@ -80,7 +80,7 @@ addr_xaddr_to_sa(const struct xaddr *xa, struct sockaddr *sa, socklen_t *len,
 		} break;
 	case AF_INET6: {
 		struct sockaddr_in6 *in6 = (struct sockaddr_in6 *)sa;
-		if (*len < sizeof(*in6))
+		if ((size_t)*len < sizeof(*in6))
 			return -1;
 		memset(in6, '\0', sizeof(*in6));
 		*len = sizeof(*in6);

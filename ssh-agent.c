@@ -610,7 +610,7 @@ process_add_identity(SocketEntry *e)
 	if (lifetime != 0 || seconds != 0) {
 		u_int timeoffset = seconds != 0 ? seconds : lifetime;
 		death = monotime();
-		if (death > (death + timeoffset)) {
+		if (death > (time_t)(death + timeoffset)) {
 			debug3_f("now lifetime is too high");
 			/* forever */
 			death = 0;
@@ -746,7 +746,7 @@ process_add_smartcard_key(SocketEntry *e)
 	debug_f("add %.100s", canonical_provider);
 	if (lifetime != 0) {
 		death = monotime();
-		if (death > (death + lifetime)) {
+		if (death > (time_t)(death + lifetime)) {
 			debug3_f("now lifetime is too high");
 			/* forever */
 			death = 0;
