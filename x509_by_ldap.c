@@ -258,9 +258,6 @@ static int  ldaplookup_shutdown(X509_LOOKUP *ctx);
 static int  ldaplookup_by_subject(X509_LOOKUP *ctx, int type, X509_NAME *name, X509_OBJECT *ret);
 
 static int  ldaplookup_add_search(X509_LOOKUP *ctx, const char *url);
-#ifndef USE_LDAP_STORE
-static int  ldaplookup_set_protocol(X509_LOOKUP *ctx, const char *ver);
-#endif
 
 
 typedef struct lookup_item_s lookup_item;
@@ -326,6 +323,46 @@ X509_LOOKUP_METHOD*
 X509_LOOKUP_ldap(void) {
 	return &x509_ldap_lookup;
 }
+
+
+#ifndef USE_LDAP_STORE
+static int/*bool*/
+ldaplookup_set_protocol(X509_LOOKUP *ctx, const char *ver) {
+	lookup_item *p;
+	int n;
+
+TRACE_BY_LDAP(__func__, "ver: '%s'  ...", ver);
+	if (ctx == NULL) return 0;
+	if (ver == NULL) return 0;
+
+	p = (lookup_item*)(void*) ctx->method_data;
+TRACE_BY_LDAP(__func__, "p=%p", (void*)p);
+	if (p == NULL) return 0;
+
+	n = parse_ldap_version(ver);
+	if (n < 0) return 0;
+
+	for(; p->next != NULL; p = p->next) {
+		/*find list end*/
+		/* NOTE: after addition of LDAP look-up is called "version"
+		 * control (see x509store.c), so it is for last item.
+		 */
+	}
+	{
+		int ret;
+		const int version = n;
+
+		ret = ldap_set_option(p->lh->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
+		if (ret != LDAP_OPT_SUCCESS) {
+			X509byLDAPerr(X509byLDAP_F_SET_PROTOCOL, X509byLDAP_R_UNABLE_TO_SET_PROTOCOL_VERSION);
+			crypto_add_ldap_error(ret);
+			return 0;
+		}
+	}
+
+	return 1;
+}
+#endif /*ndef USE_LDAP_STORE*/
 
 
 static int
@@ -417,46 +454,6 @@ ldaplookup_add_search(X509_LOOKUP *ctx, const char *url) {
 
 	return 1;
 }
-
-
-#ifndef USE_LDAP_STORE
-static int/*bool*/
-ldaplookup_set_protocol(X509_LOOKUP *ctx, const char *ver) {
-	lookup_item *p;
-	int n;
-
-TRACE_BY_LDAP(__func__, "ver: '%s'  ...", ver);
-	if (ctx == NULL) return 0;
-	if (ver == NULL) return 0;
-
-	p = (lookup_item*)(void*) ctx->method_data;
-TRACE_BY_LDAP(__func__, "p=%p", (void*)p);
-	if (p == NULL) return 0;
-
-	n = parse_ldap_version(ver);
-	if (n < 0) return 0;
-
-	for(; p->next != NULL; p = p->next) {
-		/*find list end*/
-		/* NOTE: after addition of LDAP look-up is called "version"
-		 * control (see x509store.c), so it is for last item.
-		 */
-	}
-	{
-		int ret;
-		const int version = n;
-
-		ret = ldap_set_option(p->lh->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
-		if (ret != LDAP_OPT_SUCCESS) {
-			X509byLDAPerr(X509byLDAP_F_SET_PROTOCOL, X509byLDAP_R_UNABLE_TO_SET_PROTOCOL_VERSION);
-			crypto_add_ldap_error(ret);
-			return 0;
-		}
-	}
-
-	return 1;
-}
-#endif /*ndef USE_LDAP_STORE*/
 
 
 /*
