@@ -1734,21 +1734,24 @@ client_input_channel_req(int type, u_int32_t seq, struct ssh *ssh)
 	Channel *c = NULL;
 	char *rtype = NULL;
 	u_char reply;
-	u_int32_t id;
+	int id;
 	int r, success = 0;
 
-	if ((r = sshpkt_get_u32(ssh, &id)) != 0)
+{	u_int32_t val;
+	if ((r = sshpkt_get_u32(ssh, &val)) != 0)
 		return r;
-	if (id <= INT_MAX)
-		c = channel_lookup(ssh, id);
+	id = val; /*safe cast*/
+}
+	/* channel_by_id() filter bad id */
+	c = channel_lookup(ssh, id);
+	/* channel_proxy_upstream() filter NULL channel */
 	if (channel_proxy_upstream(c, type, seq, ssh))
 		return 0;
 	if ((r = sshpkt_get_cstring(ssh, &rtype, NULL)) != 0 ||
 	    (r = sshpkt_get_u8(ssh, &reply)) != 0)
 		goto out;
 
-	debug_f("channel %u rtype %s reply %d",
-	    (unsigned)id, rtype, (int)reply);
+	debug_f("channel %d rtype %s reply %d", id, rtype, (int)reply);
 
 	if (c == NULL) {
 		error_f("channel %d: unknown channel", id);
@@ -1764,7 +1767,7 @@ client_input_channel_req(int type, u_int32_t seq, struct ssh *ssh)
 		if (c->ctl_chan != -1) {
 			mux_exit_message(ssh, c, exitval);
 			success = 1;
-		} else if ((int)id == session_ident) {
+		} else if (id == session_ident) {
 			/* Record exit value of local session */
 			success = 1;
 			exit_status = exitval;
@@ -1797,7 +1800,7 @@ client_input_channel_req(int type, u_int32_t seq, struct ssh *ssh)
 		if (c->ctl_chan != -1) {
 			mux_exit_message(ssh, c, exitval);
 			success = 1;
-		} else if ((int)id == session_ident) {
+		} else if (id == session_ident) {
 			/* Record exit value of local session */
 			success = 1;
 			exit_status = exitval;
