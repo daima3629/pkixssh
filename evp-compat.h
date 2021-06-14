@@ -113,10 +113,15 @@ EVP_MD_CTX_free(EVP_MD_CTX *ctx) {
 
 
 #ifndef HAVE_EVP_MD_FLAGS		/* OpenSSL < 1.0 */
+# ifdef HAVE_EVP_MD_GET_FLAGS		/* OpenSSL >= 3.0 */
+/* EVP_MD_flags is define to EVP_MD_get_flags */
+/* TODO use EVP_MD_get_flags? :( */
+# else
 static inline unsigned long
 EVP_MD_flags(const EVP_MD *md) {
 	return md->flags;
 }
+# endif
 #endif /* ndef HAVE_EVP_MD_FLAGS	OpenSSL < 1.0 */
 
 
@@ -170,8 +175,11 @@ ECDSA_SIG_set0(ECDSA_SIG *sig, BIGNUM *r, BIGNUM *s) {
 #endif /*OPENSSL_HAS_ECC*/
 
 
-#ifndef HAVE_EVP_PKEY_BASE_ID
-/* OpenSSL >= 1.0 */
+#ifndef HAVE_EVP_PKEY_BASE_ID		/* OpenSSL < 1.0 */
+# ifdef HAVE_EVP_PKEY_GET_BASE_ID	/* OpenSSL >= 3.0 */
+/* EVP_PKEY_base_id is define to EVP_PKEY_get_base_id */
+/* TODO use EVP_PKEY_get_base_id? :( */
+# else
 static inline int
 EVP_PKEY_id(const EVP_PKEY *pkey) {
 	return pkey->type;
@@ -181,6 +189,7 @@ static inline int
 EVP_PKEY_base_id(const EVP_PKEY *pkey) {
 	return(EVP_PKEY_type(EVP_PKEY_id(pkey)));
 }
+# endif
 #endif /*ndef HAVE_EVP_PKEY_BASE_ID */
 
 

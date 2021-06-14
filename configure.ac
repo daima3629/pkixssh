@@ -5559,6 +5559,8 @@ AC_CHECK_FUNCS([ \
   BN_check_prime \
   EC_GROUP_get_field_type \
   ERR_get_error_all \
+  EVP_MD_get_flags \
+  EVP_PKEY_get_base_id \
   X509_LOOKUP_store \
 ])
 
