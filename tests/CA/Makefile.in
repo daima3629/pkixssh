@@ -178,9 +178,9 @@ ca-test/catest-bundle.crl: testid_rsa-rsa_sha1 testid_dsa-rsa_sha1
 
 # ===
 @LDAP_OFF@ldap_files:
-@LDAP_ON@ldap_files: ldap/slapd.conf.tmpl
+@LDAP_ON@ldap_files: ldap/base.ldif
 
-@LDAP_ON@ldap/slapd.conf.tmpl:
+@LDAP_ON@ldap/base.ldif:
 @LDAP_ON@	@echo
 @LDAP_ON@	$(SHELL) $(srcdir)/5-cre_ldap.sh
 

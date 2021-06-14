@@ -65,7 +65,14 @@ test_all_keys () {
 creTestLDAPDcfgFile() {
 (
   cat <<EOF
-include		$CWD/ldap/slapd.conf.tmpl
+#required schemas
+include		$LDAP_SYSCONFDIR/schema/core.schema
+include		$LDAP_SYSCONFDIR/schema/cosine.schema
+include		$LDAP_SYSCONFDIR/schema/inetorgperson.schema
+
+#features
+allow bind_v2
+#disallow bind_simple ;-)
 EOF
 
 if test -n "$LDAP_MODULEDIR" ; then

@@ -107,37 +107,8 @@ EOF
 
 
 # ===
-cre_slapdconf () {
-(
-  cat <<EOF
-#required schemas
-include		$LDAP_SYSCONFDIR/schema/core.schema
-include		$LDAP_SYSCONFDIR/schema/cosine.schema
-include		$LDAP_SYSCONFDIR/schema/inetorgperson.schema
-
-#features
-allow bind_v2
-#disallow bind_simple ;-)
-
-# dbms backend settings should be same file !
-# this is required for openldap version 2.3.32(but not for <= 2.3.20,2.2.x,2.1.x)
-##dbms
-#database	$SSH_LDAP_DB
-#suffix		"$SSH_LDAP_DC"
-#rootdn		"cn=Manager,$SSH_LDAP_DC"
-#rootpw		secret
-#
-#index	objectClass	eq
-EOF
-) > ldap/slapd.conf.tmpl
-
-}
-
-
-# ===
 
 cre_base_ldif &&
-cre_slapdconf &&
 : ; retval=$?
 
 show_status $retval "${extd}Creating${norm} ${warn}LDAP${norm} ${attn}files${norm}"
