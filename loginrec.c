@@ -533,6 +533,7 @@ getlast_entry(struct logininfo *li)
 #if defined(DISABLE_LASTLOG)
 	/* On some systems we shouldn't even try to obtain last login
 	 * time, e.g. AIX */
+	UNUSED(li);
 	return (0);
 # elif defined(USE_WTMP) && \
     (defined(HAVE_TIME_IN_UTMP) || defined(HAVE_TV_IN_UTMP))
@@ -544,6 +545,7 @@ getlast_entry(struct logininfo *li)
 	return (wtmpx_get_entry(li));
 # else
 	/* Give up: No means of retrieving last login time */
+	UNUSED(li);
 	return (0);
 # endif /* DISABLE_LASTLOG */
 #endif /* USE_LASTLOG */
