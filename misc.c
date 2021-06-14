@@ -465,7 +465,7 @@ strdelimw(char **s)
 }
 
 struct passwd *
-pwcopy(struct passwd *pw)
+pwcopy(const struct passwd *pw)
 {
 	struct passwd *copy = xcalloc(1, sizeof(*copy));
 
