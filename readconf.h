@@ -209,6 +209,8 @@ typedef struct {
 	int	jump_port;
 	char   *jump_extra;
 
+	char   *known_hosts_command;
+
 	char	*ignored_unknown; /* Pattern list of unknown tokens to ignore */
 }       Options;
 

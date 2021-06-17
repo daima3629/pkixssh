@@ -1,4 +1,4 @@
-#	$OpenBSD: Makefile,v 1.109 2020/06/19 05:07:09 dtucker Exp $
+#	$OpenBSD: Makefile,v 1.110 2020/12/22 06:03:36 djm Exp $
 
 tests: unit file-tests t-exec
 check-core: tests
@@ -88,7 +88,8 @@ LTESTS=		connect \
 		servcfginclude \
 		allow-deny-users \
 		authinfo \
-		keygen-comment
+		keygen-comment \
+		knownhosts-command
 
 # in some environments fail regularly:
 #		multiplex \
@@ -132,7 +133,7 @@ CLEANFILES=	*.core actual agent-key.* authkeys_orig \
 		rsa_ssh2_cr.prv rsa_ssh2_crnl.prv scp-ssh-wrapper.exe \
 		scp-ssh-wrapper.scp sftp-server.log \
 		sftp-server.sh sftp.log ssh-log-wrapper.sh ssh.log \
-		ssh-rsa_oldfmt \
+		ssh-rsa_oldfmt knownhosts_command \
 		ssh_config ssh_config.* ssh_proxy ssh_proxy.orig ssh_proxy_* \
 		sshd.log sshd_config sshd_config_minimal \
 		sshd_config.* sshd_proxy sshd_proxy.* sshd_proxy_bak \

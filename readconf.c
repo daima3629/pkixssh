@@ -209,7 +209,7 @@ typedef enum {
 	oStreamLocalBindMask, oStreamLocalBindUnlink, oRevokedHostKeys,
 	oFingerprintHash, oUpdateHostkeys, oHostbasedAcceptedAlgorithms,
 	oPubkeyAcceptedAlgorithms, oCASignatureAlgorithms, oProxyJump,
-	oSecurityKeyProvider,
+	oSecurityKeyProvider, oKnownHostsCommand,
 	oIgnore, oIgnoredUnknownOption, oDeprecated, oUnsupported
 } OpCodes;
 
@@ -373,6 +373,7 @@ static struct {
 	{ "pubkeyacceptedkeytypes", oPubkeyAcceptedAlgorithms }, /* obsolete */
 	{ "ignoreunknown", oIgnoreUnknown },
 	{ "proxyjump", oProxyJump },
+	{ "knownhostscommand", oKnownHostsCommand },
 
 	{ NULL, oBadOption }
 };
@@ -1436,6 +1437,10 @@ parse_char_array:
 		goto parse_string;
 #endif
 
+	case oKnownHostsCommand:
+		charptr = &options->known_hosts_command;
+		goto parse_command;
+
 	case oProxyCommand:
 		charptr = &options->proxy_command;
 		/* Ignore ProxyCommand if ProxyJump already specified */
@@ -2456,6 +2461,7 @@ initialize_options(Options * options)
 	options->revoked_host_keys = NULL;
 	options->fingerprint_hash = -1;
 	options->update_hostkeys = -1;
+	options->known_hosts_command = NULL;
 }
 
 /*
@@ -2676,6 +2682,7 @@ fill_default_options(Options * options)
 	CLEAR_ON_NONE(options->revoked_host_keys);
 	CLEAR_ON_NONE(options->pkcs11_provider);
 	CLEAR_ON_NONE(options->sk_provider);
+	CLEAR_ON_NONE(options->known_hosts_command);
 	if (options->jump_host != NULL &&
 	    strcmp(options->jump_host, "none") == 0 &&
 	    options->jump_port == 0 && options->jump_user == NULL) {
@@ -3285,6 +3292,7 @@ dump_client_config(Options *o, const char *host)
 	dump_cfg_string(oPreferredAuthentications, o->preferred_authentications);
 	dump_cfg_string(oRevokedHostKeys, o->revoked_host_keys);
 	dump_cfg_string(oXAuthLocation, o->xauth_location);
+	dump_cfg_string(oKnownHostsCommand, o->known_hosts_command);
 
 	/* Forwards */
 	dump_cfg_forwards(oDynamicForward, o->num_local_forwards, o->local_forwards);

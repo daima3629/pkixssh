@@ -2698,12 +2698,16 @@ subprocess(const char *tag, const char *command,
 	int fd, devnull, p[2], i;
 	pid_t pid;
 	char *cp, errmsg[512];
-	char **env;
+	char **env = NULL;
 
 	UNUSED(ac);
 	/* If dropping privs, then must specify user and restore function */
 	if (drop_privs != NULL && (pw == NULL || restore_privs == NULL)) {
 		error("%s: inconsistent arguments", tag); /* XXX fatal? */
+		return 0;
+	}
+	if (pw == NULL && (pw = getpwuid(getuid())) == NULL) {
+		error("%s: no user for current uid", tag);
 		return 0;
 	}
 	if (child != NULL)
@@ -2738,7 +2742,8 @@ subprocess(const char *tag, const char *command,
 		    av[0], strerror(errno));
 		goto restore_return;
 	}
-	if (safe_path(av[0], &st, NULL, 0, errmsg, sizeof(errmsg)) != 0) {
+	if ((flags & SSH_SUBPROCESS_UNSAFE_PATH) == 0 &&
+	    safe_path(av[0], &st, NULL, 0, errmsg, sizeof(errmsg)) != 0) {
 		error("Unsafe %s \"%s\": %s", tag, av[0], errmsg);
 		goto restore_return;
 	}
@@ -2761,7 +2766,7 @@ subprocess(const char *tag, const char *command,
 		return 0;
 	case 0: /* child */
 		/* Prepare a minimal environment for the child. */
-		{
+		if ((flags & SSH_SUBPROCESS_PRESERVE_ENV) == 0) {
 			u_int nenv = 6;
 			env = xcalloc(sizeof(*env), nenv);
 			child_set_env(&env, &nenv, "PATH", _PATH_STDPATH);
@@ -2814,9 +2819,12 @@ subprocess(const char *tag, const char *command,
 			error("%s: dup2: %s", tag, strerror(errno));
 			_exit(1);
 		}
-
-		execve(av[0], av, env);
-		error("%s exec \"%s\": %s", tag, command, strerror(errno));
+		if (env != NULL)
+			execve(av[0], av, env);
+		else
+			execv(av[0], av);
+		error("%s %s \"%s\": %s", tag, env == NULL ? "execv" : "execve",
+		    command, strerror(errno));
 		_exit(127);
 	default: /* parent */
 		break;
