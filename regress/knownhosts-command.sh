@@ -49,6 +49,9 @@ _EOF
 $SSH -F $OBJ/ssh_proxy x true && fail "ssh connect succeeded with bad exit"
 
 for keytype in $SSH_HOSTKEY_TYPES ; do
+case $keytype in
+ssh-xmss@openssh.com) continue;; # TODO
+esac
 	verbose "keytype $keytype"
 	cat > $OBJ/knownhosts_command << _EOF
 #! $TEST_SHELL
