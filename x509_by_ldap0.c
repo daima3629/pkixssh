@@ -1,3 +1,63 @@
+static int/*bool*/
+ldaplookup_set_protocol(X509_LOOKUP *ctx, const char *ver) {
+	lookup_item *p;
+	int n;
+
+TRACE_BY_LDAP(__func__, "ver: '%s'  ...", ver);
+	if (ctx == NULL) return 0;
+	if (ver == NULL) return 0;
+
+	p = (lookup_item*)(void*) ctx->method_data;
+TRACE_BY_LDAP(__func__, "p=%p", (void*)p);
+	if (p == NULL) return 0;
+
+	n = parse_ldap_version(ver);
+	if (n < 0) return 0;
+
+	for(; p->next != NULL; p = p->next) {
+		/*find list end*/
+		/* NOTE: after addition of LDAP look-up is called "version"
+		 * control (see x509store.c), so it is for last item.
+		 */
+	}
+	{
+		int ret;
+		const int version = n;
+
+		ret = ldap_set_option(p->lh->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
+		if (ret != LDAP_OPT_SUCCESS) {
+			X509byLDAPerr(X509byLDAP_F_SET_PROTOCOL, X509byLDAP_R_UNABLE_TO_SET_PROTOCOL_VERSION);
+			crypto_add_ldap_error(ret);
+			return 0;
+		}
+	}
+
+	return 1;
+}
+
+
+static int
+ldaplookup_ctrl(X509_LOOKUP *ctx, int cmd, const char *argc, long argl, char **retp) {
+	int ret = 0;
+
+	UNUSED(argl);
+	UNUSED(retp);
+TRACE_BY_LDAP(__func__, "ctx=%p, cmd: %d, argc: '%s'", ctx, cmd, argc);
+	switch (cmd) {
+	case X509_L_LDAP_HOST:
+		ret = ldaplookup_add_search(ctx, argc);
+		break;
+	case X509_L_LDAP_VERSION:
+		ret = ldaplookup_set_protocol(ctx, argc);
+		break;
+	default:
+		X509byLDAPerr(X509byLDAP_F_LOOKUPCRTL, X509byLDAP_R_INVALID_CRTLCMD);
+		break;
+	}
+	return ret;
+}
+
+
 /*
  * We will put into store X509 object from passed data in buffer only
  * when object name match passed. To compare both names we use our
