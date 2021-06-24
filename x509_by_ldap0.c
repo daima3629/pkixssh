@@ -1,3 +1,34 @@
+struct lookup_item_s {
+	ldaphost *lh;
+	lookup_item *next;
+};
+
+static inline void
+lookup_item_free(lookup_item *p) {
+	if (p == NULL) return;
+
+	ldaphost_free(p->lh);
+	OPENSSL_free(p);
+}
+
+static inline lookup_item*
+lookup_item_new(const char *url) {
+	lookup_item *ret;
+
+	ret = OPENSSL_malloc(sizeof(lookup_item));
+	if (ret == NULL) return NULL;
+
+	ret->lh = ldaphost_new(url);
+	if (ret->lh == NULL) {
+		OPENSSL_free(ret);
+		return NULL;
+	}
+
+	ret->next = NULL;
+	return ret;
+}
+
+
 static int/*bool*/
 ldaplookup_set_protocol(X509_LOOKUP *ctx, const char *ver) {
 	lookup_item *p;

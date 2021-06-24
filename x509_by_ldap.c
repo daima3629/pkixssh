@@ -200,54 +200,6 @@ ERR_load_X509byLDAP_strings(void) {
 
 
 /* ================================================================== */
-#ifdef USE_LDAP_STORE
-typedef struct ldapstore_s ldapstore;
-struct ldapstore_s {
-	char *url;
-	OSSL_STORE_CTX *ctx;
-};
-
-
-static ldapstore* ldapstore_new(const char *url);
-static void ldapstore_free(ldapstore *p);
-
-
-static ldapstore*
-ldapstore_new(const char *url) {
-	ldapstore *p;
-
-	p = OPENSSL_malloc(sizeof(ldapstore));
-	if (p == NULL) return NULL;
-
-	p->url = OPENSSL_malloc(strlen(url) + 1);
-	if (p->url == NULL) goto error;
-	strcpy(p->url, url);
-
-	p->ctx = NULL;
-
-	return p;
-
-error:
-	ldapstore_free(p);
-	return NULL;
-}
-
-
-static void
-ldapstore_free(ldapstore *p) {
-	if (p == NULL) return;
-
-	OPENSSL_free(p->url);
-	if (p->ctx != NULL) {
-		OSSL_STORE_close(p->ctx);
-		p->ctx = NULL;
-	}
-	OPENSSL_free(p);
-}
-#endif /*def USE_LDAP_STORE*/
-
-
-/* ================================================================== */
 /* LOOKUP by LDAP */
 
 static int  ldaplookup_ctrl(X509_LOOKUP *ctx, int cmd, const char *argp, long argl, char **ret);
@@ -261,48 +213,6 @@ static int  ldaplookup_add_search(X509_LOOKUP *ctx, const char *url);
 
 
 typedef struct lookup_item_s lookup_item;
-struct lookup_item_s {
-#ifndef USE_LDAP_STORE
-	ldaphost *lh;
-#else
-	ldapstore *ls;
-#endif
-	lookup_item *next;
-};
-
-static inline void
-lookup_item_free(lookup_item *p) {
-	if (p == NULL) return;
-
-#ifndef USE_LDAP_STORE
-	ldaphost_free(p->lh);
-#else
-	ldapstore_free(p->ls);
-#endif
-	OPENSSL_free(p);
-}
-
-static inline lookup_item*
-lookup_item_new(const char *url) {
-	lookup_item *ret;
-
-	ret = OPENSSL_malloc(sizeof(lookup_item));
-	if (ret == NULL) return NULL;
-
-#ifndef USE_LDAP_STORE
-	ret->lh = ldaphost_new(url);
-	if (ret->lh == NULL) {
-#else
-	ret->ls = ldapstore_new(url);
-	if (ret->ls == NULL) {
-#endif
-		OPENSSL_free(ret);
-		return NULL;
-	}
-
-	ret->next = NULL;
-	return ret;
-}
 
 
 X509_LOOKUP_METHOD x509_ldap_lookup = {
