@@ -42,8 +42,8 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: ssh.1,v 1.419 2021/02/15 20:43:15 markus Exp $
-.Dd $Mdocdate: February 15 2021 $
+.\" $OpenBSD: ssh.1,v 1.420 2021/06/25 06:20:39 dtucker Exp $
+.Dd $Mdocdate: June 25 2021 $
 .Dt SSH 1
 .Os
 .Sh NAME
@@ -98,7 +98,7 @@ or a URI of the form
 .No ssh:// Oo user @ Oc hostname Op : port .
 .Sm on
 The user must prove
-his/her identity to the remote machine using one of several methods
+their identity to the remote machine using one of several methods
 (see below).
 .Pp
 If a
@@ -856,7 +856,7 @@ or higher (e.g. by using the
 .Fl v
 flag).
 .Pp
-The user creates his/her key pair by running
+The user creates their key pair by running
 .Xr ssh-keygen 1 .
 This stores the private key in
 .Pa ~/.ssh/id_dsa
@@ -885,7 +885,7 @@ In this case *.pub file must contain certificate that match key.
 The user should then copy the public key or X.509 certificate
 to
 .Pa ~/.ssh/authorized_keys
-in his/her home directory on the remote machine.
+in their home directory on the remote machine.
 In case with X.509 certificates user can use
 .Dq new style
 : instead to add content of file to authorized_keys user
