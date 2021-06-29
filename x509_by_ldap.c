@@ -28,13 +28,11 @@
 #ifndef USE_X509_LOOKUP_STORE
 /* custom X.509 look-up */
 
+#include "x509store.h"
 #ifdef USE_LDAP_STORE
 #  include <openssl/store.h>
 #endif
 #include <openssl/err.h>
-
-/* prefer X509_NAME_cmp method from ssh-x509.c */
-extern int     ssh_X509_NAME_cmp(X509_NAME *a, X509_NAME *b);
 
 #include <string.h>
 
@@ -68,41 +66,6 @@ X509_STORE_unlock(X509_STORE *s) {
 	return 1;
 }
 #endif /*def HAVE_X509_STORE_LOCK*/
-
-
-#ifndef HAVE_STRUCT_X509_LOOKUP_METHOD_ST
-/* temporary for some OpenSSL 1.1 "alpha" versions */
-struct x509_lookup_method_st {
-	const char *name;
-	int (*new_item) (X509_LOOKUP *ctx);
-	void (*free) (X509_LOOKUP *ctx);
-	int (*init) (X509_LOOKUP *ctx);
-	int (*shutdown) (X509_LOOKUP *ctx);
-	int (*ctrl) (X509_LOOKUP *ctx, int cmd, const char *argc, long argl, char **ret);
-	int (*get_by_subject) (X509_LOOKUP *ctx, int type, X509_NAME *name, X509_OBJECT *ret);
-	int (*get_by_issuer_serial) (X509_LOOKUP *ctx, int type, X509_NAME *name, ASN1_INTEGER *serial, X509_OBJECT *ret);
-	int (*get_by_fingerprint) (X509_LOOKUP *ctx, int type, unsigned char *bytes, int len, X509_OBJECT *ret);
-	int (*get_by_alias) (X509_LOOKUP *ctx, int type, char *str, int len, X509_OBJECT *ret);
-};
-
-struct x509_lookup_st {
-	int init;                   /* have we been started */
-	int skip;                   /* don't use us. */
-	X509_LOOKUP_METHOD *method; /* the functions */
-	char *method_data;          /* method data */
-	X509_STORE *store_ctx;      /* who owns us */
-};
-
-struct x509_object_st {
-	X509_LOOKUP_TYPE type;
-	union {
-		char *ptr;
-		X509 *x509;
-		X509_CRL *crl;
-		EVP_PKEY *pkey;
-	} data;
-};
-#endif /*ndef HAVE_STRUCT_X509_LOOKUP_METHOD_ST*/
 
 
 /* ================================================================== */

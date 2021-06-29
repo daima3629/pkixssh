@@ -154,4 +154,38 @@ int ssh_ocsp_validate(X509 *cert, X509_STORE *x509store);
 #endif /*def SSH_OCSP_ENABLED*/
 
 
+#ifndef HAVE_STRUCT_X509_LOOKUP_METHOD_ST
+/* temporary for some OpenSSL 1.1 "alpha" versions */
+struct x509_lookup_method_st {
+	const char *name;
+	int (*new_item) (X509_LOOKUP *ctx);
+	void (*free) (X509_LOOKUP *ctx);
+	int (*init) (X509_LOOKUP *ctx);
+	int (*shutdown) (X509_LOOKUP *ctx);
+	int (*ctrl) (X509_LOOKUP *ctx, int cmd, const char *argc, long argl, char **ret);
+	int (*get_by_subject) (X509_LOOKUP *ctx, int type, X509_NAME *name, X509_OBJECT *ret);
+	int (*get_by_issuer_serial) (X509_LOOKUP *ctx, int type, X509_NAME *name, ASN1_INTEGER *serial, X509_OBJECT *ret);
+	int (*get_by_fingerprint) (X509_LOOKUP *ctx, int type, unsigned char *bytes, int len, X509_OBJECT *ret);
+	int (*get_by_alias) (X509_LOOKUP *ctx, int type, char *str, int len, X509_OBJECT *ret);
+};
+
+struct x509_lookup_st {
+	int init;                   /* have we been started */
+	int skip;                   /* don't use us. */
+	X509_LOOKUP_METHOD *method; /* the functions */
+	char *method_data;          /* method data */
+	X509_STORE *store_ctx;      /* who owns us */
+};
+
+struct x509_object_st {
+	X509_LOOKUP_TYPE type;
+	union {
+		char *ptr;
+		X509 *x509;
+		X509_CRL *crl;
+		EVP_PKEY *pkey;
+	} data;
+};
+#endif /*ndef HAVE_STRUCT_X509_LOOKUP_METHOD_ST*/
+
 #endif /* X509STORE_H */
