@@ -43,31 +43,6 @@
 
 static const char ldap_store_scheme[] = "ldap";
 
-static void ENGINE_load_ldap(void);
-
-/* NOTE: Cannot set LDAP protocol version using STORE-API!
- * Let use global static variable.
- */
-static int ldap_version = -1;
-
-int/*bool*/
-set_ldap_version(const char *ver) {
-{	static int load_ldap = 1;
-	if (load_ldap) {
-		load_ldap = 0;
-		ENGINE_load_ldap();
-	}
-}
-
-	if (ver != NULL) {
-		int n = parse_ldap_version(ver);
-		if (n < 0) return 0;
-		ldap_version = n;
-	}
-
-	return 1;
-}
-
 
 struct ossl_store_loader_ctx_st {
 	ldaphost *lh;
@@ -130,14 +105,18 @@ TRACE_BY_LDAP(__func__, "uri='%s'", uri);
 	ctx = OSSL_STORE_LOADER_CTX_new();
 	if (ctx == NULL) return NULL;
 
-	ctx->lh = lh = ldaphost_new(uri);
-	if (ldap_version > 0) {
-		/*TODO: LDAP protocol version*/
-		ctx->result = ldap_set_option(ctx->lh->ld, LDAP_OPT_PROTOCOL_VERSION, &ldap_version);
-		if (ctx->result != LDAP_OPT_SUCCESS)
-			return ctx;
+	lh = ldaphost_new(uri);
+	if (lh == NULL) {
+		OSSL_STORE_LOADER_CTX_free(ctx);
+		return NULL;
 	}
+	ctx->lh = lh;
+
 	ctx->result = ssh_ldap_bind_s(lh->ld);
+	if (ctx->result != LDAP_OPT_SUCCESS) {
+		OSSL_STORE_LOADER_CTX_free(ctx);
+		return NULL;
+	}
 
 	return ctx;
 }
@@ -419,7 +398,7 @@ TRACE_BY_LDAP(__func__, "");
 }
 
 
-static void
+void
 ENGINE_load_ldap(void) {
 	ENGINE *e;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2004-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -49,6 +49,13 @@ TRACE_BY_LDAP(const char *f, const char *fmt, ...) {
 int
 ssh_ldap_bind_s(LDAP *ld) {
 	int result;
+
+{	int version = ssh_ldap_version();
+	if (version >= 0) {
+		result = ldap_set_option(ld, LDAP_OPT_PROTOCOL_VERSION, &version);
+		if (result != LDAP_OPT_SUCCESS) return result;
+	}
+}
 
 	/* anonymous bind - data must be retrieved by anybody */
 #ifdef HAVE_LDAP_SASL_BIND_S
@@ -517,20 +524,4 @@ void
 crypto_add_ldap_error(int err) {
 	char	buf[512];
 	ERR_add_error_data(1, ldap_errormsg(buf, sizeof(buf), err));
-}
-
-
-int
-parse_ldap_version(const char *ver) {
-	long n;
-
-	if (ver == NULL) return -1;
-
-{	char *endptr = NULL;
-	n = strtol(ver, &endptr, 10);
-	if (*endptr != '\0') return -1;
-}
-	if ((n < LDAP_VERSION_MIN) || (n > LDAP_VERSION_MAX)) return -1;
-
-	return (int) n;
 }

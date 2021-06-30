@@ -101,12 +101,8 @@ ssh_ocsp_validate(X509 *cert, X509_STORE *x509store) {
 
 #ifdef LDAP_ENABLED
 #ifdef USE_LDAP_STORE	 /* OpenSSL >= 1.1.1 */
-int/*bool*/ set_ldap_version(const char *ver);
-int/*bool*/
-set_ldap_version(const char *ver) {
-	UNUSED(ver);
-	return 0;
-}
+void ENGINE_load_ldap(void);
+void ENGINE_load_ldap(void) {}
 #endif /*def USE_LDAP_STORE*/
 
 #ifndef USE_X509_LOOKUP_STORE /* OpenSSL < 3.0 */

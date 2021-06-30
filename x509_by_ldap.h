@@ -1,7 +1,7 @@
 #ifndef X509_BY_LDAP_H
 #define X509_BY_LDAP_H
 /*
- * Copyright (c) 2004-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2004-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -42,12 +42,6 @@ X509_LOOKUP_METHOD* X509_LOOKUP_ldap(void);
 #define X509_L_LDAP_HOST	1
 #define X509_LOOKUP_add_ldap(x,value) \
 		X509_LOOKUP_ctrl((x),X509_L_LDAP_HOST,(value),(long)(0),NULL)
-
-#ifndef USE_LDAP_STORE
-#define X509_L_LDAP_VERSION	2
-#define X509_LOOKUP_set_protocol(x,value) \
-		X509_LOOKUP_ctrl((x),X509_L_LDAP_VERSION,(value),(long)(0),NULL)
-#endif
 
 
 #ifdef	__cplusplus

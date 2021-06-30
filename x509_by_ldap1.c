@@ -74,25 +74,6 @@ lookup_item_new(const char *url) {
 }
 
 
-static int
-ldaplookup_ctrl(X509_LOOKUP *ctx, int cmd, const char *argc, long argl, char **retp) {
-	int ret = 0;
-
-	UNUSED(argl);
-	UNUSED(retp);
-TRACE_BY_LDAP(__func__, "ctx=%p, cmd: %d, argc: '%s'", ctx, cmd, argc);
-	switch (cmd) {
-	case X509_L_LDAP_HOST:
-		ret = ldaplookup_add_search(ctx, argc);
-		break;
-	default:
-		X509byLDAPerr(X509byLDAP_F_LOOKUPCRTL, X509byLDAP_R_INVALID_CRTLCMD);
-		break;
-	}
-	return ret;
-}
-
-
 /*
  * We will put into store X509 object from passed data in buffer only
  * when object name match passed. To compare both names we use our

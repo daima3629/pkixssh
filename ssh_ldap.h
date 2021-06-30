@@ -1,7 +1,7 @@
 #ifndef SSH_LDAP_H
 #define SSH_LDAP_H
 /*
- * Copyright (c) 2004-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2004-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -35,6 +35,8 @@
 #endif
 #include <ldap.h>
 
+int	ssh_ldap_version(void);
+
 int	ssh_ldap_bind_s(LDAP *ld);
 int	ssh_ldap_unbind_s(LDAP *ld);
 
@@ -45,7 +47,6 @@ void	ssh_ldap_parse_result (LDAP *ld, LDAPMessage *res);
 
 
 void	crypto_add_ldap_error(int err);
-int	parse_ldap_version(const char *ver);
 
 
 /* LDAP connection details */
@@ -88,7 +89,7 @@ ldapsearch_advance(ldapsearch_result* r);
 
 
 #ifdef USE_LDAP_STORE
-int/*bool*/	set_ldap_version(const char *ver);
+void	ENGINE_load_ldap(void);
 #endif
 
 

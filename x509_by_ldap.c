@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2004-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -73,12 +73,10 @@ X509_STORE_unlock(X509_STORE *s) {
 
 /* Function codes. */
 #define X509byLDAP_F_LOOKUPCRTL			100
-#define X509byLDAP_F_SET_PROTOCOL		102
 #define X509byLDAP_F_GET_BY_SUBJECT		104
 
 /* Reason codes. */
 #define X509byLDAP_R_INVALID_CRTLCMD			100
-#define X509byLDAP_R_UNABLE_TO_SET_PROTOCOL_VERSION	105
 #define X509byLDAP_R_WRONG_LOOKUP_TYPE			107
 #define X509byLDAP_R_UNABLE_TO_GET_FILTER		108
 #define X509byLDAP_R_UNABLE_TO_BIND			109
@@ -88,7 +86,6 @@ X509_STORE_unlock(X509_STORE *s) {
 
 static ERR_STRING_DATA X509byLDAP_str_functs[] = {
 	{ ERR_PACK(0, X509byLDAP_F_LOOKUPCRTL, 0)	, "LOOKUPCRTL" },
-	{ ERR_PACK(0, X509byLDAP_F_SET_PROTOCOL, 0)	, "SET_PROTOCOL" },
 	{ ERR_PACK(0, X509byLDAP_F_GET_BY_SUBJECT, 0)	, "GET_BY_SUBJECT" },
 	{ 0, NULL }
 };
@@ -96,7 +93,6 @@ static ERR_STRING_DATA X509byLDAP_str_functs[] = {
 
 static ERR_STRING_DATA X509byLDAP_str_reasons[] = {
 	{ ERR_PACK(0, 0, X509byLDAP_R_INVALID_CRTLCMD)			, "invalid control command" },
-	{ ERR_PACK(0, 0, X509byLDAP_R_UNABLE_TO_SET_PROTOCOL_VERSION)	, "unable to set ldap protocol version" },
 	{ ERR_PACK(0, 0, X509byLDAP_R_WRONG_LOOKUP_TYPE)		, "wrong lookup type" },
 	{ ERR_PACK(0, 0, X509byLDAP_R_UNABLE_TO_GET_FILTER)		, "unable to get ldap filter" },
 	{ ERR_PACK(0, 0, X509byLDAP_R_UNABLE_TO_BIND)			, "unable to bind to ldap server" },
@@ -171,8 +167,6 @@ static void ldaplookup_free(X509_LOOKUP *ctx);
 static int  ldaplookup_init(X509_LOOKUP *ctx);
 static int  ldaplookup_shutdown(X509_LOOKUP *ctx);
 static int  ldaplookup_by_subject(X509_LOOKUP *ctx, int type, X509_NAME *name, X509_OBJECT *ret);
-
-static int  ldaplookup_add_search(X509_LOOKUP *ctx, const char *url);
 
 
 typedef struct lookup_item_s lookup_item;
@@ -269,6 +263,25 @@ ldaplookup_add_search(X509_LOOKUP *ctx, const char *url) {
 	p->next = q;
 
 	return 1;
+}
+
+
+static int
+ldaplookup_ctrl(X509_LOOKUP *ctx, int cmd, const char *argc, long argl, char **retp) {
+	int ret = 0;
+
+	UNUSED(argl);
+	UNUSED(retp);
+TRACE_BY_LDAP(__func__, "ctx=%p, cmd: %d, argc: '%s'", ctx, cmd, argc);
+	switch (cmd) {
+	case X509_L_LDAP_HOST:
+		ret = ldaplookup_add_search(ctx, argc);
+		break;
+	default:
+		X509byLDAPerr(X509byLDAP_F_LOOKUPCRTL, X509byLDAP_R_INVALID_CRTLCMD);
+		break;
+	}
+	return ret;
 }
 #else /*def USE_X509_LOOKUP_STORE*/
 
