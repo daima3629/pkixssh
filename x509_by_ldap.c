@@ -25,7 +25,7 @@
 #include "x509_by_ldap.h"
 #include "ssh_ldap.h"
 
-#ifndef USE_X509_LOOKUP_STORE
+#if !defined(USE_X509_LOOKUP_STORE) || !defined(USE_X509_LOOKUP_MYSTORE)
 /* custom X.509 look-up */
 
 #include "x509store.h"
@@ -283,7 +283,7 @@ TRACE_BY_LDAP(__func__, "ctx=%p, cmd: %d, argc: '%s'", ctx, cmd, argc);
 	}
 	return ret;
 }
-#else /*def USE_X509_LOOKUP_STORE*/
+#else /*def USE_X509_LOOKUP_*STORE*/
 
 /* use OpenSSL 3.0+ X.509 look-up "by_store" */
 typedef int x509_by_ldap_empty_translation_unit;

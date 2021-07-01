@@ -774,6 +774,9 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 #ifdef USE_X509_LOOKUP_STORE
 		#define SSH_X509_LOOKUP_ADD	X509_LOOKUP_add_store
 		lookup_method = X509_LOOKUP_store();
+#elif defined(USE_X509_LOOKUP_MYSTORE)
+		#define SSH_X509_LOOKUP_ADD	X509_LOOKUP_add_mystore
+		lookup_method = X509_LOOKUP_mystore();
 #else
 		#define SSH_X509_LOOKUP_ADD	X509_LOOKUP_add_ldap
 		lookup_method = X509_LOOKUP_ldap();

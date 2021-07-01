@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1999-2003 Damien Miller.  All rights reserved.
- * Copyright (c) 2011-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -916,6 +916,14 @@ struct winsize {
 #if defined(USE_LDAP_STORE) && defined(HAVE_X509_LOOKUP_STORE)
    /* OpenSSL >= 3.0 */
 #  define USE_X509_LOOKUP_STORE	1
+#endif
+
+#if 0 /* TODO experimental */
+# undef USE_X509_LOOKUP_MYSTORE
+#endif
+#if defined(USE_LDAP_STORE) && !defined(HAVE_X509_LOOKUP_STORE)
+   /* OpenSSL 1.1.1* only */
+#  define USE_X509_LOOKUP_MYSTORE	1
 #endif
 
 

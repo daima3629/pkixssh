@@ -123,6 +123,15 @@ X509_CRL*
 ssh_x509store_get_crl_by_subject(X509_STORE *store, X509_NAME *name);
 
 
+#ifdef USE_X509_LOOKUP_MYSTORE
+X509_LOOKUP_METHOD* X509_LOOKUP_mystore(void);
+
+#define X509_L_MYSTORE_URI	1
+#define X509_LOOKUP_add_mystore(x,value) \
+		X509_LOOKUP_ctrl((x),X509_L_MYSTORE_URI,(value),(long)(0),NULL)
+#endif
+
+
 #ifdef SSH_OCSP_ENABLED
 
 enum va_type {

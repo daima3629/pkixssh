@@ -113,6 +113,14 @@ X509_LOOKUP_ldap(void) {
 }
 #endif /*ndef USE_X509_LOOKUP_STORE*/
 #endif /*def LDAP_ENABLED*/
+
+#ifdef USE_X509_LOOKUP_MYSTORE /* OpenSSL 1.1.1* */
+X509_LOOKUP_METHOD* X509_LOOKUP_mystore(void);
+X509_LOOKUP_METHOD*
+X509_LOOKUP_mystore(void) {
+	return NULL;
+}
+#endif /*ndef USE_X509_LOOKUP_MYSTORE*/
 #endif	/* end of used in x509store.c */
 
 
