@@ -239,6 +239,19 @@ ssh_ASN1_INTEGER_2_string(ASN1_INTEGER *_asni) {
 #endif /*def SSH_CHECK_REVOKED*/
 
 
+#ifdef USE_LDAP_STORE
+static void
+load_ldap_engine(void) {
+{	static int load_ldap = 1;
+	if (load_ldap) {
+		load_ldap = 0;
+		ENGINE_load_ldap();
+	}
+}
+}
+#endif
+
+
 #ifdef LDAP_ENABLED
 static int ldap_version = -1;
 
@@ -259,15 +272,6 @@ parse_ldap_version(const char *ver) {
 
 static int/*bool*/
 set_ldap_version(const char *ver) {
-#ifdef USE_LDAP_STORE
-{	static int load_ldap = 1;
-	if (load_ldap) {
-		load_ldap = 0;
-		ENGINE_load_ldap();
-	}
-}
-#endif
-
 	if (ver != NULL) {
 		int n = parse_ldap_version(ver);
 		if (n < 0) return 0;
@@ -774,9 +778,11 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 #ifdef USE_X509_LOOKUP_STORE
 		#define SSH_X509_LOOKUP_ADD	X509_LOOKUP_add_store
 		lookup_method = X509_LOOKUP_store();
+		load_ldap_engine();
 #elif defined(USE_X509_LOOKUP_MYSTORE)
 		#define SSH_X509_LOOKUP_ADD	X509_LOOKUP_add_mystore
 		lookup_method = X509_LOOKUP_mystore();
+		load_ldap_engine();
 #else
 		#define SSH_X509_LOOKUP_ADD	X509_LOOKUP_add_ldap
 		lookup_method = X509_LOOKUP_ldap();
