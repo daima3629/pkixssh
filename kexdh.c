@@ -28,10 +28,6 @@
 
 #ifdef WITH_OPENSSL
 
-#include <signal.h>
-#include <stdio.h>
-#include <string.h>
-
 #include "kex.h"
 #include "ssherr.h"
 #include "misc.h"
