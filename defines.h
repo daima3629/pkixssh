@@ -918,9 +918,7 @@ struct winsize {
 #  define USE_X509_LOOKUP_STORE	1
 #endif
 
-#if 0 /* TODO experimental */
-# undef USE_X509_LOOKUP_MYSTORE
-#endif
+#undef USE_X509_LOOKUP_MYSTORE
 #if defined(USE_LDAP_STORE) && !defined(HAVE_X509_LOOKUP_STORE)
    /* OpenSSL 1.1.1* only */
 #  define USE_X509_LOOKUP_MYSTORE	1

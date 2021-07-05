@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2004-2020 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2004-2021 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -98,6 +98,7 @@ index	objectClass	eq
 
 pidfile		$LDAPD_PID
 argsfile	$LDAPD_ARGS
+#loglevel	any
 EOF
 ) > ${LDAPD_CFG}
 }

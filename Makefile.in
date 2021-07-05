@@ -188,7 +188,6 @@ all: configure-check $(CONFIGFILES) $(MANPAGES) $(TARGETS)
 $(LIBSSH_OBJS): Makefile.in config.h
 $(SSHOBJS): Makefile.in config.h
 $(SSHDOBJS): Makefile.in config.h
-x509_by_ldap.o: x509_by_ldap0.c x509_by_ldap1.c
 configure-check: $(srcdir)/configure
 
 $(srcdir)/configure: \
