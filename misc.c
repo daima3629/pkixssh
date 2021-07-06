@@ -2507,16 +2507,6 @@ parse_absolute_time(const char *s, uint64_t *tp)
 	return 0;
 }
 
-void
-format_absolute_time(uint64_t t, char *buf, size_t len)
-{
-	time_t tt = t > INT_MAX ? INT_MAX : t; /* XXX revisit in 2038 :P */
-	struct tm tm;
-
-	localtime_r(&tt, &tm);
-	strftime(buf, len, "%Y-%m-%dT%H:%M:%S", &tm);
-}
-
 /* check if path is absolute */
 int
 path_absolute(const char *path)
