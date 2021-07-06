@@ -907,19 +907,20 @@ struct winsize {
 
 /* LDAP use conditions */
 #undef USE_LDAP_STORE
-#if defined(USE_OPENSSL_ENGINE) && defined(HAVE_OSSL_STORE_OPEN)
+#if defined(HAVE_OSSL_STORE_OPEN) && \
+    defined(LDAP_ENABLED) && defined(USE_OPENSSL_ENGINE)
    /* OpenSSL >= 1.1.1 */
-#  define USE_LDAP_STORE	1
+#  define USE_LDAP_STORE		1
 #endif
 
 #undef USE_X509_LOOKUP_STORE
-#if defined(USE_LDAP_STORE) && defined(HAVE_X509_LOOKUP_STORE)
+#if defined(HAVE_OSSL_STORE_OPEN) && defined(HAVE_X509_LOOKUP_STORE)
    /* OpenSSL >= 3.0 */
-#  define USE_X509_LOOKUP_STORE	1
+#  define USE_X509_LOOKUP_STORE		1
 #endif
 
 #undef USE_X509_LOOKUP_MYSTORE
-#if defined(USE_LDAP_STORE) && !defined(HAVE_X509_LOOKUP_STORE)
+#if defined(HAVE_OSSL_STORE_OPEN) && !defined(HAVE_X509_LOOKUP_STORE)
    /* OpenSSL 1.1.1* only */
 #  define USE_X509_LOOKUP_MYSTORE	1
 #endif

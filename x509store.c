@@ -239,17 +239,17 @@ ssh_ASN1_INTEGER_2_string(ASN1_INTEGER *_asni) {
 #endif /*def SSH_CHECK_REVOKED*/
 
 
-#ifdef USE_LDAP_STORE
 static void
 load_ldap_engine(void) {
+#ifdef USE_LDAP_STORE
 {	static int load_ldap = 1;
 	if (load_ldap) {
 		load_ldap = 0;
 		ENGINE_load_ldap();
 	}
 }
-}
 #endif
+}
 
 
 #ifdef LDAP_ENABLED
