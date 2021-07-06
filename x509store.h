@@ -92,6 +92,10 @@ typedef struct {
 	const char   *ldap_ver;
 	const char   *ldap_url;
 #endif
+#ifdef USE_OPENSSL_STORE2
+	u_int        num_store_uri;
+	const char   **store_uri;
+#endif
 }       X509StoreOptions;
 
 void X509StoreOptions_init(X509StoreOptions *options);

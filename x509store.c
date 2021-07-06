@@ -573,6 +573,10 @@ X509StoreOptions_init(X509StoreOptions *options) {
 	options->ldap_ver = NULL;
 	options->ldap_url = NULL;
 #endif
+#ifdef USE_OPENSSL_STORE2
+	options->num_store_uri = 0;
+	options->store_uri = NULL;
+#endif
 }
 
 
@@ -580,11 +584,19 @@ void
 X509StoreOptions_reset(X509StoreOptions *options) {
 	free((char*)options->certificate_file);	options->certificate_file = NULL;
 	free((char*)options->certificate_path);	options->certificate_path = NULL;
-	free((char*)options->revocation_file);		options->revocation_file = NULL;
-	free((char*)options->revocation_path);		options->revocation_path = NULL;
+	free((char*)options->revocation_file);	options->revocation_file = NULL;
+	free((char*)options->revocation_path);	options->revocation_path = NULL;
 #ifdef LDAP_ENABLED
 	free((char*)options->ldap_ver);		options->ldap_ver = NULL;
 	free((char*)options->ldap_url);		options->ldap_url = NULL;
+#endif
+#ifdef USE_OPENSSL_STORE2
+{	u_int k;
+	for(k = 0; k < options->num_store_uri; k++)
+		free((char*)options->store_uri[k]);
+	options->num_store_uri = 0;
+	free(options->store_uri);
+}
 #endif
 }
 
@@ -815,8 +827,55 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 		return 0; /* ;-) */
 	}
 	}
+#undef SSH_X509_LOOKUP_ADD
 #endif /*def LDAP_ENABLED*/
 
+#ifdef USE_OPENSSL_STORE2
+{	u_int k;
+	X509_LOOKUP_METHOD* lookup_method;
+
+#ifdef USE_X509_LOOKUP_STORE
+	#define SSH_X509_LOOKUP_ADD	X509_LOOKUP_add_store
+	lookup_method = X509_LOOKUP_store();
+#else
+	#define SSH_X509_LOOKUP_ADD	X509_LOOKUP_add_mystore
+	lookup_method = X509_LOOKUP_mystore();
+#endif
+
+	if (_locations->num_store_uri > 0) {
+		/* store uri may use ldap scheme */
+		load_ldap_engine();
+	}
+
+	for (k = 0; k < _locations->num_store_uri; k++) {
+		const char *uri = _locations->store_uri[k];
+		X509_LOOKUP *lookup;
+
+		lookup = X509_STORE_add_lookup(x509store, lookup_method);
+		if (lookup == NULL) {
+			fatal_f("cannot add store lookup[%d]", k);
+			return 0; /* ;-) */
+		}
+		if (SSH_X509_LOOKUP_ADD(lookup, uri)) {
+			debug2("store url '%.400s' added to x509 store", uri);
+		}
+		/*ERR_clear_error();*/
+
+#ifdef SSH_CHECK_REVOKED
+		lookup = X509_STORE_add_lookup(x509revoked, lookup_method);
+		if (lookup == NULL) {
+			fatal_f("cannot add store lookup[%d](revoked)", k);
+			return 0; /* ;-) */
+		}
+		if (SSH_X509_LOOKUP_ADD(lookup, uri)) {
+			debug2("store url '%.400s' added to x509 store(revoked)", uri);
+		}
+		/*ERR_clear_error();*/
+#endif /*def SSH_CHECK_REVOKED*/
+	}
+}
+#undef SSH_X509_LOOKUP_ADD
+#endif /*def USE_OPENSSL_STORE2*/
 	return 1;
 }
 

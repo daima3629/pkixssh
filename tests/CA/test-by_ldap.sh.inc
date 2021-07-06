@@ -309,6 +309,46 @@ EOF
 
 
 # ===
+testLDAPSTORE() {
+  printSeparator
+  echo "Begin test with LDAP ${extd}STORE${norm} ${attn}$1${norm}"
+
+  creTestLDAPDcfgFile
+  creTestLDAPDCAldifFile
+  creTestSSHDcfgFile
+
+#limitation of configuration parser
+SSH_CONF_LDAP_DC=`echo $SSH_LDAP_DC | sed -e 's|=|%3D|g' -e 's|,|%2C|'`
+  cat >> "$SSHD_CFG" <<EOF
+CACertificateFile /file/not/found
+CACertificatePath /path/not/found
+CARevocationFile  /crlfile/not/found
+CARevocationPath  /crlpath/not/found
+CAStoreURI $LDAPD_URL/$SSH_CONF_LDAP_DC
+#TODO:MandatoryCRL yes
+EOF
+
+  runSSHdaemon || return $?
+  (
+    rm -f "${CWD}/ldap/data"/*
+    runLDAPdaemon
+    (
+      initLDAPdb
+      retval=$?
+      show_status $retval "    initialization of ${extd}LDAP database${norm}" || exit $retval
+
+      test_all_keys "" "" "${warn}!${norm}" "Yes"
+    ); retval=$?
+    killLDAPdaemon
+    exit ${retval}
+  ); retval=$?
+  killSSHdaemon
+
+  return ${retval}
+}
+
+
+# ===
 LDAPtestBREAK() {
   echo
   killLDAPdaemon
@@ -329,5 +369,8 @@ do_test () {
   echo "* ${extd}against ${attn}CALdapUrl${norm}:"
 
   testLDAP 2 &&
-  testLDAP 3
+  testLDAP 3 &&
+  if $USE_OPENSSL_STORE2 ; then
+    testLDAPSTORE
+  fi
 }

@@ -565,6 +565,7 @@ typedef enum {
 	sValidateFirst,
 	sCACertificateFile, sCACertificatePath,
 	sCARevocationFile, sCARevocationPath,
+	sCAStoreURI,
 	sCAldapVersion, sCAldapURL,
 	sVAType, sVACertificateFile,
 	sVAOCSPResponderURL,
@@ -635,6 +636,7 @@ static struct {
 	{ "cacertificatepath", sCACertificatePath, SSHCFG_GLOBAL },
 	{ "carevocationfile", sCARevocationFile, SSHCFG_GLOBAL },
 	{ "carevocationpath", sCARevocationPath, SSHCFG_GLOBAL },
+	{ "castoreuri", sCAStoreURI, SSHCFG_GLOBAL }, /* experimental, i.e. no documentation */
 	{ "caldapversion", sCAldapVersion, SSHCFG_GLOBAL },
 	{ "caldapurl", sCAldapURL, SSHCFG_GLOBAL },
 	{ "vatype", sVAType, SSHCFG_GLOBAL },
@@ -1547,6 +1549,17 @@ parse_string:
 		/* X509StoreOptions preffered type is 'const char*' */
 		charptr = (char**)&options->ca.revocation_path;
 		goto parse_string;
+
+#ifdef USE_OPENSSL_STORE2
+	case sCAStoreURI:
+		arg = strdelim(&cp);
+		if (!arg || *arg == '\0')
+			fatal("%s line %d: Missing argument.", filename, linenum);
+		opt_array_append(filename, linenum, "CAStoreURI",
+		    (char***)&options->ca.store_uri, &options->ca.num_store_uri,
+		    arg);
+		break;
+#endif /*def USE_OPENSSL_STORE2*/
 
 #ifdef LDAP_ENABLED
 	case sCAldapVersion:
@@ -2643,6 +2656,9 @@ parse_string:
 
 	case sDeprecated:
 	case sIgnore:
+#ifndef USE_OPENSSL_STORE2
+	case sCAStoreURI:
+#endif
 #ifndef LDAP_ENABLED
 	case sCAldapVersion:
 	case sCAldapURL:

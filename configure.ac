@@ -5548,11 +5548,14 @@ AC_CHECK_FUNCS([ \
   EC_POINT_get_affine_coordinates \
   OSSL_STORE_open \
 ])
+USE_OPENSSL_STORE2=false
 if test "x$ac_cv_func_OSSL_STORE_open" = xyes ; then
   AC_DEFINE(
     [USE_OPENSSL_STORE2],
     [1], [Use OpenSSL STORE functionality])
+  USE_OPENSSL_STORE2=:
 fi
+AC_SUBST([USE_OPENSSL_STORE2])
 
 # check for openssl 3.0+ functions ...
 AC_CHECK_FUNCS([ \
