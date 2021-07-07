@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1999-2004 Damien Miller <djm@mindrot.org>
- * Copyright (c) 2015-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2015-2021 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -122,6 +122,12 @@ int	isblank(int);
 
 #ifndef HAVE_GETPGID
 pid_t getpgid(pid_t);
+#endif
+
+#ifndef HAVE_PSELECT
+/* may require struct timespec declared above */
+int pselect(int, fd_set *, fd_set *, fd_set *, const struct timespec *,
+    const sigset_t *);
 #endif
 
 #if !HAVE_DECL_ENDGRENT

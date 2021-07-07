@@ -117,7 +117,7 @@ SSHOBJS= ssh.o readconf.o clientloop.o sshtty.o \
 
 SSHDOBJS=sshd.o auth-rhosts.o auth-passwd.o \
 	audit.o audit-bsm.o audit-linux.o platform.o \
-	sshpty.o sshlogin.o servconf.o serverloop.o \
+	sshpty.o sshlogin.o servconf.o serverloop.o ssh-pselect.o \
 	$(X509STORE_OBJS) $(OCSP_OBJS) \
 	auth.o auth2.o auth-options.o session.o \
 	auth2-chall.o groupaccess.o \
@@ -189,6 +189,7 @@ $(LIBSSH_OBJS): Makefile.in config.h
 $(SSHOBJS): Makefile.in config.h
 ssh-prngd.o: openbsd-compat/port-prngd.c
 $(SSHDOBJS): Makefile.in config.h
+ssh-pselect.o: openbsd-compat/bsd-pselect.c
 configure-check: $(srcdir)/configure
 
 $(srcdir)/configure: \

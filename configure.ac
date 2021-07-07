@@ -1984,6 +1984,7 @@ AC_CHECK_FUNCS([ \
 	pledge \
 	poll \
 	prctl \
+	pselect \
 	pstat \
 	raise \
 	readpassphrase \
