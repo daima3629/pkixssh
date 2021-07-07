@@ -100,7 +100,7 @@ LIBSSH_OBJS=${LIBOPENSSH_OBJS} \
 	atomicio.o dispatch.o mac.o misc.o utf8.o \
 	monitor_fdpass.o rijndael.o ssh-dss.o ssh-ecdsa.o ssh-rsa.o dh.o \
 	$(SSHX509_OBJS) \
-	msg.o progressmeter.o dns.o entropy.o gss-genr.o umac.o umac128.o \
+	msg.o progressmeter.o dns.o entropy.o ssh-prngd.o gss-genr.o umac.o umac128.o \
 	ssh-pkcs11-err.o smult_curve25519_ref.o \
 	poly1305.o chacha.o cipher-chachapoly.o cipher-chachapoly-libcrypto.o \
 	ssh-ed25519.o digest-openssl.o digest-libc.o hmac.o \
@@ -187,6 +187,7 @@ all: configure-check $(CONFIGFILES) $(MANPAGES) $(TARGETS)
 
 $(LIBSSH_OBJS): Makefile.in config.h
 $(SSHOBJS): Makefile.in config.h
+ssh-prngd.o: openbsd-compat/port-prngd.c
 $(SSHDOBJS): Makefile.in config.h
 configure-check: $(srcdir)/configure
 
