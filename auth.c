@@ -96,20 +96,6 @@ login_getpwclass(const struct passwd *pwd) {
 
 #endif /*def HAVE_LOGIN_CAP*/
 
-static void
-format_absolute_time(uint64_t t, char *buf, size_t len)
-{
-	struct tm tm;
-
-{	time_t tt = (time_t)t;
-	/* time_t is signed type */
-	if ((int64_t)tt < (int64_t)t)
-		tt = (time_t)~(~(uint64_t)0 << (8 * sizeof(time_t) - 1));
-	localtime_r(&tt, &tm);
-}
-	strftime(buf, len, "%Y-%m-%dT%H:%M:%S", &tm);
-}
-
 /* import */
 extern ServerOptions options;
 extern struct include_list includes;

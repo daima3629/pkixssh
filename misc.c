@@ -1,4 +1,4 @@
-/* $OpenBSD: misc.c,v 1.166 2021/06/08 06:54:40 djm Exp $ */
+/* $OpenBSD: misc.c,v 1.168 2021/07/12 06:22:57 dtucker Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2005,2006 Damien Miller.  All rights reserved.
@@ -2505,6 +2505,20 @@ parse_absolute_time(const char *s, uint64_t *tp)
 	/* success */
 	*tp = (uint64_t)tt;
 	return 0;
+}
+
+void
+format_absolute_time(uint64_t t, char *buf, size_t len)
+{
+	struct tm tm;
+
+{	time_t tt = (time_t)t;
+	/* time_t is signed type */
+	if ((int64_t)tt < (int64_t)t)
+		tt = (time_t)~(~(uint64_t)0 << (8 * sizeof(time_t) - 1));
+	localtime_r(&tt, &tm);
+}
+	strftime(buf, len, "%Y-%m-%dT%H:%M:%S", &tm);
 }
 
 /* check if path is absolute */
