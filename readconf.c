@@ -174,7 +174,6 @@ typedef enum {
 	oCAldapVersion, oCAldapURL,
 	oUserCACertificateFile, oUserCACertificatePath,
 	oUserCARevocationFile, oUserCARevocationPath,
-	oUserCAStoreURI,
 	oUserCAldapVersion, oUserCAldapURL,
 	oVAType, oVACertificateFile,
 	oVAOCSPResponderURL,
@@ -274,7 +273,6 @@ static struct {
 	{ "usercacertificatepath", oUserCACertificatePath },
 	{ "usercarevocationfile", oUserCARevocationFile },
 	{ "usercarevocationpath", oUserCARevocationPath },
-	{ "usercastoreuri", oUserCAStoreURI }, /* experimental, i.e. no documentation */
 	{ "usercaldapversion", oCAldapVersion },
 	{ "usercaldapurl", oCAldapURL },
 	{ "vatype", oVAType },
@@ -1117,16 +1115,6 @@ skip_purpose:
 		}
 		opt_array_append(filename, linenum, "CAStoreURI",
 		    (char***)&options->ca.store_uri, &options->ca.num_store_uri,
-		    arg);
-		break;
-	case oUserCAStoreURI:
-		arg = strdelim(&s);
-		if (!arg || *arg == '\0') {
-			error("%.200s line %d: Missing argument.", filename, linenum);
-			return -1;
-		}
-		opt_array_append(filename, linenum, "UserCAStoreURI",
-		    (char***)&options->userca.store_uri, &options->userca.num_store_uri,
 		    arg);
 		break;
 #endif /*def USE_OPENSSL_STORE2*/
@@ -2243,7 +2231,6 @@ parse_key_algorithms:
 
 #ifndef USE_OPENSSL_STORE2
 	case oCAStoreURI:
-	case oUserCAStoreURI:
 #endif
 #ifndef LDAP_ENABLED
 	case oCAldapVersion:
