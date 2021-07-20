@@ -3,7 +3,7 @@
 /*
  * Copyright (c) 2003 Wesley Griffin. All rights reserved.
  * Copyright (c) 2003 Jakob Schlyter. All rights reserved.
- * Copyright (c) 2005-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2005-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -28,6 +28,8 @@
 
 #ifndef DNS_H
 #define DNS_H
+
+#include "includes.h"
 
 struct ssh_conn_info;
 
@@ -55,8 +57,12 @@ enum dns_cert_types {
 enum sshfp_hashes {
 	SSHFP_HASH_RESERVED = 0,
 	SSHFP_HASH_SHA1 = 1,
+#ifdef HAVE_EVP_SHA256
 	SSHFP_HASH_SHA256 = 2,
 	SSHFP_HASH_MAX = 3
+#else
+	SSHFP_HASH_MAX = 2
+#endif
 };
 
 enum dns_key_algo {

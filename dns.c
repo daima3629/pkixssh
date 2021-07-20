@@ -3,7 +3,7 @@
 /*
  * Copyright (c) 2003 Wesley Griffin. All rights reserved.
  * Copyright (c) 2003 Jakob Schlyter. All rights reserved.
- * Copyright (c) 2005-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2005-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -109,21 +109,29 @@ dns_read_key(u_int8_t *algorithm, u_int8_t *digest_type,
 		if (!*digest_type)
 			*digest_type = SSHFP_HASH_SHA1;
 		break;
+#ifdef OPENSSL_HAS_ECC
 	case KEY_ECDSA:
 		*algorithm = SSHFP_KEY_ECDSA;
 		if (!*digest_type)
 			*digest_type = SSHFP_HASH_SHA256;
 		break;
+#endif
 	case KEY_ED25519:
 		*algorithm = SSHFP_KEY_ED25519;
 		if (!*digest_type)
+#ifdef HAVE_EVP_SHA256
 			*digest_type = SSHFP_HASH_SHA256;
+#else
+			*digest_type = SSHFP_HASH_SHA1;
+#endif /*def HAVE_EVP_SHA256*/
 		break;
+#ifdef WITH_XMSS
 	case KEY_XMSS:
 		*algorithm = SSHFP_KEY_XMSS;
 		if (!*digest_type)
 			*digest_type = SSHFP_HASH_SHA256;
 		break;
+#endif
 	default:
 		*algorithm = SSHFP_KEY_RESERVED; /* 0 */
 		*digest_type = SSHFP_HASH_RESERVED; /* 0 */
@@ -133,9 +141,11 @@ dns_read_key(u_int8_t *algorithm, u_int8_t *digest_type,
 	case SSHFP_HASH_SHA1:
 		fp_alg = SSH_DIGEST_SHA1;
 		break;
+#ifdef HAVE_EVP_SHA256
 	case SSHFP_HASH_SHA256:
 		fp_alg = SSH_DIGEST_SHA256;
 		break;
+#endif /*def HAVE_EVP_SHA256*/
 	default:
 		*digest_type = SSHFP_HASH_RESERVED; /* 0 */
 	}
