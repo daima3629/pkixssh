@@ -1,4 +1,4 @@
-#	$OpenBSD: Makefile,v 1.110 2020/12/22 06:03:36 djm Exp $
+#	$OpenBSD: Makefile,v 1.112 2021/07/19 00:16:26 dtucker Exp $
 
 tests: unit file-tests t-exec
 check-core: tests
@@ -42,8 +42,11 @@ LTESTS=		connect \
 		agent-subprocess \
 		keyscan \
 		keygen-change \
+		keygen-comment \
 		keygen-convert \
+		keygen-knownhosts \
 		keygen-moduli \
+		keygen-sshfp \
 		key-options \
 		scp \
 		scp-uri \
@@ -80,7 +83,6 @@ LTESTS=		connect \
 		multipubkey \
 		limit-keytype \
 		hostkey-agent \
-		keygen-knownhosts \
 		hostkey-rotate \
 		principals-command \
 		cert-file \
@@ -88,7 +90,6 @@ LTESTS=		connect \
 		servcfginclude \
 		allow-deny-users \
 		authinfo \
-		keygen-comment \
 		knownhosts-command
 
 # in some environments fail regularly:
