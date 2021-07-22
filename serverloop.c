@@ -1,4 +1,4 @@
-/* $OpenBSD: serverloop.c,v 1.227 2021/06/25 03:38:17 dtucker Exp $ */
+/* $OpenBSD: serverloop.c,v 1.228 2021/07/16 09:00:23 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -395,6 +395,11 @@ server_loop2(struct ssh *ssh, Authctxt *authctxt)
 			channel_after_select(ssh, readset, writeset);
 		if (process_input(ssh, readset, connection_in) < 0)
 			break;
+	{	/* A timeout may have triggered rekeying */
+		int r = ssh_packet_check_rekey(ssh);
+		if (r != 0)
+			fatal_fr(r, "cannot start rekeying");
+	}
 		process_output(ssh, writeset, connection_out);
 	}
 	collect_children(ssh);
