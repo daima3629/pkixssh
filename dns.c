@@ -1,5 +1,4 @@
-/* $OpenBSD: dns.c,v 1.39 2020/10/18 11:32:01 djm Exp $ */
-
+/* $OpenBSD: dns.c,v 1.41 2021/07/19 03:13:28 dtucker Exp $ */
 /*
  * Copyright (c) 2003 Wesley Griffin. All rights reserved.
  * Copyright (c) 2003 Jakob Schlyter. All rights reserved.
@@ -90,6 +89,7 @@ dns_result_totext(unsigned int res)
 
 /*
  * Read SSHFP parameters from key buffer.
+ * Caller must free digest which is allocated by sshkey_fingerprint_raw().
  */
 static int
 dns_read_key(u_int8_t *algorithm, u_int8_t *digest_type,
@@ -101,40 +101,25 @@ dns_read_key(u_int8_t *algorithm, u_int8_t *digest_type,
 	switch (key->type) {
 	case KEY_RSA:
 		*algorithm = SSHFP_KEY_RSA;
-		if (!*digest_type)
-			*digest_type = SSHFP_HASH_SHA1;
 		break;
 	case KEY_DSA:
 		*algorithm = SSHFP_KEY_DSA;
-		if (!*digest_type)
-			*digest_type = SSHFP_HASH_SHA1;
 		break;
 #ifdef OPENSSL_HAS_ECC
 	case KEY_ECDSA:
 		*algorithm = SSHFP_KEY_ECDSA;
-		if (!*digest_type)
-			*digest_type = SSHFP_HASH_SHA256;
 		break;
 #endif
 	case KEY_ED25519:
 		*algorithm = SSHFP_KEY_ED25519;
-		if (!*digest_type)
-#ifdef HAVE_EVP_SHA256
-			*digest_type = SSHFP_HASH_SHA256;
-#else
-			*digest_type = SSHFP_HASH_SHA1;
-#endif /*def HAVE_EVP_SHA256*/
 		break;
 #ifdef WITH_XMSS
 	case KEY_XMSS:
 		*algorithm = SSHFP_KEY_XMSS;
-		if (!*digest_type)
-			*digest_type = SSHFP_HASH_SHA256;
 		break;
 #endif
 	default:
 		*algorithm = SSHFP_KEY_RESERVED; /* 0 */
-		*digest_type = SSHFP_HASH_RESERVED; /* 0 */
 	}
 
 	switch (*digest_type) {
@@ -158,7 +143,6 @@ dns_read_key(u_int8_t *algorithm, u_int8_t *digest_type,
 	} else {
 		*digest = NULL;
 		*digest_len = 0;
-		success = 0;
 	}
 
 	return success;
@@ -522,7 +506,6 @@ verify_host_key_dns(const char *hostname, struct sockaddr *address,
 	struct rrsetinfo *fingerprints = NULL;
 
 	u_int8_t hostkey_algorithm;
-	u_int8_t hostkey_digest_type = SSHFP_HASH_RESERVED;
 	u_char *hostkey_digest;
 	size_t hostkey_digest_len;
 
@@ -567,14 +550,6 @@ verify_host_key_dns(const char *hostname, struct sockaddr *address,
 		    fingerprints->rri_nrdatas);
 	}
 
-	/* Initialize default host key parameters */
-	if (!dns_read_key(&hostkey_algorithm, &hostkey_digest_type,
-	    &hostkey_digest, &hostkey_digest_len, hostkey)) {
-		error("Error calculating host key fingerprint.");
-		freerrset(fingerprints);
-		return -1;
-	}
-
 	if (fingerprints->rri_nrdatas)
 		*flags |= DNS_VERIFY_FOUND;
 
@@ -590,34 +565,41 @@ verify_host_key_dns(const char *hostname, struct sockaddr *address,
 			verbose("Error parsing fingerprint from DNS.");
 			continue;
 		}
+		debug3_f("checking SSHFP type %d fptype %d", dnskey_algorithm,
+		    dnskey_digest_type);
 
-		if (hostkey_digest_type != dnskey_digest_type) {
-			hostkey_digest_type = dnskey_digest_type;
-			free(hostkey_digest);
-
-			/* Initialize host key parameters */
-			if (!dns_read_key(&hostkey_algorithm,
-			    &hostkey_digest_type, &hostkey_digest,
-			    &hostkey_digest_len, hostkey)) {
-				error("Error calculating key fingerprint.");
-				freerrset(fingerprints);
-				return -1;
-			}
+		/* Calculate host key fingerprint. */
+		if (!dns_read_key(&hostkey_algorithm, &dnskey_digest_type,
+		    &hostkey_digest, &hostkey_digest_len, hostkey)) {
+			error("Error calculating key fingerprint.");
+			free(dnskey_digest);
+			freerrset(fingerprints);
+			return -1;
 		}
 
 		/* Check if the current key is the same as the given key */
 		if (hostkey_algorithm == dnskey_algorithm &&
-		    hostkey_digest_type == dnskey_digest_type) {
-			if (hostkey_digest_len == dnskey_digest_len &&
-			    timingsafe_bcmp(hostkey_digest, dnskey_digest,
-			    hostkey_digest_len) == 0)
+		    hostkey_digest_len == dnskey_digest_len) {
+			if (timingsafe_bcmp(hostkey_digest, dnskey_digest,
+			    hostkey_digest_len) == 0) {
+				debug3_f("matched SSHFP type %d fptype %d",
+				    dnskey_algorithm, dnskey_digest_type);
 				*flags |= DNS_VERIFY_MATCH;
+			} else {
+				debug3_f("failed SSHFP type %d fptype %d",
+				    dnskey_algorithm, dnskey_digest_type);
+				*flags |= DNS_VERIFY_FAILED;
+			}
 		}
 		free(dnskey_digest);
+		free(hostkey_digest); /* from sshkey_fingerprint_raw() */
 	}
 
-	free(hostkey_digest); /* from sshkey_fingerprint_raw() */
 	freerrset(fingerprints);
+
+	/* If any fingerprint failed to validate, return failure. */
+	if (*flags & DNS_VERIFY_FAILED)
+		*flags &= ~DNS_VERIFY_MATCH;
 
 	if (*flags & DNS_VERIFY_FOUND)
 		if (*flags & DNS_VERIFY_MATCH)
