@@ -739,11 +739,6 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 	flag = 0;
 #ifdef SSH_CHECK_REVOKED
 	if (_locations->revocation_path != NULL
-	/* NOTE configuration parser does not allow empty string but
-	 * indirectly we use empty string in ssh-agent and ssh-add to
-	 * avoid blocking exception above!
-	 * (see ssh_x509store_addpaths)
-	 */
 	&& _locations->revocation_path[0] != '\0'
 	) {
 		X509_LOOKUP *lookup = X509_STORE_add_lookup(x509revoked, X509_LOOKUP_hash_dir());
@@ -877,42 +872,6 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 #undef SSH_X509_LOOKUP_ADD
 #endif /*def USE_OPENSSL_STORE2*/
 	return 1;
-}
-
-
-int/*bool*/
-ssh_x509store_addpaths(const STACK_OF(SSHXSTOREPATH) *paths) {
-	int ret = 1;
-	int k, N;
-	X509StoreOptions extra;
-
-	if (paths == NULL) return ret;
-
-	N = sk_SSHXSTOREPATH_num(paths);
-	for (k = 0; k < N; k++) {
-		struct stat st;
-		char *path = sk_SSHXSTOREPATH_value(paths, k);
-
-		if (stat(path, &st) == -1) {
-			error_f("error %s for path='%s'", strerror(errno), path);
-			return 0;
-		}
-
-		X509StoreOptions_init(&extra);
-		if (S_ISDIR(st.st_mode))
-			extra.certificate_path = path;
-		else
-			extra.certificate_file = path;
-#ifdef SSH_CHECK_REVOKED
-		extra.revocation_path = xstrdup(""); /*ignore*/
-#endif
-		ret = ssh_x509store_addlocations(&extra);
-		X509StoreOptions_reset(&extra);
-
-		if (!ret) break;
-	}
-
-	return ret;
 }
 
 

@@ -118,8 +118,6 @@ DECLARE_STACK_OF(SSHXSTOREPATH)
 DEFINE_STACK_OF(SSHXSTOREPATH)
 #endif
 
-int/*bool*/ ssh_x509store_addpaths(const STACK_OF(SSHXSTOREPATH) *paths);
-
 X509*
 ssh_x509store_get_cert_by_subject(X509_STORE *store, X509_NAME *name);
 
