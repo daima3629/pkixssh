@@ -1,4 +1,4 @@
-/* $OpenBSD: auth-options.c,v 1.95 2021/04/03 06:18:40 djm Exp $ */
+/* $OpenBSD: auth-options.c,v 1.97 2021/07/24 01:55:19 djm Exp $ */
 /*
  * Copyright (c) 2018 Damien Miller <djm@mindrot.org>
  *
@@ -389,13 +389,12 @@ sshauthopt_parse(const char *opts, const char **errstrp)
 			    valid_before < ret->valid_before)
 				ret->valid_before = valid_before;
 		} else if (opt_match(&opts, "environment")) {
-			if (ret->nenv > INT_MAX) {
+			if (ret->nenv > SSH_AUTHOPT_ENV_MAX) {
 				errstr = "too many environment strings";
 				goto fail;
 			}
 			if ((opt = opt_dequote(&opts, &errstr)) == NULL)
 				goto fail;
-
 			/* env name must be alphanumeric and followed by '=' */
 		{	char *cp, *tmp;
 			if ((cp = strdup(opt)) == NULL) {
@@ -415,6 +414,18 @@ sshauthopt_parse(const char *opts, const char **errstrp)
 				errstr = "invalid environment string";
 				goto fail;
 			}
+		{	size_t i, l = strlen(cp);
+			/* Check for duplicates; XXX O(n*log(n)) */
+			for (i = 0; i < ret->nenv; i++) {
+				if (strncmp(ret->env[i], cp, l) == 0 &&
+				    ret->env[i][l] == '=') {
+					/* First match wins */
+					free(cp);
+					free(opt);
+					goto done;
+				}
+			}
+		}
 			free(cp);
 		}
 			/* Append it. */
@@ -463,6 +474,7 @@ sshauthopt_parse(const char *opts, const char **errstrp)
 		}
 	}
 
+done:
 	/* success */
 	if (errstrp != NULL)
 		*errstrp = NULL;
