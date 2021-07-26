@@ -232,6 +232,8 @@ static struct {
 	{ "useprivilegedport", oDeprecated },
 	{ "rsaauthentication", oDeprecated },
 	{ "rhostsrsaauthentication", oDeprecated },
+	{ "skeyauthentication", oDeprecated },
+	{ "tisauthentication", oDeprecated },
 	{ "compressionlevel", oDeprecated },
 
 	/* Unsupported options */
@@ -293,8 +295,6 @@ static struct {
 	{ "dsaauthentication", oPubkeyAuthentication },		    /* alias */
 	{ "hostbasedauthentication", oHostbasedAuthentication },
 	{ "challengeresponseauthentication", oChallengeResponseAuthentication },
-	{ "skeyauthentication", oUnsupported },
-	{ "tisauthentication", oChallengeResponseAuthentication },  /* alias */
 	{ "identityfile", oIdentityFile },
 	{ "identityfile2", oIdentityFile },			/* obsolete */
 	{ "identitiesonly", oIdentitiesOnly },
