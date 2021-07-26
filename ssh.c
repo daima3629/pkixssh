@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh.c,v 1.558 2021/06/04 05:02:40 djm Exp $ */
+/* $OpenBSD: ssh.c,v 1.565 2021/07/23 05:24:02 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -1757,13 +1757,6 @@ main(int ac, char **av)
 	/* Log into the remote system.  Never returns if the login fails. */
 	ssh_login(ssh, &sensitive_data, host, (struct sockaddr *)&hostaddr,
 	    options.port, pw, timeout_ms, cinfo);
-
-	if (ssh_packet_connection_is_on_socket(ssh)) {
-		verbose("Authenticated to %s ([%s]:%d).", host,
-		    ssh_remote_ipaddr(ssh), ssh_remote_port(ssh));
-	} else {
-		verbose("Authenticated to %s (via proxy).", host);
-	}
 
 	/* We no longer need the private host keys.  Clear them now. */
 	if (sensitive_data.nkeys != 0) {
