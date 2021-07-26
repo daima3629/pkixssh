@@ -89,13 +89,14 @@ LTESTS=		connect \
 		cfginclude \
 		servcfginclude \
 		allow-deny-users \
-		authinfo \
-		knownhosts-command
+		authinfo
 
 # in some environments fail regularly:
 #		multiplex \
 # portability:
 #		percent \
+# experimental:
+#		knownhosts-command
 
 FIPS_LTESTS=\
 	fips-connect-privsep \
