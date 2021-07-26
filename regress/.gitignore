@@ -2,6 +2,7 @@
 *.core
 actual
 agent-key.*
+askpass
 authorized_keys_*
 authorized_principals_*
 banner.in

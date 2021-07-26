@@ -1,4 +1,4 @@
-#	$OpenBSD: Makefile,v 1.112 2021/07/19 00:16:26 dtucker Exp $
+#	$OpenBSD: Makefile,v 1.115 2021/07/25 12:27:37 dtucker Exp $
 
 tests: unit file-tests t-exec
 check-core: tests
@@ -127,7 +127,7 @@ CLEANFILES=	*.core actual agent-key.* authkeys_orig \
 		host.ecdsa-sha2-nistp521 host.ssh-dss host.ssh-ed25519 \
 		host.ssh-rsa host_ca_key* host_krl_* host_revoked_* key.* \
 		key.dsa-* key.ecdsa-* key.ed25519-512 \
-		key.ed25519-512.pub key.rsa-* keys-command-args kh.* \
+		key.ed25519-512.pub key.rsa-* keys-command-args kh.* askpass \
 		known_hosts known_hosts-cert known_hosts.* krl-* ls.copy \
 		no_identity_config \
 		pidfile putty.rsa2 ready regress.log remote_pid \

@@ -1,7 +1,13 @@
-#	$OpenBSD: keygen-convert.sh,v 1.2 2019/07/23 07:55:29 dtucker Exp $
+#	$OpenBSD: keygen-convert.sh,v 1.6 2021/07/24 02:57:28 dtucker Exp $
 #	Placed in the Public Domain.
 
 tid="convert keys"
+
+cat > $OBJ/askpass <<EOD
+#!/bin/sh
+echo hunter2
+EOD
+chmod u+x $OBJ/askpass
 
 do_test() {
 	fmt=$1
@@ -62,5 +68,16 @@ for i in ${SSH_KEYTYPES}; do
 	do_test RFC4716 "rfc4716" rfc
 	do_test PKCS8 "pkcs#8" pk8
 
-	rm -f $OBJ/$t-key $OBJ/$t-key.only-pub $OBJ/$t-key-nocomment.pub
+	trace "set passphrase $t"
+	${SSHKEYGEN} -q -p -P '' -N 'hunter2' -f $OBJ/$t-key >/dev/null || \
+	    fail "$t set passphrase failed"
+
+	trace "export $t to public with passphrase"
+	SSH_ASKPASS=$OBJ/askpass SSH_ASKPASS_REQUIRE=force \
+	    ${SSHKEYGEN} -y -f $OBJ/$t-key >$OBJ/$t-key-askpass.pub
+	cmp $OBJ/$t-key-askpass.pub $OBJ/$t-key-nocomment.pub || \
+	    fail "$t exported pubkey differs from generated"
+
+	rm -f $OBJ/$t-key $OBJ/$t-key.only-pub \
+	    $OBJ/$t-key-askpass.pub $OBJ/$t-key-nocomment.pub
 done
