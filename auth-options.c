@@ -315,7 +315,7 @@ handle_permit(const char **optsp, int allow_bare_port,
 struct sshauthopt *
 sshauthopt_parse(const char *opts, const char **errstrp)
 {
-	char **oarray, *opt, *cp, *tmp;
+	char *opt;
 	int r;
 	struct sshauthopt *ret = NULL;
 	const char *errstr = "unknown error";
@@ -395,15 +395,20 @@ sshauthopt_parse(const char *opts, const char **errstrp)
 			}
 			if ((opt = opt_dequote(&opts, &errstr)) == NULL)
 				goto fail;
+
 			/* env name must be alphanumeric and followed by '=' */
-			if ((tmp = strchr(opt, '=')) == NULL) {
+		{	char *cp, *tmp;
+			if ((cp = strdup(opt)) == NULL) {
+				free(opt);
+				goto alloc_fail;
+			}
+			if ((tmp = strchr(cp, '=')) == NULL) {
+				free(cp);
 				free(opt);
 				errstr = "invalid environment string";
 				goto fail;
 			}
-			if ((cp = strdup(opt)) == NULL)
-				goto alloc_fail;
-			cp[tmp - opt] = '\0'; /* truncate at '=' */
+			*tmp = '\0'; /* truncate at '=' */
 			if (!valid_env_name(cp)) {
 				free(cp);
 				free(opt);
@@ -411,8 +416,9 @@ sshauthopt_parse(const char *opts, const char **errstrp)
 				goto fail;
 			}
 			free(cp);
+		}
 			/* Append it. */
-			oarray = ret->env;
+		{	char **oarray = ret->env;
 			if ((ret->env = recallocarray(ret->env, ret->nenv,
 			    ret->nenv + 1, sizeof(*ret->env))) == NULL) {
 				free(opt);
@@ -420,6 +426,7 @@ sshauthopt_parse(const char *opts, const char **errstrp)
 				goto alloc_fail;
 			}
 			ret->env[ret->nenv++] = opt;
+		}
 		} else if (opt_match(&opts, "permitopen")) {
 			if (handle_permit(&opts, 0, &ret->permitopen,
 			    &ret->npermitopen, &errstr) != 0)
