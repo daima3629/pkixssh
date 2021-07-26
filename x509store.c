@@ -680,6 +680,33 @@ ssh_x509store_cleanup(void) {
 }
 
 
+static int/*bool*/
+ssh_x509store_add_hash_dir(X509_STORE* store, const char *name, const char *path) {
+	int ret = 0;
+	X509_LOOKUP *lookup;
+
+	if (path == NULL) return 0;
+	if (*path == '\0') return 0;
+
+	lookup = X509_STORE_add_lookup(store, X509_LOOKUP_hash_dir());
+	if (lookup == NULL) {
+		fatal_f("cannot add 'hash dir lookup' to '%s'", name);
+		return 0; /* ;-) */
+	}
+
+	if (X509_LOOKUP_add_dir(lookup, path, X509_FILETYPE_PEM)) {
+		debug2("'hash dir lookup' '%.400s' added to '%s'", path, name);
+		ret = 1;
+	}
+
+	/* NOTE: After X509_LOOKUP_{add_dir|load_file} calls we must call
+	 * ERR_clear_error() otherwise if first call of control function
+	 * fail then second call fail too!
+	 */
+	ERR_clear_error();
+	return ret;
+}
+
 int/*bool*/
 ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 	int flag;
@@ -702,25 +729,7 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 #endif
 	ssh_x509store_initcontext();
 
-	flag = 0;
-	/*
-	 * Note:
-	 * After X509_LOOKUP_{add_dir|load_file} calls we must call
-	 * ERR_clear_error() otherwise when the first call to
-	 * X509_LOOKUP_XXXX fail the second call fail too !
-	 */
-	if (_locations->certificate_path != NULL) {
-		X509_LOOKUP *lookup = X509_STORE_add_lookup(x509store, X509_LOOKUP_hash_dir());
-		if (lookup == NULL) {
-			fatal_f("cannot add hash dir lookup");
-			return 0; /* ;-) */
-		}
-		if (X509_LOOKUP_add_dir(lookup, _locations->certificate_path, X509_FILETYPE_PEM)) {
-			debug2("hash dir '%.400s' added to x509 store", _locations->certificate_path);
-			flag = 1;
-		}
-		ERR_clear_error();
-	}
+	flag = ssh_x509store_add_hash_dir(x509store,  "X.509 store", _locations->certificate_path);
 	if (_locations->certificate_file != NULL) {
 		X509_LOOKUP *lookup = X509_STORE_add_lookup(x509store, X509_LOOKUP_file());
 		if (lookup == NULL) {
@@ -736,22 +745,8 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 	/*at least one lookup should succeed*/
 	if (flag == 0) return 0;
 
-	flag = 0;
 #ifdef SSH_CHECK_REVOKED
-	if (_locations->revocation_path != NULL
-	&& _locations->revocation_path[0] != '\0'
-	) {
-		X509_LOOKUP *lookup = X509_STORE_add_lookup(x509revoked, X509_LOOKUP_hash_dir());
-		if (lookup == NULL) {
-			fatal_f("cannot add hash dir revocation lookup");
-			return 0; /* ;-) */
-		}
-		if (X509_LOOKUP_add_dir(lookup, _locations->revocation_path, X509_FILETYPE_PEM)) {
-			debug2("hash dir '%.400s' added to x509 revocation store", _locations->revocation_path);
-			flag = 1;
-		}
-		ERR_clear_error();
-	}
+	flag = ssh_x509store_add_hash_dir(x509revoked,  "X.509 revocation store", _locations->revocation_path);
 	if (_locations->revocation_file != NULL) {
 		X509_LOOKUP *lookup = X509_STORE_add_lookup(x509revoked, X509_LOOKUP_file());
 		if (lookup == NULL) {
@@ -765,13 +760,13 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 		ERR_clear_error();
 	}
 #else /*ndef SSH_CHECK_REVOKED*/
+	flag = 1;
 	if (_locations->revocation_path != NULL) {
 		logit("useless option: revocation_path");
 	}
 	if (_locations->revocation_file != NULL) {
 		logit("useless option: revocation_file");
 	}
-	flag = 1;
 #endif /*ndef SSH_CHECK_REVOKED*/
 	/*at least one revocation lookup should succeed*/
 	if (flag == 0) return 0;
