@@ -20,7 +20,7 @@
 .\" Copyright (c) 1999,2000 Markus Friedl.  All rights reserved.
 .\" Copyright (c) 1999 Aaron Campbell.  All rights reserved.
 .\" Copyright (c) 1999 Theo de Raadt.  All rights reserved.
-.\" Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
+.\" Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
 .\"
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions
@@ -42,8 +42,8 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: ssh.1,v 1.420 2021/06/25 06:20:39 dtucker Exp $
-.Dd $Mdocdate: June 25 2021 $
+.\" $OpenBSD: ssh.1,v 1.421 2021/07/02 05:11:21 dtucker Exp $
+.Dd $Mdocdate: July 2 2021 $
 .Dt SSH 1
 .Os
 .Sh NAME
@@ -781,7 +781,7 @@ The methods available for authentication are:
 GSSAPI-based authentication,
 host-based authentication,
 public key authentication,
-challenge-response authentication,
+keyboard-interactive authentication,
 and password authentication.
 Authentication methods are tried in the order specified above,
 though
@@ -922,11 +922,11 @@ directive in
 .Xr ssh_config 5
 for more information.
 .Pp
-Challenge-response authentication works as follows:
+Keyboard-interactive authentication works as follows:
 The server sends an arbitrary
 .Qq challenge
-text, and prompts for a response.
-Examples of challenge-response authentication include
+text and prompts for a response, possibly multiple times.
+Examples of keyboard-interactive authentication include
 .Bx
 Authentication (see
 .Xr login.conf 5 )
