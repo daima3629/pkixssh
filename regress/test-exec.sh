@@ -229,10 +229,9 @@ fi
 if [ "x$TEST_REGRESS_LOGFILE" = "x" ]; then
 	TEST_REGRESS_LOGFILE=$OBJ/regress.log
 fi
-echo "=== $SCRIPT ..." >> $TEST_SSH_LOGFILE
 
 # truncate logfiles
->$TEST_SSH_LOGFILE
+echo "=== $SCRIPT ..." > $TEST_SSH_LOGFILE
 >$TEST_SSHD_LOGFILE
 >$TEST_REGRESS_LOGFILE
 
