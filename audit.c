@@ -55,8 +55,7 @@ audit_classify_auth(const char *method)
 	else if (strcmp(method, "publickey") == 0 ||
 	    strcmp(method, "rsa") == 0)
 		return SSH_AUTH_FAIL_PUBKEY;
-	else if (strncmp(method, "keyboard-interactive", 20) == 0 ||
-	    strcmp(method, "challenge-response") == 0)
+	else if (strncmp(method, "keyboard-interactive", 20) == 0)
 		return SSH_AUTH_FAIL_KBDINT;
 	else if (strcmp(method, "hostbased") == 0 ||
 	    strcmp(method, "rhosts-rsa") == 0)

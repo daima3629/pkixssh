@@ -241,7 +241,7 @@ EOF
   fi
   cat >> "$SSHD_CFG" <<EOF
 
-ChallengeResponseAuthentication no
+KbdInteractiveAuthentication no
 HostbasedAuthentication no
 PasswordAuthentication no
 PubkeyAuthentication yes

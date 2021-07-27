@@ -184,7 +184,7 @@ kbdint_next_device(Authctxt *authctxt, KbdintAuthctxt *kbdintctxt)
 }
 
 /*
- * try challenge-response, set authctxt->postponed if we have to
+ * try keyboard-interactive, set authctxt->postponed if we have to
  * wait for the response.
  */
 int

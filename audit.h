@@ -35,7 +35,7 @@ enum ssh_audit_event_type {
 	SSH_AUTH_SUCCESS,
 	SSH_AUTH_FAIL_NONE,
 	SSH_AUTH_FAIL_PASSWD,
-	SSH_AUTH_FAIL_KBDINT,	/* keyboard-interactive or challenge-response */
+	SSH_AUTH_FAIL_KBDINT,	/* keyboard-interactive */
 	SSH_AUTH_FAIL_PUBKEY,	/* ssh2 pubkey or ssh1 rsa */
 	SSH_AUTH_FAIL_HOSTBASED,	/* ssh2 hostbased or ssh1 rhostsrsa */
 	SSH_AUTH_FAIL_GSSAPI,

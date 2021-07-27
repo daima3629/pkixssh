@@ -1,4 +1,4 @@
-/* $OpenBSD: servconf.c,v 1.379 2021/04/03 06:18:40 djm Exp $ */
+/* $OpenBSD: servconf.c,v 1.381 2021/07/02 05:11:21 dtucker Exp $ */
 /*
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
@@ -179,7 +179,6 @@ initialize_server_options(ServerOptions *options)
 	options->gss_strict_acceptor = -1;
 	options->password_authentication = -1;
 	options->kbd_interactive_authentication = -1;
-	options->challenge_response_authentication = -1;
 	options->permit_empty_passwd = -1;
 	options->permit_user_env = -1;
 	options->permit_user_env_allowlist = NULL;
@@ -402,9 +401,7 @@ fill_default_server_options(ServerOptions *options)
 	if (options->password_authentication == -1)
 		options->password_authentication = 1;
 	if (options->kbd_interactive_authentication == -1)
-		options->kbd_interactive_authentication = 0;
-	if (options->challenge_response_authentication == -1)
-		options->challenge_response_authentication = 1;
+		options->kbd_interactive_authentication = 1;
 	if (options->permit_empty_passwd == -1)
 		options->permit_empty_passwd = 0;
 	if (options->permit_user_env == -1) {
@@ -573,7 +570,7 @@ typedef enum {
 	sPort, sHostKeyFile, sLoginGraceTime,
 	sPermitRootLogin, sLogFacility, sLogLevel, sLogVerbose,
 	sKerberosAuthentication, sKerberosOrLocalPasswd, sKerberosTicketCleanup,
-	sKerberosGetAFSToken, sChallengeResponseAuthentication,
+	sKerberosGetAFSToken,
 	sPasswordAuthentication, sKbdInteractiveAuthentication,
 	sListenAddress, sAddressFamily,
 	sPrintMotd, sPrintLastLog, sIgnoreRhosts,
@@ -696,7 +693,7 @@ static struct {
 #endif
 	{ "passwordauthentication", sPasswordAuthentication, SSHCFG_ALL },
 	{ "kbdinteractiveauthentication", sKbdInteractiveAuthentication, SSHCFG_ALL },
-	{ "challengeresponseauthentication", sChallengeResponseAuthentication, SSHCFG_GLOBAL },
+	{ "challengeresponseauthentication", sKbdInteractiveAuthentication, SSHCFG_ALL }, /* alias */
 	{ "skeyauthentication", sDeprecated, SSHCFG_GLOBAL },
 	{ "checkmail", sDeprecated, SSHCFG_GLOBAL },
 	{ "listenaddress", sListenAddress, SSHCFG_GLOBAL },
@@ -1830,10 +1827,6 @@ parse_string:
 
 	case sKbdInteractiveAuthentication:
 		intptr = &options->kbd_interactive_authentication;
-		goto parse_flag;
-
-	case sChallengeResponseAuthentication:
-		intptr = &options->challenge_response_authentication;
 		goto parse_flag;
 
 	case sPrintMotd:
@@ -3160,8 +3153,6 @@ dump_config(ServerOptions *o)
 	dump_cfg_fmtint(sPasswordAuthentication, o->password_authentication);
 	dump_cfg_fmtint(sKbdInteractiveAuthentication,
 	    o->kbd_interactive_authentication);
-	dump_cfg_fmtint(sChallengeResponseAuthentication,
-	    o->challenge_response_authentication);
 	dump_cfg_fmtint(sPrintMotd, o->print_motd);
 #ifndef DISABLE_LASTLOG
 	dump_cfg_fmtint(sPrintLastLog, o->print_lastlog);

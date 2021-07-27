@@ -42,8 +42,8 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: sshd_config.5,v 1.331 2021/04/04 11:36:56 jmc Exp $
-.Dd $Mdocdate: April 4 2021 $
+.\" $OpenBSD: sshd_config.5,v 1.332 2021/07/02 05:11:21 dtucker Exp $
+.Dd $Mdocdate: July 2 2021 $
 .Dt SSHD_CONFIG 5
 .Os
 .Sh NAME
@@ -483,12 +483,6 @@ rsa-sha2-512,rsa-sha2-256,ssh-rsa
 .Pp
 Custom certificates signed using other algorithms will not be accepted for
 public key or host-based authentication.
-.It Cm ChallengeResponseAuthentication
-Specifies whether challenge-response authentication is allowed (e.g. via
-PAM or through authentication styles supported in
-.Xr login.conf 5 )
-The default is
-.Cm yes .
 .It Cm ChrootDirectory
 Specifies the pathname of a directory to
 .Xr chroot 2
@@ -957,15 +951,17 @@ for interactive sessions and
 for non-interactive sessions.
 .It Cm KbdInteractiveAuthentication
 Specifies whether to allow keyboard-interactive authentication.
+All authentication styles from
+.Xr login.conf 5
+are supported.
 The argument to this keyword must be
 .Cm yes
 or
 .Cm no .
-The default is to use whatever value
+The default is
+.Cm yes .
 .Cm ChallengeResponseAuthentication
-is set to
-(by default
-.Cm yes ) .
+is a deprecated alias for this.
 .It Cm KerberosAuthentication
 Specifies whether the password provided by the user for
 .Cm PasswordAuthentication
@@ -1823,17 +1819,17 @@ Enables the Pluggable Authentication Module interface.
 If set to
 .Cm yes
 this will enable PAM authentication using
-.Cm ChallengeResponseAuthentication
+.Cm KbdInteractiveAuthentication
 and
 .Cm PasswordAuthentication
 in addition to PAM account and session module processing for all
 authentication types.
 .Pp
-Because PAM challenge-response authentication usually serves an equivalent
+Because PAM keyboard-interactive authentication usually serves an equivalent
 role to password authentication, you should disable either
 .Cm PasswordAuthentication
 or
-.Cm ChallengeResponseAuthentication.
+.Cm KbdInteractiveAuthentication.
 .Pp
 If
 .Cm UsePAM
