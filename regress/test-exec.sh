@@ -493,7 +493,7 @@ Host *
 	GlobalKnownHostsFile	$OBJ/known_hosts
 	UserKnownHostsFile	$OBJ/known_hosts
 	PubkeyAuthentication	yes
-	ChallengeResponseAuthentication	no
+	KbdInteractiveAuthentication	no
 	HostbasedAuthentication	no
 	PasswordAuthentication	no
 	BatchMode		yes
