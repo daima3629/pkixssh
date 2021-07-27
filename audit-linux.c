@@ -105,6 +105,7 @@ audit_event(struct ssh *ssh, ssh_audit_event_t event)
 	switch(event) {
 	case SSH_AUTH_SUCCESS:
 	case SSH_CONNECTION_CLOSE:
+	case SSH_CONNECTION_ABANDON:
 	case SSH_NOLOGIN:
 	case SSH_LOGIN_EXCEED_MAXTRIES:
 	case SSH_LOGIN_ROOT_DENIED:
