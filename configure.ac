@@ -50,7 +50,6 @@ AC_PATH_PROG([SH], [sh])
 AC_PATH_PROG([GROFF], [groff])
 AC_PATH_PROG([NROFF], [nroff awf])
 AC_PATH_PROG([MANDOC], [mandoc])
-AC_SUBST([TEST_SHELL], [sh])
 
 AC_ARG_VAR([MANFMT],[manpage formatter])
 if test -z "$MANFMT" ; then
@@ -1130,7 +1129,6 @@ mips-sony-bsd|mips-sony-newsos4)
 		fi
 		],
 	)
-	TEST_SHELL=$SHELL	# let configure find us a capable shell
 	;;
 *-*-sunos4*)
 	CPPFLAGS="$CPPFLAGS -DSUNOS4"
@@ -1175,7 +1173,6 @@ mips-sony-bsd|mips-sony-newsos4)
 	AC_DEFINE([BROKEN_SETREGID])
 	AC_DEFINE([PASSWD_NEEDS_USERNAME], [1], [must supply username to passwd])
 	AC_DEFINE([LOCKED_PASSWD_STRING], ["*LK*"])
-	TEST_SHELL=$SHELL	# let configure find us a capable shell
 	;;
 # UnixWare 7.x, OpenUNIX 8
 *-*-sysv5*)
@@ -1188,7 +1185,6 @@ mips-sony-bsd|mips-sony-newsos4)
 	AC_DEFINE([BROKEN_SETREGID])
 	AC_DEFINE([PASSWD_NEEDS_USERNAME])
 	AC_DEFINE([BROKEN_TCGETATTR_ICANON], [1])
-	TEST_SHELL=$SHELL	# let configure find us a capable shell
 	check_for_libcrypt_later=1
 	case "$host" in
 	*-*-sysv5SCO_SV*)	# SCO OpenServer 6.x
@@ -1228,7 +1224,6 @@ mips-sony-bsd|mips-sony-newsos4)
 	AC_DEFINE([PASSWD_NEEDS_USERNAME])
 	AC_CHECK_FUNCS([getluid setluid])
 	MANTYPE=man
-	TEST_SHELL=$SHELL	# let configure find us a capable shell
 	SKIP_DISABLE_LASTLOG_DEFINE=yes
 	;;
 *-dec-osf*)
@@ -1310,11 +1305,8 @@ EOD
 	;;
 esac
 
-dnl adjust TEST_SHELL to autotools norms:
-if test -n "$CONFIG_SHELL"; then
-	dnl set(override) TEST_SHELL to the autoconf one
-	TEST_SHELL=$CONFIG_SHELL
-fi
+# let configure find us a capable shell
+AC_SUBST([TEST_SHELL], [$SHELL])
 
 
 AC_MSG_CHECKING([compiler and flags for sanity])
