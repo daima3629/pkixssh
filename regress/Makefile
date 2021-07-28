@@ -89,14 +89,13 @@ LTESTS=		connect \
 		cfginclude \
 		servcfginclude \
 		allow-deny-users \
-		authinfo
+		authinfo \
+		knownhosts-command
 
 # in some environments fail regularly:
 #		multiplex \
 # portability:
 #		percent \
-# experimental:
-#		knownhosts-command
 
 FIPS_LTESTS=\
 	fips-connect-privsep \
@@ -128,8 +127,8 @@ CLEANFILES=	*.core actual agent-key.* authkeys_orig \
 		host.ssh-rsa host_ca_key* host_krl_* host_revoked_* key.* \
 		key.dsa-* key.ecdsa-* key.ed25519-512 \
 		key.ed25519-512.pub key.rsa-* keys-command-args kh.* askpass \
-		known_hosts known_hosts-cert known_hosts.* krl-* ls.copy \
-		no_identity_config \
+		known_hosts known_hosts-cert known_hosts.* knownhosts_command \
+		krl-* ls.copy no_identity_config \
 		pidfile putty.rsa2 ready regress.log remote_pid \
 		revoked-* ssh-rsa-agent* ssh-rsa ssh-rsa.pub ssh-rsa_pem \
 		rsa_ssh2_cr.prv rsa_ssh2_crnl.prv scp-ssh-wrapper.exe \

@@ -67,3 +67,6 @@ _EOF
 	$SSH -F $OBJ/ssh_proxy -oHostKeyAlgorithms=$keytype x true ||
 	    fail "ssh connect failed for keytype $keytype"
 done
+
+# cleanup
+rm -f knownhosts_command

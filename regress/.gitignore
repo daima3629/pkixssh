@@ -53,6 +53,7 @@ kh.*
 known_hosts
 known_hosts-cert
 known_hosts.*
+knownhosts_command
 krl-*
 ls.copy
 no_identity_config
