@@ -170,6 +170,10 @@ typedef struct {
 	X509StoreOptions ca;
 	/* sshd PKI(X509) user store */
 	X509StoreOptions userca;
+#ifdef USE_OPENSSL_STORE2
+	u_int            num_store_uri;
+	const char       **store_uri;
+#endif
 #ifdef SSH_OCSP_ENABLED
 	/* ssh X.509 extra validation */
 	VAOptions va;

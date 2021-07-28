@@ -1114,7 +1114,7 @@ skip_purpose:
 			return -1;
 		}
 		opt_array_append(filename, linenum, "CAStoreURI",
-		    (char***)&options->ca.store_uri, &options->ca.num_store_uri,
+		    (char***)&options->store_uri, &options->num_store_uri,
 		    arg);
 		break;
 #endif /*def USE_OPENSSL_STORE2*/
@@ -2365,6 +2365,10 @@ initialize_options(Options * options)
 	ssh_x509flags_initialize(options->x509flags, 0);
 	X509StoreOptions_init(&options->ca);
 	X509StoreOptions_init(&options->userca);
+#ifdef USE_OPENSSL_STORE2
+	options->num_store_uri = 0;
+	options->store_uri = NULL;
+#endif
 #ifdef SSH_OCSP_ENABLED
 	options->va.type = -1;
 	options->va.certificate_file = NULL;
@@ -2715,6 +2719,9 @@ fill_default_options(Options * options)
 
 	(void)ssh_x509store_addlocations(&options->userca);
 	(void)ssh_x509store_addlocations(&options->ca);
+#ifdef USE_OPENSSL_STORE2
+	(void)ssh_x509store_adduri(options->store_uri, options->num_store_uri);
+#endif
 #ifdef SSH_OCSP_ENABLED
 	if (options->va.type == -1)
 		options->va.type = ssh_get_default_vatype();

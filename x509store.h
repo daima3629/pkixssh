@@ -92,10 +92,6 @@ typedef struct {
 	const char   *ldap_ver;
 	const char   *ldap_url;
 #endif
-#ifdef USE_OPENSSL_STORE2
-	u_int        num_store_uri;
-	const char   **store_uri;
-#endif
 }       X509StoreOptions;
 
 void X509StoreOptions_init(X509StoreOptions *options);
@@ -106,6 +102,9 @@ void X509StoreOptions_user_defaults(X509StoreOptions *options, uid_t uid);
 void ssh_x509store_cleanup(void);
 
 int/*bool*/ ssh_x509store_addlocations(const X509StoreOptions *locations);
+#ifdef USE_OPENSSL_STORE2
+int/*bool*/ ssh_x509store_adduri(const char **store_uri, u_int num_store_uri);
+#endif
 
 typedef char SSHXSTOREPATH;
 #if !HAVE_DECL_DEFINE_STACK_OF
