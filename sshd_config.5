@@ -42,8 +42,8 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: sshd_config.5,v 1.332 2021/07/02 05:11:21 dtucker Exp $
-.Dd $Mdocdate: July 2 2021 $
+.\" $OpenBSD: sshd_config.5,v 1.333 2021/07/27 14:28:46 jmc Exp $
+.Dd $Mdocdate: July 27 2021 $
 .Dt SSHD_CONFIG 5
 .Os
 .Sh NAME
@@ -1829,7 +1829,7 @@ Because PAM keyboard-interactive authentication usually serves an equivalent
 role to password authentication, you should disable either
 .Cm PasswordAuthentication
 or
-.Cm KbdInteractiveAuthentication.
+.Cm KbdInteractiveAuthentication .
 .Pp
 If
 .Cm UsePAM
