@@ -151,13 +151,6 @@ int need_controlpersist_detach = 0;
 int ostdin_null_flag, osession_type, otty_flag, orequest_tty;
 
 /*
- * Flag indicating that ssh should fork after authentication.  This is useful
- * so that the passphrase can be entered manually, and then ssh goes to the
- * background.
- */
-int fork_after_authentication_flag = 0;
-
-/*
  * General data structure for command line options and options configurable
  * in configuration files.  See readconf.h.
  */
@@ -772,7 +765,7 @@ main(int ac, char **av)
 			options.stdin_null = 1;
 			break;
 		case 'f':
-			fork_after_authentication_flag = 1;
+			options.fork_after_authentication = 1;
 			options.stdin_null = 1;
 			break;
 		case 'x':
@@ -1424,7 +1417,7 @@ main(int ac, char **av)
 		fatal("Cannot execute command-line and remote command.");
 
 	/* Cannot fork to background if no command. */
-	if (fork_after_authentication_flag && sshbuf_len(command) == 0 &&
+	if (options.fork_after_authentication && sshbuf_len(command) == 0 &&
 	    options.remote_command == NULL &&
 	    options.session_type != SESSION_TYPE_NONE)
 		fatal("Cannot fork into background without a command "
@@ -1846,7 +1839,7 @@ fork_postauth(void)
 	if (need_controlpersist_detach)
 		control_persist_detach();
 	debug("forking to background");
-	fork_after_authentication_flag = 0;
+	options.fork_after_authentication = 0;
 	if (daemon(1, 1) == -1)
 		fatal("daemon() failed: %.200s", strerror(errno));
 {	int keep_stderr = debug_flag && log_is_on_stderr();
@@ -1862,7 +1855,7 @@ forwarding_success(void)
 		return;
 	if (--forward_confirms_pending == 0) {
 		debug_f("all expected forwarding replies received");
-		if (fork_after_authentication_flag)
+		if (options.fork_after_authentication)
 			fork_postauth();
 	} else {
 		debug2_f("%d expected forwarding replies remaining",
@@ -2257,9 +2250,9 @@ ssh_session2(struct ssh *ssh, const struct ssh_conn_info *cinfo)
 		options.stdin_null = 1;
 		options.session_type = SESSION_TYPE_NONE;
 		tty_flag = 0;
-		if (!fork_after_authentication_flag)
+		if (!options.fork_after_authentication)
 			need_controlpersist_detach = 1;
-		fork_after_authentication_flag = 1;
+		options.fork_after_authentication = 1;
 	}
 	/*
 	 * ControlPersist mux listen socket setup failed, attempt the
@@ -2306,7 +2299,7 @@ ssh_session2(struct ssh *ssh, const struct ssh_conn_info *cinfo)
 	 * If requested and we are not interested in replies to remote
 	 * forwarding requests, then let ssh continue in the background.
 	 */
-	if (fork_after_authentication_flag) {
+	if (options.fork_after_authentication) {
 		if (forward_confirms_pending > 0) {
 			debug("deferring postauth fork until remote forward "
 			    "confirmation received");
