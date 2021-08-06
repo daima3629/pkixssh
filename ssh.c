@@ -145,10 +145,10 @@ int tty_flag = 0;
  * Flag indicating that the current process should be backgrounded and
  * a new mux-client launched in the foreground for ControlPersist.
  */
-int need_controlpersist_detach = 0;
+static int need_controlpersist_detach = 0;
 
 /* Copies of flags for ControlPersist foreground mux-client */
-int ostdin_null_flag, osession_type, otty_flag, orequest_tty;
+static int ostdin_null_flag, osession_type, otty_flag, orequest_tty;
 
 /*
  * General data structure for command line options and options configurable
@@ -176,7 +176,7 @@ char *forward_agent_sock_path = NULL;
 struct sockaddr_storage hostaddr;
 
 /* Private host keys. */
-Sensitive sensitive_data;
+static Sensitive sensitive_data;
 
 /* command to be executed */
 struct sshbuf *command;
