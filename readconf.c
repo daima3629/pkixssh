@@ -963,6 +963,7 @@ process_config_line_depth(Options *options, struct passwd *pw, const char *host,
 	struct allowed_cname *cname;
 	glob_t gl;
 	const char *errstr;
+	int ret = -1;
 
 	if (activep == NULL) { /* We are processing a command line directive */
 		cmdline = 1;
@@ -996,7 +997,7 @@ process_config_line_depth(Options *options, struct passwd *pw, const char *host,
 	switch (opcode) {
 	case oBadOption:
 		/* don't panic, but count bad options */
-		return -1;
+		goto out;
 	case oIgnore:
 		return 0;
 	case oIgnoredUnknownOption:
@@ -1010,7 +1011,7 @@ process_config_line_depth(Options *options, struct passwd *pw, const char *host,
 		arg = strdelim(&s);
 		if (!arg || *arg == '\0') {
 			error("%.200s line %d: Missing argument.", filename, linenum);
-			return -1;
+			goto out;
 		}
 		/* cannot validate here - depend from X509KeyAlgorithm */
 		if (*activep && *charptr == NULL)
@@ -1023,7 +1024,7 @@ process_config_line_depth(Options *options, struct passwd *pw, const char *host,
 		arg = strdelim(&s);
 		if (!arg || *arg == '\0') {
 			error("%.200s line %d: Missing argument.", filename, linenum);
-			return -1;
+			goto out;
 		}
 		/* cannot validate here - depend from X509KeyAlgorithm */
 		if (*activep && *charptr == NULL)
@@ -1034,14 +1035,14 @@ process_config_line_depth(Options *options, struct passwd *pw, const char *host,
 		arg = strdelim(&s);
 		if (!arg || *arg == '\0') {
 			error("%.200s line %d: Missing argument.", filename, linenum);
-			return -1;
+			goto out;
 		}
 
 		if (*activep) {
 			if (ssh_add_x509key_alg(arg) < 0) {
 				error("%.200s line %d: Bad X.509 key algorithm '%.200s'.",
 				    filename, linenum, arg);
-				return -1;
+				goto out;
 			}
 		}
 		break;
@@ -1057,7 +1058,7 @@ process_config_line_depth(Options *options, struct passwd *pw, const char *host,
 			if (value < 0) {
 				error("%.200s line %d: Bad certificate purpose '%.30s'.",
 				    filename, linenum, arg);
-				return -1;
+				goto out;
 			}
 
 			if (*activep && *intptr == -1)
@@ -1121,7 +1122,7 @@ skip_purpose:
 		arg = strdelim(&s);
 		if (!arg || *arg == '\0') {
 			error("%.200s line %d: Missing argument.", filename, linenum);
-			return -1;
+			goto out;
 		}
 		opt_array_append(filename, linenum, "CAStoreURI",
 		    (char***)&options->store_uri, &options->num_store_uri,
@@ -1157,14 +1158,14 @@ skip_purpose:
 		arg = strdelim(&s);
 		if (!arg || *arg == '\0') {
 			error("%.200s line %d: Missing argument.", filename, linenum);
-			return -1;
+			goto out;
 		}
 
 		value = ssh_get_vatype_s(arg);
 		if (value < 0) {
 			error("%.200s line %d: Bad OCSP responder type '%.30s'.",
 			    filename, linenum, arg);
-			return -1;
+			goto out;
 		}
 
 		if (*activep && *intptr == -1)
@@ -1189,13 +1190,13 @@ parse_time:
 		if (!arg || *arg == '\0') {
 			error("%s line %d: missing time value.",
 			    filename, linenum);
-			return -1;
+			goto out;
 		}
 		if (strcmp(arg, "none") == 0)
 			value = -1;
 		else {
 			value = parse_time(arg, filename, linenum);
-			if (value == -1) return -1;
+			if (value == -1) goto out;
 		}
 		if (*activep && *intptr == -1)
 			*intptr = value;
@@ -1230,7 +1231,7 @@ parse_time:
 		if (value == -1) {
 			error("%s line %d: unsupported option \"%s\".",
 			    filename, linenum, arg);
-			return -1;
+			goto out;
 		}
 		if (*activep && *intptr == -1)
 			*intptr = value;
@@ -1319,7 +1320,7 @@ parse_time:
 		if (!arg || *arg == '\0') {
 			error("%.200s line %d: Missing argument.", filename,
 			    linenum);
-			return -1;
+			goto out;
 		}
 		if (strcmp(arg, "default") == 0) {
 			val64 = 0;
@@ -1327,12 +1328,12 @@ parse_time:
 			if (scan_scaled(arg, &val64) == -1) {
 				error("%.200s line %d: Bad number '%s': %s",
 				    filename, linenum, arg, strerror(errno));
-				return -1;
+				goto out;
 			}
 			if (val64 != 0 && val64 < 16) {
 				error("%.200s line %d: RekeyLimit too small",
 				    filename, linenum);
-				return -1;
+				goto out;
 			}
 		}
 		if (*activep && options->rekey_limit == -1)
@@ -1352,7 +1353,7 @@ parse_time:
 		if (!arg || *arg == '\0') {
 			error("%.200s line %d: Missing argument.",
 			    filename, linenum);
-			return -1;
+			goto out;
 		}
 		if (*activep) {
 			intptr = &options->num_identity_files;
@@ -1360,7 +1361,7 @@ parse_time:
 				error("%.200s line %d: Too many identity files "
 				    "specified (max %d).", filename, linenum,
 				    SSH_MAX_IDENTITY_FILES);
-				return -1;
+				goto out;
 			}
 			add_identity_file(options, NULL,
 			    arg, flags & SSHCONF_USERCONF);
@@ -1372,7 +1373,7 @@ parse_time:
 		if (!arg || *arg == '\0') {
 			error("%.200s line %d: Missing argument.",
 			    filename, linenum);
-			return -1;
+			goto out;
 		}
 		if (*activep) {
 			intptr = &options->num_certificate_files;
@@ -1381,7 +1382,7 @@ parse_time:
 				    "files specified (max %d).",
 				    filename, linenum,
 				    SSH_MAX_CERTIFICATE_FILES);
-				return -1;
+				goto out;
 			}
 			add_certificate_file(options, arg,
 			    flags & SSHCONF_USERCONF);
@@ -1399,7 +1400,7 @@ parse_string:
 		if (!arg || *arg == '\0') {
 			error("%.200s line %d: Missing argument.",
 			    filename, linenum);
-			return -1;
+			goto out;
 		}
 		if (*activep && *charptr == NULL)
 			*charptr = xstrdup(arg);
@@ -1415,7 +1416,7 @@ parse_char_array:
 				if ((*uintptr) >= max_entries) {
 					error("%s line %d: too many known "
 					    "hosts files.", filename, linenum);
-					return -1;
+					goto out;
 				}
 				cpptr[(*uintptr)++] = xstrdup(arg);
 			}
@@ -1471,7 +1472,7 @@ parse_command:
 		if (s == NULL) {
 			error("%.200s line %d: Missing argument.",
 			    filename, linenum);
-			return -1;
+			goto out;
 		}
 		len = strspn(s, WHITESPACE "=");
 		if (*activep && *charptr == NULL)
@@ -1482,13 +1483,13 @@ parse_command:
 		if (s == NULL) {
 			error("%.200s line %d: Missing argument.",
 			    filename, linenum);
-			return -1;
+			goto out;
 		}
 		len = strspn(s, WHITESPACE "=");
 		if (parse_jump(s + len, options, *activep) == -1) {
 			error("%.200s line %d: Invalid ProxyJump \"%s\"",
 			    filename, linenum, s + len);
-			return -1;
+			goto out;
 		}
 		return 0;
 
@@ -1497,13 +1498,13 @@ parse_command:
 		if (!arg || *arg == '\0') {
 			error("%.200s line %d: Missing argument.",
 			    filename, linenum);
-			return -1;
+			goto out;
 		}
 		value = a2port(arg);
 		if (value <= 0) {
 			error("%.200s line %d: Bad port '%s'.",
 			    filename, linenum, arg);
-			return -1;
+			goto out;
 		}
 		if (*activep && options->port == -1)
 			options->port = value;
@@ -1516,7 +1517,7 @@ parse_int:
 		if ((errstr = atoi_err(arg, &value)) != NULL) {
 			error("%s line %d: integer value %s.",
 			    filename, linenum, errstr);
-			return -1;
+			goto out;
 		}
 		if (*activep && *intptr == -1)
 			*intptr = value;
@@ -1527,13 +1528,13 @@ parse_int:
 		if (!arg || *arg == '\0') {
 			error("%.200s line %d: Missing argument.",
 			    filename, linenum);
-			return -1;
+			goto out;
 		}
 		if (*arg != '-' &&
 		    !ciphers_valid(*arg == '+' || *arg == '^' ? arg + 1 : arg)){
 			error("%.200s line %d: Bad SSH2 cipher spec '%s'.",
 			    filename, linenum, arg ? arg : "<NONE>");
-			return -1;
+			goto out;
 		}
 		if (*activep && options->ciphers == NULL)
 			options->ciphers = xstrdup(arg);
@@ -1544,13 +1545,13 @@ parse_int:
 		if (!arg || *arg == '\0') {
 			error("%.200s line %d: Missing argument.",
 			    filename, linenum);
-			return -1;
+			goto out;
 		}
 		if (*arg != '-' &&
 		    !mac_valid(*arg == '+' || *arg == '^' ? arg + 1 : arg)) {
 			error("%.200s line %d: Bad SSH2 MAC spec '%s'.",
 			    filename, linenum, arg ? arg : "<NONE>");
-			return -1;
+			goto out;
 		}
 		if (*activep && options->macs == NULL)
 			options->macs = xstrdup(arg);
@@ -1561,14 +1562,14 @@ parse_int:
 		if (!arg || *arg == '\0') {
 			error("%.200s line %d: Missing argument.",
 			    filename, linenum);
-			return -1;
+			goto out;
 		}
 		if (*arg != '-' &&
 		    !kex_names_valid(*arg == '+' || *arg == '^' ?
 		    arg + 1 : arg)) {
 			error("%.200s line %d: Bad SSH2 KexAlgorithms '%s'.",
 			    filename, linenum, arg ? arg : "<NONE>");
-			return -1;
+			goto out;
 		}
 		if (*activep && options->kex_algorithms == NULL)
 			options->kex_algorithms = xstrdup(arg);
@@ -1581,15 +1582,15 @@ parse_key_algorithms:
 		if (!arg || *arg == '\0') {
 			error("%.200s line %d: Missing argument.",
 			    filename, linenum);
-			return -1;
+			goto out;
 		}
 #if 0		/* cannot validate here - depend from X509KeyAlgorithm */
 		if (*arg != '-' &&
 		    !sshkey_names_valid2(*arg == '+' || *arg == '^' ?
 		    arg + 1 : arg, 1)) {
 			error("%s line %d: Bad key types '%s'.",
-				filename, linenum, arg ? arg : "<NONE>");
-			return -1;
+			    filename, linenum, arg ? arg : "<NONE>");
+			goto out;
 		}
 #endif
 		if (*activep && *charptr == NULL)
@@ -1607,7 +1608,7 @@ parse_key_algorithms:
 		if (value == SYSLOG_LEVEL_NOT_SET) {
 			error("%.200s line %d: unsupported log level '%s'",
 			    filename, linenum, arg ? arg : "<NONE>");
-			return -1;
+			goto out;
 		}
 		if (*activep && *log_level_ptr == SYSLOG_LEVEL_NOT_SET)
 			*log_level_ptr = (LogLevel) value;
@@ -1620,7 +1621,7 @@ parse_key_algorithms:
 		if (value == SYSLOG_FACILITY_NOT_SET) {
 			error("%.200s line %d: unsupported log facility '%s'",
 			    filename, linenum, arg ? arg : "<NONE>");
-			return -1;
+			goto out;
 		}
 		if (*log_facility_ptr == -1)
 			*log_facility_ptr = (SyslogFacility) value;
@@ -1645,7 +1646,7 @@ parse_key_algorithms:
 		if (!arg || *arg == '\0') {
 			error("%.200s line %d: Missing argument.",
 			    filename, linenum);
-			return -1;
+			goto out;
 		}
 
 		remotefwd = (opcode == oRemoteForward);
@@ -1659,7 +1660,7 @@ parse_key_algorithms:
 				else {
 					error("%.200s line %d: Missing target "
 					    "argument.", filename, linenum);
-					return -1;
+					goto out;
 				}
 			} else {
 				/* construct a string for parse_forward */
@@ -1673,7 +1674,7 @@ parse_key_algorithms:
 		if (parse_forward(&fwd, fwdarg, dynamicfwd, remotefwd) == 0) {
 			error("%.200s line %d: Bad forwarding specification.",
 			    filename, linenum);
-			return -1;
+			goto out;
 		}
 
 		if (*activep) {
@@ -1751,7 +1752,7 @@ parse_key_algorithms:
 		if (cmdline) {
 			error("Host directive not supported as a command-line "
 			    "option");
-			return -1;
+			goto out;
 		}
 		*activep = 0;
 		arg2 = NULL;
@@ -1785,7 +1786,7 @@ parse_key_algorithms:
 		if (cmdline) {
 			error("Host directive not supported as a command-line "
 			    "option");
-			return -1;
+			goto out;
 		}
 		value = match_cfg_line(options, &s, pw, host, original_host,
 		    flags & SSHCONF_FINAL, want_final_pass,
@@ -1793,7 +1794,7 @@ parse_key_algorithms:
 		if (value < 0) {
 			error("%.200s line %d: Bad Match condition", filename,
 			    linenum);
-			return -1;
+			goto out;
 		}
 		*activep = (flags & SSHCONF_NEVERMATCH) ? 0 : value;
 		break;
@@ -1804,7 +1805,7 @@ parse_key_algorithms:
 		if (!arg || *arg == '\0') {
 			error("%.200s line %d: Missing argument.",
 			    filename, linenum);
-			return -1;
+			goto out;
 		}
 		if (strcmp(arg, "none") == 0)
 			value = SSH_ESCAPECHAR_NONE;
@@ -1816,7 +1817,7 @@ parse_key_algorithms:
 		else {
 			error("%.200s line %d: Bad escape character.",
 			    filename, linenum);
-			return -1;
+			goto out;
 		}
 		if (*activep && *intptr == -1)
 			*intptr = value;
@@ -1848,14 +1849,14 @@ parse_key_algorithms:
 			if (strchr(arg, '=') != NULL) {
 				error("%s line %d: Invalid environment name.",
 				    filename, linenum);
-				return -1;
+				goto out;
 			}
 			if (!*activep)
 				continue;
 			if (options->num_send_env >= INT_MAX) {
 				error("%s line %d: too many send env.",
 				    filename, linenum);
-				return -1;
+				goto out;
 			}
 			options->send_env = xrecallocarray(
 			    options->send_env, options->num_send_env,
@@ -1872,7 +1873,7 @@ parse_key_algorithms:
 			if (strchr(arg, '=') == NULL) {
 				error("%s line %d: Invalid SetEnv.",
 				    filename, linenum);
-				return -1;
+				goto out;
 			}
 			if (!*activep || value != 0)
 				continue;
@@ -1880,7 +1881,7 @@ parse_key_algorithms:
 			if (options->num_setenv >= INT_MAX) {
 				error("%s line %d: too many SetEnv.",
 				    filename, linenum);
-				return -1;
+				goto out;
 			}
 			options->setenv = xrecallocarray(
 			    options->setenv, options->num_setenv,
@@ -1908,7 +1909,7 @@ parse_key_algorithms:
 		if (value == -1) {
 			value = 1;
 			value2 = parse_time(arg, filename, linenum);
-			if (value2 == -1) return -1;
+			if (value2 == -1) goto out;
 		}
 		if (*activep && *intptr == -1) {
 			*intptr = value;
@@ -1930,13 +1931,13 @@ parse_key_algorithms:
 		if (!arg || *arg == '\0') {
 			error("%.200s line %d: Missing argument.",
 			    filename, linenum);
-			return -1;
+			goto out;
 		}
 		value = a2tun(arg, &value2);
 		if (value == SSH_TUNID_ERR) {
 			error("%.200s line %d: Bad tun device.",
 			    filename, linenum);
-			return -1;
+			goto out;
 		}
 		if (*activep && options->tun_local == -1) {
 			options->tun_local = value;
@@ -1964,7 +1965,7 @@ parse_key_algorithms:
 		if (cmdline) {
 			error("Include directive not supported as a "
 			    "command-line option");
-			return -1;
+			goto out;
 		}
 		value = 0;
 		while ((arg = strdelim(&s)) != NULL && *arg != '\0') {
@@ -1978,7 +1979,7 @@ parse_key_algorithms:
 			if (*arg == '~' && (flags & SSHCONF_USERCONF) == 0) {
 				error("%.200s line %d: bad include path %s.",
 				    filename, linenum, arg);
-				return -1;
+				goto out;
 			}
 			if (!path_absolute(arg) && *arg != '~') {
 				xasprintf(&arg2, "%s/%s",
@@ -1996,7 +1997,7 @@ parse_key_algorithms:
 			} else if (r != 0) {
 				error("%.200s line %d: glob failed for %s.",
 				    filename, linenum, arg2);
-				return -1;
+				goto out;
 			}
 			free(arg2);
 			oactive = *activep;
@@ -2015,7 +2016,7 @@ parse_key_algorithms:
 					    "%.100s: %.100s", gl.gl_pathv[i],
 					    strerror(errno));
 					globfree(&gl);
-					return -1;
+					goto out;
 				}
 				/*
 				 * don't let Match in includes clobber the
@@ -2036,7 +2037,7 @@ parse_key_algorithms:
 		if ((value = parse_ipqos(arg)) == -1) {
 			error("%s line %d: Bad IPQoS value: %s",
 			    filename, linenum, arg);
-			return -1;
+			goto out;
 		}
 		arg = strdelim(&s);
 		if (arg == NULL)
@@ -2044,7 +2045,7 @@ parse_key_algorithms:
 		else if ((value2 = parse_ipqos(arg)) == -1) {
 			error("%s line %d: Bad IPQoS value: %s",
 			    filename, linenum, arg);
-			return -1;
+			goto out;
 		}
 		if (*activep && options->ip_qos_interactive == -1) {
 			options->ip_qos_interactive = value;
@@ -2084,7 +2085,7 @@ parse_key_algorithms:
 			if (!valid_domain(arg, 1, &errstr)) {
 				error("%s line %d: %s", filename, linenum,
 				    errstr);
-				return -1;
+				goto out;
 			}
 			if (!*activep || value)
 				continue;
@@ -2092,7 +2093,7 @@ parse_key_algorithms:
 			    MAX_CANON_DOMAINS) {
 				error("%s line %d: too many hostname suffixes.",
 				    filename, linenum);
-				return -1;
+				goto out;
 			}
 			options->canonical_domains[
 			    options->num_canonical_domains++] = xstrdup(arg);
@@ -2112,7 +2113,7 @@ parse_key_algorithms:
 					error("%s line %d: "
 					    "Invalid permitted CNAME \"%s\"",
 					    filename, linenum, arg);
-					return -1;
+					goto out;
 				}
 				*arg2 = '\0';
 				arg2++;
@@ -2123,7 +2124,7 @@ parse_key_algorithms:
 			    MAX_CANON_DOMAINS) {
 				error("%s line %d: too many permitted CNAMEs.",
 				    filename, linenum);
-				return -1;
+				goto out;
 			}
 			cname = options->permitted_cnames +
 			    options->num_permitted_cnames++;
@@ -2150,13 +2151,13 @@ parse_key_algorithms:
 		if (!arg || *arg == '\0') {
 			error("%.200s line %d: Missing StreamLocalBindMask "
 			    "argument.", filename, linenum);
-			return -1;
+			goto out;
 		}
 		/* Parse mode in octal format */
 		value = strtol(arg, &endofnumber, 8);
 		if (arg == endofnumber || value < 0 || value > 0777) {
 			error("%.200s line %d: Bad mask.", filename, linenum);
-			return -1;
+			goto out;
 		}
 		options->fwd_opts.streamlocal_bind_mask = (mode_t)value;
 		break;
@@ -2175,12 +2176,12 @@ parse_key_algorithms:
 		if (!arg || *arg == '\0') {
 			error("%.200s line %d: Missing argument.",
 			    filename, linenum);
-			return -1;
+			goto out;
 		}
 		if ((value = ssh_digest_alg_by_name(arg)) == -1) {
 			error("%.200s line %d: Invalid hash algorithm \"%s\".",
 			    filename, linenum, arg);
-			return -1;
+			goto out;
 		}
 		if (*activep && *intptr == -1)
 			*intptr = value;
@@ -2200,15 +2201,15 @@ parse_key_algorithms:
 		if (value == 3 && arg2 != NULL) {
 			/* allow "AddKeysToAgent confirm 5m" */
 			value2 = parse_time(arg2, filename, linenum);
-			if (value2 == -1) return -1;
+			if (value2 == -1) goto out;
 		} else if (value == -1 && arg2 == NULL) {
 			value2 = parse_time(arg, filename, linenum);
-			if (value2 == -1) return -1;
+			if (value2 == -1) goto out;
 			value = 1; /* yes */
 		} else if (value == -1 || arg2 != NULL) {
 			error("%s line %d: unsupported option",
 			    filename, linenum);
-			return -1;
+			goto out;
 		}
 		if (*activep && options->add_keys_to_agent == -1) {
 			options->add_keys_to_agent = value;
@@ -2222,14 +2223,14 @@ parse_key_algorithms:
 		if (!arg || *arg == '\0') {
 			error("%.200s line %d: Missing argument.",
 			    filename, linenum);
-			return -1;
+			goto out;
 		}
   parse_agent_path:
 		/* Extra validation if the string represents an env var. */
 		if ((arg2 = dollar_expand(&r, arg)) == NULL || r) {
 			error("%.200s line %d: Invalid environment expansion "
 			    "%s.", filename, linenum, arg);
-			return -1;
+			goto out;
 		}
 		free(arg2);
 		/* check for legacy environment format */
@@ -2237,7 +2238,7 @@ parse_key_algorithms:
 		    !valid_env_name(arg + 1)) {
 			error("%.200s line %d: Invalid environment name %s.",
 			    filename, linenum, arg);
-			return -1;
+			goto out;
 		}
 		if (*activep && *charptr == NULL)
 			*charptr = xstrdup(arg);
@@ -2273,16 +2274,20 @@ parse_key_algorithms:
 	default:
 		error("%s line %d: Unimplemented opcode %d",
 		    filename, linenum, opcode);
-		return -1;
+		goto out;
 	}
 
 	/* Check that there is no garbage at end of line. */
 	if ((arg = strdelim(&s)) != NULL && *arg != '\0') {
 		error("%.200s line %d: garbage at end of line; \"%.200s\".",
 		    filename, linenum, arg);
-		return -1;
+		goto out;
 	}
-	return 0;
+
+	/* success */
+	ret = 0;
+ out:
+	return ret;
 }
 
 /*

@@ -1407,6 +1407,7 @@ process_server_config_line_depth(ServerOptions *options, char *line,
 	const char *errstr;
 	struct include_item *item;
 	glob_t gbuf;
+	int ret = -1;
 
 	/* Strip trailing whitespace. Allow \f (form feed) at EOL only */
 	if ((len = strlen(line)) == 0)
@@ -1607,7 +1608,7 @@ parse_string:
 
 	/* Standard Options */
 	case sBadOption:
-		return -1;
+		goto out;
 	case sPort:
 		/* ignore ports from configfile if cmdline specifies ports */
 		if (options->ports_from_cmdline)
@@ -1633,7 +1634,7 @@ parse_string:
 			fatal("%s line %d: missing time value.",
 			    filename, linenum);
 		value = parse_time(arg, filename, linenum);
-		if (value == -1) return -1;
+		if (value == -1) goto out;
 		if (*activep && *intptr == -1)
 			*intptr = value;
 		break;
@@ -2684,7 +2685,11 @@ parse_string:
 	if ((arg = strdelim(&cp)) != NULL && *arg != '\0')
 		fatal("%s line %d: garbage at end of line; \"%.200s\".",
 		    filename, linenum, arg);
-	return 0;
+
+	/* success */
+	ret = 0;
+ out:
+	return ret;
 }
 
 int
