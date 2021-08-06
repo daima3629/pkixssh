@@ -1395,7 +1395,7 @@ process_server_config_line_depth(ServerOptions *options, char *line,
     struct connection_info *connectinfo, int *inc_flags, int depth,
     struct include_list *includes)
 {
-	char ch, *cp, ***chararrayptr, **charptr, *arg, *arg2, *p;
+	char ch, *cp, ***chararrayptr, **charptr, *arg, *arg2, *p, *keyword;
 	int cmdline = 0, *intptr, value, value2, n, port, oactive, r, found;
 	SyslogFacility *log_facility_ptr;
 	LogLevel *log_level_ptr;
@@ -1419,28 +1419,29 @@ process_server_config_line_depth(ServerOptions *options, char *line,
 	}
 
 	cp = line;
-	if ((arg = strdelim(&cp)) == NULL)
+	if ((keyword = strdelim(&cp)) == NULL)
 		return 0;
 	/* Ignore leading whitespace */
-	if (*arg == '\0')
-		arg = strdelim(&cp);
-	if (!arg || !*arg || *arg == '#')
+	if (*keyword == '\0')
+		keyword = strdelim(&cp);
+	if (!keyword || !*keyword || *keyword == '#')
 		return 0;
 	intptr = NULL;
 	charptr = NULL;
-	opcode = parse_token(arg, filename, linenum, &flags);
+	opcode = parse_token(keyword, filename, linenum, &flags);
 
 	if (activep == NULL) { /* We are processing a command line directive */
 		cmdline = 1;
 		activep = &cmdline;
 	}
 	if (*activep && opcode != sMatch && opcode != sInclude)
-		debug3("%s:%d setting %s %s", filename, linenum, arg, cp);
+		debug3("%s:%d setting %s %s", filename, linenum, keyword, cp);
 	if (*activep == 0 && !(flags & SSHCFG_MATCH)) {
 		if (connectinfo == NULL) {
 			fatal("%s line %d: Directive '%s' is not allowed "
-			    "within a Match block", filename, linenum, arg);
+			    "within a Match block", filename, linenum, keyword);
 		} else { /* this is a directive we have already processed */
+			arg = keyword;
 			while (arg)
 				arg = strdelim(&cp);
 			return 0;
@@ -1854,8 +1855,8 @@ parse_string:
  parse_int:
 		arg = strdelim(&cp);
 		if ((errstr = atoi_err(arg, &value)) != NULL)
-			fatal("%s line %d: integer value %s.",
-			    filename, linenum, errstr);
+			fatal("%s line %d: %s integer value %s.",
+			    filename, linenum, keyword, errstr);
 		if (*activep && *intptr == -1)
 			*intptr = value;
 		break;
@@ -1893,8 +1894,8 @@ parse_string:
 		charptr = &options->permit_user_env_allowlist;
 		arg = strdelim(&cp);
 		if (!arg || *arg == '\0')
-			fatal("%s line %d: missing argument.",
-			    filename, linenum);
+			fatal("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 		value = 0;
 		p = NULL;
 		if (strcmp(arg, "yes") == 0)
@@ -1922,17 +1923,18 @@ parse_string:
 	case sRekeyLimit:
 		arg = strdelim(&cp);
 		if (!arg || *arg == '\0')
-			fatal("%.200s line %d: Missing argument.", filename,
-			    linenum);
+			fatal("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 		if (strcmp(arg, "default") == 0) {
 			val64 = 0;
 		} else {
 			if (scan_scaled(arg, &val64) == -1)
-				fatal("%.200s line %d: Bad number '%s': %s",
-				    filename, linenum, arg, strerror(errno));
+				fatal("%.200s line %d: Bad %s number '%s': %s",
+				    filename, linenum, keyword,
+				    arg, strerror(errno));
 			if (val64 != 0 && val64 < 16)
-				fatal("%.200s line %d: RekeyLimit too small",
-				    filename, linenum);
+				fatal("%.200s line %d: %s too small",
+				    filename, linenum, keyword);
 		}
 		if (*activep && options->rekey_limit == -1)
 			options->rekey_limit = val64;
@@ -1981,7 +1983,7 @@ parse_string:
 		while ((arg = strdelim(&cp)) && *arg != '\0') {
 			if (!*activep)
 				continue;
-			opt_array_append(filename, linenum, "oLogVerbose",
+			opt_array_append(filename, linenum, keyword,
 			    &options->log_verbose, &options->num_log_verbose,
 			    arg);
 		}
@@ -2013,11 +2015,11 @@ parse_string:
 	case sAllowUsers:
 		while ((arg = strdelim(&cp)) && *arg != '\0') {
 			if (match_user(NULL, NULL, NULL, arg) == -1)
-				fatal("%s line %d: invalid AllowUsers pattern: "
-				    "\"%.100s\"", filename, linenum, arg);
+				fatal("%s line %d: invalid %s pattern: \"%s\"",
+				    filename, linenum, keyword, arg);
 			if (!*activep)
 				continue;
-			opt_array_append(filename, linenum, "AllowUsers",
+			opt_array_append(filename, linenum, keyword,
 			    &options->allow_users, &options->num_allow_users,
 			    arg);
 		}
@@ -2026,11 +2028,11 @@ parse_string:
 	case sDenyUsers:
 		while ((arg = strdelim(&cp)) && *arg != '\0') {
 			if (match_user(NULL, NULL, NULL, arg) == -1)
-				fatal("%s line %d: invalid DenyUsers pattern: "
-				    "\"%.100s\"", filename, linenum, arg);
+				fatal("%s line %d: invalid %s pattern: \"%s\"",
+				    filename, linenum, keyword, arg);
 			if (!*activep)
 				continue;
-			opt_array_append(filename, linenum, "DenyUsers",
+			opt_array_append(filename, linenum, keyword,
 			    &options->deny_users, &options->num_deny_users,
 			    arg);
 		}
@@ -2040,7 +2042,7 @@ parse_string:
 		while ((arg = strdelim(&cp)) && *arg != '\0') {
 			if (!*activep)
 				continue;
-			opt_array_append(filename, linenum, "AllowGroups",
+			opt_array_append(filename, linenum, keyword,
 			    &options->allow_groups, &options->num_allow_groups,
 			    arg);
 		}
@@ -2050,7 +2052,7 @@ parse_string:
 		while ((arg = strdelim(&cp)) && *arg != '\0') {
 			if (!*activep)
 				continue;
-			opt_array_append(filename, linenum, "DenyGroups",
+			opt_array_append(filename, linenum, keyword,
 			    &options->deny_groups, &options->num_deny_groups,
 			    arg);
 		}
@@ -2059,7 +2061,8 @@ parse_string:
 	case sCiphers:
 		arg = strdelim(&cp);
 		if (!arg || *arg == '\0')
-			fatal("%s line %d: Missing argument.", filename, linenum);
+			fatal("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 		if (*arg != '-' &&
 		    !ciphers_valid(*arg == '+' || *arg == '^' ? arg + 1 : arg))
 			fatal("%s line %d: Bad SSH2 cipher spec '%s'.",
@@ -2071,7 +2074,8 @@ parse_string:
 	case sMacs:
 		arg = strdelim(&cp);
 		if (!arg || *arg == '\0')
-			fatal("%s line %d: Missing argument.", filename, linenum);
+			fatal("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 		if (*arg != '-' &&
 		    !mac_valid(*arg == '+' || *arg == '^' ? arg + 1 : arg))
 			fatal("%s line %d: Bad SSH2 mac spec '%s'.",
@@ -2083,8 +2087,8 @@ parse_string:
 	case sKexAlgorithms:
 		arg = strdelim(&cp);
 		if (!arg || *arg == '\0')
-			fatal("%s line %d: Missing argument.",
-			    filename, linenum);
+			fatal("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 		if (*arg != '-' &&
 		    !kex_names_valid(*arg == '+' || *arg == '^' ?
 		    arg + 1 : arg))
@@ -2101,21 +2105,21 @@ parse_string:
 		}
 		arg = strdelim(&cp);
 		if (!arg || *arg == '\0')
-			fatal("%s line %d: Missing subsystem name.",
-			    filename, linenum);
+			fatal("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 		if (!*activep) {
 			arg = strdelim(&cp);
 			break;
 		}
 		for (i = 0; i < options->num_subsystems; i++)
 			if (strcmp(arg, options->subsystem_name[i]) == 0)
-				fatal("%s line %d: Subsystem '%s' already defined.",
-				    filename, linenum, arg);
+				fatal("%s line %d: %s already defined %s.",
+				    filename, linenum, keyword, arg);
 		options->subsystem_name[options->num_subsystems] = xstrdup(arg);
 		arg = strdelim(&cp);
 		if (!arg || *arg == '\0')
-			fatal("%s line %d: Missing subsystem command.",
-			    filename, linenum);
+			fatal("%s line %d: %s missing command.",
+			    filename, linenum, keyword);
 		options->subsystem_command[options->num_subsystems] = xstrdup(arg);
 
 		/* Collect arguments (separate to executable) */
@@ -2134,8 +2138,8 @@ parse_string:
 	case sMaxStartups:
 		arg = strdelim(&cp);
 		if (!arg || *arg == '\0')
-			fatal("%s line %d: Missing MaxStartups spec.",
-			    filename, linenum);
+			fatal("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 		if ((n = sscanf(arg, "%d:%d:%d",
 		    &options->max_startups_begin,
 		    &options->max_startups_rate,
@@ -2144,11 +2148,11 @@ parse_string:
 			    options->max_startups ||
 			    options->max_startups_rate > 100 ||
 			    options->max_startups_rate < 1)
-				fatal("%s line %d: Illegal MaxStartups spec.",
-				    filename, linenum);
+				fatal("%s line %d: Invalid %s spec.",
+				    filename, linenum, keyword);
 		} else if (n != 1)
-			fatal("%s line %d: Illegal MaxStartups spec.",
-			    filename, linenum);
+			fatal("%s line %d: Invalid %s spec.",
+			    filename, linenum, keyword);
 		else
 			options->max_startups = options->max_startups_begin;
 		break;
@@ -2157,8 +2161,8 @@ parse_string:
 		intptr = &options->per_source_masklen_ipv4;
 		arg = strdelim(&cp);
 		if (!arg || *arg == '\0')
-			fatal("%s line %d: Missing PerSourceNetBlockSize spec.",
-			    filename, linenum);
+			fatal("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 		value2 = -1;
 		n = sscanf(arg, "%d:%d", &value, &value2);
 		if (n > 2) n = -1; /*?*/
@@ -2169,8 +2173,8 @@ parse_string:
 			if (value < 0 || value > 32)
 				n = -1;
 		if (n < 1)
-			fatal("%s line %d: Invalid PerSourceNetBlockSize"
-			    " spec.", filename, linenum);
+			fatal("%s line %d: Invalid %s spec.",
+			    filename, linenum, keyword);
 		if (*activep && *intptr == -1) {
 			*intptr = value;
 			options->per_source_masklen_ipv6 = value2;
@@ -2181,14 +2185,14 @@ parse_string:
 		intptr = &options->per_source_max_startups;
 		arg = strdelim(&cp);
 		if (!arg || *arg == '\0')
-			fatal("%s line %d: Missing PerSourceMaxStartups spec.",
-			    filename, linenum);
+			fatal("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 		if (strcmp(arg, "none") == 0) { /* no limit */
 			value = -2;
 		} else {
 			if ((errstr = atoi_err(arg, &value)) != NULL)
-				fatal("%s line %d: integer value %s.",
-				    filename, linenum, errstr);
+				fatal("%s line %d: %s integer value %s.",
+				    filename, linenum, keyword, errstr);
 		}
 		if (*activep && *intptr == -1)
 			*intptr = value;
@@ -2216,8 +2220,7 @@ parse_string:
 		if (*activep && options->num_authkeys_files == 0) {
 			while ((arg = strdelim(&cp)) && *arg != '\0') {
 				arg = tilde_expand_filename(arg, getuid());
-				opt_array_append(filename, linenum,
-				    "AuthorizedKeysFile",
+				opt_array_append(filename, linenum, keyword,
 				    &options->authorized_keys_files,
 				    &options->num_authkeys_files, arg);
 				free(arg);
@@ -2229,8 +2232,8 @@ parse_string:
 		charptr = &options->authorized_principals_file;
 		arg = strdelim(&cp);
 		if (!arg || *arg == '\0')
-			fatal("%s line %d: missing file name.",
-			    filename, linenum);
+			fatal("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 		if (*activep && *charptr == NULL) {
 			*charptr = tilde_expand_filename(arg, getuid());
 			/* increase optional counter */
@@ -2254,7 +2257,7 @@ parse_string:
 				    filename, linenum);
 			if (!*activep)
 				continue;
-			opt_array_append(filename, linenum, "AcceptEnv",
+			opt_array_append(filename, linenum, keyword,
 			    &options->accept_env, &options->num_accept_env,
 			    arg);
 		}
@@ -2268,7 +2271,7 @@ parse_string:
 				    filename, linenum);
 			if (!*activep || uvalue != 0)
 				continue;
-			opt_array_append(filename, linenum, "SetEnv",
+			opt_array_append(filename, linenum, keyword,
 			    &options->setenv, &options->num_setenv, arg);
 		}
 		break;
@@ -2277,8 +2280,8 @@ parse_string:
 		intptr = &options->permit_tun;
 		arg = strdelim(&cp);
 		if (!arg || *arg == '\0')
-			fatal("%s line %d: Missing yes/point-to-point/"
-			    "ethernet/no argument.", filename, linenum);
+			fatal("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 		value = -1;
 		for (i = 0; tunmode_desc[i].val != -1; i++)
 			if (strcmp(tunmode_desc[i].text, arg) == 0) {
@@ -2286,8 +2289,8 @@ parse_string:
 				break;
 			}
 		if (value == -1)
-			fatal("%s line %d: Bad yes/point-to-point/ethernet/"
-			    "no argument: %s", filename, linenum, arg);
+			fatal("%s line %d: bad %s argument %s",
+			    filename, linenum, keyword, arg);
 		if (*activep && *intptr == -1)
 			*intptr = value;
 		break;
@@ -2338,9 +2341,8 @@ parse_string:
 			    filename, linenum, arg);
 			if ((r = glob(arg, 0, NULL, &gbuf)) != 0) {
 				if (r != GLOB_NOMATCH) {
-					fatal("%s line %d: include \"%s\" "
-					    "glob failed", filename,
-					    linenum, arg);
+					fatal("%s line %d: include \"%s\" glob "
+					    "failed", filename, linenum, arg);
 				}
 				/*
 				 * If no entry matched then record a
@@ -2379,8 +2381,8 @@ parse_string:
 			free(arg);
 		}
 		if (value == 0) {
-			fatal("%s line %d: Include missing filename argument",
-			    filename, linenum);
+			fatal("%s line %d: %s missing filename argument",
+			    filename, linenum, keyword);
 		}
 		break;
 
@@ -2409,8 +2411,8 @@ parse_string:
 		}
 		arg = strdelim(&cp);
 		if (!arg || *arg == '\0')
-			fatal("%s line %d: missing %s specification",
-			    filename, linenum, lookup_opcode_name(opcode));
+			fatal("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 		uvalue = *uintptr;	/* modified later */
 		if (strcmp(arg, "any") == 0 || strcmp(arg, "none") == 0) {
 			if (*activep && uvalue == 0) {
@@ -2434,21 +2436,18 @@ parse_string:
 				ch = '\0';
 				p = hpdelim2(&arg, &ch);
 				if (p == NULL || ch == '/') {
-					fatal("%s line %d: missing host in %s",
-					    filename, linenum,
-					    lookup_opcode_name(opcode));
+					fatal("%s line %d: %s missing host",
+					    filename, linenum, keyword);
 				}
 				p = cleanhostname(p);
 			}
 			if (arg == NULL ||
 			    ((port = permitopen_port(arg)) < 0)) {
-				fatal("%s line %d: bad port number in %s",
-				    filename, linenum,
-				    lookup_opcode_name(opcode));
+				fatal("%s line %d: %s bad port number",
+				    filename, linenum, keyword);
 			}
 			if (*activep && uvalue == 0) {
-				opt_array_append(filename, linenum,
-				    lookup_opcode_name(opcode),
+				opt_array_append(filename, linenum, keyword,
 				    chararrayptr, uintptr, arg2);
 			}
 			free(arg2);
@@ -2457,8 +2456,8 @@ parse_string:
 
 	case sForceCommand:
 		if (cp == NULL || *cp == '\0')
-			fatal("%.200s line %d: Missing argument.", filename,
-			    linenum);
+			fatal("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 		len = strspn(cp, WHITESPACE);
 		if (*activep && options->adm_forced_command == NULL)
 			options->adm_forced_command = xstrdup(cp + len);
@@ -2469,8 +2468,8 @@ parse_string:
 
 		arg = strdelim(&cp);
 		if (!arg || *arg == '\0')
-			fatal("%s line %d: missing file name.",
-			    filename, linenum);
+			fatal("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 		if (*activep && *charptr == NULL)
 			*charptr = xstrdup(arg);
 		break;
@@ -2486,14 +2485,14 @@ parse_string:
 	case sIPQoS:
 		arg = strdelim(&cp);
 		if ((value = parse_ipqos(arg)) == -1)
-			fatal("%s line %d: Bad IPQoS value: %s",
-			    filename, linenum, arg);
+			fatal("%s line %d: Bad %s value: %s",
+			    filename, linenum, keyword, arg);
 		arg = strdelim(&cp);
 		if (arg == NULL)
 			value2 = value;
 		else if ((value2 = parse_ipqos(arg)) == -1)
-			fatal("%s line %d: Bad IPQoS value: %s",
-			    filename, linenum, arg);
+			fatal("%s line %d: Bad %s value: %s",
+			    filename, linenum, keyword, arg);
 		if (*activep) {
 			options->ip_qos_interactive = value;
 			options->ip_qos_bulk = value2;
@@ -2502,8 +2501,8 @@ parse_string:
 
 	case sVersionAddendum:
 		if (cp == NULL || *cp == '\0')
-			fatal("%.200s line %d: Missing argument.", filename,
-			    linenum);
+			fatal("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 		len = strspn(cp, WHITESPACE);
 		if (*activep && options->version_addendum == NULL) {
 			if (strcasecmp(cp + len, "none") == 0)
@@ -2518,14 +2517,13 @@ parse_string:
 
 	case sAuthorizedKeysCommand:
 		if (cp == NULL)
-			fatal("%.200s line %d: Missing argument.", filename,
-			    linenum);
+			fatal("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 		len = strspn(cp, WHITESPACE);
 		if (*activep && options->authorized_keys_command == NULL) {
 			if (cp[len] != '/' && strcasecmp(cp + len, "none") != 0)
-				fatal("%.200s line %d: AuthorizedKeysCommand "
-				    "must be an absolute path",
-				    filename, linenum);
+				fatal("%s line %d: %s must be an absolute path",
+				    filename, linenum, keyword);
 			options->authorized_keys_command = xstrdup(cp + len);
 		}
 		return 0;
@@ -2535,23 +2533,22 @@ parse_string:
 
 		arg = strdelim(&cp);
 		if (!arg || *arg == '\0')
-			fatal("%s line %d: missing AuthorizedKeysCommandUser "
-			    "argument.", filename, linenum);
+			fatal("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 		if (*activep && *charptr == NULL)
 			*charptr = xstrdup(arg);
 		break;
 
 	case sAuthorizedPrincipalsCommand:
 		if (cp == NULL)
-			fatal("%.200s line %d: Missing argument.", filename,
-			    linenum);
+			fatal("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 		len = strspn(cp, WHITESPACE);
 		if (*activep &&
 		    options->authorized_principals_command == NULL) {
 			if (cp[len] != '/' && strcasecmp(cp + len, "none") != 0)
-				fatal("%.200s line %d: "
-				    "AuthorizedPrincipalsCommand must be "
-				    "an absolute path", filename, linenum);
+				fatal("%s line %d: %s must be an absolute path",
+				    filename, linenum, keyword);
 			options->authorized_principals_command =
 			    xstrdup(cp + len);
 		}
@@ -2609,12 +2606,13 @@ parse_string:
 	case sStreamLocalBindMask:
 		arg = strdelim(&cp);
 		if (!arg || *arg == '\0')
-			fatal("%s line %d: missing StreamLocalBindMask "
-			    "argument.", filename, linenum);
+			fatal("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 		/* Parse mode in octal format */
 		value = strtol(arg, &p, 8);
 		if (arg == p || value < 0 || value > 0777)
-			fatal("%s line %d: Bad mask.", filename, linenum);
+			fatal("%s line %d: Invalid %s.",
+			    filename, linenum, keyword);
 		if (*activep)
 			options->fwd_opts.streamlocal_bind_mask = (mode_t)value;
 		break;
@@ -2626,11 +2624,11 @@ parse_string:
 	case sFingerprintHash:
 		arg = strdelim(&cp);
 		if (!arg || *arg == '\0')
-			fatal("%.200s line %d: Missing argument.",
-			    filename, linenum);
+			fatal("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 		if ((value = ssh_digest_alg_by_name(arg)) == -1)
-			fatal("%.200s line %d: Invalid hash algorithm \"%s\".",
-			    filename, linenum, arg);
+			fatal("%s line %d: Invalid %s algorithm \"%s\".",
+			    filename, linenum, keyword, arg);
 		if (*activep)
 			options->fingerprint_hash = value;
 		break;
@@ -2644,11 +2642,11 @@ parse_string:
 		charptr = &options->routing_domain;
 		arg = strdelim(&cp);
 		if (!arg || *arg == '\0')
-			fatal("%.200s line %d: Missing argument.",
-			    filename, linenum);
+			fatal("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 		if (strcasecmp(arg, "none") != 0 && strcmp(arg, "%D") != 0 &&
 		    !valid_rdomain(arg))
-			fatal("%s line %d: bad routing domain",
+			fatal("%s line %d: invalid routing domain",
 			    filename, linenum);
 		if (*activep && *charptr == NULL)
 			*charptr = xstrdup(arg);
@@ -2673,14 +2671,16 @@ parse_string:
 		do_log2(opcode == sIgnore ?
 		    SYSLOG_LEVEL_DEBUG2 : SYSLOG_LEVEL_INFO,
 		    "%s line %d: %s option %s", filename, linenum,
-		    opcode == sDeprecated || opcode == sIgnore ? "Deprecated" : "Unsupported", arg);
+		    opcode == sDeprecated || opcode == sIgnore ?
+		        "Deprecated" : "Unsupported", keyword);
+		arg = keyword;
 		while (arg)
 		    arg = strdelim(&cp);
 		break;
 
 	default:
 		fatal("%s line %d: Missing handler for opcode %s (%d)",
-		    filename, linenum, arg, opcode);
+		    filename, linenum, keyword, opcode);
 	}
 	if ((arg = strdelim(&cp)) != NULL && *arg != '\0')
 		fatal("%s line %d: garbage at end of line; \"%.200s\".",
