@@ -2013,6 +2013,9 @@ parse_string:
 		goto parse_multistate;
 
 	case sAllowUsers:
+		chararrayptr = &options->allow_users;
+		uintptr = &options->num_allow_users;
+ parse_allowdenyusers:
 		while ((arg = strdelim(&cp)) && *arg != '\0') {
 			if (match_user(NULL, NULL, NULL, arg) == -1)
 				fatal("%s line %d: invalid %s pattern: \"%s\"",
@@ -2020,43 +2023,31 @@ parse_string:
 			if (!*activep)
 				continue;
 			opt_array_append(filename, linenum, keyword,
-			    &options->allow_users, &options->num_allow_users,
-			    arg);
+			    chararrayptr, uintptr, arg);
 		}
 		break;
 
 	case sDenyUsers:
-		while ((arg = strdelim(&cp)) && *arg != '\0') {
-			if (match_user(NULL, NULL, NULL, arg) == -1)
-				fatal("%s line %d: invalid %s pattern: \"%s\"",
-				    filename, linenum, keyword, arg);
-			if (!*activep)
-				continue;
-			opt_array_append(filename, linenum, keyword,
-			    &options->deny_users, &options->num_deny_users,
-			    arg);
-		}
-		break;
+		chararrayptr = &options->deny_users;
+		uintptr = &options->num_deny_users;
+		goto parse_allowdenyusers;
 
 	case sAllowGroups:
+		chararrayptr = &options->allow_groups;
+		uintptr = &options->num_allow_groups;
+ parse_allowdenygroups:
 		while ((arg = strdelim(&cp)) && *arg != '\0') {
 			if (!*activep)
 				continue;
 			opt_array_append(filename, linenum, keyword,
-			    &options->allow_groups, &options->num_allow_groups,
-			    arg);
+			    chararrayptr, uintptr, arg);
 		}
 		break;
 
 	case sDenyGroups:
-		while ((arg = strdelim(&cp)) && *arg != '\0') {
-			if (!*activep)
-				continue;
-			opt_array_append(filename, linenum, keyword,
-			    &options->deny_groups, &options->num_deny_groups,
-			    arg);
-		}
-		break;
+		chararrayptr = &options->deny_groups;
+		uintptr = &options->num_deny_groups;
+		goto parse_allowdenygroups;
 
 	case sCiphers:
 		arg = strdelim(&cp);
