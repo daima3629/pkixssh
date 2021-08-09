@@ -2507,21 +2507,22 @@ parse_string:
 		return 0;
 
 	case sAuthorizedKeysCommand:
+		charptr = &options->authorized_keys_command;
+ parse_command:
 		if (cp == NULL)
 			fatal("%s line %d: %s missing argument.",
 			    filename, linenum, keyword);
 		len = strspn(cp, WHITESPACE);
-		if (*activep && options->authorized_keys_command == NULL) {
-			if (cp[len] != '/' && strcasecmp(cp + len, "none") != 0)
-				fatal("%s line %d: %s must be an absolute path",
-				    filename, linenum, keyword);
-			options->authorized_keys_command = xstrdup(cp + len);
-		}
+		if (cp[len] != '/' && strcasecmp(cp + len, "none") != 0)
+			fatal("%s line %d: %s must be an absolute path",
+			    filename, linenum, keyword);
+		if (*activep && *charptr == NULL)
+			*charptr = xstrdup(cp + len);
 		return 0;
 
 	case sAuthorizedKeysCommandUser:
 		charptr = &options->authorized_keys_command_user;
-
+ parse_localuser:
 		arg = strdelim(&cp);
 		if (!arg || *arg == '\0')
 			fatal("%s line %d: %s missing argument.",
@@ -2531,31 +2532,12 @@ parse_string:
 		break;
 
 	case sAuthorizedPrincipalsCommand:
-		if (cp == NULL)
-			fatal("%s line %d: %s missing argument.",
-			    filename, linenum, keyword);
-		len = strspn(cp, WHITESPACE);
-		if (*activep &&
-		    options->authorized_principals_command == NULL) {
-			if (cp[len] != '/' && strcasecmp(cp + len, "none") != 0)
-				fatal("%s line %d: %s must be an absolute path",
-				    filename, linenum, keyword);
-			options->authorized_principals_command =
-			    xstrdup(cp + len);
-		}
-		return 0;
+		charptr = &options->authorized_principals_command;
+		goto parse_command;
 
 	case sAuthorizedPrincipalsCommandUser:
 		charptr = &options->authorized_principals_command_user;
-
-		arg = strdelim(&cp);
-		if (!arg || *arg == '\0')
-			fatal("%s line %d: missing "
-			    "AuthorizedPrincipalsCommandUser argument.",
-			    filename, linenum);
-		if (*activep && *charptr == NULL)
-			*charptr = xstrdup(arg);
-		break;
+		goto parse_localuser;
 
 	case sAuthenticationMethods:
 		if (options->num_auth_methods == 0) {
