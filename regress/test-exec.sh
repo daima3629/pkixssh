@@ -1,44 +1,11 @@
-#	$OpenBSD: test-exec.sh,v 1.81 2021/06/01 23:56:20 dtucker Exp $
+#	$OpenBSD: test-exec.sh,v 1.85 2021/08/08 07:27:52 dtucker Exp $
 #	Placed in the Public Domain.
 
 #SUDO=sudo
 
-# Unbreak GNU head(1)
-_POSIX2_VERSION=199209
-export _POSIX2_VERSION
-
 . ../tests/CA/shell.rc
 . $OBJ/../tests/env
 TEST_SHELL=${TEST_SHELL-sh}
-
-case `uname -s 2>/dev/null` in
-OSF1*)
-	BIN_SH=xpg4
-	export BIN_SH
-	;;
-CYGWIN*)
-	os=cygwin
-	;;
-esac
-
-# wrapper to egrep program found by configure script
-egrep() {
-  $EGREP ${1+"$@"}
-}
-
-if [ -x /usr/ucb/whoami ]; then
-	USER=`/usr/ucb/whoami`
-elif whoami >/dev/null 2>&1; then
-	USER=`whoami`
-elif logname >/dev/null 2>&1; then
-	USER=`logname`
-else
-	USER=`id -un`
-fi
-if test -z "$LOGNAME"; then
-	LOGNAME="$USER"
-	export LOGNAME
-fi
 
 if test -n "$TEST_SSH_ELAPSED_TIME" ; then
 	STARTTIME=`date -u '+%s'`
@@ -78,6 +45,41 @@ else
 	exit 2
 fi
 unset SSH_AUTH_SOCK || :
+
+# Platform-specific settings.
+
+if [ -x /usr/ucb/whoami ]; then
+	USER=`/usr/ucb/whoami`
+elif whoami >/dev/null 2>&1; then
+	USER=`whoami`
+elif logname >/dev/null 2>&1; then
+	USER=`logname`
+else
+	USER=`id -un`
+fi
+if test -z "$LOGNAME"; then
+	LOGNAME="$USER"
+	export LOGNAME
+fi
+
+# Unbreak GNU head(1)
+_POSIX2_VERSION=199209
+export _POSIX2_VERSION
+
+case `uname -s 2>/dev/null` in
+OSF1*)
+	BIN_SH=xpg4
+	export BIN_SH
+	;;
+CYGWIN*)
+	os=cygwin
+	;;
+esac
+
+# wrapper to egrep program found by configure script
+egrep() {
+  $EGREP ${1+"$@"}
+}
 
 SRC=`dirname ${SCRIPT}`
 
