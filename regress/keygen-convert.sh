@@ -16,14 +16,12 @@ do_test() {
 
 	case $fmt in
 	PKCS8)
-	  case $t in
-	  rsa|ec_p*|dsa);;
-	  ed25519)
-		config_defined OPENSSL_HAS_ED25519 ||
-		return;;
-	  *) return;;
-	  esac
-	  ;;
+		case $t in
+		ed25519)
+			config_defined OPENSSL_HAS_ED25519 ||
+			return;;
+		esac
+		;;
 	esac
 
 	trace "export $t private to $msg public"
@@ -47,6 +45,25 @@ do_test() {
 	rm -f $OBJ/$t-key-$sfx $OBJ/$t-key-$sfx.pub $OBJ/$t-$sfx-imported
 }
 
+do_test_askpass() {
+	e=$t-key-nocomment.pub
+	case $t in
+	ed25519)
+		config_defined OPENSSL_HAS_ED25519 ||
+		e=$t-key.only-pub;;
+	esac
+
+	trace "set passphrase $t"
+	${SSHKEYGEN} -q -p -P '' -N 'hunter2' -f $OBJ/$t-key >/dev/null || \
+	    fail "$t set passphrase failed"
+
+	trace "export $t to public with passphrase"
+	SSH_ASKPASS=$OBJ/askpass SSH_ASKPASS_REQUIRE=force \
+	    ${SSHKEYGEN} -y -f $OBJ/$t-key >$OBJ/$t-key-askpass.pub
+	cmp $OBJ/$t-key-askpass.pub $OBJ/$e || \
+	    fail "$t exported pubkey differs from generated"
+}
+
 for i in ${SSH_KEYTYPES}; do
 	case "$i" in
 	ssh-rsa)		t=rsa;     type="-t rsa" ;;
@@ -68,15 +85,7 @@ for i in ${SSH_KEYTYPES}; do
 	do_test RFC4716 "rfc4716" rfc
 	do_test PKCS8 "pkcs#8" pk8
 
-	trace "set passphrase $t"
-	${SSHKEYGEN} -q -p -P '' -N 'hunter2' -f $OBJ/$t-key >/dev/null || \
-	    fail "$t set passphrase failed"
-
-	trace "export $t to public with passphrase"
-	SSH_ASKPASS=$OBJ/askpass SSH_ASKPASS_REQUIRE=force \
-	    ${SSHKEYGEN} -y -f $OBJ/$t-key >$OBJ/$t-key-askpass.pub
-	cmp $OBJ/$t-key-askpass.pub $OBJ/$t-key-nocomment.pub || \
-	    fail "$t exported pubkey differs from generated"
+	do_test_askpass
 
 	rm -f $OBJ/$t-key $OBJ/$t-key.only-pub \
 	    $OBJ/$t-key-askpass.pub $OBJ/$t-key-nocomment.pub
