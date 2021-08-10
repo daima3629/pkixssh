@@ -5539,9 +5539,11 @@ AC_CHECK_TYPES([struct x509_lookup_method_st], [], [], [
 # check for openssl 1.1.1+ functions ...
 AC_CHECK_FUNCS([ \
   EC_POINT_get_affine_coordinates \
-  OSSL_STORE_open \
 ])
+
+# activate openssl(1.1.1+) store functionality
 USE_OPENSSL_STORE2=false
+AC_CHECK_FUNC([OSSL_STORE_open])
 if test "x$ac_cv_func_OSSL_STORE_open" = xyes ; then
   AC_DEFINE(
     [USE_OPENSSL_STORE2],
