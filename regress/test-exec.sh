@@ -1,4 +1,4 @@
-#	$OpenBSD: test-exec.sh,v 1.85 2021/08/08 07:27:52 dtucker Exp $
+#	$OpenBSD: test-exec.sh,v 1.86 2021/08/08 08:27:28 dtucker Exp $
 #	Placed in the Public Domain.
 
 #SUDO=sudo
@@ -237,11 +237,23 @@ echo "=== $SCRIPT ..." > $TEST_SSH_LOGFILE
 >$TEST_SSHD_LOGFILE
 >$TEST_REGRESS_LOGFILE
 
-# Create wrapper ssh with logging.  We can't just specify "SSH=ssh -E..."
-# because sftp and scp don't handle spaces in arguments.
+# Create wrapper ssh with logging.  We can not just specify "SSH=ssh -E..."
+# because sftp and scp do not handle spaces in arguments.
+# Some tests use -q so wrapper remove argument to preserve debug logging.
+# In the rare instance where -q is desirable -qq is equivalent and is not
+# removed.
 SSHLOGWRAP=$OBJ/ssh-log-wrapper.sh
 cat > $SSHLOGWRAP <<EOF
 #! $TEST_SHELL
+
+for o in \${1+"\$@"} ; do
+  shift
+  case "\$o" in
+  -q) : ;;
+  *) set -- \${1+"\$@"} "\$o" ;;
+  esac
+done
+
 exec $SSH -E$TEST_SSH_LOGFILE \${1+"\$@"}
 EOF
 chmod a+rx $OBJ/ssh-log-wrapper.sh
