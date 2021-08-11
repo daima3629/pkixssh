@@ -39,7 +39,7 @@ CA_FP=`${SSHKEYGEN} -lf $OBJ/user_ca_key.pub | awk '{ print $2 }'`
 PRINCIPALS_COMMAND="/var/run/principals_command_${LOGNAME}.$$"
 trap "$SUDO rm -f ${PRINCIPALS_COMMAND}" 0
 cat << _EOF | $SUDO sh -c "cat > '$PRINCIPALS_COMMAND'"
-#!/bin/sh
+#! $TEST_SHELL
 test "x\$1" != "x${LOGNAME}" && exit 1
 test "x\$2" != "xssh-${userkeytype}-cert-v01@openssh.com" && exit 1
 test "x\$3" != "xssh-ed25519" && exit 1

@@ -8,8 +8,10 @@ CLIENT_LOG=${OBJ}/sftp.log
 TEST_SFTP_SERVER=${OBJ}/sftp-server.sh
 
 prepare_server() {
-	printf "#!/bin/sh\nexec $SFTPSERVER -el debug3 $* 2>$SERVER_LOG\n" \
-	> $TEST_SFTP_SERVER
+	cat > $TEST_SFTP_SERVER <<EOF
+#! $TEST_SHELL
+exec $SFTPSERVER -el debug3 ${1+"$@"} 2> $SERVER_LOG
+EOF
 	chmod a+x $TEST_SFTP_SERVER
 }
 

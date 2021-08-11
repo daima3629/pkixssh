@@ -22,7 +22,7 @@ expected_key_fp=`$SSHKEYGEN -lf $OBJ/ssh-ed25519.pub | awk '{ print $2 }'`
 KEY_COMMAND="/var/run/keycommand_${LOGNAME}.$$"
 trap "${SUDO} rm -f ${KEY_COMMAND}" 0
 cat << _EOF | $SUDO sh -c "rm -f '$KEY_COMMAND' ; cat > '$KEY_COMMAND'"
-#!/bin/sh
+#! $TEST_SHELL
 echo args: "\$@" >> $OBJ/keys-command-args
 echo "$PATH" | grep -q mekmitasdigoat && exit 7
 test "x\$1" != "x${LOGNAME}" && exit 1

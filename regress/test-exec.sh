@@ -5,7 +5,7 @@
 
 . ../tests/CA/shell.rc
 . $OBJ/../tests/env
-TEST_SHELL=${TEST_SHELL-sh}
+TEST_SHELL=${TEST_SHELL-/bin/sh}
 
 if test -n "$TEST_SSH_ELAPSED_TIME" ; then
 	STARTTIME=`date -u '+%s'`
@@ -210,8 +210,8 @@ if [ "x$USE_VALGRIND" != "x" ]; then
 		SFTP="$VG --log-file=${VG_LOG}sftp.%p ${SFTP}"
 		SCP="$VG --log-file=${VG_LOG}scp.%p $SCP"
 		cat > $OBJ/valgrind-sftp-server.sh << EOF
-#!/bin/sh
-exec $VG --log-file=${VG_LOG}sftp-server.%p $SFTPSERVER "\$@"
+#! $TEST_SHELL
+exec $VG --log-file=${VG_LOG}sftp-server.%p $SFTPSERVER \${1+"\$@"}
 EOF
 		chmod a+rx $OBJ/valgrind-sftp-server.sh
 		SFTPSERVER="$OBJ/valgrind-sftp-server.sh"
@@ -240,10 +240,12 @@ echo "=== $SCRIPT ..." > $TEST_SSH_LOGFILE
 # Create wrapper ssh with logging.  We can't just specify "SSH=ssh -E..."
 # because sftp and scp don't handle spaces in arguments.
 SSHLOGWRAP=$OBJ/ssh-log-wrapper.sh
-echo "#!/bin/sh" > $SSHLOGWRAP
-echo "exec ${SSH} -E${TEST_SSH_LOGFILE} "'"$@"' >>$SSHLOGWRAP
-
+cat > $SSHLOGWRAP <<EOF
+#! $TEST_SHELL
+exec $SSH -E$TEST_SSH_LOGFILE \${1+"\$@"}
+EOF
 chmod a+rx $OBJ/ssh-log-wrapper.sh
+
 REAL_SSH="$SSH"
 REAL_SSHD="$SSHD"
 SSH="$SSHLOGWRAP"

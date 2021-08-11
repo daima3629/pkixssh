@@ -4,7 +4,7 @@
 tid="convert keys"
 
 cat > $OBJ/askpass <<EOD
-#!/bin/sh
+#! $TEST_SHELL
 echo hunter2
 EOD
 chmod u+x $OBJ/askpass
