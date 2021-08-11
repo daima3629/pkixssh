@@ -5,13 +5,12 @@ tid="sftp-uri"
 
 #set -x
 
-COPY2=${OBJ}/copy2
 DIR=${COPY}.dd
 DIR2=${COPY}.dd2
 SRC=`dirname ${SCRIPT}`
 
 sftpclean() {
-	rm -rf ${COPY} ${COPY2} ${DIR} ${DIR2}
+	rm -rf ${COPY} ${DIR} ${DIR2}
 	mkdir ${DIR} ${DIR2}
 }
 
