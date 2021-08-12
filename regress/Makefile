@@ -1,4 +1,4 @@
-#	$OpenBSD: Makefile,v 1.115 2021/07/25 12:27:37 dtucker Exp $
+#	$OpenBSD: Makefile,v 1.116 2021/08/04 21:28:00 djm Exp $
 
 tests: unit file-tests t-exec
 check-core: tests
@@ -49,6 +49,7 @@ LTESTS=		connect \
 		keygen-sshfp \
 		key-options \
 		scp \
+		scp3 \
 		scp-uri \
 		sftp \
 		sftp-chroot \
