@@ -29,8 +29,7 @@ start_sshd
 start_mux_master()
 {
 	trace "start master, fork to background"
-	${SSH} -Nn2 -MS$CTL -F $OBJ/ssh_config -oSendEnv="_XXX_TEST" somehost \
-	    -E $TEST_REGRESS_LOGFILE 2>&1 &
+	$SSH -Nn2 -MS$CTL -F $OBJ/ssh_config -oSendEnv="_XXX_TEST" somehost &
 	# NB. $SSH_PID will be killed by test-exec.sh:cleanup on fatal errors.
 	SSH_PID=$!
 	wait_for_mux_master_ready
@@ -69,7 +68,7 @@ cmp ${DATA} ${COPY}		|| fail "sftp: corrupted copy of ${DATA}"
 
 rm -f ${COPY}
 trace "scp transfer over multiplexed connection and check result"
-${SCP} -S ${SSH} -F $OBJ/ssh_config -oControlPath=$CTL otherhost:${DATA} ${COPY} >>$TEST_REGRESS_LOGFILE 2>&1
+$SCP -S $SSH -F $OBJ/ssh_config -oControlPath=$CTL otherhost:$DATA $COPY
 test -f ${COPY}			|| fail "scp: failed copy ${DATA}"
 cmp ${DATA} ${COPY}		|| fail "scp: corrupted copy of ${DATA}"
 
@@ -185,8 +184,7 @@ trace "restart master, fork to background"
 start_mux_master
 
 # start a long-running command then immediately request a stop
-${SSH} -F $OBJ/ssh_config -S $CTL otherhost "sleep 10; exit 0" \
-     >>$TEST_REGRESS_LOGFILE 2>&1 &
+$SSH -F $OBJ/ssh_config -S $CTL otherhost "sleep 10; exit 0" &
 SLEEP_PID=$!
 ${SSH} -F $OBJ/ssh_config -S $CTL -Ostop otherhost >>$TEST_REGRESS_LOGFILE 2>&1 \
     || fail "send stop command failed"

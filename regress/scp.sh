@@ -129,7 +129,7 @@ verbose "$tid: detect non-directory target"
 scpclean
 echo a > ${COPY}
 echo b > ${COPY2}
-$SCP $scpopts ${DATA} ${COPY} ${COPY2}
+$SCP $scpopts ${DATA} ${COPY} ${COPY2} >>$TEST_REGRESS_LOGFILE 2>&1
 cmp ${COPY} ${COPY2} >/dev/null && fail "corrupt target"
 
 scpclean

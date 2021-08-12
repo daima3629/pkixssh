@@ -14,8 +14,7 @@ start_client()
 {
 	rm -f $pidfile
 	$SSH -q $fwd ${1+"$@"} somehost \
-	    exec sh -c \'"echo \$\$ > $pidfile; exec sleep 100"\' \
-	    >>$TEST_REGRESS_LOGFILE 2>&1 &
+	    exec sh -c \'"echo \$\$ > $pidfile; exec sleep 100"\' &
 	client_pid=$!
 	# Wait for remote end
 	n=0

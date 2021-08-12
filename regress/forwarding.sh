@@ -75,8 +75,7 @@ if [ $? != 0 ]; then
 	fail "connection failed with cleared local forwarding"
 else
 	# this one should fail
-	${SSH} -F $OBJ/ssh_config -p ${base}01 somehost true \
-	     >>$TEST_REGRESS_LOGFILE 2>&1 && \
+	$SSH -F $OBJ/ssh_config -p ${base}01 somehost true && \
 		fail "local forwarding not cleared"
 fi
 ${SSH} -F $OBJ/ssh_config -S $CTL -O exit somehost 2>/dev/null
@@ -89,8 +88,7 @@ if [ $? != 0 ]; then
 	fail "connection failed with cleared remote forwarding"
 else
 	# this one should fail
-	${SSH} -F $OBJ/ssh_config -p ${base}01 somehost true \
-	     >>$TEST_REGRESS_LOGFILE 2>&1 && \
+	$SSH -F $OBJ/ssh_config -p ${base}01 somehost true && \
 		fail "remote forwarding not cleared"
 fi
 ${SSH} -F $OBJ/ssh_config -S $CTL -O exit somehost 2>/dev/null

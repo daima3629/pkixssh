@@ -14,14 +14,13 @@ echo "ExitOnForwardFailure=yes" >> $OBJ/ssh_proxy
 start_client()
 {
 	rm -f $pidfile
-	$SSH -vvv $fwd ${1+"$@"} somehost true >>$TEST_REGRESS_LOGFILE 2>&1
+	$SSH $fwd ${1+"$@"} somehost true
 	r=$?
 	if [ $r -ne 0 ]; then
 		return $r
 	fi
-	$SSH -vvv $fwd ${1+"$@"} somehost \
-	    exec sh -c \'"echo \$\$ > $pidfile; exec sleep 100"\' \
-	    >>$TEST_REGRESS_LOGFILE 2>&1 &
+	$SSH $fwd ${1+"$@"} somehost \
+	    exec sh -c \'"echo \$\$ > $pidfile; exec sleep 100"\' &
 	client_pid=$!
 	# Wait for remote end
 	n=0
