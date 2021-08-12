@@ -66,6 +66,6 @@ badserver_7)
 *)
 	set -- $arg
 	shift
-	exec $SCP "$@"
+	exec $SCP ${1+"$@"}
 	;;
 esac

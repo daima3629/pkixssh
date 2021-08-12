@@ -13,7 +13,7 @@ cp $OBJ/sshd_proxy $OBJ/sshd_proxy_bak
 ssh_data_rekeying()
 {
 	_kexopt=$1 ; shift
-	_opts="$@"
+	_opts=${1+"$@"}
 	if test -n "$_kexopt" ; then
 		cp $OBJ/sshd_proxy_bak $OBJ/sshd_proxy
 		echo "$_kexopt" >> $OBJ/sshd_proxy

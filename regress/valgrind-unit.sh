@@ -2,7 +2,7 @@
 
 UNIT_BINARY="$1"
 shift
-UNIT_ARGS="$@"
+UNIT_ARGS=${1+"$@"}
 
 test "x$OBJ" = "x" && OBJ=$PWD
 mkdir $OBJ/valgrind-out 2>/dev/null || :

@@ -431,17 +431,17 @@ save_debug_log ()
 
 trace ()
 {
-	start_debug_log $@
+	start_debug_log ${1+"$@"}
 	if [ "X$TEST_SSH_TRACE" = "Xyes" ]; then
-		echo "$@"
+		echo ${1+"$@"}
 	fi
 }
 
 verbose ()
 {
-	start_debug_log $@
+	start_debug_log ${1+"$@"}
 	if [ "X$TEST_SSH_QUIET" != "Xyes" ]; then
-		echo "$@"
+		echo ${1+"$@"}
 	fi
 }
 
@@ -449,7 +449,7 @@ fail ()
 {
 	save_debug_log "FAIL: $@"
 	RESULT=1
-	echo "$@"
+	echo ${1+"$@"}
 	if test "x$TEST_SSH_FAIL_FATAL" != "x" ; then
 		cleanup
 		exit $RESULT
@@ -460,7 +460,7 @@ fatal ()
 {
 	save_debug_log "FATAL: $@"
 	printf "FATAL: "
-	fail "$@"
+	fail ${1+"$@"}
 	cleanup
 	exit $RESULT
 }
@@ -655,8 +655,8 @@ ${SSHD} -t -f $OBJ/sshd_proxy	|| fatal "sshd_proxy broken"
 start_sshd ()
 {
 	# start sshd
-	$SUDO ${SSHD} -f $OBJ/sshd_config "$@" -t || fatal "sshd_config broken"
-	$SUDO ${SSHD} -f $OBJ/sshd_config "$@" -E$TEST_SSHD_LOGFILE
+	$SUDO $SSHD -f $OBJ/sshd_config ${1+"$@"} -t || fatal "sshd_config broken"
+	$SUDO $SSHD -f $OBJ/sshd_config ${1+"$@"} -E$TEST_SSHD_LOGFILE
 
 	trace "wait for sshd"
 	i=0;

@@ -44,13 +44,13 @@ cp $OBJ/sshd_proxy $OBJ/sshd_proxy_bak
 HOSTS='localhost-with-alias,127.0.0.1,::1'
 
 kh_ca() {
-	for k in "$@" ; do
+	for k in ${1+"$@"} ; do
 		printf "@cert-authority $HOSTS "
 		cat $OBJ/$k || fatal "couldn't cat $k"
 	done
 }
 kh_revoke() {
-	for k in "$@" ; do
+	for k in ${1+"$@"} ; do
 		printf "@revoked * "
 		cat $OBJ/$k || fatal "couldn't cat $k"
 	done
@@ -127,7 +127,7 @@ attempt_connect() {
 	cp $OBJ/known_hosts-cert.orig $OBJ/known_hosts-cert
 	${SSH} -oUserKnownHostsFile=$OBJ/known_hosts-cert \
 	    -oGlobalKnownHostsFile=$OBJ/known_hosts-cert \
-	    "$@" -F $OBJ/ssh_proxy somehost true
+	    ${1+"$@"} -F $OBJ/ssh_proxy somehost true
 	_r=$?
 	if [ "x$_expect_success" = "xyes" ] ; then
 		if [ $_r -ne 0 ]; then

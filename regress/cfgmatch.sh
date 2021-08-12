@@ -13,7 +13,7 @@ echo "ExitOnForwardFailure=yes" >> $OBJ/ssh_proxy
 start_client()
 {
 	rm -f $pidfile
-	${SSH} -q $fwd "$@" somehost \
+	$SSH -q $fwd ${1+"$@"} somehost \
 	    exec sh -c \'"echo \$\$ > $pidfile; exec sleep 100"\' \
 	    >>$TEST_REGRESS_LOGFILE 2>&1 &
 	client_pid=$!

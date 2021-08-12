@@ -8,4 +8,4 @@
 log=$1
 shift
 
-exec "$@" -E$log
+exec ${1+"$@"} -E$log

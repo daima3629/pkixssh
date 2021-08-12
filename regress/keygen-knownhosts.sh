@@ -56,7 +56,7 @@ check_find() {
 	_host=$1
 	_name=$2
 	shift; shift
-	${SSHKEYGEN} "$@" -f $OBJ/kh.invalid -F $_host > $OBJ/kh.result
+	$SSHKEYGEN ${1+"$@"} -f $OBJ/kh.invalid -F $_host > $OBJ/kh.result
 	if ! diff -w $OBJ/kh.expect $OBJ/kh.result ; then
 		fail "didn't find $_name"
 	fi

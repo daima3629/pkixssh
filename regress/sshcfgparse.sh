@@ -5,7 +5,7 @@ tid="ssh config parse"
 
 expect_result_present() {
 	_str="$1" ; shift
-	for _expect in "$@" ; do
+	for _expect in ${1+"$@"} ; do
 		echo "$f" | tr ',' '\n' | grep "^$_expect\$" >/dev/null
 		if test $? -ne 0 ; then
 			fail "missing expected \"$_expect\" from \"$_str\""

@@ -14,12 +14,12 @@ echo "ExitOnForwardFailure=yes" >> $OBJ/ssh_proxy
 start_client()
 {
 	rm -f $pidfile
-	${SSH} -vvv $fwd "$@" somehost true >>$TEST_REGRESS_LOGFILE 2>&1
+	$SSH -vvv $fwd ${1+"$@"} somehost true >>$TEST_REGRESS_LOGFILE 2>&1
 	r=$?
 	if [ $r -ne 0 ]; then
 		return $r
 	fi
-	${SSH} -vvv $fwd "$@" somehost \
+	$SSH -vvv $fwd ${1+"$@"} somehost \
 	    exec sh -c \'"echo \$\$ > $pidfile; exec sleep 100"\' \
 	    >>$TEST_REGRESS_LOGFILE 2>&1 &
 	client_pid=$!
@@ -38,7 +38,7 @@ start_client()
 
 expect_client_ok()
 {
-	start_client "$@" ||
+	start_client ${1+"$@"} ||
 	    fail "client did not start"
 }
 
@@ -46,7 +46,7 @@ expect_client_fail()
 {
 	failmsg="$1"
 	shift
-	start_client "$@" &&
+	start_client ${1+"$@"} &&
 	    fail $failmsg
 }
 

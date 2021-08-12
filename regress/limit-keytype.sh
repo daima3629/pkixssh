@@ -56,7 +56,7 @@ prepare_config() {
 		echo "AuthenticationMethods publickey"
 		echo "TrustedUserCAKeys $OBJ/user_ca_key.pub"
 		echo "AuthorizedPrincipalsFile $OBJ/authorized_principals_%u"
-		for x in "$@" ; do
+		for x in ${1+"$@"} ; do
 			echo "$x"
 		done
 	) > $OBJ/sshd_proxy

@@ -36,7 +36,7 @@ done
 
 dossh() {
 	# All ssh should succeed in this test
-	${SSH} -F $OBJ/ssh_proxy "$@" x true || fail "ssh $@ failed"
+	$SSH -F $OBJ/ssh_proxy ${1+"$@"} x true || fail "ssh $@ failed"
 }
 
 expect_nkeys() {

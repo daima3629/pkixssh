@@ -19,7 +19,7 @@ unset DISPLAY
 # start command w/o tty, so ssh-add accepts pin from stdin
 notty() {
 	perl -e 'use POSIX; POSIX::setsid(); 
-	    if (fork) { wait; exit($? >> 8); } else { exec(@ARGV) }' "$@"
+	    if (fork) { wait; exit($? >> 8); } else { exec(@ARGV) }' ${1+"$@"}
 }
 
 trace "start agent"

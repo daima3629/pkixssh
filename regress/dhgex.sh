@@ -24,7 +24,7 @@ ssh_test_dhgex()
 	max=8192
 	groupsz="$min<$bits<$max"
 	verbose "$tid bits $bits $kex $cipher"
-	${SSH} ${opts} $@ -vvv -F ${OBJ}/ssh_proxy somehost true
+	$SSH $opts ${1+"$@"} -vvv -F $OBJ/ssh_proxy somehost true
 	if [ $? -ne 0 ]; then
 		fail "ssh failed ($@)"
 	fi
@@ -47,7 +47,7 @@ check()
 {
 	bits="$1"; shift
 
-	for c in $@; do
+	for c in ${1+"$@"} ; do
 		for k in $kexs; do
 			ssh_test_dhgex $bits $c $k
 		done

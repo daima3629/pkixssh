@@ -16,7 +16,7 @@ EOF
 }
 
 run_client() {
-	echo "$@" | ${SFTP} -D ${TEST_SFTP_SERVER} -vvvb - >$CLIENT_LOG 2>&1
+	echo ${1+"$@"} | $SFTP -D $TEST_SFTP_SERVER -vvvb - >$CLIENT_LOG 2>&1
 }
 
 prepare_files() {
