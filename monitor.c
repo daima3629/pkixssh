@@ -1,4 +1,4 @@
-/* $OpenBSD: monitor.c,v 1.227 2021/07/02 05:11:20 dtucker Exp $ */
+/* $OpenBSD: monitor.c,v 1.228 2021/08/11 05:20:17 djm Exp $ */
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * Copyright 2002 Markus Friedl <markus@openbsd.org>
@@ -678,8 +678,8 @@ mm_answer_sign(struct ssh *ssh, int sock, struct sshbuf *m)
 	} else
 		fatal_f("no hostkey from index %d", keyid);
 
-	debug3_f("%s signature %p(%zu)", is_proof ? "hostkey proof" : "KEX",
-	    (void*)signature, siglen);
+	debug3_f("%s %s signature len=%zu", alg,
+	    is_proof ? "hostkey proof" : "KEX", siglen);
 
 	sshbuf_reset(m);
 	if ((r = sshbuf_put_string(m, signature, siglen)) != 0)
@@ -1157,7 +1157,7 @@ mm_answer_keyallowed(struct ssh *ssh, int sock, struct sshbuf *m)
 	if ((r = Xkey_from_blob(pkalg, blob, bloblen, &key)) != 0)
 		fatal_fr(r, "Xkey_from_blob");
 
-	debug3_f("Xkey_from_blob: %s %p", pkalg, (void*)key);
+	debug3_f("Xkey_from_blob: %s", pkalg);
 
 {	ssh_verify_ctx ctx = { pkalg, key, &ssh->compat, NULL };
 
@@ -1425,7 +1425,7 @@ mm_answer_keyverify(struct ssh *ssh, int sock, struct sshbuf *m)
 {	ssh_verify_ctx ctx = { pkalg, key, &ssh->compat, NULL };
 
 	ret = Xkey_verify(&ctx, signature, signaturelen, data, datalen);
-	debug3_f("%s %p signature %s%s%s", auth_method, (void*)key,
+	debug3_f("%s %s signature %s%s%s", auth_method, pkalg,
 	    (ret == 0) ? "verified" : "unverified",
 	    (ret != 0) ? ": " : "", (ret != 0) ? ssh_err(ret) : "");
 }

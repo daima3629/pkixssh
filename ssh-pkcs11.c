@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-pkcs11.c,v 1.52 2020/11/22 22:38:26 djm Exp $ */
+/* $OpenBSD: ssh-pkcs11.c,v 1.54 2021/08/11 05:20:17 djm Exp $ */
 /*
  * Copyright (c) 2010 Markus Friedl.  All rights reserved.
  * Copyright (c) 2011 Kenneth Robinette.  All rights reserved.
@@ -343,8 +343,8 @@ pkcs11_provider_finalize(struct pkcs11_provider *p)
 	CK_RV rv;
 	CK_ULONG i;
 
-	debug_f("%p refcount %d valid %d",
-	    (void*)p, p->refcount, p->valid);
+	debug_f("provider \"%s\" refcount %d valid %d",
+	    p->name, p->refcount, p->valid);
 	if (!p->valid)
 		return;
 	for (i = 0; i < p->nslots; i++) {
@@ -367,10 +367,10 @@ pkcs11_provider_finalize(struct pkcs11_provider *p)
 static void
 pkcs11_provider_unref(struct pkcs11_provider *p)
 {
-	debug_f("%p refcount %d", (void*)p, p->refcount);
+	debug_f("provider \"%s\" refcount %d", p->name, p->refcount);
 	if (--p->refcount <= 0) {
 		if (p->valid)
-			error_f("%p still valid", (void*)p);
+			error_f("provider \"%s\" still valid", p->name);
 		pkcs11_provider_free(p);
 	}
 }
@@ -395,7 +395,7 @@ pkcs11_provider_lookup(char *provider_id)
 	struct pkcs11_provider *p;
 
 	TAILQ_FOREACH(p, &pkcs11_providers, next) {
-		debug("check %p %s", (void*)p, p->name);
+		debug("check provider \"%s\"", p->name);
 		if (!strcmp(provider_id, p->name))
 			return (p);
 	}
@@ -494,11 +494,11 @@ pkcs11_rsa_private_encrypt(int flen, const u_char *from, u_char *to, RSA *rsa,
 
 	k11 = RSA_get_ex_data(rsa, ssh_pkcs11_rsa_ctx_index);
 	if (k11 == NULL) {
-		error("RSA_get_ex_data failed for rsa %p", (void*)rsa);
+		error("RSA_get_ex_data failed");
 		return (-1);
 	}
 	if (!k11->provider || !k11->provider->valid) {
-		error("no pkcs11 (valid) provider for rsa %p", (void*)rsa);
+		error_f("no pkcs11 (valid) provider");
 		return (-1);
 	}
 	f = k11->provider->function_list;
@@ -649,11 +649,11 @@ pkcs11_dsa_do_sign(const unsigned char *dgst, int dlen, DSA *dsa)
 
 	k11 = DSA_get_ex_data(dsa, ssh_pkcs11_dsa_ctx_index);
 	if (k11 == NULL) {
-		error("DSA_get_ex_data failed for dsa %p", (void*)dsa);
+		error("DSA_get_ex_data failed");
 		return NULL;
 	}
 	if (!k11->provider || !k11->provider->valid) {
-		error("no pkcs11 (valid) provider for dsa %p", (void*)dsa);
+		error_f("no pkcs11 (valid) provider");
 		return NULL;
 	}
 	f = k11->provider->function_list;
@@ -798,11 +798,11 @@ pkcs11_ecdsa_do_sign(
 
 	k11 = EC_KEY_get_ex_data(ec, ssh_pkcs11_ec_ctx_index);
 	if (k11 == NULL) {
-		error("EC_KEY_get_ex_data failed for ec %p", (void*)ec);
+		error("EC_KEY_get_ex_data failed");
 		return NULL;
 	}
 	if (!k11->provider || !k11->provider->valid) {
-		error("no pkcs11 (valid) provider for ec %p", (void*)ec);
+		error_f("no pkcs11 (valid) provider");
 		return NULL;
 	}
 	f = k11->provider->function_list;
