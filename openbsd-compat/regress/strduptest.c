@@ -14,12 +14,14 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include "includes.h"
+
 #include <stdlib.h>
 #include <string.h>
 
 static int fail = 0;
 
-void
+static void
 test(const char *a)
 {
 	char *b;

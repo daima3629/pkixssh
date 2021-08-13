@@ -17,6 +17,8 @@
 
 #define BUFSZ 2048
 
+#include "includes.h"
+
 #include <sys/types.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -32,7 +34,8 @@ fail(const char *m)
 	failed = 1;
 }
 
-int x_snprintf(char *str, size_t count, const char *fmt, ...)
+static int
+x_snprintf(char *str, size_t count, const char *fmt, ...)
 {
 	size_t ret;
 	va_list ap;

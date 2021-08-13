@@ -15,7 +15,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <includes.h>
+#include "includes.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -54,7 +54,7 @@ struct version_test {
 	{ 0x1000101fL, 0x2000101fL, 0},	/* newer library major version: NO */
 };
 
-void
+static void
 fail(long hver, long lver, int result)
 {
 	fprintf(stderr, "opensslver: header %lx library %lx != %d \n", hver, lver, result);

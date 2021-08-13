@@ -18,7 +18,7 @@
 
 /* OPENBSD ORIGINAL: regress/lib/libc/strtonum/strtonumtest.c */
 
-#include <includes.h>
+#include "includes.h"
 
 #include <limits.h>
 #include <stdio.h>
