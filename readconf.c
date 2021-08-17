@@ -1412,7 +1412,12 @@ parse_string:
 		max_entries = SSH_MAX_HOSTS_FILES;
 parse_char_array:
 		if (*activep && *uintptr == 0) {
-			while ((arg = strdelim(&s)) != NULL && *arg != '\0') {
+			while ((arg = strdelim(&s)) != NULL) {
+				if (*arg == '\0') {
+					error("%s line %d: keyword %s empty argument",
+					    filename, linenum, keyword);
+					goto out;
+				}
 				if ((*uintptr) >= max_entries) {
 					error("%s line %d: too many known "
 					    "hosts files.", filename, linenum);
@@ -1631,7 +1636,12 @@ parse_key_algorithms:
 		cppptr = &options->log_verbose;
 		uintptr = &options->num_log_verbose;
 		if (*activep && *uintptr == 0) {
-			while ((arg = strdelim(&s)) != NULL && *arg != '\0') {
+			while ((arg = strdelim(&s)) != NULL) {
+				if (*arg == '\0') {
+					error("%s line %d: keyword %s empty argument",
+					    filename, linenum, keyword);
+					goto out;
+				}
 				*cppptr = xrecallocarray(*cppptr, *uintptr,
 				    *uintptr + 1, sizeof(**cppptr));
 				(*cppptr)[(*uintptr)++] = xstrdup(arg);
@@ -1713,9 +1723,14 @@ parse_key_algorithms:
 			}
 			break;
 		}
-		for (; arg != NULL && *arg != '\0'; arg = strdelim(&s)) {
+		for (; arg != NULL; arg = strdelim(&s)) {
 			char *p, ch;
 
+			if (*arg == '\0') {
+				error("%s line %d: keyword %s empty argument",
+				    filename, linenum, keyword);
+				goto out;
+			}
 			arg2 = xstrdup(arg);
 			ch = '\0';
 			p = hpdelim2(&arg, &ch);
@@ -1756,7 +1771,12 @@ parse_key_algorithms:
 		}
 		*activep = 0;
 		arg2 = NULL;
-		while ((arg = strdelim(&s)) != NULL && *arg != '\0') {
+		while ((arg = strdelim(&s)) != NULL) {
+			if (*arg == '\0') {
+				error("%s line %d: keyword %s empty argument",
+				    filename, linenum, keyword);
+				goto out;
+			}
 			if ((flags & SSHCONF_NEVERMATCH) != 0)
 				break;
 			negated = *arg == '!';
@@ -1845,7 +1865,12 @@ parse_key_algorithms:
 		goto parse_int;
 
 	case oSendEnv:
-		while ((arg = strdelim(&s)) != NULL && *arg != '\0') {
+		while ((arg = strdelim(&s)) != NULL) {
+			if (*arg == '\0') {
+				error("%s line %d: keyword %s empty argument",
+				    filename, linenum, keyword);
+				goto out;
+			}
 			if (strchr(arg, '=') != NULL) {
 				error("%s line %d: Invalid environment name.",
 				    filename, linenum);
@@ -1869,7 +1894,12 @@ parse_key_algorithms:
 
 	case oSetEnv:
 		value = options->num_setenv;
-		while ((arg = strdelimw(&s)) != NULL && *arg != '\0') {
+		while ((arg = strdelimw(&s)) != NULL) {
+			if (*arg == '\0') {
+				error("%s line %d: keyword %s empty argument",
+				    filename, linenum, keyword);
+				goto out;
+			}
 			if (strchr(arg, '=') == NULL) {
 				error("%s line %d: Invalid SetEnv.",
 				    filename, linenum);
@@ -1968,7 +1998,12 @@ parse_key_algorithms:
 			goto out;
 		}
 		value = 0;
-		while ((arg = strdelim(&s)) != NULL && *arg != '\0') {
+		while ((arg = strdelim(&s)) != NULL) {
+			if (*arg == '\0') {
+				error("%s line %d: keyword %s empty argument",
+				    filename, linenum, keyword);
+				goto out;
+			}
 			/*
 			 * Ensure all paths are anchored. User configuration
 			 * files may begin with '~/' but system configurations
@@ -2081,7 +2116,12 @@ parse_key_algorithms:
 
 	case oCanonicalDomains:
 		value = options->num_canonical_domains != 0;
-		while ((arg = strdelim(&s)) != NULL && *arg != '\0') {
+		while ((arg = strdelim(&s)) != NULL) {
+			if (*arg == '\0') {
+				error("%s line %d: keyword %s empty argument",
+				    filename, linenum, keyword);
+				goto out;
+			}
 			if (!valid_domain(arg, 1, &errstr)) {
 				error("%s line %d: %s", filename, linenum,
 				    errstr);
@@ -2102,7 +2142,12 @@ parse_key_algorithms:
 
 	case oCanonicalizePermittedCNAMEs:
 		value = options->num_permitted_cnames != 0;
-		while ((arg = strdelim(&s)) != NULL && *arg != '\0') {
+		while ((arg = strdelim(&s)) != NULL) {
+			if (*arg == '\0') {
+				error("%s line %d: keyword %s empty argument",
+				    filename, linenum, keyword);
+				goto out;
+			}
 			/* Either '*' for everything or 'list:list' */
 			if (strcmp(arg, "*") == 0)
 				arg2 = arg;

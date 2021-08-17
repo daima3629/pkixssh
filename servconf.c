@@ -1980,7 +1980,10 @@ parse_string:
 		break;
 
 	case sLogVerbose:
-		while ((arg = strdelim(&cp)) && *arg != '\0') {
+		while ((arg = strdelim(&cp)) != NULL) {
+			if (*arg == '\0')
+				fatal("%s line %d: empty %s pattern",
+				    filename, linenum, keyword);
 			if (!*activep)
 				continue;
 			opt_array_append(filename, linenum, keyword,
@@ -2016,7 +2019,10 @@ parse_string:
 		chararrayptr = &options->allow_users;
 		uintptr = &options->num_allow_users;
  parse_allowdenyusers:
-		while ((arg = strdelim(&cp)) && *arg != '\0') {
+		while ((arg = strdelim(&cp)) != NULL) {
+			if (*arg == '\0')
+				fatal("%s line %d: empty %s pattern",
+				    filename, linenum, keyword);
 			if (match_user(NULL, NULL, NULL, arg) == -1)
 				fatal("%s line %d: invalid %s pattern: \"%s\"",
 				    filename, linenum, keyword, arg);
@@ -2036,7 +2042,10 @@ parse_string:
 		chararrayptr = &options->allow_groups;
 		uintptr = &options->num_allow_groups;
  parse_allowdenygroups:
-		while ((arg = strdelim(&cp)) && *arg != '\0') {
+		while ((arg = strdelim(&cp)) != NULL) {
+			if (*arg == '\0')
+				fatal("%s line %d: empty %s pattern",
+				    filename, linenum, keyword);
 			if (!*activep)
 				continue;
 			opt_array_append(filename, linenum, keyword,
@@ -2116,7 +2125,10 @@ parse_string:
 		/* Collect arguments (separate to executable) */
 		p = xstrdup(arg);
 		len = strlen(p) + 1;
-		while ((arg = strdelim(&cp)) != NULL && *arg != '\0') {
+		while ((arg = strdelim(&cp)) != NULL) {
+			if (*arg == '\0')
+				fatal("%s line %d: empty %s pattern",
+				    filename, linenum, keyword);
 			len += 1 + strlen(arg);
 			p = xreallocarray(p, 1, len);
 			strlcat(p, " ", len);
@@ -2208,14 +2220,18 @@ parse_string:
 	 * AuthorizedKeysFile	/etc/ssh_keys/%u
 	 */
 	case sAuthorizedKeysFile:
-		if (*activep && options->num_authkeys_files == 0) {
-			while ((arg = strdelim(&cp)) && *arg != '\0') {
-				arg = tilde_expand_filename(arg, getuid());
+		uvalue = options->num_authkeys_files;
+		while ((arg = strdelim(&cp)) != NULL) {
+			if (*arg == '\0')
+				fatal("%s line %d: empty %s pattern",
+				    filename, linenum, keyword);
+			arg2 = tilde_expand_filename(arg, getuid());
+			if (*activep && uvalue == 0) {
 				opt_array_append(filename, linenum, keyword,
 				    &options->authorized_keys_files,
-				    &options->num_authkeys_files, arg);
-				free(arg);
+				    &options->num_authkeys_files, arg2);
 			}
+			free(arg2);
 		}
 		return 0;
 
@@ -2242,8 +2258,8 @@ parse_string:
 		goto parse_int;
 
 	case sAcceptEnv:
-		while ((arg = strdelim(&cp)) && *arg != '\0') {
-			if (strchr(arg, '=') != NULL)
+		while ((arg = strdelim(&cp)) != NULL) {
+			if (*arg == '\0' || strchr(arg, '=') != NULL)
 				fatal("%s line %d: Invalid environment name.",
 				    filename, linenum);
 			if (!*activep)
@@ -2256,8 +2272,8 @@ parse_string:
 
 	case sSetEnv:
 		uvalue = options->num_setenv;
-		while ((arg = strdelimw(&cp)) && *arg != '\0') {
-			if (strchr(arg, '=') == NULL)
+		while ((arg = strdelimw(&cp)) != NULL) {
+			if (*arg == '\0' || strchr(arg, '=') == NULL)
 				fatal("%s line %d: Invalid environment.",
 				    filename, linenum);
 			if (!*activep || uvalue != 0)
@@ -2292,7 +2308,10 @@ parse_string:
 			    "command-line option");
 		}
 		value = 0;
-		while ((arg2 = strdelim(&cp)) != NULL && *arg2 != '\0') {
+		while ((arg2 = strdelim(&cp)) != NULL) {
+			if (*arg2 == '\0')
+				fatal("%s line %d: empty %s pattern",
+				    filename, linenum, keyword);
 			value++;
 			found = 0;
 			if (*arg2 != '/' && *arg2 != '~') {
@@ -2414,7 +2433,10 @@ parse_string:
 			}
 			break;
 		}
-		for (; arg != NULL && *arg != '\0'; arg = strdelim(&cp)) {
+		for (; arg != NULL; arg = strdelim(&cp)) {
+			if (*arg == '\0')
+				fatal("%s line %d: empty %s pattern",
+				    filename, linenum, keyword);
 			if (opcode == sPermitListen &&
 			    strchr(arg, ':') == NULL) {
 				/*
@@ -2475,6 +2497,9 @@ parse_string:
 
 	case sIPQoS:
 		arg = strdelim(&cp);
+		if (!arg || *arg == '\0')
+			fatal("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 		if ((value = parse_ipqos(arg)) == -1)
 			fatal("%s line %d: Bad %s value: %s",
 			    filename, linenum, keyword, arg);
@@ -2543,7 +2568,10 @@ parse_string:
 		if (options->num_auth_methods == 0) {
 			value = 0; /* seen "any" pseudo-method */
 			value2 = 0; /* successfully parsed any method */
-			while ((arg = strdelim(&cp)) && *arg != '\0') {
+			while ((arg = strdelim(&cp)) != NULL) {
+			if (*arg == '\0')
+				fatal("%s line %d: empty %s pattern",
+				    filename, linenum, keyword);
 				if (strcmp(arg, "any") == 0) {
 					if (options->num_auth_methods > 0) {
 						fatal("%s line %d: \"any\" "
