@@ -42,8 +42,8 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: ssh_config.5,v 1.361 2021/08/06 05:04:42 dtucker Exp $
-.Dd $Mdocdate: August 6 2021 $
+.\" $OpenBSD: ssh_config.5,v 1.362 2021/08/12 23:59:25 djm Exp $
+.Dd $Mdocdate: August 12 2021 $
 .Dt SSH_CONFIG 5
 .Os
 .Sh NAME
@@ -458,6 +458,15 @@ ssh-ed25519,
 ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ecdsa-sha2-nistp521,
 rsa-sha2-512,rsa-sha2-256,ssh-rsa
 .Ed
+.Pp
+If the specified list begins with a
+.Sq +
+character, then the specified algorithms will be appended to the default set
+instead of replacing them.
+If the specified list begins with a
+.Sq -
+character, then the specified algorithms (including wildcards) will be removed
+from the default set instead of replacing them.
 .Pp
 .Xr ssh 1
 will not accept custom host certificates signed using algorithms other than those

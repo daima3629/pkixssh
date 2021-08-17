@@ -42,8 +42,8 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: sshd_config.5,v 1.333 2021/07/27 14:28:46 jmc Exp $
-.Dd $Mdocdate: July 27 2021 $
+.\" $OpenBSD: sshd_config.5,v 1.334 2021/08/12 23:59:25 djm Exp $
+.Dd $Mdocdate: August 12 2021 $
 .Dt SSHD_CONFIG 5
 .Os
 .Sh NAME
@@ -480,6 +480,15 @@ ssh-ed25519,
 ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ecdsa-sha2-nistp521,
 rsa-sha2-512,rsa-sha2-256,ssh-rsa
 .Ed
+.Pp
+If the specified list begins with a
+.Sq +
+character, then the specified algorithms will be appended to the default set
+instead of replacing them.
+If the specified list begins with a
+.Sq -
+character, then the specified algorithms (including wildcards) will be removed
+from the default set instead of replacing them.
 .Pp
 Custom certificates signed using other algorithms will not be accepted for
 public key or host-based authentication.
