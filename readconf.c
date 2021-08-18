@@ -952,7 +952,7 @@ process_config_line_depth(Options *options, struct passwd *pw, const char *host,
 	char *s, **charptr, *endofnumber, *keyword, *arg, *arg2;
 	char **cpptr, ***cppptr, fwdarg[256];
 	u_int i, *uintptr, max_entries = 0;
-	int r, oactive, negated, opcode, *intptr, value, value2, cmdline = 0;
+	int r, oactive, negated, opcode, *intptr, value, value2, cmdline = 0, found;
 	int remotefwd, dynamicfwd;
 	LogLevel *log_level_ptr;
 	SyslogFacility *log_facility_ptr;
@@ -1411,16 +1411,18 @@ parse_string:
 		uintptr = &options->num_system_hostfiles;
 		max_entries = SSH_MAX_HOSTS_FILES;
 parse_char_array:
-		if (*activep && *uintptr == 0) {
-			while ((arg = strdelim(&s)) != NULL) {
-				if (*arg == '\0') {
-					error("%s line %d: keyword %s empty argument",
-					    filename, linenum, keyword);
-					goto out;
-				}
+		found = *uintptr > 0;
+		while ((arg = strdelim(&s)) != NULL) {
+			if (*arg == '\0') {
+				error("%s line %d: keyword %s empty argument",
+				    filename, linenum, keyword);
+				goto out;
+			}
+			if (*activep && !found) {
 				if ((*uintptr) >= max_entries) {
-					error("%s line %d: too many known "
-					    "hosts files.", filename, linenum);
+					error("%s line %d: too many %s "
+					    "entries", filename, linenum,
+					    keyword);
 					goto out;
 				}
 				cpptr[(*uintptr)++] = xstrdup(arg);
@@ -1635,13 +1637,14 @@ parse_key_algorithms:
 	case oLogVerbose:
 		cppptr = &options->log_verbose;
 		uintptr = &options->num_log_verbose;
-		if (*activep && *uintptr == 0) {
-			while ((arg = strdelim(&s)) != NULL) {
-				if (*arg == '\0') {
-					error("%s line %d: keyword %s empty argument",
-					    filename, linenum, keyword);
-					goto out;
-				}
+		found = *uintptr > 0;
+		while ((arg = strdelim(&s)) != NULL) {
+			if (*arg == '\0') {
+				error("%s line %d: keyword %s empty argument",
+				    filename, linenum, keyword);
+				goto out;
+			}
+			if (*activep && !found) {
 				*cppptr = xrecallocarray(*cppptr, *uintptr,
 				    *uintptr + 1, sizeof(**cppptr));
 				(*cppptr)[(*uintptr)++] = xstrdup(arg);
@@ -1706,33 +1709,29 @@ parse_key_algorithms:
 		break;
 
 	case oPermitRemoteOpen: {
-		u_int uvalue;
-
 		uintptr = &options->num_permitted_remote_opens;
 		cppptr = &options->permitted_remote_opens;
 		arg = strdelim(&s);
 		if (!arg || *arg == '\0')
 			fatal("%s line %d: missing %s specification",
 			    filename, linenum, lookup_opcode_name(opcode));
-		uvalue = *uintptr;	/* modified later */
+		found = *uintptr > 0;
 		if (strcmp(arg, "any") == 0 || strcmp(arg, "none") == 0) {
-			if (*activep && uvalue == 0) {
+			if (*activep && !found) {
 				*uintptr = 1;
 				*cppptr = xcalloc(1, sizeof(**cppptr));
 				(*cppptr)[0] = xstrdup(arg);
 			}
 			break;
 		}
-		for (; arg != NULL; arg = strdelim(&s)) {
-			char *p, ch;
-
+		while ((arg = strdelim(&s)) != NULL) {
 			if (*arg == '\0') {
 				error("%s line %d: keyword %s empty argument",
 				    filename, linenum, keyword);
 				goto out;
 			}
 			arg2 = xstrdup(arg);
-			ch = '\0';
+		{	char *p, ch = '\0';
 			p = hpdelim2(&arg, &ch);
 			if (p == NULL || ch == '/') {
 				fatal("%s line %d: missing host in %s",
@@ -1740,6 +1739,7 @@ parse_key_algorithms:
 				    lookup_opcode_name(opcode));
 			}
 			p = cleanhostname(p);
+		}
 			/*
 			 * don't want to use permitopen_port to avoid
 			 * dependency on channels.[ch] here.
@@ -1750,7 +1750,7 @@ parse_key_algorithms:
 				    filename, linenum,
 				    lookup_opcode_name(opcode));
 			}
-			if (*activep && uvalue == 0) {
+			if (*activep && !found) {
 				opt_array_append(filename, linenum,
 				    lookup_opcode_name(opcode),
 				    cppptr, uintptr, arg2);
@@ -1893,7 +1893,7 @@ parse_key_algorithms:
 		break;
 
 	case oSetEnv:
-		value = options->num_setenv;
+		found = options->num_setenv > 0;
 		while ((arg = strdelimw(&s)) != NULL) {
 			if (*arg == '\0') {
 				error("%s line %d: keyword %s empty argument",
@@ -1905,7 +1905,7 @@ parse_key_algorithms:
 				    filename, linenum);
 				goto out;
 			}
-			if (!*activep || value != 0)
+			if (!*activep || found)
 				continue;
 			/* Adding a setenv var */
 			if (options->num_setenv >= INT_MAX) {
@@ -2115,7 +2115,7 @@ parse_key_algorithms:
 		goto parse_flag;
 
 	case oCanonicalDomains:
-		value = options->num_canonical_domains != 0;
+		found = options->num_canonical_domains > 0;
 		while ((arg = strdelim(&s)) != NULL) {
 			if (*arg == '\0') {
 				error("%s line %d: keyword %s empty argument",
@@ -2127,7 +2127,7 @@ parse_key_algorithms:
 				    errstr);
 				goto out;
 			}
-			if (!*activep || value)
+			if (!*activep || found)
 				continue;
 			if (options->num_canonical_domains >=
 			    MAX_CANON_DOMAINS) {
@@ -2141,7 +2141,7 @@ parse_key_algorithms:
 		break;
 
 	case oCanonicalizePermittedCNAMEs:
-		value = options->num_permitted_cnames != 0;
+		found = options->num_permitted_cnames > 0;
 		while ((arg = strdelim(&s)) != NULL) {
 			if (*arg == '\0') {
 				error("%s line %d: keyword %s empty argument",
@@ -2163,7 +2163,7 @@ parse_key_algorithms:
 				*arg2 = '\0';
 				arg2++;
 			}
-			if (!*activep || value)
+			if (!*activep || found)
 				continue;
 			if (options->num_permitted_cnames >=
 			    MAX_CANON_DOMAINS) {

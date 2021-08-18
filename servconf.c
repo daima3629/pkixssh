@@ -1980,11 +1980,12 @@ parse_string:
 		break;
 
 	case sLogVerbose:
+		found = options->num_log_verbose > 0;
 		while ((arg = strdelim(&cp)) != NULL) {
 			if (*arg == '\0')
 				fatal("%s line %d: empty %s pattern",
 				    filename, linenum, keyword);
-			if (!*activep)
+			if (!*activep || found)
 				continue;
 			opt_array_append(filename, linenum, keyword,
 			    &options->log_verbose, &options->num_log_verbose,
@@ -2565,42 +2566,37 @@ parse_string:
 		goto parse_localuser;
 
 	case sAuthenticationMethods:
-		if (options->num_auth_methods == 0) {
-			value = 0; /* seen "any" pseudo-method */
-			value2 = 0; /* successfully parsed any method */
-			while ((arg = strdelim(&cp)) != NULL) {
+		found = options->num_auth_methods > 0;
+		value = 0; /* seen "any" pseudo-method */
+		value2 = 0; /* successfully parsed any method */
+		while ((arg = strdelim(&cp)) != NULL) {
 			if (*arg == '\0')
 				fatal("%s line %d: empty %s pattern",
 				    filename, linenum, keyword);
-				if (strcmp(arg, "any") == 0) {
-					if (options->num_auth_methods > 0) {
-						fatal("%s line %d: \"any\" "
-						    "must appear alone in "
-						    "AuthenticationMethods",
-						    filename, linenum);
-					}
-					value = 1;
-				} else if (value) {
-					fatal("%s line %d: \"any\" must appear "
-					    "alone in AuthenticationMethods",
-					    filename, linenum);
-				} else if (auth2_methods_valid(arg, 0) != 0) {
-					fatal("%s line %d: invalid "
-					    "authentication method list.",
-					    filename, linenum);
+			if (strcmp(arg, "any") == 0) {
+				if (options->num_auth_methods > 0) {
+					fatal("%s line %d: \"any\" must "
+					    "appear alone in %s",
+					    filename, linenum, keyword);
 				}
-				value2 = 1;
-				if (!*activep)
-					continue;
-				opt_array_append(filename, linenum,
-				    "AuthenticationMethods",
-				    &options->auth_methods,
-				    &options->num_auth_methods, arg);
+				value = 1;
+			} else if (value) {
+				fatal("%s line %d: \"any\" must appear "
+				    "alone in %s", filename, linenum, keyword);
+			} else if (auth2_methods_valid(arg, 0) != 0) {
+				fatal("%s line %d: Invalid %s spec.",
+				    filename, linenum, keyword);
 			}
-			if (value2 == 0) {
-				fatal("%s line %d: no AuthenticationMethods "
-				    "specified", filename, linenum);
-			}
+			value2 = 1;
+			if (!*activep || found)
+				continue;
+			opt_array_append(filename, linenum, keyword,
+			    &options->auth_methods,
+			    &options->num_auth_methods, arg);
+		}
+		if (value2 == 0) {
+			fatal("%s line %d: no %s specified",
+			    filename, linenum, keyword);
 		}
 		return 0;
 
