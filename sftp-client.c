@@ -131,9 +131,47 @@ struct sftp_conn {
 	struct bwlimit bwlimit_in, bwlimit_out;
 };
 
+/* Tracks in-progress requests during file transfers */
+struct request {
+	u_int id;
+	size_t len;
+	u_int64_t offset;
+	TAILQ_ENTRY(request) tq;
+};
+TAILQ_HEAD(requests, request);
+
 static u_char *
 get_handle(struct sftp_conn *conn, u_int expected_id, size_t *len,
     const char *errfmt, ...) __attribute__((format(printf, 4, 5)));
+
+static struct request *
+request_enqueue(struct requests *requests, u_int id, size_t len,
+    uint64_t offset)
+{
+	struct request *req;
+
+	req = xcalloc(1, sizeof(*req));
+	req->id = id;
+	req->len = len;
+	req->offset = offset;
+
+	TAILQ_INSERT_TAIL(requests, req, tq);
+
+	return req;
+}
+
+static struct request *
+request_find(struct requests *requests, u_int id)
+{
+	struct request *req;
+
+	for (req = TAILQ_FIRST(requests);
+	    req != NULL && req->id != id;
+	    req = TAILQ_NEXT(req, tq))
+		;
+
+	return req;
+}
 
 static int
 sftpio(void *_bwlimit, size_t amount)
@@ -1392,13 +1430,7 @@ do_download(struct sftp_conn *conn, const char *remote_path,
 	off_t progress_counter;
 	size_t handle_len;
 	struct stat st;
-	struct request {
-		u_int id;
-		size_t len;
-		u_int64_t offset;
-		TAILQ_ENTRY(request) tq;
-	};
-	TAILQ_HEAD(reqhead, request) requests;
+	struct requests requests;
 	struct request *req;
 	u_char type;
 
@@ -1495,13 +1527,10 @@ do_download(struct sftp_conn *conn, const char *remote_path,
 			    (unsigned long long)offset,
 			    (unsigned long long)offset + buflen - 1,
 			    num_req, max_req);
-			req = xcalloc(1, sizeof(*req));
-			req->id = conn->msg_id++;
-			req->len = buflen;
-			req->offset = offset;
+			req = request_enqueue(&requests, conn->msg_id++,
+			    buflen, offset);
 			offset += buflen;
 			num_req++;
-			TAILQ_INSERT_TAIL(&requests, req, tq);
 			send_read_request(conn, req->id, req->offset,
 			    req->len, handle, handle_len);
 		}
@@ -1514,11 +1543,7 @@ do_download(struct sftp_conn *conn, const char *remote_path,
 		debug3("Received reply T:%u I:%u R:%d", type, id, max_req);
 
 		/* Find the request in our queue */
-		for (req = TAILQ_FIRST(&requests);
-		    req != NULL && req->id != id;
-		    req = TAILQ_NEXT(req, tq))
-			;
-		if (req == NULL)
+		if ((req = request_find(&requests, id)) == NULL)
 			fatal("Unexpected reply %u", id);
 
 		switch (type) {
@@ -1794,14 +1819,8 @@ do_upload(struct sftp_conn *conn, const char *local_path,
 	Attrib a, *c = NULL;
 	u_int32_t startid;
 	u_int32_t ackid;
-	struct outstanding_ack {
-		u_int id;
-		u_int len;
-		off_t offset;
-		TAILQ_ENTRY(outstanding_ack) tq;
-	};
-	TAILQ_HEAD(ackhead, outstanding_ack) acks;
-	struct outstanding_ack *ack = NULL;
+	struct requests acks;
+	struct request *ack = NULL;
 	size_t handle_len;
 
 	TAILQ_INIT(&acks);
@@ -1872,7 +1891,7 @@ do_upload(struct sftp_conn *conn, const char *local_path,
 	if ((msg = sshbuf_new()) == NULL)
 		fatal_f("sshbuf_new failed");
 	for (;;) {
-		int len;
+		ssize_t len;
 
 		/*
 		 * Can't use atomicio here because it returns 0 on EOF,
@@ -1892,12 +1911,7 @@ do_upload(struct sftp_conn *conn, const char *local_path,
 			    strerror(errno));
 
 		if (len != 0) {
-			ack = xcalloc(1, sizeof(*ack));
-			ack->id = ++id;
-			ack->offset = offset;
-			ack->len = len;
-			TAILQ_INSERT_TAIL(&acks, ack, tq);
-
+			ack = request_enqueue(&acks, ++id, len, offset);
 			sshbuf_reset(msg);
 			if ((r = sshbuf_put_u8(msg, SSH2_FXP_WRITE)) != 0 ||
 			    (r = sshbuf_put_u32(msg, ack->id)) != 0 ||
@@ -1907,7 +1921,7 @@ do_upload(struct sftp_conn *conn, const char *local_path,
 			    (r = sshbuf_put_string(msg, data, len)) != 0)
 				fatal_fr(r, "compose");
 			send_msg(conn, msg);
-			debug3("Sent message SSH2_FXP_WRITE I:%u O:%llu S:%u",
+			debug3("Sent message SSH2_FXP_WRITE I:%u O:%llu S:%zi",
 			    id, (unsigned long long)offset, len);
 		} else if (TAILQ_FIRST(&acks) == NULL)
 			break;
@@ -1934,15 +1948,12 @@ do_upload(struct sftp_conn *conn, const char *local_path,
 			debug3("SSH2_FXP_STATUS %u", status);
 
 			/* Find the request in our queue */
-			for (ack = TAILQ_FIRST(&acks);
-			    ack != NULL && ack->id != rid;
-			    ack = TAILQ_NEXT(ack, tq))
-				;
-			if (ack == NULL)
+			if ((ack = request_find(&acks, rid)) == NULL)
 				fatal("Can't find request for ID %u", rid);
+
 			TAILQ_REMOVE(&acks, ack, tq);
-			debug3("In write loop, ack for %u %u bytes at %lld",
-			    ack->id, ack->len, (long long)ack->offset);
+			debug3("In write loop, ack for %u %zi bytes at %llu",
+			    ack->id, ack->len, (unsigned long long)ack->offset);
 			++ackid;
 			progress_counter += ack->len;
 			free(ack);
