@@ -127,8 +127,8 @@ extern char *__progname;
 
 #define COPY_BUFLEN	16384
 
-int do_cmd(char *host, char *remuser, int port, char *cmd, int *fdin, int *fdout);
-int do_cmd2(char *host, char *remuser, int port, char *cmd, int fdin, int fdout);
+int do_cmd(const char *, char *, char *, int, int, char *, int *, int *, pid_t *);
+int do_cmd2(char *, char *, int, char *, int, int);
 
 /* Struct for addargs */
 arglist args;
@@ -176,17 +176,23 @@ killchild(int signo)
 }
 
 static void
-suspchild(int signo)
+suspone(int pid, int signo)
 {
 	int status;
 
-	if (do_cmd_pid > 1) {
-		kill(do_cmd_pid, signo);
-		while (waitpid(do_cmd_pid, &status, WUNTRACED) == -1 &&
+	if (pid > 1) {
+		kill(pid, signo);
+		while (waitpid(pid, &status, WUNTRACED) == -1 &&
 		    errno == EINTR)
 			;
-		kill(getpid(), SIGSTOP);
 	}
+}
+
+static void
+suspchild(int signo)
+{
+	suspone(do_cmd_pid, signo);
+	kill(getpid(), SIGSTOP);
 }
 
 static int
@@ -238,14 +244,16 @@ do_local_cmd(arglist *a)
  */
 
 int
-do_cmd(char *host, char *remuser, int port, char *cmd, int *fdin, int *fdout)
+do_cmd(const char *program, char *host, char *remuser, int port, int subsystem,
+    char *cmd, int *fdin, int *fdout, pid_t *pid)
 {
 	int pin[2], pout[2], reserved[2];
 
+	UNUSED(subsystem);
 	if (verbose_mode)
 		fmprintf(stderr,
 		    "Executing: program %s host %s, user %s, command %s\n",
-		    ssh_program, host,
+		    program, host,
 		    remuser ? remuser : "(unspecified)", cmd);
 
 	if (port == -1)
@@ -273,8 +281,8 @@ do_cmd(char *host, char *remuser, int port, char *cmd, int *fdin, int *fdout)
 	ssh_signal(SIGTTOU, suspchild);
 
 	/* Fork a child to execute the command on the remote host using ssh. */
-	do_cmd_pid = fork();
-	if (do_cmd_pid == 0) {
+	*pid = fork();
+	if (*pid == 0) {
 		/* Child. */
 		close(pin[1]);
 		close(pout[0]);
@@ -283,7 +291,7 @@ do_cmd(char *host, char *remuser, int port, char *cmd, int *fdin, int *fdout)
 		close(pin[0]);
 		close(pout[1]);
 
-		replacearg(&args, 0, "%s", ssh_program);
+		replacearg(&args, 0, "%s", program);
 		if (port != -1) {
 			addargs(&args, "-p");
 			addargs(&args, "%d", port);
@@ -296,10 +304,10 @@ do_cmd(char *host, char *remuser, int port, char *cmd, int *fdin, int *fdout)
 		addargs(&args, "%s", host);
 		addargs(&args, "%s", cmd);
 
-		execvp(ssh_program, args.list);
-		perror(ssh_program);
+		execvp(program, args.list);
+		perror(program);
 		exit(1);
-	} else if (do_cmd_pid == -1) {
+	} else if (*pid == -1) {
 		fatal("fork: %s", strerror(errno));
 	}
 	/* Parent.  Close the other side, and return the local side. */
@@ -319,10 +327,11 @@ do_cmd(char *host, char *remuser, int port, char *cmd, int *fdin, int *fdout)
  * This way the input and output of two commands can be connected.
  */
 int
-do_cmd2(char *host, char *remuser, int port, char *cmd, int fdin, int fdout)
+do_cmd2(char *host, char *remuser, int port, char *cmd,
+    int fdin, int fdout)
 {
-	pid_t pid;
 	int status;
+	pid_t pid;
 
 	if (verbose_mode)
 		fmprintf(stderr,
@@ -939,12 +948,14 @@ toremote(int argc, char **argv)
 		if (host && throughlocal) {	/* extended remote to remote */
 			xasprintf(&bp, "%s -f %s%s", cmd,
 			    *src == '-' ? "-- " : "", src);
-			if (do_cmd(host, suser, sport, bp, &remin, &remout) < 0)
+			if (do_cmd(ssh_program, host, suser, sport, 0,
+			    bp, &remin, &remout, &do_cmd_pid) < 0)
 				exit(1);
 			free(bp);
 			xasprintf(&bp, "%s -t %s%s", cmd,
 			    *targ == '-' ? "-- " : "", targ);
-			if (do_cmd2(thost, tuser, tport, bp, remin, remout) < 0)
+			if (do_cmd2(thost, tuser, tport, bp,
+			    remin, remout) < 0)
 				exit(1);
 			free(bp);
 			(void) close(remin);
@@ -997,8 +1008,8 @@ toremote(int argc, char **argv)
 			if (remin == -1) {
 				xasprintf(&bp, "%s -t %s%s", cmd,
 				    *targ == '-' ? "-- " : "", targ);
-				if (do_cmd(thost, tuser, tport, bp, &remin,
-				    &remout) < 0)
+				if (do_cmd(ssh_program, thost, tuser, tport, 0,
+				    bp, &remin, &remout, &do_cmd_pid) < 0)
 					exit(1);
 				if (response() < 0)
 					exit(1);
@@ -1059,7 +1070,8 @@ tolocal(int argc, char **argv)
 		/* Remote to local. */
 		xasprintf(&bp, "%s -f %s%s",
 		    cmd, *src == '-' ? "-- " : "", src);
-		if (do_cmd(host, suser, sport, bp, &remin, &remout) < 0) {
+		if (do_cmd(ssh_program, host, suser, sport, 0, bp,
+		    &remin, &remout, &do_cmd_pid) < 0) {
 			free(bp);
 			++errs;
 			continue;
