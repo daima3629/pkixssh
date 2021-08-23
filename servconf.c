@@ -2521,12 +2521,12 @@ parse_string:
 			fatal("%s line %d: %s missing argument.",
 			    filename, linenum, keyword);
 		len = strspn(cp, WHITESPACE);
+		if (strchr(cp + len, '\r') != NULL)
+			fatal("%s line %d: Invalid %s argument",
+			    filename, linenum, keyword);
 		if (*activep && options->version_addendum == NULL) {
 			if (strcasecmp(cp + len, "none") == 0)
 				options->version_addendum = xstrdup("");
-			else if (strchr(cp + len, '\r') != NULL)
-				fatal("%.200s line %d: Invalid argument",
-				    filename, linenum);
 			else
 				options->version_addendum = xstrdup(cp + len);
 		}
