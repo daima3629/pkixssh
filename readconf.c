@@ -2384,22 +2384,14 @@ read_config_file_depth(const char *filename, struct passwd *pw,
 	 */
 	linenum = 0;
 	while (getline(&line, &linesize, f) != -1) {
+		/* strip whitespace, preserve newlines, they are needed
+		 * to reproduce line numbers later for error messages
+		 */
+		char *cp = line + strspn(line, " \t\r");
 		/* Update line number counter. */
 		linenum++;
-#if 0
-		/*
-		 * Trim out comments and strip whitespace.
-		 * NB - preserve newlines, they are needed to reproduce
-		 * line numbers later for error messages.
-		 */
-	{	char *cp = strchr(line, '#');
-		if (cp != NULL) *cp = '\0';
-	}
-#else
-		/* avoid naive trim above */
-#endif
 		if (process_config_line_depth(options, pw, host, original_host,
-		    line, filename, linenum, activep, flags, want_final_pass,
+		    cp, filename, linenum, activep, flags, want_final_pass,
 		    depth) != 0)
 			bad_options++;
 	}

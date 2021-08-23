@@ -2706,7 +2706,7 @@ process_server_config_line(ServerOptions *options, char *line,
 void
 load_server_config(const char *filename, struct sshbuf *conf)
 {
-	char *line = NULL, *cp;
+	char *line = NULL;
 	size_t linesize = 0;
 	FILE *f;
 	int r, lineno = 0;
@@ -2721,20 +2721,11 @@ load_server_config(const char *filename, struct sshbuf *conf)
 	if ((r = sshbuf_allocate_fd(fileno(f), conf)) != 0)
 		fatal_fr(r, "allocate");
 	while (getline(&line, &linesize, f) != -1) {
-		lineno++;
-#if 0
-		/*
-		 * Trim out comments and strip whitespace
-		 * NB - preserve newlines, they are needed to reproduce
-		 * line numbers later for error messages
+		/* strip whitespace, preserve newlines, they are needed
+		 * to reproduce line numbers later for error messages
 		 */
-		if ((cp = strchr(line, '#')) != NULL)
-			memcpy(cp, "\n", 2);
-		cp = line + strspn(line, " \t\r");
-#else
-		/* avoid naive trim above */
-		cp = line;
-#endif
+		char *cp = line + strspn(line, " \t\r");
+		lineno++;
 		if ((r = sshbuf_put(conf, cp, strlen(cp))) != 0)
 			fatal_fr(r, "sshbuf_put");
 	}
