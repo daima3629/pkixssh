@@ -128,6 +128,10 @@ initialize_server_options(ServerOptions *options)
 	options->accepted_algorithms = NULL;
 	ssh_x509flags_initialize(&options->x509flags, 1);
 	X509StoreOptions_init(&options->ca);
+#ifdef LDAP_ENABLED
+	options->ca_ldap_url = NULL;
+	options->ca_ldap_ver = NULL;
+#endif
 #ifdef USE_OPENSSL_STORE2
 	options->num_store_uri = 0;
 	options->store_uri = NULL;
@@ -318,6 +322,9 @@ fill_default_server_options(ServerOptions *options)
 	memcpy(&ssh_x509flags, &options->x509flags, sizeof(ssh_x509flags));
 	X509StoreOptions_system_defaults(&options->ca);
 	(void)ssh_x509store_addlocations(&options->ca);
+#ifdef LDAP_ENABLED
+	(void)ssh_x509store_addldapurl(options->ca_ldap_url, options->ca_ldap_ver);
+#endif
 #ifdef USE_OPENSSL_STORE2
 	(void)ssh_x509store_adduri(options->store_uri, options->num_store_uri);
 #endif
@@ -1569,13 +1576,11 @@ parse_string:
 
 #ifdef LDAP_ENABLED
 	case sCAldapVersion:
-		/* X509StoreOptions preffered type is 'const char*' */
-		charptr = (char**)&options->ca.ldap_ver;
+		charptr = (char**)&options->ca_ldap_ver;
 		goto parse_string;
 
 	case sCAldapURL:
-		/* X509StoreOptions preffered type is 'const char*' */
-		charptr = (char**)&options->ca.ldap_url;
+		charptr = (char**)&options->ca_ldap_url;
 		goto parse_string;
 #endif /*def LDAP_ENABLED*/
 
@@ -3111,8 +3116,8 @@ dump_config(ServerOptions *o)
 	dump_cfg_string(sCARevocationFile , o->ca.revocation_file );
 	dump_cfg_string(sCARevocationPath , o->ca.revocation_path );
 #ifdef LDAP_ENABLED
-	dump_cfg_string(sCAldapVersion    , o->ca.ldap_ver	  );
-	dump_cfg_string(sCAldapURL	  , o->ca.ldap_url	  );
+	dump_cfg_string(sCAldapVersion    , o->ca_ldap_ver	  );
+	dump_cfg_string(sCAldapURL	  , o->ca_ldap_url	  );
 #endif
 #ifdef SSH_OCSP_ENABLED
 	/* ssh X.509 extra validation */

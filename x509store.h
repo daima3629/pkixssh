@@ -88,10 +88,6 @@ typedef struct {
 	const char   *certificate_path;
 	const char   *revocation_file;
 	const char   *revocation_path;
-#ifdef LDAP_ENABLED
-	const char   *ldap_ver;
-	const char   *ldap_url;
-#endif
 }       X509StoreOptions;
 
 void X509StoreOptions_init(X509StoreOptions *options);
@@ -102,6 +98,9 @@ void X509StoreOptions_user_defaults(X509StoreOptions *options, uid_t uid);
 void ssh_x509store_cleanup(void);
 
 int/*bool*/ ssh_x509store_addlocations(const X509StoreOptions *locations);
+#ifdef LDAP_ENABLED
+int/*bool*/ ssh_x509store_addldapurl(const char *ldap_url, const char *ldap_ver);
+#endif
 #ifdef USE_OPENSSL_STORE2
 int/*bool*/ ssh_x509store_adduri(const char **store_uri, u_int num_store_uri);
 #endif

@@ -227,6 +227,10 @@ typedef struct {
 	SSH_X509Flags    x509flags;
 	/* sshd PKI(X509) system store */
 	X509StoreOptions ca;
+#ifdef LDAP_ENABLED
+	const char      *ca_ldap_url;
+	const char      *ca_ldap_ver; /* outdated */
+#endif
 #ifdef USE_OPENSSL_STORE2
 	u_int            num_store_uri;
 	const char       **store_uri;

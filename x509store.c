@@ -571,10 +571,6 @@ X509StoreOptions_init(X509StoreOptions *options) {
 	options->certificate_path = NULL;
 	options->revocation_file = NULL;
 	options->revocation_path = NULL;
-#ifdef LDAP_ENABLED
-	options->ldap_ver = NULL;
-	options->ldap_url = NULL;
-#endif
 }
 
 
@@ -584,10 +580,6 @@ X509StoreOptions_reset(X509StoreOptions *options) {
 	free((char*)options->certificate_path);	options->certificate_path = NULL;
 	free((char*)options->revocation_file);	options->revocation_file = NULL;
 	free((char*)options->revocation_path);	options->revocation_path = NULL;
-#ifdef LDAP_ENABLED
-	free((char*)options->ldap_ver);		options->ldap_ver = NULL;
-	free((char*)options->ldap_url);		options->ldap_url = NULL;
-#endif
 }
 
 
@@ -761,9 +753,15 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 	/*at least one revocation lookup should succeed*/
 	if (flag == 0) return 0;
 
+	return 1;
+}
+
+
 #ifdef LDAP_ENABLED
+int/*bool*/
+ssh_x509store_addldapurl(const char *ldap_url, const char *ldap_ver) {
 	/* could be set only in client and daemon program */
-	if (_locations->ldap_url != NULL) {
+	if (ldap_url != NULL) {
 		X509_LOOKUP_METHOD* lookup_method;
 		X509_LOOKUP *lookup;
 
@@ -785,8 +783,8 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 			fatal_f("cannot add ldap lookup");
 			return 0; /* ;-) */
 		}
-		if (SSH_X509_LOOKUP_ADD(lookup, _locations->ldap_url)) {
-			debug2("ldap url '%.400s' added to x509 store", _locations->ldap_url);
+		if (SSH_X509_LOOKUP_ADD(lookup, ldap_url)) {
+			debug2("ldap url '%.400s' added to x509 store", ldap_url);
 		}
 		/*ERR_clear_error();*/
 
@@ -796,21 +794,21 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 			fatal_f("cannot add ldap lookup(revoked)");
 			return 0; /* ;-) */
 		}
-		if (SSH_X509_LOOKUP_ADD(lookup, _locations->ldap_url)) {
-			debug2("ldap url '%.400s' added to x509 store(revoked)", _locations->ldap_url);
+		if (SSH_X509_LOOKUP_ADD(lookup, ldap_url)) {
+			debug2("ldap url '%.400s' added to x509 store(revoked)", ldap_url);
 		}
 		/*ERR_clear_error();*/
 #endif /*def SSH_CHECK_REVOKED*/
 	/* NOTE: All LDAP-connections will use one and the same protocol version */
-	if (!set_ldap_version(_locations->ldap_ver)) {
+	if (!set_ldap_version(ldap_ver)) {
 		fatal_f("cannot set ldap version");
 		return 0; /* ;-) */
 	}
 	}
 #undef SSH_X509_LOOKUP_ADD
-#endif /*def LDAP_ENABLED*/
 	return 1;
 }
+#endif /*def LDAP_ENABLED*/
 
 
 #ifdef USE_OPENSSL_STORE2

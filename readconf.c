@@ -174,7 +174,6 @@ typedef enum {
 	oCAldapVersion, oCAldapURL,
 	oUserCACertificateFile, oUserCACertificatePath,
 	oUserCARevocationFile, oUserCARevocationPath,
-	oUserCAldapVersion, oUserCAldapURL,
 	oVAType, oVACertificateFile,
 	oVAOCSPResponderURL,
 	/* Standard Options */
@@ -1132,23 +1131,10 @@ skip_purpose:
 
 #ifdef LDAP_ENABLED
 	case oCAldapVersion:
-		/*X509StoreOptions preffered type is 'const char*' */
-		charptr = (char**)&options->ca.ldap_ver;
+		charptr = (char**)&options->ca_ldap_ver;
 		goto parse_string;
-
 	case oCAldapURL:
-		/*X509StoreOptions preffered type is 'const char*' */
-		charptr = (char**)&options->ca.ldap_url;
-		goto parse_string;
-
-	case oUserCAldapVersion:
-		/*X509StoreOptions preffered type is 'const char*' */
-		charptr = (char**)&options->userca.ldap_ver;
-		goto parse_string;
-
-	case oUserCAldapURL:
-		/*X509StoreOptions preffered type is 'const char*' */
-		charptr = (char**)&options->userca.ldap_url;
+		charptr = (char**)&options->ca_ldap_url;
 		goto parse_string;
 #endif /*def LDAP_ENABLED*/
 
@@ -2300,8 +2286,6 @@ parse_key_algorithms:
 #ifndef LDAP_ENABLED
 	case oCAldapVersion:
 	case oCAldapURL:
-	case oUserCAldapVersion:
-	case oUserCAldapURL:
 #endif /*ndef LDAP_ENABLED*/
 #ifndef SSH_OCSP_ENABLED
 	case oVAType:
@@ -2430,6 +2414,10 @@ initialize_options(Options * options)
 	ssh_x509flags_initialize(options->x509flags, 0);
 	X509StoreOptions_init(&options->ca);
 	X509StoreOptions_init(&options->userca);
+#ifdef LDAP_ENABLED
+	options->ca_ldap_url = NULL;
+	options->ca_ldap_ver = NULL;
+#endif
 #ifdef USE_OPENSSL_STORE2
 	options->num_store_uri = 0;
 	options->store_uri = NULL;
@@ -2793,6 +2781,9 @@ fill_default_options(Options * options)
 
 	(void)ssh_x509store_addlocations(&options->userca);
 	(void)ssh_x509store_addlocations(&options->ca);
+#ifdef LDAP_ENABLED
+	(void)ssh_x509store_addldapurl(options->ca_ldap_url, options->ca_ldap_ver);
+#endif
 #ifdef USE_OPENSSL_STORE2
 	(void)ssh_x509store_adduri(options->store_uri, options->num_store_uri);
 #endif

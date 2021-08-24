@@ -170,6 +170,10 @@ typedef struct {
 	X509StoreOptions ca;
 	/* sshd PKI(X509) user store */
 	X509StoreOptions userca;
+#ifdef LDAP_ENABLED
+	const char       *ca_ldap_url;
+	const char       *ca_ldap_ver; /* outdated */
+#endif
 #ifdef USE_OPENSSL_STORE2
 	u_int            num_store_uri;
 	const char       **store_uri;
