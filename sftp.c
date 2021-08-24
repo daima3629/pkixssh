@@ -1,4 +1,4 @@
-/* $OpenBSD: sftp.c,v 1.209 2021/04/03 06:58:30 djm Exp $ */
+/* $OpenBSD: sftp.c,v 1.211 2021/08/12 09:59:00 schwarze Exp $ */
 /*
  * Copyright (c) 2001-2004 Damien Miller <djm@openbsd.org>
  * Copyright (c) 2013-2021 Roumen Petrov.  All rights reserved.
@@ -1757,9 +1757,17 @@ parse_dispatch_command(struct sftp_conn *conn, const char *cmd, char **pwd,
 }
 
 #ifdef USE_LIBEDIT
+static void
+read_interrupt(int signo)
+{
+	UNUSED(signo);
+	interrupted = 1;
+}
+
 static char *
 prompt(EditLine *el)
 {
+	UNUSED(el);
 	return ("sftp> ");
 }
 
@@ -2063,6 +2071,7 @@ complete(EditLine *el, int ch)
 	const LineInfo *lf;
 	struct complete_ctx *complete_ctx;
 
+	UNUSED(ch);
 	lf = el_line(el);
 	if (el_get(el, EL_CLIENTDATA, (void**)&complete_ctx) != 0)
 		fatal_f("el_get failed");
@@ -2207,8 +2216,6 @@ interactive_loop(struct sftp_conn *conn, char *file1, char *file2)
 	interactive = !batchmode && isatty(STDIN_FILENO);
 	err = 0;
 	for (;;) {
-		ssh_signal(SIGINT, SIG_IGN);
-
 		if (el == NULL) {
 			if (interactive)
 				printf("sftp> ");
@@ -2221,10 +2228,21 @@ interactive_loop(struct sftp_conn *conn, char *file1, char *file2)
 #ifdef USE_LIBEDIT
 			const char *line;
 			int count = 0;
+			struct sigaction sa;
 
+			interrupted = 0;
+			memset(&sa, 0, sizeof(sa));
+			sa.sa_handler = read_interrupt;
+			if (sigaction(SIGINT, &sa, NULL) == -1) {
+				debug3("sigaction(%s): %s",
+				    strsignal(SIGINT), strerror(errno));
+				break;
+			}
 			if ((line = el_gets(el, &count)) == NULL ||
 			    count <= 0) {
 				printf("\n");
+				if (interrupted)
+					continue;
 				break;
 			}
 			history(hl, &hev, H_ENTER, line);
