@@ -1466,7 +1466,8 @@ process_server_config_line_depth(ServerOptions *options, char *line,
 	case sHostbasedAlgorithms:
 		arg = strdelim(&cp);
 		if (arg == NULL || *arg == '\0')
-			fatal("%s line %d: Missing argument.", filename, linenum);
+			fatal("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 		/* cannot validate here - depend from X509KeyAlgorithm */
 		if (*activep && options->hostbased_algorithms == NULL)
 			options->hostbased_algorithms = xstrdup(arg);
@@ -1476,7 +1477,8 @@ process_server_config_line_depth(ServerOptions *options, char *line,
 	case sPubkeyAlgorithms:
 		arg = strdelim(&cp);
 		if (arg == NULL || *arg == '\0')
-			fatal("%s line %d: Missing argument.", filename, linenum);
+			fatal("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 		/* cannot validate here - depend from X509KeyAlgorithm */
 		if (*activep && options->pubkey_algorithms == NULL)
 			options->pubkey_algorithms = xstrdup(arg);
@@ -1485,7 +1487,8 @@ process_server_config_line_depth(ServerOptions *options, char *line,
 	case sAcceptedAlgorithms:
 		arg = strdelim(&cp);
 		if (arg == NULL || *arg == '\0')
-			fatal("%s line %d: Missing argument.", filename, linenum);
+			fatal("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 		/* cannot validate here - depend from X509KeyAlgorithm */
 		if (*activep && options->accepted_algorithms == NULL)
 			options->accepted_algorithms = xstrdup(arg);
@@ -1494,9 +1497,10 @@ process_server_config_line_depth(ServerOptions *options, char *line,
 	case sX509KeyAlgorithm:
 		arg = strdelim(&cp);
 		if (arg == NULL || *arg == '\0')
-			fatal("%s line %d: Missing argument.", filename, linenum);
+			fatal("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 		if (ssh_add_x509key_alg(arg) < 0) {
-			fatal("%.200s line %d: Bad X.509 key algorithm '%.200s'.",
+			fatal("%s line %d: bad X.509 key algorithm '%s'.",
 			    filename, linenum, arg);
 		}
 		break;
@@ -1510,7 +1514,7 @@ process_server_config_line_depth(ServerOptions *options, char *line,
 			/* convert string to OpenSSL index */
 			value = ssh_get_x509purpose_s (1, arg);
 			if (value < 0)
-				fatal("%.200s line %d: Bad certificate purpose '%.30s'.",
+				fatal("%s line %d: bad certificate purpose '%s'.",
 				    filename, linenum, arg);
 
 			if (*intptr == -1)
@@ -1519,8 +1523,8 @@ process_server_config_line_depth(ServerOptions *options, char *line,
 skip_purpose:
 			if (*intptr == -1) {
 				*intptr = -2;
-				verbose("%.200s line %d: option is set to don`t check certificate purpose.",
-				    filename, linenum);
+				verbose("%s line %d: %s is set do not check certificate purpose.",
+				    filename, linenum, keyword);
 			}
 		}
 		break;
@@ -1543,7 +1547,8 @@ skip_purpose:
 parse_string:
 		arg = strdelim(&cp);
 		if (arg == NULL || *arg == '\0')
-			fatal("%.200s line %d: Missing argument.", filename, linenum);
+			fatal("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 		if (*charptr == NULL)
 			*charptr = xstrdup(arg);
 		break;
@@ -1567,7 +1572,8 @@ parse_string:
 	case sCAStoreURI:
 		arg = strdelim(&cp);
 		if (arg == NULL || *arg == '\0')
-			fatal("%s line %d: Missing argument.", filename, linenum);
+			fatal("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 		opt_array_append(filename, linenum, "CAStoreURI",
 		    (char***)&options->store_uri, &options->num_store_uri,
 		    arg);
@@ -1589,11 +1595,12 @@ parse_string:
 		intptr = &options->va.type;
 		arg = strdelim(&cp);
 		if (arg == NULL || *arg == '\0')
-			fatal("%.200s line %d: Missing argument.", filename, linenum);
+			fatal("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 
 		value = ssh_get_vatype_s(arg);
 		if (value < 0) {
-			fatal("%.200s line %d: Bad OCSP responder type '%.30s'.",
+			fatal("%s line %d: Bad OCSP responder type '%.30s'.",
 			    filename, linenum, arg);
 		}
 
@@ -1691,8 +1698,8 @@ parse_string:
  parse_multistate:
 		arg = strdelim(&cp);
 		if (arg == NULL || *arg == '\0')
-			fatal("%s line %d: missing argument.",
-			    filename, linenum);
+			fatal("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 		value = -1;
 		for (i = 0; multistate_ptr[i].key != NULL; i++) {
 			if (strcasecmp(arg, multistate_ptr[i].key) == 0) {
@@ -1786,13 +1793,13 @@ parse_string:
  parse_key_algorithms:
 		arg = strdelim(&cp);
 		if (arg == NULL || *arg == '\0')
-			fatal("%s line %d: Missing argument.",
-			    filename, linenum);
+			fatal("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 #if 0		/* cannot validate here - depend from X509KeyAlgorithm */
 		if (*arg != '-' &&
 		    !sshkey_names_valid2(*arg == '+' || *arg == '^' ?
 		    arg + 1 : arg, 1))
-			fatal("%s line %d: Bad key types '%s'.",
+			fatal("%s line %d: bad key types '%s'.",
 			    filename, linenum, arg ? arg : "<NONE>");
 #endif
 		if (*activep && *charptr == NULL)

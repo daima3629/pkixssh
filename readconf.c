@@ -913,13 +913,14 @@ static const struct multistate multistate_canonicalizehostname[] = {
 };
 
 static int
-parse_multistate_value(const char *arg, const char *filename, int linenum,
-    const struct multistate *multistate_ptr)
+parse_multistate_value(const char *arg, const struct multistate *multistate_ptr,
+    const char *filename, int linenum, const char* keyword)
 {
 	int i;
 
 	if (arg == NULL || *arg == '\0') {
-		error("%s line %d: missing argument.", filename, linenum);
+		error("%s line %d: %s missing argument.",
+		    filename, linenum, keyword);
 		return -1;
 	}
 	for (i = 0; multistate_ptr[i].key != NULL; i++) {
@@ -1009,7 +1010,8 @@ process_config_line_depth(Options *options, struct passwd *pw, const char *host,
 		charptr = (char**)&options->hostbased_algorithms;
 		arg = strdelim(&s);
 		if (arg == NULL || *arg == '\0') {
-			error("%.200s line %d: Missing argument.", filename, linenum);
+			error("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 			goto out;
 		}
 		/* cannot validate here - depend from X509KeyAlgorithm */
@@ -1022,7 +1024,8 @@ process_config_line_depth(Options *options, struct passwd *pw, const char *host,
 		charptr = (char**)&options->pubkey_algorithms;
 		arg = strdelim(&s);
 		if (arg == NULL || *arg == '\0') {
-			error("%.200s line %d: Missing argument.", filename, linenum);
+			error("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 			goto out;
 		}
 		/* cannot validate here - depend from X509KeyAlgorithm */
@@ -1033,7 +1036,8 @@ process_config_line_depth(Options *options, struct passwd *pw, const char *host,
 	case oX509KeyAlgorithm:
 		arg = strdelim(&s);
 		if (arg == NULL || *arg == '\0') {
-			error("%.200s line %d: Missing argument.", filename, linenum);
+			error("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 			goto out;
 		}
 
@@ -1120,7 +1124,8 @@ skip_purpose:
 	case oCAStoreURI:
 		arg = strdelim(&s);
 		if (arg == NULL || *arg == '\0') {
-			error("%.200s line %d: Missing argument.", filename, linenum);
+			error("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 			goto out;
 		}
 		opt_array_append(filename, linenum, "CAStoreURI",
@@ -1143,7 +1148,8 @@ skip_purpose:
 		intptr = &options->va.type;
 		arg = strdelim(&s);
 		if (arg == NULL || *arg == '\0') {
-			error("%.200s line %d: Missing argument.", filename, linenum);
+			error("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 			goto out;
 		}
 
@@ -1192,8 +1198,8 @@ parse_time:
 		intptr = &options->forward_agent;
 
 		arg = strdelim(&s);
-		value = parse_multistate_value(arg, filename, linenum,
-		    multistate_flag);
+		value = parse_multistate_value(arg, multistate_flag,
+		    filename, linenum, keyword);
 		if (value != -1) {
 			if (*activep && *intptr == -1)
 				*intptr = value;
@@ -1212,8 +1218,8 @@ parse_time:
 		multistate_ptr = multistate_flag;
  parse_multistate:
 		arg = strdelim(&s);
-		value = parse_multistate_value(arg, filename, linenum,
-		    multistate_ptr);
+		value = parse_multistate_value(arg, multistate_ptr,
+		    filename, linenum, keyword);
 		if (value == -1) {
 			error("%s line %d: unsupported option \"%s\".",
 			    filename, linenum, arg);
@@ -1304,8 +1310,8 @@ parse_time:
 	case oRekeyLimit:
 		arg = strdelim(&s);
 		if (arg == NULL || *arg == '\0') {
-			error("%.200s line %d: Missing argument.", filename,
-			    linenum);
+			error("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 			goto out;
 		}
 		if (strcmp(arg, "default") == 0) {
@@ -1337,8 +1343,8 @@ parse_time:
 	case oIdentityFile:
 		arg = strdelim(&s);
 		if (arg == NULL || *arg == '\0') {
-			error("%.200s line %d: Missing argument.",
-			    filename, linenum);
+			error("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 			goto out;
 		}
 		if (*activep) {
@@ -1357,8 +1363,8 @@ parse_time:
 	case oCertificateFile:
 		arg = strdelim(&s);
 		if (arg == NULL || *arg == '\0') {
-			error("%.200s line %d: Missing argument.",
-			    filename, linenum);
+			error("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 			goto out;
 		}
 		if (*activep) {
@@ -1384,8 +1390,8 @@ parse_time:
 parse_string:
 		arg = strdelim(&s);
 		if (arg == NULL || *arg == '\0') {
-			error("%.200s line %d: Missing argument.",
-			    filename, linenum);
+			error("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 			goto out;
 		}
 		if (*activep && *charptr == NULL)
@@ -1463,8 +1469,8 @@ parse_char_array:
 			charptr = &options->jump_host; /* Skip below */
 parse_command:
 		if (s == NULL) {
-			error("%.200s line %d: Missing argument.",
-			    filename, linenum);
+			error("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 			goto out;
 		}
 		len = strspn(s, WHITESPACE "=");
@@ -1474,8 +1480,8 @@ parse_command:
 
 	case oProxyJump:
 		if (s == NULL) {
-			error("%.200s line %d: Missing argument.",
-			    filename, linenum);
+			error("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 			goto out;
 		}
 		len = strspn(s, WHITESPACE "=");
@@ -1489,8 +1495,8 @@ parse_command:
 	case oPort:
 		arg = strdelim(&s);
 		if (arg == NULL || *arg == '\0') {
-			error("%.200s line %d: Missing argument.",
-			    filename, linenum);
+			error("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 			goto out;
 		}
 		value = a2port(arg);
@@ -1519,8 +1525,8 @@ parse_int:
 	case oCiphers:
 		arg = strdelim(&s);
 		if (arg == NULL || *arg == '\0') {
-			error("%.200s line %d: Missing argument.",
-			    filename, linenum);
+			error("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 			goto out;
 		}
 		if (*arg != '-' &&
@@ -1536,8 +1542,8 @@ parse_int:
 	case oMacs:
 		arg = strdelim(&s);
 		if (arg == NULL || *arg == '\0') {
-			error("%.200s line %d: Missing argument.",
-			    filename, linenum);
+			error("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 			goto out;
 		}
 		if (*arg != '-' &&
@@ -1553,8 +1559,8 @@ parse_int:
 	case oKexAlgorithms:
 		arg = strdelim(&s);
 		if (arg == NULL || *arg == '\0') {
-			error("%.200s line %d: Missing argument.",
-			    filename, linenum);
+			error("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 			goto out;
 		}
 		if (*arg != '-' &&
@@ -1573,8 +1579,8 @@ parse_int:
 parse_key_algorithms:
 		arg = strdelim(&s);
 		if (arg == NULL || *arg == '\0') {
-			error("%.200s line %d: Missing argument.",
-			    filename, linenum);
+			error("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 			goto out;
 		}
 #if 0		/* cannot validate here - depend from X509KeyAlgorithm */
@@ -1643,8 +1649,8 @@ parse_key_algorithms:
 	case oDynamicForward:
 		arg = strdelim(&s);
 		if (arg == NULL || *arg == '\0') {
-			error("%.200s line %d: Missing argument.",
-			    filename, linenum);
+			error("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 			goto out;
 		}
 
@@ -1809,8 +1815,8 @@ parse_key_algorithms:
 		intptr = &options->escape_char;
 		arg = strdelim(&s);
 		if (arg == NULL || *arg == '\0') {
-			error("%.200s line %d: Missing argument.",
-			    filename, linenum);
+			error("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 			goto out;
 		}
 		if (strcmp(arg, "none") == 0)
@@ -1919,8 +1925,8 @@ parse_key_algorithms:
 		/* no/false/yes/true, or a time spec */
 		intptr = &options->control_persist;
 		arg = strdelim(&s);
-		value = parse_multistate_value(arg, filename, linenum,
-		    multistate_flag);
+		value = parse_multistate_value(arg, multistate_flag,
+		    filename, linenum, keyword);
 		value2 = 0;	/* timeout */
 		if (value == -1) {
 			value = 1;
@@ -1945,8 +1951,8 @@ parse_key_algorithms:
 	case oTunnelDevice:
 		arg = strdelim(&s);
 		if (arg == NULL || *arg == '\0') {
-			error("%.200s line %d: Missing argument.",
-			    filename, linenum);
+			error("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 			goto out;
 		}
 		value = a2tun(arg, &value2);
@@ -2205,8 +2211,8 @@ parse_key_algorithms:
 		intptr = &options->fingerprint_hash;
 		arg = strdelim(&s);
 		if (arg == NULL || *arg == '\0') {
-			error("%.200s line %d: Missing argument.",
-			    filename, linenum);
+			error("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 			goto out;
 		}
 		if ((value = ssh_digest_alg_by_name(arg)) == -1) {
@@ -2226,8 +2232,8 @@ parse_key_algorithms:
 	case oAddKeysToAgent:
 		arg = strdelim(&s);
 		arg2 = strdelim(&s);
-		value = parse_multistate_value(arg, filename, linenum,
-		    multistate_yesnoaskconfirm);
+		value = parse_multistate_value(arg, multistate_yesnoaskconfirm,
+		    filename, linenum, keyword);
 		value2 = 0; /* unlimited lifespan by default */
 		if (value == 3 && arg2 != NULL) {
 			/* allow "AddKeysToAgent confirm 5m" */
@@ -2252,8 +2258,8 @@ parse_key_algorithms:
 		charptr = &options->identity_agent;
 		arg = strdelim(&s);
 		if (arg == NULL || *arg == '\0') {
-			error("%.200s line %d: Missing argument.",
-			    filename, linenum);
+			error("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
 			goto out;
 		}
   parse_agent_path:
