@@ -56,7 +56,7 @@ static sshsig_t saved_sighandler[NSIG];
  */
 #define REEXEC_MIN_FREE_FD (STDERR_FILENO + 4)
 static int
-notify_setup_fd(int *fd)
+pselect_notify_setup_fd(int *fd)
 {
 	int r;
 
@@ -73,7 +73,7 @@ notify_setup_fd(int *fd)
  */
 static int notify_pipe[2];
 static void
-notify_setup(void)
+pselect_notify_setup(void)
 {
 	static int initialized;
 
@@ -81,8 +81,8 @@ notify_setup(void)
 		return;
 	if (pipe(notify_pipe) == -1) {
 		error("pipe(notify_pipe) failed %s", strerror(errno));
-	} else if (notify_setup_fd(&notify_pipe[0]) == -1 ||
-	    notify_setup_fd(&notify_pipe[1]) == -1) {
+	} else if (pselect_notify_setup_fd(&notify_pipe[0]) == -1 ||
+	    pselect_notify_setup_fd(&notify_pipe[1]) == -1) {
 		error("fcntl(notify_pipe, ...) failed %s", strerror(errno));
 		close(notify_pipe[0]);
 		close(notify_pipe[1]);
@@ -96,19 +96,19 @@ notify_setup(void)
 	notify_pipe[1] = -1;    /* write end */
 }
 static void
-notify_parent(void)
+pselect_notify_parent(void)
 {
 	if (notify_pipe[1] != -1)
 		(void)write(notify_pipe[1], "", 1);
 }
 static void
-notify_prepare(fd_set *readset)
+pselect_notify_prepare(fd_set *readset)
 {
 	if (notify_pipe[0] != -1)
 		FD_SET(notify_pipe[0], readset);
 }
 static void
-notify_done(fd_set *readset)
+pselect_notify_done(fd_set *readset)
 {
 	char c;
 
@@ -120,11 +120,11 @@ notify_done(fd_set *readset)
 }
 
 static void
-sig_handler(int sig)
+pselect_sig_handler(int sig)
 {
 	int save_errno = errno;
 
-	notify_parent();
+	pselect_notify_parent();
 	if (saved_sighandler[sig] != NULL)
 		(*saved_sighandler[sig])(sig);  /* call original handler */
 	errno = save_errno;
@@ -157,8 +157,8 @@ pselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
 			continue;
 		if (sigaction(sig, NULL, &sa) == 0 &&
 		    sa.sa_handler != SIG_IGN && sa.sa_handler != SIG_DFL &&
-		    sa.sa_handler != sig_handler) {
-			sa.sa_handler = sig_handler;
+		    sa.sa_handler != pselect_sig_handler) {
+			sa.sa_handler = pselect_sig_handler;
 			if (sigaction(sig, &sa, &osa) == 0) {
 				debug3_f("installing signal handler for %s, "
 				    "previous %p", strsignal(sig),
@@ -169,8 +169,8 @@ pselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
 		}
 	}
 	if (unmasked) {
-		notify_setup();
-		notify_prepare(readfds);
+		pselect_notify_setup();
+		pselect_notify_prepare(readfds);
 		nfds = MAX(nfds, notify_pipe[0]);
 	}
 
@@ -180,7 +180,7 @@ pselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
 	saved_errno = errno;
 	sigprocmask(SIG_SETMASK, &osig, NULL);
 
-	notify_done(readfds);
+	pselect_notify_done(readfds);
 	errno = saved_errno;
 	return ret;
 }
