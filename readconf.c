@@ -918,7 +918,7 @@ parse_multistate_value(const char *arg, const char *filename, int linenum,
 {
 	int i;
 
-	if (!arg || *arg == '\0') {
+	if (arg == NULL || *arg == '\0') {
 		error("%s line %d: missing argument.", filename, linenum);
 		return -1;
 	}
@@ -1008,7 +1008,7 @@ process_config_line_depth(Options *options, struct passwd *pw, const char *host,
 	case oHostbasedAlgorithms:
 		charptr = (char**)&options->hostbased_algorithms;
 		arg = strdelim(&s);
-		if (!arg || *arg == '\0') {
+		if (arg == NULL || *arg == '\0') {
 			error("%.200s line %d: Missing argument.", filename, linenum);
 			goto out;
 		}
@@ -1021,7 +1021,7 @@ process_config_line_depth(Options *options, struct passwd *pw, const char *host,
 	case oPubkeyAlgorithms:
 		charptr = (char**)&options->pubkey_algorithms;
 		arg = strdelim(&s);
-		if (!arg || *arg == '\0') {
+		if (arg == NULL || *arg == '\0') {
 			error("%.200s line %d: Missing argument.", filename, linenum);
 			goto out;
 		}
@@ -1032,7 +1032,7 @@ process_config_line_depth(Options *options, struct passwd *pw, const char *host,
 
 	case oX509KeyAlgorithm:
 		arg = strdelim(&s);
-		if (!arg || *arg == '\0') {
+		if (arg == NULL || *arg == '\0') {
 			error("%.200s line %d: Missing argument.", filename, linenum);
 			goto out;
 		}
@@ -1119,7 +1119,7 @@ skip_purpose:
 #ifdef USE_OPENSSL_STORE2
 	case oCAStoreURI:
 		arg = strdelim(&s);
-		if (!arg || *arg == '\0') {
+		if (arg == NULL || *arg == '\0') {
 			error("%.200s line %d: Missing argument.", filename, linenum);
 			goto out;
 		}
@@ -1142,7 +1142,7 @@ skip_purpose:
 	case oVAType:
 		intptr = &options->va.type;
 		arg = strdelim(&s);
-		if (!arg || *arg == '\0') {
+		if (arg == NULL || *arg == '\0') {
 			error("%.200s line %d: Missing argument.", filename, linenum);
 			goto out;
 		}
@@ -1173,7 +1173,7 @@ skip_purpose:
 		intptr = &options->connection_timeout;
 parse_time:
 		arg = strdelim(&s);
-		if (!arg || *arg == '\0') {
+		if (arg == NULL || *arg == '\0') {
 			error("%s line %d: missing time value.",
 			    filename, linenum);
 			goto out;
@@ -1303,7 +1303,7 @@ parse_time:
 
 	case oRekeyLimit:
 		arg = strdelim(&s);
-		if (!arg || *arg == '\0') {
+		if (arg == NULL || *arg == '\0') {
 			error("%.200s line %d: Missing argument.", filename,
 			    linenum);
 			goto out;
@@ -1336,7 +1336,7 @@ parse_time:
 
 	case oIdentityFile:
 		arg = strdelim(&s);
-		if (!arg || *arg == '\0') {
+		if (arg == NULL || *arg == '\0') {
 			error("%.200s line %d: Missing argument.",
 			    filename, linenum);
 			goto out;
@@ -1356,7 +1356,7 @@ parse_time:
 
 	case oCertificateFile:
 		arg = strdelim(&s);
-		if (!arg || *arg == '\0') {
+		if (arg == NULL || *arg == '\0') {
 			error("%.200s line %d: Missing argument.",
 			    filename, linenum);
 			goto out;
@@ -1383,7 +1383,7 @@ parse_time:
 		charptr = &options->user;
 parse_string:
 		arg = strdelim(&s);
-		if (!arg || *arg == '\0') {
+		if (arg == NULL || *arg == '\0') {
 			error("%.200s line %d: Missing argument.",
 			    filename, linenum);
 			goto out;
@@ -1488,7 +1488,7 @@ parse_command:
 
 	case oPort:
 		arg = strdelim(&s);
-		if (!arg || *arg == '\0') {
+		if (arg == NULL || *arg == '\0') {
 			error("%.200s line %d: Missing argument.",
 			    filename, linenum);
 			goto out;
@@ -1518,7 +1518,7 @@ parse_int:
 
 	case oCiphers:
 		arg = strdelim(&s);
-		if (!arg || *arg == '\0') {
+		if (arg == NULL || *arg == '\0') {
 			error("%.200s line %d: Missing argument.",
 			    filename, linenum);
 			goto out;
@@ -1535,7 +1535,7 @@ parse_int:
 
 	case oMacs:
 		arg = strdelim(&s);
-		if (!arg || *arg == '\0') {
+		if (arg == NULL || *arg == '\0') {
 			error("%.200s line %d: Missing argument.",
 			    filename, linenum);
 			goto out;
@@ -1552,7 +1552,7 @@ parse_int:
 
 	case oKexAlgorithms:
 		arg = strdelim(&s);
-		if (!arg || *arg == '\0') {
+		if (arg == NULL || *arg == '\0') {
 			error("%.200s line %d: Missing argument.",
 			    filename, linenum);
 			goto out;
@@ -1572,7 +1572,7 @@ parse_int:
 		charptr = &options->hostkeyalgorithms;
 parse_key_algorithms:
 		arg = strdelim(&s);
-		if (!arg || *arg == '\0') {
+		if (arg == NULL || *arg == '\0') {
 			error("%.200s line %d: Missing argument.",
 			    filename, linenum);
 			goto out;
@@ -1642,7 +1642,7 @@ parse_key_algorithms:
 	case oRemoteForward:
 	case oDynamicForward:
 		arg = strdelim(&s);
-		if (!arg || *arg == '\0') {
+		if (arg == NULL || *arg == '\0') {
 			error("%.200s line %d: Missing argument.",
 			    filename, linenum);
 			goto out;
@@ -1698,7 +1698,7 @@ parse_key_algorithms:
 		uintptr = &options->num_permitted_remote_opens;
 		cppptr = &options->permitted_remote_opens;
 		arg = strdelim(&s);
-		if (!arg || *arg == '\0')
+		if (arg == NULL || *arg == '\0')
 			fatal("%s line %d: missing %s specification",
 			    filename, linenum, lookup_opcode_name(opcode));
 		found = *uintptr > 0;
@@ -1808,7 +1808,7 @@ parse_key_algorithms:
 	case oEscapeChar:
 		intptr = &options->escape_char;
 		arg = strdelim(&s);
-		if (!arg || *arg == '\0') {
+		if (arg == NULL || *arg == '\0') {
 			error("%.200s line %d: Missing argument.",
 			    filename, linenum);
 			goto out;
@@ -1944,7 +1944,7 @@ parse_key_algorithms:
 
 	case oTunnelDevice:
 		arg = strdelim(&s);
-		if (!arg || *arg == '\0') {
+		if (arg == NULL || *arg == '\0') {
 			error("%.200s line %d: Missing argument.",
 			    filename, linenum);
 			goto out;
@@ -2179,7 +2179,7 @@ parse_key_algorithms:
 
 	case oStreamLocalBindMask:
 		arg = strdelim(&s);
-		if (!arg || *arg == '\0') {
+		if (arg == NULL || *arg == '\0') {
 			error("%.200s line %d: Missing StreamLocalBindMask "
 			    "argument.", filename, linenum);
 			goto out;
@@ -2204,7 +2204,7 @@ parse_key_algorithms:
 	case oFingerprintHash:
 		intptr = &options->fingerprint_hash;
 		arg = strdelim(&s);
-		if (!arg || *arg == '\0') {
+		if (arg == NULL || *arg == '\0') {
 			error("%.200s line %d: Missing argument.",
 			    filename, linenum);
 			goto out;
@@ -2251,7 +2251,7 @@ parse_key_algorithms:
 	case oIdentityAgent:
 		charptr = &options->identity_agent;
 		arg = strdelim(&s);
-		if (!arg || *arg == '\0') {
+		if (arg == NULL || *arg == '\0') {
 			error("%.200s line %d: Missing argument.",
 			    filename, linenum);
 			goto out;
