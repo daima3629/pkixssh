@@ -1407,7 +1407,7 @@ process_server_config_line_depth(ServerOptions *options, char *line,
 	SyslogFacility *log_facility_ptr;
 	LogLevel *log_level_ptr;
 	ServerOpCodes opcode;
-	u_int i, *uintptr, uvalue, flags = 0;
+	u_int i, *uintptr, flags = 0;
 	size_t len;
 	long long val64;
 	const struct multistate *multistate_ptr;
@@ -2243,13 +2243,13 @@ parse_string:
 	 * AuthorizedKeysFile	/etc/ssh_keys/%u
 	 */
 	case sAuthorizedKeysFile:
-		uvalue = options->num_authkeys_files;
+		found = options->num_authkeys_files > 0;
 		while ((arg = strdelim(&cp)) != NULL) {
 			if (*arg == '\0')
 				fatal("%s line %d: empty %s pattern",
 				    filename, linenum, keyword);
 			arg2 = tilde_expand_filename(arg, getuid());
-			if (*activep && uvalue == 0) {
+			if (*activep && !found) {
 				opt_array_append(filename, linenum, keyword,
 				    &options->authorized_keys_files,
 				    &options->num_authkeys_files, arg2);
@@ -2294,12 +2294,12 @@ parse_string:
 		break;
 
 	case sSetEnv:
-		uvalue = options->num_setenv;
+		found = options->num_setenv > 0;
 		while ((arg = strdelimw(&cp)) != NULL) {
 			if (*arg == '\0' || strchr(arg, '=') == NULL)
 				fatal("%s line %d: Invalid environment.",
 				    filename, linenum);
-			if (!*activep || uvalue != 0)
+			if (!*activep || found)
 				continue;
 			opt_array_append(filename, linenum, keyword,
 			    &options->setenv, &options->num_setenv, arg);
@@ -2446,9 +2446,9 @@ parse_string:
 		if (arg == NULL || *arg == '\0')
 			fatal("%s line %d: %s missing argument.",
 			    filename, linenum, keyword);
-		uvalue = *uintptr;	/* modified later */
+		found = *uintptr > 0;
 		if (strcmp(arg, "any") == 0 || strcmp(arg, "none") == 0) {
-			if (*activep && uvalue == 0) {
+			if (*activep && !found) {
 				*uintptr = 1;
 				*chararrayptr = xcalloc(1,
 				    sizeof(**chararrayptr));
@@ -2482,7 +2482,7 @@ parse_string:
 				fatal("%s line %d: %s bad port number",
 				    filename, linenum, keyword);
 			}
-			if (*activep && uvalue == 0) {
+			if (*activep && !found) {
 				opt_array_append(filename, linenum, keyword,
 				    chararrayptr, uintptr, arg2);
 			}
