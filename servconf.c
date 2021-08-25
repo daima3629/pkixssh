@@ -2529,7 +2529,7 @@ parse_string:
 		else if ((value2 = parse_ipqos(arg)) == -1)
 			fatal("%s line %d: Bad %s value: %s",
 			    filename, linenum, keyword, arg);
-		if (*activep) {
+		if (*activep && options->ip_qos_interactive == -1) {
 			options->ip_qos_interactive = value;
 			options->ip_qos_bulk = value2;
 		}
@@ -2623,7 +2623,7 @@ parse_string:
 		if (arg == p || value < 0 || value > 0777)
 			fatal("%s line %d: Invalid %s.",
 			    filename, linenum, keyword);
-		if (*activep)
+		if (*activep && options->fwd_opts.streamlocal_bind_mask == (mode_t)-1)
 			options->fwd_opts.streamlocal_bind_mask = (mode_t)value;
 		break;
 
@@ -2639,7 +2639,7 @@ parse_string:
 		if ((value = ssh_digest_alg_by_name(arg)) == -1)
 			fatal("%s line %d: Invalid %s algorithm \"%s\".",
 			    filename, linenum, keyword, arg);
-		if (*activep)
+		if (*activep && options->fingerprint_hash == -1)
 			options->fingerprint_hash = value;
 		break;
 
