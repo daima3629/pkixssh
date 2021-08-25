@@ -1433,6 +1433,16 @@ process_server_config_line_depth(ServerOptions *options, char *line,
 		keyword = strdelim(&cp);
 	if (!keyword || !*keyword || *keyword == '#')
 		return 0;
+
+	/* Prepare to parse remainder of line */
+	if (cp != NULL)
+		cp += strspn(cp, WHITESPACE);
+	if (cp == NULL || *cp == '\0') {
+		error("%s line %d: no argument after keyword \"%s\"",
+		    filename, linenum, keyword);
+		return -1;
+	}
+
 	intptr = NULL;
 	charptr = NULL;
 	opcode = parse_token(keyword, filename, linenum, &flags);
@@ -2481,9 +2491,6 @@ parse_string:
 		break;
 
 	case sForceCommand:
-		if (cp == NULL || *cp == '\0')
-			fatal("%s line %d: %s missing argument.",
-			    filename, linenum, keyword);
 		len = strspn(cp, WHITESPACE);
 		if (*activep && options->adm_forced_command == NULL)
 			options->adm_forced_command = xstrdup(cp + len);
@@ -2529,9 +2536,6 @@ parse_string:
 		break;
 
 	case sVersionAddendum:
-		if (cp == NULL || *cp == '\0')
-			fatal("%s line %d: %s missing argument.",
-			    filename, linenum, keyword);
 		len = strspn(cp, WHITESPACE);
 		if (strchr(cp + len, '\r') != NULL)
 			fatal("%s line %d: Invalid %s argument",
@@ -2547,9 +2551,6 @@ parse_string:
 	case sAuthorizedKeysCommand:
 		charptr = &options->authorized_keys_command;
  parse_command:
-		if (cp == NULL)
-			fatal("%s line %d: %s missing argument.",
-			    filename, linenum, keyword);
 		len = strspn(cp, WHITESPACE);
 		if (cp[len] != '/' && strcasecmp(cp + len, "none") != 0)
 			fatal("%s line %d: %s must be an absolute path",

@@ -991,6 +991,15 @@ process_config_line_depth(Options *options, struct passwd *pw, const char *host,
 	/* Match lowercase keyword */
 	lowercase(keyword);
 
+	/* Prepare to parse remainder of line */
+	if (s != NULL)
+		s += strspn(s, WHITESPACE);
+	if (s == NULL || *s == '\0') {
+		error("%s line %d: no argument after keyword \"%s\"",
+		    filename, linenum, keyword);
+		return -1;
+	}
+
 	opcode = parse_token(keyword, filename, linenum,
 	    options->ignored_unknown);
 
@@ -1468,22 +1477,12 @@ parse_char_array:
 		if (options->jump_host != NULL)
 			charptr = &options->jump_host; /* Skip below */
 parse_command:
-		if (s == NULL) {
-			error("%s line %d: %s missing argument.",
-			    filename, linenum, keyword);
-			goto out;
-		}
 		len = strspn(s, WHITESPACE "=");
 		if (*activep && *charptr == NULL)
 			*charptr = xstrdup(s + len);
 		return 0;
 
 	case oProxyJump:
-		if (s == NULL) {
-			error("%s line %d: %s missing argument.",
-			    filename, linenum, keyword);
-			goto out;
-		}
 		len = strspn(s, WHITESPACE "=");
 		if (parse_jump(s + len, options, *activep) == -1) {
 			error("%.200s line %d: Invalid ProxyJump \"%s\"",

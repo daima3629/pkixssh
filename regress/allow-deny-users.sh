@@ -21,7 +21,7 @@ test_auth()
 
 	cp $OBJ/sshd_proxy.orig $OBJ/sshd_proxy
 	test -z "$deny" || echo DenyUsers="$deny" >> $OBJ/sshd_proxy
-	echo "AllowUsers $allow" >> $OBJ/sshd_proxy
+	test -z "$allow" || echo "AllowUsers $allow" >> $OBJ/sshd_proxy
 	${SSH} -F $OBJ/ssh_proxy "$me@somehost" true
 	status=$?
 
