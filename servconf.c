@@ -1431,7 +1431,7 @@ process_server_config_line_depth(ServerOptions *options, char *line,
 	/* Ignore leading whitespace */
 	if (*keyword == '\0')
 		keyword = strdelim(&cp);
-	if (!keyword || !*keyword || *keyword == '#')
+	if (keyword == NULL || *keyword == '\0' || *keyword == '\n' || *keyword == '#')
 		return 0;
 
 	/* Prepare to parse remainder of line */

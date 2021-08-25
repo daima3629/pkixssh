@@ -986,7 +986,7 @@ process_config_line_depth(Options *options, struct passwd *pw, const char *host,
 	/* Ignore leading whitespace. */
 	if (*keyword == '\0')
 		keyword = strdelim(&s);
-	if (keyword == NULL || !*keyword || *keyword == '\n' || *keyword == '#')
+	if (keyword == NULL || *keyword == '\0' || *keyword == '\n' || *keyword == '#')
 		return 0;
 	/* Match lowercase keyword */
 	lowercase(keyword);
