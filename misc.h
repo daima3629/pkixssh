@@ -185,6 +185,8 @@ const char *lookup_env_in_list(const char *env,
 
 int	 argv_split(const char *, int *, char ***);
 char	*argv_assemble(int, char **argv);
+char	*argv_next(int *, char ***);
+void	 argv_consume(int *);
 void	 argv_free(char **, int);
 
 int	 exited_cleanly(pid_t, const char *, const char *, int);

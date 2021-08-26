@@ -2130,6 +2130,27 @@ argv_assemble(int argc, char **argv)
 	return ret;
 }
 
+char *
+argv_next(int *argcp, char ***argvp)
+{
+	char *ret;
+
+	if (*argcp <= 0) return NULL;
+
+	ret = (*argvp)[0];
+	if (ret == NULL)  return NULL;
+
+	(*argcp)--;
+	(*argvp)++;
+	return ret;
+}
+
+void
+argv_consume(int *argcp)
+{
+	*argcp = 0;
+}
+
 void
 argv_free(char **av, int ac)
 {

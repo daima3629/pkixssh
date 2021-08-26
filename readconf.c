@@ -949,7 +949,9 @@ process_config_line_depth(Options *options, struct passwd *pw, const char *host,
     const char *original_host, char *line, const char *filename,
     int linenum, int *activep, int flags, int *want_final_pass, int depth)
 {
-	char *s, **charptr, *endofnumber, *keyword, *arg, *arg2;
+	char *str, **charptr, *endofnumber, *keyword, *arg, *arg2;
+	char **oav = NULL, **av;
+	int oac = 0, ac;
 	char **cpptr, ***cppptr, fwdarg[256];
 	u_int i, *uintptr, max_entries = 0;
 	int r, oactive, negated, opcode, *intptr, value, value2, cmdline = 0, found;
@@ -979,22 +981,22 @@ process_config_line_depth(Options *options, struct passwd *pw, const char *host,
 		line[len] = '\0';
 	}
 
-	s = line;
+	str = line;
 	/* Get the keyword. (Each line is supposed to begin with a keyword). */
-	if ((keyword = strdelim(&s)) == NULL)
+	if ((keyword = strdelim(&str)) == NULL)
 		return 0;
 	/* Ignore leading whitespace. */
 	if (*keyword == '\0')
-		keyword = strdelim(&s);
+		keyword = strdelim(&str);
 	if (keyword == NULL || *keyword == '\0' || *keyword == '\n' || *keyword == '#')
 		return 0;
 	/* Match lowercase keyword */
 	lowercase(keyword);
 
 	/* Prepare to parse remainder of line */
-	if (s != NULL)
-		s += strspn(s, WHITESPACE);
-	if (s == NULL || *s == '\0') {
+	if (str != NULL)
+		str += strspn(str, WHITESPACE);
+	if (str == NULL || *str == '\0') {
 		error("%s line %d: no argument after keyword \"%s\"",
 		    filename, linenum, keyword);
 		return -1;
@@ -1003,21 +1005,30 @@ process_config_line_depth(Options *options, struct passwd *pw, const char *host,
 	opcode = parse_token(keyword, filename, linenum,
 	    options->ignored_unknown);
 
+	if (argv_split(str, &oac, &oav) != 0) {
+		error("%s line %d: invalid quotes", filename, linenum);
+		return -1;
+	}
+	ac = oac;
+	av = oav;
+
 	switch (opcode) {
 	case oBadOption:
 		/* don't panic, but count bad options */
 		goto out;
 	case oIgnore:
-		return 0;
+		argv_consume(&ac);
+		break;
 	case oIgnoredUnknownOption:
 		debug("%s line %d: Ignored unknown option \"%s\"",
 		    filename, linenum, keyword);
-		return 0;
+		argv_consume(&ac);
+		break;
 	/* X.509 Standard Options */
 	case oHostbasedAcceptedAlgorithms:	/* compatibility ;) */
 	case oHostbasedAlgorithms:
 		charptr = (char**)&options->hostbased_algorithms;
-		arg = strdelim(&s);
+		arg = argv_next(&ac, &av);
 		if (arg == NULL || *arg == '\0') {
 			error("%s line %d: %s missing argument.",
 			    filename, linenum, keyword);
@@ -1031,7 +1042,7 @@ process_config_line_depth(Options *options, struct passwd *pw, const char *host,
 	case oPubkeyAcceptedAlgorithms:		/* compatibility ;) */
 	case oPubkeyAlgorithms:
 		charptr = (char**)&options->pubkey_algorithms;
-		arg = strdelim(&s);
+		arg = argv_next(&ac, &av);
 		if (arg == NULL || *arg == '\0') {
 			error("%s line %d: %s missing argument.",
 			    filename, linenum, keyword);
@@ -1043,7 +1054,7 @@ process_config_line_depth(Options *options, struct passwd *pw, const char *host,
 		break;
 
 	case oX509KeyAlgorithm:
-		arg = strdelim(&s);
+		arg = argv_next(&ac, &av);
 		if (arg == NULL || *arg == '\0') {
 			error("%s line %d: %s missing argument.",
 			    filename, linenum, keyword);
@@ -1061,7 +1072,7 @@ process_config_line_depth(Options *options, struct passwd *pw, const char *host,
 
 	case oAllowedServerCertPurpose:
 		intptr = &options->x509flags->allowedcertpurpose;
-		arg = strdelim(&s);
+		arg = argv_next(&ac, &av);
 		if (arg && *arg) {
 			if (strcasecmp(arg, "skip") == 0) goto skip_purpose;
 
@@ -1131,7 +1142,7 @@ skip_purpose:
 
 #ifdef USE_OPENSSL_STORE2
 	case oCAStoreURI:
-		arg = strdelim(&s);
+		arg = argv_next(&ac, &av);
 		if (arg == NULL || *arg == '\0') {
 			error("%s line %d: %s missing argument.",
 			    filename, linenum, keyword);
@@ -1155,7 +1166,7 @@ skip_purpose:
 #ifdef SSH_OCSP_ENABLED
 	case oVAType:
 		intptr = &options->va.type;
-		arg = strdelim(&s);
+		arg = argv_next(&ac, &av);
 		if (arg == NULL || *arg == '\0') {
 			error("%s line %d: %s missing argument.",
 			    filename, linenum, keyword);
@@ -1187,7 +1198,7 @@ skip_purpose:
 	case oConnectTimeout:
 		intptr = &options->connection_timeout;
 parse_time:
-		arg = strdelim(&s);
+		arg = argv_next(&ac, &av);
 		if (arg == NULL || *arg == '\0') {
 			error("%s line %d: missing time value.",
 			    filename, linenum);
@@ -1206,7 +1217,7 @@ parse_time:
 	case oForwardAgent:
 		intptr = &options->forward_agent;
 
-		arg = strdelim(&s);
+		arg = argv_next(&ac, &av);
 		value = parse_multistate_value(arg, multistate_flag,
 		    filename, linenum, keyword);
 		if (value != -1) {
@@ -1226,7 +1237,7 @@ parse_time:
  parse_flag:
 		multistate_ptr = multistate_flag;
  parse_multistate:
-		arg = strdelim(&s);
+		arg = argv_next(&ac, &av);
 		value = parse_multistate_value(arg, multistate_ptr,
 		    filename, linenum, keyword);
 		if (value == -1) {
@@ -1317,7 +1328,7 @@ parse_time:
 		goto parse_int;
 
 	case oRekeyLimit:
-		arg = strdelim(&s);
+		arg = argv_next(&ac, &av);
 		if (arg == NULL || *arg == '\0') {
 			error("%s line %d: %s missing argument.",
 			    filename, linenum, keyword);
@@ -1339,9 +1350,9 @@ parse_time:
 		}
 		if (*activep && options->rekey_limit == -1)
 			options->rekey_limit = val64;
-		if (s != NULL) { /* optional rekey interval present */
-			if (strcmp(s, "none") == 0) {
-				(void)strdelim(&s);	/* discard */
+		if (ac > 0) { /* optional rekey interval present */
+			if (strcmp(av[0], "none") == 0) {
+				(void)argv_next(&ac, &av);	/* discard */
 				break;
 			}
 			intptr = &options->rekey_interval;
@@ -1350,7 +1361,7 @@ parse_time:
 		break;
 
 	case oIdentityFile:
-		arg = strdelim(&s);
+		arg = argv_next(&ac, &av);
 		if (arg == NULL || *arg == '\0') {
 			error("%s line %d: %s missing argument.",
 			    filename, linenum, keyword);
@@ -1370,7 +1381,7 @@ parse_time:
 		break;
 
 	case oCertificateFile:
-		arg = strdelim(&s);
+		arg = argv_next(&ac, &av);
 		if (arg == NULL || *arg == '\0') {
 			error("%s line %d: %s missing argument.",
 			    filename, linenum, keyword);
@@ -1397,7 +1408,7 @@ parse_time:
 	case oUser:
 		charptr = &options->user;
 parse_string:
-		arg = strdelim(&s);
+		arg = argv_next(&ac, &av);
 		if (arg == NULL || *arg == '\0') {
 			error("%s line %d: %s missing argument.",
 			    filename, linenum, keyword);
@@ -1413,7 +1424,7 @@ parse_string:
 		max_entries = SSH_MAX_HOSTS_FILES;
 parse_char_array:
 		found = *uintptr > 0;
-		while ((arg = strdelim(&s)) != NULL) {
+		while ((arg = argv_next(&ac, &av)) != NULL) {
 			if (*arg == '\0') {
 				error("%s line %d: keyword %s empty argument",
 				    filename, linenum, keyword);
@@ -1429,7 +1440,7 @@ parse_char_array:
 				cpptr[(*uintptr)++] = xstrdup(arg);
 			}
 		}
-		return 0;
+		break;
 
 	case oUserKnownHostsFile:
 		cpptr = (char **)&options->user_hostfiles;
@@ -1477,22 +1488,24 @@ parse_char_array:
 		if (options->jump_host != NULL)
 			charptr = &options->jump_host; /* Skip below */
 parse_command:
-		len = strspn(s, WHITESPACE "=");
+		len = strspn(str, WHITESPACE "=");
 		if (*activep && *charptr == NULL)
-			*charptr = xstrdup(s + len);
-		return 0;
+			*charptr = xstrdup(str + len);
+		argv_consume(&ac);
+		break;
 
 	case oProxyJump:
-		len = strspn(s, WHITESPACE "=");
-		if (parse_jump(s + len, options, *activep) == -1) {
+		len = strspn(str, WHITESPACE "=");
+		if (parse_jump(str + len, options, *activep) == -1) {
 			error("%.200s line %d: Invalid ProxyJump \"%s\"",
-			    filename, linenum, s + len);
+			    filename, linenum, str + len);
 			goto out;
 		}
-		return 0;
+		argv_consume(&ac);
+		break;
 
 	case oPort:
-		arg = strdelim(&s);
+		arg = argv_next(&ac, &av);
 		if (arg == NULL || *arg == '\0') {
 			error("%s line %d: %s missing argument.",
 			    filename, linenum, keyword);
@@ -1511,7 +1524,7 @@ parse_command:
 	case oConnectionAttempts:
 		intptr = &options->connection_attempts;
 parse_int:
-		arg = strdelim(&s);
+		arg = argv_next(&ac, &av);
 		if ((errstr = atoi_err(arg, &value)) != NULL) {
 			error("%s line %d: integer value %s.",
 			    filename, linenum, errstr);
@@ -1522,7 +1535,7 @@ parse_int:
 		break;
 
 	case oCiphers:
-		arg = strdelim(&s);
+		arg = argv_next(&ac, &av);
 		if (arg == NULL || *arg == '\0') {
 			error("%s line %d: %s missing argument.",
 			    filename, linenum, keyword);
@@ -1539,7 +1552,7 @@ parse_int:
 		break;
 
 	case oMacs:
-		arg = strdelim(&s);
+		arg = argv_next(&ac, &av);
 		if (arg == NULL || *arg == '\0') {
 			error("%s line %d: %s missing argument.",
 			    filename, linenum, keyword);
@@ -1556,7 +1569,7 @@ parse_int:
 		break;
 
 	case oKexAlgorithms:
-		arg = strdelim(&s);
+		arg = argv_next(&ac, &av);
 		if (arg == NULL || *arg == '\0') {
 			error("%s line %d: %s missing argument.",
 			    filename, linenum, keyword);
@@ -1576,7 +1589,7 @@ parse_int:
 	case oHostKeyAlgorithms:
 		charptr = &options->hostkeyalgorithms;
 parse_key_algorithms:
-		arg = strdelim(&s);
+		arg = argv_next(&ac, &av);
 		if (arg == NULL || *arg == '\0') {
 			error("%s line %d: %s missing argument.",
 			    filename, linenum, keyword);
@@ -1601,7 +1614,7 @@ parse_key_algorithms:
 
 	case oLogLevel:
 		log_level_ptr = &options->log_level;
-		arg = strdelim(&s);
+		arg = argv_next(&ac, &av);
 		value = log_level_number(arg);
 		if (value == SYSLOG_LEVEL_NOT_SET) {
 			error("%.200s line %d: unsupported log level '%s'",
@@ -1614,7 +1627,7 @@ parse_key_algorithms:
 
 	case oLogFacility:
 		log_facility_ptr = &options->log_facility;
-		arg = strdelim(&s);
+		arg = argv_next(&ac, &av);
 		value = log_facility_number(arg);
 		if (value == SYSLOG_FACILITY_NOT_SET) {
 			error("%.200s line %d: unsupported log facility '%s'",
@@ -1629,7 +1642,7 @@ parse_key_algorithms:
 		cppptr = &options->log_verbose;
 		uintptr = &options->num_log_verbose;
 		found = *uintptr > 0;
-		while ((arg = strdelim(&s)) != NULL) {
+		while ((arg = argv_next(&ac, &av)) != NULL) {
 			if (*arg == '\0') {
 				error("%s line %d: keyword %s empty argument",
 				    filename, linenum, keyword);
@@ -1641,12 +1654,12 @@ parse_key_algorithms:
 				(*cppptr)[(*uintptr)++] = xstrdup(arg);
 			}
 		}
-		return 0;
+		break;
 
 	case oLocalForward:
 	case oRemoteForward:
 	case oDynamicForward:
-		arg = strdelim(&s);
+		arg = argv_next(&ac, &av);
 		if (arg == NULL || *arg == '\0') {
 			error("%s line %d: %s missing argument.",
 			    filename, linenum, keyword);
@@ -1657,7 +1670,7 @@ parse_key_algorithms:
 		dynamicfwd = (opcode == oDynamicForward);
 
 		if (!dynamicfwd) {
-			arg2 = strdelim(&s);
+			arg2 = argv_next(&ac, &av);
 			if (arg2 == NULL || *arg2 == '\0') {
 				if (remotefwd)
 					dynamicfwd = 1;
@@ -1702,7 +1715,7 @@ parse_key_algorithms:
 	case oPermitRemoteOpen: {
 		uintptr = &options->num_permitted_remote_opens;
 		cppptr = &options->permitted_remote_opens;
-		arg = strdelim(&s);
+		arg = argv_next(&ac, &av);
 		if (arg == NULL || *arg == '\0')
 			fatal("%s line %d: missing %s specification",
 			    filename, linenum, lookup_opcode_name(opcode));
@@ -1715,7 +1728,7 @@ parse_key_algorithms:
 			}
 			break;
 		}
-		while ((arg = strdelim(&s)) != NULL) {
+		while ((arg = argv_next(&ac, &av)) != NULL) {
 			if (*arg == '\0') {
 				error("%s line %d: keyword %s empty argument",
 				    filename, linenum, keyword);
@@ -1762,14 +1775,16 @@ parse_key_algorithms:
 		}
 		*activep = 0;
 		arg2 = NULL;
-		while ((arg = strdelim(&s)) != NULL) {
+		while ((arg = argv_next(&ac, &av)) != NULL) {
 			if (*arg == '\0') {
 				error("%s line %d: keyword %s empty argument",
 				    filename, linenum, keyword);
 				goto out;
 			}
-			if ((flags & SSHCONF_NEVERMATCH) != 0)
+			if ((flags & SSHCONF_NEVERMATCH) != 0) {
+				argv_consume(&ac);
 				break;
+			}
 			negated = *arg == '!';
 			if (negated)
 				arg++;
@@ -1780,6 +1795,7 @@ parse_key_algorithms:
 					    "for %.100s", filename, linenum,
 					    arg);
 					*activep = 0;
+					argv_consume(&ac);
 					break;
 				}
 				if (!*activep)
@@ -1790,8 +1806,7 @@ parse_key_algorithms:
 		if (*activep)
 			debug("%.200s line %d: Applying options for %.100s",
 			    filename, linenum, arg2);
-		/* Avoid garbage check below, as strdelim is done. */
-		return 0;
+		break;
 
 	case oMatch:
 		if (cmdline) {
@@ -1799,7 +1814,7 @@ parse_key_algorithms:
 			    "option");
 			goto out;
 		}
-		value = match_cfg_line(options, &s, pw, host, original_host,
+		value = match_cfg_line(options, &str, pw, host, original_host,
 		    flags & SSHCONF_FINAL, want_final_pass,
 		    filename, linenum);
 		if (value < 0) {
@@ -1808,11 +1823,16 @@ parse_key_algorithms:
 			goto out;
 		}
 		*activep = (flags & SSHCONF_NEVERMATCH) ? 0 : value;
+		/* if match_cfg_line() didn't consume all its arguments then
+		 * arrange for the extra arguments check below to fail
+		 */
+		if (str == NULL || *str == '\0')
+			argv_consume(&ac);
 		break;
 
 	case oEscapeChar:
 		intptr = &options->escape_char;
-		arg = strdelim(&s);
+		arg = argv_next(&ac, &av);
 		if (arg == NULL || *arg == '\0') {
 			error("%s line %d: %s missing argument.",
 			    filename, linenum, keyword);
@@ -1856,7 +1876,7 @@ parse_key_algorithms:
 		goto parse_int;
 
 	case oSendEnv:
-		while ((arg = strdelim(&s)) != NULL) {
+		while ((arg = argv_next(&ac, &av)) != NULL) {
 			if (*arg == '\0') {
 				error("%s line %d: keyword %s empty argument",
 				    filename, linenum, keyword);
@@ -1885,7 +1905,7 @@ parse_key_algorithms:
 
 	case oSetEnv:
 		found = options->num_setenv > 0;
-		while ((arg = strdelimw(&s)) != NULL) {
+		while ((arg = argv_next(&ac, &av)) != NULL) {
 			if (*arg == '\0') {
 				error("%s line %d: keyword %s empty argument",
 				    filename, linenum, keyword);
@@ -1923,7 +1943,7 @@ parse_key_algorithms:
 	case oControlPersist:
 		/* no/false/yes/true, or a time spec */
 		intptr = &options->control_persist;
-		arg = strdelim(&s);
+		arg = argv_next(&ac, &av);
 		value = parse_multistate_value(arg, multistate_flag,
 		    filename, linenum, keyword);
 		value2 = 0;	/* timeout */
@@ -1948,7 +1968,7 @@ parse_key_algorithms:
 		goto parse_multistate;
 
 	case oTunnelDevice:
-		arg = strdelim(&s);
+		arg = argv_next(&ac, &av);
 		if (arg == NULL || *arg == '\0') {
 			error("%s line %d: %s missing argument.",
 			    filename, linenum, keyword);
@@ -1989,7 +2009,7 @@ parse_key_algorithms:
 			goto out;
 		}
 		value = 0;
-		while ((arg = strdelim(&s)) != NULL) {
+		while ((arg = argv_next(&ac, &av)) != NULL) {
 			if (*arg == '\0') {
 				error("%s line %d: keyword %s empty argument",
 				    filename, linenum, keyword);
@@ -2055,17 +2075,17 @@ parse_key_algorithms:
 			globfree(&gl);
 		}
 		if (value != 0)
-			return value;
+			ret = value;
 		break;
 
 	case oIPQoS:
-		arg = strdelim(&s);
+		arg = argv_next(&ac, &av);
 		if ((value = parse_ipqos(arg)) == -1) {
 			error("%s line %d: Bad IPQoS value: %s",
 			    filename, linenum, arg);
 			goto out;
 		}
-		arg = strdelim(&s);
+		arg = argv_next(&ac, &av);
 		if (arg == NULL)
 			value2 = value;
 		else if ((value2 = parse_ipqos(arg)) == -1) {
@@ -2107,7 +2127,7 @@ parse_key_algorithms:
 
 	case oCanonicalDomains:
 		found = options->num_canonical_domains > 0;
-		while ((arg = strdelim(&s)) != NULL) {
+		while ((arg = argv_next(&ac, &av)) != NULL) {
 			if (*arg == '\0') {
 				error("%s line %d: keyword %s empty argument",
 				    filename, linenum, keyword);
@@ -2133,7 +2153,7 @@ parse_key_algorithms:
 
 	case oCanonicalizePermittedCNAMEs:
 		found = options->num_permitted_cnames > 0;
-		while ((arg = strdelim(&s)) != NULL) {
+		while ((arg = argv_next(&ac, &av)) != NULL) {
 			if (*arg == '\0') {
 				error("%s line %d: keyword %s empty argument",
 				    filename, linenum, keyword);
@@ -2183,7 +2203,7 @@ parse_key_algorithms:
 		goto parse_flag;
 
 	case oStreamLocalBindMask:
-		arg = strdelim(&s);
+		arg = argv_next(&ac, &av);
 		if (arg == NULL || *arg == '\0') {
 			error("%.200s line %d: Missing StreamLocalBindMask "
 			    "argument.", filename, linenum);
@@ -2208,7 +2228,7 @@ parse_key_algorithms:
 
 	case oFingerprintHash:
 		intptr = &options->fingerprint_hash;
-		arg = strdelim(&s);
+		arg = argv_next(&ac, &av);
 		if (arg == NULL || *arg == '\0') {
 			error("%s line %d: %s missing argument.",
 			    filename, linenum, keyword);
@@ -2229,8 +2249,8 @@ parse_key_algorithms:
 		goto parse_multistate;
 
 	case oAddKeysToAgent:
-		arg = strdelim(&s);
-		arg2 = strdelim(&s);
+		arg = argv_next(&ac, &av);
+		arg2 = argv_next(&ac, &av);
 		value = parse_multistate_value(arg, multistate_yesnoaskconfirm,
 		    filename, linenum, keyword);
 		value2 = 0; /* unlimited lifespan by default */
@@ -2255,7 +2275,7 @@ parse_key_algorithms:
 
 	case oIdentityAgent:
 		charptr = &options->identity_agent;
-		arg = strdelim(&s);
+		arg = argv_next(&ac, &av);
 		if (arg == NULL || *arg == '\0') {
 			error("%s line %d: %s missing argument.",
 			    filename, linenum, keyword);
@@ -2283,7 +2303,8 @@ parse_key_algorithms:
 	case oDeprecated:
 		debug("%s line %d: Deprecated option \"%s\"",
 		    filename, linenum, keyword);
-		return 0;
+		argv_consume(&ac);
+		break;
 
 #ifndef USE_OPENSSL_STORE2
 	case oCAStoreURI:
@@ -2303,7 +2324,8 @@ parse_key_algorithms:
 	case oUnsupported:
 		error("%s line %d: Unsupported option \"%s\"",
 		    filename, linenum, keyword);
-		return 0;
+		argv_consume(&ac);
+		break;
 
 	default:
 		error("%s line %d: Unimplemented opcode %d",
@@ -2312,15 +2334,16 @@ parse_key_algorithms:
 	}
 
 	/* Check that there is no garbage at end of line. */
-	if ((arg = strdelim(&s)) != NULL && *arg != '\0') {
-		error("%.200s line %d: garbage at end of line; \"%.200s\".",
-		    filename, linenum, arg);
+	if (ac > 0) {
+		error("%s line %d: keyword %s extra arguments "
+		    "at end of line", filename, linenum, keyword);
 		goto out;
 	}
 
 	/* success */
 	ret = 0;
  out:
+	argv_free(oav, oac);
 	return ret;
 }
 
