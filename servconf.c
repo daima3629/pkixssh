@@ -1525,7 +1525,7 @@ process_server_config_line_depth(ServerOptions *options, char *line,
 	case sAllowedClientCertPurpose:
 		intptr = &options->x509flags.allowedcertpurpose;
 		arg = argv_next(&ac, &av);
-		if (arg && *arg) {
+		if (arg != NULL && *arg != '\0') {
 			if (strcasecmp(arg, "skip") == 0) goto skip_purpose;
 
 			/* convert string to OpenSSL index */
