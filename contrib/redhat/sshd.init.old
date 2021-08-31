@@ -24,8 +24,6 @@ prog="sshd"
 # Some functions to make the below more readable
 KEYGEN=/usr/bin/ssh-keygen
 SSHD=/usr/sbin/sshd
-RSA_KEY=/etc/ssh/ssh_host_rsa_key
-DSA_KEY=/etc/ssh/ssh_host_dsa_key
 PID_FILE=/var/run/sshd.pid
 
 my_success() {
@@ -60,36 +58,6 @@ my_failure() {
     ;;
   esac
 }
-do_rsa_keygen() {
-	if [ ! -s $RSA_KEY ]; then
-		echo -n "Generating SSH2 RSA host key: "
-		if $KEYGEN -q -t rsa -f $RSA_KEY -C '' -N '' >&/dev/null; then
-			chmod 600 $RSA_KEY
-			chmod 644 $RSA_KEY.pub
-			my_success "RSA key generation"
-			echo
-		else
-			my_failure "RSA key generation"
-			echo
-			exit 1
-		fi
-	fi
-}
-do_dsa_keygen() {
-	if [ ! -s $DSA_KEY ]; then
-		echo -n "Generating SSH2 DSA host key: "
-		if $KEYGEN -q -t dsa -f $DSA_KEY -C '' -N '' >&/dev/null; then
-			chmod 600 $DSA_KEY
-			chmod 644 $DSA_KEY.pub
-			my_success "DSA key generation"
-			echo
-		else
-			my_failure "DSA key generation"
-			echo
-			exit 1
-		fi
-	fi
-}
 do_restart_sanity_check() {
 	$SSHD -t
 	RETVAL=$?
@@ -103,8 +71,7 @@ do_restart_sanity_check() {
 case "$1" in
 	start)
 		# Create keys if necessary
-		do_rsa_keygen;
-		do_dsa_keygen;
+		$KEYGEN -A
 		echo -n "Starting sshd: "
 		if [ ! -f $PID_FILE ] ; then
 			sshd $OPTIONS

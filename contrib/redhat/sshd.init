@@ -24,6 +24,7 @@ prog="sshd"
 # Some functions to make the below more readable
 SSHD=/usr/sbin/sshd
 PID_FILE=/var/run/sshd.pid
+KEYGEN=/usr/bin/ssh-keygen
 
 do_restart_sanity_check()
 {
@@ -38,11 +39,12 @@ do_restart_sanity_check()
 start()
 {
 	# Create keys if necessary
-	/usr/bin/ssh-keygen -A
+	$KEYGEN -A
 	if [ -x /sbin/restorecon ]; then
-		/sbin/restorecon /etc/ssh/ssh_host_rsa_key.pub
-		/sbin/restorecon /etc/ssh/ssh_host_dsa_key.pub
-		/sbin/restorecon /etc/ssh/ssh_host_ecdsa_key.pub
+		for f in /etc/ssh/ssh_host_*_key.pub ; do
+			test -f $F || continue
+			/sbin/restorecon $f
+		done
 	fi
 
 	echo -n $"Starting $prog:"

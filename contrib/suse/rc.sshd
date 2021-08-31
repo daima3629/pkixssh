@@ -43,8 +43,6 @@ rc_reset
 
 case "$1" in
     start)
-	# Generate any missing host keys
-	ssh-keygen -A
 	echo -n "Starting SSH daemon"
 	## Start daemon with startproc(8). If this fails
 	## the echo return value is set appropriate.
