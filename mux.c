@@ -1890,9 +1890,8 @@ mux_client_request_session(int fd)
 		fatal_f("stdfd_devnull failed");
 
 	if ((term = lookup_env_in_list("TERM", options.setenv,
-	    options.num_setenv)) == NULL ||
-	    (term = getenv("TERM")) == NULL)
-		term = "";
+	    options.num_setenv)) == NULL || *term == '\0')
+		term = getenv("TERM");
 
 	echar = 0xffffffff;
 	if (options.escape_char != SSH_ESCAPECHAR_NONE)

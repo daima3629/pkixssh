@@ -46,6 +46,15 @@ if [ $? -ne 0 ]; then
 	fail "environment not found"
 fi
 
+verbose "test $tid: pass TERM"
+trace "pass env TERM over multiplexed connection"
+TERM=blah $SSH -F $OBJ/ssh_config -S$CTL -t otherhost \
+	"echo XXX\${TERM}TEST" 2>>$TEST_REGRESS_LOGFILE | \
+	grep XXXblahTEST > /dev/null
+if test $? -ne 0 ; then
+	fail "pass env TERM fail"
+fi
+
 verbose "test $tid: transfer"
 rm -f ${COPY}
 trace "ssh transfer over multiplexed connection and check result"
@@ -196,4 +205,3 @@ wait $SSH_PID
 [ $! != 0 ] || fail "waiting for master stop"
 kill -0 $SSH_PID >/dev/null 2>&1 && fatal "stop command failed"
 SSH_PID="" # Already gone, so don't kill in cleanup
-
