@@ -45,6 +45,7 @@ ssh_sandbox_init(struct monitor *monitor)
 {
 	struct ssh_sandbox *box;
 
+	UNUSED(monitor);
 	/*
 	 * Strictly, we don't need to maintain any state here but we need
 	 * to return non-NULL to satisfy the API.
@@ -61,6 +62,7 @@ ssh_sandbox_child(struct ssh_sandbox *box)
 {
 	struct rlimit rl_zero;
 
+	UNUSED(box);
 	rl_zero.rlim_cur = rl_zero.rlim_max = 0;
 
 #ifndef SANDBOX_SKIP_RLIMIT_FSIZE
