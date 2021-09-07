@@ -7,6 +7,7 @@ authorized_keys_*
 authorized_principals_*
 banner.in
 banner.out
+batch
 cert_host_key*
 cert_user_key*
 copy.1

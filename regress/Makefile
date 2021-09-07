@@ -116,7 +116,7 @@ CLEANFILES=	*.core actual agent-key.* authkeys_orig \
 		authorized_keys_* \
 		authorized_principals_* \
 		banner.in banner.out cert_host_key* cert_user_key* \
-		copy.1 copy.2 data \
+		batch copy.1 copy.2 data \
 		ssh-dss-agent* ssh-dss ssh-dss.pub \
 		ssh-ed25519-agent* ssh-ed25519 ssh-ed25519.pub empty.in \
 		ecdsa-sha2-nistp256-agent* ecdsa-sha2-nistp256 ecdsa-sha2-nistp256.pub \
