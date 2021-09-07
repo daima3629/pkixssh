@@ -1060,7 +1060,7 @@ The list of available key exchange algorithms may also be obtained using
 .Qq ssh -Q kex .
 .It Cm KeyAllowSelfIssued
 Specifies whether only encoded public key or X.509 certificate listed in
-.Cm AutorizedKeysFile
+.Cm AuthorizedKeysFile
 can allow self-issued X.509 certificate to be used for user authentication.
 The default is
 .Dq no .
@@ -1070,7 +1070,7 @@ Unsupported if daemon is build without
 A certificate (including self-issued) is accepted for user authentication
 if encoded public key or encoded X.509 certificate or distinguished name
 is listed in
-.Cm AutorizedKeysFile ,
+.Cm AuthorizedKeysFile ,
 if is valid and if is verified by certificates from
 .Dq X509 store .
 See
@@ -1079,7 +1079,7 @@ If option is set to
 .Dq yes
 self-issued certificate is accepted when its public key
 match public key extracted from entry in
-.Cm AutorizedKeysFile .
+.Cm AuthorizedKeysFile .
 In this case validity of certificate is not checked.
 .It Cm ListenAddress
 Specifies the local addresses

@@ -46,7 +46,7 @@
 #AllowedCertPurpose sslclient
 
 # Specifies whether self-issued X.509 certificate can be allowed only
-# by entry in AutorizedKeysFile that contain matching public key or
+# by entry in AuthorizedKeysFile that contain matching public key or
 # certificate blob.
 #KeyAllowSelfIssued no
 
