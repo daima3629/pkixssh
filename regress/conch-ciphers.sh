@@ -3,7 +3,7 @@
 
 tid="conch ciphers"
 
-$REGRESS_INTEROP_CONCH || { echo "conch interop tests are not enabled" >&1;  exit 1; }
+$REGRESS_INTEROP_CONCH || { RESULT=1; skip "conch interop tests are not enabled"; }
 
 start_sshd
 

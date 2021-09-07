@@ -7,9 +7,7 @@ rm -f $OBJ/user_ca_key* $OBJ/cert_user_key*
 cp $OBJ/sshd_proxy $OBJ/sshd_proxy_bak
 
 if [ -z "$SUDO" -a ! -w /var/run ]; then
-	echo "skipped (SUDO not set)"
-	echo "need SUDO to create file in /var/run, test won't work without"
-	exit 0
+	skip "need SUDO to create file in /var/run, test won't work without"
 fi
 
 if expr "$SSH_KEYTYPES" : '.*rsa' > /dev/null ; then
@@ -56,10 +54,9 @@ test $? -eq 0 || fatal "couldn't prepare principals command"
 $SUDO chmod 0755 "$PRINCIPALS_COMMAND"
 
 if ! $OBJ/check-perm -m keys-command $PRINCIPALS_COMMAND ; then
-	echo "skipping: $PRINCIPALS_COMMAND is unsuitable as " \
-	    "AuthorizedPrincipalsCommand"
 	$SUDO rm -f $PRINCIPALS_COMMAND
-	exit 0
+	skip "$PRINCIPALS_COMMAND is unsuitable as " \
+	    "AuthorizedPrincipalsCommand"
 fi
 
 if [ -x $PRINCIPALS_COMMAND ]; then
@@ -170,6 +167,6 @@ if [ -x $PRINCIPALS_COMMAND ]; then
 		fi
 	done
 else
-	echo "SKIPPED: $PRINCIPALS_COMMAND not executable " \
+	skip "$PRINCIPALS_COMMAND not executable " \
 	    "(/var/run mounted noexec?)"
 fi

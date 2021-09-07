@@ -1,9 +1,9 @@
-#	$OpenBSD: putty-ciphers.sh,v 1.7 2020/01/23 03:35:07 dtucker Exp $
+#	$OpenBSD: putty-ciphers.sh,v 1.11 2021/09/01 03:16:06 dtucker Exp $
 #	Placed in the Public Domain.
 
 tid="putty ciphers"
 
-$REGRESS_INTEROP_PUTTY || { echo "putty interop tests are not enabled" >&1;  exit 1; }
+$REGRESS_INTEROP_PUTTY || { RESUILT=1; skip "putty interop tests are not enabled"; }
 
 for c in aes 3des aes128-ctr aes192-ctr aes256-ctr chacha20 ; do
 	verbose "$tid: cipher $c"

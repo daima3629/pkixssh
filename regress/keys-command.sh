@@ -1,12 +1,10 @@
-#	$OpenBSD: keys-command.sh,v 1.6 2019/07/25 08:48:11 dtucker Exp $
+#	$OpenBSD: keys-command.sh,v 1.7 2021/09/01 00:50:27 dtucker Exp $
 #	Placed in the Public Domain.
 
 tid="authorized keys from command"
 
 if [ -z "$SUDO" -a ! -w /var/run ]; then
-	echo "skipped (SUDO not set)"
-	echo "need SUDO to create file in /var/run, test won't work without"
-	exit 0
+	skip "need SUDO to create file in /var/run, test won't work without"
 fi
 
 rm -f $OBJ/keys-command-args
@@ -38,9 +36,8 @@ _EOF
 $SUDO chmod 0755 "$KEY_COMMAND"
 
 if ! $OBJ/check-perm -m keys-command $KEY_COMMAND ; then
-	echo "skipping: $KEY_COMMAND is unsuitable as AuthorizedKeysCommand"
 	$SUDO rm -f $KEY_COMMAND
-	exit 0
+	skip "$KEY_COMMAND is unsuitable as AuthorizedKeysCommand"
 fi
 
 if [ -x $KEY_COMMAND ]; then
@@ -77,5 +74,5 @@ if [ -x $KEY_COMMAND ]; then
 		fail "connect failed"
 	fi
 else
-	echo "SKIPPED: $KEY_COMMAND not executable (/var/run mounted noexec?)"
+	skip "$KEY_COMMAND not executable (/var/run mounted noexec?)"
 fi

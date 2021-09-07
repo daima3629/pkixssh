@@ -8,8 +8,7 @@ tid="connection multiplexing"
 
 trace "will use ProxyCommand $proxycmd"
 if config_defined DISABLE_FD_PASSING ; then
-	echo "skipped (not supported on this platform)"
-	exit 0
+	skip "not supported on this platform"
 fi
 
 P=${TEST_MULTIPLEX_PORT-3301}

@@ -6,34 +6,29 @@ tid="disallow agent ptrace attach"
 if have_prog uname ; then
 	case `uname` in
 	AIX|CYGWIN*|OSF1)
-		echo "skipped (not supported on this platform)"
-		exit 0
+		skip "not supported on this platform"
 		;;
 	esac
 fi
 
 if [ "x$USER" = "xroot" ]; then
-	echo "Skipped: running as root"
-	exit 0
+	skip "running as root"
 fi
 
 if have_prog gdb ; then
 	: ok
 else
-	echo "skipped (gdb not found)"
-	exit 0
+	skip "gdb not found"
 fi
 
 if $OBJ/setuid-allowed ${SSHAGENT} ; then
 	: ok
 else
-	echo "skipped (${SSHAGENT} is mounted on a no-setuid filesystem)"
-	exit 0
+	skip "$SSHAGENT is mounted on a no-setuid filesystem"
 fi
 
 if test -z "$SUDO" ; then
-	echo "skipped (SUDO not set)"
-	exit 0
+	skip "SUDO not set"
 else
 	$SUDO chown 0 ${SSHAGENT}
 	$SUDO chgrp 0 ${SSHAGENT}
