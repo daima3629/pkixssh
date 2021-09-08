@@ -1,4 +1,4 @@
-/* $OpenBSD: sftp-client.c,v 1.154 2021/08/09 23:47:44 djm Exp $ */
+/* $OpenBSD: sftp-client.c,v 1.155 2021/09/03 05:12:25 dtucker Exp $ */
 /*
  * Copyright (c) 2001-2004 Damien Miller <djm@openbsd.org>
  * Copyright (c) 2018-2021 Roumen Petrov.  All rights reserved.
@@ -2063,7 +2063,6 @@ upload_dir_internal(struct sftp_conn *conn, const char *src, const char *dst,
 	if (print_flag)
 		mprintf("Entering %s\n", src);
 
-	attrib_clear(&a);
 	stat_to_attrib(&sb, &a);
 	a.flags &= ~SSH2_FILEXFER_ATTR_SIZE;
 	a.flags &= ~SSH2_FILEXFER_ATTR_UIDGID;
