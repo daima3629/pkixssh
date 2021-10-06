@@ -474,6 +474,7 @@ AC_CHECK_HEADERS([ \
 	sys/ndir.h \
 	sys/poll.h \
 	sys/prctl.h \
+	sys/procctl.h \
 	sys/pstat.h \
 	sys/ptrace.h \
 	sys/random.h \
@@ -1976,6 +1977,7 @@ AC_CHECK_FUNCS([ \
 	pledge \
 	poll \
 	prctl \
+	procctl \
 	pselect \
 	pstat \
 	raise \
