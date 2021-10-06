@@ -17,6 +17,7 @@ sshcadir=@sshcadir@
 piddir=@piddir@
 srcdir=@srcdir@
 abs_srcdir=@abs_srcdir@
+abs_builddir=@abs_builddir@
 
 DESTDIR=
 VPATH=@srcdir@
@@ -24,6 +25,7 @@ PRIVSEP_PATH=@PRIVSEP_PATH@
 SSH_PRIVSEP_USER=@SSH_PRIVSEP_USER@
 STRIP_OPT=@STRIP_OPT@
 TEST_SHELL=@TEST_SHELL@
+BUILDDIR=@abs_builddir@
 
 PATHS= -DSSHDIR=\"$(sysconfdir)\" \
 	-DSSHCADIR=\"$(sshcadir)\" \
@@ -474,19 +476,19 @@ uninstall:
 	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)8/ssh-pkcs11-helper.8
 
 regress-prep:
-	$(MKDIR_P) `pwd`/regress/unittests/test_helper
-	$(MKDIR_P) `pwd`/regress/unittests/authopt
-	$(MKDIR_P) `pwd`/regress/unittests/bitmap
-	$(MKDIR_P) `pwd`/regress/unittests/conversion
-	$(MKDIR_P) `pwd`/regress/unittests/hostkeys
-	$(MKDIR_P) `pwd`/regress/unittests/kex
-	$(MKDIR_P) `pwd`/regress/unittests/match
-	$(MKDIR_P) `pwd`/regress/unittests/misc
-	$(MKDIR_P) `pwd`/regress/unittests/sshbuf
-	$(MKDIR_P) `pwd`/regress/unittests/sshkey
-	$(MKDIR_P) `pwd`/regress/unittests/utf8
-	[ -f `pwd`/regress/Makefile ] || \
-	    ln -s `cd $(srcdir) && pwd`/regress/Makefile `pwd`/regress/Makefile
+	$(MKDIR_P) regress/unittests/test_helper
+	$(MKDIR_P) regress/unittests/authopt
+	$(MKDIR_P) regress/unittests/bitmap
+	$(MKDIR_P) regress/unittests/conversion
+	$(MKDIR_P) regress/unittests/hostkeys
+	$(MKDIR_P) regress/unittests/kex
+	$(MKDIR_P) regress/unittests/match
+	$(MKDIR_P) regress/unittests/misc
+	$(MKDIR_P) regress/unittests/sshbuf
+	$(MKDIR_P) regress/unittests/sshkey
+	$(MKDIR_P) regress/unittests/utf8
+	test -f regress/Makefile || \
+	    ln -s $(abs_srcdir)/regress/Makefile regress/Makefile
 
 
 REGRESSLIBS = $(LIBCOMPAT) libssh.a
@@ -660,25 +662,24 @@ check:
 tests: check
 
 check-core unit file-tests t-exec f-exec interop-tests: regress-binaries $(TARGETS)
-	BUILDDIR=`pwd`; \
-	TEST_SSH_SCP="$${TEST_SSH_SCP-$${BUILDDIR}/scp}"; \
-	TEST_SSH_SSH="$${TEST_SSH_SSH-$${BUILDDIR}/ssh}"; \
-	TEST_SSH_SSHD="$${TEST_SSH_SSHD-$${BUILDDIR}/sshd}"; \
-	TEST_SSH_SSHAGENT="$${TEST_SSH_SSHAGENT-$${BUILDDIR}/ssh-agent}"; \
-	TEST_SSH_SSHADD="$${TEST_SSH_SSHADD-$${BUILDDIR}/ssh-add}"; \
-	TEST_SSH_SSHKEYGEN="$${TEST_SSH_SSHKEYGEN-$${BUILDDIR}/ssh-keygen}"; \
-	TEST_SSH_SSHPKCS11HELPER="$${TEST_SSH_SSHPKCS11HELPER-$${BUILDDIR}/ssh-pkcs11-helper}"; \
-	TEST_SSH_SSHKEYSCAN="$${TEST_SSH_SSHKEYSCAN-$${BUILDDIR}/ssh-keyscan}"; \
-	TEST_SSH_SFTP="$${TEST_SSH_SFTP-$${BUILDDIR}/sftp}"; \
-	TEST_SSH_SFTPSERVER="$${TEST_SSH_SFTPSERVER-$${BUILDDIR}/sftp-server}"; \
+	TEST_SSH_SCP="$${TEST_SSH_SCP-$(BUILDDIR)/scp}"; \
+	TEST_SSH_SSH="$${TEST_SSH_SSH-$(BUILDDIR)/ssh}"; \
+	TEST_SSH_SSHD="$${TEST_SSH_SSHD-$(BUILDDIR)/sshd}"; \
+	TEST_SSH_SSHAGENT="$${TEST_SSH_SSHAGENT-$(BUILDDIR)/ssh-agent}"; \
+	TEST_SSH_SSHADD="$${TEST_SSH_SSHADD-$(BUILDDIR)/ssh-add}"; \
+	TEST_SSH_SSHKEYGEN="$${TEST_SSH_SSHKEYGEN-$(BUILDDIR)/ssh-keygen}"; \
+	TEST_SSH_SSHPKCS11HELPER="$${TEST_SSH_SSHPKCS11HELPER-$(BUILDDIR)/ssh-pkcs11-helper}"; \
+	TEST_SSH_SSHKEYSCAN="$${TEST_SSH_SSHKEYSCAN-$(BUILDDIR)/ssh-keyscan}"; \
+	TEST_SSH_SFTP="$${TEST_SSH_SFTP-$(BUILDDIR)/sftp}"; \
+	TEST_SSH_SFTPSERVER="$${TEST_SSH_SFTPSERVER-$(BUILDDIR)/sftp-server}"; \
 	TEST_SSH_MODULI_FILE="$(abs_srcdir)/moduli"; \
 	cd $(srcdir)/regress || exit $$?; \
 	$(MAKE) \
-		.OBJDIR="$${BUILDDIR}/regress" \
-		.CURDIR="`pwd`" \
-		BUILDDIR="$${BUILDDIR}" \
-		OBJ="$${BUILDDIR}/regress/" \
-		PATH="$${BUILDDIR}:$${PATH}" \
+		.CURDIR="$(abs_srcdir)/regress" \
+		.OBJDIR="$(BUILDDIR)/regress" \
+		BUILDDIR="$(BUILDDIR)" \
+		OBJ="$(BUILDDIR)/regress" \
+		PATH="$(BUILDDIR):$${PATH}" \
 		TEST_ENV=MALLOC_OPTIONS="@TEST_MALLOC_OPTIONS@" \
 		TEST_MALLOC_OPTIONS="@TEST_MALLOC_OPTIONS@" \
 		TEST_SSH_SCP="$${TEST_SSH_SCP}" \
@@ -696,15 +697,14 @@ check-core unit file-tests t-exec f-exec interop-tests: regress-binaries $(TARGE
 		$@ && echo 'regress test "$@" pass'
 
 CHECKCERTSENV = \
-	TEST_SSH_SSH="$${TEST_SSH_SSH-$$BUILDDIR/ssh}" \
-	TEST_SSH_SSHD="$${TEST_SSH_SSHD-$$BUILDDIR/sshd}" \
-	TEST_SSH_SSHAGENT="$${TEST_SSH_SSHAGENT-$$BUILDDIR/ssh-agent}" \
-	TEST_SSH_SSHADD="$${TEST_SSH_SSHADD-$$BUILDDIR/ssh-add}" \
-	TEST_SSH_SSHKEYGEN="$${TEST_SSH_SSHKEYGEN-$$BUILDDIR/ssh-keygen}"
+	TEST_SSH_SSH="$${TEST_SSH_SSH-$(BUILDDIR)/ssh}" \
+	TEST_SSH_SSHD="$${TEST_SSH_SSHD-$(BUILDDIR)/sshd}" \
+	TEST_SSH_SSHAGENT="$${TEST_SSH_SSHAGENT-$(BUILDDIR)/ssh-agent}" \
+	TEST_SSH_SSHADD="$${TEST_SSH_SSHADD-$(BUILDDIR)/ssh-add}" \
+	TEST_SSH_SSHKEYGEN="$${TEST_SSH_SSHKEYGEN-$(BUILDDIR)/ssh-keygen}"
 
 check-certs: $(TARGETS)
 	@if test skip = "$$SSH_X509TESTS"; then echo 'skip X.509 certificate tests'; else \
-	BUILDDIR="`pwd`"; \
 	$(CHECKCERTSENV); \
 	cd tests/CA || exit $$?; \
 	$(MAKE) \
@@ -717,7 +717,7 @@ compat-tests: $(LIBCOMPAT)
 
 regressclean:
 	if [ -f regress/Makefile ] && [ -r regress/Makefile ]; then \
-		(cd regress && $(MAKE) clean TEST_SHELL="${TEST_SHELL}" ) \
+		(cd regress && $(MAKE) clean TEST_SHELL="$(TEST_SHELL)" ) \
 	fi
 	(cd tests/CA && $(MAKE) clean)
 
