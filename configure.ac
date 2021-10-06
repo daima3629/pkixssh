@@ -3134,8 +3134,6 @@ if test "x$openssl" = "xyes" ; then
 		AC_MSG_RESULT([no])
 	)
 
-	TEST_SSH_ECC=no
-
 	if test x$enable_nistp256 = x1 || test x$enable_nistp384 = x1 || \
 	    test x$enable_nistp521 = x1; then
 		AC_DEFINE(OPENSSL_HAS_ECC, [1], [OpenSSL has ECC])
@@ -3143,7 +3141,6 @@ if test "x$openssl" = "xyes" ; then
 	if test x$enable_nistp256 = x1; then
 		AC_DEFINE([OPENSSL_HAS_NISTP256], [1],
 		    [libcrypto has NID_X9_62_prime256v1])
-		TEST_SSH_ECC=yes
 		COMMENT_OUT_ECC=
 		COMMENT_OUT_ECC256=
 	else
@@ -3154,7 +3151,6 @@ if test "x$openssl" = "xyes" ; then
 	fi
 	if test x$enable_nistp384 = x1; then
 		AC_DEFINE([OPENSSL_HAS_NISTP384], [1], [libcrypto has NID_secp384r1])
-		TEST_SSH_ECC=yes
 		COMMENT_OUT_ECC=
 		COMMENT_OUT_ECC384=
 	else
@@ -3165,7 +3161,6 @@ if test "x$openssl" = "xyes" ; then
 	fi
 	if test x$enable_nistp521 = x1; then
 		AC_DEFINE([OPENSSL_HAS_NISTP521], [1], [libcrypto has NID_secp521r1])
-		TEST_SSH_ECC=yes
 		COMMENT_OUT_ECC=
 		COMMENT_OUT_ECC521=
 	else
@@ -3196,8 +3191,6 @@ if test "x$openssl" = "xyes" ; then
 			AC_MSG_RESULT([no])
 		]
 	)
-
-	AC_SUBST([TEST_SSH_ECC])
 else
 	AC_CHECK_LIB([crypt], [crypt], [LIBS="$LIBS -lcrypt"])
 	AC_CHECK_FUNCS([crypt])
