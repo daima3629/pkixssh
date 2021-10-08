@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh.c,v 1.568 2021/09/15 06:56:01 djm Exp $ */
+/* $OpenBSD: ssh.c,v 1.569 2021/09/20 04:02:13 dtucker Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -1873,13 +1873,14 @@ ssh_confirm_remote_forward(struct ssh *ssh, int type, u_int32_t seq, void *ctxt)
 
 	UNUSED(seq);
 	/* XXX verbose() on failure? */
+{	const char *connect_path = rfwd->connect_path != NULL
+	    ? rfwd->connect_path : rfwd->connect_host;
 	debug("remote forward %s for: listen %s%s%d, connect %s:%d",
 	    type == SSH2_MSG_REQUEST_SUCCESS ? "success" : "failure",
 	    rfwd->listen_path ? rfwd->listen_path :
 	    rfwd->listen_host ? rfwd->listen_host : "",
 	    (rfwd->listen_path || rfwd->listen_host) ? ":" : "",
-	    rfwd->listen_port, rfwd->connect_path ? rfwd->connect_path :
-	    rfwd->connect_host, rfwd->connect_port);
+	    rfwd->listen_port, connect_path, rfwd->connect_port);
 	if (rfwd->listen_path == NULL && rfwd->listen_port == 0) {
 		if (type == SSH2_MSG_REQUEST_SUCCESS) {
 			u_int32_t port;
@@ -1888,7 +1889,7 @@ ssh_confirm_remote_forward(struct ssh *ssh, int type, u_int32_t seq, void *ctxt)
 			if (port > 65535) {
 				error("Invalid allocated port %u for remote "
 				    "forward to %s:%d", (unsigned)port,
-				    rfwd->connect_host, rfwd->connect_port);
+				    connect_path, rfwd->connect_port);
 				/* Ensure failure processing runs below */
 				type = SSH2_MSG_REQUEST_FAILURE;
 				channel_update_permission(ssh,
@@ -1897,7 +1898,7 @@ ssh_confirm_remote_forward(struct ssh *ssh, int type, u_int32_t seq, void *ctxt)
 				rfwd->allocated_port = (int)port;
 				logit("Allocated port %u for remote "
 				    "forward to %s:%d",
-				    rfwd->allocated_port, rfwd->connect_host,
+				    rfwd->allocated_port, connect_path,
 				    rfwd->connect_port);
 				channel_update_permission(ssh,
 				    rfwd->handle, rfwd->allocated_port);
@@ -1906,6 +1907,7 @@ ssh_confirm_remote_forward(struct ssh *ssh, int type, u_int32_t seq, void *ctxt)
 			channel_update_permission(ssh, rfwd->handle, -1);
 		}
 	}
+}
 
 	if (type == SSH2_MSG_REQUEST_FAILURE) {
 		if (options.exit_on_forward_failure) {
