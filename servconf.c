@@ -2010,10 +2010,21 @@ parse_string:
 
 	case sLogVerbose:
 		found = options->num_log_verbose > 0;
+		i = 0;
 		while ((arg = argv_next(&ac, &av)) != NULL) {
 			if (*arg == '\0')
 				fatal("%s line %d: empty %s pattern",
 				    filename, linenum, keyword);
+			/* Allow "none" only in first position */
+			if (strcasecmp(arg, "none") == 0) {
+				if (i > 0 || ac > 0) {
+					error("%s line %d: keyword %s \"none\" "
+					    "argument must appear alone.",
+					    filename, linenum, keyword);
+					goto out;
+				}
+			}
+			i++;
 			if (!*activep || found)
 				continue;
 			opt_array_append(filename, linenum, keyword,

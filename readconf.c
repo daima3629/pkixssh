@@ -1424,12 +1424,23 @@ parse_string:
 		max_entries = SSH_MAX_HOSTS_FILES;
 parse_char_array:
 		found = *uintptr > 0;
+		i = 0;
 		while ((arg = argv_next(&ac, &av)) != NULL) {
 			if (*arg == '\0') {
 				error("%s line %d: keyword %s empty argument",
 				    filename, linenum, keyword);
 				goto out;
 			}
+			/* Allow "none" only in first position */
+			if (strcasecmp(arg, "none") == 0) {
+				if (i > 0 || ac > 0) {
+					error("%s line %d: keyword %s \"none\" "
+					    "argument must appear alone.",
+					    filename, linenum, keyword);
+					goto out;
+				}
+			}
+			i++;
 			if (*activep && !found) {
 				if ((*uintptr) >= max_entries) {
 					error("%s line %d: too many %s "
@@ -1642,12 +1653,23 @@ parse_key_algorithms:
 		cppptr = &options->log_verbose;
 		uintptr = &options->num_log_verbose;
 		found = *uintptr > 0;
+		i = 0;
 		while ((arg = argv_next(&ac, &av)) != NULL) {
 			if (*arg == '\0') {
 				error("%s line %d: keyword %s empty argument",
 				    filename, linenum, keyword);
 				goto out;
 			}
+			/* Allow "none" only in first position */
+			if (strcasecmp(arg, "none") == 0) {
+				if (i > 0 || ac > 0) {
+					error("%s line %d: keyword %s \"none\" "
+					    "argument must appear alone.",
+					    filename, linenum, keyword);
+					goto out;
+				}
+			}
+			i++;
 			if (*activep && !found) {
 				*cppptr = xrecallocarray(*cppptr, *uintptr,
 				    *uintptr + 1, sizeof(**cppptr));
@@ -2127,12 +2149,23 @@ parse_key_algorithms:
 
 	case oCanonicalDomains:
 		found = options->num_canonical_domains > 0;
+		i = 0;
 		while ((arg = argv_next(&ac, &av)) != NULL) {
 			if (*arg == '\0') {
 				error("%s line %d: keyword %s empty argument",
 				    filename, linenum, keyword);
 				goto out;
 			}
+			/* Allow "none" only in first position */
+			if (strcasecmp(arg, "none") == 0) {
+				if (i > 0 || ac > 0) {
+					error("%s line %d: keyword %s \"none\" "
+					    "argument must appear alone.",
+					    filename, linenum, keyword);
+					goto out;
+				}
+			}
+			i++;
 			if (!valid_domain(arg, 1, &errstr)) {
 				error("%s line %d: %s", filename, linenum,
 				    errstr);
