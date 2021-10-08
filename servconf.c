@@ -1170,9 +1170,10 @@ match_cfg_line(char **condition, int line, struct connection_info *ci)
 
 	while ((attrib = strdelim(&cp)) && *attrib != '\0') {
 		attributes++;
+		/* Criterion "all" has no argument and must appear alone */
 		if (strcasecmp(attrib, "all") == 0) {
-			if (attributes != 1 ||
-			    ((arg = strdelim(&cp)) != NULL && *arg != '\0')) {
+			if (attributes > 1 || ((arg = strdelim(&cp)) != NULL &&
+			    *arg != '\0')) {
 				error("'all' cannot be combined with other "
 				    "Match attributes");
 				return -1;
@@ -1180,7 +1181,9 @@ match_cfg_line(char **condition, int line, struct connection_info *ci)
 			*condition = cp;
 			return 1;
 		}
-		if ((arg = strdelim(&cp)) == NULL || *arg == '\0') {
+		/* All other criteria require an argument */
+		if ((arg = strdelim(&cp)) == NULL ||
+		    *arg == '\0') {
 			error("Missing Match criteria for %s", attrib);
 			return -1;
 		}
@@ -2447,10 +2450,14 @@ parse_string:
 			fatal("%s line %d: Bad Match condition", filename,
 			    linenum);
 		*activep = (*inc_flags & SSHCFG_NEVERMATCH) ? 0 : value;
-		/* The MATCH_ONLY is applicable only until the first match block */
+		/*
+		 * The MATCH_ONLY flag is applicable only until the first
+		 * match block.
+		 */
 		*inc_flags &= ~SSHCFG_MATCH_ONLY;
-		/* if match_cfg_line() didn't consume all its arguments then
-		 * arrange for the extra arguments check below to fail
+		/*
+		 * If match_cfg_line() didn't consume all its arguments then
+		 * arrange for the extra arguments check below to fail.
 		 */
 		if (str == NULL || *str == '\0')
 			argv_consume(&ac);
@@ -2762,8 +2769,10 @@ load_server_config(const char *filename, struct sshbuf *conf)
 	if ((r = sshbuf_allocate_fd(fileno(f), conf)) != 0)
 		fatal_fr(r, "allocate");
 	while (getline(&line, &linesize, f) != -1) {
-		/* strip whitespace, preserve newlines, they are needed
-		 * to reproduce line numbers later for error messages
+		/*
+		 * Strip whitespace
+		 * NB - preserve newlines, they are needed to reproduce
+		 * line numbers later for error messages
 		 */
 		char *cp = line + strspn(line, " \t\r");
 		lineno++;

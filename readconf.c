@@ -655,10 +655,10 @@ match_cfg_line(Options *options, char **condition, struct passwd *pw,
 		this_result = 1;
 		if ((negate = attrib[0] == '!'))
 			attrib++;
-		/* criteria "all" and "canonical" have no argument */
+		/* Criterion "all" has no argument and must appear alone */
 		if (strcasecmp(attrib, "all") == 0) {
-			if (attributes > 1 ||
-			    ((arg = strdelim(&cp)) != NULL && *arg != '\0')) {
+			if (attributes > 1 || ((arg = strdelim(&cp)) != NULL &&
+			    *arg != '\0')) {
 				error("%.200s line %d: '%s' cannot be combined "
 				    "with other Match attributes",
 				    filename, linenum, oattrib);
@@ -670,6 +670,7 @@ match_cfg_line(Options *options, char **condition, struct passwd *pw,
 			goto out;
 		}
 		attributes++;
+		/* Criteria "final" and "canonical" have no argument */
 		if (strcasecmp(attrib, "canonical") == 0 ||
 		    strcasecmp(attrib, "final") == 0) {
 			/*
@@ -688,7 +689,8 @@ match_cfg_line(Options *options, char **condition, struct passwd *pw,
 			continue;
 		}
 		/* All other criteria require an argument */
-		if ((arg = strdelim(&cp)) == NULL || *arg == '\0') {
+		if ((arg = strdelim(&cp)) == NULL ||
+		    *arg == '\0') {
 			error("Missing Match criteria for %s", attrib);
 			result = -1;
 			goto out;
@@ -1845,8 +1847,9 @@ parse_key_algorithms:
 			goto out;
 		}
 		*activep = (flags & SSHCONF_NEVERMATCH) ? 0 : value;
-		/* if match_cfg_line() didn't consume all its arguments then
-		 * arrange for the extra arguments check below to fail
+		/*
+		 * If match_cfg_line() didn't consume all its arguments then
+		 * arrange for the extra arguments check below to fail.
 		 */
 		if (str == NULL || *str == '\0')
 			argv_consume(&ac);
@@ -3113,7 +3116,10 @@ parse_forward(struct Forward *fwd, const char *fwdspec, int dynamicfwd, int remo
 	if (fwd->connect_host != NULL &&
 	    strlen(fwd->connect_host) >= NI_MAXHOST)
 		goto fail_free;
-	/* XXX - if connecting to a remote socket, max sun len may not match this host */
+	/*
+	 * XXX - if connecting to a remote socket, max sun len may not
+	 * match this host
+	 */
 	if (fwd->connect_path != NULL &&
 	    strlen(fwd->connect_path) >= PATH_MAX_SUN)
 		goto fail_free;
