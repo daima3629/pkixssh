@@ -315,6 +315,10 @@ private EC or RSA key and X.509 certificate.
 .It Fl i Ar identity_file
 Selects a file from which the identity (private key) for
 public key authentication is read.
+You can also specify a public key file to use the corresponding
+private key that is loaded in
+.Xr ssh-agent 1
+when the private key file is not present locally.
 The default is
 .Pa ~/.ssh/id_rsa ,
 .Pa ~/.ssh/id_ecdsa ,

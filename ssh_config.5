@@ -1085,6 +1085,10 @@ Additionally, any identities represented by the authentication agent
 will be used for authentication unless
 .Cm IdentitiesOnly
 is set.
+You can also specify a public key file to use the corresponding
+private key that is loaded in authentication agent
+when the private key file is not present locally.
+.Pp
 If no OpenSSH custom certificates have been explicitly specified by
 .Cm CertificateFile ,
 .Xr ssh 1
