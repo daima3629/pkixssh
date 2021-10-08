@@ -3,6 +3,7 @@
 
 tid="dynamic forwarding"
 
+pidfile=$OBJ/remote_pid
 FWDPORT=`expr $PORT + 1`
 
 if have_prog nc && nc -h 2>&1 | grep "proxy address" >/dev/null; then
@@ -21,11 +22,12 @@ for d in D R; do
 	error="1"
 	trace "start dynamic forwarding, fork to background"
 
+	rm -f $pidfile
 	while [ "$error" -ne 0 -a "$n" -lt 3 ]; do
 		n=`expr $n + 1`
 		${SSH} -F $OBJ/ssh_config -f -$d $FWDPORT -q \
 		    -oExitOnForwardFailure=yes somehost exec sh -c \
-			\'"echo \$\$ > $OBJ/remote_pid; exec sleep 444"\'
+			\'"echo \$\$ > $pidfile; exec sleep 444"\'
 		error=$?
 		if [ "$error" -ne 0 ]; then
 			trace "forward failed attempt $n err $error"
@@ -47,14 +49,14 @@ for d in D R; do
 	    done
 	done
 
-	if [ -f $OBJ/remote_pid ]; then
-		remote=`cat $OBJ/remote_pid`
+	if test -f $pidfile ; then
+		remote=`cat $pidfile`
 		trace "terminate remote shell, pid $remote"
 		if [ $remote -gt 1 ]; then
 			kill -HUP $remote
 		fi
 	else
-		fail "no pid file: $OBJ/remote_pid"
+		fail "no pid file: $pidfile"
 	fi
 
 done
