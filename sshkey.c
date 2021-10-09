@@ -2362,7 +2362,7 @@ sshkey_from_blob_internal(struct sshbuf *b, struct sshkey **keyp,
 	}
 
 	type = sshkey_type_from_name(ktype);
-	debug3_f("ktype=%.30s", ktype);
+	debug3_f("ktype=%.100s", ktype);
 	if (!allow_cert && sshkey_type_is_cert(type)) {
 		ret = SSH_ERR_KEY_CERT_INVALID_SIGN_KEY;
 		goto out;

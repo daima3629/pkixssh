@@ -1301,7 +1301,7 @@ x509key_parse_cert(struct sshkey *key, BIO *bio) {
 
 	(void)x509key_load_certs_bio(key, bio);
 
-	debug3("read X.509 certificate done: type %.40s", sshkey_type(key));
+	debug3("read X.509 certificate done: type %s", sshkey_type(key));
 	return;
 }
 
