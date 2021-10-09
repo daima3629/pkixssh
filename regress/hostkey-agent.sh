@@ -53,6 +53,47 @@ for k in $PLAIN_TYPES ; do
 done
 done
 
+SSH_CERTTYPES=`ssh -Q key | grep 'cert-v01@openssh.com'`
+SSH_CERTTYPES=`echo "$SSH_CERTTYPES" | sed 's/ssh-xmss-cert-v01@openssh.com//'` # TODO
+
+# Prepare sshd_proxy for certificates.
+cp $OBJ/sshd_proxy.orig $OBJ/sshd_proxy
+HOSTKEYALGS=""
+for k in $SSH_CERTTYPES ; do
+	if test -z "$HOSTKEYALGS" ; then
+		HOSTKEYALGS="$k"
+	else
+		HOSTKEYALGS="$HOSTKEYALGS,$k"
+	fi
+done
+for k in $PLAIN_TYPES ; do
+	echo "Hostkey $OBJ/agent-key.${k}" >> $OBJ/sshd_proxy
+	echo "HostCertificate $OBJ/agent-key.${k}-cert.pub" >> $OBJ/sshd_proxy
+	test -f $OBJ/agent-key.${k}.pub || fatal "no $k key"
+	test -f $OBJ/agent-key.${k}-cert.pub || fatal "no $k cert"
+done
+echo "HostKeyAlgorithms $HOSTKEYALGS" >> $OBJ/sshd_proxy
+cp $OBJ/sshd_proxy $OBJ/sshd_proxy.orig
+
+# Add only CA trust anchor to known_hosts.
+( printf '@cert-authority localhost-with-alias ' ;
+  cat $OBJ/agent-ca.pub) > $OBJ/known_hosts
+
+for ps in $SSHD_PRIVSEP ; do
+for k in $SSH_CERTTYPES ; do
+	verbose "cert type $k privsep=$ps"
+	cp $OBJ/sshd_proxy.orig $OBJ/sshd_proxy
+	echo "UsePrivilegeSeparation $ps" >> $OBJ/sshd_proxy
+	opts="-oHostKeyAlgorithms=$k -F $OBJ/ssh_proxy"
+	SSH_CONNECTION=`${SSH} $opts host 'echo $SSH_CONNECTION'`
+	if test $? -ne 0 ; then
+		fail "cert type $k privsep=$ps failed"
+	fi
+	if test "$SSH_CONNECTION" != "UNKNOWN 65535 UNKNOWN 65535" ; then
+		fail "bad SSH_CONNECTION key type $k privsep=$ps"
+	fi
+done
+done
+
 trace "kill agent"
 ${SSHAGENT} -k > /dev/null
-

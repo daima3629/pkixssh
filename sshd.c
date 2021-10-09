@@ -2532,8 +2532,18 @@ Xsshd_hostkey_sign(
 			if (r != 0)
 				fatal_fr(r, "Xkey_sign failed");
 		} else {
-			ssh_sign_ctx a_ctx = { ctx->alg, pubkey, ctx->compat,
+			ssh_sign_ctx a_ctx = { ctx->alg, NULL, ctx->compat,
 			    ctx->provider, ctx->pin };
+			/* mimic logic in priviledged mode */
+			if (sshkey_is_cert(pubkey)) {
+				int nxd = get_hostkey_index(pubkey, 0, ssh);
+				if (nxd < 0)
+					fatal_f("missing custom certificate");
+				pubkey = get_hostkey_public_by_index(nxd, ssh);
+				if (pubkey == NULL)
+					fatal_f("missing public key");
+			}
+			a_ctx.key = pubkey;
 			r = Xssh_agent_sign(auth_sock, &a_ctx, signature, slenp,
 			    data, dlen);
 			if (r != 0)
