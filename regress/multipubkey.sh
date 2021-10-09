@@ -75,4 +75,3 @@ for match in no yes ; do
 	${SSH} $opts proxy true || fail "ssh failed with key/cert"
 done
 done
-
