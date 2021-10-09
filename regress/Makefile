@@ -112,7 +112,7 @@ EXTRA_TESTS=	agent-pkcs11
 CLEAN_KEYGEN_CONVERT=	*-key *-key.only-pub *-key-nocomment.pub \
 		*-key-rfc *-key-rfc.pub *-rfc-imported \
 		*-key-pk8 *-key-pk8.pub *-pk8-imported
-CLEANFILES=	*.core actual agent-key.* authkeys_orig \
+CLEANFILES=	*.core actual agent-ca agent-key.* authkeys_orig \
 		$(CLEAN_KEYGEN_CONVERT) \
 		authorized_keys_* \
 		authorized_principals_* \
@@ -129,7 +129,7 @@ CLEANFILES=	*.core actual agent-key.* authkeys_orig \
 		host.ssh-rsa host_ca_key* host_krl_* host_revoked_* key.* \
 		key.dsa-* key.ecdsa-* key.ed25519-512 \
 		key.ed25519-512.pub key.rsa-* keys-command-args kh.* askpass \
-		known_hosts known_hosts-cert known_hosts.* knownhosts_command \
+		known_hosts known_hosts-cert knownhosts_command \
 		krl-* ls.copy no_identity_config \
 		pidfile putty.rsa2 ready regress.log remote_pid \
 		revoked-* ssh-rsa-agent* ssh-rsa ssh-rsa.pub ssh-rsa_pem \

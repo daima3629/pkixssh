@@ -1,6 +1,7 @@
 # Synchonized with makefile macro CLEANFILES
 *.core
 actual
+agent-ca
 agent-key.*
 askpass
 authorized_keys_*
@@ -53,7 +54,6 @@ keys-command-args
 kh.*
 known_hosts
 known_hosts-cert
-known_hosts.*
 knownhosts_command
 krl-*
 ls.copy
