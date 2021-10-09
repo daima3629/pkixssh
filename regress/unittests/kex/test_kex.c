@@ -141,22 +141,7 @@ do_kex_with_key(char *kex, int keytype, int bits)
 	ASSERT_INT_EQ(sshbuf_len(state), 0);
 	sshbuf_free(state);
 	ASSERT_PTR_NE(server2->kex, NULL);
-	/* XXX we need to set the callbacks */
-#ifdef WITH_OPENSSL
-	server2->kex->kex[KEX_DH_GRP1_SHA1] = kex_gen_server;
-	server2->kex->kex[KEX_DH_GRP14_SHA1] = kex_gen_server;
-	server2->kex->kex[KEX_DH_GEX_SHA1] = kexgex_server;
-#ifdef HAVE_EVP_SHA256
-	server2->kex->kex[KEX_DH_GEX_SHA256] = kexgex_server;
-#endif /*def HAVE_EVP_SHA256*/
-#ifdef OPENSSL_HAS_ECC
-	server2->kex->kex[KEX_ECDH_SHA2] = kex_gen_server;
-#endif /* OPENSSL_HAS_ECC */
-#endif /* WITH_OPENSSL */
-#ifdef HAVE_EVP_SHA256
-	server2->kex->kex[KEX_C25519_SHA256] = kex_gen_server;
-	server2->kex->kex[KEX_KEM_SNTRUP761X25519_SHA512] = kex_gen_server;
-#endif /*def HAVE_EVP_SHA256*/
+	kex_set_callbacks_server(server2->kex);
 	server2->kex->find_host_public_key = server->kex->find_host_public_key;
 	server2->kex->find_host_private_key = server->kex->find_host_private_key;
 	server2->kex->xsign = server->kex->xsign;

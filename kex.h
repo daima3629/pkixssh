@@ -148,6 +148,8 @@ int	 kex_assemble_names(char **, const char *, const char *);
 int	 kex_exchange_identification(struct ssh *, int);
 
 struct kex *kex_new(void);
+void	 kex_set_callbacks_client(struct kex *);
+void	 kex_set_callbacks_server(struct kex *);
 int	 kex_ready(struct ssh *, char *[PROPOSAL_MAX]);
 int	 kex_setup(struct ssh *, char *[PROPOSAL_MAX]);
 void	 kex_free_newkeys(struct newkeys *);
@@ -169,11 +171,6 @@ int	 kex_start_rekex(struct ssh *);
 int	 kex_load_host_keys(struct ssh *ssh, struct sshkey **hostpub, struct sshkey **hostpriv);
 int	 kex_verify_host_key(struct ssh *ssh, struct sshkey *key);
 
-
-int	 kexgex_client(struct ssh *);
-int	 kexgex_server(struct ssh *);
-int	 kex_gen_client(struct ssh *);
-int	 kex_gen_server(struct ssh *);
 
 int	 kex_dh_keypair(struct kex *);
 int	 kex_dh_enc(struct kex *, const struct sshbuf *, struct sshbuf **,

@@ -123,38 +123,12 @@ ssh_init(struct ssh **sshp, int is_server, struct kex_params *kex_params)
 		return r;
 	}
 	if (is_server) {
-#ifdef WITH_OPENSSL
-		ssh->kex->kex[KEX_DH_GRP1_SHA1] = kex_gen_server;
-		ssh->kex->kex[KEX_DH_GRP14_SHA1] = kex_gen_server;
-		ssh->kex->kex[KEX_DH_GRP14_SHA256] = kex_gen_server;
-		ssh->kex->kex[KEX_DH_GRP16_SHA512] = kex_gen_server;
-		ssh->kex->kex[KEX_DH_GRP18_SHA512] = kex_gen_server;
-		ssh->kex->kex[KEX_DH_GEX_SHA1] = kexgex_server;
-		ssh->kex->kex[KEX_DH_GEX_SHA256] = kexgex_server;
-# ifdef OPENSSL_HAS_ECC
-		ssh->kex->kex[KEX_ECDH_SHA2] = kex_gen_server;
-# endif
-#endif /* WITH_OPENSSL */
-		ssh->kex->kex[KEX_C25519_SHA256] = kex_gen_server;
-		ssh->kex->kex[KEX_KEM_SNTRUP761X25519_SHA512] = kex_gen_server;
+		kex_set_callbacks_server(ssh->kex);
 		ssh->kex->find_host_public_key=&_ssh_host_public_key;
 		ssh->kex->find_host_private_key=&_ssh_host_private_key;
 		ssh->kex->xsign=&_ssh_host_key_sign;
 	} else {
-#ifdef WITH_OPENSSL
-		ssh->kex->kex[KEX_DH_GRP1_SHA1] = kex_gen_client;
-		ssh->kex->kex[KEX_DH_GRP14_SHA1] = kex_gen_client;
-		ssh->kex->kex[KEX_DH_GRP14_SHA256] = kex_gen_client;
-		ssh->kex->kex[KEX_DH_GRP16_SHA512] = kex_gen_client;
-		ssh->kex->kex[KEX_DH_GRP18_SHA512] = kex_gen_client;
-		ssh->kex->kex[KEX_DH_GEX_SHA1] = kexgex_client;
-		ssh->kex->kex[KEX_DH_GEX_SHA256] = kexgex_client;
-# ifdef OPENSSL_HAS_ECC
-		ssh->kex->kex[KEX_ECDH_SHA2] = kex_gen_client;
-# endif
-#endif /* WITH_OPENSSL */
-		ssh->kex->kex[KEX_C25519_SHA256] = kex_gen_client;
-		ssh->kex->kex[KEX_KEM_SNTRUP761X25519_SHA512] = kex_gen_client;
+		kex_set_callbacks_client(ssh->kex);
 		ssh->kex->verify_host_key =&_ssh_verify_host_key;
 	}
 	*sshp = ssh;
