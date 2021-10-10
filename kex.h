@@ -172,6 +172,9 @@ int	 kex_load_host_keys(struct ssh *ssh, struct sshkey **hostpub, struct sshkey 
 int	 kex_verify_host_key(struct ssh *ssh, struct sshkey *key);
 
 
+int	 kexgex_client(struct ssh *);
+int	 kexgex_server(struct ssh *);
+
 int	 kex_dh_keypair(struct kex *);
 int	 kex_dh_enc(struct kex *, const struct sshbuf *, struct sshbuf **,
     struct sshbuf **);

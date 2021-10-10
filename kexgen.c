@@ -368,9 +368,6 @@ out:
 }
 
 
-extern int	 kexgex_client(struct ssh *);
-extern int	 kexgex_server(struct ssh *);
-
 void
 kex_set_callbacks_client(struct kex *kex) {
 #ifdef WITH_OPENSSL
