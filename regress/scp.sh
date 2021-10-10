@@ -1,4 +1,4 @@
-#	$OpenBSD: scp.sh,v 1.11 2019/07/19 03:45:44 djm Exp $
+#	$OpenBSD: scp.sh,v 1.13 2021/08/10 03:35:45 djm Exp $
 #	Placed in the Public Domain.
 
 tid="scp"
@@ -19,7 +19,6 @@ DIR2=${COPY}.dd2
 SRC=`dirname ${SCRIPT}`
 cp ${SRC}/scp-ssh-wrapper.sh ${OBJ}/scp-ssh-wrapper.scp
 chmod 755 ${OBJ}/scp-ssh-wrapper.scp
-scpopts="-q -S ${OBJ}/scp-ssh-wrapper.scp"
 export SCP # used in scp-ssh-wrapper.scp
 
 scpclean() {
@@ -28,9 +27,13 @@ scpclean() {
 	chmod 755 ${DIR} ${DIR2}
 }
 
-# XXX sftp too once it's ready
-for mode in scp ; do
-	tag="$tid"
+for mode in scp sftp ; do
+	tag="$tid: $mode mode"
+	if test $mode = scp ; then
+		scpopts="-O -q -S ${OBJ}/scp-ssh-wrapper.scp"
+	else
+		scpopts="-s -D ${SFTPSERVER}"
+	fi
 	verbose "$tag: simple copy local file to local file"
 	scpclean
 	$SCP $scpopts ${DATA} ${COPY} || fail "copy failed"
