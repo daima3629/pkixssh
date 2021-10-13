@@ -1,4 +1,4 @@
-/* $OpenBSD: hostfile.c,v 1.90 2021/04/03 06:58:30 djm Exp $ */
+/* $OpenBSD: hostfile.c,v 1.92 2021/10/02 03:17:01 dtucker Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -124,7 +124,7 @@ host_hash(const char *host, const char *name_from_hostfile, u_int src_len)
 	struct ssh_hmac_ctx *ctx;
 	u_char salt[256], result[256];
 	char uu_salt[512], uu_result[512];
-	static char encoded[1024];
+	char *encoded = NULL;
 	u_int len;
 
 	len = ssh_digest_bytes(SSH_DIGEST_SHA1);
@@ -150,8 +150,8 @@ host_hash(const char *host, const char *name_from_hostfile, u_int src_len)
 	    __b64_ntop(result, len, uu_result, sizeof(uu_result)) == -1)
 		fatal_f("__b64_ntop failed");
 
-	snprintf(encoded, sizeof(encoded), "%s%s%c%s", HASH_MAGIC, uu_salt,
-	    HASH_DELIM, uu_result);
+	xasprintf(&encoded, "%s%s%c%s", HASH_MAGIC, uu_salt, HASH_DELIM,
+	    uu_result);
 
 	return (encoded);
 }
@@ -473,6 +473,7 @@ write_host_entry(FILE *f, const char *host, const char *ip,
 			return 0;
 		}
 		fprintf(f, "%s ", hashed_host);
+		free(hashed_host);
 	} else if (ip != NULL)
 		fprintf(f, "%s,%s ", lhost, ip);
 	else {
@@ -747,8 +748,8 @@ hostfile_replace_entries(const char *filename, const char *host, const char *ip,
 static int
 match_maybe_hashed(const char *host, const char *names, int *was_hashed)
 {
-	int hashed = *names == HASH_DELIM;
-	const char *hashed_host;
+	int hashed = *names == HASH_DELIM, ret;
+	char *hashed_host;
 	size_t nlen = strlen(names);
 
 	if (was_hashed != NULL)
@@ -756,8 +757,10 @@ match_maybe_hashed(const char *host, const char *names, int *was_hashed)
 	if (hashed) {
 		if ((hashed_host = host_hash(host, names, nlen)) == NULL)
 			return -1;
-		return nlen == strlen(hashed_host) &&
-		    strncmp(hashed_host, names, nlen) == 0;
+		ret = (nlen == strlen(hashed_host) &&
+		    strncmp(hashed_host, names, nlen) == 0);
+		free(hashed_host);
+		return ret;
 	}
 	return match_hostname(host, names) == 1;
 }
