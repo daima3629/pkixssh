@@ -146,3 +146,5 @@ verbose "check rotate primary hostkey"
 dossh -oStrictHostKeyChecking=yes -oHostKeyAlgorithms=${primary}
 expect_nkeys 1 "learn hostkeys"
 check_key_present ${primary} || fail "didn't learn changed key"
+
+rm -f $OBJ/known_hosts.old

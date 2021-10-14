@@ -2,6 +2,7 @@
 *.core
 actual
 agent-ca
+agent-ca.pub
 agent-key.*
 askpass
 authorized_keys_*
@@ -53,6 +54,7 @@ key.rsa-*
 keys-command-args
 kh.*
 known_hosts
+known_hosts.old
 known_hosts-cert
 knownhosts_command
 krl-*

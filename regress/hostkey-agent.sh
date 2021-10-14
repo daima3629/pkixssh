@@ -4,7 +4,7 @@
 tid="hostkey agent"
 PLAIN_TYPES=`echo "$SSH_HOSTKEY_TYPES" | sed 's/ssh-xmss@openssh.com//'` # TODO
 
-rm -f $OBJ/agent-key.* $OBJ/ssh_proxy.orig $OBJ/agent-ca
+rm -f $OBJ/agent-key.* $OBJ/ssh_proxy.orig $OBJ/agent-ca $OBJ/agent-ca.pub
 
 trace "start agent"
 eval `${SSHAGENT} ${EXTRA_AGENT_ARGS} -s` > /dev/null
@@ -97,3 +97,5 @@ done
 
 trace "kill agent"
 ${SSHAGENT} -k > /dev/null
+
+rm $OBJ/agent-ca.pub
