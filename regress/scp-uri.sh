@@ -25,10 +25,11 @@ egrep -v '^	+(Port|User)	+.*$' $OBJ/ssh_config.orig > $OBJ/ssh_config
 
 for mode in $SCP_MODES ; do
 	tag="$tid: $mode mode"
+	scpopts="-q"
 	if test $mode = scp ; then
-		scpopts="-O -q -S ${OBJ}/scp-ssh-wrapper.scp"
+		scpopts="$scpopts -O -S ${OBJ}/scp-ssh-wrapper.scp"
 	else
-		scpopts="-s -D ${SFTPSERVER}"
+		scpopts="$scpopts -s -D ${SFTPSERVER}"
 	fi
 	verbose "$tag: simple copy local file to remote file"
 	scpclean

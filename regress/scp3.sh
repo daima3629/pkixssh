@@ -18,12 +18,12 @@ scpclean() {
 }
 
 for mode in $SCP_MODES ; do
-	scpopts="-F${OBJ}/ssh_proxy -S ${SSH} -q"
 	tag="$tid: $mode mode"
+	scpopts="-q"
 	if test $mode = scp ; then
-		scpopts="$scpopts -O"
+		scpopts="$scpopts -O -S ${SSH} -F${OBJ}/ssh_proxy"
 	else
-		scpopts="-s -D ${SFTPSERVER}"
+		scpopts="$scpopts -s -D ${SFTPSERVER}"
 	fi
 
 	verbose "$tag: simple copy remote file to remote file"
