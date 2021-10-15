@@ -23,7 +23,7 @@ scpclean() {
 cp $OBJ/ssh_config $OBJ/ssh_config.orig
 egrep -v '^	+(Port|User)	+.*$' $OBJ/ssh_config.orig > $OBJ/ssh_config
 
-for mode in scp sftp ; do
+for mode in $SCP_MODES ; do
 	tag="$tid: $mode mode"
 	if test $mode = scp ; then
 		scpopts="-O -q -S ${OBJ}/scp-ssh-wrapper.scp"

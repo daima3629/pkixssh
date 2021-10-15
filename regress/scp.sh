@@ -27,7 +27,7 @@ scpclean() {
 	chmod 755 ${DIR} ${DIR2}
 }
 
-for mode in scp sftp ; do
+for mode in $SCP_MODES ; do
 	tag="$tid: $mode mode"
 	if test $mode = scp ; then
 		scpopts="-O -q -S ${OBJ}/scp-ssh-wrapper.scp"

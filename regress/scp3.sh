@@ -17,7 +17,7 @@ scpclean() {
 	chmod 755 ${DIR} ${DIR2}
 }
 
-for mode in scp sftp ; do
+for mode in $SCP_MODES ; do
 	scpopts="-F${OBJ}/ssh_proxy -S ${SSH} -q"
 	tag="$tid: $mode mode"
 	if test $mode = scp ; then
