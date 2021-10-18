@@ -5,9 +5,9 @@ tid="environment passing"
 
 # NB accepted env vars are in test-exec.sh (_XXX_TEST_* and _XXX_TEST)
 
-# Prepare a custom config to test for a configuration parsing bug fixed in 4.0
+# Prepare a custom config to test configuration parsing in addition
 cat << EOF > $OBJ/ssh_proxy_envpass
-Host test-sendenv-confparse-bug
+Host test-sendenv-envpass
 	SendEnv *
 EOF
 cat $OBJ/ssh_proxy >> $OBJ/ssh_proxy_envpass
