@@ -979,8 +979,13 @@ do_sftp_connect(char *host, char *user, int port, char *sftp_direct,
 			return NULL;
 
 	} else {
-		args.list = NULL;
+		freeargs(&args);
 		addargs(&args, "sftp-server");
+		if (verbose_mode) {
+			addargs(&args, "-e");
+			addargs(&args, "-l");
+			addargs(&args, "DEBUG3");
+		}
 		if (do_cmd(sftp_direct, host, NULL, -1, 0, "sftp",
 		    reminp, remoutp, pidp) < 0)
 			return NULL;
