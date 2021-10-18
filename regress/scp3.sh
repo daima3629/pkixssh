@@ -28,12 +28,16 @@ for mode in $SCP_MODES ; do
 
 	verbose "$tag: simple copy remote file to remote file"
 	scpclean
+	SCP_REMOTE_PREFIX=$BUILDDIR/ \
+	SCP_REMOTE_PREFIX2=$BUILDDIR/ \
 	$SCP $scpopts -3 hostA:${DATA} hostB:${COPY} || fail "copy failed"
 	cmp ${DATA} ${COPY} || fail "corrupted copy"
 
 	verbose "$tag: simple copy remote file to remote dir"
 	scpclean
 	cp ${DATA} ${COPY}
+	SCP_REMOTE_PREFIX=$BUILDDIR/ \
+	SCP_REMOTE_PREFIX2=$BUILDDIR/ \
 	$SCP $scpopts -3 hostA:${COPY} hostB:${DIR} || fail "copy failed"
 	cmp ${COPY} ${DIR}/copy || fail "corrupted copy"
 
@@ -41,6 +45,8 @@ for mode in $SCP_MODES ; do
 	scpclean
 	rm -rf ${DIR2}
 	cp ${DATA} ${DIR}/copy
+	SCP_REMOTE_PREFIX=$BUILDDIR/ \
+	SCP_REMOTE_PREFIX2=$BUILDDIR/ \
 	$SCP $scpopts -3r hostA:${DIR} hostB:${DIR2} || fail "copy failed"
 	diff -r ${DIR} ${DIR2} || fail "corrupted copy"
 	diff -r ${DIR2} ${DIR} || fail "corrupted copy"
@@ -49,6 +55,8 @@ for mode in $SCP_MODES ; do
 	scpclean
 	echo a > ${COPY}
 	echo b > ${COPY2}
+	SCP_REMOTE_PREFIX=$BUILDDIR/ \
+	SCP_REMOTE_PREFIX2=$BUILDDIR/ \
 	$SCP $scpopts -3 hostA:${DATA} hostA:${COPY} hostB:${COPY2}
 	cmp ${COPY} ${COPY2} >/dev/null && fail "corrupt target"
 done

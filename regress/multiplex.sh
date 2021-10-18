@@ -76,7 +76,9 @@ cmp ${DATA} ${COPY}		|| fail "sftp: corrupted copy of ${DATA}"
 
 rm -f ${COPY}
 trace "scp transfer over multiplexed connection and check result"
-$SCP -S $SSH -F $OBJ/ssh_config -oControlPath=$CTL otherhost:$DATA $COPY
+# test requires pre-installed scp command
+SCP_REMOTE_PREFIX=$BUILDDIR/ \
+$SCP -q -S $SSH -F $OBJ/ssh_config -oControlPath=$CTL otherhost:$DATA $COPY
 test -f ${COPY}			|| fail "scp: failed copy ${DATA}"
 cmp ${DATA} ${COPY}		|| fail "scp: corrupted copy of ${DATA}"
 

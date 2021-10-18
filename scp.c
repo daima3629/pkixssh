@@ -422,6 +422,9 @@ int Tflag, pflag, iamremote, iamrecursive, targetshouldbedirectory;
 #define	CMDNEEDS	64
 char cmd[CMDNEEDS];		/* must hold "rcp -r -p -d\0" */
 
+static const char *cmdprefix = NULL;
+static const char *cmdprefix2 = NULL;
+
 enum scp_mode_e {
 	MODE_SCP,
 	MODE_SFTP
@@ -641,6 +644,12 @@ main(int argc, char **argv)
 	    verbose_mode ? " -v" : "",
 	    iamrecursive ? " -r" : "", pflag ? " -p" : "",
 	    targetshouldbedirectory ? " -d" : "");
+
+	/* mainly for testing purposes */
+	cmdprefix = getenv("SCP_REMOTE_PREFIX");
+	if (cmdprefix == NULL) cmdprefix="";
+	cmdprefix2 = getenv("SCP_REMOTE_PREFIX2");
+	if (cmdprefix2 == NULL) cmdprefix2=cmdprefix;
 
 	(void) ssh_signal(SIGPIPE, lostconn);
 
@@ -1070,13 +1079,13 @@ toremote(int argc, char **argv, enum scp_mode_e mode, char *sftp_direct)
 				continue;
 			}
 			/* SCP */
-			xasprintf(&bp, "%s -f %s%s", cmd,
+			xasprintf(&bp, "%s%s -f %s%s", cmdprefix, cmd,
 			    *src == '-' ? "-- " : "", src);
 			if (do_cmd(ssh_program, host, suser, sport, 0,
 			    bp, &remin, &remout, &do_cmd_pid) < 0)
 				exit(1);
 			free(bp);
-			xasprintf(&bp, "%s -t %s%s", cmd,
+			xasprintf(&bp, "%s%s -t %s%s", cmdprefix2, cmd,
 			    *targ == '-' ? "-- " : "", targ);
 			if (do_cmd2(thost, tuser, tport, bp,
 			    remin, remout) < 0)
@@ -1121,7 +1130,7 @@ toremote(int argc, char **argv, enum scp_mode_e mode, char *sftp_direct)
 			}
 			addargs(&alist, "--");
 			addargs(&alist, "%s", host);
-			addargs(&alist, "%s", cmd);
+			addargs(&alist, "%s%s", cmdprefix, cmd);
 			addargs(&alist, "%s", src);
 			addargs(&alist, "%s%s%s:%s",
 			    tuser ? tuser : "", tuser ? "@" : "",
@@ -1147,7 +1156,7 @@ toremote(int argc, char **argv, enum scp_mode_e mode, char *sftp_direct)
 			}
 			/* SCP */
 			if (remin == -1) {
-				xasprintf(&bp, "%s -t %s%s", cmd,
+				xasprintf(&bp, "%s%s -t %s%s", cmdprefix, cmd,
 				    *targ == '-' ? "-- " : "", targ);
 				if (do_cmd(ssh_program, thost, tuser, tport, 0,
 				    bp, &remin, &remout, &do_cmd_pid) < 0)
@@ -1232,7 +1241,7 @@ tolocal(int argc, char **argv, enum scp_mode_e mode, char *sftp_direct)
 			continue;
 		}
 		/* SCP */
-		xasprintf(&bp, "%s -f %s%s",
+		xasprintf(&bp, "%s%s -f %s%s", cmdprefix,
 		    cmd, *src == '-' ? "-- " : "", src);
 		if (do_cmd(ssh_program, host, suser, sport, 0, bp,
 		    &remin, &remout, &do_cmd_pid) < 0) {
