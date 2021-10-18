@@ -19,7 +19,6 @@ DIR2=${COPY}.dd2
 SRC=`dirname ${SCRIPT}`
 cp ${SRC}/scp-ssh-wrapper.sh ${OBJ}/scp-ssh-wrapper.scp
 chmod 755 ${OBJ}/scp-ssh-wrapper.scp
-export SCP # used in scp-ssh-wrapper.scp
 
 scpclean() {
 	rm -rf ${COPY} ${COPY2} ${DIR} ${DIR2}

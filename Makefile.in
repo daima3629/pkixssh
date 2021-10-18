@@ -681,7 +681,6 @@ check-core unit file-tests t-exec f-exec interop-tests: regress-binaries $(TARGE
 		.OBJDIR="$(BUILDDIR)/regress" \
 		BUILDDIR="$(BUILDDIR)" \
 		OBJ="$(BUILDDIR)/regress" \
-		PATH="$(BUILDDIR):$${PATH}" \
 		TEST_ENV=MALLOC_OPTIONS="@TEST_MALLOC_OPTIONS@" \
 		TEST_MALLOC_OPTIONS="@TEST_MALLOC_OPTIONS@" \
 		TEST_SSH_SCP="$${TEST_SSH_SCP}" \
