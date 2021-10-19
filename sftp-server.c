@@ -52,6 +52,8 @@
 #include "sftp.h"
 #include "sftp-common.h"
 
+char* sftp_realpath(const char *path, char *resolved);
+
 /* Maximum data read that we are willing to accept */
 #define SFTP_MAX_READ_LENGTH (SFTP_MAX_MSG_LENGTH - 1024)
 #define SFTP_INIT_READ_LENGTH (SFTP_MAX_MSG_LENGTH >> 1)
@@ -1235,8 +1237,8 @@ process_realpath(u_int32_t id)
 	}
 	debug3("request %u: realpath", id);
 	verbose("realpath \"%s\"", path);
-	if (realpath(path, resolvedname) == NULL) {
-		debug3("realpath: %s", strerror(errno));
+	if (sftp_realpath(path, resolvedname) == NULL) {
+		debug3_f("sftp_realpath: %s", strerror(errno));
 		send_status(id, errno_to_portable(errno));
 	} else {
 		Stat s;
@@ -1554,7 +1556,8 @@ process_extended_expand(u_int32_t id)
 		path = npath;
 	}
 	verbose("expand \"%s\"", path);
-	if (realpath(path, resolvedname) == NULL) {
+	if (sftp_realpath(path, resolvedname) == NULL) {
+		debug3_f("sftp_realpath: %s", strerror(errno));
 		send_status(id, errno_to_portable(errno));
 	} else {
 		Stat s;

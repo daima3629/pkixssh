@@ -87,15 +87,7 @@ void *reallocarray(void *, size_t, size_t);
 void *recallocarray(void *, size_t, size_t, size_t);
 #endif
 
-#if !defined(HAVE_REALPATH) || defined(BROKEN_REALPATH)
-/*
- * glibc's FORTIFY_SOURCE can redefine this and prevent us picking up the
- * compat version.
- */
-# ifdef BROKEN_REALPATH
-#  define realpath(x, y) _ssh_compat_realpath(x, y)
-# endif
-
+#if !defined(HAVE_REALPATH)
 char *realpath(const char *path, char *resolved);
 #endif
 

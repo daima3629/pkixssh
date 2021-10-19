@@ -31,7 +31,7 @@
 
 #include "includes.h"
 
-#if !defined(HAVE_REALPATH) || defined(BROKEN_REALPATH)
+#if !defined(HAVE_REALPATH) || defined(USE_BROKEN_REALPATH)
 
 #include <sys/types.h>
 #include <sys/param.h>
@@ -57,8 +57,8 @@
  * components.  Returns (resolved) on success, or (NULL) on failure,
  * in which case the path which caused trouble is left in (resolved).
  */
-char *
-realpath(const char *path, char *resolved)
+static char *
+broken_realpath(const char *path, char *resolved)
 {
 	struct stat sb;
 	char *p, *q, *s;
@@ -226,4 +226,22 @@ err:
 		free(resolved);
 	return (NULL);
 }
-#endif /* !defined(HAVE_REALPATH) || defined(BROKEN_REALPATH) */
+#endif /* !defined(HAVE_REALPATH) || defined(USE_BROKEN_REALPATH) */
+
+#if !defined(HAVE_REALPATH)
+char*
+realpath(const char *path, char *resolved) {
+	return broken_realpath(path, resolved);
+}
+#endif
+
+char* sftp_realpath(const char *path, char *resolved);
+
+char*
+sftp_realpath(const char *path, char *resolved) {
+#ifdef USE_BROKEN_REALPATH
+	return broken_realpath(path, resolved);
+#else
+	return realpath(path, resolved);
+#endif
+}
