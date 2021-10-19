@@ -4,7 +4,7 @@
 # This is free software; see Copyright file in the source
 # distribution for precise wording.
 #
-# Copyright (c) 2019-2020 Roumen Petrov
+# Copyright (c) 2019-2021 Roumen Petrov
 #
 
 # Do we want to enable building with ldap? (1=yes 0=no)
@@ -119,11 +119,30 @@ make
 %check
 TERM=dumb \
 make check
+
 %if %{enable_ldap_test}
 TERM=dumb \
 SSH_X509TESTS="by_ldap" \
 make check-certs
 %endif
+
+TERM=dumb \
+make t-exec LTESTS=percent || :
+
+TERM=dumb \
+SCP_MODES=sftp \
+make t-exec LTESTS=scp || :
+
+TERM=dumb \
+SCP_MODES=sftp \
+make t-exec LTESTS=scp-uri || :
+
+TERM=dumb \
+SCP_MODES=sftp \
+make t-exec LTESTS=scp3 || :
+
+TERM=dumb \
+make t-exec LTESTS=multiplex || :
 
 
 %install
