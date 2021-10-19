@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2004-2018 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2004-2021 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -122,7 +122,7 @@ runResponder() {
     -rkey    "${OCSP_RESPKEY}" \
     -index   "${SSH_CAROOT}/index-${type}.txt" \
     -host ${SSHD_LISTENADDRESS} \
-    -port ${port} 2> va-${type}.log &
+    -port ${port} > va-${type}.log 2>&1 &
   pid=$!
   echo ${pid} > "${pidfile}"
   wait ${pid}
