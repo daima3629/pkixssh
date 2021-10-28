@@ -1116,7 +1116,7 @@ wtmp_write(struct logininfo *li, struct utmp *ut)
 	int fd, ret = 1;
 
 	UNUSED(li);
-	if ((fd = open(WTMP_FILE, O_WRONLY|O_APPEND, 0)) == -1) {
+	if ((fd = open(WTMP_FILE, O_WRONLY|O_APPEND)) == -1) {
 		error_f("problem writing %s: %s",
 		    WTMP_FILE, strerror(errno));
 		return (0);
@@ -1289,7 +1289,7 @@ wtmpx_write(struct logininfo *li, struct utmpx *utx)
 	int fd, ret = 1;
 
 	UNUSED(li);
-	if ((fd = open(WTMPX_FILE, O_WRONLY|O_APPEND, 0)) == -1) {
+	if ((fd = open(WTMPX_FILE, O_WRONLY|O_APPEND)) == -1) {
 		error_f("problem opening %s: %s",
 		    WTMPX_FILE, strerror(errno));
 		return (0);
