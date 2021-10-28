@@ -1,5 +1,4 @@
-/* $OpenBSD: addr.c,v 1.1 2021/01/09 11:58:50 dtucker Exp $ */
-
+/* $OpenBSD: addr.c,v 1.4 2021/10/22 10:51:57 dtucker Exp $ */
 /*
  * Copyright (c) 2004-2008 Damien Miller <djm@mindrot.org>
  * Copyright (c) 2021 Roumen Petrov.  All rights reserved.
@@ -260,7 +259,7 @@ addr_cmp(const struct xaddr *a, const struct xaddr *b)
 
 /*
  * Test whether address 'a' is all zeros (i.e. 0.0.0.0 or ::)
- * Returns 0 on if address is all-zeros, -1 if not all zeros or on failure.
+ * Returns 0 if address is all-zeros, -1 if not all zeros or on failure.
  */
 static int
 addr_is_all0s(const struct xaddr *a)
@@ -270,7 +269,7 @@ addr_is_all0s(const struct xaddr *a)
 	switch (a->af) {
 	case AF_INET:
 		return (a->v4.s_addr == 0 ? 0 : -1);
-	case AF_INET6:;
+	case AF_INET6:
 		for (i = 0; i < 4; i++)
 			if (a->addr32[i] != 0)
 				return -1;
@@ -283,7 +282,7 @@ addr_is_all0s(const struct xaddr *a)
 /*
  * Test whether host portion of address 'a', as determined by 'masklen'
  * is all zeros.
- * Returns 0 on if host portion of address is all-zeros,
+ * Returns 0 if host portion of address is all-zeros,
  * -1 if not all zeros or on failure.
  */
 static int
@@ -300,7 +299,7 @@ addr_host_is_all0s(const struct xaddr *a, u_int masklen)
 }
 
 /*
- * Parse string address 'p' into 'n'
+ * Parse string address 'p' into 'n'.
  * Returns 0 on success, -1 on failure.
  */
 int
