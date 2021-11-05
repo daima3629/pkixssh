@@ -47,7 +47,8 @@ fi
 
 verbose "test $tid: pass TERM"
 trace "pass env TERM over multiplexed connection"
-TERM=blah $SSH -F $OBJ/ssh_config -S$CTL -t otherhost \
+echo "simulate some build environments where stdin is not tty" | \
+TERM=blah $SSH -F $OBJ/ssh_config -S$CTL -tt otherhost \
 	"echo XXX\${TERM}TEST" 2>>$TEST_REGRESS_LOGFILE | \
 	grep XXXblahTEST > /dev/null
 if test $? -ne 0 ; then
