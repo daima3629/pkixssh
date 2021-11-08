@@ -210,6 +210,13 @@ if test "$GCC" = "yes" || test "$GCC" = "egcs"; then
 	#
 	# Remark: -ftrapv creates more troubles so exclude!
 	#-#OSSH_CHECK_CFLAG_LINK([-ftrapv])
+
+	# TODO: wipe used registers
+	#?#OSSH_CHECK_CFLAG_COMPILE([-fzero-call-used-regs=all])
+
+	# stack Variables auto-initialization
+	#   see -Wuninitialized
+	#-#OSSH_CHECK_CFLAG_COMPILE([-ftrivial-auto-var-init=zero])
     fi
 	AC_MSG_CHECKING([gcc version])
 	GCC_VER=`$CC -v 2>&1 | $AWK '/gcc version /{print $3}'`
