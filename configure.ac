@@ -5504,6 +5504,7 @@ AC_CHECK_FUNCS([ \
   EVP_MD_CTX_new \
   RSA_meth_new \
   RSA_PKCS1_OpenSSL \
+  TLS_client_method \
   X509_CRL_get0_lastUpdate \
   X509_get0_tbs_sigalg \
   X509_get_extension_flags \

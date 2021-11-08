@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2004-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -88,8 +88,13 @@ OPENSSL_STRING_free(STRING p) {
 
 #define OPENSSL_STRING_free		free
 
-#endif
+#endif /*def sk_STRING_new_null*/
 
+#endif /*def sk_OPENSSL_STRING_new_null*/
+
+#ifndef HAVE_TLS_CLIENT_METHOD	/* OpenSSL < 1.1 */
+/* NOTE since 18 Mar 2012 OpenSSL uses only v23 method */
+# define TLS_client_method	SSLv23_client_method
 #endif
 
 static VAOptions va = { SSHVA_NONE, NULL, NULL };
@@ -517,8 +522,7 @@ ssh_ocsp_get_response(const ssh_ocsp_conn *conn, OCSP_REQUEST *req) {
 #ifdef SSH_WITH_SSLOCSP
 	if (conn->use_ssl == 1) {
 		BIO *bio_sslconn;
-		/* NOTE since 18 Mar 2012 OpenSSL use only v23 method */
-		ctx = SSL_CTX_new(SSLv23_client_method());
+		ctx = SSL_CTX_new(TLS_client_method());
 		SSL_CTX_set_mode(ctx, SSL_MODE_AUTO_RETRY);
 		bio_sslconn = BIO_new_ssl(ctx, 1);
 		bio_conn = BIO_push(bio_sslconn, bio_conn);
