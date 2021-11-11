@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keysign.c,v 1.66 2020/12/17 23:10:27 djm Exp $ */
+/* $OpenBSD: ssh-keysign.c,v 1.68 2021/11/10 06:25:08 djm Exp $ */
 /*
  * Copyright (c) 2002 Markus Friedl.  All rights reserved.
  * Copyright (c) 2011-2021 Roumen Petrov.  All rights reserved.
@@ -145,10 +145,13 @@ valid_request(struct passwd *pw, char *host, struct sshkey **retkey, char **reta
 	if ((b = sshbuf_from(data, datalen)) == NULL)
 		fatal_f("sshbuf_from failed");
 
-	/* session id, currently limited to SHA1 (20 bytes) or SHA256 (32) */
+	/* session id */
 	if ((r = sshbuf_get_string(b, NULL, &len)) != 0)
 		fatal_fr(r, "parse session ID");
-	if (len != 20 && len != 32)
+	if (len != 20 && /* SHA1 */
+	    len != 32 && /* SHA256 */
+	    len != 48 && /* SHA384 */
+	    len != 64)   /* SHA512 */
 		fail++;
 
 	if ((r = sshbuf_get_u8(b, &type)) != 0)
