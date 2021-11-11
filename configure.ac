@@ -1929,6 +1929,7 @@ AC_CHECK_FUNCS([ \
 	cap_rights_limit \
 	clock \
 	closefrom \
+	close_range \
 	dirfd \
 	endgrent \
 	err \

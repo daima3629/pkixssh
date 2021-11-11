@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2004-2005 Todd C. Miller <Todd.Miller@courtesan.com>
+ * Copyright (c) 2021 Roumen Petrov
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -15,6 +16,16 @@
  */
 
 #include "includes.h"
+
+#if defined(HAVE_CLOSEFROM) && defined(__GLIBC__)
+/*
+ * GNU C Library (2.34+) closefrom implementation aborts on failure.
+ * Also on Linux it tries to read from /proc/self/fd as failback
+ * and when that fails also aborts.
+ * Instead library function, activate closefrom from here.
+ */
+# undef HAVE_CLOSEFROM
+#endif
 
 #ifndef HAVE_CLOSEFROM
 
@@ -142,6 +153,10 @@ closefrom(int lowfd)
 	pws_fd = atoi(pws_env);
     }
 }
+#endif
+#ifdef HAVE_CLOSE_RANGE
+    if (close_range(lowfd, INT_MAX, 0) != -1)
+	return;
 #endif
     /* Check for a /proc/$$/fd directory. */
     len = snprintf(fdpath, sizeof(fdpath), "/proc/%ld/fd", (long)getpid());
