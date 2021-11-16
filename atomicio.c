@@ -78,7 +78,7 @@ atomicio6(ssize_t (*f) (int, void *, size_t), int fd, void *_s, size_t n,
 				(void)poll(&pfd, 1, -1);
 				continue;
 			}
-			return 0;
+			return pos;
 		case 0:
 			errno = EPIPE;
 			return pos;
@@ -140,7 +140,7 @@ atomiciov6(ssize_t (*f) (int, const struct iovec *, int), int fd,
 				(void)poll(&pfd, 1, -1);
 				continue;
 			}
-			return 0;
+			return pos;
 		case 0:
 			errno = EPIPE;
 			return pos;
