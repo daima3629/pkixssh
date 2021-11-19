@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keysign.c,v 1.68 2021/11/10 06:25:08 djm Exp $ */
+/* $OpenBSD: ssh-keysign.c,v 1.69 2021/11/13 17:26:13 deraadt Exp $ */
 /*
  * Copyright (c) 2002 Markus Friedl.  All rights reserved.
  * Copyright (c) 2011-2021 Roumen Petrov.  All rights reserved.
@@ -309,6 +309,9 @@ main(int argc, char **argv)
 		fatal("%s: ssh-keysign not enabled in %s", __progname,
 		    _PATH_HOST_CONFIG_FILE);
 
+	if (pledge("stdio dns", NULL) != 0)
+		fatal("%s: pledge: %s", __progname, strerror(errno));
+
 	for (i = found = 0; i < NUM_KEYTYPES; i++) {
 		if (key_fd[i] != -1)
 			found = 1;
@@ -332,9 +335,6 @@ main(int argc, char **argv)
 	}
 	if (!found)
 		fatal("%s: no hostkey found", __progname);
-
-	if (pledge("stdio dns", NULL) != 0)
-		fatal("%s: pledge: %s", __progname, strerror(errno));
 
 	if ((b = sshbuf_new()) == NULL)
 		fatal("%s: sshbuf_new failed", __progname);
