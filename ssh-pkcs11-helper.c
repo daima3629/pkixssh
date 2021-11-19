@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-pkcs11-helper.c,v 1.25 2021/08/11 05:20:17 djm Exp $ */
+/* $OpenBSD: ssh-pkcs11-helper.c,v 1.26 2021/11/18 03:31:44 djm Exp $ */
 /*
  * Copyright (c) 2010 Markus Friedl.  All rights reserved.
  * Copyright (c) 2011 Kenneth Robinette.  All rights reserved.
@@ -45,6 +45,10 @@
 #include <errno.h>
 #ifdef HAVE_POLL_H
 # include <poll.h>
+#else
+# ifdef HAVE_SYS_POLL_H
+#  include <sys/poll.h>
+# endif
 #endif
 #include <stdarg.h>
 #include <string.h>
@@ -418,7 +422,7 @@ main(int argc, char **argv)
 		}
 
 		/* copy stdin to iqueue */
-		if ((pfd[0].revents & (POLLIN|POLLERR)) != 0) {
+		if ((pfd[0].revents & (POLLIN|POLLHUP|POLLERR)) != 0) {
 			len = read(in, buf, sizeof buf);
 			if (len == 0) {
 				debug("read eof");
