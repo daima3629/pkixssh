@@ -1,4 +1,4 @@
-/* $OpenBSD: misc.c,v 1.170 2021/09/26 14:01:03 djm Exp $ */
+/* $OpenBSD: misc.c,v 1.171 2021/11/13 21:14:13 deraadt Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2005,2006 Damien Miller.  All rights reserved.
@@ -40,6 +40,10 @@
 #endif
 #ifdef HAVE_POLL_H
 # include <poll.h>
+#else
+# ifdef HAVE_SYS_POLL_H
+#  include <sys/poll.h>
+# endif
 #endif
 #include <signal.h>
 #include <stdarg.h>

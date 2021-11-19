@@ -270,6 +270,9 @@ static const struct sock_filter preauth_insns[] = {
 #ifdef __NR__newselect
 	SC_ALLOW(__NR__newselect),
 #endif
+#ifdef __NR_ppoll
+	SC_ALLOW(__NR_ppoll),
+#endif
 #ifdef __NR_poll
 	SC_ALLOW(__NR_poll),
 #endif
@@ -394,16 +397,21 @@ ssh_sandbox_child_debugging(void)
 void
 ssh_sandbox_child(struct ssh_sandbox *box)
 {
-	struct rlimit rl_zero;
+	struct rlimit rl_zero, rl_one;
 	int nnp_failed = 0;
 
 	UNUSED(box);
 	/* Set rlimits for completeness if possible. */
 	rl_zero.rlim_cur = rl_zero.rlim_max = 0;
+	rl_one.rlim_cur = rl_one.rlim_max = 1;
 	if (setrlimit(RLIMIT_FSIZE, &rl_zero) == -1)
 		fatal_f("setrlimit(RLIMIT_FSIZE, { 0, 0 }): %s",
 			strerror(errno));
-	if (setrlimit(RLIMIT_NOFILE, &rl_zero) == -1)
+	/*
+	 * Cannot use zero for nfds, because poll(2) will fail with
+	 * errno=EINVAL if nfds>RLIMIT_NOFILE.
+	 */
+	if (setrlimit(RLIMIT_NOFILE, &rl_one) == -1)
 		fatal_f("setrlimit(RLIMIT_NOFILE, { 0, 0 }): %s",
 			strerror(errno));
 	if (setrlimit(RLIMIT_NPROC, &rl_zero) == -1)
