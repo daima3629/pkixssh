@@ -65,7 +65,7 @@ typedef struct pollfd {
 #endif /* !HAVE_STRUCT_POLLFD_FD */
 
 #ifndef HAVE_NFDS_T
-/ *on most used systems is ...long... */
+/* on most used systems is ...long... */
 typedef unsigned long int	nfds_t;
 #endif
 
