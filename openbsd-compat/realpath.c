@@ -234,14 +234,3 @@ realpath(const char *path, char *resolved) {
 	return broken_realpath(path, resolved);
 }
 #endif
-
-char* sftp_realpath(const char *path, char *resolved);
-
-char*
-sftp_realpath(const char *path, char *resolved) {
-#ifdef USE_BROKEN_REALPATH
-	return broken_realpath(path, resolved);
-#else
-	return realpath(path, resolved);
-#endif
-}

@@ -59,7 +59,24 @@
 #include "sftp.h"
 #include "sftp-common.h"
 
-char* sftp_realpath(const char *path, char *resolved);
+/*
+ * Broken realpath: return path as is if does not exist.
+ * Goal is to use it (temporary?) in sftp related code that relies
+ * on broken OpenBSD implemenation.
+ * NOTE: there is no such requirement in filexfer-03 draft.
+ */
+static char*
+sftp_realpath(const char *path, char *resolved_path) {
+	char *ret;
+
+	ret = realpath(path, resolved_path);
+	if (ret != NULL) return ret;
+	if (errno != ENOENT) return ret /*= NULL*/;
+
+	ret = (resolved_path == NULL) ? xstrdup(path) : resolved_path;
+	strcpy(resolved_path, ret);
+	return resolved_path;
+}
 
 /* Maximum data read that we are willing to accept */
 #define SFTP_MAX_READ_LENGTH (SFTP_MAX_MSG_LENGTH - 1024)

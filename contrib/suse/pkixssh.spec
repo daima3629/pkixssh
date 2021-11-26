@@ -135,18 +135,6 @@ TERM=dumb \
 make t-exec LTESTS=percent || :
 
 TERM=dumb \
-SCP_MODES=sftp \
-make t-exec LTESTS=scp || :
-
-TERM=dumb \
-SCP_MODES=sftp \
-make t-exec LTESTS=scp-uri || :
-
-TERM=dumb \
-SCP_MODES=sftp \
-make t-exec LTESTS=scp3 || :
-
-TERM=dumb \
 make t-exec LTESTS=multiplex || :
 
 
