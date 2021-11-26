@@ -1,4 +1,4 @@
-/* $OpenBSD: packet.c,v 1.301 2021/07/16 09:00:23 djm Exp $ */
+/* $OpenBSD: packet.c,v 1.302 2021/11/13 21:14:13 deraadt Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -59,6 +59,13 @@
 #include <string.h>
 #include <unistd.h>
 #include <limits.h>
+#ifdef HAVE_POLL_H
+# include <poll.h>
+#else
+# ifdef HAVE_SYS_POLL_H
+#  include <sys/poll.h>
+# endif
+#endif
 #include <signal.h>
 #include <time.h>
 
@@ -93,6 +100,15 @@
 #endif
 
 #define PACKET_MAX_SIZE (256 * 1024)
+
+static inline void
+ms_to_timespec(struct timespec *ts, int ms)
+{
+	if (ms < 0) ms = 0;
+	ts->tv_sec = ms / 1000;
+	ts->tv_nsec = (ms % 1000) * 1000000;
+}
+
 
 struct packet_state {
 	u_int32_t seqnr;
@@ -1325,16 +1341,11 @@ ssh_packet_read_seqnr(struct ssh *ssh, u_char *typep, u_int32_t *seqnr_p)
 {
 	struct session_state *state = ssh->state;
 	int len, r, ms_remain;
-	fd_set *setp;
 	char buf[8192];
-	struct timeval timeout, start, *timeoutp = NULL;
+	struct timeval start;
+	struct timespec timeout, *timeoutp = NULL;
 
 	DBG(debug("packet_read()"));
-
-	setp = calloc(howmany(state->connection_in + 1,
-	    NFDBITS), sizeof(fd_mask));
-	if (setp == NULL)
-		return SSH_ERR_ALLOC_FAIL;
 
 	/*
 	 * Since we are blocking, ensure that all written packets have
@@ -1345,6 +1356,8 @@ ssh_packet_read_seqnr(struct ssh *ssh, u_char *typep, u_int32_t *seqnr_p)
 
 	/* Stay in the loop until we have received a complete packet. */
 	for (;;) {
+		struct pollfd pfd;
+
 		/* Try to read a packet from the buffer. */
 		r = ssh_packet_read_poll_seqnr(ssh, typep, seqnr_p);
 		if (r != 0)
@@ -1356,9 +1369,8 @@ ssh_packet_read_seqnr(struct ssh *ssh, u_char *typep, u_int32_t *seqnr_p)
 		 * Otherwise, wait for some data to arrive, add it to the
 		 * buffer, and try again.
 		 */
-		memset(setp, 0, howmany(state->connection_in + 1,
-		    NFDBITS) * sizeof(fd_mask));
-		FD_SET(state->connection_in, setp);
+		pfd.fd = state->connection_in;
+		pfd.events = POLLIN;
 
 		if (state->packet_timeout_ms > 0) {
 			ms_remain = state->packet_timeout_ms;
@@ -1367,11 +1379,10 @@ ssh_packet_read_seqnr(struct ssh *ssh, u_char *typep, u_int32_t *seqnr_p)
 		/* Wait for some data to arrive. */
 		for (;;) {
 			if (state->packet_timeout_ms > 0) {
-				ms_to_timeval(&timeout, ms_remain);
+				ms_to_timespec(&timeout, ms_remain);
 				monotime_tv(&start);
 			}
-			if ((r = select(state->connection_in + 1, setp,
-			    NULL, NULL, timeoutp)) != -1)
+			if ((r = ppoll(&pfd, 1, timeoutp, NULL)) != -1)
 				break;
 			if (errno != EAGAIN && errno != EINTR &&
 			    errno != EWOULDBLOCK) {
@@ -1406,7 +1417,6 @@ ssh_packet_read_seqnr(struct ssh *ssh, u_char *typep, u_int32_t *seqnr_p)
 			goto out;
 	}
  out:
-	free(setp);
 	return r;
 }
 
@@ -1979,23 +1989,18 @@ ssh_packet_write_poll(struct ssh *ssh)
 int
 ssh_packet_write_wait(struct ssh *ssh)
 {
-	fd_set *setp;
 	int ret, r, ms_remain = 0;
-	struct timeval start, timeout, *timeoutp = NULL;
+	struct timeval start;
+	struct timespec timeout, *timeoutp = NULL;
 	struct session_state *state = ssh->state;
 
-	setp = calloc(howmany(state->connection_out + 1,
-	    NFDBITS), sizeof(fd_mask));
-	if (setp == NULL)
-		return SSH_ERR_ALLOC_FAIL;
-	if ((r = ssh_packet_write_poll(ssh)) != 0) {
-		free(setp);
+	if ((r = ssh_packet_write_poll(ssh)) != 0)
 		return r;
-	}
 	while (ssh_packet_have_data_to_write(ssh)) {
-		memset(setp, 0, howmany(state->connection_out + 1,
-		    NFDBITS) * sizeof(fd_mask));
-		FD_SET(state->connection_out, setp);
+		struct pollfd pfd;
+
+		pfd.fd = state->connection_out;
+		pfd.events = POLLOUT;
 
 		if (state->packet_timeout_ms > 0) {
 			ms_remain = state->packet_timeout_ms;
@@ -2003,11 +2008,10 @@ ssh_packet_write_wait(struct ssh *ssh)
 		}
 		for (;;) {
 			if (state->packet_timeout_ms > 0) {
-				ms_to_timeval(&timeout, ms_remain);
+				ms_to_timespec(&timeout, ms_remain);
 				monotime_tv(&start);
 			}
-			if ((ret = select(state->connection_out + 1,
-			    NULL, setp, NULL, timeoutp)) != -1)
+			if ((ret = ppoll(&pfd, 1, timeoutp, NULL)) != -1)
 				break;
 			if (errno != EAGAIN && errno != EINTR &&
 			    errno != EWOULDBLOCK)
@@ -2020,16 +2024,11 @@ ssh_packet_write_wait(struct ssh *ssh)
 				break;
 			}
 		}
-		if (ret == 0) {
-			free(setp);
+		if (ret == 0)
 			return SSH_ERR_CONN_TIMEOUT;
-		}
-		if ((r = ssh_packet_write_poll(ssh)) != 0) {
-			free(setp);
+		if ((r = ssh_packet_write_poll(ssh)) != 0)
 			return r;
-		}
 	}
-	free(setp);
 	return 0;
 }
 
