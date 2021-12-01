@@ -163,12 +163,12 @@ ldap_store_find(
 	int type;
 
 	type = OSSL_STORE_SEARCH_get_type(criterion);
-TRACE_BY_LDAP(__func__, "type=%d", type);
+TRACE_BY_LDAP(__func__, "type=%d, ctx=%p", type, (void*)ctx);
 	if (type != OSSL_STORE_SEARCH_BY_NAME) return 0;
+	if (ctx == NULL) return 1;
 
 	ctx->name = X509_NAME_dup(OSSL_STORE_SEARCH_get0_name(criterion));
-
-	return 0;
+	return (ctx->name ! = NULL);
 }
 
 
