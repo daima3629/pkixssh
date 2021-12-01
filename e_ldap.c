@@ -168,7 +168,7 @@ TRACE_BY_LDAP(__func__, "type=%d, ctx=%p", type, (void*)ctx);
 	if (ctx == NULL) return 1;
 
 	ctx->name = X509_NAME_dup(OSSL_STORE_SEARCH_get0_name(criterion));
-	return (ctx->name ! = NULL);
+	return (ctx->name != NULL);
 }
 
 
