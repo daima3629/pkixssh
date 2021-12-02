@@ -2,7 +2,7 @@
  * Copyright (c) 1999-2003 Damien Miller.  All rights reserved.
  * Copyright (c) 2003 Ben Lindstrom. All rights reserved.
  * Copyright (c) 2002 Tim Rice.  All rights reserved.
- * Copyright (c) 2013-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2013-2021 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -85,10 +85,6 @@ void *reallocarray(void *, size_t, size_t);
 
 #ifndef HAVE_RECALLOCARRAY
 void *recallocarray(void *, size_t, size_t, size_t);
-#endif
-
-#if !defined(HAVE_REALPATH)
-char *realpath(const char *path, char *resolved);
 #endif
 
 #ifndef HAVE_RRESVPORT_AF

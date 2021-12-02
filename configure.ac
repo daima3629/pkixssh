@@ -2288,39 +2288,6 @@ AS_IF([test $ssh_cv_func_setresgid_work != yes], [
 ])
 ])
 
-AC_CHECK_FUNCS([realpath], [
-	dnl The sftp v3 spec says SSH_FXP_REALPATH will "canonicalize any
-	dnl given path name", however posix conformant implementations of
-	dnl realpath do not work on non-existent files.
-	dnl So on those platforms we will use broken implementation
-	dnl based on OpenBSD.
-	AC_CACHE_CHECK([if realpath works with non-existent files],
-	[ssh_cv_has_broken_realpath],
-	AC_RUN_IFELSE(
-		[AC_LANG_PROGRAM([[
-#include <limits.h>
-#include <stdlib.h>
-#include <errno.h>
-		]], [[
-		char buf[PATH_MAX];
-		if (realpath("/openbsd-non-existent-filename-1234", buf) == NULL)
-			if (errno == ENOENT)
-				return 1;
-		]])],
-		[ssh_cv_has_broken_realpath=yes],
-		[ssh_cv_has_broken_realpath=no],
-		[ssh_cv_has_broken_realpath=cross]
-	))
-	AS_IF([test $ssh_cv_has_broken_realpath = cross], [
-		AC_MSG_WARN([cross compiling: assuming that realpath does not work with non-existent files])
-		ssh_cv_has_broken_realpath=no
-	])
-	AS_IF([test $ssh_cv_has_broken_realpath = no], [
-		AC_DEFINE([USE_BROKEN_REALPATH], [1],
-			[Define to 1 to use broken realpath in sftp server])
-	])
-])
-
 AC_CACHE_CHECK([for working fflush(NULL)], [ssh_cv_func_fflush_null], [
 AC_RUN_IFELSE(
 	[AC_LANG_PROGRAM([[#include <stdio.h>]], [[fflush(NULL);]])],
