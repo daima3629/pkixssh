@@ -1,4 +1,4 @@
-/* $OpenBSD: bcrypt_pbkdf.c,v 1.13 2015/01/12 03:20:04 tedu Exp $ */
+/* $OpenBSD: bcrypt_pbkdf.c,v 1.16 2020/08/02 18:35:48 tb Exp $ */
 /*
  * Copyright (c) 2013 Ted Unangst <tedu@openbsd.org>
  *
@@ -16,6 +16,8 @@
  */
 
 /* OPENBSD ORIGINAL: lib/libutil/bcrypt_pbkdf.c */
+
+/* This version has been modified to use SHA512 from SUPERCOP */
 
 #include "includes.h"
 
@@ -99,7 +101,7 @@ bcrypt_pbkdf.c:94:40: error: expression does not compute the number of
   silence this warning
 */
 	for (i = 0; i < 64; i++)
-		blf_enc(&state, cdata, sizeof(cdata) / (sizeof(uint64_t)));
+		blf_enc(&state, cdata, BCRYPT_WORDS / 2);
 
 	/* copy out */
 	for (i = 0; i < BCRYPT_WORDS; i++) {
@@ -130,12 +132,12 @@ bcrypt_pbkdf(const char *pass, size_t passlen, const uint8_t *salt, size_t saltl
 
 	/* nothing crazy */
 	if (rounds < 1)
-		return -1;
+		goto bad;
 	if (passlen == 0 || saltlen == 0 || keylen == 0 ||
 	    keylen > sizeof(out) * sizeof(out) || saltlen > 1<<20)
-		return -1;
+		goto bad;
 	if ((countsalt = calloc(1, saltlen + 4)) == NULL)
-		return -1;
+		goto bad;
 	stride = (keylen + sizeof(out) - 1) / sizeof(out);
 	amt = (keylen + stride - 1) / stride;
 
@@ -179,9 +181,15 @@ bcrypt_pbkdf(const char *pass, size_t passlen, const uint8_t *salt, size_t saltl
 	}
 
 	/* zap */
+	freezero(countsalt, saltlen + 4);
 	explicit_bzero(out, sizeof(out));
-	free(countsalt);
+	explicit_bzero(tmpout, sizeof(tmpout));
 
 	return 0;
+
+bad:
+	/* overwrite with random in case caller doesn't check return code */
+	arc4random_buf(key, origkeylen);
+	return -1;
 }
 #endif /* HAVE_BCRYPT_PBKDF */
