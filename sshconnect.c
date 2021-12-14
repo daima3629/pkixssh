@@ -318,9 +318,6 @@ static int
 check_ifaddrs(const char *ifname, int af, const struct ifaddrs *ifaddrs,
     struct sockaddr_storage *resultp, socklen_t *rlenp)
 {
-	struct sockaddr_in6 *sa6;
-	struct sockaddr_in *sa;
-	struct in6_addr *v6addr;
 	const struct ifaddrs *ifa;
 	int allow_local;
 
@@ -338,9 +335,13 @@ check_ifaddrs(const char *ifname, int af, const struct ifaddrs *ifaddrs,
 				continue;
 			switch (ifa->ifa_addr->sa_family) {
 			case AF_INET:
+			{	struct sockaddr_in *sa;
+				struct in_addr *addr;
+
 				sa = (struct sockaddr_in *)ifa->ifa_addr;
-				if (!allow_local && sa->sin_addr.s_addr ==
-				    htonl(INADDR_LOOPBACK))
+				addr = &sa->sin_addr;
+				if (!allow_local &&
+				    IN_LOOPBACK(ntohl(addr->s_addr)))
 					continue;
 				if (*rlenp < sizeof(struct sockaddr_in)) {
 					error_f("v4 addr doesn't fit");
@@ -349,7 +350,11 @@ check_ifaddrs(const char *ifname, int af, const struct ifaddrs *ifaddrs,
 				*rlenp = sizeof(struct sockaddr_in);
 				memcpy(resultp, sa, *rlenp);
 				return 0;
+			}
 			case AF_INET6:
+			{	struct sockaddr_in6 *sa6;
+				struct in6_addr *v6addr;
+
 				sa6 = (struct sockaddr_in6 *)ifa->ifa_addr;
 				v6addr = &sa6->sin6_addr;
 				if (!allow_local &&
@@ -363,6 +368,7 @@ check_ifaddrs(const char *ifname, int af, const struct ifaddrs *ifaddrs,
 				*rlenp = sizeof(struct sockaddr_in6);
 				memcpy(resultp, sa6, *rlenp);
 				return 0;
+			}
 			}
 		}
 	}
@@ -638,8 +644,8 @@ sockaddr_is_local(struct sockaddr *hostaddr)
 {
 	switch (hostaddr->sa_family) {
 	case AF_INET:
-		return (ntohl(((struct sockaddr_in *)hostaddr)->
-		    sin_addr.s_addr) >> 24) == IN_LOOPBACKNET;
+		return IN_LOOPBACK(ntohl(((struct sockaddr_in *)hostaddr)->
+		    sin_addr.s_addr));
 	case AF_INET6:
 		return IN6_IS_ADDR_LOOPBACK(
 		    &(((struct sockaddr_in6 *)hostaddr)->sin6_addr));

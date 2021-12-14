@@ -211,6 +211,10 @@ including rpc/rpc.h breaks Solaris 6
 #define INADDR_LOOPBACK ((u_long)0x7f000001)
 #endif
 
+#ifndef IN_LOOPBACK
+#define IN_LOOPBACK(a) ((((long int) (a)) & 0xff000000) == 0x7f000000)
+#endif
+
 /* Types */
 
 /* If sys/types.h does not supply intXX_t, supply them ourselves */
