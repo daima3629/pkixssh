@@ -914,6 +914,7 @@ pkcs11_wrap_ecdsa(struct pkcs11_provider *provider, CK_ULONG slotidx,
 	key->flags |= SSHKEY_FLAG_EXT;
 	ret = 0;
 done:
+	EC_KEY_free(ec);
 	return ret;
 }
 #endif /*def OPENSSL_HAS_ECC*/
