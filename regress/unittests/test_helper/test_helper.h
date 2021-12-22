@@ -22,14 +22,16 @@
 
 #include "includes.h"
 
+/* from "includes.h" above
 #include <sys/types.h>
+#include <sys/param.h>
 #ifdef HAVE_STDINT_H
 # include <stdint.h>
 #endif
+*/
 
 #ifdef WITH_OPENSSL
 #include <openssl/bn.h>
-#include <openssl/err.h>
 #endif
 
 enum test_predicate {

@@ -1,33 +1,25 @@
-/* 	$OpenBSD: common.c,v 1.4 2020/01/26 00:09:50 djm Exp $ */
+/* 	$OpenBSD: common.c,v 1.5 2021/12/14 21:25:27 deraadt Exp $ */
 /*
  * Helpers for key API tests
  *
  * Placed in the public domain
  */
 
-#include "includes.h"
+#include "../test_helper/test_helper.h"
 
-#include <sys/types.h>
-#include <sys/param.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdio.h>
-#ifdef HAVE_STDINT_H
-# include <stdint.h>
-#endif
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
 #ifdef WITH_OPENSSL
-#include <openssl/bn.h>
 #include <openssl/objects.h>
 #ifdef OPENSSL_HAS_NISTP256
 # include <openssl/ec.h>
 #endif /* OPENSSL_HAS_NISTP256 */
 #endif /* WITH_OPENSSL */
-
-#include "../test_helper/test_helper.h"
 
 #include "ssherr.h"
 #include "authfile.h"

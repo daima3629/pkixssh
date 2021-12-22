@@ -1,22 +1,15 @@
-/* 	$OpenBSD: test_strdelim.c,v 1.2 2021/05/21 03:59:01 djm Exp $ */
+/* 	$OpenBSD: test_strdelim.c,v 1.3 2021/12/14 21:25:27 deraadt Exp $ */
 /*
  * Regress test for misc strdelim() and co
  *
  * Placed in the public domain.
  */
 
-#include "includes.h"
+#include "../test_helper/test_helper.h"
 
-#include <sys/types.h>
-#include <sys/param.h>
 #include <stdio.h>
-#ifdef HAVE_STDINT_H
-# include <stdint.h>
-#endif
 #include <stdlib.h>
 #include <string.h>
-
-#include "../test_helper/test_helper.h"
 
 #include "log.h"
 #include "misc.h"

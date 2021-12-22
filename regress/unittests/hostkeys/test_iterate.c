@@ -1,22 +1,15 @@
-/* 	$OpenBSD: test_iterate.c,v 1.7 2020/12/21 01:31:06 djm Exp $ */
+/* 	$OpenBSD: test_iterate.c,v 1.8 2021/12/14 21:25:27 deraadt Exp $ */
 /*
  * Regress test for hostfile.h hostkeys_foreach()
  *
  * Placed in the public domain
  */
 
-#include "includes.h"
+#include "../test_helper/test_helper.h"
 
-#include <sys/types.h>
-#include <sys/param.h>
 #include <stdio.h>
-#ifdef HAVE_STDINT_H
-# include <stdint.h>
-#endif
 #include <stdlib.h>
 #include <string.h>
-
-#include "../test_helper/test_helper.h"
 
 #include "sshkey.h"
 #include "authfile.h"

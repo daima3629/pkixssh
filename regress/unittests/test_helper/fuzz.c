@@ -17,23 +17,18 @@
 
 /* Utility functions/framework for fuzz tests */
 
-#include "includes.h"
+#include "test_helper.h"
 
-#include <sys/types.h>
 #include <sys/uio.h>
 
 #include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
-#ifdef HAVE_STDINT_H
-# include <stdint.h>
-#endif
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
 #include <unistd.h>
 
-#include "test_helper.h"
 #include "atomicio.h"
 typedef void (*sshsig_t)(int);
 sshsig_t ssh_signal(int, sshsig_t);

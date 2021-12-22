@@ -1,20 +1,15 @@
-/* 	$OpenBSD: test_file.c,v 1.8 2018/09/13 09:03:20 djm Exp $ */
+/* 	$OpenBSD: test_file.c,v 1.10 2021/12/14 21:25:27 deraadt Exp $ */
 /*
  * Regress test for sshkey.h key management API
  *
  * Placed in the public domain
  */
 
-#include "includes.h"
+#include "../test_helper/test_helper.h"
 
-#include <sys/types.h>
-#include <sys/param.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdio.h>
-#ifdef HAVE_STDINT_H
-# include <stdint.h>
-#endif
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -22,8 +17,6 @@
 #ifdef WITH_OPENSSL
 #include "evp-compat.h"
 #endif /* WITH_OPENSSL */
-
-#include "../test_helper/test_helper.h"
 
 #include "ssherr.h"
 #include "authfile.h"

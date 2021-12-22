@@ -1,22 +1,15 @@
-/* 	$OpenBSD: test_kex.c,v 1.5 2020/12/29 01:02:15 djm Exp $ */
+/* 	$OpenBSD: test_kex.c,v 1.6 2021/12/14 21:25:27 deraadt Exp $ */
 /*
  * Regress test KEX
  *
  * Placed in the public domain
  */
 
-#include "includes.h"
+#include "../test_helper/test_helper.h"
 
-#include <sys/types.h>
-#include <sys/param.h>
 #include <stdio.h>
-#ifdef HAVE_STDINT_H
-# include <stdint.h>
-#endif
 #include <stdlib.h>
 #include <string.h>
-
-#include "../test_helper/test_helper.h"
 
 #include "ssherr.h"
 #include "ssh_api.h"

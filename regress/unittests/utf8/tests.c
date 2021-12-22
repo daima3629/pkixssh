@@ -6,14 +6,12 @@
  * and placed in the public domain.
  */
 
-#include "includes.h"
+#include "../test_helper/test_helper.h"
 
 #include <locale.h>
 #include <stdarg.h>
 #include <string.h>
 #include <stdio.h>
-
-#include "../test_helper/test_helper.h"
 
 #include "utf8.h"
 

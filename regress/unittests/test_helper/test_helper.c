@@ -1,4 +1,4 @@
-/*	$OpenBSD: test_helper.c,v 1.12 2019/08/02 01:41:24 djm Exp $	*/
+/*	$OpenBSD: test_helper.c,v 1.13 2021/12/14 21:25:27 deraadt Exp $	*/
 /*
  * Copyright (c) 2011 Damien Miller <djm@mindrot.org>
  *
@@ -17,18 +17,13 @@
 
 /* Utility functions/framework for regress tests */
 
-#include "includes.h"
+#include "test_helper.h"
 
-#include <sys/types.h>
-#include <sys/param.h>
 #include <sys/uio.h>
 
 #include <stdarg.h>
 #include <fcntl.h>
 #include <stdio.h>
-#ifdef HAVE_STDINT_H
-# include <stdint.h>
-#endif
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -36,14 +31,13 @@
 #include <signal.h>
 
 #ifdef WITH_OPENSSL
-#include <openssl/bn.h>
+#include <openssl/err.h>
 #endif
 
 #if defined(HAVE_STRNVIS) && defined(HAVE_VIS_H) && !defined(BROKEN_STRNVIS)
 # include <vis.h>
 #endif
 
-#include "test_helper.h"
 #include "atomicio.h"
 typedef void (*sshsig_t)(int);
 sshsig_t ssh_signal(int, sshsig_t);

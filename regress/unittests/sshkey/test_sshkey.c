@@ -1,28 +1,21 @@
-/* 	$OpenBSD: test_sshkey.c,v 1.21 2020/08/27 03:55:22 djm Exp $ */
+/* 	$OpenBSD: test_sshkey.c,v 1.22 2021/12/14 21:25:27 deraadt Exp $ */
 /*
  * Regress test for sshkey.h key management API
  *
  * Placed in the public domain
  */
 
-#include "includes.h"
+#define SSHBUF_INTERNAL 1	/* access internals for testing */
+#include "../test_helper/test_helper.h"
 
-#include <sys/types.h>
-#include <sys/param.h>
 #include <stdio.h>
-#ifdef HAVE_STDINT_H
-# include <stdint.h>
-#endif
 #include <stdlib.h>
 #include <string.h>
 
 #include "evp-compat.h"
 
-#include "../test_helper/test_helper.h"
-
 #include "ssherr.h"
 #include "sshbuf.h"
-#define SSHBUF_INTERNAL 1	/* access internals for testing */
 #include "sshkey.h"
 
 #include "authfile.h"
