@@ -517,8 +517,8 @@ struct winsize {
 # define MIN(a,b) (((a)<(b))?(a):(b))
 #endif
 
-#ifndef roundup
-# define roundup(x, y)   ((((x)+((y)-1))/(y))*(y))
+#ifndef ROUNDUP
+# define ROUNDUP(x, y)   ((((x)+((y)-1))/(y))*(y))
 #endif
 
 #ifndef timersub

@@ -192,7 +192,7 @@ sshbuf_tests(void)
 	TEST_START("resize full buffer");
 	r = sshbuf_set_max_size(p1, 1000);
 	ASSERT_INT_EQ(r, SSH_ERR_NO_BUFFER_SPACE);
-	sz = roundup(1223 + SSHBUF_SIZE_INC * 3, SSHBUF_SIZE_INC);
+	sz = ROUNDUP(1223 + SSHBUF_SIZE_INC * 3, SSHBUF_SIZE_INC);
 	ASSERT_INT_EQ(sshbuf_set_max_size(p1, sz), 0);
 	ASSERT_SIZE_T_EQ(sshbuf_max_size(p1), sz);
 	ASSERT_SIZE_T_EQ(sshbuf_avail(p1), sz - 1223);
