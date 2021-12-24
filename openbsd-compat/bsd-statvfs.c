@@ -19,7 +19,6 @@
 
 #if !defined(HAVE_STATVFS) || !defined(HAVE_FSTATVFS)
 
-#include <sys/param.h>
 #ifdef HAVE_SYS_STATFS_H
 # include <sys/statfs.h>
 #endif

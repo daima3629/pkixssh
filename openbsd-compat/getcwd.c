@@ -34,7 +34,6 @@
 
 #if !defined(HAVE_GETCWD)
 
-#include <sys/param.h>
 #include <sys/stat.h>
 #include <errno.h>
 #include <dirent.h>
@@ -42,7 +41,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "includes.h"
 
 #define	ISDOT(dp) \
 	(dp->d_name[0] == '.' && (dp->d_name[1] == '\0' || \

@@ -14,12 +14,9 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include "config.h"
 #include "includes.h"
 
-#include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/param.h>
 
 #include <errno.h>
 #ifdef HAVE_FCNTL_H
