@@ -96,7 +96,7 @@ pick_salt(void)
 			continue;
 		if (passwd[0] == '$' && (p = strrchr(passwd+1, '$')) != NULL) {
 			typelen = p - passwd + 1;
-			strlcpy(salt, passwd, MIN(typelen, sizeof(salt)));
+			strlcpy(salt, passwd, MINIMUM(typelen, sizeof(salt)));
 			explicit_bzero(passwd, strlen(passwd));
 			goto out;
 		}

@@ -514,7 +514,16 @@ struct winsize {
 
 #ifndef MAX
 # define MAX(a,b) (((a)>(b))?(a):(b))
+#endif
+#ifndef MIN
 # define MIN(a,b) (((a)<(b))?(a):(b))
+#endif
+
+#ifndef MAXIMUM
+# define MAXIMUM	MAX
+#endif
+#ifndef MINIMUM
+# define MINIMUM	MIN
 #endif
 
 #ifndef ROUNDUP

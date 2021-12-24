@@ -38,8 +38,6 @@
 #endif
 #define SHA512_DIGEST_LENGTH crypto_hash_sha512_BYTES
 
-#define	MINIMUM(a,b) (((a) < (b)) ? (a) : (b))
-
 /*
  * pkcs #5 pbkdf2 implementation using the "bcrypt" hash
  *

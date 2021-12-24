@@ -224,9 +224,6 @@ void	opt_array_append2(const char *file, const int line,
 char	*read_passphrase(const char *, int);
 int	 ask_permission(const char *, ...) __attribute__((format(printf, 1, 2)));
 
-#define MINIMUM(a, b)	(((a) < (b)) ? (a) : (b))
-#define MAXIMUM(a, b)	(((a) > (b)) ? (a) : (b))
-
 typedef void (*sshsig_t)(int);
 sshsig_t ssh_signal(int, sshsig_t);
 
