@@ -359,11 +359,13 @@ userauth_finish(struct ssh *ssh, int authenticated, const char *method,
 	char *methods;
 	int r, partial = 0;
 
-	if (!authctxt->valid && authenticated)
-		fatal("INTERNAL ERROR: authenticated invalid user %s",
-		    authctxt->user);
-	if (authenticated && authctxt->postponed)
-		fatal("INTERNAL ERROR: authenticated and postponed");
+	if (authenticated) {
+		if (!authctxt->valid)
+			fatal("INTERNAL ERROR: authenticated invalid user %s",
+			    authctxt->user);
+		if (authctxt->postponed)
+			fatal("INTERNAL ERROR: authenticated and postponed");
+	}
 
 	/* Special handling for root */
 	if (authenticated && authctxt->pw->pw_uid == 0 &&
