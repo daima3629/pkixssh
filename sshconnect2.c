@@ -347,7 +347,7 @@ void	userauth(struct ssh *, char *);
 
 static void pubkey_cleanup(struct ssh *);
 static int sign_and_send_pubkey(struct ssh *ssh, Identity *);
-static void pubkey_prepare(Authctxt *);
+static void pubkey_prepare(struct ssh *, Authctxt *);
 static void pubkey_reset(Authctxt *);
 static struct sshkey *load_identity_file(Identity *);
 
@@ -422,7 +422,7 @@ ssh_userauth2(struct ssh *ssh, const char *local_user,
 	authctxt.mech_tried = 0;
 #endif
 	authctxt.agent_fd = -1;
-	pubkey_prepare(&authctxt);
+	pubkey_prepare(ssh, &authctxt);
 	if (authctxt.method == NULL) {
 		fatal_f("internal error: cannot send userauth none request");
 	}
@@ -1441,7 +1441,7 @@ load_identity_file(Identity *id)
  *	5. keys that are only listed in the config file
  */
 static void
-pubkey_prepare(Authctxt *authctxt)
+pubkey_prepare(struct ssh *ssh, Authctxt *authctxt)
 {
 	struct identity *id, *id2, *tmp;
 	struct idlist agent, files, *preferred;
@@ -1450,6 +1450,7 @@ pubkey_prepare(Authctxt *authctxt)
 	size_t j;
 	struct ssh_identitylist *idlist;
 
+	UNUSED(ssh);
 	debug2("preparing keys");
 	TAILQ_INIT(&agent);	/* keys from the agent */
 	TAILQ_INIT(&files);	/* keys from the config file */
