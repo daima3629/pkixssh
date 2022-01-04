@@ -1097,6 +1097,8 @@ pkcs11_push_key(struct sshkey *key, char *label,
 	for (i = 0; i < *nkeys; i++, sp++)
 		if (sshkey_equal_public(key, *sp)) {
 			debug("exist equal key, ignoring '%s'", label);
+			sshkey_free(key);
+			free(label);
 			return;
 		}
 }
@@ -1107,11 +1109,13 @@ pkcs11_push_key(struct sshkey *key, char *label,
 
 	if (labelsp != NULL) {
 		*labelsp = xreallocarray(*labelsp, *nkeys + 1, sizeof(char *));
-		(*labelsp)[*nkeys] = xstrdup(label);
+		(*labelsp)[*nkeys] = label;
 	}
 
 	*nkeys = *nkeys + 1;
 	debug("push key #%d '%s'", *nkeys, label);
+	if (labelsp == NULL)
+		free(label);
 }
 
 /*
@@ -1340,8 +1344,11 @@ pkcs11_get_pubkey_ec(
 		error_f("d2i_ECParameters failed");
 		goto fail;
 	}
-	if (!EVP_PKEY_set1_EC_KEY(key->pk, ec))
+	if (!EVP_PKEY_set1_EC_KEY(key->pk, ec)) {
+		EC_KEY_free(ec);
 		goto fail;
+	}
+	EC_KEY_free(ec);
 }
 {	const unsigned char *q;
 	/* "DER-encoding of ANSI X9.62 ECPoint value Q" */
