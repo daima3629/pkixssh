@@ -125,6 +125,7 @@ extern void ERR_load_SSHLDAP_strings(void);
 #endif
 
 extern char *__progname;
+extern struct sshkey *previous_host_key; /* sshconnect.c */
 
 /* Saves a copy of argv for setproctitle emulation */
 #ifndef HAVE_SETPROCTITLE
@@ -1788,6 +1789,10 @@ main(int ac, char **av)
 
 	/* Kill ProxyCommand if it is running. */
 	ssh_kill_proxy_command();
+
+	/* clean-up some memory - goal is to ensure more clean OpenSSL shuthdown */
+	sshkey_free(previous_host_key);
+	previous_host_key = NULL;
 
 	ssh_engines_shutdown();
 	ssh_OpenSSL_shuthdown();
