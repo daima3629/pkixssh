@@ -2334,11 +2334,6 @@ load_public_identity_files(const struct ssh_conn_info *cinfo)
 	char *certificate_files[SSH_MAX_CERTIFICATE_FILES];
 	struct sshkey *certificates[SSH_MAX_CERTIFICATE_FILES];
 	int certificate_file_userprovided[SSH_MAX_CERTIFICATE_FILES];
-#ifdef ENABLE_PKCS11
-	struct sshkey **keys;
-	char **comments;
-	int nkeys;
-#endif /* PKCS11 */
 
 	n_ids = n_certs = 0;
 	memset(identity_files, 0, sizeof(identity_files));
@@ -2351,6 +2346,11 @@ load_public_identity_files(const struct ssh_conn_info *cinfo)
 	    sizeof(certificate_file_userprovided));
 
 #ifdef ENABLE_PKCS11
+{
+	struct sshkey **keys;
+	char **comments;
+	int nkeys;
+
 	if (options.pkcs11_provider != NULL &&
 	    options.num_identity_files < SSH_MAX_IDENTITY_FILES &&
 	    (pkcs11_init(!options.batch_mode) == 0) &&
@@ -2370,6 +2370,7 @@ load_public_identity_files(const struct ssh_conn_info *cinfo)
 		free(keys);
 		free(comments);
 	}
+}
 #endif /* ENABLE_PKCS11 */
 	for (i = 0; i < options.num_identity_files; i++) {
 		if (n_ids >= SSH_MAX_IDENTITY_FILES ||
