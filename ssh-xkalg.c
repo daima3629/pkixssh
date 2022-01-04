@@ -160,14 +160,14 @@ SSH_ECDSA_SignFinal(EVP_MD_CTX *ctx, unsigned char *sigret, unsigned int *siglen
 	unsigned char buf[20+2*(SHA512_DIGEST_LENGTH)];
 
 	ret = EVP_SignFinal(ctx, buf, &len, pkey);
-	if (ret <= 0) return(ret);
+	if (ret <= 0) return ret;
 
 {	/* decode ECDSA signature */
 	const unsigned char *psig = buf;
 	sig = d2i_ECDSA_SIG(NULL, &psig, (long)len);
 }
 
-	if (sig == NULL) return(-1);
+	if (sig == NULL) return -1;
 }
 
 /* encode ECDSA r&s into SecSH signature blob */
@@ -191,12 +191,15 @@ SSH_ECDSA_SignFinal(EVP_MD_CTX *ctx, unsigned char *sigret, unsigned int *siglen
 
 	memcpy(sigret, sshbuf_ptr(buf), len);
 	*siglen = len;
-	return(1);
+
+	sshbuf_free(buf);
+	ECDSA_SIG_free(sig);
+	return 1;
 
 encode_err:
 	sshbuf_free(buf);
 	ECDSA_SIG_free(sig);
-	return(-1);
+	return -1;
 }
 }
 #endif /*def OPENSSL_HAS_ECC*/
@@ -237,8 +240,10 @@ SSH_ECDSA_VerifyFinal(EVP_MD_CTX *ctx, const unsigned char *sigblob, unsigned in
 	sig = ECDSA_SIG_new();
 	if (sig == NULL) goto parse_err;
 
-	if (ECDSA_SIG_set0(sig, pr, ps))
+	if (ECDSA_SIG_set0(sig, pr, ps)) {
+		sshbuf_free(buf);
 		goto process;
+	}
 
 	ECDSA_SIG_free(sig);
 
