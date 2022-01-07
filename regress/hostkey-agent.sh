@@ -53,7 +53,7 @@ for k in $PLAIN_TYPES ; do
 done
 done
 
-SSH_CERTTYPES=`ssh -Q key | grep 'cert-v01@openssh.com'`
+SSH_CERTTYPES=`$SSH -Q key | grep 'cert-v01@openssh.com'`
 SSH_CERTTYPES=`echo "$SSH_CERTTYPES" | sed 's/ssh-xmss-cert-v01@openssh.com//'` # TODO
 
 # Prepare sshd_proxy for certificates.
