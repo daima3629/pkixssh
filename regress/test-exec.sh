@@ -1,4 +1,4 @@
-#	$OpenBSD: test-exec.sh,v 1.87 2021/09/01 00:50:27 dtucker Exp $
+#	$OpenBSD: test-exec.sh,v 1.89 2022/01/06 22:14:25 dtucker Exp $
 #	Placed in the Public Domain.
 
 #SUDO=sudo
@@ -255,6 +255,7 @@ for o in \${1+"\$@"} ; do
   esac
 done
 
+echo Executing: $SSH \${1+"\$@"} >>$TEST_SSH_LOGFILE
 exec $SSH -E$TEST_SSH_LOGFILE \${1+"\$@"}
 EOF
 chmod a+rx $OBJ/ssh-log-wrapper.sh
