@@ -1369,7 +1369,7 @@ main(int ac, char **av)
 		    /* Optional additional jump hosts ",..." */
 		    options.jump_extra == NULL ? "" : " -J ",
 		    options.jump_extra == NULL ? "" : options.jump_extra,
-		    /* Optional "-F" argumment if -F specified */
+		    /* Optional "-F" argument if -F specified */
 		    config == NULL ? "" : " -F ",
 		    config == NULL ? "" : config,
 		    /* Optional "-v" arguments if -v set */
