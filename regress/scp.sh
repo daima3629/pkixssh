@@ -95,7 +95,7 @@ for mode in $SCP_MODES ; do
 	 $SCP $scpopts *metachar* ${DIR2} 2>/dev/null; \
 	 [ ! -f metachartest ] ) || fail "shell metacharacters"
 
-	if [ ! -z "$SUDO" ]; then
+	if test -n "$SUDO" ; then
 		verbose "$tag: skipped file after scp -p with failed chown+utimes"
 		scpclean
 		cp -p ${DATA} ${DIR}/copy

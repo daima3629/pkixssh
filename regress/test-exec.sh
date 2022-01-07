@@ -171,7 +171,7 @@ if [ "x$USE_VALGRIND" != "x" ]; then
 	rm -rf $OBJ/valgrind-out $OBJ/valgrind-vgdb
 	mkdir -p $OBJ/valgrind-out $OBJ/valgrind-vgdb
 	# When using sudo ensure low-priv tests can write pipes and logs.
-	if [ "x$SUDO" != "x" ]; then
+	if test -n "$SUDO" ; then
 		chmod 777 $OBJ/valgrind-out $OBJ/valgrind-vgdb
 	fi
 	VG_TEST=`basename $SCRIPT .sh`
@@ -181,7 +181,7 @@ if [ "x$USE_VALGRIND" != "x" ]; then
 	reexec)
 		VG_SKIP=1 ;;
 	sftp-chroot)
-		if [ "x${SUDO}" != "x" ]; then
+		if test -n "$SUDO" ; then
 			VG_SKIP=1
 		fi ;;
 	esac
