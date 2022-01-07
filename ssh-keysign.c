@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keysign.c,v 1.69 2021/11/13 17:26:13 deraadt Exp $ */
+/* $OpenBSD: ssh-keysign.c,v 1.70 2022/01/06 22:00:18 djm Exp $ */
 /*
  * Copyright (c) 2002 Markus Friedl.  All rights reserved.
  * Copyright (c) 2011-2021 Roumen Petrov.  All rights reserved.
@@ -130,7 +130,7 @@ valid_request(struct passwd *pw, char *host, struct sshkey **retkey, char **reta
 {
 	struct sshbuf *b;
 	struct sshkey *key = NULL;
-	u_char type, *pkblob;
+	u_char type;
 	char *p;
 	size_t blen, len;
 	char *pkalg = NULL, *luser;
@@ -177,7 +177,8 @@ valid_request(struct passwd *pw, char *host, struct sshkey **retkey, char **reta
 		fail++;
 	free(p);
 
-	/* pubkey */
+{	/* pubkey */
+	u_char *pkblob;
 	if ((r = sshbuf_get_cstring(b, &pkalg, NULL)) != 0 ||
 	    (r = sshbuf_get_string(b, &pkblob, &blen)) != 0)
 		fatal_fr(r, "parse pk");
@@ -191,6 +192,7 @@ valid_request(struct passwd *pw, char *host, struct sshkey **retkey, char **reta
 	} else if (key->type != pktype)
 		fail++;
 	free(pkblob);
+}
 
 	/* client host name, handle trailing dot */
 	if ((r = sshbuf_get_cstring(b, &p, &len)) != 0)
