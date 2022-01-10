@@ -2009,8 +2009,9 @@ channel_handle_wfd(struct ssh *ssh, Channel *c,
 	int r, len;
 
 	UNUSED(readset);
-	if (c->wfd == -1 || !FD_ISSET(c->wfd, writeset) ||
-	    sshbuf_len(c->output) == 0)
+	if (c->wfd == -1 || !FD_ISSET(c->wfd, writeset))
+		return 1;
+	if (sshbuf_len(c->output) == 0)
 		return 1;
 
 	/* Send buffered output data to the socket. */
@@ -2101,7 +2102,9 @@ channel_handle_efd_write(struct ssh *ssh, Channel *c,
 	ssize_t len;
 
 	UNUSED(readset);
-	if (!FD_ISSET(c->efd, writeset) || sshbuf_len(c->extended) == 0)
+	if (!FD_ISSET(c->efd, writeset))
+		return 1;
+	if (sshbuf_len(c->extended) == 0)
 		return 1;
 
 	len = write(c->efd, sshbuf_ptr(c->extended),
@@ -2276,8 +2279,9 @@ channel_post_mux_client_write(struct ssh *ssh, Channel *c,
 	int r;
 
 	UNUSED(readset);
-	if (c->wfd == -1 || !FD_ISSET(c->wfd, writeset) ||
-	    sshbuf_len(c->output) == 0)
+	if (c->wfd == -1 || !FD_ISSET(c->wfd, writeset))
+		return;
+	if (sshbuf_len(c->output) == 0)
 		return;
 
 	len = write(c->wfd, sshbuf_ptr(c->output), sshbuf_len(c->output));
