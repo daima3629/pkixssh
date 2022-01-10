@@ -76,10 +76,16 @@ CYGWIN*)
 	;;
 esac
 
-# wrapper to egrep program found by configure script
+
+# wrappers to programs found by configure script
 egrep() {
   $EGREP ${1+"$@"}
 }
+
+awk() {
+  $AWK ${1+"$@"}
+}
+
 
 SRC=`dirname ${SCRIPT}`
 
