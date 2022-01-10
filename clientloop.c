@@ -2019,6 +2019,8 @@ client_global_hostkeys_private_confirm(struct ssh *ssh, int type,
 	size_t i, ndone;
 	struct sshbuf *signdata;
 	int r;
+	const char *rsa_kexalg = NULL;
+	char *rsa_keyalg = NULL;
 	const u_char *sig;
 	size_t siglen;
 
@@ -2030,6 +2032,12 @@ client_global_hostkeys_private_confirm(struct ssh *ssh, int type,
 		    "private host keys");
 		hostkeys_update_ctx_free(ctx);
 		return;
+	}
+
+	if (ssh->kex->hostkey_alg != NULL) {
+		int hktype = sshkey_type_from_name(ssh->kex->hostkey_alg);
+		if (sshkey_type_plain(hktype) == KEY_RSA)
+			rsa_kexalg =  ssh->kex->hostkey_alg;
 	}
 
 	if ((signdata = sshbuf_new()) == NULL)
@@ -2058,6 +2066,28 @@ client_global_hostkeys_private_confirm(struct ssh *ssh, int type,
 			goto out;
 		}
 		/* Prepare data to be signed: session ID, unique string, key */
+		if ((sshkey_type_plain(key->type) == KEY_RSA) &&
+		    !sshkey_is_x509(key)
+		) {
+			free(rsa_keyalg);
+			r = sshkey_sigtype(sig, siglen, &rsa_keyalg);
+			if (r != 0) {
+				error_fr(r, "server gave unintelligible signature "
+				    "for %s key %zu", pkalg, i);
+				goto out;
+			}
+			pkalg = rsa_keyalg;
+			/* warn for untrusted signature only
+			 * if host-key is not rsa based
+			 */
+			if (rsa_kexalg == NULL &&
+			    match_pattern_list(rsa_keyalg,
+				"rsa-sha2-256,rsa-sha2-512", 0) != 1) {
+				debug("server uses untrusted RSA signature"
+				    " algorithm %s for hostkey prove %zu",
+				    rsa_keyalg, i);
+			}
+		}
 		if ((r = sshbuf_put_cstring(signdata,
 			"hostkeys-prove-00@openssh.com")) != 0 ||
 		    (r = sshbuf_put_stringb(signdata,
@@ -2087,6 +2117,7 @@ client_global_hostkeys_private_confirm(struct ssh *ssh, int type,
 	/* Make the edits to known_hosts */
 	update_known_hosts(ctx);
  out:
+	free(rsa_keyalg);
 	hostkeys_update_ctx_free(ctx);
 }
 
