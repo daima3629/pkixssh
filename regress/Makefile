@@ -1,4 +1,4 @@
-#	$OpenBSD: Makefile,v 1.118 2021/10/01 05:20:20 dtucker Exp $
+#	$OpenBSD: Makefile,v 1.120 2022/01/06 21:46:56 dtucker Exp $
 
 tests: unit file-tests t-exec
 check-core: tests
@@ -99,6 +99,8 @@ LTESTS=		connect \
 #		multiplex \
 # portability:
 #		percent \
+# extra setup:
+#		hostbased - see comment in regression test
 
 FIPS_LTESTS=\
 	fips-connect-privsep \
