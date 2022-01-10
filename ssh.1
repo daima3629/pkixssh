@@ -172,9 +172,11 @@ The compression algorithm is the same used by
 Compression is desirable on modem lines and other
 slow connections, but will only slow down things on fast networks.
 The default value can be set on a host-by-host basis in the
-configuration files; see the
+configuration files. See the
 .Cm Compression
-option.
+keyword in
+.Xr ssh_config 5
+for more information.
 .Pp
 .It Fl c Ar cipher_spec
 Selects the cipher specification for encrypting the session.
@@ -473,7 +475,9 @@ A comma-separated list of MAC (message authentication code) algorithms,
 specified in order of preference.
 See the
 .Cm MACs
-keyword for more information.
+keyword in
+.Xr ssh_config 5
+for more information.
 .Pp
 .It Fl N
 Do not execute a remote command.
