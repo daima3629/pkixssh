@@ -5,7 +5,7 @@
  *                    All rights reserved
  * Rhosts authentication.  This file contains code to check whether to admit
  * the login based on rhosts authentication.  This file also processes
- * /etc/hosts.equiv.
+ * hosts.equiv(5) files.
  *
  * As far as I am concerned, the code I have written for this software
  * can be used freely for any purpose.  Any derived versions of this
@@ -44,8 +44,9 @@ extern ServerOptions options;
 extern int use_privsep;
 
 /*
- * This function processes an rhosts-style file (.rhosts, .shosts, or
- * /etc/hosts.equiv).  This returns true if authentication can be granted
+ * This function processes an rhosts-style file (.rhosts, .shosts,
+ * /etc/hosts.equiv or /etc/shosts.equiv).
+ * This returns true if authentication can be granted
  * based on the file, and returns zero otherwise.
  */
 
@@ -179,9 +180,10 @@ check_rhosts_file(const char *filename, const char *hostname,
 }
 
 /*
- * Tries to authenticate the user using the .shosts or .rhosts file. Returns
- * true if authentication succeeds.  If ignore_rhosts is true, only
- * /etc/hosts.equiv will be considered (.rhosts and .shosts are ignored).
+ * Tries to authenticate the user using the hosts.equiv(5) files. Returns
+ * true if authentication succeeds. Always consider files /etc/hosts.equiv
+ * and /etc/shosts.equiv. Files .rhosts and .shosts are ignored depending from
+ * IgnoreRhosts option.
  */
 int
 auth_rhosts2(struct passwd *pw, const char *client_user, const char *hostname,
@@ -218,7 +220,7 @@ auth_rhosts2(struct passwd *pw, const char *client_user, const char *hostname,
 	 * Deny if The user has no .shosts or .rhosts file and there
 	 * are no system-wide files.
 	 */
-	if (!rhosts_files[rhosts_file_index] &&
+	if (rhosts_files[rhosts_file_index] == NULL &&
 	    stat(_PATH_RHOSTS_EQUIV, &st) == -1 &&
 	    stat(_PATH_SSH_HOSTS_EQUIV, &st) == -1) {
 		debug3_f("no hosts access files exist");
@@ -235,13 +237,13 @@ auth_rhosts2(struct passwd *pw, const char *client_user, const char *hostname,
 		if (check_rhosts_file(_PATH_RHOSTS_EQUIV, hostname, ipaddr,
 		    client_user, pw->pw_name)) {
 			auth_debug_add("Accepted for %.100s [%.100s] by "
-			    "/etc/hosts.equiv.", hostname, ipaddr);
+			    "%s.", hostname, ipaddr, _PATH_RHOSTS_EQUIV);
 			return 1;
 		}
 		if (check_rhosts_file(_PATH_SSH_HOSTS_EQUIV, hostname, ipaddr,
 		    client_user, pw->pw_name)) {
 			auth_debug_add("Accepted for %.100s [%.100s] by "
-			    "%.100s.", hostname, ipaddr, _PATH_SSH_HOSTS_EQUIV);
+			    "%s.", hostname, ipaddr, _PATH_SSH_HOSTS_EQUIV);
 			return 1;
 		}
 	}

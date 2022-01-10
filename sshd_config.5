@@ -798,6 +798,7 @@ The list of available key algorithms may also be obtained using
 Specifies whether rhosts or /etc/hosts.equiv authentication together
 with successful public key client host authentication is allowed
 (host-based authentication).
+Also secure shell uses equavalient shosts and /etc/shosts.equiv.
 The default is
 .Cm no .
 .It Cm HostbasedUsesNameFromPacketOnly
@@ -805,8 +806,9 @@ Specifies whether or not the server will attempt to perform a reverse
 name lookup when matching the name in the
 .Pa ~/.shosts ,
 .Pa ~/.rhosts ,
+.Pa /etc/hosts.equiv ,
 and
-.Pa /etc/hosts.equiv
+.Pa /etc/shosts.equiv
 files during
 .Cm HostbasedAuthentication .
 A setting of
