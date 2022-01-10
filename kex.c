@@ -610,8 +610,10 @@ kex_input_newkeys(int type, u_int32_t seq, struct ssh *ssh)
 	/* sshbuf_reset(kex->my); */
 	kex->flags &= ~KEX_INIT_SENT;
 
+#if 0	/* keep for later use */
 	free(kex->hostkey_alg);
 	kex->hostkey_alg = NULL;
+#endif
 
 	free(kex->name);
 	kex->name = NULL;
