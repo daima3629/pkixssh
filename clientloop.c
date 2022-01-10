@@ -2043,30 +2043,32 @@ client_global_hostkeys_private_confirm(struct ssh *ssh, int type,
 	 * ctx->keys where the corresponding ctx->keys_seen[i] == 0.
 	 */
 	for (ndone = i = 0; i < ctx->nkeys; i++) {
+		struct sshkey *key;
 		const char *pkalg;
+
 		if (ctx->keys_seen[i])
 			continue;
 
-		pkalg = sshkey_ssh_name(ctx->keys[i]);
-		/* Prepare data to be signed: session ID, unique string, key */
+		key = ctx->keys[i];
+		pkalg = sshkey_ssh_name(key);
 		sshbuf_reset(signdata);
-		if ( (r = sshbuf_put_cstring(signdata,
-		    "hostkeys-prove-00@openssh.com")) != 0 ||
-		    (r = sshbuf_put_stringb(signdata,
-			ssh->kex->session_id)) != 0 ||
-		    (r = Xkey_puts(pkalg, ctx->keys[i], signdata)) != 0)
-			fatal_fr(r, "compose signdata");
 		/* Extract and verify signature */
 		if ((r = sshpkt_get_string_direct(ssh, &sig, &siglen)) != 0) {
 			error_fr(r, "parse sig");
 			goto out;
 		}
-	{	ssh_verify_ctx verify_ctx = { pkalg, ctx->keys[i], &ssh->compat, NULL };
+		/* Prepare data to be signed: session ID, unique string, key */
+		if ((r = sshbuf_put_cstring(signdata,
+			"hostkeys-prove-00@openssh.com")) != 0 ||
+		    (r = sshbuf_put_stringb(signdata,
+			ssh->kex->session_id)) != 0 ||
+		    (r = Xkey_puts(pkalg, key, signdata)) != 0)
+			fatal_fr(r, "compose signdata");
+	{	ssh_verify_ctx verify_ctx = { pkalg, key, &ssh->compat, NULL };
 
 		r = Xkey_verify(&verify_ctx, sig, siglen, sshbuf_ptr(signdata), sshbuf_len(signdata));
 		if (r != 0) {
-			error_f("server gave bad signature for %s key %zu",
-			    sshkey_type(ctx->keys[i]), i);
+			error_f("server gave bad signature for %s key %zu", pkalg, i);
 			goto out;
 		}
 	}
