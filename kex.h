@@ -1,4 +1,4 @@
-/* $OpenBSD: kex.h,v 1.114 2021/01/31 22:55:29 djm Exp $ */
+/* $OpenBSD: kex.h,v 1.117 2022/01/06 21:55:23 djm Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2014-2021 Roumen Petrov.  All rights reserved.
@@ -78,8 +78,11 @@ enum kex_exchange {
 	KEX_MAX
 };
 
-#define KEX_INIT_SENT	0x0001
-#define KEX_INITIAL	0x0002
+/* kex->flags */
+#define KEX_INIT_SENT			0x0001
+#define KEX_INITIAL			0x0002
+#define KEX_RSA_SHA2_256_SUPPORTED 	0x0008 /* only set in server for now */
+#define KEX_RSA_SHA2_512_SUPPORTED 	0x0010 /* only set in server for now */
 
 struct sshenc {
 	char	*name;

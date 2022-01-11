@@ -1,4 +1,4 @@
-/* $OpenBSD: serverloop.c,v 1.228 2021/07/16 09:00:23 djm Exp $ */
+/* $OpenBSD: serverloop.c,v 1.230 2022/01/06 21:55:23 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -13,7 +13,7 @@
  *
  * SSH2 support by Markus Friedl.
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2017-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2017-2022 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -692,8 +692,16 @@ server_input_hostkeys_prove(struct ssh *ssh, struct sshbuf **respp)
 	char *pkalg = NULL;
 	int r, ndx, success = 0;
 	const u_char *blob;
+	const char *rsa_kexalg = NULL;
+	//char *rsa_keyalg = NULL;
 	u_char *sig = 0;
 	size_t blen, slen;
+
+	if (ssh->kex->hostkey_alg != NULL) {
+		int hktype = sshkey_type_from_name(ssh->kex->hostkey_alg);
+		if (sshkey_type_plain(hktype) == KEY_RSA)
+			rsa_kexalg =  ssh->kex->hostkey_alg;
+	}
 
 	if ((resp = sshbuf_new()) == NULL || (sigbuf = sshbuf_new()) == NULL)
 		fatal_f("sshbuf_new");
@@ -730,6 +738,23 @@ server_input_hostkeys_prove(struct ssh *ssh, struct sshbuf **respp)
 		sshbuf_reset(sigbuf);
 		free(sig);
 		sig = NULL;
+		if (sshkey_type_plain(key->type) == KEY_RSA &&
+		    !sshkey_is_x509(key)
+		) {
+			const char *rsa_keyalg = NULL;
+			if (rsa_kexalg != NULL)
+				rsa_keyalg = rsa_kexalg;
+			else if (ssh->kex->flags & KEX_RSA_SHA2_256_SUPPORTED)
+				rsa_keyalg = "rsa-sha2-256";
+			else if (ssh->kex->flags & KEX_RSA_SHA2_512_SUPPORTED)
+				rsa_keyalg = "rsa-sha2-512";
+			debug3_f("sign rsa key %d using %s signature", ndx,
+			    rsa_keyalg == NULL ? "default" : rsa_keyalg);
+			if (rsa_keyalg != NULL) {
+				free(pkalg);
+				pkalg = xstrdup(rsa_keyalg);
+			}
+		}
 	{	ssh_sign_ctx ctx = { pkalg, key_prv, &ssh->compat, NULL, NULL };
 
 		if ((r = sshbuf_put_cstring(sigbuf,
