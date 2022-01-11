@@ -1,7 +1,7 @@
-/* $OpenBSD: sftp-client.c,v 1.158 2022/01/01 01:55:30 jsg Exp $ */
+/* $OpenBSD: sftp-client.c,v 1.160 2022/01/08 07:37:32 djm Exp $ */
 /*
  * Copyright (c) 2001-2004 Damien Miller <djm@openbsd.org>
- * Copyright (c) 2018-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2018-2022 Roumen Petrov.  All rights reserved.
  * Copyright (c) 2021 Mike Frysinger.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
@@ -1049,10 +1049,20 @@ do_realpath_expand(struct sftp_conn *conn, const char *path, int expand)
 
 	if (type == SSH2_FXP_STATUS) {
 		u_int status;
+		char *errmsg = NULL;
 
 		if ((r = sshbuf_get_u32(msg, &status)) != 0)
 			fatal_fr(r, "parse status");
-		error("Couldn't canonicalize: %s", fx2txt(status));
+		if ((conn->version >= 3) &&
+		    (r = sshbuf_get_cstring(msg, &errmsg, NULL)) != 0)
+			fatal_fr(r, "parse message");
+		if (errmsg != NULL && *errmsg == '\0') {
+			free(errmsg);
+			errmsg = NULL;
+		}
+		error("%s %s: %s", expand ? "expand" : "realpath",
+		    path, (errmsg != NULL ? errmsg : fx2txt(status)));
+		free(errmsg);
 		sshbuf_free(msg);
 		return NULL;
 	} else if (type != SSH2_FXP_NAME)
@@ -1442,7 +1452,7 @@ send_open(struct sftp_conn *conn, const char *path, const char *tag,
 	    tag, id, path, openmode);
 
 	if ((handle = get_handle(conn, id, &handle_len,
-	    "%s open(\"%s\")", tag, path)) == NULL)
+	    "%s open \"%s\"", tag, path)) == NULL)
 		return -1;
 
 	/* success */
