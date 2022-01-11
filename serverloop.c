@@ -693,7 +693,6 @@ server_input_hostkeys_prove(struct ssh *ssh, struct sshbuf **respp)
 	int r, ndx, success = 0;
 	const u_char *blob;
 	const char *rsa_kexalg = NULL;
-	//char *rsa_keyalg = NULL;
 	u_char *sig = 0;
 	size_t blen, slen;
 
