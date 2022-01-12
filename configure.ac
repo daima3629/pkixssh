@@ -574,6 +574,7 @@ AC_CHECK_HEADERS([sys/un.h], [], [], [
 
 # templates for target-specific defines
 AH_TEMPLATE([BROKEN_TCGETATTR_ICANON], [Define to 1 if tcgetattr with ICANON may hang])
+AH_TEMPLATE([BROKEN_POLL], [Define to 1 if system poll(2) implementation is broken])
 AH_TEMPLATE([NEED_SETPGRP], [Need setpgrp to acquire controlling tty])
 AH_TEMPLATE([DISABLE_FD_PASSING], [Define if your platform needs to skip post auth file descriptor passing])
 
@@ -765,6 +766,9 @@ main() { if (NSVersionOfRunTimeLibrary("System") >= (60 << 16))
 	# proc_pidinfo()-based closefrom() replacement.
 	AC_CHECK_HEADERS([libproc.h])
 	AC_CHECK_FUNCS([proc_pidinfo])
+	# poll(2) is broken for character-special devices (at least).
+	# cf. Apple bug 3710161 (not public, but searchable)
+	AC_DEFINE([BROKEN_POLL], [1])
 	;;
 *-*-dragonfly*)
 	SSHDLIBS="$SSHDLIBS -lcrypt"
