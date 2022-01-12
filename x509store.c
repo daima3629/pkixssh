@@ -88,7 +88,10 @@ ssh_x509flags = {
 };
 
 
-static X509_STORE	*x509store = NULL;
+static X509_STORE *x509store = NULL;
+static X509_STORE *x509revoked = NULL;
+
+static int ssh_x509revoked_cb(int ok, X509_STORE_CTX *ctx);
 
 
 #ifdef USE_X509_STORE_CTX_INDEX
@@ -200,16 +203,6 @@ X509_get_extension_flags(X509 *x) {
 #endif /*ndef HAVE_X509_GET_EXTENSION_FLAGS*/
 
 
-#if 1
-#  define SSH_CHECK_REVOKED
-#endif
-
-
-#ifdef SSH_CHECK_REVOKED
-static X509_STORE	*x509revoked = NULL;
-static int ssh_x509revoked_cb(int ok, X509_STORE_CTX *ctx);
-
-
 static char *
 ssh_ASN1_INTEGER_2_string(ASN1_INTEGER *_asni) {
 	BIO  *bio;
@@ -236,7 +229,6 @@ ssh_ASN1_INTEGER_2_string(ASN1_INTEGER *_asni) {
 
 	return p;
 }
-#endif /*def SSH_CHECK_REVOKED*/
 
 
 #ifdef USE_OPENSSL_STORE2
@@ -385,11 +377,9 @@ ssh_x509store_cb(int ok, X509_STORE_CTX *ctx) {
 			X509_verify_cert_error_string(ctx_error));
 		free(buf);
 	}
-#ifdef SSH_CHECK_REVOKED
 	if (ok && !self_signed) {
 		ok = ssh_x509revoked_cb(ok, ctx);
 	}
-#endif
 	return ok;
 }
 
@@ -472,15 +462,9 @@ ssh_x509flags_defaults(SSH_X509Flags *flags) {
 	if (flags->key_allow_selfissued == -1) {
 		flags->key_allow_selfissued = 0;
 	}
-#ifdef SSH_CHECK_REVOKED
 	if (flags->mandatory_crl == -1) {
 		flags->mandatory_crl = 0;
 	}
-#else
-	if (flags->mandatory_crl != -1) {
-		logit("useless option: mandatory_crl");
-	}
-#endif
 	if (flags->validate_first == -1) {
 		flags->validate_first = 0;
 	}
@@ -636,14 +620,12 @@ ssh_x509store_initcontext(void) {
 		}
 		X509_STORE_set_verify_cb(x509store, ssh_x509store_cb);
 	}
-#ifdef SSH_CHECK_REVOKED
 	if (x509revoked == NULL) {
 		x509revoked = X509_STORE_new();
 		if (x509revoked == NULL) {
 			fatal("cannot create x509revoked context");
 		}
 	}
-#endif
 }
 
 
@@ -653,12 +635,10 @@ ssh_x509store_cleanup(void) {
 		X509_STORE_free(x509store);
 		x509store = NULL;
 	}
-#ifdef SSH_CHECK_REVOKED
 	if (x509revoked != NULL) {
 		X509_STORE_free(x509revoked);
 		x509revoked = NULL;
 	}
-#endif
 }
 
 
@@ -702,13 +682,11 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 		error_f("certificate path and file are NULLs");
 		return 0;
 	}
-#ifdef SSH_CHECK_REVOKED
 	if ((_locations->revocation_path == NULL) &&
 	    (_locations->revocation_file == NULL)) {
 		error_f("revocation path and file are NULLs");
 		return 0;
 	}
-#endif
 	ssh_x509store_initcontext();
 
 	flag = ssh_x509store_add_hash_dir(x509store,  "X.509 store", _locations->certificate_path);
@@ -727,7 +705,6 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 	/*at least one lookup should succeed*/
 	if (flag == 0) return 0;
 
-#ifdef SSH_CHECK_REVOKED
 	flag = ssh_x509store_add_hash_dir(x509revoked,  "X.509 revocation store", _locations->revocation_path);
 	if (_locations->revocation_file != NULL) {
 		X509_LOOKUP *lookup = X509_STORE_add_lookup(x509revoked, X509_LOOKUP_file());
@@ -741,15 +718,6 @@ ssh_x509store_addlocations(const X509StoreOptions *_locations) {
 		}
 		ERR_clear_error();
 	}
-#else /*ndef SSH_CHECK_REVOKED*/
-	flag = 1;
-	if (_locations->revocation_path != NULL) {
-		logit("useless option: revocation_path");
-	}
-	if (_locations->revocation_file != NULL) {
-		logit("useless option: revocation_file");
-	}
-#endif /*ndef SSH_CHECK_REVOKED*/
 	/*at least one revocation lookup should succeed*/
 	if (flag == 0) return 0;
 
@@ -788,7 +756,7 @@ ssh_x509store_addldapurl(const char *ldap_url, const char *ldap_ver) {
 		}
 		/*ERR_clear_error();*/
 
-#ifdef SSH_CHECK_REVOKED
+
 		lookup = X509_STORE_add_lookup(x509revoked, lookup_method);
 		if (lookup == NULL) {
 			fatal_f("cannot add ldap lookup(revoked)");
@@ -798,12 +766,12 @@ ssh_x509store_addldapurl(const char *ldap_url, const char *ldap_ver) {
 			debug2("ldap url '%.400s' added to x509 store(revoked)", ldap_url);
 		}
 		/*ERR_clear_error();*/
-#endif /*def SSH_CHECK_REVOKED*/
-	/* NOTE: All LDAP-connections will use one and the same protocol version */
-	if (!set_ldap_version(ldap_ver)) {
-		fatal_f("cannot set ldap version");
-		return 0; /* ;-) */
-	}
+
+		/* NOTE: All LDAP-connections will use one and the same protocol version */
+		if (!set_ldap_version(ldap_ver)) {
+			fatal_f("cannot set ldap version");
+			return 0; /* ;-) */
+		}
 	}
 #undef SSH_X509_LOOKUP_ADD
 	return 1;
@@ -846,7 +814,6 @@ ssh_x509store_adduri(const char **store_uri, u_int num_store_uri) {
 			error("cannot add store URI '%.400s' to x509 store", uri);
 		/*ERR_clear_error();*/
 
-#ifdef SSH_CHECK_REVOKED
 		lookup = X509_STORE_add_lookup(x509revoked, lookup_method);
 		if (lookup == NULL) {
 			fatal_f("cannot add store lookup[%d](revoked)", k);
@@ -857,7 +824,6 @@ ssh_x509store_adduri(const char **store_uri, u_int num_store_uri) {
 		else
 			error("cannot add store URI '%.400s' to x509 store(revoked)", uri);
 		/*ERR_clear_error();*/
-#endif /*def SSH_CHECK_REVOKED*/
 	}
 #undef SSH_X509_LOOKUP_ADD
 	return 1;
@@ -1126,7 +1092,6 @@ donecsc:
 }
 
 
-#ifdef SSH_CHECK_REVOKED
 static void
 ssh_get_namestr_and_hash(
 	X509_NAME *name,
@@ -1482,4 +1447,3 @@ ssh_x509revoked_cb(int ok, X509_STORE_CTX *ctx) {
 
 	return ok;
 }
-#endif
