@@ -1,4 +1,4 @@
-/* $OpenBSD: mux.c,v 1.91 2021/07/23 04:00:59 djm Exp $ */
+/* $OpenBSD: mux.c,v 1.92 2022/01/11 01:26:47 djm Exp $ */
 /*
  * Copyright (c) 2002-2008 Damien Miller <djm@openbsd.org>
  * Copyright (c) 2018-2021 Roumen Petrov.  All rights reserved.
@@ -2045,7 +2045,7 @@ mux_client_request_session(int fd)
 	} else
 		debug2("Received exit status from master %d", (int)exitval);
 
-	if (tty_flag && options.log_level != SYSLOG_LEVEL_QUIET)
+	if (tty_flag && options.log_level >= SYSLOG_LEVEL_INFO)
 		fprintf(stderr, "Shared connection to %s closed.\r\n", host);
 
 	exit(exitval);
