@@ -259,6 +259,7 @@ typedef struct {
 char	*ssh_connection_hash(const char *thishost, const char *host,
     const char *portstr, const char *user);
 void	 initialize_options(Options *);
+void	 cleanup_options(Options *);
 int	 fill_default_options(Options *);
 void	 fill_default_options_for_canonicalization(Options *);
 int	 process_config_line(Options *, struct passwd *, const char *,

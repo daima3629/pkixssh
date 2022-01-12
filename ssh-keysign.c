@@ -272,7 +272,7 @@ main(int argc, char **argv)
 	X509StoreOptions_init(&ca);
 	X509StoreOptions_system_defaults(&ca);
 	ssh_x509store_addlocations(&ca);
-	X509StoreOptions_reset(&ca);
+	X509StoreOptions_cleanup(&ca);
 }
 	pssh_x509store_build_certchain = ssh_x509store_build_certchain;
 

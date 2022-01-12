@@ -91,7 +91,7 @@ typedef struct {
 }       X509StoreOptions;
 
 void X509StoreOptions_init(X509StoreOptions *options);
-void X509StoreOptions_reset(X509StoreOptions *options);
+void X509StoreOptions_cleanup(X509StoreOptions *options);
 void X509StoreOptions_system_defaults(X509StoreOptions *options);
 void X509StoreOptions_user_defaults(X509StoreOptions *options, uid_t uid);
 

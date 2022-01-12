@@ -1800,6 +1800,8 @@ main(int ac, char **av)
 	sshkey_free(previous_host_key);
 	previous_host_key = NULL;
 
+	cleanup_options(&options);
+
 	ssh_engines_shutdown();
 	ssh_OpenSSL_shuthdown();
 

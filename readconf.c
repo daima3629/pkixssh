@@ -2628,6 +2628,13 @@ initialize_options(Options * options)
 	options->known_hosts_command = NULL;
 }
 
+void
+cleanup_options(Options *options) {
+	ssh_x509store_cleanup();
+	X509StoreOptions_cleanup(&options->userca);
+	X509StoreOptions_cleanup(&options->ca);
+}
+
 /*
  * A petite version of fill_default_options() that just fills the options
  * needed for hostname canonicalization to proceed.

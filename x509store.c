@@ -575,7 +575,7 @@ X509StoreOptions_init(X509StoreOptions *options) {
 
 
 void
-X509StoreOptions_reset(X509StoreOptions *options) {
+X509StoreOptions_cleanup(X509StoreOptions *options) {
 	free((char*)options->certificate_file);	options->certificate_file = NULL;
 	free((char*)options->certificate_path);	options->certificate_path = NULL;
 	free((char*)options->revocation_file);	options->revocation_file = NULL;
