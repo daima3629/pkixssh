@@ -1,6 +1,6 @@
 #
 # Copyright (c) 1999-2004 Damien Miller
-# Copyright (c) 2002-2021 Roumen Petrov
+# Copyright (c) 2002-2022 Roumen Petrov
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -574,9 +574,19 @@ AC_CHECK_HEADERS([sys/un.h], [], [], [
 
 # templates for target-specific defines
 AH_TEMPLATE([BROKEN_TCGETATTR_ICANON], [Define to 1 if tcgetattr with ICANON may hang])
+AH_TEMPLATE([BROKEN_GETADDRINFO], [Define to 1 if system getaddrinfo(3) is broken])
+AH_TEMPLATE([BROKEN_SETREUID], [Define to 1 if system setreuid(2) is broken])
+AH_TEMPLATE([BROKEN_SETREGID], [Define to 1 if system setregid(2) is broken])
+# For instance inet_ntoa(3) Irix gcc issue:
+AH_TEMPLATE([BROKEN_INET_NTOA], [Define to 1 if system inet_ntoa(3) is broken])
+AH_TEMPLATE([BROKEN_UPDWTMPX], [Define to 1 if system updwtmpx(3) is broken])
 AH_TEMPLATE([BROKEN_POLL], [Define to 1 if system poll(2) implementation is broken])
 AH_TEMPLATE([NEED_SETPGRP], [Need setpgrp to acquire controlling tty])
 AH_TEMPLATE([DISABLE_FD_PASSING], [Define if your platform needs to skip post auth file descriptor passing])
+AH_TEMPLATE([BROKEN_ONE_BYTE_DIRENT_D_NAME],
+    [Define to 1 if system struct dirent expects program to allocate extra space for d_name])
+# For instance unexpected glob(3) functionality on FreeBSD and OS X
+AH_TEMPLATE([BROKEN_GLOB], [Define to 1 if system glob(3) does not do what we expect])
 
 # Messages for features tested for in target-specific section
 SIA_MSG="no"
@@ -672,8 +682,8 @@ case "$host" in
 	check_for_aix_broken_getaddrinfo=1
 	AC_DEFINE([SETEUID_BREAKS_SETUID], [1],
 	    [Define if your platform breaks doing a seteuid before a setuid])
-	AC_DEFINE([BROKEN_SETREUID], [1], [Define if your setreuid() is broken])
-	AC_DEFINE([BROKEN_SETREGID], [1], [Define if your setregid() is broken])
+	AC_DEFINE([BROKEN_SETREUID], [1])
+	AC_DEFINE([BROKEN_SETREGID], [1])
 	dnl AIX handles lastlog as part of its login message
 	AC_DEFINE([DISABLE_LASTLOG], [1], [Define if you don't want to use lastlog])
 	AC_DEFINE([LOGIN_NEEDS_UTMPX], [1],
@@ -710,8 +720,8 @@ case "$host" in
 	AC_DEFINE([IP_TOS_IS_BROKEN], [1],
 		[Define if your system choked on IP TOS setting])
 	AC_DEFINE([SETEUID_BREAKS_SETUID])
-	AC_DEFINE([BROKEN_SETREUID])
-	AC_DEFINE([BROKEN_SETREGID])
+	AC_DEFINE([BROKEN_SETREUID], [1])
+	AC_DEFINE([BROKEN_SETREGID], [1])
 	;;
 *-*-darwin*)
 	use_pie=auto
@@ -726,14 +736,13 @@ main() { if (NSVersionOfRunTimeLibrary("System") >= (60 << 16))
 			]])],
 	[AC_MSG_RESULT([working])],
 	[AC_MSG_RESULT([buggy])
-	AC_DEFINE([BROKEN_GETADDRINFO], [1],
-		[getaddrinfo is broken (if present)])
+	AC_DEFINE([BROKEN_GETADDRINFO], [1])
 	],
 	[AC_MSG_RESULT([assume it is working])])
 	AC_DEFINE([SETEUID_BREAKS_SETUID])
-	AC_DEFINE([BROKEN_SETREUID])
-	AC_DEFINE([BROKEN_SETREGID])
-	AC_DEFINE([BROKEN_GLOB], [1], [OS X glob does not do what we expect])
+	AC_DEFINE([BROKEN_SETREUID], [1])
+	AC_DEFINE([BROKEN_SETREGID], [1])
+	AC_DEFINE([BROKEN_GLOB], [1])
 	AC_DEFINE_UNQUOTED([BIND_8_COMPAT], [1],
 		[Define if your resolver libs need this for getrrsetbyname])
 	AC_CHECK_HEADERS([net/if_utun.h])
@@ -831,12 +840,10 @@ main() { if (NSVersionOfRunTimeLibrary("System") >= (60 << 16))
 	;;
 *-*-irix5*)
 	PATH="$PATH:/usr/etc"
-	AC_DEFINE([BROKEN_INET_NTOA], [1],
-		[Define if you system's inet_ntoa is busted
-		(e.g. Irix gcc issue)])
+	AC_DEFINE([BROKEN_INET_NTOA], [1])
 	AC_DEFINE([SETEUID_BREAKS_SETUID])
-	AC_DEFINE([BROKEN_SETREUID])
-	AC_DEFINE([BROKEN_SETREGID])
+	AC_DEFINE([BROKEN_SETREUID], [1])
+	AC_DEFINE([BROKEN_SETREGID], [1])
 	AC_DEFINE([WITH_ABBREV_NO_TTY], [1],
 		[Define if you shouldn't strip 'tty' from your
 		ttyname in [uw]tmp])
@@ -853,11 +860,11 @@ main() { if (NSVersionOfRunTimeLibrary("System") >= (60 << 16))
 		[Define if you want IRIX audit trails])
 	AC_CHECK_FUNC([jlimit_startjob], [AC_DEFINE([WITH_IRIX_JOBS], [1],
 		[Define if you want IRIX kernel jobs])])
-	AC_DEFINE([BROKEN_INET_NTOA])
+	AC_DEFINE([BROKEN_INET_NTOA], [1])
 	AC_DEFINE([SETEUID_BREAKS_SETUID])
-	AC_DEFINE([BROKEN_SETREUID])
-	AC_DEFINE([BROKEN_SETREGID])
-	AC_DEFINE([BROKEN_UPDWTMPX], [1], [updwtmpx is broken (if present)])
+	AC_DEFINE([BROKEN_SETREUID], [1])
+	AC_DEFINE([BROKEN_SETREGID], [1])
+	AC_DEFINE([BROKEN_UPDWTMPX], [1])
 	AC_DEFINE([WITH_ABBREV_NO_TTY])
 	AC_DEFINE([LOCKED_PASSWD_STRING], ["*LK*"])
 	;;
@@ -1042,7 +1049,7 @@ mips-sony-bsd|mips-sony-newsos4)
 	AC_DEFINE([SSH_TUN_FREEBSD], [1], [Open tunnel devices the FreeBSD way])
 	AC_CHECK_HEADER([net/if_tap.h], ,
 	    AC_DEFINE([SSH_TUN_NO_L2], [1], [No layer 2 tunnel support]))
-	AC_DEFINE([BROKEN_GLOB], [1], [FreeBSD glob does not do what we need])
+	AC_DEFINE([BROKEN_GLOB], [1])
 	TEST_MALLOC_OPTIONS="AJRX"
 	# Preauth crypto occasionally uses file descriptors for crypto offload
 	# and will crash if they cannot be opened.
@@ -1056,8 +1063,8 @@ mips-sony-bsd|mips-sony-newsos4)
 	;;
 *-*-bsdi*)
 	AC_DEFINE([SETEUID_BREAKS_SETUID])
-	AC_DEFINE([BROKEN_SETREUID])
-	AC_DEFINE([BROKEN_SETREGID])
+	AC_DEFINE([BROKEN_SETREUID], [1])
+	AC_DEFINE([BROKEN_SETREGID], [1])
 	;;
 *-next-*)
 	conf_lastlog_location="/usr/adm/lastlog"
@@ -1164,8 +1171,8 @@ mips-sony-bsd|mips-sony-newsos4)
 	AC_DEFINE([USE_PIPES])
 	AC_DEFINE([SSHD_ACQUIRES_CTTY])
 	AC_DEFINE([SETEUID_BREAKS_SETUID])
-	AC_DEFINE([BROKEN_SETREUID])
-	AC_DEFINE([BROKEN_SETREGID])
+	AC_DEFINE([BROKEN_SETREUID], [1])
+	AC_DEFINE([BROKEN_SETREGID], [1])
 	;;
 *-sni-sysv*)
 	# /usr/ucblib MUST NOT be searched on ReliantUNIX
@@ -1176,8 +1183,8 @@ mips-sony-bsd|mips-sony-newsos4)
 	AC_DEFINE([USE_PIPES])
 	AC_DEFINE([IP_TOS_IS_BROKEN])
 	AC_DEFINE([SETEUID_BREAKS_SETUID])
-	AC_DEFINE([BROKEN_SETREUID])
-	AC_DEFINE([BROKEN_SETREGID])
+	AC_DEFINE([BROKEN_SETREUID], [1])
+	AC_DEFINE([BROKEN_SETREGID], [1])
 	AC_DEFINE([SSHD_ACQUIRES_CTTY])
 	external_path_file=/etc/default/login
 	# /usr/ucblib/libucb.a no longer needed on ReliantUNIX
@@ -1188,8 +1195,8 @@ mips-sony-bsd|mips-sony-newsos4)
 *-*-sysv4.2*)
 	AC_DEFINE([USE_PIPES])
 	AC_DEFINE([SETEUID_BREAKS_SETUID])
-	AC_DEFINE([BROKEN_SETREUID])
-	AC_DEFINE([BROKEN_SETREGID])
+	AC_DEFINE([BROKEN_SETREUID], [1])
+	AC_DEFINE([BROKEN_SETREGID], [1])
 	AC_DEFINE([PASSWD_NEEDS_USERNAME], [1], [must supply username to passwd])
 	AC_DEFINE([LOCKED_PASSWD_STRING], ["*LK*"])
 	;;
@@ -1199,16 +1206,16 @@ mips-sony-bsd|mips-sony-newsos4)
 	AC_DEFINE([UNIXWARE_LONG_PASSWORDS], [1], [Support passwords > 8 chars])
 	AC_DEFINE([USE_PIPES])
 	AC_DEFINE([SETEUID_BREAKS_SETUID])
-	AC_DEFINE([BROKEN_GETADDRINFO])
-	AC_DEFINE([BROKEN_SETREUID])
-	AC_DEFINE([BROKEN_SETREGID])
+	AC_DEFINE([BROKEN_GETADDRINFO], [1])
+	AC_DEFINE([BROKEN_SETREUID], [1])
+	AC_DEFINE([BROKEN_SETREGID], [1])
 	AC_DEFINE([PASSWD_NEEDS_USERNAME])
 	AC_DEFINE([BROKEN_TCGETATTR_ICANON], [1])
 	check_for_libcrypt_later=1
 	case "$host" in
 	*-*-sysv5SCO_SV*)	# SCO OpenServer 6.x
 		maildir=/var/spool/mail
-		AC_DEFINE([BROKEN_UPDWTMPX])
+		AC_DEFINE([BROKEN_UPDWTMPX], [1])
 		AC_CHECK_LIB([prot], [getluid], [ LIBS="$LIBS -lprot"
 			AC_CHECK_FUNCS([getluid setluid], , , [-lprot])
 			], , )
@@ -1235,11 +1242,11 @@ mips-sony-bsd|mips-sony-newsos4)
 	AC_DEFINE([DISABLE_SHADOW])
 	AC_DEFINE([DISABLE_FD_PASSING])
 	AC_DEFINE([SETEUID_BREAKS_SETUID])
-	AC_DEFINE([BROKEN_GETADDRINFO])
-	AC_DEFINE([BROKEN_SETREUID])
-	AC_DEFINE([BROKEN_SETREGID])
+	AC_DEFINE([BROKEN_GETADDRINFO], [1])
+	AC_DEFINE([BROKEN_SETREUID], [1])
+	AC_DEFINE([BROKEN_SETREGID], [1])
 	AC_DEFINE([WITH_ABBREV_NO_TTY])
-	AC_DEFINE([BROKEN_UPDWTMPX])
+	AC_DEFINE([BROKEN_UPDWTMPX], [1])
 	AC_DEFINE([PASSWD_NEEDS_USERNAME])
 	AC_CHECK_FUNCS([getluid setluid])
 	MANTYPE=man
@@ -1275,10 +1282,10 @@ mips-sony-bsd|mips-sony-newsos4)
 			  [String used in /etc/passwd to denote locked account])
 		fi
 	fi
-	AC_DEFINE([BROKEN_GETADDRINFO])
+	AC_DEFINE([BROKEN_GETADDRINFO], [1])
 	AC_DEFINE([SETEUID_BREAKS_SETUID])
-	AC_DEFINE([BROKEN_SETREUID])
-	AC_DEFINE([BROKEN_SETREGID])
+	AC_DEFINE([BROKEN_SETREUID], [1])
+	AC_DEFINE([BROKEN_SETREGID], [1])
 	AC_DEFINE([BROKEN_READV_COMPARISON], [1], [Can't do comparisons on readv])
 	;;
 
@@ -1653,13 +1660,11 @@ AC_RUN_IFELSE(
 ])
 case $ssh_cv_dirent_allocates_space_for_d_name in
 	no)
-		AC_DEFINE([BROKEN_ONE_BYTE_DIRENT_D_NAME], [1],
-			[Define if your struct dirent expects you to
-			allocate extra space for d_name])
+		AC_DEFINE([BROKEN_ONE_BYTE_DIRENT_D_NAME], [1])
 		;;
 	cross)
 		AC_MSG_WARN([cross compiling: assuming BROKEN_ONE_BYTE_DIRENT_D_NAME])
-		AC_DEFINE([BROKEN_ONE_BYTE_DIRENT_D_NAME])
+		AC_DEFINE([BROKEN_ONE_BYTE_DIRENT_D_NAME], [1])
 		;;
 esac
 
@@ -2456,7 +2461,7 @@ if test "x$ac_cv_func_getaddrinfo" = "xyes" && \
 		],
 		[
 			AC_MSG_RESULT([no])
-			AC_DEFINE([BROKEN_GETADDRINFO])
+			AC_DEFINE([BROKEN_GETADDRINFO], [1])
 		],
 		[
 			AC_MSG_RESULT([cross-compiling, assuming yes])
@@ -2514,7 +2519,7 @@ if test "x$ac_cv_func_getaddrinfo" = "xyes" && \
 		],
 		[
 			AC_MSG_RESULT([no])
-			AC_DEFINE([BROKEN_GETADDRINFO])
+			AC_DEFINE([BROKEN_GETADDRINFO], [1])
 		],
 		[
 			AC_MSG_RESULT([cross-compiling, assuming no])
@@ -6028,7 +6033,7 @@ if test "x$ac_cv_func_getaddrinfo" != "xyes" ; then
 else
 	TEST_SSH_IPV6=yes
 fi
-AC_CHECK_DECL([BROKEN_GETADDRINFO],  [TEST_SSH_IPV6=no])
+AC_CHECK_DECL([BROKEN_GETADDRINFO], [TEST_SSH_IPV6=no])
 AC_SUBST([TEST_SSH_IPV6], [$TEST_SSH_IPV6])
 AC_SUBST([TEST_SSH_UTF8], [$TEST_SSH_UTF8])
 AC_SUBST([TEST_MALLOC_OPTIONS], [$TEST_MALLOC_OPTIONS])
