@@ -398,9 +398,9 @@ get_decode_stat(struct sftp_conn *conn, u_int expected_id, int quiet)
 		if ((r = sshbuf_get_u32(msg, &status)) != 0)
 			fatal_fr(r, "parse status");
 		if (quiet)
-			debug("Couldn't stat remote file: %s", fx2txt(status));
+			debug("remote stat: %s", fx2txt(status));
 		else
-			error("Couldn't stat remote file: %s", fx2txt(status));
+			error("remote stat: %s", fx2txt(status));
 		sshbuf_free(msg);
 		return(NULL);
 	} else if (type != SSH2_FXP_ATTRS) {
@@ -446,9 +446,9 @@ get_decode_statvfs(struct sftp_conn *conn, struct sftp_statvfs *st,
 		if ((r = sshbuf_get_u32(msg, &status)) != 0)
 			fatal_fr(r, "parse status");
 		if (quiet)
-			debug("Couldn't statvfs: %s", fx2txt(status));
+			debug("remote statvfs: %s", fx2txt(status));
 		else
-			error("Couldn't statvfs: %s", fx2txt(status));
+			error("remote statvfs: %s", fx2txt(status));
 		sshbuf_free(msg);
 		return -1;
 	} else if (type != SSH2_FXP_EXTENDED_REPLY) {
@@ -709,7 +709,7 @@ do_close(struct sftp_conn *conn, const u_char *handle, u_int handle_len)
 
 	status = get_status(conn, id);
 	if (status != SSH2_FX_OK)
-		error("Couldn't close file: %s", fx2txt(status));
+		error("remote close: %s", fx2txt(status));
 
 	sshbuf_free(msg);
 
@@ -891,7 +891,7 @@ do_rm(struct sftp_conn *conn, const char *path)
 	send_string_request(conn, id, SSH2_FXP_REMOVE, path, strlen(path));
 	status = get_status(conn, id);
 	if (status != SSH2_FX_OK)
-		error("Couldn't delete file: %s", fx2txt(status));
+		error("remote delete \"%s\": %s", path, fx2txt(status));
 	return status == SSH2_FX_OK ? 0 : -1;
 }
 
@@ -906,7 +906,7 @@ do_mkdir(struct sftp_conn *conn, const char *path, Attrib *a, int print_flag)
 
 	status = get_status(conn, id);
 	if (status != SSH2_FX_OK && print_flag)
-		error("Couldn't create directory: %s", fx2txt(status));
+		error("remote mkdir \"%s\": %s", path, fx2txt(status));
 
 	return status == SSH2_FX_OK ? 0 : -1;
 }
@@ -922,7 +922,7 @@ do_rmdir(struct sftp_conn *conn, const char *path)
 
 	status = get_status(conn, id);
 	if (status != SSH2_FX_OK)
-		error("Couldn't remove directory: %s", fx2txt(status));
+		error("remote rmdir \"%s\": %s", path, fx2txt(status));
 
 	return status == SSH2_FX_OK ? 0 : -1;
 }
@@ -987,8 +987,7 @@ do_setstat(struct sftp_conn *conn, const char *path, Attrib *a)
 
 	status = get_status(conn, id);
 	if (status != SSH2_FX_OK)
-		error("Couldn't setstat on \"%s\": %s", path,
-		    fx2txt(status));
+		error("remote setstat \"%s\": %s", path, fx2txt(status));
 
 	return status == SSH2_FX_OK ? 0 : -1;
 }
@@ -1005,7 +1004,7 @@ do_fsetstat(struct sftp_conn *conn, const u_char *handle, u_int handle_len,
 
 	status = get_status(conn, id);
 	if (status != SSH2_FX_OK)
-		error("Couldn't fsetstat: %s", fx2txt(status));
+		error("remote fsetstat: %s", fx2txt(status));
 
 	return status == SSH2_FX_OK ? 0 : -1;
 }
@@ -1145,7 +1144,7 @@ do_rename(struct sftp_conn *conn, const char *oldpath, const char *newpath,
 
 	status = get_status(conn, id);
 	if (status != SSH2_FX_OK)
-		error("Couldn't rename file \"%s\" to \"%s\": %s", oldpath,
+		error("remote rename \"%s\" to \"%s\": %s", oldpath,
 		    newpath, fx2txt(status));
 
 	return status == SSH2_FX_OK ? 0 : -1;
@@ -1181,7 +1180,7 @@ do_hardlink(struct sftp_conn *conn, const char *oldpath, const char *newpath)
 
 	status = get_status(conn, id);
 	if (status != SSH2_FX_OK)
-		error("Couldn't link file \"%s\" to \"%s\": %s", oldpath,
+		error("remote link \"%s\" to \"%s\": %s", oldpath,
 		    newpath, fx2txt(status));
 
 	return status == SSH2_FX_OK ? 0 : -1;
@@ -1216,7 +1215,7 @@ do_symlink(struct sftp_conn *conn, const char *oldpath, const char *newpath)
 
 	status = get_status(conn, id);
 	if (status != SSH2_FX_OK)
-		error("Couldn't symlink file \"%s\" to \"%s\": %s", oldpath,
+		error("remote symlink \"%s\" to \"%s\": %s", oldpath,
 		    newpath, fx2txt(status));
 
 	return status == SSH2_FX_OK ? 0 : -1;
@@ -1248,7 +1247,7 @@ do_fsync(struct sftp_conn *conn, u_char *handle, u_int handle_len)
 
 	status = get_status(conn, id);
 	if (status != SSH2_FX_OK)
-		error("Couldn't sync file: %s", fx2txt(status));
+		error("remote fsync: %s", fx2txt(status));
 
 	return status == SSH2_FX_OK ? 0 : -1;
 }
@@ -1393,8 +1392,7 @@ do_lsetstat(struct sftp_conn *conn, const char *path, Attrib *a)
 
 	status = get_status(conn, id);
 	if (status != SSH2_FX_OK)
-		error("Couldn't setstat on \"%s\": %s", path,
-		    fx2txt(status));
+		error("remote lsetstat \"%s\": %s", path, fx2txt(status));
 
 	return status == SSH2_FX_OK ? 0 : -1;
 }
@@ -1505,7 +1503,7 @@ do_download(struct sftp_conn *conn, const char *remote_path,
 
 	if ((a->flags & SSH2_FILEXFER_ATTR_PERMISSIONS) &&
 	    (!S_ISREG(a->perm))) {
-		error("Cannot download non-regular file: %s", remote_path);
+		error("download \"%s\": not a regular file", remote_path);
 		return(-1);
 	}
 
@@ -1524,14 +1522,13 @@ do_download(struct sftp_conn *conn, const char *remote_path,
 	local_fd = open(local_path,
 	    O_WRONLY | O_CREAT | (resume_flag ? 0 : O_TRUNC), mode | S_IWUSR);
 	if (local_fd == -1) {
-		error("Couldn't open local file \"%s\" for writing: %s",
-		    local_path, strerror(errno));
+		error("local open \"%s\": %s", local_path, strerror(errno));
 		goto fail;
 	}
 	offset = highwater = 0;
 	if (resume_flag) {
 		if (fstat(local_fd, &st) == -1) {
-			error("Unable to stat local file \"%s\": %s",
+			error("local stat \"%s\": %s",
 			    local_path, strerror(errno));
 			goto fail;
 		}
@@ -1692,16 +1689,15 @@ do_download(struct sftp_conn *conn, const char *remote_path,
 		}
 		debug("truncating at %llu", (unsigned long long)highwater);
 		if (ftruncate(local_fd, highwater) == -1)
-			error("ftruncate \"%s\": %s", local_path,
+			error("local ftruncate \"%s\": %s", local_path,
 			    strerror(errno));
 	}
 	if (read_error) {
-		error("Couldn't read from remote file \"%s\" : %s",
-		    remote_path, fx2txt(status));
+		error("remote read \"%s\" : %s", remote_path, fx2txt(status));
 		status = -1;
 		do_close(conn, handle, handle_len);
 	} else if (write_error) {
-		error("Couldn't write to \"%s\": %s", local_path,
+		error("local write \"%s\": %s", local_path,
 		    strerror(write_errno));
 		status = SSH2_FX_FAILURE;
 		do_close(conn, handle, handle_len);
@@ -1716,7 +1712,7 @@ do_download(struct sftp_conn *conn, const char *remote_path,
 #else
 		if (preserve_flag && chmod(local_path, mode) == -1)
 #endif /* HAVE_FCHMOD */
-			error("Couldn't set mode on \"%s\": %s", local_path,
+			error("local chmod \"%s\": %s", local_path,
 			    strerror(errno));
 		if (preserve_flag &&
 		    (a->flags & SSH2_FILEXFER_ATTR_ACMODTIME)) {
@@ -1725,7 +1721,7 @@ do_download(struct sftp_conn *conn, const char *remote_path,
 			tv[1].tv_sec = a->mtime;
 			tv[0].tv_usec = tv[1].tv_usec = 0;
 			if (utimes(local_path, tv) == -1)
-				error("Can't set times on \"%s\": %s",
+				error("local set times \"%s\": %s",
 				    local_path, strerror(errno));
 		}
 		if (resume_flag && !lmodified)
@@ -1733,7 +1729,7 @@ do_download(struct sftp_conn *conn, const char *remote_path,
 		else if (fsync_flag) {
 			debug("syncing \"%s\"", local_path);
 			if (fsync(local_fd) == -1)
-				error("Couldn't sync file \"%s\": %s",
+				error("local sync \"%s\": %s",
 				    local_path, strerror(errno));
 		}
 	}
@@ -1761,11 +1757,11 @@ download_dir_internal(struct sftp_conn *conn, const char *src, const char *dst,
 
 	if (dirattrib == NULL &&
 	    (dirattrib = do_stat(conn, src, 1)) == NULL) {
-		error("Unable to stat remote directory \"%s\"", src);
+		error("remote stat \"%s\" failed", src);
 		return -1;
 	}
 	if (!S_ISDIR(dirattrib->perm)) {
-		error("\"%s\" is not a directory", src);
+		error("remote \"%s\": not a directory", src);
 		return -1;
 	}
 	if (print_flag && print_flag != SFTP_PROGRESS_ONLY)
@@ -1775,8 +1771,8 @@ download_dir_internal(struct sftp_conn *conn, const char *src, const char *dst,
 		mode = dirattrib->perm & 01777;
 		tmpmode = mode | (S_IWUSR|S_IXUSR);
 	} else {
-		debug("Server did not send permissions for "
-		    "directory \"%s\"", dst);
+		debug("download remote \"%s\": server "
+		    "did not send permissions", dst);
 	}
 
 	if (mkdir(dst, tmpmode) == -1 && errno != EEXIST) {
@@ -1785,7 +1781,7 @@ download_dir_internal(struct sftp_conn *conn, const char *src, const char *dst,
 	}
 
 	if (do_readdir(conn, src, &dir_entries) == -1) {
-		error("%s: Failed to get directory contents", src);
+		error("remote readdir \"%s\" failed", src);
 		return -1;
 	}
 
@@ -1822,7 +1818,7 @@ download_dir_internal(struct sftp_conn *conn, const char *src, const char *dst,
 				ret = -1;
 			}
 		} else
-			logit("%s: not a regular file\n", new_src);
+			logit("download \"%s\": not a regular file", new_src);
 
 	}
 	free(new_dst);
@@ -1835,7 +1831,7 @@ download_dir_internal(struct sftp_conn *conn, const char *src, const char *dst,
 			tv[1].tv_sec = dirattrib->mtime;
 			tv[0].tv_usec = tv[1].tv_usec = 0;
 			if (utimes(dst, tv) == -1)
-				error("Can't set times on \"%s\": %s",
+				error("local set times on \"%s\": %s",
 				    dst, strerror(errno));
 		} else
 			debug("Server did not send times for directory "
@@ -1843,7 +1839,7 @@ download_dir_internal(struct sftp_conn *conn, const char *src, const char *dst,
 	}
 
 	if (mode != tmpmode && chmod(dst, mode) == -1)
-		error("Can't set final mode on \"%s\": %s", dst,
+		error("local chmod directory \"%s\": %s", dst,
 		    strerror(errno));
 
 	free_sftp_dirents(dir_entries);
@@ -1860,7 +1856,7 @@ download_dir(struct sftp_conn *conn, const char *src, const char *dst,
 	int ret;
 
 	if ((src_canon = do_realpath(conn, src)) == NULL) {
-		error("Unable to canonicalize path \"%s\"", src);
+		error("download \"%s\": path canonicalization failed", src);
 		return -1;
 	}
 
@@ -1893,18 +1889,16 @@ do_upload(struct sftp_conn *conn, const char *local_path,
 	TAILQ_INIT(&acks);
 
 	if ((local_fd = open(local_path, O_RDONLY)) == -1) {
-		error("Couldn't open local file \"%s\" for reading: %s",
-		    local_path, strerror(errno));
+		error("local open \"%s\": %s", local_path, strerror(errno));
 		return(-1);
 	}
 	if (fstat(local_fd, &sb) == -1) {
-		error("Couldn't fstat local file \"%s\": %s",
-		    local_path, strerror(errno));
+		error("local fstat \"%s\": %s", local_path, strerror(errno));
 		close(local_fd);
 		return(-1);
 	}
 	if (!S_ISREG(sb.st_mode)) {
-		error("%s is not a regular file", local_path);
+		error("local \"%s\": not a regular file", local_path);
 		close(local_fd);
 		return(-1);
 	}
@@ -1924,8 +1918,8 @@ do_upload(struct sftp_conn *conn, const char *local_path,
 		}
 
 		if ((off_t)c->size >= sb.st_size) {
-			error("destination file bigger or same size as "
-			    "source file");
+			error("resume \"%s\": destination file "
+			    "same size or larger", local_path);
 			close(local_fd);
 			return -1;
 		}
@@ -1973,11 +1967,10 @@ do_upload(struct sftp_conn *conn, const char *local_path,
 		while ((len == -1) &&
 		    (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK));
 
-		if (len == -1)
-			fatal("Couldn't read from \"%s\": %s", local_path,
-			    strerror(errno));
-
-		if (len != 0) {
+		if (len == -1) {
+			fatal("local read \"%s\": %s",
+			    local_path, strerror(errno));
+		} else if (len != 0) {
 			ack = request_enqueue(&acks, ++id, len, offset);
 			sshbuf_reset(msg);
 			if ((r = sshbuf_put_u8(msg, SSH2_FXP_WRITE)) != 0 ||
@@ -2036,14 +2029,12 @@ do_upload(struct sftp_conn *conn, const char *local_path,
 	free(data);
 
 	if (status != SSH2_FX_OK) {
-		error("Couldn't write to remote file \"%s\": %s",
-		    remote_path, fx2txt(status));
+		error("remote write \"%s\": %s", remote_path, fx2txt(status));
 		status = SSH2_FX_FAILURE;
 	}
 
 	if (close(local_fd) == -1) {
-		error("Couldn't close local file \"%s\": %s", local_path,
-		    strerror(errno));
+		error("local close \"%s\": %s", local_path, strerror(errno));
 		status = SSH2_FX_FAILURE;
 	}
 
@@ -2080,12 +2071,11 @@ upload_dir_internal(struct sftp_conn *conn, const char *src, const char *dst,
 	}
 
 	if (stat(src, &sb) == -1) {
-		error("Couldn't stat directory \"%s\": %s",
-		    src, strerror(errno));
+		error("local stat \"%s\": %s", src, strerror(errno));
 		return -1;
 	}
 	if (!S_ISDIR(sb.st_mode)) {
-		error("\"%s\" is not a directory", src);
+		error("local \"%s\": not a directory", src);
 		return -1;
 	}
 	if (print_flag && print_flag != SFTP_PROGRESS_ONLY)
@@ -2118,7 +2108,7 @@ upload_dir_internal(struct sftp_conn *conn, const char *src, const char *dst,
 }
 
 	if ((dirp = opendir(src)) == NULL) {
-		error("Failed to open dir \"%s\": %s", src, strerror(errno));
+		error("local opendir \"%s\": %s", src, strerror(errno));
 		return -1;
 	}
 
@@ -2132,7 +2122,7 @@ upload_dir_internal(struct sftp_conn *conn, const char *src, const char *dst,
 		new_src = path_append(src, filename);
 
 		if (lstat(new_src, &sb) == -1) {
-			logit("%s: lstat failed: %s", filename,
+			logit("local lstat \"%s\": %s", filename,
 			    strerror(errno));
 			ret = -1;
 		} else if (S_ISDIR(sb.st_mode)) {
@@ -2148,12 +2138,12 @@ upload_dir_internal(struct sftp_conn *conn, const char *src, const char *dst,
 		    (follow_link_flag && S_ISLNK(sb.st_mode))) {
 			if (do_upload(conn, new_src, new_dst,
 			    preserve_flag, resume, fsync_flag) == -1) {
-				error("Uploading of file %s to %s failed!",
+				error("upload \"%s\" to \"%s\" failed",
 				    new_src, new_dst);
 				ret = -1;
 			}
 		} else
-			logit("%s: not a regular file\n", filename);
+			logit("local \"%s\": not a regular file", filename);
 	}
 	free(new_dst);
 	free(new_src);
@@ -2173,7 +2163,7 @@ upload_dir(struct sftp_conn *conn, const char *src, const char *dst,
 	int ret;
 
 	if ((dst_canon = do_realpath(conn, dst)) == NULL) {
-		error("Unable to canonicalize path \"%s\"", dst);
+		error("upload \"%s\": path canonicalization failed", dst);
 		return -1;
 	}
 
@@ -2276,7 +2266,7 @@ do_crossload(struct sftp_conn *from, struct sftp_conn *to,
 
 	if ((a->flags & SSH2_FILEXFER_ATTR_PERMISSIONS) &&
 	    (!S_ISREG(a->perm))) {
-		error("Cannot download non-regular file: %s", from_path);
+		error("download \"%s\": not a regular file", from_path);
 		return(-1);
 	}
 	if (a->flags & SSH2_FILEXFER_ATTR_SIZE)
@@ -2457,20 +2447,18 @@ do_crossload(struct sftp_conn *from, struct sftp_conn *to,
 		if (send_open(to, to_path, "dest",
 		    SSH2_FXF_WRITE|SSH2_FXF_CREAT|SSH2_FXF_TRUNC, a,
 		    &to_handle, &to_handle_len) != 0) {
-			error("truncation failed for \"%s\"", to_path);
+			error("dest truncate \"%s\" failed", to_path);
 			to_handle = NULL;
 		}
 	}
 	if (read_error) {
-		error("Couldn't read from origin file \"%s\" : %s",
-		    from_path, fx2txt(status));
+		error("origin read \"%s\": %s", from_path, fx2txt(status));
 		status = -1;
 		do_close(from, from_handle, from_handle_len);
 		if (to_handle != NULL)
 			do_close(to, to_handle, to_handle_len);
 	} else if (write_error) {
-		error("Couldn't write to \"%s\": %s",
-		    to_path, fx2txt(write_error));
+		error("dest write \"%s\": %s", to_path, fx2txt(write_error));
 		status = SSH2_FX_FAILURE;
 		do_close(from, from_handle, from_handle_len);
 		if (to_handle != NULL)
@@ -2514,11 +2502,11 @@ crossload_dir_internal(struct sftp_conn *from, struct sftp_conn *to,
 
 	if (dirattrib == NULL &&
 	    (dirattrib = do_stat(from, from_path, 1)) == NULL) {
-		error("Unable to stat remote directory \"%s\"", from_path);
+		error("remote stat \"%s\" failed", from_path);
 		return -1;
 	}
 	if (!S_ISDIR(dirattrib->perm)) {
-		error("\"%s\" is not a directory", from_path);
+		error("remote \"%s\": not a directory", from_path);
 		return -1;
 	}
 	if (print_flag && print_flag != SFTP_PROGRESS_ONLY)
@@ -2554,7 +2542,7 @@ crossload_dir_internal(struct sftp_conn *from, struct sftp_conn *to,
 	curdir.perm = mode;
 
 	if (do_readdir(from, from_path, &dir_entries) == -1) {
-		error("%s: Failed to get directory contents", from_path);
+		error("origin readdir \"%s\" failed", from_path);
 		return -1;
 	}
 
@@ -2585,13 +2573,14 @@ crossload_dir_internal(struct sftp_conn *from, struct sftp_conn *to,
 			if (do_crossload(from, to, new_from_path, new_to_path,
 			    S_ISLNK(dir_entries[i]->a.perm) ? NULL :
 			    &(dir_entries[i]->a), preserve_flag) == -1) {
-				error("Transfer of file %s to %s failed",
+				error("crossload \"%s\" to \"%s\" failed",
 				    new_from_path, new_to_path);
 				ret = -1;
 			}
-		} else
-			logit("%s: not a regular file\n", new_from_path);
-
+		} else {
+			logit("origin \"%s\": not a regular file",
+			    new_from_path);
+		}
 	}
 	free(new_to_path);
 	free(new_from_path);
@@ -2612,7 +2601,8 @@ crossload_dir(struct sftp_conn *from, struct sftp_conn *to,
 	int ret;
 
 	if ((from_path_canon = do_realpath(from, from_path)) == NULL) {
-		error("Unable to canonicalize path \"%s\"", from_path);
+		error("crossload \"%s\": path canonicalization failed",
+		    from_path);
 		return -1;
 	}
 
