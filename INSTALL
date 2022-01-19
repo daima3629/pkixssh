@@ -1,7 +1,7 @@
 1. Prerequisites
 ----------------
 
-A C compiler.  Any C89 or better compiler should work.  Where supported,
+A C compiler.  Any C99 or better compiler should work.  Where supported,
 configure will attempt to enable the compiler's run-time integrity checking
 options.  Some notes about specific compilers:
  - clang: -ftrapv and -sanitize=integer require the compiler-rt runtime
