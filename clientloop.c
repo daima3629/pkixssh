@@ -1826,13 +1826,14 @@ struct hostkeys_update_ctx {
 	/*
 	 * Keys received from the server and a flag for each indicating
 	 * whether they already exist in known_hosts.
-	 * keys_seen is filled in by hostkeys_find() and later (for new
+	 * keys_match is filled in by hostkeys_find() and later (for new
 	 * keys) by client_global_hostkeys_private_confirm().
 	 */
 	char **algs;
 	struct sshkey **keys;
-	int *keys_seen;
-	size_t nkeys, nnew;
+	u_int *keys_match;	/* mask of HKF_MATCH_* from hostfile.h */
+	int *keys_verified;	/* flag for new keys verified by server */
+	size_t nkeys, nnew, nincomplete; /* total, new keys, incomplete match */
 
 	/*
 	 * Keys that are in known_hosts, but were not present in the update
@@ -1841,6 +1842,12 @@ struct hostkeys_update_ctx {
 	 */
 	struct sshkey **old_keys;
 	size_t nold;
+
+	/* Various special cases. */
+	int complex_hostspec;	/* wildcard or manual pattern-list host name */
+	int ca_available;	/* saw CA key for this host */
+	int old_key_seen;	/* saw old key with other name/addr */
+	int other_name_seen;	/* saw key with other name/addr */
 };
 
 static void
@@ -1856,7 +1863,8 @@ hostkeys_update_ctx_free(struct hostkeys_update_ctx *ctx)
 	for (i = 0; i < ctx->nkeys; i++)
 		sshkey_free(ctx->keys[i]);
 	free(ctx->keys);
-	free(ctx->keys_seen);
+	free(ctx->keys_match);
+	free(ctx->keys_verified);
 	for (i = 0; i < ctx->nold; i++)
 		sshkey_free(ctx->old_keys[i]);
 	free(ctx->old_keys);
@@ -1865,6 +1873,30 @@ hostkeys_update_ctx_free(struct hostkeys_update_ctx *ctx)
 	free(ctx);
 }
 
+/*
+ * Returns non-zero if a known_hosts hostname list is not of a form that
+ * can be handled by UpdateHostkeys. These include wildcard hostnames and
+ * hostnames lists that do not follow the form host[,ip].
+ */
+static int
+hostspec_is_complex(const char *hosts)
+{
+	char *cp;
+
+	/* wildcard */
+	if (strchr(hosts, '*') != NULL || strchr(hosts, '?') != NULL)
+		return 1;
+	/* single host/ip = ok */
+	if ((cp = strchr(hosts, ',')) == NULL)
+		return 0;
+	/* more than two entries on the line */
+	if (strchr(cp + 1, ',') != NULL)
+		return 1;
+	/* XXX maybe parse cp+1 and ensure it is an IP? */
+	return 0;
+}
+
+/* callback to search for ctx->keys in known_hosts */
 static int
 hostkeys_find(struct hostkey_foreach_line *l, void *_ctx)
 {
@@ -1872,17 +1904,66 @@ hostkeys_find(struct hostkey_foreach_line *l, void *_ctx)
 	size_t i;
 	struct sshkey **tmp;
 
-	if (l->status != HKF_STATUS_MATCHED || l->key == NULL)
+	if (l->key == NULL)
 		return 0;
+	if (l->status != HKF_STATUS_MATCHED) {
+		/* Record if one of the keys appears on a non-matching line */
+		for (i = 0; i < ctx->nkeys; i++) {
+			if (sshkey_equal(l->key, ctx->keys[i])) {
+				ctx->other_name_seen = 1;
+				debug3_f("found %s key under different "
+				    "name/addr at %s:%ld",
+				    sshkey_ssh_name(ctx->keys[i]),
+				    l->path, l->linenum);
+				return 0;
+			}
+		}
+		return 0;
+	}
+	/* Don't proceed if revocation or CA markers are present */
+	/* XXX relax this */
+	if (l->marker != MRK_NONE) {
+		debug3_f("hostkeys file %s:%ld has CA/revocation marker",
+		    l->path, l->linenum);
+		ctx->complex_hostspec = 1;
+		return 0;
+	}
+
+	/* If CheckHostIP is enabled, then check for mismatched hostname/addr */
+	if (ctx->ip_str != NULL && strchr(l->hosts, ',') != NULL) {
+		if ((l->match & HKF_MATCH_HOST) == 0) {
+			/* Record if address matched a different hostname. */
+			ctx->other_name_seen = 1;
+			debug3_f("found address %s against different hostname "
+			    "at %s:%ld", ctx->ip_str, l->path, l->linenum);
+			return 0;
+		} else if ((l->match & HKF_MATCH_IP) == 0) {
+			/* Record if hostname matched a different address. */
+			ctx->other_name_seen = 1;
+			debug3_f("found hostname %s against different address "
+			    "at %s:%ld", ctx->host_str, l->path, l->linenum);
+		}
+	}
+
+	/*
+	 * UpdateHostkeys is skipped for wildcard host names and hostnames
+	 * that contain more than two entries (ssh never writes these).
+	 */
+	if (hostspec_is_complex(l->hosts)) {
+		debug3_f("hostkeys file %s:%ld complex host specification",
+		    l->path, l->linenum);
+		ctx->complex_hostspec = 1;
+		return 0;
+	}
 
 	/* Mark off keys we've already seen for this host */
 	for (i = 0; i < ctx->nkeys; i++) {
-		if (sshkey_equal(l->key, ctx->keys[i])) {
-			debug3_f("found %s key at %s:%ld",
-			    sshkey_ssh_name(ctx->keys[i]), l->path, l->linenum);
-			ctx->keys_seen[i] = 1;
-			return 0;
-		}
+		if (!sshkey_equal(l->key, ctx->keys[i]))
+			continue;
+		debug3_f("found %s key at %s:%ld",
+		    sshkey_ssh_name(ctx->keys[i]), l->path, l->linenum);
+		ctx->keys_match[i] |= l->match;
+		return 0;
 	}
 	/* This line contained a key that not offered by the server */
 	debug3_f("deprecated %s key at %s:%ld", sshkey_ssh_name(l->key),
@@ -1894,6 +1975,63 @@ hostkeys_find(struct hostkey_foreach_line *l, void *_ctx)
 	ctx->old_keys[ctx->nold++] = l->key;
 	l->key = NULL;
 
+	return 0;
+}
+
+/* callback to search for ctx->old_keys in known_hosts under other names */
+static int
+hostkeys_check_old(struct hostkey_foreach_line *l, void *_ctx)
+{
+	struct hostkeys_update_ctx *ctx = (struct hostkeys_update_ctx *)_ctx;
+	size_t i;
+	int hashed;
+
+	/* only care about lines that *don't* match the active host spec */
+	if (l->status == HKF_STATUS_MATCHED || l->key == NULL)
+		return 0;
+
+	hashed = l->match & (HKF_MATCH_HOST_HASHED|HKF_MATCH_IP_HASHED);
+	for (i = 0; i < ctx->nold; i++) {
+		if (!sshkey_equal(l->key, ctx->old_keys[i]))
+			continue;
+		debug3_f("found deprecated %s key at %s:%ld as %s",
+		    sshkey_ssh_name(ctx->old_keys[i]), l->path, l->linenum,
+		    hashed ? "[HASHED]" : l->hosts);
+		ctx->old_key_seen = 1;
+		break;
+	}
+	return 0;
+}
+
+/*
+ * Check known_hosts files for deprecated keys under other names. Returns 0
+ * on success or -1 on failure. Updates ctx->old_key_seen if deprecated keys
+ * exist under names other than the active hostname/IP.
+ */
+static int
+check_old_keys_othernames(struct hostkeys_update_ctx *ctx)
+{
+	size_t i;
+	int r;
+
+	debug2_f("checking for %zu deprecated keys", ctx->nold);
+	for (i = 0; i < options.num_user_hostfiles; i++) {
+		debug3_f("searching %s for %s / %s",
+		    options.user_hostfiles[i], ctx->host_str,
+		    ctx->ip_str ? ctx->ip_str : "(none)");
+		if ((r = hostkeys_foreach(options.user_hostfiles[i],
+		    hostkeys_check_old, ctx, ctx->host_str, ctx->ip_str,
+		    HKF_WANT_PARSE_KEY, 0)) != 0) {
+			if (r == SSH_ERR_SYSTEM_ERROR && errno == ENOENT) {
+				debug_f("hostkeys file %s does not exist",
+				    options.user_hostfiles[i]);
+				continue;
+			}
+			error_fr(r, "hostkeys_foreach failed for %s",
+			    options.user_hostfiles[i]);
+			return -1;
+		}
+	}
 	return 0;
 }
 
@@ -1918,7 +2056,7 @@ update_known_hosts(struct hostkeys_update_ctx *ctx)
 	struct stat sb;
 
 	for (i = 0; i < ctx->nkeys; i++) {
-		if (ctx->keys_seen[i] != 2)
+		if (!ctx->keys_verified[i])
 			continue;
 		key = ctx->keys[i];
 		is_x509 = sshkey_is_x509(key);
@@ -2048,13 +2186,13 @@ client_global_hostkeys_private_confirm(struct ssh *ssh, int type,
 	/*
 	 * Expect a signature for each of the ctx->nnew private keys we
 	 * haven't seen before. They will be in the same order as the
-	 * ctx->keys where the corresponding ctx->keys_seen[i] == 0.
+	 * ctx->keys where the corresponding ctx->keys_match[i] == 0.
 	 */
 	for (ndone = i = 0; i < ctx->nkeys; i++) {
 		struct sshkey *key;
 		const char *pkalg;
 
-		if (ctx->keys_seen[i])
+		if (ctx->keys_match[i])
 			continue;
 
 		key = ctx->keys[i];
@@ -2103,7 +2241,7 @@ client_global_hostkeys_private_confirm(struct ssh *ssh, int type,
 		}
 	}
 		/* Key is good. Mark it as 'seen' */
-		ctx->keys_seen[i] = 2;
+		ctx->keys_verified[i] = 1;
 		ndone++;
 	}
 	/* Shouldn't happen */
@@ -2139,6 +2277,7 @@ client_input_hostkeys(struct ssh *ssh)
 	static int hostkeys_seen = 0; /* XXX use struct ssh */
 	extern struct sockaddr_storage hostaddr; /* XXX from ssh.c */
 	struct hostkeys_update_ctx *ctx = NULL;
+	u_int want;
 
 	if (hostkeys_seen)
 		fatal_f("server already sent hostkeys");
@@ -2216,8 +2355,10 @@ client_input_hostkeys(struct ssh *ssh)
 		goto out;
 	}
 
-	if ((ctx->keys_seen = calloc(ctx->nkeys,
-	    sizeof(*ctx->keys_seen))) == NULL)
+	if ((ctx->keys_match = calloc(ctx->nkeys,
+	    sizeof(*ctx->keys_match))) == NULL ||
+	    (ctx->keys_verified = calloc(ctx->nkeys,
+	    sizeof(*ctx->keys_verified))) == NULL)
 		fatal_f("calloc failed");
 
 	get_hostfile_hostname_ipaddr(host,
@@ -2232,7 +2373,7 @@ client_input_hostkeys(struct ssh *ssh)
 		    ctx->ip_str ? ctx->ip_str : "(none)");
 		if ((r = hostkeys_foreach(options.user_hostfiles[i],
 		    hostkeys_find, ctx, ctx->host_str, ctx->ip_str,
-		    HKF_WANT_PARSE_KEY|HKF_WANT_MATCH, 0)) != 0) {
+		    HKF_WANT_PARSE_KEY, 0)) != 0) {
 			if (r == SSH_ERR_SYSTEM_ERROR && errno == ENOENT) {
 				debug_f("hostkeys file %s does not exist",
 				    options.user_hostfiles[i]);
@@ -2245,47 +2386,89 @@ client_input_hostkeys(struct ssh *ssh)
 	}
 
 	/* Figure out if we have any new keys to add */
-	ctx->nnew = 0;
+	ctx->nnew = ctx->nincomplete = 0;
+	want = HKF_MATCH_HOST | ( options.check_host_ip ? HKF_MATCH_IP : 0);
 	for (i = 0; i < ctx->nkeys; i++) {
-		if (!ctx->keys_seen[i])
+		if (ctx->keys_match[i] == 0)
 			ctx->nnew++;
+		if ((ctx->keys_match[i] & want) != want)
+			ctx->nincomplete++;
 	}
 
-	debug3_f("%zu keys from server: %zu new, %zu retained. %zu to remove",
-	    ctx->nkeys, ctx->nnew, ctx->nkeys - ctx->nnew, ctx->nold);
+	debug3_f("%zu server keys: %zu new, %zu retained, "
+	    "%zu incomplete match. %zu to remove", ctx->nkeys, ctx->nnew,
+	    ctx->nkeys - ctx->nnew - ctx->nincomplete,
+	    ctx->nincomplete, ctx->nold);
 
-	if (ctx->nnew == 0 && ctx->nold != 0) {
-		/* We have some keys to remove. Just do it. */
-		update_known_hosts(ctx);
-	} else if (ctx->nnew != 0) {
-		/*
-		 * We have received hitherto-unseen keys from the server.
-		 * Ask the server to confirm ownership of the private halves.
-		 */
-		debug3_f("asking server to prove ownership for %zu keys",
-		    ctx->nnew);
-		if ((r = sshpkt_start(ssh, SSH2_MSG_GLOBAL_REQUEST)) != 0 ||
-		    (r = sshpkt_put_cstring(ssh,
-		    "hostkeys-prove-00@openssh.com")) != 0 ||
-		    (r = sshpkt_put_u8(ssh, 1)) != 0) /* bool: want reply */
-			fatal_fr(r, "cannot prepare packet");
-		if ((buf = sshbuf_new()) == NULL)
-			fatal_f("sshbuf_new");
-		for (i = 0; i < ctx->nkeys; i++) {
-			if (ctx->keys_seen[i])
-				continue;
-			sshbuf_reset(buf);
-			if ((r = Xkey_putb(ctx->algs[i], ctx->keys[i], buf)) != 0)
-				fatal_fr(r, "Xkey_putb");
-			if ((r = sshpkt_put_stringb(ssh, buf)) != 0)
-				fatal_fr(r, "sshpkt_put_string");
+	if (ctx->nnew == 0 && ctx->nold == 0) {
+		debug_f("no new or deprecated keys from server");
+		goto out;
+	}
+
+	/* Various reasons why we cannot proceed with the update */
+	if (ctx->complex_hostspec) {
+		debug_f("CA/revocation marker, manual host list or wildcard "
+		    "host pattern found, skipping UserKnownHostsFile update");
+		goto out;
+	}
+	if (ctx->other_name_seen) {
+		debug_f("host key found matching a different name/address, "
+		    "skipping UserKnownHostsFile update");
+		goto out;
+	}
+	/*
+	 * If removing keys, check whether they appear under different
+	 * names/addresses and refuse to proceed if they do. This avoids
+	 * cases such as hosts with multiple names becoming inconsistent
+	 * with regards to CheckHostIP entries.
+	 * XXX UpdateHostkeys=force to override this (and other) checks?
+	 */
+	if (ctx->nold != 0) {
+		if (check_old_keys_othernames(ctx) != 0)
+			goto out; /* error already logged */
+		if (ctx->old_key_seen) {
+			debug_f("key(s) for %s%s%s exist under other names; "
+			    "skipping UserKnownHostsFile update",
+			    ctx->host_str, ctx->ip_str == NULL ? "" : ",",
+			    ctx->ip_str == NULL ? "" : ctx->ip_str);
+			goto out;
 		}
-		if ((r = sshpkt_send(ssh)) != 0)
-			fatal_fr(r, "sshpkt_send");
-		client_register_global_confirm(
-		    client_global_hostkeys_private_confirm, ctx);
-		ctx = NULL;  /* will be freed in callback */
 	}
+
+	if (ctx->nnew == 0) {
+		/*
+		 * We have some keys to remove or fix matching for.
+		 * We can proceed to do this without requiring a fresh proof
+		 * from the server.
+		 */
+		update_known_hosts(ctx);
+		goto out;
+	}
+	/*
+	 * We have received previously-unseen keys from the server.
+	 * Ask the server to confirm ownership of the private halves.
+	 */
+	debug3_f("asking server to prove ownership for %zu keys", ctx->nnew);
+	if ((r = sshpkt_start(ssh, SSH2_MSG_GLOBAL_REQUEST)) != 0 ||
+	    (r = sshpkt_put_cstring(ssh,
+	    "hostkeys-prove-00@openssh.com")) != 0 ||
+	    (r = sshpkt_put_u8(ssh, 1)) != 0) /* bool: want reply */
+		fatal_fr(r, "prepare hostkeys-prove");
+	if ((buf = sshbuf_new()) == NULL)
+		fatal_f("sshbuf_new");
+	for (i = 0; i < ctx->nkeys; i++) {
+		if (ctx->keys_match[i])
+			continue;
+		sshbuf_reset(buf);
+		if ((r = Xkey_putb(ctx->algs[i], ctx->keys[i], buf)) != 0 ||
+		    (r = sshpkt_put_stringb(ssh, buf)) != 0)
+			fatal_fr(r, "assemble hostkeys-prove");
+	}
+	if ((r = sshpkt_send(ssh)) != 0)
+		fatal_fr(r, "send hostkeys-prove");
+	client_register_global_confirm(
+	    client_global_hostkeys_private_confirm, ctx);
+	ctx = NULL;  /* will be freed in callback */
 
 	/* Success */
  out:
