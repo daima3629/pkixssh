@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keyscan.c,v 1.144 2021/12/02 23:45:36 djm Exp $ */
+/* $OpenBSD: ssh-keyscan.c,v 1.145 2022/01/21 00:53:40 deraadt Exp $ */
 /*
  * Copyright 1995, 1996 by David Mazieres <dm@lcs.mit.edu>.
  *
@@ -6,7 +6,7 @@
  * permitted provided that due credit is given to the author and the
  * OpenBSD project by leaving this copyright notice intact.
  *
- * Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2022 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -589,9 +589,12 @@ conloop(void)
 	else
 		timespecclear(&seltime);
 
-	while (ppoll(read_wait, maxfd, &seltime, NULL) == -1 &&
-	    (errno == EAGAIN || errno == EINTR || errno == EWOULDBLOCK))
-		;
+	while (ppoll(read_wait, maxfd, &seltime, NULL) == -1) {
+		if (errno == EAGAIN || errno == EINTR || errno == EWOULDBLOCK)
+			continue;
+		error("ppoll: %s", strerror(errno));
+		break;
+	}
 
 	for (i = 0; i < maxfd; i++) {
 		if (read_wait[i].revents & (POLLHUP|POLLERR|POLLNVAL))
