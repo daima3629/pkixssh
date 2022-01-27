@@ -1958,6 +1958,12 @@ channel_handle_rfd(struct ssh *ssh, Channel *c,
 	char buf[CHAN_RBUF];
 	ssize_t len;
 	int r, force;
+	int pty_zeroread = 0;
+
+#ifdef PTY_ZEROREAD
+	/* Bug on AIX: read(1) can return 0 for a non-closed fd */
+	pty_zeroread = c->isatty;
+#endif
 
 	UNUSED(writeset);
 	force = c->isatty && c->detach_close && c->istate != CHAN_INPUT_CLOSED;
@@ -1967,17 +1973,16 @@ channel_handle_rfd(struct ssh *ssh, Channel *c,
 
 	errno = 0;
 	len = read(c->rfd, buf, sizeof(buf));
+	/* fixup AIX zero-length read with errno set to look more like errors */
+	if (pty_zeroread && len == 0 && errno != 0)
+		len = -1;
 	if (len == -1 && (errno == EINTR ||
 	    ((errno == EAGAIN || errno == EWOULDBLOCK) && !force)))
 		return 1;
-#ifndef PTY_ZEROREAD
-	if (len <= 0) {
-#else
-	if ((!c->isatty && len <= 0) ||
-	    (c->isatty && (len < 0 || (len == 0 && errno != 0)))) {
-#endif
-		debug2("channel %d: read<=0 rfd %d len %zd",
-		    c->self, c->rfd, len);
+	if (len < 0 || (!pty_zeroread && len == 0)) {
+		debug2("channel %d: read<=0 rfd %d len %zd: %s",
+		    c->self, c->rfd, len,
+		    len == 0 ? "closed" : strerror(errno));
 		if (c->type != SSH_CHANNEL_OPEN) {
 			debug2("channel %d: not open", c->self);
 			chan_mark_dead(ssh, c);
