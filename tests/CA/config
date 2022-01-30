@@ -255,7 +255,10 @@ SSH_VA_BASEPORT=${SSH_VA_BASEPORT-20080}
 SSH_OPENSSL_OCSP_TMOUT=${SSH_OPENSSL_OCSP_TMOUT-60}
 
 # === LDAP:
-SSH_LDAP_DB=${SSH_LDAP_DB-bdb}
+# "mdb" backend since openldap 2.4+
+SSH_LDAP_DB=${SSH_LDAP_DB-mdb}
+# bdb and hdb removed in openldap 2.5+
+#SSH_LDAP_DB=${SSH_LDAP_DB-bdb}
 # "hdb" backend since openldap 2.2+
 #SSH_LDAP_DB=hdb
 # openldap 2.4+ deprecate "ldbm" backend
