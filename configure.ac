@@ -103,14 +103,7 @@ AC_SUBST([LD])
 AC_C_INLINE
 
 AC_CHECK_DECL([LLONG_MAX], [have_llong_max=1], , [#include <limits.h>])
-if test -z "$have_llong_max" ; then
-  dnl LONGLONG_{MIN|MAX} is defined on AIX
-  AC_CHECK_DECL([LONGLONG_MAX], [have_llong_max=1], , [#include <limits.h>])
-fi
-if test -z "$have_llong_max" ; then
-  dnl LONG_LONG_{MIN|MAX} is defined on HP-UX
-  AC_CHECK_DECL([LONG_LONG_MAX], [have_llong_max=1], , [#include <limits.h>])
-fi
+
 AC_CHECK_DECL([SYSTR_POLICY_KILL], [have_systr_policy_kill=1], , [
 	#include <sys/types.h>
 	#include <sys/param.h>
@@ -309,6 +302,15 @@ int main(int argc, char* argv[]) {
 		    [#include <limits.h>]
 		)
 	fi
+fi
+
+if test -z "$have_llong_max" ; then
+  dnl LONGLONG_{MIN|MAX} is defined on AIX
+  AC_CHECK_DECL([LONGLONG_MAX], [have_llong_max=1], , [#include <limits.h>])
+fi
+if test -z "$have_llong_max" ; then
+  dnl LONG_LONG_{MIN|MAX} is defined on HP-UX
+  AC_CHECK_DECL([LONG_LONG_MAX], [have_llong_max=1], , [#include <limits.h>])
 fi
 
 AC_MSG_CHECKING([if compiler allows __attribute__ on return types])
