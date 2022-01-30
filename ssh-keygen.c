@@ -119,7 +119,6 @@ static int quiet = 0;
 /* Flag indicating that we just want to see the key fingerprint */
 static int print_fingerprint = 0;
 static int print_bubblebabble = 0;
-static void fingerprint_one_key(const struct sshkey *public, const char *comment);
 
 /* Hash algorithm to use for fingerprints. */
 static int fingerprint_hash = SSH_FP_HASH_DEFAULT;
@@ -200,6 +199,30 @@ int gen_candidates(FILE *, u_int32_t, u_int32_t, BIGNUM *);
 int prime_test(FILE *, FILE *, u_int32_t, u_int32_t, char *, unsigned long,
     unsigned long);
 #endif
+
+
+typedef void (*fingerprint_format_f)(const struct sshkey *public,
+    const char *comment, const char *fp, va_list ap);
+
+static void
+fingerprint_format(const struct sshkey *public, const char *comment,
+    fingerprint_format_f format_f, ...);
+
+
+static void
+print_fingerprint_one_key(const struct sshkey *public,
+    const char *comment, const char *fp, va_list ap)
+{
+	UNUSED(ap);
+	mprintf("%u %s %s (%s)\n", sshkey_size(public), fp,
+	    comment ? comment : "no comment", sshkey_type(public));
+}
+
+static inline void
+fingerprint_one_key(const struct sshkey *public, const char *comment) {
+	fingerprint_format(public, comment, print_fingerprint_one_key);
+}
+
 
 static void
 type_bits_valid(int type, const char *name, u_int32_t *bitsp)
@@ -760,9 +783,6 @@ try_read_key(char **cpp)
 	return NULL;
 }
 
-typedef void (*fingerprint_format_f)(const struct sshkey *public,
-    const char *comment, const char *fp, va_list ap);
-
 static void
 fingerprint_format(const struct sshkey *public, const char *comment,
     fingerprint_format_f format_f, ...)
@@ -800,20 +820,6 @@ fingerprint_format(const struct sshkey *public, const char *comment,
 	}
 	printf("%s\n", fp);
 	free(fp);
-}
-
-static void
-print_fingerprint_one_key(const struct sshkey *public,
-    const char *comment, const char *fp, va_list ap)
-{
-	UNUSED(ap);
-	mprintf("%u %s %s (%s)\n", sshkey_size(public), fp,
-	    comment ? comment : "no comment", sshkey_type(public));
-}
-
-static inline void
-fingerprint_one_key(const struct sshkey *public, const char *comment) {
-	fingerprint_format(public, comment, print_fingerprint_one_key);
 }
 
 static void
