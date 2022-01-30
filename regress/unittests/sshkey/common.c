@@ -14,13 +14,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#ifdef WITH_OPENSSL
-#include <openssl/objects.h>
-#ifdef OPENSSL_HAS_NISTP256
-# include <openssl/ec.h>
-#endif /* OPENSSL_HAS_NISTP256 */
-#endif /* WITH_OPENSSL */
-
 #include "ssherr.h"
 #include "authfile.h"
 #include "sshkey.h"
