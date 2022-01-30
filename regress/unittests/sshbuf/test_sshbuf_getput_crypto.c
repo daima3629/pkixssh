@@ -13,11 +13,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <openssl/objects.h>
-#ifdef OPENSSL_HAS_NISTP256
-# include <openssl/ec.h>
-#endif
-
 #include "evp-compat.h"
 #include "ssherr.h"
 #include "sshbuf.h"

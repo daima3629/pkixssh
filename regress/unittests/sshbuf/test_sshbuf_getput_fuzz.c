@@ -11,15 +11,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef WITH_OPENSSL
-#include <openssl/objects.h>
-#ifdef OPENSSL_HAS_NISTP256
-# include <openssl/ec.h>
-#endif
-#endif /* WITH_OPENSSL */
-
 #include "ssherr.h"
 #include "sshbuf.h"
+#ifdef WITH_OPENSSL
+#include <openssl/obj_mac.h> /* for NID_X9_62_prime256v1 */
+#endif /* WITH_OPENSSL */
 
 void sshbuf_getput_fuzz_tests(void);
 
