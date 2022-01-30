@@ -32,6 +32,10 @@
 #include <string.h>
 #include <stdio.h>
 
+#ifdef HAVE_OPENSSL_FIPS_H
+# include <openssl/fips.h> /* for FIPS_mode() */
+#endif
+
 #include "digest.h"
 #include "hmac.h"
 #include "umac.h"

@@ -5689,6 +5689,10 @@ if test yes = $ac_openssl_fips; then
     [],
     [AC_MSG_ERROR([cannot found fips capable openssl library])]
   )
+  # On some system FIPS_mode() is in openssl/fips.h
+  AC_CHECK_HEADERS([ \
+    openssl/fips.h \
+  ])
 fi
 if test yes = $ac_openssl_fips; then
   OPENSSL_FIPS_MODE=yes

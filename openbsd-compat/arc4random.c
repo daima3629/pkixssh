@@ -59,6 +59,9 @@
 #endif
 
 #ifdef OPENSSL_FIPS
+# ifdef HAVE_OPENSSL_FIPS_H
+#  include <openssl/fips.h> /* for FIPS_mode() */
+# endif
 /* define to avoid use of 'efficient' arc4random_buf() */
 # define HAVE_ARC4RANDOM_BUF
 
