@@ -6,6 +6,8 @@ configure will attempt to enable the compiler's run-time integrity checking
 options.  Some notes about specific compilers:
  - clang: -ftrapv and -sanitize=integer require the compiler-rt runtime
   (CC=clang LDFLAGS=--rtlib=compiler-rt ./configure)
+Remark: If compiler is C89 and GCC compatible configure script may set
+language standard to gnu99 (-std=gnu99).
 
 You will need working installations of libcrypto (OpenSSL
 or compatible)

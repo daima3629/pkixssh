@@ -1,7 +1,7 @@
 # options to check compiler
 #
 # Author: Roumen Petrov
-# Revision: 7 Jan 2021
+# Revision: 2022-01-30
 #
 
 AC_DEFUN([SSH_AC_PROG_CC],
@@ -14,7 +14,8 @@ AC_DEFUN([SSH_AC_PROG_CC],
 # are performed in standard macro.
     ],
     [
-    AC_REQUIRE([AC_PROG_CC_C99])
+# Note macro AC_PROG_CC_C99 is added in autoconf 2.60.
+    m4_ifdef([AC_PROG_CC_C99], [AC_REQUIRE([AC_PROG_CC_C99])])
     ]
   )
 ])

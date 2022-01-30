@@ -14,7 +14,7 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-AC_PREREQ([2.60])
+AC_PREREQ([2.59])
 m4_include([version.m4])
 
 AC_INIT([SSH_PACKAGE], [SSH_VERSION], [SSH_BUGREPORT], [openssh], [SSH_URL])
@@ -297,7 +297,7 @@ int main(int argc, char* argv[]) {
 	    done
 	fi
 
-	# TODO: remove check as C99 is required
+	# keep check as C99 is not strictly required
 	if test -z "$have_llong_max"; then
 		# retry LLONG_MAX with -std=gnu99, needed on some Linuxes
 		unset ac_cv_have_decl_LLONG_MAX
