@@ -29,7 +29,12 @@
 #ifdef WITH_OPENSSL
 # include <openssl/rsa.h>
 # include <openssl/dsa.h>
-# include <openssl/ec.h>
+# ifdef HAVE_OPENSSL_EC_H
+#  include <openssl/ec.h>
+# else
+#  define EC_GROUP	void
+#  define EC_POINT	void
+# endif
 # if defined(OPENSSL_HAS_ECC)
 #  include <openssl/ecdsa.h>
 #  if defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x00908000L)

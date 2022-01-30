@@ -5475,6 +5475,11 @@ AC_CHECK_FUNCS([ \
   EVP_MD_CTX_init \
 ])
 
+# check for openssl 0.9.8+ headers ...
+AC_CHECK_HEADERS([ \
+  openssl/ec.h \
+])
+
 # check for openssl 0.9.8+ functions ...
 dnl BN_is_negative is macro in 0.9.8*-1.0.2*
 AC_CHECK_FUNCS([ \
