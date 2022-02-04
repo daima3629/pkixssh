@@ -3,6 +3,17 @@
 
 tid="cipher speed"
 
+ciphers=`$SSH -Q cipher`
+macs=`$SSH -Q mac`
+
+# Enable all supported ciphers and macs.
+cat >>$OBJ/sshd_proxy <<EOF
+Ciphers `echo $ciphers | sed 's/ /,/g'`
+MACs `echo $macs | sed 's/ /,/g'`
+EOF
+
+increase_datafile_size 10000 # 10MB
+
 getbytes ()
 {
 	sed -n -e '/transferred/s/.*secs (\(.* bytes.sec\).*/\1/p' \
@@ -11,7 +22,7 @@ getbytes ()
 
 tries="1 2"
 
-for c in `${SSH} -Q cipher`; do n=0; for m in `${SSH} -Q mac`; do
+for c in $ciphers; do n=0; for m in $macs; do
 	trace "cipher $c mac $m"
 	for x in $tries; do
 		printf "%-60s" "$c/$m:"
