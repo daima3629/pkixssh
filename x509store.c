@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2022 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -385,21 +385,21 @@ ssh_x509store_cb(int ok, X509_STORE_CTX *ctx) {
 
 
 typedef struct  {
-	const char **synonyms;
+	const char * const *synonyms;
 }	CertPurposes;
 
 
-static const char *__purpose_any[] = {
+static const char * const __purpose_any[] = {
 	"any", "any purpose", "any_purpose", "anypurpose", NULL
 };
 
 
-static const char *__purpose_sslclient[] = {
+static const char * const __purpose_sslclient[] = {
 	"sslclient", "ssl client", "ssl_client", "client", NULL
 };
 
 
-static const char *__purpose_sslserver[] = {
+static const char * const __purpose_sslserver[] = {
 	"sslserver", "ssl server", "ssl_server", "server", NULL
 };
 
@@ -429,7 +429,7 @@ get_cert_purpose(const char* _purpose_synonym, CertPurposes *_purposes) {
 		if (strcasecmp(_purpose_synonym, q) == 0) {
 			return q;
 		} else {
-			const char **p;
+			const char * const *p;
 			for (p = (_purposes[i].synonyms) + 1; *p; p++) {
 				if (strcasecmp(_purpose_synonym, *p) == 0 ) {
 					return q;

@@ -1,4 +1,4 @@
-/* $OpenBSD: kex.c,v 1.171 2022/01/06 21:55:23 djm Exp $ */
+/* $OpenBSD: kex.c,v 1.172 2022/02/01 23:32:51 djm Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2014-2021 Roumen Petrov.  All rights reserved.
@@ -67,7 +67,7 @@ char *server_pkalgs = NULL;
 static int kex_choose_conf(struct ssh *);
 static int kex_input_newkeys(int, u_int32_t, struct ssh *);
 
-static const char *proposal_names[PROPOSAL_MAX] = {
+static const char * const proposal_names[PROPOSAL_MAX] = {
 	"KEX algorithms",
 	"host key algorithms",
 	"ciphers ctos",

@@ -9,7 +9,7 @@
  * incompatible with the protocol description in the RFC file, it must be
  * called by a name other than "ssh" or "Secure Shell".
  *
- * Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2022 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -1339,7 +1339,7 @@ parse_time(const char *arg, const char *filename, int linenum)
 
 /* Multistate option parsing */
 struct multistate {
-	char *key;
+	const char *key;
 	int value;
 };
 static const struct multistate multistate_flag[] = {

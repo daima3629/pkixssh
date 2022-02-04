@@ -1,7 +1,7 @@
 /* $OpenBSD: mac.c,v 1.35 2019/09/06 04:53:27 djm Exp $ */
 /*
  * Copyright (c) 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2011-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2022 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -51,7 +51,7 @@
 #define SSH_UMAC128	3
 
 struct macalg {
-	char		*name;
+	const char	*name;
 	int		type;
 	int		alg;
 	int		truncatebits;	/* truncate digest if != 0 */

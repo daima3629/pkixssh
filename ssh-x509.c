@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2022 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -181,7 +181,7 @@ ssh_x509_support_plain_type(int k_type) {
 
 static const char*
 x509key_find_subject(const char* s) {
-	static const char *keywords[] = {
+	static const char * const keywords[] = {
 		"subject",
 		"distinguished name",
 		"distinguished-name",
@@ -190,7 +190,7 @@ x509key_find_subject(const char* s) {
 		"dn",
 		NULL
 	};
-	const char **q, *p;
+	const char * const *q, *p;
 	size_t len;
 
 	if (s == NULL) {

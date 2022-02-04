@@ -13,7 +13,7 @@
  *
  * Copyright (c) 1999 Niels Provos.  All rights reserved.
  * Copyright (c) 1999, 2000 Markus Friedl.  All rights reserved.
- * Copyright (c) 2011-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2022 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -93,7 +93,7 @@ struct sshcipher_ctx {
 };
 
 struct sshcipher {
-	char	*name;
+	const char	*name;
 	u_int	block_size;
 	u_int	key_len;
 	u_int	iv_len;		/* defaults to block_size */
