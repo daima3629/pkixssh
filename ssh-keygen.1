@@ -1,4 +1,4 @@
-.\"	$OpenBSD: ssh-keygen.1,v 1.213 2021/05/12 11:34:30 dtucker Exp $
+.\"	$OpenBSD: ssh-keygen.1,v 1.220 2022/02/06 00:29:03 jsg Exp $
 .\"
 .\" Author: Tatu Ylonen <ylo@cs.hut.fi>
 .\" Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -44,7 +44,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: May 12 2021 $
+.Dd $Mdocdate: February 6 2022 $
 .Dt SSH-KEYGEN 1
 .Os
 .Sh NAME
@@ -362,12 +362,12 @@ to use on files that mix hashed and non-hashed names.
 .It Fl h
 When signing a key, create a host custom certificate instead of a user
 custom certificate.
-Please see the
+See the
 .Sx CERTIFICATES
 section for details.
 .It Fl I Ar certificate_identity
 Specify the key identity when signing a public key.
-Please see the
+See the
 .Sx CERTIFICATES
 section for details.
 .It Fl i
@@ -459,7 +459,7 @@ Provides the new passphrase.
 Specify one or more principals (user or host names) to be included in
 a custom certificate when signing a key.
 Multiple principals may be specified, separated by commas.
-Please see the
+See the
 .Sx CERTIFICATES
 section for details.
 .It Fl O Ar option
@@ -545,7 +545,7 @@ for the specified public key file.
 Note CERT is printed for X.509 certificate based key.
 .It Fl s Ar ca_key
 Certify (sign) a public key using the specified CA key.
-Please see the
+See the
 .Sx CERTIFICATES
 section for details.
 .Pp
@@ -886,7 +886,7 @@ public key must be trusted by
 .Xr sshd 8
 or
 .Xr ssh 1 .
-Please refer to those manual pages for details.
+Refer to those manual pages for details.
 .Sh KEY REVOCATION LISTS
 .Nm
 is able to manage OpenSSH format custom Key Revocation Lists (KRLs).
