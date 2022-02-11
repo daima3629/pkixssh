@@ -1,4 +1,4 @@
-/* $OpenBSD: readconf.c,v 1.363 2021/09/16 05:36:03 djm Exp $ */
+/* $OpenBSD: readconf.c,v 1.366 2022/02/08 08:59:12 dtucker Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -1759,9 +1759,8 @@ parse_key_algorithms:
 				goto out;
 			}
 			arg2 = xstrdup(arg);
-		{	char *p, ch = '\0';
-			p = hpdelim2(&arg, &ch);
-			if (p == NULL || ch == '/') {
+		{	char *p = hpdelim(&arg);
+			if (p == NULL) {
 				fatal("%s line %d: missing host in %s",
 				    filename, linenum,
 				    lookup_opcode_name(opcode));

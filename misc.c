@@ -1,4 +1,4 @@
-/* $OpenBSD: misc.c,v 1.172 2022/01/08 07:32:45 djm Exp $ */
+/* $OpenBSD: misc.c,v 1.173 2022/02/08 08:59:12 dtucker Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2005,2006 Damien Miller.  All rights reserved.
@@ -740,10 +740,16 @@ hpdelim2(char **cp, char *delim)
 	return old;
 }
 
+/* The common case: only accept colon as delimiter. */
 char *
 hpdelim(char **cp)
 {
-	return hpdelim2(cp, NULL);
+	char *r, delim;
+
+	r =  hpdelim2(cp, &delim);
+	if (delim == '/')
+		return NULL;
+	return r;
 }
 
 char *
@@ -882,7 +888,7 @@ parse_user_host_port(const char *s, char **userp, char **hostp, int *portp)
 		tmp = cp + 1;
 	}
 	/* Extract mandatory hostname */
-	if ((cp = hpdelim(&tmp)) == NULL || *cp == '\0')
+	if ((cp = hpdelim2(&tmp, NULL)) == NULL || *cp == '\0')
 		goto out;
 	host = xstrdup(cleanhostname(cp));
 	/* Convert and verify optional port */
