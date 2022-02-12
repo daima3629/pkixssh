@@ -452,6 +452,21 @@ main(int argc, char **argv)
 	const char *errstr;
 	extern char *optarg;
 	extern int optind;
+/* NOTE "sftp mode" requires non-standard extension to
+ * sftp protocol version 3 - expand-path@openssh.com.
+ * - Last sftp version is 6. It is unlikely implementation that
+ *   support sftp version greater than 3 to change code;
+ * - Implementation of sftp functionality with scp interface
+ *   was rejected many times. Side effect is that users have
+ *   enough time to change scripts to use sftp instead scp;
+ * - Implementation uses custom server extension. It is not
+ *   part of current "enterprise" Linux releases. It is expected
+ *   to be part of next "enterprise" Linux release but this
+ *   requires a lot of time to be deployed in production.
+ * Based on above estimated usability of sftp based on scp
+ * command interface,  is after 5 - 10 years (not before 2027).
+ * TODO: to control default mode from an environment variable.
+ */
 	enum scp_mode_e mode = MODE_SCP;
 	char *sftp_direct = NULL;
 
