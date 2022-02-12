@@ -589,6 +589,8 @@ AH_TEMPLATE([BROKEN_ONE_BYTE_DIRENT_D_NAME],
     [Define to 1 if system struct dirent expects program to allocate extra space for d_name])
 # For instance unexpected glob(3) functionality on FreeBSD and OS X
 AH_TEMPLATE([BROKEN_GLOB], [Define to 1 if system glob(3) does not do what we expect])
+AH_TEMPLATE([SSHD_ACQUIRES_CTTY],
+    [Define to 1 if sshd somehow reacquires a controlling TTY after setsid()])
 
 # Messages for features tested for in target-specific section
 SIA_MSG="no"
@@ -1095,9 +1097,7 @@ mips-sony-bsd|mips-sony-newsos4)
 		to the unpriv'ed user])
 	AC_DEFINE([LOCKED_PASSWD_STRING], ["*LK*"])
 	# Pushing STREAMS modules will cause sshd to acquire a controlling tty.
-	AC_DEFINE([SSHD_ACQUIRES_CTTY], [1],
-		[Define if sshd somehow reacquires a controlling TTY
-		after setsid()])
+	AC_DEFINE([SSHD_ACQUIRES_CTTY], [1])
 	AC_DEFINE([PASSWD_NEEDS_USERNAME], [1], [must supply username to passwd
 		in case the name is longer than 8 chars])
 	AC_DEFINE([BROKEN_TCGETATTR_ICANON], [1])
@@ -1171,7 +1171,7 @@ mips-sony-bsd|mips-sony-newsos4)
 *-ncr-sysv*)
 	LIBS="$LIBS -lc89"
 	AC_DEFINE([USE_PIPES])
-	AC_DEFINE([SSHD_ACQUIRES_CTTY])
+	AC_DEFINE([SSHD_ACQUIRES_CTTY], [1])
 	AC_DEFINE([SETEUID_BREAKS_SETUID])
 	AC_DEFINE([BROKEN_SETREUID], [1])
 	AC_DEFINE([BROKEN_SETREGID], [1])
@@ -1187,7 +1187,7 @@ mips-sony-bsd|mips-sony-newsos4)
 	AC_DEFINE([SETEUID_BREAKS_SETUID])
 	AC_DEFINE([BROKEN_SETREUID], [1])
 	AC_DEFINE([BROKEN_SETREGID], [1])
-	AC_DEFINE([SSHD_ACQUIRES_CTTY])
+	AC_DEFINE([SSHD_ACQUIRES_CTTY], [1])
 	external_path_file=/etc/default/login
 	# /usr/ucblib/libucb.a no longer needed on ReliantUNIX
 	# Attention: always take care to bind libsocket and libnsl before libc,
@@ -1295,7 +1295,7 @@ mips-sony-bsd|mips-sony-newsos4)
 	AC_DEFINE([USE_PIPES])
 	AC_DEFINE([NO_X11_UNIX_SOCKETS])
 	AC_DEFINE([DISABLE_LASTLOG])
-	AC_DEFINE([SSHD_ACQUIRES_CTTY])
+	AC_DEFINE([SSHD_ACQUIRES_CTTY], [1])
 	AC_DEFINE([BROKEN_SHADOW_EXPIRE], [1], [QNX shadow support is broken])
 	enable_etc_default_login=no	# has incompatible /etc/default/login
 	case "$host" in
@@ -2396,7 +2396,7 @@ if test ! -z "$check_for_openpty_ctty_bug"; then
 		],
 		[
 			AC_MSG_RESULT([no])
-			AC_DEFINE([SSHD_ACQUIRES_CTTY])
+			AC_DEFINE([SSHD_ACQUIRES_CTTY], [1])
 		],
 		[
 			AC_MSG_RESULT([cross-compiling, assuming yes])
