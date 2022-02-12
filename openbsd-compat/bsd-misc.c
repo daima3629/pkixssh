@@ -1,7 +1,7 @@
 
 /*
  * Copyright (c) 1999-2004 Damien Miller <djm@mindrot.org>
- * Copyright (c) 2016-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2016-2022 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -379,14 +379,6 @@ pledge(const char *promises, const char *paths[])
 	UNUSED(promises);
 	UNUSED(paths);
 	return 0;
-}
-#endif
-
-#ifndef HAVE_BZERO
-void
-bzero(void *b, size_t n)
-{
-	(void)memset(b, 0, n);
 }
 #endif
 

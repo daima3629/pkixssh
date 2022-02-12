@@ -34,9 +34,6 @@ case "$host" in
   ac_cv_func_statvfs=use_port
   ac_cv_func_fstatvfs=use_port
 
-  dnl A macro defines "bzero" as build-in (not detectable case)
-  ac_cv_func_bzero=yes
-
   dnl Platform headers always declare syscall wrapper function "getsid".
   dnl In unified it is declared for API 17. Also before API 17 it is
   dnl defined in "C" library only on some platforms!

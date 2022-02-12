@@ -1943,7 +1943,6 @@ AC_CHECK_FUNCS([ \
 	bcrypt_pbkdf \
 	bindresvport_sa \
 	blf_enc \
-	bzero \
 	cap_rights_limit \
 	clock \
 	closefrom \
@@ -2071,7 +2070,7 @@ dnl It is not defined yet by configuration, but is defined in common
 dnl header "includes.h".
 saved_CPPFLAGS="$CPPFLAGS"
 CPPFLAGS="$CPPFLAGS -D_GNU_SOURCE"
-AC_CHECK_DECLS([bzero, memmem])
+AC_CHECK_DECLS([memmem])
 dnl Function memmem_s, if defined, conforms to c11 and could be
 dnl declared under some conditions.
 AC_CHECK_DECLS([memset_s])

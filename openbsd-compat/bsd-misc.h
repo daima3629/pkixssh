@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1999-2004 Damien Miller <djm@mindrot.org>
- * Copyright (c) 2015-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2015-2022 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -165,10 +165,6 @@ void errx(int, const char *, ...) __attribute__((format(printf, 2, 3)));
 #endif
 #ifndef HAVE_WARN
 void warn(const char *, ...) __attribute__((format(printf, 1, 2)));
-#endif
-
-#if !HAVE_DECL_BZERO
-void bzero(void *, size_t);
 #endif
 
 #ifndef HAVE_RAISE
