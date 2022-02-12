@@ -74,5 +74,4 @@ test_hpdelim(void)
 	ASSERT_PTR_EQ(cp, NULL);
 	DONE_STRING();
 	TEST_DONE();
-
 }

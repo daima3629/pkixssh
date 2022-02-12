@@ -1,4 +1,4 @@
-/* $OpenBSD: misc.c,v 1.173 2022/02/08 08:59:12 dtucker Exp $ */
+/* $OpenBSD: misc.c,v 1.174 2022/02/11 00:43:56 dtucker Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2005,2006 Damien Miller.  All rights reserved.
@@ -744,7 +744,7 @@ hpdelim2(char **cp, char *delim)
 char *
 hpdelim(char **cp)
 {
-	char *r, delim;
+	char *r, delim = '\0';
 
 	r =  hpdelim2(cp, &delim);
 	if (delim == '/')
@@ -992,7 +992,7 @@ int
 parse_uri(const char *scheme, const char *uri, char **userp, char **hostp,
     int *portp, char **pathp)
 {
-	char *uridup, *cp, *tmp, ch;
+	char *uridup, *cp, *tmp;
 	char *user = NULL, *host = NULL, *path = NULL;
 	int port = -1, ret = -1;
 	size_t len;
@@ -1032,15 +1032,16 @@ parse_uri(const char *scheme, const char *uri, char **userp, char **hostp,
 		tmp = cp + 1;
 	}
 
+{	char delim = '\0';
 	/* Extract mandatory hostname */
-	if ((cp = hpdelim2(&tmp, &ch)) == NULL || *cp == '\0')
+	if ((cp = hpdelim2(&tmp, &delim)) == NULL || *cp == '\0')
 		goto out;
 	host = xstrdup(cleanhostname(cp));
 	if (!valid_domain(host, 0, NULL))
 		goto out;
 
 	if (tmp != NULL && *tmp != '\0') {
-		if (ch == ':') {
+		if (delim == ':') {
 			/* Convert and verify port. */
 			if ((cp = strchr(tmp, '/')) != NULL)
 				*cp = '\0';
@@ -1054,6 +1055,7 @@ parse_uri(const char *scheme, const char *uri, char **userp, char **hostp,
 				goto out;
 		}
 	}
+}
 
 	/* Success */
 	if (userp != NULL) {
