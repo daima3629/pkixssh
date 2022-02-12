@@ -5,7 +5,7 @@
 
 /*
  * Copyright (c) 2004 Damien Miller <djm@mindrot.org>
- * Copyright (c) 2016-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2016-2022 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -71,40 +71,12 @@
 #define O_NOCTTY 0
 #endif
 
-/* NOTE:
- * Android API 23 defines function "openpty" but it is declared
- * only in unified headers.
- * As we prefer to use definition below we has to declare it with
- * same arguments - see configure.ac.
- */
-
-int
-openpty(int *amaster, int *aslave, char *name,
-   OPENPTY_CONST_ARG struct termios *termp,
-   OPENPTY_CONST_ARG struct winsize *winp
+#if defined(HAVE_DEV_PTMX) && !defined(HAVE__GETPTY)
+static int
+openpty_streams(int *amaster, int *aslave, char *name,
+    OPENPTY_CONST_ARG struct termios *termp,
+    OPENPTY_CONST_ARG struct winsize *winp
 ) {
-#if defined(HAVE__GETPTY)
-	/*
-	 * _getpty(3) exists in SGI Irix 4.x, 5.x & 6.x -- it generates more
-	 * pty's automagically when needed
-	 */
-	char *slave;
-
-	UNUSED(name);
-	UNUSED(termp);
-	UNUSED(winp);
-
-	if ((slave = _getpty(amaster, O_RDWR, 0622, 0)) == NULL)
-		return (-1);
-
-	/* Open the slave side. */
-	if ((*aslave = open(slave, O_RDWR | O_NOCTTY)) == -1) {
-		close(*amaster);
-		return (-1);
-	}
-	return (0);
-
-#elif defined(HAVE_DEV_PTMX)
 	/*
 	 * This code is used e.g. on Solaris 2.x.  (Note that Solaris 2.3
 	 * also has bsd-style ptys, but they simply do not work.)
@@ -163,6 +135,44 @@ openpty(int *amaster, int *aslave, char *name,
 # endif /*ndef I_PUSH*/
 
 	return (0);
+}
+#endif
+
+/* NOTE:
+ * Android API 23 defines function "openpty" but it is declared
+ * only in unified headers.
+ * As we prefer to use definition below we has to declare it with
+ * same arguments - see configure.ac.
+ */
+int
+openpty(int *amaster, int *aslave, char *name,
+    OPENPTY_CONST_ARG struct termios *termp,
+    OPENPTY_CONST_ARG struct winsize *winp
+) {
+#if defined(HAVE__GETPTY)
+	/*
+	 * _getpty(3) exists in SGI Irix 4.x, 5.x & 6.x -- it generates more
+	 * pty's automagically when needed
+	 */
+	char *slave;
+
+	UNUSED(name);
+	UNUSED(termp);
+	UNUSED(winp);
+
+	if ((slave = _getpty(amaster, O_RDWR, 0622, 0)) == NULL)
+		return (-1);
+
+	/* Open the slave side. */
+	if ((*aslave = open(slave, O_RDWR | O_NOCTTY)) == -1) {
+		close(*amaster);
+		return (-1);
+	}
+	return (0);
+
+#elif defined(HAVE_DEV_PTMX)
+
+	return openpty_streams(amaster, aslave, name, termp, winp);
 
 #elif defined(HAVE_DEV_PTS_AND_PTC)
 	/* AIX-style pty code. */
