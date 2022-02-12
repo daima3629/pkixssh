@@ -155,7 +155,6 @@ ssh_digest_copy_state(struct ssh_digest_ctx *from, struct ssh_digest_ctx *to)
 {
 	if (from->alg != to->alg)
 		return SSH_ERR_INVALID_ARGUMENT;
-	/* we have bcopy-style order while openssl has memcpy-style */
 	if (!EVP_MD_CTX_copy_ex(to->mdctx, from->mdctx))
 		return SSH_ERR_LIBCRYPTO_ERROR;
 	return 0;

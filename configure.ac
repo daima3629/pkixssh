@@ -1940,7 +1940,6 @@ AC_CHECK_FUNCS([ \
 	__b64_ntop \
 	b64_pton \
 	__b64_pton \
-	bcopy \
 	bcrypt_pbkdf \
 	bindresvport_sa \
 	blf_enc \

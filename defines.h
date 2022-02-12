@@ -685,10 +685,6 @@ struct winsize {
 # define DO_LOG_SAFE_IN_SIGHAND
 #endif
 
-#if !defined(HAVE_MEMMOVE) && defined(HAVE_BCOPY)
-# define memmove(s1, s2, n) bcopy((s2), (s1), (n))
-#endif /* !defined(HAVE_MEMMOVE) && defined(HAVE_BCOPY) */
-
 #ifndef GETPGRP_VOID
 # include <unistd.h>
 # define getpgrp() getpgrp(0)
