@@ -2660,24 +2660,17 @@ AC_ARG_WITH([ssl-dir],
 				# Relative paths
 				./*|../*)	withval="`pwd`/$withval"
 			esac
-			if test -d "$withval/lib"; then
-				if test -n "${rpath_opt}"; then
-					LDFLAGS="-L${withval}/lib ${rpath_opt}${withval}/lib ${LDFLAGS}"
-				else
-					LDFLAGS="-L${withval}/lib ${LDFLAGS}"
-				fi
-			elif test -d "$withval/lib64"; then
-				if test -n "${rpath_opt}"; then
-					LDFLAGS="-L${withval}/lib64 ${rpath_opt}${withval}/lib64 ${LDFLAGS}"
-				else
-					LDFLAGS="-L${withval}/lib64 ${LDFLAGS}"
-				fi
+			if test -d "$withval/lib64"; then
+				libcrypto_path="$withval/lib64"
+			elif test -d "$withval/lib"; then
+				libcrypto_path="$withval/lib"
 			else
-				if test -n "${rpath_opt}"; then
-					LDFLAGS="-L${withval} ${rpath_opt}${withval} ${LDFLAGS}"
-				else
-					LDFLAGS="-L${withval} ${LDFLAGS}"
-				fi
+				libcrypto_path="$withval"
+			fi
+			if test -n "$rpath_opt"; then
+				LDFLAGS="-L$libcrypto_path $rpath_opt$libcrypto_path $LDFLAGS"
+			else
+				LDFLAGS="-L$libcrypto_path $LDFLAGS"
 			fi
 			if test -d "$withval/include"; then
 				CPPFLAGS="-I${withval}/include ${CPPFLAGS}"
