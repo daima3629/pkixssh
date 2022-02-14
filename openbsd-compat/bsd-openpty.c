@@ -172,6 +172,24 @@ openpty(int *amaster, int *aslave, char *name,
 
 #elif defined(HAVE_DEV_PTMX)
 
+#ifdef SSHD_ACQUIRES_CTTY
+	/*
+	 * On some (most? all?) SysV based systems with STREAMS based terminals,
+	 * sshd will acquire a controlling terminal when it pushes the "ptem"
+	 * module.  On such platforms, first allocate a sacrificial pty so
+	 * that sshd already has a controlling terminal before allocating the
+	 * one that will be passed back to the user process.  This ensures
+	 * the second pty is not already the controlling terminal for a
+	 * different session and is available to become controlling terminal
+	 * for the client's subprocess.
+	 */
+	static int junk_ptyfd = -1, junk_ttyfd;
+
+	if (junk_ptyfd == -1)
+		(void)openpty_streams(&junk_ptyfd, &junk_ttyfd, NULL, NULL,
+		    NULL);
+#endif
+
 	return openpty_streams(amaster, aslave, name, termp, winp);
 
 #elif defined(HAVE_DEV_PTS_AND_PTC)
