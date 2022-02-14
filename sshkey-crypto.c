@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2020-2022 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -1127,7 +1127,7 @@ sshkey_equal_public_pkey(const struct sshkey *ka, const struct sshkey *kb) {
 	b = kb->pk;
 	if (b == NULL) return 0;
 
-	return EVP_PKEY_cmp(a, b) == 1;
+	return ssh_EVP_PKEY_eq(a, b) == 1;
 }
 
 

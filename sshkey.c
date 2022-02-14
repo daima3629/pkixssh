@@ -3,7 +3,7 @@
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Alexander von Gernler.  All rights reserved.
  * Copyright (c) 2010,2011 Damien Miller.  All rights reserved.
- * Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2022 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -2266,7 +2266,7 @@ sshbuf_read_priv_ed25519(struct sshbuf *buf, struct sshkey *key) {
 	}
 	if (key->pk != NULL) {
 		/* TODO match public vs private ? */
-		if (EVP_PKEY_cmp(key->pk, pk) != 1) {
+		if (ssh_EVP_PKEY_eq(key->pk, pk) != 1) {
 			r = SSH_ERR_INVALID_ARGUMENT;
 			goto err;
 		}

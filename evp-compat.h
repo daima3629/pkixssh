@@ -1,7 +1,7 @@
 #ifndef EVP_COMPAT_H
 #define EVP_COMPAT_H
 /*
- * Copyright (c) 2011-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2022 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -196,6 +196,16 @@ EVP_PKEY_base_id(const EVP_PKEY *pkey) {
 }
 # endif
 #endif /*ndef HAVE_EVP_PKEY_BASE_ID */
+
+
+static inline int
+ssh_EVP_PKEY_eq(const EVP_PKEY *a, const EVP_PKEY *b) {
+#ifdef HAVE_EVP_PKEY_EQ			/* OpenSSL >= 3.0 */
+	return EVP_PKEY_eq(a, b);
+#else
+	return EVP_PKEY_cmp(a, b);
+#endif
+}
 
 
 #ifndef HAVE_EC_POINT_GET_AFFINE_COORDINATES		/* OpenSSL < 1.1.1 */

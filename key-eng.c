@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2022 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -787,7 +787,7 @@ store_set_key_certs(STORE_KEY_DATA *kd, struct sshkey *key) {
 	for (n = 0; n < sk_X509_num(kd->chain); n++) {
 		x = sk_X509_value(kd->chain, n);
 
-		if (EVP_PKEY_cmp(kd->pk, X509_get0_pubkey(x)) == 1)
+		if (ssh_EVP_PKEY_eq(kd->pk, X509_get0_pubkey(x)) == 1)
 			break;
 	}
 	if (n >= len) {
