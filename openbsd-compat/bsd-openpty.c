@@ -66,6 +66,7 @@
 #include <unistd.h>
 
 #include "misc.h"
+#include "log.h"
 
 #ifndef O_NOCTTY
 #define O_NOCTTY 0
@@ -73,10 +74,8 @@
 
 #if defined(HAVE_DEV_PTMX) && !defined(HAVE__GETPTY)
 static int
-openpty_streams(int *amaster, int *aslave, char *name,
-    OPENPTY_CONST_ARG struct termios *termp,
-    OPENPTY_CONST_ARG struct winsize *winp
-) {
+openpty_streams(int *amaster, int *aslave)
+{
 	/*
 	 * This code is used e.g. on Solaris 2.x.  (Note that Solaris 2.3
 	 * also has bsd-style ptys, but they simply do not work.)
@@ -84,10 +83,6 @@ openpty_streams(int *amaster, int *aslave, char *name,
 	int ptm;
 	char *pts;
 	sshsig_t old_signal;
-
-	UNUSED(name);
-	UNUSED(termp);
-	UNUSED(winp);
 
 	if ((ptm = open("/dev/ptmx", O_RDWR | O_NOCTTY)) == -1)
 		return (-1);
@@ -183,14 +178,21 @@ openpty(int *amaster, int *aslave, char *name,
 	 * different session and is available to become controlling terminal
 	 * for the client's subprocess.
 	 */
+	int r, fd;
 	static int junk_ptyfd = -1, junk_ttyfd;
 
-	if (junk_ptyfd == -1)
-		(void)openpty_streams(&junk_ptyfd, &junk_ttyfd, NULL, NULL,
-		    NULL);
+	r = openpty_streams(amaster, aslave);
+	if (junk_ptyfd == -1 && (fd = open(_PATH_TTY, O_RDWR|O_NOCTTY)) >= 0) {
+		close(fd);
+		junk_ptyfd = *amaster;
+		junk_ttyfd = *aslave;
+		debug("STREAMS bug workaround pty %d tty %d name %s",
+		    junk_ptyfd, junk_ttyfd, ttyname(junk_ttyfd));
+        } else
+		return r;
 #endif
 
-	return openpty_streams(amaster, aslave, name, termp, winp);
+	return openpty_streams(amaster, aslave);
 
 #elif defined(HAVE_DEV_PTS_AND_PTC)
 	/* AIX-style pty code. */
