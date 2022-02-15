@@ -343,7 +343,7 @@ check_ifaddrs(const char *ifname, int af, const struct ifaddrs *ifaddrs,
 				if (!allow_local &&
 				    IN_LOOPBACK(ntohl(addr->s_addr)))
 					continue;
-				if (*rlenp < sizeof(struct sockaddr_in)) {
+				if (*rlenp < (socklen_t)sizeof(struct sockaddr_in)) {
 					error_f("v4 addr doesn't fit");
 					return -1;
 				}
@@ -361,7 +361,7 @@ check_ifaddrs(const char *ifname, int af, const struct ifaddrs *ifaddrs,
 				    (IN6_IS_ADDR_LINKLOCAL(v6addr) ||
 				    IN6_IS_ADDR_LOOPBACK(v6addr)))
 					continue;
-				if (*rlenp < sizeof(struct sockaddr_in6)) {
+				if (*rlenp < (socklen_t)sizeof(struct sockaddr_in6)) {
 					error_f("v6 addr doesn't fit");
 					return -1;
 				}
