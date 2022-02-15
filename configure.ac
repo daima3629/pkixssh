@@ -173,7 +173,6 @@ if test "$GCC" = "yes" || test "$GCC" = "egcs"; then
 	OSSH_CHECK_CFLAG_COMPILE([-pipe])
 	OSSH_CHECK_CFLAG_COMPILE([-Wunknown-warning-option])
 	OSSH_CHECK_CFLAG_COMPILE([-Wno-error=format-truncation])
-	OSSH_CHECK_CFLAG_COMPILE([-Qunused-arguments])
 	OSSH_CHECK_CFLAG_COMPILE([-Wall])
 	OSSH_CHECK_CFLAG_COMPILE([-Wextra])
 	OSSH_CHECK_CFLAG_COMPILE([-Wpointer-arith])
@@ -184,6 +183,7 @@ if test "$GCC" = "yes" || test "$GCC" = "egcs"; then
 	OSSH_CHECK_CFLAG_COMPILE([-Wpointer-sign], [-Wno-pointer-sign])
 	#unused parameter must be marked explicitly
 	#OSSH_CHECK_CFLAG_COMPILE([-Wunused-parameter], [-Wno-unused-parameter])
+	#OSSH_CHECK_CFLAG_COMPILE([-Qunused-arguments])
 	OSSH_CHECK_CFLAG_COMPILE([-Wunused-result], [-Wno-unused-result])
 	#ignore bogus warnings on some compilers...
 	#OSSH_CHECK_CFLAG_COMPILE([-Wimplicit-fallthrough])
