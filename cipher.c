@@ -532,6 +532,19 @@ cipher_get_keyiv_len(const struct sshcipher_ctx *cc)
 #endif
 }
 
+static inline int
+ssh_copy_iv(EVP_CIPHER_CTX *ctx, void *buf, size_t len) {
+#ifdef HAVE_OPENSSL_VERSION_MAJOR	/* OpenSSL >= 3.0 */
+/* EVP_CIPHER_CTX_get_updated_iv() is very specific OpenSSL 3+ function.
+ * So there is no need to test for availability at configure time.
+ */
+	return EVP_CIPHER_CTX_get_updated_iv(ctx, buf, len);
+#else
+	memcpy(buf, EVP_CIPHER_CTX_iv(ctx), len);
+	return 1;
+#endif
+}
+
 int
 cipher_get_keyiv(struct sshcipher_ctx *cc, u_char *iv, size_t len)
 {
@@ -572,7 +585,8 @@ cipher_get_keyiv(struct sshcipher_ctx *cc, u_char *iv, size_t len)
 		    evplen, iv))
 			return SSH_ERR_LIBCRYPTO_ERROR;
 	} else
-		memcpy(iv, EVP_CIPHER_CTX_iv(cc->evp), len);
+		if (ssh_copy_iv(cc->evp, iv, len) != 1)
+			return SSH_ERR_INVALID_ARGUMENT;
 #endif
 	return 0;
 }
