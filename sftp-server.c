@@ -73,8 +73,10 @@ sftp_realpath(const char *path, char *resolved_path) {
 	if (ret != NULL) return ret;
 	if (errno != ENOENT) return ret /*= NULL*/;
 
-	ret = (resolved_path == NULL) ? xstrdup(path) : resolved_path;
-	strcpy(resolved_path, ret);
+	if (resolved_path == NULL)
+		resolved_path =  xstrdup(path);
+	else
+		strcpy(resolved_path, path);
 	return resolved_path;
 }
 
