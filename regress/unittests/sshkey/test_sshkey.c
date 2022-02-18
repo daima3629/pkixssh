@@ -6,6 +6,8 @@
  */
 
 #define SSHBUF_INTERNAL 1	/* access internals for testing */
+#define OPENSSL_SUPPRESS_DEPRECATED	/* TODO implement OpenSSL 3.1 API */
+
 #include "../test_helper/test_helper.h"
 
 #include <stdio.h>
