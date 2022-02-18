@@ -71,9 +71,13 @@ ssh_sandbox_child(struct ssh_sandbox *box)
 			strerror(errno));
 #endif
 #ifndef SANDBOX_SKIP_RLIMIT_NOFILE
-	if (setrlimit(RLIMIT_NOFILE, &rl_zero) == -1)
-		fatal_f("setrlimit(RLIMIT_NOFILE, { 0, 0 }): %s",
+{	struct rlimit rl_one;
+	/* Cannot use zero because of poll(2) use */
+	rl_one.rlim_cur = rl_one.rlim_max = 1;
+	if (setrlimit(RLIMIT_NOFILE, &rl_one) == -1)
+		fatal_f("setrlimit(RLIMIT_NOFILE, { 1, 1 }): %s",
 			strerror(errno));
+}
 #endif
 #ifdef HAVE_RLIMIT_NPROC
 	if (setrlimit(RLIMIT_NPROC, &rl_zero) == -1)

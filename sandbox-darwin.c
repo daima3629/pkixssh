@@ -75,9 +75,13 @@ ssh_sandbox_child(struct ssh_sandbox *box)
 	if (setrlimit(RLIMIT_FSIZE, &rl_zero) == -1)
 		fatal_f("setrlimit(RLIMIT_FSIZE, { 0, 0 }): %s",
 			strerror(errno));
-	if (setrlimit(RLIMIT_NOFILE, &rl_zero) == -1)
-		fatal_f("setrlimit(RLIMIT_NOFILE, { 0, 0 }): %s",
+{	struct rlimit rl_one;
+	/* Cannot use zero because of poll(2) use */
+	rl_one.rlim_cur = rl_one.rlim_max = 1;
+	if (setrlimit(RLIMIT_NOFILE, &rl_one) == -1)
+		fatal_f("setrlimit(RLIMIT_NOFILE, { 1, 1 }): %s",
 			strerror(errno));
+}
 	if (setrlimit(RLIMIT_NPROC, &rl_zero) == -1)
 		fatal_f("setrlimit(RLIMIT_NPROC, { 0, 0 }): %s",
 			strerror(errno));
