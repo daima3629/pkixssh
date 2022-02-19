@@ -409,6 +409,7 @@ ssh_sandbox_child(struct ssh_sandbox *box)
 	if (setrlimit(RLIMIT_FSIZE, &rl_zero) == -1)
 		fatal_f("setrlimit(RLIMIT_FSIZE, { 0, 0 }): %s",
 			strerror(errno));
+#ifndef SANDBOX_SKIP_RLIMIT_NOFILE
 {	struct rlimit rl_one;
 	/*
 	 * Cannot use zero for nfds, because poll(2) will fail with
@@ -419,6 +420,7 @@ ssh_sandbox_child(struct ssh_sandbox *box)
 		fatal_f("setrlimit(RLIMIT_NOFILE, { 1, 1 }): %s",
 			strerror(errno));
 }
+#endif
 	if (setrlimit(RLIMIT_NPROC, &rl_zero) == -1)
 		fatal_f("setrlimit(RLIMIT_NPROC, { 0, 0 }): %s",
 			strerror(errno));

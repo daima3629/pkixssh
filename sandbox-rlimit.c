@@ -71,6 +71,13 @@ ssh_sandbox_child(struct ssh_sandbox *box)
 			strerror(errno));
 #endif
 #ifndef SANDBOX_SKIP_RLIMIT_NOFILE
+/*
+ * Define to disable RLIMIT_NOFILE in sandboxes.
+ * In some builds OpenSSL cryptographic library opens regularly
+ * random device and program may crash if open fail.
+ * For instance OpenSSL FIPS 1.2 module requires access
+ * to random device.
+ */
 {	struct rlimit rl_one;
 	/* Cannot use zero because of poll(2) use */
 	rl_one.rlim_cur = rl_one.rlim_max = 1;

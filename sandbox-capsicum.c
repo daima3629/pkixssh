@@ -74,6 +74,12 @@ ssh_sandbox_child(struct ssh_sandbox *box)
 		fatal_f("setrlimit(RLIMIT_FSIZE, { 0, 0 }): %s",
 			strerror(errno));
 #ifndef SANDBOX_SKIP_RLIMIT_NOFILE
+/*
+ * Define to disable RLIMIT_NOFILE in sandboxes.
+ * In some FreeBSD configurations, C library may attempt to open
+ * additional file descriptors required by cryptographic operations
+ * and program may crash if open fail.
+ */
 {	struct rlimit rl_one;
 	/* Cannot use zero because of poll(2) use */
 	rl_one.rlim_cur = rl_one.rlim_max = 1;

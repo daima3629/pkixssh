@@ -1057,10 +1057,6 @@ mips-sony-bsd|mips-sony-newsos4)
 	    AC_DEFINE([SSH_TUN_NO_L2], [1], [No layer 2 tunnel support]))
 	AC_DEFINE([BROKEN_GLOB], [1])
 	TEST_MALLOC_OPTIONS="AJRX"
-	# Preauth crypto occasionally uses file descriptors for crypto offload
-	# and will crash if they cannot be opened.
-	AC_DEFINE([SANDBOX_SKIP_RLIMIT_NOFILE], [1],
-	    [define if setrlimit RLIMIT_NOFILE breaks things])
 	case "$host" in
 	*-*-freebsd9.*|*-*-freebsd10.*)
 		# Capsicum on 9 and 10 do not allow ppoll() so don't auto-enable.
