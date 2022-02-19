@@ -20,7 +20,7 @@
 .\" Copyright (c) 1999,2000 Markus Friedl.  All rights reserved.
 .\" Copyright (c) 1999 Aaron Campbell.  All rights reserved.
 .\" Copyright (c) 1999 Theo de Raadt.  All rights reserved.
-.\" Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
+.\" Copyright (c) 2002-2022 Roumen Petrov.  All rights reserved.
 .\"
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions
@@ -2011,6 +2011,9 @@ Presently, only
 some ssh servers support the
 .Qq hostkeys@openssh.com
 protocol extension used to inform the client of all the server's hostkeys.
+.Pp
+Due to all above feature is considered experimental and so default is
+.Cm no .
 .It Cm User
 Specifies the user to log in as.
 This can be useful when a different user name is used on different machines.
