@@ -17,6 +17,7 @@
 /*
  * Copyright (c) 1999 Theo de Raadt.  All rights reserved.
  * Copyright (c) 1999 Aaron Campbell.  All rights reserved.
+ * Copyright (c) 2022 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -465,7 +466,6 @@ main(int argc, char **argv)
  *   requires a lot of time to be deployed in production.
  * Based on above estimated usability of sftp based on scp
  * command interface,  is after 5 - 10 years (not before 2027).
- * TODO: to control default mode from an environment variable.
  */
 	enum scp_mode_e mode = MODE_SCP;
 	char *sftp_direct = NULL;
@@ -501,6 +501,14 @@ main(int argc, char **argv)
 	addargs(&args, "-oRemoteCommand=none");
 	addargs(&args, "-oRequestTTY=no");
 
+{	const char *s = getenv("SSH_SCP_MODE");
+	if (s != NULL) {
+		if (strcmp(s, "sftp") == 0)
+			mode = MODE_SFTP;
+		else if (strcmp(s, "scp") == 0)
+			mode = MODE_SCP;
+	}
+}
 	fflag = Tflag = tflag = 0;
 	while ((ch = getopt(argc, argv,
 	    "12346ABCTdfOpqRrstvD:F:J:M:P:S:c:i:l:o:")) != -1) {

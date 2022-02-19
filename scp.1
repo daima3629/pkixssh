@@ -13,6 +13,7 @@
 .\"
 .\" Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
 .\"                    All rights reserved
+.\" Copyright (c) 2022 Roumen Petrov.  All rights reserved.
 .\"
 .\" Created: Sun May  7 00:14:37 1995 ylo
 .\"
@@ -228,6 +229,18 @@ and
 to print debugging messages about their progress.
 This is helpful in
 debugging connection, authentication, and configuration problems.
+.El
+.Sh ENVIRONMENT
+.Bl -tag -width Ds
+.It Ev SSH_SCP_MODE
+Specify mode for remote copy.
+If value is
+.Dq sftp
+will be used sftp protocol.
+If value is
+.Dq scp
+will be used scp protocol.
+Note any other value or if variable is not set means use scp protocol.
 .El
 .Sh EXIT STATUS
 .Ex -std scp
