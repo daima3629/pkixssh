@@ -502,7 +502,6 @@ AC_CHECK_HEADERS([ \
 	tmpdir.h \
 	ttyent.h \
 	ucred.h \
-	unistd.h \
 	usersec.h \
 	util.h \
 	utime.h \
@@ -2177,9 +2176,7 @@ AC_CHECK_DECLS([SHUT_RD, getpeereid], , ,
 	[
 #include <sys/types.h>
 #include <sys/socket.h>
-#ifdef HAVE_UNISTD_H
-# include <unistd.h>
-#endif
+#include <unistd.h>
 	])
 
 AC_CHECK_DECLS([O_NONBLOCK], , ,
@@ -2220,9 +2217,7 @@ AC_CHECK_DECLS([howmany, NFDBITS], [], [], [[
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
-#ifdef HAVE_UNISTD_H
 #include <unistd.h>
-#endif
 	]])
 AC_CHECK_TYPES([fd_mask], [], [], [[
 #include <sys/param.h>
@@ -2233,9 +2228,7 @@ AC_CHECK_TYPES([fd_mask], [], [], [[
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
-#ifdef HAVE_UNISTD_H
 #include <unistd.h>
-#endif
 	]])
 
 AC_CHECK_FUNCS([setresuid], [
@@ -2244,10 +2237,8 @@ AC_CACHE_CHECK(
 	[if setresuid seems to work],
 	[ssh_cv_func_setresuid_work],
 	[AC_RUN_IFELSE([AC_LANG_PROGRAM([[
-#ifdef HAVE_UNISTD_H
-# define _GNU_SOURCE
-# include <unistd.h>
-#endif
+#define _GNU_SOURCE
+#include <unistd.h>
 #include <errno.h>
 	]], [[
 errno=0;
@@ -2274,10 +2265,8 @@ AC_CACHE_CHECK(
 	[if setresgid seems to work],
 	[ssh_cv_func_setresgid_work],
 	[AC_RUN_IFELSE([AC_LANG_PROGRAM([[
-#ifdef HAVE_UNISTD_H
-# define _GNU_SOURCE
-# include <unistd.h>
-#endif
+#define _GNU_SOURCE
+#include <unistd.h>
 #include <errno.h>
 	]], [[
 errno=0;
@@ -2358,9 +2347,7 @@ if test ! -z "$check_for_openpty_ctty_bug"; then
 #include <sys/fcntl.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#ifdef HAVE_UNISTD_H
-# include <unistd.h>
-#endif
+#include <unistd.h>
 #ifdef HAVE_PTY_H
 # include <pty.h>
 #endif
@@ -2595,9 +2582,7 @@ AC_CACHE_CHECK(
 # include <sys/time.h>
 #endif
 #include <signal.h>
-#ifdef HAVE_UNISTD_H
-# include <unistd.h>
-#endif
+#include <unistd.h>
 static void sighandler(int sig) { }
 		]], [[
 	pid_t pid;

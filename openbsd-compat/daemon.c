@@ -44,9 +44,7 @@
 # include <fcntl.h>
 #endif
 
-#ifdef HAVE_UNISTD_H
-# include <unistd.h>
-#endif
+#include <unistd.h>
 
 int
 daemon(int nochdir, int noclose)
