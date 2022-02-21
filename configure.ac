@@ -3576,7 +3576,9 @@ AS_IF([test $ssh_cv_setrlimit_nofile_zero = cross], [
 dnl used in code below
 rlimit_nofile_zero_works=$ssh_cv_setrlimit_nofile_zero
 
-AC_MSG_CHECKING([if setrlimit RLIMIT_FSIZE works])
+AC_CACHE_CHECK(
+	[if setrlimit RLIMIT_FSIZE works],
+	[ssh_cv_rlimit_fsize_work], [
 AC_RUN_IFELSE(
 	[AC_LANG_PROGRAM([[
 #include <sys/types.h>
@@ -3592,12 +3594,19 @@ AC_RUN_IFELSE(
 	r = setrlimit(RLIMIT_FSIZE, &rl_zero);
 	if (r == -1) return 1;
 	]])],
-	[AC_MSG_RESULT([yes])],
-	[AC_MSG_RESULT([no])
-	 AC_DEFINE(SANDBOX_SKIP_RLIMIT_FSIZE, 1,
-	    [setrlimit RLIMIT_FSIZE works])],
-	[AC_MSG_WARN([cross compiling: assuming yes])]
+	[ssh_cv_rlimit_fsize_work=yes],
+	[ssh_cv_rlimit_fsize_work=no],
+	[ssh_cv_rlimit_fsize_work=cross]
 )
+])
+AS_IF([test $ssh_cv_rlimit_fsize_work = cross], [
+	AC_MSG_WARN([cross compiling: assuming working setrlimit RLIMIT_FSIZE])
+	ssh_cv_rlimit_fsize_work=yes
+])
+AS_IF([test $ssh_cv_rlimit_fsize_work != yes], [
+	 AC_DEFINE([SANDBOX_SKIP_RLIMIT_FSIZE], [1],
+	    [setrlimit RLIMIT_FSIZE works])
+])
 
 if test "x$sandbox_arg" = "xpledge" || \
    ( test -z "$sandbox_arg" && test "x$ac_cv_func_pledge" = "xyes" ) ; then

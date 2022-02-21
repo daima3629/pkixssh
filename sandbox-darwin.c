@@ -72,9 +72,11 @@ ssh_sandbox_child(struct ssh_sandbox *box)
 	 * we must disable these using rlimit.
 	 */
 	rl_zero.rlim_cur = rl_zero.rlim_max = 0;
+#ifndef SANDBOX_SKIP_RLIMIT_FSIZE
 	if (setrlimit(RLIMIT_FSIZE, &rl_zero) == -1)
 		fatal_f("setrlimit(RLIMIT_FSIZE, { 0, 0 }): %s",
 			strerror(errno));
+#endif
 #ifndef SANDBOX_SKIP_RLIMIT_NOFILE
 {	struct rlimit rl_one;
 	/* Cannot use zero because of poll(2) use */
