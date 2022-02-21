@@ -3545,7 +3545,9 @@ AC_CHECK_TYPES([nfds_t], , , [
 #endif
 ])
 
-AC_MSG_CHECKING([if setrlimit(RLIMIT_NOFILE,{0,0}) works])
+AC_CACHE_CHECK(
+	[if setrlimit(RLIMIT_NOFILE,{0,0}) works],
+	[ssh_cv_setrlimit_nofile_zero], [
 AC_RUN_IFELSE(
 	[AC_LANG_PROGRAM([[
 #include <sys/types.h>
@@ -3562,13 +3564,17 @@ AC_RUN_IFELSE(
 	r = setrlimit(RLIMIT_NOFILE, &rl_zero);
 	if (r == -1) return 1;
 	]])],
-	[AC_MSG_RESULT([yes])
-	 rlimit_nofile_zero_works=yes],
-	[AC_MSG_RESULT([no])
-	 rlimit_nofile_zero_works=no],
-	[AC_MSG_WARN([cross compiling: assuming yes])
-	 rlimit_nofile_zero_works=yes]
+	[ssh_cv_setrlimit_nofile_zero=yes],
+	[ssh_cv_setrlimit_nofile_zero=no],
+	[ssh_cv_setrlimit_nofile_zero=cross]
 )
+])
+AS_IF([test $ssh_cv_setrlimit_nofile_zero = cross], [
+	AC_MSG_WARN([cross compiling: assuming working setrlimit(RLIMIT_NOFILE,{0,0})])
+	ssh_cv_setrlimit_nofile_zero=yes
+])
+dnl used in code below
+rlimit_nofile_zero_works=$ssh_cv_setrlimit_nofile_zero
 
 AC_MSG_CHECKING([if setrlimit RLIMIT_FSIZE works])
 AC_RUN_IFELSE(
