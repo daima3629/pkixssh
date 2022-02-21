@@ -3484,7 +3484,13 @@ AC_ARG_WITH([sandbox],
 # Some platforms (seems to be the ones that have a kernel poll(2)-type
 # function with which they implement select(2)) use an extra file descriptor
 # when calling select(2), which means we can't use the rlimit sandbox.
-AC_MSG_CHECKING([if select works with descriptor rlimit])
+dnl NOTE: Test below relies on undefined behaviour when RLIMIT_NOFILE is
+dnl less than the highest currently open file descriptor + 1.
+dnl Use of undefined behaviour is incorrect from functional point of view.
+dnl TODO: Most of code uses poll(2) and this check looks obsolete.
+AC_CACHE_CHECK(
+	[if select works with descriptor rlimit],
+	[ssh_cv_select_rlimit_nofile_zero], [
 AC_RUN_IFELSE(
 	[AC_LANG_PROGRAM([[
 #include <sys/types.h>
@@ -3515,13 +3521,17 @@ AC_RUN_IFELSE(
 	r = select(fd+1, &fds, NULL, NULL, &tv);
 	if (r == -1) return 1;
 	]])],
-	[AC_MSG_RESULT([yes])
-	 select_works_with_rlimit=yes],
-	[AC_MSG_RESULT([no])
-	 select_works_with_rlimit=no],
-	[AC_MSG_WARN([cross compiling: assuming yes])
-	 select_works_with_rlimit=yes]
+	[ssh_cv_select_rlimit_nofile_zero=yes],
+	[ssh_cv_select_rlimit_nofile_zero=no],
+	[ssh_cv_select_rlimit_nofile_zero=cross]
 )
+])
+AS_IF([test $ssh_cv_select_rlimit_nofile_zero = cross], [
+	AC_MSG_WARN([cross compiling: assuming working select with descriptor rlimit])
+	ssh_cv_select_rlimit_nofile_zero=yes
+])
+dnl used in code below
+select_works_with_rlimit=$ssh_cv_select_rlimit_nofile_zero
 
 AC_CHECK_MEMBERS([struct pollfd.fd], [], [], [[
 #include <sys/types.h>
