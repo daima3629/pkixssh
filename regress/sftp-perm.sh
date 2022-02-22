@@ -7,10 +7,22 @@ SERVER_LOG=${OBJ}/sftp-server.log
 CLIENT_LOG=${OBJ}/sftp.log
 TEST_SFTP_SERVER=${OBJ}/sftp-server.sh
 
-prepare_server() {
+prepare_server_bad() {
+# NOTE: Some shells expand all arguments as single quoted string!
+# Also some getopt(1) on split "-f option" command argument did
+# not clean leading spaces.
 	cat > $TEST_SFTP_SERVER <<EOF
 #! $TEST_SHELL
 exec $SFTPSERVER -el debug3 ${1+"$@"} 2> $SERVER_LOG
+EOF
+	chmod a+x $TEST_SFTP_SERVER
+}
+
+prepare_server() {
+# NOTE: Caller does not use arguments with spaces.
+	cat > $TEST_SFTP_SERVER <<EOF
+#! $TEST_SHELL
+exec $SFTPSERVER -el debug3 $* 2> $SERVER_LOG
 EOF
 	chmod a+x $TEST_SFTP_SERVER
 }
@@ -268,4 +280,4 @@ perm_test \
 # fstatvfs
 
 rm -rf ${COPY} ${COPY}.1 ${COPY}.dd
-
+rm -rf ${OBJ}/sftp-server.sh
