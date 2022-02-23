@@ -1,4 +1,4 @@
-/* $OpenBSD: sftp-client.c,v 1.160 2022/01/08 07:37:32 djm Exp $ */
+/* $OpenBSD: sftp-client.c,v 1.161 2022/01/17 21:41:04 djm Exp $ */
 /*
  * Copyright (c) 2001-2004 Damien Miller <djm@openbsd.org>
  * Copyright (c) 2018-2022 Roumen Petrov.  All rights reserved.
@@ -900,6 +900,8 @@ do_mkdir(struct sftp_conn *conn, const char *path, Attrib *a, int print_flag)
 {
 	u_int status, id;
 
+	debug2("Sending SSH2_FXP_MKDIR \"%s\"", path);
+
 	id = conn->msg_id++;
 	send_string_attrs_request(conn, id, SSH2_FXP_MKDIR, path,
 	    strlen(path), a);
@@ -916,6 +918,8 @@ do_rmdir(struct sftp_conn *conn, const char *path)
 {
 	u_int status, id;
 
+	debug2("Sending SSH2_FXP_RMDIR \"%s\"", path);
+
 	id = conn->msg_id++;
 	send_string_request(conn, id, SSH2_FXP_RMDIR, path,
 	    strlen(path));
@@ -931,6 +935,8 @@ Attrib *
 do_stat(struct sftp_conn *conn, const char *path, int quiet)
 {
 	u_int id;
+
+	debug2("Sending SSH2_FXP_STAT \"%s\"", path);
 
 	id = conn->msg_id++;
 
@@ -968,6 +974,8 @@ do_fstat(struct sftp_conn *conn, const u_char *handle, u_int handle_len,
 {
 	u_int id;
 
+	debug2("Sending SSH2_FXP_FSTAT \"%s\"");
+
 	id = conn->msg_id++;
 	send_string_request(conn, id, SSH2_FXP_FSTAT, handle,
 	    handle_len);
@@ -980,6 +988,8 @@ int
 do_setstat(struct sftp_conn *conn, const char *path, Attrib *a)
 {
 	u_int status, id;
+
+	debug2("Sending SSH2_FXP_SETSTAT \"%s\"", path);
 
 	id = conn->msg_id++;
 	send_string_attrs_request(conn, id, SSH2_FXP_SETSTAT, path,
@@ -997,6 +1007,8 @@ do_fsetstat(struct sftp_conn *conn, const u_char *handle, u_int handle_len,
     Attrib *a)
 {
 	u_int status, id;
+
+	debug2("Sending SSH2_FXP_FSETSTAT");
 
 	id = conn->msg_id++;
 	send_string_attrs_request(conn, id, SSH2_FXP_FSETSTAT, handle,
@@ -1026,6 +1038,8 @@ do_realpath_expand(struct sftp_conn *conn, const char *path, int expand)
 
 	expected_id = id = conn->msg_id++;
 	if (expand) {
+		debug2("Sending SSH2_FXP_EXTENDED(expand-path@openssh.com) "
+		    "\"%s\"", path);
 		what = "expand-path@openssh.com";
 		if ((r = sshbuf_put_u8(msg, SSH2_FXP_EXTENDED)) != 0 ||
 		    (r = sshbuf_put_u32(msg, id)) != 0 ||
@@ -1035,6 +1049,7 @@ do_realpath_expand(struct sftp_conn *conn, const char *path, int expand)
 			fatal_fr(r, "compose %s", what);
 		send_msg(conn, msg);
 	} else {
+		debug2("Sending SSH2_FXP_REALPATH \"%s\"", path);
 		send_string_request(conn, id, SSH2_FXP_REALPATH,
 		    path, strlen(path));
 	}
@@ -1123,12 +1138,16 @@ do_rename(struct sftp_conn *conn, const char *oldpath, const char *newpath,
 	/* Send rename request */
 	id = conn->msg_id++;
 	if (use_ext) {
+		debug2("Sending SSH2_FXP_EXTENDED(posix-rename@openssh.com) "
+		    "\"%s\" to \"%s\"", oldpath, newpath);
 		if ((r = sshbuf_put_u8(msg, SSH2_FXP_EXTENDED)) != 0 ||
 		    (r = sshbuf_put_u32(msg, id)) != 0 ||
 		    (r = sshbuf_put_cstring(msg,
 		    "posix-rename@openssh.com")) != 0)
 			fatal_fr(r, "compose posix-rename");
 	} else {
+		debug2("Sending SSH2_FXP_RENAME \"%s\" to \"%s\"",
+		    oldpath, newpath);
 		if ((r = sshbuf_put_u8(msg, SSH2_FXP_RENAME)) != 0 ||
 		    (r = sshbuf_put_u32(msg, id)) != 0)
 			fatal_fr(r, "compose rename");
@@ -1161,6 +1180,8 @@ do_hardlink(struct sftp_conn *conn, const char *oldpath, const char *newpath)
 		error("Server does not support hardlink@openssh.com extension");
 		return -1;
 	}
+	debug2("Sending SSH2_FXP_EXTENDED(hardlink@openssh.com) "
+	    "\"%s\" to \"%s\"", oldpath, newpath);
 
 	if ((msg = sshbuf_new()) == NULL)
 		fatal_f("sshbuf_new failed");
@@ -1197,6 +1218,7 @@ do_symlink(struct sftp_conn *conn, const char *oldpath, const char *newpath)
 		error("This server does not support the symlink operation");
 		return(SSH2_FX_OP_UNSUPPORTED);
 	}
+	debug2("Sending SSH2_FXP_SYMLINK \"%s\" to \"%s\"", oldpath, newpath);
 
 	if ((msg = sshbuf_new()) == NULL)
 		fatal_f("sshbuf_new failed");
@@ -1231,6 +1253,7 @@ do_fsync(struct sftp_conn *conn, u_char *handle, u_int handle_len)
 	/* Silently return if the extension is not supported */
 	if ((conn->exts & SFTP_EXT_FSYNC) == 0)
 		return -1;
+	debug2("Sending SSH2_FXP_EXTENDED(fsync@openssh.com)");
 
 	/* Send fsync request */
 	if ((msg = sshbuf_new()) == NULL)
@@ -1262,6 +1285,8 @@ do_readlink(struct sftp_conn *conn, const char *path)
 	Attrib a;
 	u_char type;
 	int r;
+
+	debug2("Sending SSH2_FXP_READLINK \"%s\"", path);
 
 	expected_id = id = conn->msg_id++;
 	send_string_request(conn, id, SSH2_FXP_READLINK, path, strlen(path));
@@ -1322,6 +1347,8 @@ do_statvfs(struct sftp_conn *conn, const char *path, struct sftp_statvfs *st,
 		return -1;
 	}
 
+	debug2("Sending SSH2_FXP_EXTENDED(statvfs@openssh.com) \"%s\"", path);
+
 	id = conn->msg_id++;
 
 	if ((msg = sshbuf_new()) == NULL)
@@ -1350,6 +1377,8 @@ do_fstatvfs(struct sftp_conn *conn, const u_char *handle, u_int handle_len,
 		return -1;
 	}
 
+	debug2("Sending SSH2_FXP_EXTENDED(fstatvfs@openssh.com)");
+
 	id = conn->msg_id++;
 
 	if ((msg = sshbuf_new()) == NULL)
@@ -1377,6 +1406,8 @@ do_lsetstat(struct sftp_conn *conn, const char *path, Attrib *a)
 		error("Server does not support lsetstat@openssh.com extension");
 		return -1;
 	}
+
+	debug2("Sending SSH2_FXP_EXTENDED(lsetstat@openssh.com) \"%s\"", path);
 
 	id = conn->msg_id++;
 	if ((msg = sshbuf_new()) == NULL)
@@ -1426,6 +1457,8 @@ send_open(struct sftp_conn *conn, const char *path, const char *tag,
 	struct sshbuf *msg;
 	int r;
 	u_int id;
+
+	debug2("Sending SSH2_FXP_OPEN \"%s\"", path);
 
 	*handlep = NULL;
 	*handle_lenp = 0;
@@ -1489,6 +1522,9 @@ do_download(struct sftp_conn *conn, const char *remote_path,
 	struct requests requests;
 	struct request *req;
 	u_char type;
+
+	debug2_f("download remote \"%s\" to local \"%s\"",
+	    remote_path, local_path);
 
 	TAILQ_INIT(&requests);
 
@@ -1755,6 +1791,8 @@ download_dir_internal(struct sftp_conn *conn, const char *src, const char *dst,
 		return -1;
 	}
 
+	debug2_f("download dir remote \"%s\" to local \"%s\"", src, dst);
+
 	if (dirattrib == NULL &&
 	    (dirattrib = do_stat(conn, src, 1)) == NULL) {
 		error("remote stat \"%s\" failed", src);
@@ -1885,6 +1923,9 @@ do_upload(struct sftp_conn *conn, const char *local_path,
 	struct requests acks;
 	struct request *ack = NULL;
 	size_t handle_len;
+
+	debug2_f("upload local \"%s\" to remote \"%s\"",
+	    local_path, remote_path);
 
 	TAILQ_INIT(&acks);
 
@@ -2064,6 +2105,8 @@ upload_dir_internal(struct sftp_conn *conn, const char *src, const char *dst,
 	char *filename, *new_src = NULL, *new_dst = NULL;
 	struct stat sb;
 	Attrib a, *dirattrib;
+
+	debug2_f("upload local dir \"%s\" to remote \"%s\"", src, dst);
 
 	if (depth >= MAX_DIR_DEPTH) {
 		error("Maximum directory depth exceeded: %d levels", depth);
@@ -2258,6 +2301,8 @@ do_crossload(struct sftp_conn *from, struct sftp_conn *to,
 	struct requests requests;
 	struct request *req;
 	u_char type;
+
+	debug2_f("crossload src \"%s\" to dst \"%s\"", from_path, to_path);
 
 	TAILQ_INIT(&requests);
 
@@ -2494,6 +2539,8 @@ crossload_dir_internal(struct sftp_conn *from, struct sftp_conn *to,
 	char *filename, *new_from_path = NULL, *new_to_path = NULL;
 	mode_t mode = 0777;
 	Attrib curdir;
+
+	debug2_f("crossload dir src \"%s\" to dst \"%s\"", from_path, to_path);
 
 	if (depth >= MAX_DIR_DEPTH) {
 		error("Maximum directory depth exceeded: %d levels", depth);
