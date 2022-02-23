@@ -1,4 +1,4 @@
-#	$OpenBSD: percent.sh,v 1.12 2021/05/24 10:25:18 dtucker Exp $
+#	$OpenBSD: percent.sh,v 1.14 2022/02/20 03:47:26 dtucker Exp $
 #	Placed in the Public Domain.
 
 tid="percent expansions"
@@ -113,8 +113,10 @@ done
 
 
 # A subset of options support tilde expansion
+PREFIX=$HOME
+test "$PREFIX" = "/" && PREFIX=
 for i in controlpath identityagent forwardagent; do
 	verbose $tid $i tilde
-	trial $i '~' $HOME/
-	trial $i '~/.ssh' $HOME/.ssh
+	trial $i '~' $PREFIX/
+	trial $i '~/.ssh' $PREFIX/.ssh
 done
