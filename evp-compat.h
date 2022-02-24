@@ -198,14 +198,7 @@ EVP_PKEY_base_id(const EVP_PKEY *pkey) {
 #endif /*ndef HAVE_EVP_PKEY_BASE_ID */
 
 
-static inline int
-ssh_EVP_PKEY_eq(const EVP_PKEY *a, const EVP_PKEY *b) {
-#ifdef HAVE_EVP_PKEY_EQ			/* OpenSSL >= 3.0 */
-	return EVP_PKEY_eq(a, b);
-#else
-	return EVP_PKEY_cmp(a, b);
-#endif
-}
+int ssh_EVP_PKEY_eq(const EVP_PKEY *a, const EVP_PKEY *b);
 
 
 #ifndef HAVE_EC_POINT_GET_AFFINE_COORDINATES		/* OpenSSL < 1.1.1 */

@@ -1114,6 +1114,15 @@ EVP_PKEY_cmp(const EVP_PKEY *a, const EVP_PKEY *b) {
 }
 #endif /*ndef HAVE_EVP_PKEY_CMP*/
 
+int
+ssh_EVP_PKEY_eq(const EVP_PKEY *a, const EVP_PKEY *b) {
+#ifdef HAVE_EVP_PKEY_EQ			/* OpenSSL >= 3.0 */
+	return EVP_PKEY_eq(a, b);
+#else
+	return EVP_PKEY_cmp(a, b);
+#endif
+}
+
 int/*bool*/
 sshkey_equal_public_pkey(const struct sshkey *ka, const struct sshkey *kb) {
 	const EVP_PKEY *a, *b;
