@@ -1,4 +1,4 @@
-/* $OpenBSD: auth2.c,v 1.161 2021/04/03 06:18:40 djm Exp $ */
+/* $OpenBSD: auth2.c,v 1.164 2022/02/23 11:18:13 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  *
@@ -284,6 +284,8 @@ input_userauth_request(int type, u_int32_t seq, struct ssh *ssh)
 	if ((style = strchr(user, ':')) != NULL)
 		*style++ = 0;
 
+	if (authctxt->attempt >= 1024)
+		auth_maxtries_exceeded(ssh);
 	if (authctxt->attempt++ == 0) {
 		/* setup auth context */
 		authctxt->pw = PRIVSEP(getpwnamallow(ssh, user));
@@ -292,6 +294,7 @@ input_userauth_request(int type, u_int32_t seq, struct ssh *ssh)
 			authctxt->valid = 1;
 			debug2_f("setting up authctxt for %s", user);
 		} else {
+			authctxt->valid = 0;
 			/* Invalid user, fake password information */
 			authctxt->pw = fakepw();
 #ifdef SSH_AUDIT_EVENTS
