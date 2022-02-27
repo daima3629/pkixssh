@@ -16,6 +16,9 @@
 # Do we use FIPS capable OpenSSL library ? (1=yes 0=no)
 %global enable_openssl_fips 1
 
+# Do we want to enable FIPS test? (1=yes 0=no)
+%global enable_fips_test 1
+
 # TODO: do not produce debug package(temporary)
 %global debug_package %{nil}
 
@@ -25,6 +28,16 @@
 # No more openldap server package on CentOS 8
 %undefine enable_ldap_test
 %global enable_ldap_test 0
+%endif
+
+%if 0%{?fedora} >= 36
+# OpenSSL 3+ FIPS model is not supported yet
+%undefine enable_openssl_fips
+%global enable_openssl_fips 0
+%endif
+%if !%{enable_openssl_fips}
+%undefine enable_fips_test
+%global enable_fips_test 0
 %endif
 
 %global use_fipscheck 1
@@ -142,6 +155,14 @@ make t-exec LTESTS=percent || :
 
 TERM=dumb \
 make t-exec LTESTS=multiplex || :
+
+%if %{enable_fips_test}
+# ignore failures as tests are sensitive to used sandbox
+TERM=dumb \
+make t-exec LTESTS=fips-connect-privsep || :
+TERM=dumb \
+make t-exec LTESTS=fips-try-ciphers || :
+%endif
 
 
 %install

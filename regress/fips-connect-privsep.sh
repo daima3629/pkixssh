@@ -7,9 +7,9 @@ if test -z "$OPENSSL_FIPS" ; then
 fi
 
 
+verbose "privilege separation: enabled"
 cp $OBJ/sshd_proxy $OBJ/sshd_proxy.orig
 echo 'UsePrivilegeSeparation yes' >> $OBJ/sshd_proxy
-
 echo "= UsePrivilegeSeparation yes" >> $TEST_SSH_LOGFILE
 $SSH -F $OBJ/ssh_proxy 999.999.999.999 :
 if test $? -ne 0; then
@@ -17,11 +17,11 @@ if test $? -ne 0; then
 fi
 
 
+verbose "privilege separation: sandbox"
 cp $OBJ/sshd_proxy.orig $OBJ/sshd_proxy
 echo 'UsePrivilegeSeparation sandbox' >> $OBJ/sshd_proxy
-
 echo "= UsePrivilegeSeparation sandbox" >> $TEST_SSH_LOGFILE
 $SSH -F $OBJ/ssh_proxy 999.999.999.999 :
 if test $? -ne 0; then
-  warn "ssh privsep/sandbox+proxyconnect failed"
+  fail "ssh sandbox+proxyconnect failed"
 fi

@@ -4,7 +4,7 @@
 # This is free software; see Copyright file in the source
 # distribution for precise wording.
 #
-# Copyright (c) 2019-2021 Roumen Petrov
+# Copyright (c) 2019-2022 Roumen Petrov
 #
 
 # Do we want to enable building with ldap? (1=yes 0=no)
@@ -16,12 +16,19 @@
 # Do we use FIPS capable OpenSSL library ? (1=yes 0=no)
 %global enable_openssl_fips 1
 
+# Do we want to enable FIPS test? (1=yes 0=no)
+%global enable_fips_test 1
+
 
 # Disable non-working configurations
 %if 0%{?sle_version} < 120200 && !0%{?is_opensuse}
 # No FIPS on SLE before 12 SP2
 %undefine enable_openssl_fips
 %global enable_openssl_fips 0
+%endif
+%if !%{enable_openssl_fips}
+%undefine enable_fips_test
+%global enable_fips_test 0
 %endif
 
 
@@ -139,6 +146,14 @@ make t-exec LTESTS=percent || :
 
 TERM=dumb \
 make t-exec LTESTS=multiplex || :
+
+%if %{enable_fips_test}
+# ignore failures as tests are sensitive to used sandbox
+TERM=dumb \
+make t-exec LTESTS=fips-connect-privsep || :
+TERM=dumb \
+make t-exec LTESTS=fips-try-ciphers || :
+%endif
 
 
 %install
