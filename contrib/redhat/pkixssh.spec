@@ -68,7 +68,7 @@ BuildRequires:	openssl-devel openssl
 BuildRequires:	openldap-devel openldap openldap-clients
 %endif
 %if %{enable_ldap_test}
-BuildRequires: openldap-servers
+BuildRequires:	openldap-servers
 %endif
 %if %{enable_openssl_fips} && %{use_fipscheck}
 BuildRequires:	fipscheck-devel fipscheck
@@ -131,6 +131,9 @@ TERM=dumb \
 make check
 
 %if %{enable_ldap_test}
+%if 0%{?rhel_version} && 0%{?rhel_version} < 700
+SSH_LDAP_DB=hdb \
+%endif
 TERM=dumb \
 SSH_X509TESTS="by_ldap" \
 make check-certs

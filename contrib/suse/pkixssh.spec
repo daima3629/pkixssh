@@ -125,6 +125,9 @@ TERM=dumb \
 make check
 
 %if %{enable_ldap_test}
+%if 0%{?sle_version} < 120000 && !0%{?is_opensuse}
+SSH_LDAP_DB=hdb \
+%endif
 LDAP_MODULEDIR=%{ldap_moduledir} \
 TERM=dumb \
 SSH_X509TESTS="by_ldap" \

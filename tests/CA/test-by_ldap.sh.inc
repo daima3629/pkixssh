@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2004-2021 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2004-2022 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -87,7 +87,8 @@ fi
   cat <<EOF
 
 # dbms backend settings must be in same file !
-# this is required for openldap version 2.3.32(but not for <= 2.3.20,2.2.x,2.1.x)
+# this is required for openldap version 2.3.32
+# (but not for <= 2.3.20,2.2.x,2.1.x)
 database	$SSH_LDAP_DB
 suffix		"$SSH_LDAP_DC"
 rootdn		"cn=Manager,$SSH_LDAP_DC"
@@ -367,6 +368,7 @@ do_test () {
     return 1
   fi
   echo "* ${extd}against ${attn}CALdapUrl${norm}:"
+  echo "  ${extd}using backend ${attn}$SSH_LDAP_DB${norm}"
 
   testLDAP 2 &&
   testLDAP 3 &&
