@@ -4,7 +4,7 @@
 # This is free software; see Copyright file in the source
 # distribution for precise wording.
 #
-# Copyright (c) 2019-2021 Roumen Petrov
+# Copyright (c) 2019-2022 Roumen Petrov
 #
 
 # Do we want to enable building with ldap? (1=yes 0=no)
@@ -39,6 +39,16 @@
 %global use_fipscheck 0
 %endif
 
+%global use_groff_package 0
+%if 0%{?rhel_version} && 0%{?rhel_version} < 700
+%undefine use_groff_package
+%global use_groff_package 1
+%endif
+%if 0%{?centos_version} && 0%{?centos_version} < 700
+%undefine use_groff_package
+%global use_groff_package 1
+%endif
+
 
 # norootforbuild
 
@@ -63,7 +73,7 @@ BuildRequires: openldap-servers
 %if %{enable_openssl_fips} && %{use_fipscheck}
 BuildRequires:	fipscheck-devel fipscheck
 %endif
-%if 0%{?centos_version} && 0%{?centos_version} < 700
+%if %{use_groff_package}
 BuildRequires:	groff
 %else
 BuildRequires:	groff-base
