@@ -2,6 +2,7 @@
 
 /*
  * Copyright (c) 2001 Jakob Schlyter. All rights reserved.
+ * Copyright (c) 2022 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -42,8 +43,6 @@
  * NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION
  * WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-
-/* OPENBSD ORIGINAL: lib/libc/net/getrrsetbyname.c */
 
 #include "includes.h"
 
@@ -89,7 +88,7 @@ struct __res_state _res;
 
 #ifndef GETSHORT
 #define GETSHORT(s, cp) { \
-	register u_char *t_cp = (u_char *)(cp); \
+	u_char *t_cp = (u_char *)(cp); \
 	(s) = ((u_int16_t)t_cp[0] << 8) \
 	    | ((u_int16_t)t_cp[1]) \
 	    ; \
@@ -99,7 +98,7 @@ struct __res_state _res;
 
 #ifndef GETLONG
 #define GETLONG(l, cp) { \
-	register u_char *t_cp = (u_char *)(cp); \
+	u_char *t_cp = (u_char *)(cp); \
 	(l) = ((u_int32_t)t_cp[0] << 24) \
 	    | ((u_int32_t)t_cp[1] << 16) \
 	    | ((u_int32_t)t_cp[2] << 8) \
@@ -111,33 +110,40 @@ struct __res_state _res;
 
 /*
  * Routines to insert/extract short/long's.
+ *
+ * Usually resolver library (libresolv) provides _getshort interface
+ * but without to define.
+ * If the system does not provide _getshort or _get_long use compatibility
+ * code below. Also use project names to avoid name collisions.
  */
 
 #ifndef HAVE__GETSHORT
 static u_int16_t
-_getshort(msgp)
-	register const u_char *msgp;
+_ssh_getshort(const u_char *msgp)
 {
-	register u_int16_t u;
+	u_int16_t u;
 
 	GETSHORT(u, msgp);
 	return (u);
 }
-#elif defined(HAVE_DECL__GETSHORT) && (HAVE_DECL__GETSHORT == 0)
-u_int16_t _getshort(register const u_char *);
+#define _getshort _ssh_getshort
+#endif
+#if !HAVE_DECL__GETSHORT
+u_int16_t _getshort(const u_char *);
 #endif
 
 #ifndef HAVE__GETLONG
 static u_int32_t
-_getlong(msgp)
-	register const u_char *msgp;
+_ssh_getlong(const u_char *msgp)
 {
-	register u_int32_t u;
+	u_int32_t u;
 
 	GETLONG(u, msgp);
 	return (u);
 }
-#elif defined(HAVE_DECL__GETLONG) && (HAVE_DECL__GETLONG == 0)
+#define _getlong _ssh_getlong
+#endif
+#if !HAVE_DECL__GETLONG
 u_int32_t _getlong(register const u_char *);
 #endif
 
