@@ -27,14 +27,12 @@
 %global enable_ldap_test 0
 %endif
 
-%if 0%{?rhel_version} > 0
-#TODO 0%{?rhel_version} > 700 ?
-%undefine enable_openssl_fips
-%global enable_openssl_fips 0
-%endif
-
 %global use_fipscheck 1
 %if 0%{?fedora} >= 33
+%undefine use_fipscheck
+%global use_fipscheck 0
+%endif
+%if 0%{?rhel_version} && 0%{?rhel_version} > 500
 %undefine use_fipscheck
 %global use_fipscheck 0
 %endif
@@ -70,7 +68,7 @@ BuildRequires:	openldap-devel openldap openldap-clients
 %if %{enable_ldap_test}
 BuildRequires:	openldap-servers
 %endif
-%if %{enable_openssl_fips} && %{use_fipscheck}
+%if %{use_fipscheck}
 BuildRequires:	fipscheck-devel fipscheck
 %endif
 %if %{use_groff_package}
