@@ -119,7 +119,7 @@ const char *strerror(int e)
 #endif
 
 #ifndef HAVE_UTIMES
-int utimes(char *filename, struct timeval *tvp)
+int utimes(const char *filename, const struct timeval *tvp)
 {
 	struct utimbuf ub;
 
