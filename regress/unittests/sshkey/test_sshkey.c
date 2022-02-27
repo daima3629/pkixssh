@@ -585,16 +585,17 @@ sshkey_tests(void)
 	sshkey_free(k2);
 	TEST_DONE();
 
-#ifdef OPENSSL_HAS_ECC
+#ifdef OPENSSL_HAS_NISTP521 /* implies OPENSSL_HAS_ECC */
 	TEST_START("sign and verify ECDSA");
 	k1 = get_private("ecdsa_1");
+	/*k2 is ecdsa-sha2-nistp521!*/
 	ASSERT_INT_EQ(sshkey_load_public(test_data_file("ecdsa_2.pub"), &k2,
 	    NULL), 0);
 	signature_tests(k1, k2, NULL);
 	sshkey_free(k1);
 	sshkey_free(k2);
 	TEST_DONE();
-#endif /* OPENSSL_HAS_ECC */
+#endif /* OPENSSL_HAS_NISTP521 */
 #endif /* WITH_OPENSSL */
 
 	TEST_START("sign and verify ED25519");
