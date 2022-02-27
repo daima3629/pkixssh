@@ -89,6 +89,9 @@ BuildRequires:	groff
 %else
 BuildRequires:	groff-base
 %endif
+# Next is not part of preinstalled packages on some build configurations
+# (RHEL5?)
+BuildRequires:	which
 BuildRoot:	%{_tmppath}/%{name}-%{version}-build
 
 Source0:	https://roumenpetrov.info/secsh/src/%{name}-%{version}.tar.xz
