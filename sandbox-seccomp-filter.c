@@ -422,13 +422,17 @@ ssh_sandbox_child(struct ssh_sandbox *box)
 			strerror(errno));
 #endif
 #ifndef SANDBOX_SKIP_RLIMIT_NOFILE
-{	struct rlimit rl_one;
-	/*
-	 * Cannot use zero for nfds, because poll(2) will fail with
-	 * errno=EINVAL if nfds>RLIMIT_NOFILE.
-	 */
-	rl_one.rlim_cur = rl_one.rlim_max = 1;
-	if (setrlimit(RLIMIT_NOFILE, &rl_one) == -1)
+/*
+ * NOTE: The Open Group Base Specifications requires poll to return error
+ * EINVAL if argument nfds argument is greater than limit {OPEN_MAX}.
+ * Switch to poll requires to set limits to one on systems that conform
+ * with POSIX specification. Also note that cryptographic library
+ * may require file description to obtain random data.
+ */
+{	struct rlimit rl_nofile;
+	/* Cannot use zero because of poll(2) requirement */
+	rl_nofile.rlim_cur = rl_nofile.rlim_max = 1;
+	if (setrlimit(RLIMIT_NOFILE, &rl_nofile) == -1)
 		fatal_f("setrlimit(RLIMIT_NOFILE, { 1, 1 }): %s",
 			strerror(errno));
 }
