@@ -14,7 +14,8 @@
 %global enable_ldap_test 1
 
 # Do we use FIPS capable OpenSSL library ? (1=yes 0=no)
-%global enable_openssl_fips 1
+# TODO: FIPS enabled builds
+%global enable_openssl_fips 0
 
 # Do we want to enable FIPS test? (1=yes 0=no)
 %global enable_fips_test 1
@@ -24,11 +25,6 @@
 
 
 # Disable non-working configurations
-%if 0%{?sle_version} < 120200 && !0%{?is_opensuse}
-# No FIPS on SLE before 12 SP2
-%undefine enable_openssl_fips
-%global enable_openssl_fips 0
-%endif
 %if !%{enable_openssl_fips}
 %undefine enable_fips_test
 %global enable_fips_test 0
@@ -128,6 +124,11 @@ two untrusted hosts over an insecure network.
   --enable-ldap --with-ldap-libexecdir=%{ldap_libexecdir} \
 %else
   --disable-ldap \
+%endif
+%if %{enable_openssl_fips}
+  --enable-openssl-fips \
+%else
+  --disable-openssl-fips \
 %endif
   --with-pie \
   --with-pam \

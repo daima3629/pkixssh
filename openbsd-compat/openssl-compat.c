@@ -147,7 +147,6 @@ void
 ssh_OpenSSL_startup()
 {
 #ifdef HAVE_OPENSSL_INIT_CRYPTO
-	/* NOTE FIPS is not available for OpenSSL 1.1 */
 	OPENSSL_init_crypto(
 	#ifdef USE_OPENSSL_ENGINE
 	    OPENSSL_INIT_ENGINE_ALL_BUILTIN |
@@ -155,6 +154,13 @@ ssh_OpenSSL_startup()
 	    OPENSSL_INIT_ADD_ALL_CIPHERS |
 	    OPENSSL_INIT_ADD_ALL_DIGESTS |
 	    OPENSSL_INIT_LOAD_CONFIG, NULL);
+
+#ifdef OPENSSL_FIPS
+	/* vendor OpenSSL 1.1 may support FIPS */
+	if (getenv("OPENSSL_FIPS")) {
+		(void) ssh_FIPS_mode(1);
+	}
+#endif
 #else
 	OpenSSL_add_all_algorithms();
 
