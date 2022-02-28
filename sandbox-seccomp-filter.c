@@ -316,6 +316,9 @@ static const struct sock_filter preauth_insns[] = {
 	SC_ALLOW_ARG(__NR_socketcall, 0, SYS_SHUTDOWN),
 	SC_DENY(__NR_socketcall, EACCES),
 #endif
+#ifdef __NR_socket
+	SC_DENY(__NR_socket, EACCES),
+#endif
 #if defined(__NR_ioctl) && defined(__s390__)
 	/* Allow ioctls for ICA crypto card on s390 */
 	SC_ALLOW_ARG(__NR_ioctl, 1, Z90STAT_STATUS_MASK),
