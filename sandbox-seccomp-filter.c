@@ -27,6 +27,8 @@
 
 /* XXX it should be possible to do logging via the log socket safely */
 
+#if 0
+/* NOTE: on older kernels - error: redefinition of 'union sigval' */
 #ifdef SANDBOX_SECCOMP_FILTER_DEBUG
 /* Use the kernel headers in case of an older toolchain. */
 # include <asm/siginfo.h>
@@ -34,6 +36,7 @@
 # define __have_sigval_t 1
 # define __have_sigevent_t 1
 #endif /* SANDBOX_SECCOMP_FILTER_DEBUG */
+#endif
 
 #include "includes.h"
 
@@ -376,6 +379,7 @@ ssh_sandbox_violation(int signum, siginfo_t *info, void *void_context)
 {
 	char msg[256];
 
+	UNUSED(signum); UNUSED(void_context);
 	snprintf(msg, sizeof(msg),
 	    "%s: unexpected system call (arch:0x%x,syscall:%d @ %p)",
 	    __func__, info->si_arch, info->si_syscall, info->si_call_addr);
