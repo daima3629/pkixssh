@@ -19,6 +19,9 @@
 # Do we want to enable FIPS test? (1=yes 0=no)
 %global enable_fips_test 1
 
+# Do we want to use fipscheck? (1=yes 0=no)
+%global use_fipscheck 1
+
 # TODO: do not produce debug package(temporary)
 %global debug_package %{nil}
 
@@ -40,7 +43,6 @@
 %global enable_fips_test 0
 %endif
 
-%global use_fipscheck 1
 %if 0%{?fedora} >= 33
 %undefine use_fipscheck
 %global use_fipscheck 0

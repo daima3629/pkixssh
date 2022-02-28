@@ -19,6 +19,9 @@
 # Do we want to enable FIPS test? (1=yes 0=no)
 %global enable_fips_test 1
 
+# Do we want to use fipscheck? (1=yes 0=no)
+%global use_fipscheck 1
+
 
 # Disable non-working configurations
 %if 0%{?sle_version} < 120200 && !0%{?is_opensuse}
@@ -29,6 +32,11 @@
 %if !%{enable_openssl_fips}
 %undefine enable_fips_test
 %global enable_fips_test 0
+%endif
+
+%if 0%{?sles_version} == 11
+%undefine use_fipscheck
+%global use_fipscheck 0
 %endif
 
 
@@ -68,7 +76,7 @@ BuildRequires:	openldap2-devel openldap2-client
 %if %{enable_ldap_test}
 BuildRequires:	openldap2
 %endif
-%if %{enable_openssl_fips}
+%if %{use_fipscheck}
 BuildRequires:	fipscheck-devel fipscheck
 # TODO: to run in FIPS mode, but which version 1_0_0 or 1_1?
 #BuildRequires:	libopenssl<VER>-hmac
@@ -226,6 +234,13 @@ install -m744 contrib/suse/sysconfig.ssh %{buildroot}%{_fillupdir}
 %attr(0600,root,root) %verify(not mode) %config(noreplace) %{ssh_sysconfdir}/moduli
 %attr(0644,root,root) %config(noreplace) /etc/pam.d/sshd
 %attr(0755,root,root) %config /etc/init.d/sshd
+%if %{use_fipscheck}
+# TODO: installation into fipscheck "lib" directory?
+%attr(0644,root,root) %{_bindir}/.ssh.hmac
+%attr(0644,root,root) %{_bindir}/.ssh-agent.hmac
+%attr(0644,root,root) %{_bindir}/.ssh-keygen.hmac
+%attr(0644,root,root) %{_sbindir}/.sshd.hmac
+%endif
 %attr(0755,root,root) %{_bindir}/scp
 %attr(0755,root,root) %{_bindir}/sftp
 %attr(0755,root,root) %{_bindir}/ssh
