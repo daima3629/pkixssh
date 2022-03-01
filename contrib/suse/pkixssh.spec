@@ -14,7 +14,13 @@
 %global enable_ldap_test 1
 
 # Do we use FIPS capable OpenSSL library ? (1=yes 0=no)
-# TODO: FIPS enabled builds
+# NOTE: On SUSE FIPS support looks broken:
+# - on some relases fipscheck is missing
+# - on all fipscheck utility exit with code 14 when checks binary with hmac file:
+#   10 and higher - Failure during self-checking the libfipscheck.so shared library
+#   20 and higher - Failure during self-checking the fipscheck binary
+# - activation of FIPS mode fail with error:
+#   ssh_FIPS_mode: crypto message: 'error:2D06C06E:FIPS routines:FIPS_module_mode_set:fingerprint does not match'
 %global enable_openssl_fips 0
 
 # Do we want to enable FIPS test? (1=yes 0=no)
@@ -30,6 +36,10 @@
 %global enable_fips_test 0
 %endif
 
+%if 0%{?sle_version} >= 120000 && 0%{?sle_version} < 120200
+%undefine use_fipscheck
+%global use_fipscheck 0
+%endif
 %if 0%{?sles_version} == 11
 %undefine use_fipscheck
 %global use_fipscheck 0
