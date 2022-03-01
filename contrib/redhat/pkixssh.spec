@@ -51,6 +51,10 @@
 %undefine use_fipscheck
 %global use_fipscheck 0
 %endif
+%if !%{enable_openssl_fips}
+%undefine use_fipscheck
+%global use_fipscheck 0
+%endif
 
 %global use_groff_package 0
 %if 0%{?rhel_version} && 0%{?rhel_version} < 700
