@@ -5599,6 +5599,11 @@ AC_CHECK_DECLS([UTF8_getc],,,[
 ])
 AC_CHECK_FUNCS([UTF8_getc])
 
+# functions in openssl vendor libraries
+AC_CHECK_FUNCS([ \
+  ERR_load_FIPS_strings \
+])
+
 # ASN1_STRING_length const argument >= 1.0
 AC_MSG_CHECKING([whether ASN1_STRING_length declare const argument])
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[

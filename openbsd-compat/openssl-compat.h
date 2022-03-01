@@ -49,12 +49,19 @@ extern void ssh_OpenSSL_shuthdown(void);
 #ifndef HAVE_OPENSSL_INIT_CRYPTO
 # include <openssl/err.h>
 #endif
+#ifdef HAVE_OPENSSL_FIPS_H
+# include <openssl/fips.h> /* for ERR_load_FIPS_strings() */
+#endif
 static inline void
 ssh_OpenSSL_load_error_strings(void) {
 #ifdef HAVE_OPENSSL_INIT_CRYPTO
 	OPENSSL_init_crypto(OPENSSL_INIT_LOAD_CRYPTO_STRINGS, NULL);
 #else
 	ERR_load_crypto_strings();
+#endif
+#ifdef HAVE_ERR_LOAD_FIPS_STRINGS
+	/* vendor specific - load explicitly */
+	ERR_load_FIPS_strings();
 #endif
 }
 
