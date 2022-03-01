@@ -1,7 +1,7 @@
-/* $OpenBSD: auth2-pubkey.c,v 1.110 2021/09/29 01:33:32 djm Exp $ */
+/* $OpenBSD: auth2-pubkey.c,v 1.113 2022/02/27 01:33:59 naddy Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
- * Copyright (c) 2003-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2003-2022 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -132,10 +132,8 @@ userauth_pubkey(struct ssh *ssh)
 		verbose("Unsupported public key algorithm: %s", pkalg);
 		goto done;
 	}
-	if (!pubkey_algorithm_allowed(pkalg)) {
-		debug_f("disallowed public key algorithm: %s", pkalg);
-		goto done;
-	}
+	if (!pubkey_algorithm_allowed(pkalg)) goto done;
+
 	if ((r = Xkey_from_blob(pkalg, pkblob, blen, &key)) != 0) {
 		error_fr(r, "parse key");
 		goto done;

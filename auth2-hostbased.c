@@ -1,9 +1,7 @@
-/* $OpenBSD: auth2-hostbased.c,v 1.47 2021/07/23 03:37:52 djm Exp $ */
+/* $OpenBSD: auth2-hostbased.c,v 1.49 2022/01/06 22:01:14 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
- *
- * X.509 certificates support,
- * Copyright (c) 2004-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2004-2022 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -112,10 +110,8 @@ userauth_hostbased(struct ssh *ssh)
 		verbose("Unsupported public key algorithm: %s", pkalg);
 		goto done;
 	}
-	if (!hostbased_algorithm_allowed(pkalg)) {
-		debug_f("disallowed hostbased algorithm: %s", pkalg);
-		goto done;
-	}
+	if (!hostbased_algorithm_allowed(pkalg)) goto done;
+
 	if ((r = Xkey_from_blob(pkalg, pkblob, blen, &key)) != 0) {
 		error_fr(r, "Xkey_from_blob");
 		goto done;
