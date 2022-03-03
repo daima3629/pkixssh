@@ -1,5 +1,5 @@
 #! /bin/sh
-# Copyright (c) 2002-2021 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2002-2022 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -329,9 +329,8 @@ for type in $SSH_SIGN_TYPES; do
 
   rm -f "$TMP_CSR_FILE"
 
-  test $retval -ne 0 && return $retval
 done
-  return 0
+  return $retval
 }
 
 
@@ -363,7 +362,7 @@ install () {
 
   for type in $SSH_CAKEY_TYPES; do
     F="$CAKEY_PREFIX-$type.key"
-    update_file "$TMPDIR/$F" "$SSH_CAROOT/keys/$F"
+    update_file "$TMPDIR/$F" "$SSH_CAROOT/keys/$F" || exit $?
   done
 
   for type in $SSH_SIGN_TYPES; do
