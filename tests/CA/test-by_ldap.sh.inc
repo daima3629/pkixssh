@@ -76,12 +76,18 @@ allow bind_v2
 EOF
 
 if test -n "$LDAP_MODULEDIR" ; then
-  cat <<EOF
+  for B in back_$SSH_LDAP_DB.la back_$SSH_LDAP_DB.so "" ; do
+    test -z "$B" && break
+    test -f "$LDAP_MODULEDIR/$B" && break
+  done
+  if test -n "$B" ; then
+    cat <<EOF
 
 # load dynamic backend modules:
 modulepath    $LDAP_MODULEDIR
-moduleload    back_$SSH_LDAP_DB.la
+moduleload    $B
 EOF
+  fi
 fi
 
   cat <<EOF
@@ -101,7 +107,7 @@ pidfile		$LDAPD_PID
 argsfile	$LDAPD_ARGS
 #loglevel	any
 EOF
-) > ${LDAPD_CFG}
+) > $LDAPD_CFG
 }
 
 
