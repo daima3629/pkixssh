@@ -38,7 +38,7 @@
 
 const char *audit_username(void);
 
-int
+static int
 linux_audit_record_event(int uid, const char *username, const char *hostname,
     const char *ip, const char *ttyn, int success)
 {
