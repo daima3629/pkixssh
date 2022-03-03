@@ -14,14 +14,7 @@
 %global enable_ldap_test 1
 
 # Do we use FIPS capable OpenSSL library ? (1=yes 0=no)
-# NOTE: On SUSE FIPS support looks broken:
-# - on some relases fipscheck is missing
-# - on all fipscheck utility exit with code 14 when checks binary with hmac file:
-#   10 and higher - Failure during self-checking the libfipscheck.so shared library
-#   20 and higher - Failure during self-checking the fipscheck binary
-# - activation of FIPS mode fail with error:
-#   ssh_FIPS_mode: crypto message: 'error:2D06C06E:FIPS routines:FIPS_module_mode_set:fingerprint does not match'
-%global enable_openssl_fips 0
+%global enable_openssl_fips 1
 
 # Do we want to enable FIPS test? (1=yes 0=no)
 %global enable_fips_test 1
@@ -37,6 +30,8 @@
 %endif
 
 %if 0%{?sle_version} >= 120000 && 0%{?sle_version} < 120200
+# NOTE: Exclude fipscheck on SLE 12 releases before SP2 due to
+# missing package with header files (fipscheck-devel). Why?
 %undefine use_fipscheck
 %global use_fipscheck 0
 %endif
@@ -86,11 +81,24 @@ BuildRequires:	openldap2-devel openldap2-client
 %if %{enable_ldap_test}
 BuildRequires:	openldap2
 %endif
+%if %{enable_openssl_fips}
+# Actually check-sum files for OpenSSL libraries are is separate package!
+# To minimise installation difficulties let make them required at run time.
+%if 0%{?suse_version} == 1500
+BuildRequires:	libopenssl1_1-hmac
+Requires:	libopenssl1_1-hmac
+%endif
+%if 0%{?suse_version} == 1315
+BuildRequires:	libopenssl1_0_0-hmac
+Requires:	libopenssl1_0_0-hmac
+%endif
+%if 0%{?suse_version} == 1110
+BuildRequires:	libopenssl0_9_8-hmac
+Requires:	libopenssl0_9_8-hmac
+%endif
+%endif
 %if %{use_fipscheck}
 BuildRequires:	fipscheck-devel fipscheck
-# TODO: to run in FIPS mode, but which version 1_0_0 or 1_1?
-#BuildRequires:	libopenssl<VER>-hmac
-#Requires:	libopenssl<VER>-hmac
 %endif
 BuildRequires:	groff
 BuildRoot:	%{_tmppath}/%{name}-%{version}-build
