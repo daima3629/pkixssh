@@ -398,7 +398,7 @@ userauth_finish(struct ssh *ssh, int authenticated, const char *method,
 
 #ifdef USE_PAM
 	if (options.use_pam && authenticated) {
-		int r, success = PRIVSEP(do_pam_account());
+		int success = PRIVSEP(do_pam_account());
 
 		/* If PAM returned a message, send it to the user. */
 		if (sshbuf_len(loginmsg) > 0) {
