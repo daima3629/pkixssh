@@ -5591,11 +5591,14 @@ AC_CHECK_FUNCS([ \
   AES_encrypt \
 ])
 
-# functions hidden in openssl compatible libraries
+# functions in openssl compatible libraries
 AC_CHECK_DECLS([UTF8_getc],,,[
 #include <openssl/asn1.h>
 ])
-AC_CHECK_FUNCS([UTF8_getc])
+AC_CHECK_FUNCS([ \
+  EVP_CIPHER_CTX_get_iv \
+  UTF8_getc \
+])
 
 # functions in openssl vendor libraries
 AC_CHECK_DECLS([ERR_load_FIPS_strings], [],[], [

@@ -54,14 +54,6 @@
 
 #ifdef WITH_OPENSSL
 
-#ifndef HAVE_EVP_CIPHER_CTX_IV		/* OpenSSL < 1.1 */
-static inline const unsigned char*
-EVP_CIPHER_CTX_iv(const EVP_CIPHER_CTX *ctx) { return ctx->iv; }
-
-static inline unsigned char*
-EVP_CIPHER_CTX_iv_noconst(EVP_CIPHER_CTX *ctx) { return ctx->iv; }
-#endif
-
 #ifndef OPENSSL_HAVE_EVPCTR
 const EVP_CIPHER *evp_aes_128_ctr(void);
 void ssh_aes_ctr_iv(EVP_CIPHER_CTX *, int, u_char *, size_t);
@@ -532,6 +524,7 @@ cipher_get_keyiv_len(const struct sshcipher_ctx *cc)
 #endif
 }
 
+
 static inline int
 ssh_copy_iv(EVP_CIPHER_CTX *ctx, void *buf, size_t len) {
 #ifdef HAVE_OPENSSL_VERSION_MAJOR	/* OpenSSL >= 3.0 */
@@ -539,8 +532,18 @@ ssh_copy_iv(EVP_CIPHER_CTX *ctx, void *buf, size_t len) {
  * So there is no need to test for availability at configure time.
  */
 	return EVP_CIPHER_CTX_get_updated_iv(ctx, buf, len);
+#elif defined(HAVE_EVP_CIPHER_CTX_GET_IV) && defined(LIBRESSL_VERSION_NUMBER)
+/* At some point of time was defined by OpenSSL but wrongly designed
+ * to return initial IV. Who cares for initial IV?!?!
+ */
+	return EVP_CIPHER_CTX_get_iv(ctx, buf, len);
 #else
+/* Defined in OpenSSL 1.1, deprecated in 3.0 ?!?! */
+#ifdef HAVE_EVP_CIPHER_CTX_IV
 	memcpy(buf, EVP_CIPHER_CTX_iv(ctx), len);
+#else
+	memcpy(buf, ctx->iv, len);
+#endif
 	return 1;
 #endif
 }
