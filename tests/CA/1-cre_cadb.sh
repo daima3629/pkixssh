@@ -256,7 +256,12 @@ subjectKeyIdentifier            = hash
 authorityKeyIdentifier          = keyid:always,issuer:always
 
 # To test CRL presence this extension should exist
-crlDistributionPoints = URI:attribute_only_exist
+# NOTE: Some OpenSSL compatible libraries choke on next line:
+#crlDistributionPoints = URI:attribute_only_exist
+# NOTE: As work-around for broken OpenSSL compatible libraries
+# use syntax with authority.
+crlDistributionPoints = URI:none://attribute_only_exist
+
 EOF
 
 
