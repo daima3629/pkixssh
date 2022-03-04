@@ -5515,7 +5515,6 @@ AC_CHECK_FUNCS([ \
   ASN1_STRING_get0_data \
   BN_is_negative \
   DH_get0_key \
-  DSA_meth_new \
   DSA_SIG_get0 \
   DSA_SIG_set0 \
   EC_KEY_METHOD_new \
@@ -5539,7 +5538,6 @@ AC_CHECK_FUNCS([ \
 # check for functions randomly implemented for compatibility with openssl 1.1+
 AC_CHECK_FUNCS([ \
   DSA_get0_key \
-  DSA_meth_get_verify \
   OPENSSL_cleanup \
   RSA_meth_get_pub_enc \
   RSA_meth_set1_name \

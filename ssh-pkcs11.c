@@ -120,7 +120,6 @@ crypto_pkcs11_error(CK_RV err) {
  * Constants used when creating the context extra data
  */
 static int ssh_pkcs11_rsa_ctx_index = -1;
-static int ssh_pkcs11_dsa_ctx_index = -1;
 #ifdef OPENSSL_HAS_ECC
 static int ssh_pkcs11_ec_ctx_index = -1;
 #endif /*def OPENSSL_HAS_ECC*/
@@ -183,15 +182,6 @@ CRYPTO_EX_pkcs11_rsa_free(
     int idx, long argl, void *argp
 ) {
 	if (idx == ssh_pkcs11_rsa_ctx_index)
-		CRYPTO_EX_pkcs11_key_free(parent, ptr, ad, argl, argp);
-}
-
-static void
-CRYPTO_EX_pkcs11_dsa_free(
-    void *parent, void *ptr, CRYPTO_EX_DATA *ad,
-    int idx, long argl, void *argp
-) {
-	if (idx == ssh_pkcs11_dsa_ctx_index)
 		CRYPTO_EX_pkcs11_key_free(parent, ptr, ad, argl, argp);
 }
 
@@ -606,146 +596,6 @@ done:
 	return ret;
 }
 
-static DSA_SIG*
-parse_DSA_SIG(char *buf, CK_ULONG blen) {
-	DSA_SIG *sig;
-	BIGNUM *ps, *pr;
-	int  k = blen >> 1;
-
-	pr = BN_bin2bn(buf    , k, NULL);
-	ps = BN_bin2bn(buf + k, k, NULL);
-	if ((pr == NULL) || (ps == NULL)) goto parse_err;
-
-	sig = DSA_SIG_new();
-	if (sig == NULL) goto parse_err;
-
-	if (DSA_SIG_set0(sig, pr, ps))
-		return (sig);
-
-/*error*/
-	DSA_SIG_free(sig);
-parse_err:
-	BN_free(pr);
-	BN_free(ps);
-	return (NULL);
-}
-
-/* redirect private key operations for dsa key to pkcs11 token */
-static DSA_SIG*
-pkcs11_dsa_do_sign(const unsigned char *dgst, int dlen, DSA *dsa)
-{
-	struct pkcs11_key	*k11;
-	struct pkcs11_slotinfo	*si;
-	CK_FUNCTION_LIST	*f;
-	CK_OBJECT_HANDLE	obj;
-	CK_ULONG		tlen = 0;
-	CK_RV			rv;
-	CK_MECHANISM		mech = {
-		CKM_DSA, NULL_PTR, 0
-	};
-	DSA_SIG			*sig = NULL;
-
-	debug3_f("...");
-
-	k11 = DSA_get_ex_data(dsa, ssh_pkcs11_dsa_ctx_index);
-	if (k11 == NULL) {
-		error("DSA_get_ex_data failed");
-		return NULL;
-	}
-	if (!k11->provider || !k11->provider->valid) {
-		error_f("no pkcs11 (valid) provider");
-		return NULL;
-	}
-	f = k11->provider->function_list;
-	si = &k11->provider->slotinfo[k11->slotidx];
-
-	if (!pkcs11_login(si, f)) return NULL;
-	if (!pkcs11_get_key(k11, &obj)) return NULL;
-
-	if ((rv = f->C_SignInit(si->session, &mech, obj)) != CKR_OK) {
-		PKCS11err(PKCS11_DSA_DO_SIGN, PKCS11_C_SIGNINIT_FAIL);
-		crypto_pkcs11_error(rv);
-	} else {
-		char rs[(2*SHA_DIGEST_LENGTH)];
-		(void)pkcs11_reauthenticate(si, f, obj);
-		tlen = (2*SHA_DIGEST_LENGTH);
-		rv = f->C_Sign(si->session, (CK_BYTE *)dgst, dlen, rs, &tlen);
-		if (rv == CKR_OK)
-			sig = parse_DSA_SIG(rs, tlen);
-		else {
-			PKCS11err(PKCS11_DSA_DO_SIGN, PKCS11_C_SIGN_FAIL);
-			crypto_pkcs11_error(rv);
-		}
-	}
-	return (sig);
-}
-
-
-static DSA_METHOD*
-ssh_pkcs11_dsa_method(void) {
-	static DSA_METHOD *meth = NULL;
-
-	if (meth != NULL) return meth;
-
-	meth = DSA_meth_new("SSH PKCS#11 DSA method",
-	#ifdef DSA_FLAG_FIPS_METHOD
-		DSA_FLAG_FIPS_METHOD |
-	#endif
-		0);
-	if (meth == NULL) return NULL;
-
-	if (!DSA_meth_set_sign(meth, pkcs11_dsa_do_sign))
-		goto err;
-
-{	const DSA_METHOD *def = DSA_OpenSSL();
-
-	if (!DSA_meth_set_verify(meth, DSA_meth_get_verify(def))
-	||  !DSA_meth_set_mod_exp(meth, DSA_meth_get_mod_exp(def))
-	||  !DSA_meth_set_bn_mod_exp(meth, DSA_meth_get_bn_mod_exp(def))
-	)
-		goto err;
-}
-
-	/* ensure DSA context index */
-	if (ssh_pkcs11_dsa_ctx_index < 0)
-		ssh_pkcs11_dsa_ctx_index = DSA_get_ex_new_index(0,
-		    NULL, NULL, NULL, CRYPTO_EX_pkcs11_dsa_free);
-	if (ssh_pkcs11_dsa_ctx_index < 0)
-		goto err;
-
-	return meth;
-
-err:
-	DSA_meth_free(meth);
-	meth = NULL;
-	return NULL;
-}
-
-static int
-pkcs11_wrap_dsa(struct pkcs11_provider *provider, CK_ULONG slotidx,
-    CK_ATTRIBUTE *keyid_attrib,  struct sshkey *key)
-{
-	int ret;
-	DSA *dsa = EVP_PKEY_get1_DSA(key->pk);
-	if (dsa == NULL) return -1;
-
-	ret = -1;
-{	DSA_METHOD *meth = ssh_pkcs11_dsa_method();
-	if (meth == NULL) goto done;
-	if (!DSA_set_method(dsa, meth)) goto done;
-}
-{	struct pkcs11_key *k11;
-		/* fatal on error */
-	k11 = pkcs11_key_create(provider, slotidx, keyid_attrib);
-	DSA_set_ex_data(dsa, ssh_pkcs11_dsa_ctx_index, k11);
-}
-	key->flags |= SSHKEY_FLAG_EXT;
-	ret = 0;
-done:
-	DSA_free(dsa);
-	return ret;
-}
-
 
 #ifdef OPENSSL_HAS_ECC
 static ECDSA_SIG*
@@ -984,8 +834,6 @@ pkcs11_wrap(struct pkcs11_provider *provider, CK_ULONG slotidx,
 	switch(key->type) {
 	case KEY_RSA:
 		return pkcs11_wrap_rsa(provider, slotidx, keyid_attrib, key);
-	case KEY_DSA:
-		return pkcs11_wrap_dsa(provider, slotidx, keyid_attrib, key);
 #ifdef OPENSSL_HAS_ECC
 	case KEY_ECDSA:
 		return pkcs11_wrap_ecdsa(provider, slotidx, keyid_attrib, key);

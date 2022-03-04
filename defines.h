@@ -975,13 +975,6 @@ struct winsize {
 #endif
 
 
-#undef USE_DSA_METHOD
-#ifndef OPENSSL_NO_DSA
-/* TODO: to decide at configuration time */
-# define USE_DSA_METHOD
-#endif
-
-
 #ifndef UNUSED
 # define UNUSED(x)	(void)(x)
 #endif
