@@ -5600,16 +5600,6 @@ AC_CHECK_FUNCS([ \
   UTF8_getc \
 ])
 
-# functions in openssl vendor libraries
-AC_CHECK_DECLS([ERR_load_FIPS_strings], [],[], [
-#ifdef HAVE_OPENSSL_FIPS_H
-# include <openssl/fips.h>
-#endif
-])
-AC_CHECK_FUNCS([ \
-  ERR_load_FIPS_strings \
-])
-
 # ASN1_STRING_length const argument >= 1.0
 AC_MSG_CHECKING([whether ASN1_STRING_length declare const argument])
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
@@ -5700,10 +5690,6 @@ if test yes = $ac_openssl_fips; then
     [],
     [AC_MSG_ERROR([cannot found fips capable openssl library])]
   )
-  # On some system FIPS_mode() is in openssl/fips.h
-  AC_CHECK_HEADERS([ \
-    openssl/fips.h \
-  ])
 fi
 if test yes = $ac_openssl_fips; then
   OPENSSL_FIPS_MODE=yes
@@ -5713,6 +5699,19 @@ AC_SUBST([OPENSSL_FIPS_MODE])
 FIPS_LIBS=
 FIPSHMAC=':'
 if test yes = $OPENSSL_FIPS_MODE; then
+  # some system distribute openssl/fips.h
+  AC_CHECK_HEADERS([openssl/fips.h])
+
+  # on some systems FIPS error string are not loaded with other erros!?
+  AC_CHECK_DECLS([ERR_load_FIPS_strings], [],[], [
+#ifdef HAVE_OPENSSL_FIPS_H
+# include <openssl/fips.h>
+#endif
+  ])
+  AC_CHECK_FUNCS([ \
+    ERR_load_FIPS_strings \
+  ])
+
   # check for Red Hat specific fips library
   AC_CHECK_LIB([fipscheck], [FIPSCHECK_verify],
   [
