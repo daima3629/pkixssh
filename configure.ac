@@ -5598,6 +5598,11 @@ AC_CHECK_DECLS([UTF8_getc],,,[
 AC_CHECK_FUNCS([UTF8_getc])
 
 # functions in openssl vendor libraries
+AC_CHECK_DECLS([ERR_load_FIPS_strings], [],[], [
+#ifdef HAVE_OPENSSL_FIPS_H
+# include <openssl/fips.h>
+#endif
+])
 AC_CHECK_FUNCS([ \
   ERR_load_FIPS_strings \
 ])

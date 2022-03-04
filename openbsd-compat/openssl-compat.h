@@ -49,8 +49,12 @@ extern void ssh_OpenSSL_shuthdown(void);
 #ifndef HAVE_OPENSSL_INIT_CRYPTO
 # include <openssl/err.h>
 #endif
+#if HAVE_DECL_ERR_LOAD_FIPS_STRINGS
 #ifdef HAVE_OPENSSL_FIPS_H
 # include <openssl/fips.h> /* for ERR_load_FIPS_strings() */
+#endif
+#else
+void ERR_load_FIPS_strings(void);
 #endif
 static inline void
 ssh_OpenSSL_load_error_strings(void) {
