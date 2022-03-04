@@ -49,10 +49,12 @@
 /* Note structure X509_VERIFY_PARAM is defined in OpenSSL 0.9.8+ together
  * with function X509_STORE_CTX_get0_param()
  */
-#    if defined(HAVE_OPENSSL_INIT_CRYPTO) && !defined(LIBRESSL_VERSION_NUMBER)
+#    if defined(HAVE_OPENSSL_INIT_CRYPTO)
 /* Temporary work-around for opaque structure X509_VERIFY_PARAM.
  * In OpenSSL 1.1.0* branch X509_VERIFY_PARAM_get_time() is available since 1.1.0d.
  * As result for versions from 1.1.0 to 1.1.0c we has to provide work-around.
+ * In LibreSSL 3.5 structure X509_VERIFY_PARAM is opaque but library
+ * fail to provide get_time() function!
  */
 #      define USE_X509_STORE_CTX_INDEX	1
 #    else
