@@ -99,6 +99,9 @@ case "$host" in
   dnl platforms depending from NDK version!
   dnl => do not use "reallocarray" for consistency
   ac_cv_func_reallocarray=ignore
+
+  dnl Function "ppoll" is declared in API 21(unified headers).
+  dnl NOTE: Use system.
   ;;
 esac
 ])
