@@ -5398,6 +5398,10 @@ if test "x$ssh_ocsp" = "xyes"; then
 		AC_MSG_RESULT([fail])
 		AC_MSG_ERROR([cannot link with OpenSSL ssl library])
 	fi
+	# check for openssl ssl 1.1+ functions ...
+	AC_CHECK_FUNCS([ \
+	  TLS_client_method \
+	])
 	LIBS="$save_LIBS"
 
 	AC_DEFINE(
@@ -5525,7 +5529,6 @@ AC_CHECK_FUNCS([ \
   EVP_MD_CTX_new \
   RSA_meth_new \
   RSA_PKCS1_OpenSSL \
-  TLS_client_method \
   X509_CRL_get0_lastUpdate \
   X509_get0_tbs_sigalg \
   X509_get_extension_flags \
