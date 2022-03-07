@@ -22,6 +22,9 @@
 # Do we want to use fipscheck? (1=yes 0=no)
 %global use_fipscheck 1
 
+# Do we want to use Linux auditing? (1=yes 0=no)
+%global enable_audit_module 1
+
 # TODO: do not produce debug package(temporary)
 %global debug_package %{nil}
 
@@ -95,6 +98,10 @@ BuildRequires:	groff
 %else
 BuildRequires:	groff-base
 %endif
+%if %{enable_audit_module}
+BuildRequires:	audit-libs-devel
+Requires:	audit-libs
+%endif
 # Next is not part of preinstalled packages on some build configurations
 # (RHEL5?)
 BuildRequires:	which
@@ -143,6 +150,9 @@ two untrusted hosts over an insecure network.
   --enable-openssl-fips \
 %else
   --disable-openssl-fips \
+%endif
+%if %{enable_audit_module}
+  --with-audit=linux \
 %endif
   --with-pie \
   --with-pam \

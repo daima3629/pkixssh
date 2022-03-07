@@ -22,6 +22,9 @@
 # Do we want to use fipscheck? (1=yes 0=no)
 %global use_fipscheck 1
 
+# Do we want to use Linux auditing? (1=yes 0=no)
+%global enable_audit_module 1
+
 
 # Disable non-working configurations
 %if !%{enable_openssl_fips}
@@ -101,6 +104,14 @@ Requires:	libopenssl0_9_8-hmac
 BuildRequires:	fipscheck-devel fipscheck
 %endif
 BuildRequires:	groff
+%if %{enable_audit_module}
+BuildRequires:	audit-devel
+%if 0%{?sle_version} >= 120000
+Requires:	libaudit1
+%else
+Requires:	audit-libs
+%endif
+%endif
 BuildRoot:	%{_tmppath}/%{name}-%{version}-build
 
 %if 0%{?sle_version} >= 120000
@@ -151,6 +162,9 @@ two untrusted hosts over an insecure network.
   --enable-openssl-fips \
 %else
   --disable-openssl-fips \
+%endif
+%if %{enable_audit_module}
+  --with-audit=linux \
 %endif
   --with-pie \
   --with-pam \
