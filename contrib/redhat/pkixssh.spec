@@ -100,7 +100,11 @@ BuildRequires:	groff-base
 BuildRequires:	which
 BuildRoot:	%{_tmppath}/%{name}-%{version}-build
 
+%if 0%{?rhel_version} && 0%{?rhel_version} < 600
+Source0:	https://roumenpetrov.info/secsh/src/%{name}-%{version}.tar.gz
+%else
 Source0:	https://roumenpetrov.info/secsh/src/%{name}-%{version}.tar.xz
+%endif
 
 
 # Default values for additional components
