@@ -61,6 +61,10 @@ int bindresvport_sa(int sd, struct sockaddr *sa);
 void closefrom(int);
 #endif
 
+#if !HAVE_DECL_FTRUNCATE
+int ftruncate(int filedes, off_t length);
+#endif
+
 #ifndef HAVE_GETLINE
 #include <stdio.h>
 ssize_t getdelim(char **, size_t *, int, FILE *);
