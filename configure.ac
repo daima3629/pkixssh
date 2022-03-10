@@ -1983,6 +1983,7 @@ AC_CHECK_FUNCS([ \
 	inet_ntoa \
 	inet_ntop \
 	innetgr \
+	killpg \
 	localtime_r \
 	login_getcapbool \
 	login_getpwclass \
