@@ -2,6 +2,7 @@
 
 /*
  * Copyright (c) 2001, 2002, 2003 Ian F. Darwin.  All rights reserved.
+ * Copyright (c) 2013 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -26,8 +27,6 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/* OPENBSD ORIGINAL: lib/libutil/fmt_scaled.c */
-
 /*
  * fmt_scaled: Format numbers scaled for human comprehension
  * scan_scaled: Scan numbers in this format.
@@ -49,11 +48,11 @@
 #include <ctype.h>
 #include <limits.h>
 
-/* mixed declaration => force local_llabs
- * For insnace on Android
- * platform-9 -> static __inline__ long long => not found by configure
- * platform-21 -> extern long long
- * So to be ABI compatible lest use local
+/* Avoid mixed declarations, i.e. force local definition.
+ * For instance on Android:
+ *   platform-9 -> static __inline__ long long => not found by configure
+ *   platform-21 -> extern long long
+ * So to be ABI compatible let use local.
 */
 static inline long long local_llabs(long long ll) {
     return (ll < 0LL) ? -ll : ll;
