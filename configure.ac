@@ -201,14 +201,15 @@ if test "$GCC" = "yes" || test "$GCC" = "egcs"; then
 	# actually links. The test program compiled/linked includes a number
 	# of integer operations that should exercise this.
 	#
-	# Remark: -ftrapv creates more troubles so exclude!
+	# Remark: Option -ftrapv is not maintained and does not work on
+	# all platforms. Use -fsanitize=... instead.
 	#-#OSSH_CHECK_CFLAG_LINK([-ftrapv])
 
 	# TODO: wipe used registers
 	#?#OSSH_CHECK_CFLAG_COMPILE([-fzero-call-used-regs=all])
 
-	# stack Variables auto-initialization
-	#   see -Wuninitialized
+	# TODO: stack variables auto-initialization
+	# (see -Wuninitialized)
 	#-#OSSH_CHECK_CFLAG_COMPILE([-ftrivial-auto-var-init=zero])
     fi
 	AC_MSG_CHECKING([gcc version])
