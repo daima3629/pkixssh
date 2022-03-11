@@ -65,9 +65,9 @@ typedef enum {
 } unit_type;
 
 /* These three arrays MUST be in sync!  XXX make a struct */
-static unit_type units[] = { NONE, KILO, MEGA, GIGA, TERA, PETA, EXA };
-static char scale_chars[] = "BKMGTPE";
-static long long scale_factors[] = {
+static const unit_type units[] = { NONE, KILO, MEGA, GIGA, TERA, PETA, EXA };
+static const char scale_chars[] = "BKMGTPE";
+static const long long scale_factors[] = {
 	1LL,
 	1024LL,
 	1024LL*1024,
@@ -233,12 +233,16 @@ fmt_scaled(long long number, char *result)
 	unsigned int i;
 	unit_type unit = NONE;
 
+	/* Not every negative long long has a positive representation. */
+	if (number == LLONG_MIN) {
+		errno = ERANGE;
+		return -1;
+	}
+
 	abval = llabs(number);
 
-	/* Not every negative long long has a positive representation.
-	 * Also check for numbers that are just too darned big to format
-	 */
-	if (abval < 0 || abval / 1024 >= scale_factors[SCALE_LENGTH-1]) {
+	/* Also check for numbers that are just too darned big to format. */
+	if (abval / 1024 >= scale_factors[SCALE_LENGTH-1]) {
 		errno = ERANGE;
 		return -1;
 	}
