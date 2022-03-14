@@ -3676,6 +3676,10 @@ elif test "x$sandbox_arg" = "xcapsicum" || \
 		AC_MSG_ERROR([capsicum sandbox requires cap_rights_limit function])
        SANDBOX_STYLE="capsicum"
        AC_DEFINE([SANDBOX_CAPSICUM], [1], [Sandbox using capsicum])
+elif test "x$sandbox_arg" = "xsolaris" || \
+   ( test -z "$sandbox_arg" && test "x$SOLARIS_PRIVS" = "xyes" ) ; then
+	SANDBOX_STYLE="solaris"
+	AC_DEFINE([SANDBOX_SOLARIS], [1], [Sandbox using Solaris/Illumos privileges])
 elif test "x$sandbox_arg" = "xrlimit" || \
      ( test -z "$sandbox_arg" && test "x$ac_cv_func_setrlimit" = "xyes" && \
        test "x$select_works_with_rlimit" = "xyes" && \
@@ -3686,10 +3690,6 @@ elif test "x$sandbox_arg" = "xrlimit" || \
 		AC_MSG_ERROR([rlimit sandbox requires select to work with rlimit])
 	SANDBOX_STYLE="rlimit"
 	AC_DEFINE([SANDBOX_RLIMIT], [1], [Sandbox using setrlimit(2)])
-elif test "x$sandbox_arg" = "xsolaris" || \
-   ( test -z "$sandbox_arg" && test "x$SOLARIS_PRIVS" = "xyes" ) ; then
-	SANDBOX_STYLE="solaris"
-	AC_DEFINE([SANDBOX_SOLARIS], [1], [Sandbox using Solaris/Illumos privileges])
 elif test -z "$sandbox_arg" || test "x$sandbox_arg" = "xno" || \
      test "x$sandbox_arg" = "xnone" || test "x$sandbox_arg" = "xnull" ; then
 	SANDBOX_STYLE="none"
