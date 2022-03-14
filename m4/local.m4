@@ -1,5 +1,26 @@
-dnl OpenSSH-specific autoconf macros
+dnl PKIX-SSH-specific autoconf macros
 dnl
+
+AC_DEFUN([SSH_LANG_PROGRAM_CHECK_FLAGS], [
+AC_LANG_SOURCE([[
+#include <stdlib.h>
+#include <stdio.h>
+/* Trivial function to help test for flags like -fzero-call-used-regs.
+Note compiler does not inform whether this option is supported unless it
+runs into the situation where it would need to emit corresponding code.*/
+static int f(int n) {return n;}
+int main(int argc, char *argv[]) {
+	/* Some math to catch -ftrapv problems in the toolchain */
+	int i = 123 * argc, j = 456 + argc, k = 789 - argc;
+	float l = i * 2.1;
+	double m = l / 0.5;
+	long long int n = argc * 12345LL, o = 12345LL * (long long int)argc;
+	long long int p = n * o;
+	printf("%d %d %d %f %f %lld %lld %lld %d\n", i, j, k, l, m, n, o, p, f(0));
+	(void)argv;
+	return 0;
+}
+]])])
 
 dnl OSSH_CHECK_CFLAG_COMPILE(check_flag[, define_flag])
 dnl Check that $CC accepts a flag 'check_flag'. If it is supported append
@@ -11,21 +32,7 @@ AC_DEFUN([OSSH_CHECK_CFLAG_COMPILE], [{
 	CFLAGS="$CFLAGS $WERROR $1"
 	_define_flag="$2"
 	test "x$_define_flag" = "x" && _define_flag="$1"
-	AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
-#include <stdlib.h>
-#include <stdio.h>
-int
-main(int argc, char *argv[]) {
-	/* Some math to catch -ftrapv problems in the toolchain */
-	int i = 123 * argc, j = 456 + argc, k = 789 - argc;
-	float l = i * 2.1;
-	double m = l / 0.5;
-	long long int n = argc * 12345LL, o = 12345LL * (long long int)argc;
-	printf("%d %d %d %f %f %lld %lld\n", i, j, k, l, m, n, o);
-(void) argv;
-return 0; }
-	]])],
-		[
+	AC_COMPILE_IFELSE([SSH_LANG_PROGRAM_CHECK_FLAGS], [
 if $EGREP -i "unrecognized option|warning.*ignored" conftest.err >/dev/null
 then
 		AC_MSG_RESULT([no])
@@ -49,22 +56,7 @@ AC_DEFUN([OSSH_CHECK_CFLAG_LINK], [{
 	CFLAGS="$CFLAGS $WERROR $1"
 	_define_flag="$2"
 	test "x$_define_flag" = "x" && _define_flag="$1"
-	AC_LINK_IFELSE([AC_LANG_SOURCE([[
-#include <stdlib.h>
-#include <stdio.h>
-int
-main(int argc, char *argv[]) {
-	/* Some math to catch -ftrapv problems in the toolchain */
-	int i = 123 * argc, j = 456 + argc, k = 789 - argc;
-	float l = i * 2.1;
-	double m = l / 0.5;
-	long long int n = argc * 12345LL, o = 12345LL * (long long int)argc;
-	long long int p = n * o;
-	printf("%d %d %d %f %f %lld %lld %lld\n", i, j, k, l, m, n, o, p);
-(void) argv;
-return 0; }
-	]])],
-		[
+	AC_LINK_IFELSE([SSH_LANG_PROGRAM_CHECK_FLAGS], [
 if $EGREP -i "unrecognized option|warning.*ignored" conftest.err >/dev/null
 then
 		AC_MSG_RESULT([no])
@@ -88,22 +80,7 @@ AC_DEFUN([OSSH_CHECK_LDFLAG_LINK], [{
 	LDFLAGS="$LDFLAGS $WERROR $1"
 	_define_flag="$2"
 	test "x$_define_flag" = "x" && _define_flag="$1"
-	AC_LINK_IFELSE([AC_LANG_SOURCE([[
-#include <stdlib.h>
-#include <stdio.h>
-int
-main(int argc, char *argv[]) {
-	/* Some math to catch -ftrapv problems in the toolchain */
-	int i = 123 * argc, j = 456 + argc, k = 789 - argc;
-	float l = i * 2.1;
-	double m = l / 0.5;
-	long long int n = argc * 12345LL, o = 12345LL * (long long int)argc;
-	long long p = n * o;
-	printf("%d %d %d %f %f %lld %lld %lld\n", i, j, k, l, m, n, o, p);
-(void) argv;
-return 0; }
-		]])],
-		[
+	AC_LINK_IFELSE([SSH_LANG_PROGRAM_CHECK_FLAGS], [
 if $EGREP -i "unrecognized option|warning.*ignored" conftest.err >/dev/null
 then
 		  AC_MSG_RESULT([no])
