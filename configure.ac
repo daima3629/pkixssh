@@ -3489,57 +3489,6 @@ AC_ARG_WITH([sandbox],
 	]
 )
 
-# Some platforms (seems to be the ones that have a kernel poll(2)-type
-# function with which they implement select(2)) use an extra file descriptor
-# when calling select(2), which means we can't use the rlimit sandbox.
-dnl NOTE: Test below relies on undefined behaviour when RLIMIT_NOFILE is
-dnl less than the highest currently open file descriptor + 1.
-dnl Use of undefined behaviour is incorrect from functional point of view.
-dnl TODO: Most of code uses poll(2) and this check looks obsolete.
-AC_CACHE_CHECK(
-	[if select works with descriptor rlimit],
-	[ssh_cv_select_rlimit_nofile_zero], [
-AC_RUN_IFELSE(
-	[AC_LANG_PROGRAM([[
-#include <sys/types.h>
-#ifdef HAVE_SYS_TIME_H
-# include <sys/time.h>
-#endif
-#include <sys/resource.h>
-#ifdef HAVE_SYS_SELECT_H
-# include <sys/select.h>
-#endif
-#include <errno.h>
-#include <fcntl.h>
-#include <stdlib.h>
-	]],[[
-	struct rlimit rl_zero;
-	int fd, r;
-	fd_set fds;
-	struct timeval tv;
-
-	fd = open("/dev/null", O_RDONLY);
-	FD_ZERO(&fds);
-	FD_SET(fd, &fds);
-	rl_zero.rlim_cur = rl_zero.rlim_max = 0;
-	setrlimit(RLIMIT_FSIZE, &rl_zero);
-	setrlimit(RLIMIT_NOFILE, &rl_zero);
-	tv.tv_sec = 1;
-	tv.tv_usec = 0;
-	r = select(fd+1, &fds, NULL, NULL, &tv);
-	if (r == -1) return 1;
-	]])],
-	[ssh_cv_select_rlimit_nofile_zero=yes],
-	[ssh_cv_select_rlimit_nofile_zero=no],
-	[ssh_cv_select_rlimit_nofile_zero=cross]
-)
-])
-AS_IF([test $ssh_cv_select_rlimit_nofile_zero = cross], [
-	AC_MSG_WARN([cross compiling: assuming working select with descriptor rlimit])
-	ssh_cv_select_rlimit_nofile_zero=yes
-])
-dnl used in code below
-select_works_with_rlimit=$ssh_cv_select_rlimit_nofile_zero
 
 AC_CHECK_MEMBERS([struct pollfd.fd], [], [], [[
 #include <sys/types.h>
@@ -3682,12 +3631,9 @@ elif test "x$sandbox_arg" = "xsolaris" || \
 	AC_DEFINE([SANDBOX_SOLARIS], [1], [Sandbox using Solaris/Illumos privileges])
 elif test "x$sandbox_arg" = "xrlimit" || \
      ( test -z "$sandbox_arg" && test "x$ac_cv_func_setrlimit" = "xyes" && \
-       test "x$select_works_with_rlimit" = "xyes" && \
        test "x$rlimit_nofile_zero_works" = "xyes" ) ; then
 	test "x$ac_cv_func_setrlimit" != "xyes" && \
 		AC_MSG_ERROR([rlimit sandbox requires setrlimit function])
-	test "x$select_works_with_rlimit" != "xyes" && \
-		AC_MSG_ERROR([rlimit sandbox requires select to work with rlimit])
 	SANDBOX_STYLE="rlimit"
 	AC_DEFINE([SANDBOX_RLIMIT], [1], [Sandbox using setrlimit(2)])
 elif test -z "$sandbox_arg" || test "x$sandbox_arg" = "xno" || \
