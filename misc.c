@@ -1,4 +1,4 @@
-/* $OpenBSD: misc.c,v 1.174 2022/02/11 00:43:56 dtucker Exp $ */
+/* $OpenBSD: misc.c,v 1.175 2022/03/20 08:51:21 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2005,2006 Damien Miller.  All rights reserved.
@@ -1100,10 +1100,14 @@ addargs(arglist *args, char *fmt, ...)
 	if (args->list == NULL) {
 		nalloc = 32;
 		args->num = 0;
-	} else if (args->num+2 >= nalloc)
+	}
+	else if (args->num > (256 * 1024))
+		fatal_f("too many arguments");
+	else if (args->num + 2 >= nalloc)
 		nalloc *= 2;
 
-	args->list = xrecallocarray(args->list, args->nalloc, nalloc, sizeof(char *));
+	args->list = xrecallocarray(args->list, args->nalloc,
+	    nalloc, sizeof(char *));
 	args->nalloc = nalloc;
 	args->list[args->num++] = cp;
 	args->list[args->num] = NULL;
@@ -1123,7 +1127,7 @@ replacearg(arglist *args, u_int which, char *fmt, ...)
 		fatal_f("argument too long");
 
 	if (which >= args->num)
-		fatal_f("tried to replace invalid arg %d >= %d",
+		fatal_f("tried to replace invalid arg %u >= %u",
 		    which, args->num);
 	free(args->list[which]);
 	args->list[which] = cp;
@@ -1132,15 +1136,16 @@ replacearg(arglist *args, u_int which, char *fmt, ...)
 void
 freeargs(arglist *args)
 {
-	u_int i;
-
+	if (args == NULL)
+		return;
 	if (args->list != NULL) {
+		u_int i;
 		for (i = 0; i < args->num; i++)
 			free(args->list[i]);
 		free(args->list);
-		args->nalloc = args->num = 0;
 		args->list = NULL;
 	}
+	args->nalloc = args->num = 0;
 }
 
 /*
