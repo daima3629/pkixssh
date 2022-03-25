@@ -601,12 +601,17 @@ void
 sshsigdie(const char *file, const char *func, int line,
     const char *fmt,...)
 {
+#if 1
+/* NOTE: "OpenSSH bug 3286". See grace_alarm_handler() in sshd.c.
+ * Logging in signal handler cannot be considered as safe.
+ * Let enable log as now daemon does not sent explicitly alarm
+ * signal. This should avoid logging in child signal handler.
+ */
+# define DO_LOG_SAFE_IN_SIGHAND
+#endif
 #ifdef DO_LOG_SAFE_IN_SIGHAND
 	va_list args;
 
-	/* TODO: allow log unconditionally?
-	 * NOTE: see sshd.c - it may not perform log in privsep child
-	 */
 	va_start(args, fmt);
 	sshlogv(file, func, line, SYSLOG_LEVEL_FATAL, fmt, args);
 	va_end(args);

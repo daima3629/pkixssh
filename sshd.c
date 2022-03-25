@@ -390,22 +390,25 @@ static void
 grace_alarm_handler(int sig)
 {
 	UNUSED(sig);
+#if 0
+/* NOTE: "OpenSSH bug 3286". See sshsigdie() in log.c
+ * PKIX-SSH was not impacted as it does not activate logs in sigdie.
+ * With removing explicit send of alarm signal log is activated.
+ */
 	if (use_privsep && pmonitor != NULL && pmonitor->m_pid > 0)
 		kill(pmonitor->m_pid, SIGALRM);
+#endif
 
 	/*
 	 * Try to kill any processes that we have spawned, E.g. authorized
-	 * keys command helpers.
+	 * keys command helpers or privsep children.
 	 */
 	if (getpgid(0) == getpid()) {
 		ssh_signal(SIGTERM, SIG_IGN);
 		kill(0, SIGTERM);
 	}
 
-	/* XXX pre-format ipaddr/port so we don't need to access the_active_state */
-	/* Log error if allowed and exit.
-	 * TODO: disallow log in privsep child? What about PAM module?
-	 */
+	/* Log error and exit. */
 	sigdie("Timeout before authentication for %s port %d",
 	    ssh_remote_ipaddr(the_active_state),
 	    ssh_remote_port(the_active_state));
