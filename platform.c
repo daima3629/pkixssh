@@ -18,7 +18,6 @@
 
 #include <stdarg.h>
 #include <stdio.h>
-#include <string.h>
 #include <unistd.h>
 
 #include "log.h"
@@ -201,57 +200,4 @@ platform_krb5_get_principal_name(const char *pw_name)
 	UNUSED(pw_name);
 	return NULL;
 #endif
-}
-
-/* returns 1 if account is locked */
-int
-platform_locked_account(struct passwd *pw)
-{
-	int locked = 0;
-	const char *passwd = pw->pw_passwd;
-#ifdef USE_LIBIAF
-	char *iaf_passwd = NULL;
-#endif
-#ifdef USE_SHADOW
-{
-	struct spwd *spw = NULL;
-
-	spw = getspnam(pw->pw_name);
-#ifdef HAS_SHADOW_EXPIRE
-	if (spw != NULL && auth_shadow_acctexpired(spw))
-		return 1;
-#endif /* HAS_SHADOW_EXPIRE */
-
-	if (spw != NULL)
-#ifdef USE_LIBIAF
-		passwd = iaf_passwd = get_iaf_password(pw);
-#else
-		passwd = spw->sp_pwdp;
-#endif
-}
-#endif
-
-	/* check for locked account */
-	if (passwd != NULL && passwd != '\0') {
-#ifdef LOCKED_PASSWD_STRING
-		if (strcmp(passwd, LOCKED_PASSWD_STRING) == 0)
-			locked = 1;
-#endif
-#ifdef LOCKED_PASSWD_PREFIX
-		if (strncmp(passwd, LOCKED_PASSWD_PREFIX,
-		    strlen(LOCKED_PASSWD_PREFIX)) == 0)
-			locked = 1;
-#endif
-#ifdef LOCKED_PASSWD_SUBSTR
-		if (strstr(passwd, LOCKED_PASSWD_SUBSTR))
-			locked = 1;
-#endif
-	}
-
-#ifdef USE_LIBIAF
-	if (iaf_passwd != NULL)
-		freezero(iaf_passwd, strlen(iaf_passwd));
-#endif /* USE_LIBIAF */
-
-	return locked;
 }
