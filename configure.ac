@@ -43,9 +43,6 @@ AC_CHECK_TOOLS([AR], [ar])
 AC_PATH_PROG([CAT], [cat])
 AC_PATH_PROG([KILL], [kill])
 AC_PATH_PROG([SED], [sed])
-AC_PATH_PROG([TEST_MINUS_S_SH], [bash])
-AC_PATH_PROG([TEST_MINUS_S_SH], [ksh])
-AC_PATH_PROG([TEST_MINUS_S_SH], [sh])
 AC_PATH_PROG([SH], [sh])
 AC_PATH_PROG([GROFF], [groff])
 AC_PATH_PROG([NROFF], [nroff awf])
@@ -3319,7 +3316,7 @@ AC_ARG_WITH([prngd-socket],
 			AC_MSG_CHECKING([for PRNGD/EGD socket])
 			# Insert other locations here
 			for sock in /var/run/egd-pool /dev/egd-pool /etc/entropy; do
-				if test -r $sock && $TEST_MINUS_S_SH -c "test -S $sock -o -p $sock" ; then
+				if test -r $sock && $SHELL -c "test -S $sock -o -p $sock" ; then
 					PRNGD_SOCKET="$sock"
 					AC_DEFINE_UNQUOTED([PRNGD_SOCKET], ["$PRNGD_SOCKET"])
 					break;
