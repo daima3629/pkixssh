@@ -42,8 +42,8 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: ssh_config.5,v 1.366 2021/09/25 09:40:33 kn Exp $
-.Dd $Mdocdate: September 25 2021 $
+.\" $OpenBSD: ssh_config.5,v 1.370 2022/03/31 17:27:27 naddy Exp $
+.Dd $Mdocdate: March 31 2022 $
 .Dt SSH_CONFIG 5
 .Os
 .Sh NAME
@@ -508,7 +508,7 @@ directives will add to the list of OpenSSH custom certificates used for
 authentication.
 .It Cm CheckHostIP
 If set to
-.Cm yes
+.Cm yes ,
 .Xr ssh 1
 will additionally check the host IP address in the
 known hosts files.
@@ -1686,7 +1686,7 @@ If forwarding to a specific destination then the second argument must be
 or a Unix domain socket path,
 otherwise if no destination argument is specified then the remote forwarding
 will be established as a SOCKS proxy.
-When acting as a SOCKS proxy the destination of the connection can be
+When acting as a SOCKS proxy, the destination of the connection can be
 restricted by
 .Cm PermitRemoteOpen .
 .Pp
