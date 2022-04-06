@@ -968,6 +968,12 @@ struct winsize {
 #endif
 
 
+#ifndef HAVE_EVP_SHA512
+/* check only for EVP_sha512() as build with OpenSSL is required */
+# undef ENABLE_KEX_SNTRUP761X25519
+#endif
+
+
 #undef USE_RSA_METHOD
 #ifndef OPENSSL_NO_RSA
 /* TODO: to decide at configuration time */

@@ -42,8 +42,8 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: sshd_config.5,v 1.336 2021/10/09 10:52:42 dtucker Exp $
-.Dd $Mdocdate: October 9 2021 $
+.\" $OpenBSD: sshd_config.5,v 1.340 2022/03/31 17:58:44 naddy Exp $
+.Dd $Mdocdate: March 31 2022 $
 .Dt SSHD_CONFIG 5
 .Os
 .Sh NAME
@@ -1054,8 +1054,11 @@ The default is:
 curve25519-sha256,curve25519-sha256@libssh.org,
 ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,
 diffie-hellman-group-exchange-sha256,
-diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,
-diffie-hellman-group14-sha256,diffie-hellman-group14-sha1
+diffie-hellman-group16-sha512,
+diffie-hellman-group18-sha512,
+diffie-hellman-group14-sha256,
+sntrup761x25519-sha512@openssh.com,
+diffie-hellman-group14-sha1
 .Ed
 .Pp
 The list of available key exchange algorithms may also be obtained using
