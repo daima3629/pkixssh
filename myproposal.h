@@ -27,7 +27,9 @@
 #include "includes.h"
 
 #ifdef ENABLE_KEX_SNTRUP761X25519
-# define KEX_SNTRUP761X25519 	"sntrup761x25519-sha512@openssh.com,"
+# define KEX_SNTRUP761X25519	"sntrup761x25519-sha512@openssh.com,"
+#else
+# define KEX_SNTRUP761X25519
 #endif
 
 #define KEX_SERVER_KEX \
