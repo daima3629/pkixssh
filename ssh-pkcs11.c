@@ -1217,28 +1217,30 @@ pkcs11_get_pubkey_ec(
 }
 {	const unsigned char *q;
 	/* "DER-encoding of ANSI X9.62 ECPoint value Q" */
-	ASN1_OCTET_STRING *point;
 	EC_KEY *ec, *pk_ec;
-
-	rv = CKR_GENERAL_ERROR;
-
-	q = attribs[2].pValue;
-	point = d2i_ASN1_OCTET_STRING(NULL, &q, attribs[2].ulValueLen);
-	if (point == NULL)  {
-		error_f("d2i_ASN1_OCTET_STRING failed");
-		goto fail;
-	}
 
 	pk_ec = EVP_PKEY_get1_EC_KEY(key->pk);
 	if (pk_ec == NULL) goto fail;
+
+	q = attribs[2].pValue;
+{	ASN1_OCTET_STRING *point;
+
+	point = d2i_ASN1_OCTET_STRING(NULL, &q, attribs[2].ulValueLen);
+	if (point == NULL)  {
+		error_f("d2i_ASN1_OCTET_STRING failed");
+		goto try_raw_ec_point;
+	}
 
 	q = point->data;
 	ec = o2i_ECPublicKey(&pk_ec, &q, point->length);
 	if (ec == NULL)
 		error_f("o2i_ECPublicKey failed for EC point");
-	else
-		goto done_ecpub;
 
+	ASN1_STRING_free(point);
+	if (ec != NULL) goto done_ecpub;
+}
+
+try_raw_ec_point:
 	/* try raw data (broken PKCS#11 module) */
 	q = attribs[2].pValue;
 	ec = o2i_ECPublicKey(&pk_ec, &q, attribs[2].ulValueLen);
@@ -1246,7 +1248,6 @@ pkcs11_get_pubkey_ec(
 		error_f("o2i_ECPublicKey failed for raw EC point too");
 
 done_ecpub:
-	ASN1_STRING_free(point);
 	EC_KEY_free(pk_ec);
 	if (ec == NULL) goto fail;
 }
@@ -1263,7 +1264,6 @@ done:
 
 	return key;
 }
-
 #endif /* OPENSSL_HAS_ECC */
 
 static struct sshkey*
