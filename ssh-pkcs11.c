@@ -743,6 +743,14 @@ err:
 	return NULL;
 }
 
+static inline int
+set_ssh_pkcs11_ec_method(EC_KEY *ec) {
+	EC_KEY_METHOD *meth = ssh_pkcs11_ec_method();
+	if (meth == NULL) return 0;
+
+	return EC_KEY_set_method(ec, meth);
+}
+
 static int
 pkcs11_wrap_ecdsa(struct pkcs11_provider *provider, CK_ULONG slotidx,
     CK_ATTRIBUTE *keyid_attrib, struct sshkey *key)
@@ -752,10 +760,9 @@ pkcs11_wrap_ecdsa(struct pkcs11_provider *provider, CK_ULONG slotidx,
 	if (ec == NULL) return -1;
 
 	ret = -1;
-{	EC_KEY_METHOD *meth = ssh_pkcs11_ec_method();
-	if (meth == NULL) goto done;
-	if (!EC_KEY_set_method(ec, meth)) goto done;
-}
+	/*TODO: remove when pkcs11 method is set on certificate based keys */
+	if (!set_ssh_pkcs11_ec_method(ec)) goto done;
+
 {	struct pkcs11_key *k11;
 		/* fatal on error */
 	k11 = pkcs11_key_create(provider, slotidx, keyid_attrib);
@@ -1190,6 +1197,10 @@ pkcs11_get_pubkey_ec(
 	ec = d2i_ECParameters(NULL, &q, attribs[1].ulValueLen);
 	if (ec == NULL) {
 		error_f("d2i_ECParameters failed");
+		goto fail;
+	}
+	if (!set_ssh_pkcs11_ec_method(ec)) {
+		EC_KEY_free(ec);
 		goto fail;
 	}
 	if (!EVP_PKEY_set1_EC_KEY(key->pk, ec)) {
