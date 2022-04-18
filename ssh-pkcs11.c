@@ -1203,6 +1203,12 @@ pkcs11_get_pubkey_ec(
 		EC_KEY_free(ec);
 		goto fail;
 	}
+	key->ecdsa_nid  = ssh_EC_KEY_preserve_nid(ec);
+	if (key->ecdsa_nid  < 0) {
+		error_f("unsupported elliptic curve");
+		EC_KEY_free(ec);
+		goto fail;
+	}
 	if (!EVP_PKEY_set1_EC_KEY(key->pk, ec)) {
 		EC_KEY_free(ec);
 		goto fail;
@@ -1243,12 +1249,6 @@ done_ecpub:
 	ASN1_STRING_free(point);
 	EC_KEY_free(pk_ec);
 	if (ec == NULL) goto fail;
-
-	key->ecdsa_nid  = ssh_EC_KEY_preserve_nid(ec);
-	if (key->ecdsa_nid  < 0) {
-		error_f("unsupported elliptic curve");
-		goto fail;
-	}
 }
 	if (pkcs11_wrap_ecdsa(p, slotidx, attribs, key) == 0)
 		goto done;
