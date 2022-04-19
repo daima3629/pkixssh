@@ -64,6 +64,29 @@
 #include "xmalloc.h"
 #include "sshbuf.h"
 
+#ifndef HAVE_RSA_GET0_KEY
+/* opaque RSA key structure */
+static inline int
+RSA_set0_key(RSA *rsa, BIGNUM *n, BIGNUM *e, BIGNUM *d) {
+/* If the fields in r are NULL, the corresponding input parameters MUST
+ * be non-NULL for n and e.  d may be left NULL (in case only the
+ * public key is used).
+ *
+ * It is an error to give the results from get0 on r as input
+ * parameters.
+ */
+	if (n == rsa->n || e == rsa->e
+	|| (rsa->d != NULL && d == rsa->d))
+		return 0;
+
+	if (n != NULL) { BN_free(rsa->n); rsa->n = n; }
+	if (e != NULL) { BN_free(rsa->e); rsa->e = e; }
+	if (d != NULL) { BN_free(rsa->d); rsa->d = d; }
+
+	return 1;
+}
+#endif /*ndef HAVE_RSA_GET0_KEY*/
+
 struct pkcs11_slotinfo {
 	CK_TOKEN_INFO		token;
 	CK_SESSION_HANDLE	session;
@@ -570,6 +593,14 @@ err:
 	return NULL;
 }
 
+static inline int
+set_ssh_pkcs11_rsa_method(RSA *key) {
+	RSA_METHOD *meth = ssh_pkcs11_rsa_method();
+	if (meth == NULL) return 0;;
+
+	return RSA_set_method(key, meth);
+}
+
 /* redirect private key operations for rsa key to pkcs11 token */
 static int
 pkcs11_wrap_rsa(struct pkcs11_provider *provider, CK_ULONG slotidx,
@@ -580,10 +611,9 @@ pkcs11_wrap_rsa(struct pkcs11_provider *provider, CK_ULONG slotidx,
 	if (rsa == NULL) return -1;
 
 	ret = -1;
-{	RSA_METHOD *meth = ssh_pkcs11_rsa_method();
-	if (meth == NULL) goto done;
-	if (!RSA_set_method(rsa, meth)) goto done;
-}
+	/*TODO: remove when pkcs11 method is set on certificate based keys */
+	if (!set_ssh_pkcs11_rsa_method(rsa)) goto done;
+
 {	struct pkcs11_key *k11;
 		/* fatal on error */
 	k11 = pkcs11_key_create(provider, slotidx, keyid_attrib);
@@ -1088,36 +1118,48 @@ pkcs11_get_pubkey_rsa(
 		goto done;
 	}
 	key->type = KEY_RSA;
+	key->pk = EVP_PKEY_new();
+	if (key->pk == NULL)
+		goto fail;
 
 {	BIGNUM *rsa_n = NULL, *rsa_e = NULL;
-	struct sshbuf *buf = NULL;
-	int r = -1/*SSH_ERR_INTERNAL_ERROR*/;
+	RSA *rsa;
+
+	rsa = RSA_new();
+	if (rsa == NULL) {
+		error_f("RSA_new failed");
+		goto fail;
+	}
+	if (!set_ssh_pkcs11_rsa_method(rsa)) {
+		RSA_free(rsa);
+		goto fail;
+	}
 
 	rsa_n = BN_bin2bn(attribs[1].pValue, attribs[1].ulValueLen, NULL);
 	rsa_e = BN_bin2bn(attribs[2].pValue, attribs[2].ulValueLen, NULL);
 	if (rsa_n == NULL || rsa_e == NULL) {
 		error_f("BN_bin2bn failed");
-		goto key_done;
-	}
-	buf = sshbuf_new();
-	if (buf == NULL) {
-		error_f("sshbuf_new failed");
-		goto key_done;
-	}
-	if ((r = sshbuf_put_bignum2(buf, rsa_n)) != 0 ||
-	    (r = sshbuf_put_bignum2(buf, rsa_e)) != 0) {
-		error_fr(r, "compose");
-		goto key_done;
+		goto key_fail;
 	}
 
-	r = sshbuf_read_pub_rsa(buf, key);
+	if (!RSA_set0_key(rsa, rsa_n, rsa_e, NULL)) {
+		RSA_free(rsa);
+		goto key_fail;
+	}
 
-key_done:
-	sshbuf_free(buf);
+	if (!EVP_PKEY_set1_RSA(key->pk, rsa)) {
+		RSA_free(rsa);
+		goto fail;
+	}
+	RSA_free(rsa);
+	goto key_done;
+
+key_fail:
 	BN_free(rsa_n);
 	BN_free(rsa_e);
-	if (r != 0) goto fail;
+	goto fail;
 }
+key_done:
 
 	if (pkcs11_wrap_rsa(p, slotidx, attribs, key) == 0)
 		goto done;
