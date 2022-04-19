@@ -3,7 +3,7 @@
  * Copyright (c) 2010 Markus Friedl.  All rights reserved.
  * Copyright (c) 2011 Kenneth Robinette.  All rights reserved.
  * Copyright (c) 2013 Andrew Cooke.  All rights reserved.
- * Copyright (c) 2016-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2016-2022 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -744,11 +744,11 @@ err:
 }
 
 static inline int
-set_ssh_pkcs11_ec_method(EC_KEY *ec) {
+set_ssh_pkcs11_ec_method(EC_KEY *key) {
 	EC_KEY_METHOD *meth = ssh_pkcs11_ec_method();
 	if (meth == NULL) return 0;
 
-	return EC_KEY_set_method(ec, meth);
+	return EC_KEY_set_method(key, meth);
 }
 
 static int
@@ -1186,8 +1186,10 @@ pkcs11_get_pubkey_ec(
 	}
 	key->type = KEY_ECDSA;
 	key->pk = EVP_PKEY_new();
-	if (key->pk == NULL)
-		goto done;
+	if (key->pk == NULL) {
+		error_f("EVP_PKEY_new failed");
+		goto fail;
+	}
 
 {	const unsigned char *q;
 	EC_KEY *ec;
