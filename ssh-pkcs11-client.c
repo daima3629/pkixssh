@@ -354,6 +354,12 @@ wrap_key_rsa(struct sshkey *key)
 
 {	RSA *rsa = EVP_PKEY_get1_RSA(key->pk);
 	ret = RSA_set_method(rsa, meth) ? 0 : -1;
+#ifdef HAVE_EVP_PKEY_GET_BASE_ID /* OpenSSL 3+ */
+	/* Throw out misfunctional "key manager" in OpenSSL 3+,
+	 * i.e. make non-provider key.
+	 */
+	EVP_PKEY_set1_RSA(key->pk, rsa);
+#endif
 	RSA_free(rsa);
 }
 	return ret;
@@ -370,6 +376,12 @@ wrap_key_ecdsa(struct sshkey *key)
 
 {	EC_KEY *ec = EVP_PKEY_get1_EC_KEY(key->pk);
 	ret = EC_KEY_set_method(ec, meth) ? 0 : -1;
+#ifdef HAVE_EVP_PKEY_GET_BASE_ID /* OpenSSL 3+ */
+	/* Throw out misfunctional "key manager" in OpenSSL 3+,
+	 * i.e. make non-provider key.
+	 */
+	EVP_PKEY_set1_EC_KEY(key->pk, ec);
+#endif
 	EC_KEY_free(ec);
 }
 	return ret;
