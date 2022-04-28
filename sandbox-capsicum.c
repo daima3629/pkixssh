@@ -104,11 +104,11 @@ ssh_sandbox_child(struct ssh_sandbox *box)
 	cap_rights_init(&rights);
 
 	if (cap_rights_limit(STDIN_FILENO, &rights) < 0 && errno != ENOSYS)
-		fatal("can't limit stdin: %m");
+		fatal("can't limit stdin: %s", strerror(errno));
 	if (cap_rights_limit(STDOUT_FILENO, &rights) < 0 && errno != ENOSYS)
-		fatal("can't limit stdout: %m");
+		fatal("can't limit stdout: %s", strerror(errno));
 	if (cap_rights_limit(STDERR_FILENO, &rights) < 0 && errno != ENOSYS)
-		fatal("can't limit stderr: %m");
+		fatal("can't limit stderr: %s", strerror(errno));
 
 	cap_rights_init(&rights, CAP_READ, CAP_WRITE);
 	if (cap_rights_limit(box->monitor->m_recvfd, &rights) < 0 &&
