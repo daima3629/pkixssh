@@ -605,15 +605,12 @@ set_ssh_pkcs11_rsa_method(RSA *key) {
 }
 
 /* redirect private key operations for rsa key to pkcs11 token */
-static int
+static int/*boolean*/
 pkcs11_wrap_rsa(struct pkcs11_provider *provider, CK_ULONG slotidx,
     CK_ATTRIBUTE *keyid_attrib, struct sshkey *key)
 {
-	int ret;
 	RSA *rsa = EVP_PKEY_get1_RSA(key->pk);
-	if (rsa == NULL) return -1;
-
-	ret = -1;
+	if (rsa == NULL) return 0;
 
 {	struct pkcs11_key *k11;
 		/* fatal on error */
@@ -621,10 +618,8 @@ pkcs11_wrap_rsa(struct pkcs11_provider *provider, CK_ULONG slotidx,
 	RSA_set_ex_data(rsa, ssh_pkcs11_rsa_ctx_index, k11);
 }
 	key->flags |= SSHKEY_FLAG_EXT;
-	ret = 0;
-
 	RSA_free(rsa);
-	return ret;
+	return 1;
 }
 
 
@@ -782,15 +777,12 @@ set_ssh_pkcs11_ec_method(EC_KEY *key) {
 	return EC_KEY_set_method(key, meth);
 }
 
-static int
-pkcs11_wrap_ecdsa(struct pkcs11_provider *provider, CK_ULONG slotidx,
+static int/*boolean*/
+pkcs11_wrap_ec(struct pkcs11_provider *provider, CK_ULONG slotidx,
     CK_ATTRIBUTE *keyid_attrib, struct sshkey *key)
 {
-	int ret;
 	EC_KEY *ec = EVP_PKEY_get1_EC_KEY(key->pk);
-	if (ec == NULL) return -1;
-
-	ret = -1;
+	if (ec == NULL) return 0;
 
 {	struct pkcs11_key *k11;
 		/* fatal on error */
@@ -798,10 +790,8 @@ pkcs11_wrap_ecdsa(struct pkcs11_provider *provider, CK_ULONG slotidx,
 	EC_KEY_set_ex_data(ec, ssh_pkcs11_ec_ctx_index, k11);
 }
 	key->flags |= SSHKEY_FLAG_EXT;
-	ret = 0;
-
 	EC_KEY_free(ec);
-	return ret;
+	return 1;
 }
 #endif /*def OPENSSL_HAS_ECC*/
 
@@ -863,7 +853,7 @@ pkcs11_open_session(struct pkcs11_provider *p, CK_ULONG slotidx, char *pin,
 	return 0;
 }
 
-static inline int
+static inline int/*boolean*/
 pkcs11_wrap(struct pkcs11_provider *provider, CK_ULONG slotidx,
     CK_ATTRIBUTE *keyid_attrib, struct sshkey *key
 ) {
@@ -872,10 +862,10 @@ pkcs11_wrap(struct pkcs11_provider *provider, CK_ULONG slotidx,
 		return pkcs11_wrap_rsa(provider, slotidx, keyid_attrib, key);
 #ifdef OPENSSL_HAS_ECC
 	case KEY_ECDSA:
-		return pkcs11_wrap_ecdsa(provider, slotidx, keyid_attrib, key);
+		return pkcs11_wrap_ec(provider, slotidx, keyid_attrib, key);
 #endif /*def OPENSSL_HAS_ECC*/
 	}
-	return -1;
+	return 0;
 }
 
 static inline int/*boolean*/
@@ -1009,7 +999,7 @@ pkcs11_get_x509key(
 	key = x509_to_key(x);
 	if (key == NULL) goto fail;
 
-	if (pkcs11_wrap(p, slotidx, attribs, key) == 0)
+	if (pkcs11_wrap(p, slotidx, attribs, key))
 		goto done;
 
 fail:
@@ -1231,7 +1221,7 @@ key_fail:
 }
 key_done:
 
-	if (pkcs11_wrap_rsa(p, slotidx, attribs, key) == 0)
+	if (pkcs11_wrap_rsa(p, slotidx, attribs, key))
 		goto done;
 
 fail:
@@ -1365,7 +1355,7 @@ done_ecpub:
 	EC_KEY_free(pk_ec);
 	if (ec == NULL) goto fail;
 }
-	if (pkcs11_wrap_ecdsa(p, slotidx, attribs, key) == 0)
+	if (pkcs11_wrap_ec(p, slotidx, attribs, key))
 		goto done;
 
 fail:
