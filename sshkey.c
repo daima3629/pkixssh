@@ -1,4 +1,4 @@
-/* $OpenBSD: sshkey.c,v 1.119 2021/07/23 03:37:52 djm Exp $ */
+/* $OpenBSD: sshkey.c,v 1.121 2022/05/05 01:04:14 djm Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Alexander von Gernler.  All rights reserved.
@@ -1847,6 +1847,31 @@ sshkey_from_private(const struct sshkey *k, struct sshkey **pkp)
 	return r;
 }
 
+/* Check deterministic padding after private key */
+static int
+private2_check_padding(struct sshbuf *decrypted)
+{
+	u_char pad;
+	size_t i;
+	int r;
+
+	i = 0;
+	while (sshbuf_len(decrypted)) {
+		if ((r = sshbuf_get_u8(decrypted, &pad)) != 0)
+			goto out;
+		if (pad != (++i & 0xff)) {
+			r = SSH_ERR_INVALID_FORMAT;
+			goto out;
+		}
+	}
+	/* success */
+	r = 0;
+ out:
+	explicit_bzero(&pad, sizeof(pad));
+	explicit_bzero(&i, sizeof(i));
+	return r;
+}
+
 #ifdef USE_SSHKEY_SHIELDING
 int
 sshkey_is_shielded(struct sshkey *k)
@@ -1967,10 +1992,9 @@ int
 sshkey_unshield_private(struct sshkey *k)
 {
 	struct sshbuf *prvbuf = NULL;
-	u_char pad, *cp, keyiv[SSH_DIGEST_MAX_LENGTH];
+	u_char *cp, keyiv[SSH_DIGEST_MAX_LENGTH];
 	struct sshcipher_ctx *cctx = NULL;
 	const struct sshcipher *cipher;
-	size_t i;
 	struct sshkey *kswap = NULL, tmp;
 	int r = SSH_ERR_INTERNAL_ERROR;
 
@@ -2032,16 +2056,9 @@ sshkey_unshield_private(struct sshkey *k)
 	/* Parse private key */
 	if ((r = sshkey_private_deserialize(prvbuf, &kswap)) != 0)
 		goto out;
-	/* Check deterministic padding */
-	i = 0;
-	while (sshbuf_len(prvbuf)) {
-		if ((r = sshbuf_get_u8(prvbuf, &pad)) != 0)
-			goto out;
-		if (pad != (++i & 0xff)) {
-			r = SSH_ERR_INVALID_FORMAT;
-			goto out;
-		}
-	}
+
+	if ((r = private2_check_padding(prvbuf)) != 0)
+		goto out;
 
 	/* Swap the parsed key back into place */
 	tmp = *kswap;
@@ -3680,31 +3697,6 @@ private2_decrypt(struct sshbuf *decoded, const char *passphrase,
 		freezero(key, keylen + ivlen);
 	sshbuf_free(kdf);
 	sshbuf_free(decrypted);
-	return r;
-}
-
-/* Check deterministic padding after private key */
-static int
-private2_check_padding(struct sshbuf *decrypted)
-{
-	u_char pad;
-	size_t i;
-	int r = SSH_ERR_INTERNAL_ERROR;
-
-	i = 0;
-	while (sshbuf_len(decrypted)) {
-		if ((r = sshbuf_get_u8(decrypted, &pad)) != 0)
-			goto out;
-		if (pad != (++i & 0xff)) {
-			r = SSH_ERR_INVALID_FORMAT;
-			goto out;
-		}
-	}
-	/* success */
-	r = 0;
- out:
-	explicit_bzero(&pad, sizeof(pad));
-	explicit_bzero(&i, sizeof(i));
 	return r;
 }
 
