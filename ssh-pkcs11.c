@@ -877,7 +877,7 @@ set_ssh_pkcs11_pkey_rsa_method(EVP_PKEY *pk) {
 	if (rsa == NULL) return 0;
 
 	ret = set_ssh_pkcs11_rsa_method(rsa);
-#ifdef HAVE_EVP_PKEY_GET_BASE_ID /* OpenSSL 3+ */
+#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER /* OpenSSL 3+ */
 	/* Implicitly throw out "key manager" in OpenSSL 3+,
 	 * i.e. make non-provider key.
 	 */
@@ -897,7 +897,7 @@ set_ssh_pkcs11_pkey_ec_method(EVP_PKEY *pk) {
 	if (ec == NULL) return 0;
 
 	ret = set_ssh_pkcs11_ec_method(ec);
-#ifdef HAVE_EVP_PKEY_GET_BASE_ID /* OpenSSL 3+ */
+#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER /* OpenSSL 3+ */
 	/* Implicitly throw out "key manager" in OpenSSL 3+,
 	 * i.e. make non-provider key.
 	 */
