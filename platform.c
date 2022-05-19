@@ -232,7 +232,7 @@ platform_locked_account(struct passwd *pw)
 #endif
 
 	/* check for locked account */
-	if (passwd != NULL && passwd != '\0') {
+	if (passwd != NULL && *passwd != '\0') {
 #ifdef LOCKED_PASSWD_STRING
 		if (strcmp(passwd, LOCKED_PASSWD_STRING) == 0)
 			locked = 1;
