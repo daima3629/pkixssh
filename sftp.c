@@ -1,4 +1,4 @@
-/* $OpenBSD: sftp.c,v 1.212 2021/09/11 09:05:50 schwarze Exp $ */
+/* $OpenBSD: sftp.c,v 1.216 2022/05/13 06:31:50 djm Exp $ */
 /*
  * Copyright (c) 2001-2004 Damien Miller <djm@openbsd.org>
  * Copyright (c) 2013-2021 Roumen Petrov.  All rights reserved.
@@ -598,18 +598,45 @@ parse_no_flags(const char *cmd, char **argv, int argc)
 	return optind;
 }
 
+static char *
+escape_glob(const char *s)
+{
+	size_t i, o, len;
+	char *ret;
+
+	len = strlen(s);
+	ret = xcalloc(2, len + 1);
+	for (i = o = 0; i < len; i++) {
+		if (strchr("[]?*\\", s[i]) != NULL)
+			ret[o++] = '\\';
+		ret[o++] = s[i];
+	}
+	ret[o++] = '\0';
+	return ret;
+}
+
+static char *
+make_absolute_pwd_glob(const char *p, const char *pwd)
+{
+	char *ret, *escpwd;
+
+	escpwd = escape_glob(pwd);
+	if (p == NULL)
+		return escpwd;
+	ret = make_absolute(xstrdup(p), escpwd);
+	free(escpwd);
+	return ret;
+}
+
 static int
 process_get(struct sftp_conn *conn, const char *src, const char *dst,
     const char *pwd, int pflag, int rflag, int resume, int fflag)
 {
-	char *abs_src = NULL;
-	char *abs_dst = NULL;
+	char *filename, *abs_src = NULL, *abs_dst = NULL, *tmp = NULL;
 	glob_t g;
-	char *filename, *tmp=NULL;
 	int i, r, err = 0;
 
-	abs_src = xstrdup(src);
-	abs_src = make_absolute(abs_src, pwd);
+	abs_src = make_absolute_pwd_glob(src, pwd);
 	memset(&g, 0, sizeof(g));
 
 	debug3("Looking up %s", abs_src);
@@ -1562,7 +1589,7 @@ parse_dispatch_command(struct sftp_conn *conn, const char *cmd, char **pwd,
 		err = (sflag ? do_symlink : do_hardlink)(conn, path1, path2);
 		break;
 	case I_RM:
-		path1 = make_absolute(path1, *pwd);
+		path1 = make_absolute_pwd_glob(path1, *pwd);
 		remote_glob(conn, path1, GLOB_NOCHECK, NULL, &g);
 		for (i = 0; g.gl_pathv[i] && !interrupted; i++) {
 			if (!quiet)
@@ -1623,7 +1650,7 @@ parse_dispatch_command(struct sftp_conn *conn, const char *cmd, char **pwd,
 		if (!path_absolute(path1))
 			tmp = *pwd;
 
-		path1 = make_absolute(path1, *pwd);
+		path1 = make_absolute_pwd_glob(path1, *pwd);
 		err = do_globbed_ls(conn, path1, tmp, lflag);
 		break;
 	case I_DF:
@@ -1663,7 +1690,7 @@ parse_dispatch_command(struct sftp_conn *conn, const char *cmd, char **pwd,
 		printf("Local umask: %03lo\n", n_arg);
 		break;
 	case I_CHMOD:
-		path1 = make_absolute(path1, *pwd);
+		path1 = make_absolute_pwd_glob(path1, *pwd);
 		attrib_clear(&a);
 		a.flags |= SSH2_FILEXFER_ATTR_PERMISSIONS;
 		a.perm = n_arg;
@@ -1680,7 +1707,7 @@ parse_dispatch_command(struct sftp_conn *conn, const char *cmd, char **pwd,
 		break;
 	case I_CHOWN:
 	case I_CHGRP:
-		path1 = make_absolute(path1, *pwd);
+		path1 = make_absolute_pwd_glob(path1, *pwd);
 		remote_glob(conn, path1, GLOB_NOCHECK, NULL, &g);
 		for (i = 0; g.gl_pathv[i] && !interrupted; i++) {
 			if (!(aa = (hflag ? do_lstat : do_stat)(conn,
@@ -1956,7 +1983,7 @@ complete_match(EditLine *el, struct sftp_conn *conn, char *remote_path,
 
 	memset(&g, 0, sizeof(g));
 	if (remote != LOCAL) {
-		tmp = make_absolute(tmp, remote_path);
+		tmp = make_absolute_pwd_glob(tmp, remote_path);
 		remote_glob(conn, tmp, GLOB_DOOFFS|GLOB_MARK, NULL, &g);
 	} else
 		glob(tmp, GLOB_DOOFFS|GLOB_MARK, NULL, &g);
