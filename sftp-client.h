@@ -1,4 +1,4 @@
-/* $OpenBSD: sftp-client.h,v 1.35 2022/01/01 01:55:30 jsg Exp $ */
+/* $OpenBSD: sftp-client.h,v 1.37 2022/05/13 06:31:50 djm Exp $ */
 /*
  * Copyright (c) 2001-2004 Damien Miller <djm@openbsd.org>
  *
@@ -126,28 +126,29 @@ int do_fsync(struct sftp_conn *conn, u_char *, u_int);
  * Download 'remote_path' to 'local_path'. Preserve permissions and times
  * if 'pflag' is set
  */
-int do_download(struct sftp_conn *, const char *, const char *,
-    Attrib *, int, int, int);
+int do_download(struct sftp_conn *, const char *, const char *, Attrib *,
+    int, int, int, int);
 
 /*
  * Recursively download 'remote_directory' to 'local_directory'. Preserve
  * times if 'pflag' is set
  */
-int download_dir(struct sftp_conn *, const char *, const char *,
-    Attrib *, int, int, int, int, int);
+int download_dir(struct sftp_conn *, const char *, const char *, Attrib *,
+    int, int, int, int, int, int);
 
 /*
  * Upload 'local_path' to 'remote_path'. Preserve permissions and times
  * if 'pflag' is set
  */
-int do_upload(struct sftp_conn *, const char *, const char *, int, int, int);
+int do_upload(struct sftp_conn *, const char *, const char *,
+    int, int, int, int);
 
 /*
  * Recursively upload 'local_directory' to 'remote_directory'. Preserve
  * times if 'pflag' is set
  */
-int upload_dir(struct sftp_conn *, const char *, const char *, int, int, int,
-    int, int);
+int upload_dir(struct sftp_conn *, const char *, const char *,
+    int, int, int, int, int, int);
 
 /*
  * Download a 'from_path' from the 'from' connection and upload it to
