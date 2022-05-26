@@ -1,4 +1,4 @@
-/* $OpenBSD: sftp-client.c,v 1.161 2022/01/17 21:41:04 djm Exp $ */
+/* $OpenBSD: sftp-client.c,v 1.164 2022/05/15 23:47:21 djm Exp $ */
 /*
  * Copyright (c) 2001-2004 Damien Miller <djm@openbsd.org>
  * Copyright (c) 2018-2022 Roumen Petrov.  All rights reserved.
@@ -1523,7 +1523,6 @@ do_download(struct sftp_conn *conn, const char *remote_path,
 	struct request *req;
 	u_char type;
 
-	UNUSED(inplace_flag);
 	debug2_f("download remote \"%s\" to local \"%s\"",
 	    remote_path, local_path);
 
@@ -1557,7 +1556,7 @@ do_download(struct sftp_conn *conn, const char *remote_path,
 		return -1;
 
 	local_fd = open(local_path, O_WRONLY | O_CREAT |
-	    (resume_flag ? 0 : O_TRUNC), mode | S_IWUSR);
+	((resume_flag || inplace_flag) ? 0 : O_TRUNC), mode | S_IWUSR);
 	if (local_fd == -1) {
 		error("local open \"%s\": %s", local_path, strerror(errno));
 		goto fail;
@@ -1718,8 +1717,11 @@ do_download(struct sftp_conn *conn, const char *remote_path,
 	/* Sanity check */
 	if (TAILQ_FIRST(&requests) != NULL)
 		fatal("Transfer complete, but requests still in queue");
-	/* Truncate at highest contiguous point to avoid holes on interrupt */
-	if (read_error || write_error || interrupted) {
+	/*
+	 * Truncate at highest contiguous point to avoid holes on interrupt,
+	 * or unconditionally if writing in place.
+	 */
+	if (inplace_flag || read_error || write_error || interrupted) {
 		if (reordered && resume_flag) {
 			error("Unable to resume download of \"%s\": "
 			    "server reordered requests", local_path);
@@ -1913,19 +1915,18 @@ do_upload(struct sftp_conn *conn, const char *local_path,
     int fsync_flag, int inplace_flag)
 {
 	int r, local_fd;
-	u_int status = SSH2_FX_OK;
-	u_int id;
+	u_int openmode, id, status = SSH2_FX_OK, reordered = 0;
 	off_t offset, progress_counter;
 	u_char type, *handle, *data;
 	struct sshbuf *msg;
 	struct stat sb;
 	Attrib a, *c = NULL;
 	u_int32_t startid, ackid;
+	u_int64_t highwater = 0;
 	struct requests acks;
 	struct request *ack = NULL;
 	size_t handle_len;
 
-	UNUSED(inplace_flag);
 	debug2_f("upload local \"%s\" to remote \"%s\"",
 	    local_path, remote_path);
 
@@ -1973,10 +1974,15 @@ do_upload(struct sftp_conn *conn, const char *local_path,
 		}
 	}
 
+	openmode = SSH2_FXF_WRITE|SSH2_FXF_CREAT;
+	if (resume)
+		openmode |= SSH2_FXF_APPEND;
+	else if (!inplace_flag)
+		openmode |= SSH2_FXF_TRUNC;
+
 	/* Send open request */
-	if (send_open(conn, remote_path, "dest", SSH2_FXF_WRITE|SSH2_FXF_CREAT|
-	    (resume ? SSH2_FXF_APPEND : SSH2_FXF_TRUNC),
-	    &a, &handle, &handle_len) != 0) {
+	if (send_open(conn, remote_path, "dest", openmode, &a,
+	    &handle, &handle_len) != 0) {
 		close(local_fd);
 		return -1;
 	}
@@ -2059,6 +2065,12 @@ do_upload(struct sftp_conn *conn, const char *local_path,
 			    ack->id, ack->len, (unsigned long long)ack->offset);
 			++ackid;
 			progress_counter += ack->len;
+			if (!reordered && ack->offset <= highwater)
+				highwater = ack->offset + ack->len;
+			else if (!reordered && ack->offset > highwater) {
+				debug3_f("server reordered ACKs");
+				reordered = 1;
+			}
 			free(ack);
 		}
 		offset += len;
@@ -2074,6 +2086,15 @@ do_upload(struct sftp_conn *conn, const char *local_path,
 	if (status != SSH2_FX_OK) {
 		error("remote write \"%s\": %s", remote_path, fx2txt(status));
 		status = SSH2_FX_FAILURE;
+	}
+
+	if (inplace_flag || (resume && (status != SSH2_FX_OK || interrupted))) {
+		Attrib t;
+		debug("truncating at %llu", (unsigned long long)highwater);
+		attrib_clear(&t);
+		t.flags = SSH2_FILEXFER_ATTR_SIZE;
+		t.size = highwater;
+		do_fsetstat(conn, handle, handle_len, &t);
 	}
 
 	if (close(local_fd) == -1) {
