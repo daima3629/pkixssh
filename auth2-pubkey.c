@@ -290,7 +290,7 @@ match_principals_option(const char *principal_list, struct sshkey_cert *cert)
  * log preamble for file/line information.
  */
 static int
-check_principals_line(struct ssh *ssh, char *cp, const struct sshkey_cert *cert,
+check_principals_line(char *cp, const struct sshkey_cert *cert,
     const char *loc, struct sshauthopt **authoptsp)
 {
 	u_int i, found = 0;
@@ -298,7 +298,6 @@ check_principals_line(struct ssh *ssh, char *cp, const struct sshkey_cert *cert,
 	const char *reason = NULL;
 	struct sshauthopt *opts = NULL;
 
-	UNUSED(ssh);
 	if (authoptsp != NULL)
 		*authoptsp = NULL;
 
@@ -341,7 +340,7 @@ check_principals_line(struct ssh *ssh, char *cp, const struct sshkey_cert *cert,
 }
 
 static int
-process_principals(struct ssh *ssh, FILE *f, const char *file,
+process_principals(FILE *f, const char *file,
     const struct sshkey_cert *cert, struct sshauthopt **authoptsp)
 {
 	char loc[256], *line = NULL, *cp, *ep;
@@ -369,7 +368,7 @@ process_principals(struct ssh *ssh, FILE *f, const char *file,
 
 		nonblank++;
 		snprintf(loc, sizeof(loc), "%.200s:%lu", file, linenum);
-		if (check_principals_line(ssh, cp, cert, loc, authoptsp) == 0)
+		if (check_principals_line(cp, cert, loc, authoptsp) == 0)
 			found_principal = 1;
 	}
 	debug2_f("%s: processed %lu/%lu lines", file, nonblank, linenum);
@@ -380,7 +379,7 @@ process_principals(struct ssh *ssh, FILE *f, const char *file,
 /* XXX remove pw args here and elsewhere once ssh->authctxt is guaranteed */
 
 static int
-match_principals_file(struct ssh *ssh, struct passwd *pw, char *file,
+match_principals_file(struct passwd *pw, char *file,
     struct sshkey_cert *cert, struct sshauthopt **authoptsp)
 {
 	FILE *f;
@@ -395,7 +394,7 @@ match_principals_file(struct ssh *ssh, struct passwd *pw, char *file,
 		restore_uid();
 		return 0;
 	}
-	success = process_principals(ssh, f, file, cert, authoptsp);
+	success = process_principals(f, file, cert, authoptsp);
 	fclose(f);
 	restore_uid();
 	return success;
@@ -447,7 +446,7 @@ x509_match(const struct sshkey *key, const struct sshkey *found) {
  * returns 1 if the principal is allowed or 0 otherwise.
  */
 static int
-match_principals_command(struct ssh *ssh, struct passwd *user_pw,
+match_principals_command(struct passwd *user_pw,
     const struct sshkey *key, struct sshauthopt **authoptsp)
 {
 	struct passwd *runas_pw = NULL;
@@ -551,7 +550,7 @@ match_principals_command(struct ssh *ssh, struct passwd *user_pw,
 	uid_swapped = 1;
 	temporarily_use_uid(runas_pw);
 
-	ok = process_principals(ssh, f, "(command)", cert, authoptsp);
+	ok = process_principals(f, "(command)", cert, authoptsp);
 
 	fclose(f);
 	f = NULL;
@@ -814,12 +813,12 @@ user_cert_trusted_ca(struct ssh *ssh, struct passwd *pw, struct sshkey *key,
 	 * against the username.
 	 */
 	if ((principals_file = authorized_principals_file(pw)) != NULL) {
-		if (match_principals_file(ssh, pw, principals_file,
+		if (match_principals_file(pw, principals_file,
 		    key->cert, &principals_opts))
 			found_principal = 1;
 	}
 	/* Try querying command if specified */
-	if (!found_principal && match_principals_command(ssh, pw, key,
+	if (!found_principal && match_principals_command(pw, key,
 	    &principals_opts))
 		found_principal = 1;
 	/* If principals file or command is specified, then require a match */
