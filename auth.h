@@ -216,8 +216,6 @@ int	Xsshd_hostkey_sign(struct ssh *ssh, ssh_sign_ctx *ctx, struct sshkey *pubkey
 const struct sshauthopt *auth_options(struct ssh *);
 int	 auth_activate_options(struct ssh *, struct sshauthopt *);
 void	 auth_restrict_session(struct ssh *);
-int	 auth_authorise_keyopts(struct passwd *pw, struct sshauthopt *, int,
-    const char *, const char *, const char *);
 void	 auth_log_authopts(const char *, const struct sshauthopt *, int);
 
 /* debug messages during authentication */
@@ -227,6 +225,10 @@ void	 auth_debug_send(struct ssh *);
 void	 auth_debug_reset(void);
 
 struct passwd *fakepw(void);
+
+/* auth2-pubkeyfile.c */
+int	 auth_authorise_keyopts(struct passwd *, struct sshauthopt *, int,
+    const char *, const char *, const char *);
 
 int	 sys_auth_passwd(struct ssh *, const char *);
 
