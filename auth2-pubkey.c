@@ -585,6 +585,9 @@ static int
 check_authkey_line(struct ssh *ssh, struct passwd *pw, struct sshkey *key,
     char *cp, const char *loc, struct sshauthopt **authoptsp)
 {
+	const char *remote_ip = ssh_remote_ipaddr(ssh);
+	const char *remote_host = auth_get_canonical_hostname(ssh,
+	    options.use_dns);
 	int want_keytype = sshkey_is_cert(key) || sshkey_is_x509(key)
 		? KEY_UNSPEC : key->type;
 	struct sshkey *found = NULL;
@@ -659,8 +662,8 @@ check_authkey_line(struct ssh *ssh, struct passwd *pw, struct sshkey *key,
 	debug("%s: matching %s found: %s %s", loc,
 	    sshkey_is_cert(key) ? "CA" : "key", sshkey_type(found), fp);
 
-	if (auth_authorise_keyopts(ssh, pw, keyopts,
-	    sshkey_is_cert(key), loc) != 0) {
+	if (auth_authorise_keyopts(pw, keyopts,
+	    sshkey_is_cert(key), remote_ip, remote_host, loc) != 0) {
 		reason = "Refused by key options";
 		goto fail_reason;
 	}
@@ -690,7 +693,8 @@ check_authkey_line(struct ssh *ssh, struct passwd *pw, struct sshkey *key,
 		reason = "Invalid certificate options";
 		goto fail_reason;
 	}
-	if (auth_authorise_keyopts(ssh, pw, certopts, 0, loc) != 0) {
+	if (auth_authorise_keyopts(pw, certopts, 0,
+	    remote_ip, remote_host, loc) != 0) {
 		reason = "Refused by certificate options";
 		goto fail_reason;
 	}
@@ -784,6 +788,9 @@ static int
 user_cert_trusted_ca(struct ssh *ssh, struct passwd *pw, struct sshkey *key,
     struct sshauthopt **authoptsp)
 {
+	const char *remote_ip = ssh_remote_ipaddr(ssh);
+	const char *remote_host = auth_get_canonical_hostname(ssh,
+	    options.use_dns);
 	char *ca_fp, *principals_file = NULL;
 	const char *reason;
 	struct sshauthopt *principals_opts = NULL, *cert_opts = NULL;
@@ -839,7 +846,8 @@ user_cert_trusted_ca(struct ssh *ssh, struct passwd *pw, struct sshkey *key,
 		reason = "Invalid certificate options";
 		goto fail_reason;
 	}
-	if (auth_authorise_keyopts(ssh, pw, cert_opts, 0, "cert") != 0) {
+	if (auth_authorise_keyopts(pw, cert_opts, 0,
+	    remote_ip, remote_host, "cert") != 0) {
 		reason = "Refused by certificate options";
 		goto fail_reason;
 	}
@@ -847,8 +855,8 @@ user_cert_trusted_ca(struct ssh *ssh, struct passwd *pw, struct sshkey *key,
 		final_opts = cert_opts;
 		cert_opts = NULL;
 	} else {
-		if (auth_authorise_keyopts(ssh, pw, principals_opts, 0,
-		    "principals") != 0) {
+		if (auth_authorise_keyopts(pw, principals_opts, 0,
+		    remote_ip, remote_host, "principals") != 0) {
 			reason = "Refused by certificate principals options";
 			goto fail_reason;
 		}

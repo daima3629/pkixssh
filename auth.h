@@ -1,5 +1,4 @@
-/* $OpenBSD: auth.h,v 1.101 2020/12/22 00:12:22 djm Exp $ */
-
+/* $OpenBSD: auth.h,v 1.103 2022/05/27 05:01:25 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  *
@@ -217,8 +216,8 @@ int	Xsshd_hostkey_sign(struct ssh *ssh, ssh_sign_ctx *ctx, struct sshkey *pubkey
 const struct sshauthopt *auth_options(struct ssh *);
 int	 auth_activate_options(struct ssh *, struct sshauthopt *);
 void	 auth_restrict_session(struct ssh *);
-int	 auth_authorise_keyopts(struct ssh *, struct passwd *pw,
-    struct sshauthopt *, int, const char *);
+int	 auth_authorise_keyopts(struct passwd *pw, struct sshauthopt *, int,
+    const char *, const char *, const char *);
 void	 auth_log_authopts(const char *, const struct sshauthopt *, int);
 
 /* debug messages during authentication */
