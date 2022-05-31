@@ -1,4 +1,4 @@
-/* $OpenBSD: auth2-pubkey.c,v 1.113 2022/02/27 01:33:59 naddy Exp $ */
+/* $OpenBSD: auth2-pubkey.c,v 1.114 2022/05/27 05:01:25 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2003-2022 Roumen Petrov.  All rights reserved.
@@ -582,12 +582,10 @@ match_principals_command(struct passwd *user_pw,
  * on success. "loc" is used as file/line location in log messages.
  */
 static int
-check_authkey_line(struct ssh *ssh, struct passwd *pw, struct sshkey *key,
-    char *cp, const char *loc, struct sshauthopt **authoptsp)
+check_authkey_line(struct passwd *pw, struct sshkey *key,
+    char *cp, const char *remote_ip, const char *remote_host, const char *loc,
+    struct sshauthopt **authoptsp)
 {
-	const char *remote_ip = ssh_remote_ipaddr(ssh);
-	const char *remote_host = auth_get_canonical_hostname(ssh,
-	    options.use_dns);
 	int want_keytype = sshkey_is_cert(key) || sshkey_is_x509(key)
 		? KEY_UNSPEC : key->type;
 	struct sshkey *found = NULL;
@@ -750,8 +748,9 @@ check_authkey_line(struct ssh *ssh, struct passwd *pw, struct sshkey *key,
  * returns 1 if the key is allowed or 0 otherwise.
  */
 static int
-check_authkeys_file(struct ssh *ssh, struct passwd *pw, FILE *f,
-    char *file, struct sshkey *key, struct sshauthopt **authoptsp)
+check_authkeys_file(struct passwd *pw, FILE *f, char *file,
+    struct sshkey *key, const char *remote_ip,
+    const char *remote_host, struct sshauthopt **authoptsp)
 {
 	char *cp, *line = NULL, loc[256];
 	size_t linesize = 0;
@@ -775,7 +774,8 @@ check_authkeys_file(struct ssh *ssh, struct passwd *pw, FILE *f,
 
 		nonblank++;
 		snprintf(loc, sizeof(loc), "%.200s:%lu", file, linenum);
-		if (check_authkey_line(ssh, pw, key, cp, loc, authoptsp) == 0)
+		if (check_authkey_line(pw, key, cp,
+		    remote_ip, remote_host, loc, authoptsp) == 0)
 			found_key = 1;
 	}
 	free(line);
@@ -785,12 +785,10 @@ check_authkeys_file(struct ssh *ssh, struct passwd *pw, FILE *f,
 
 /* Authenticate a certificate key against TrustedUserCAKeys */
 static int
-user_cert_trusted_ca(struct ssh *ssh, struct passwd *pw, struct sshkey *key,
+user_cert_trusted_ca(struct passwd *pw, struct sshkey *key,
+    const char *remote_ip, const char *remote_host,
     struct sshauthopt **authoptsp)
 {
-	const char *remote_ip = ssh_remote_ipaddr(ssh);
-	const char *remote_host = auth_get_canonical_hostname(ssh,
-	    options.use_dns);
 	char *ca_fp, *principals_file = NULL;
 	const char *reason;
 	struct sshauthopt *principals_opts = NULL, *cert_opts = NULL;
@@ -894,8 +892,9 @@ user_cert_trusted_ca(struct ssh *ssh, struct passwd *pw, struct sshkey *key,
  * returns 1 if the key is allowed or 0 otherwise.
  */
 static int
-user_key_allowed2(struct ssh *ssh, struct passwd *pw, struct sshkey *key,
-    char *file, struct sshauthopt **authoptsp)
+user_key_allowed2(struct passwd *pw, struct sshkey *key,
+    char *file, const char *remote_ip, const char *remote_host,
+    struct sshauthopt **authoptsp)
 {
 	FILE *f;
 	int found_key = 0;
@@ -908,8 +907,8 @@ user_key_allowed2(struct ssh *ssh, struct passwd *pw, struct sshkey *key,
 
 	debug("trying public key file %s", file);
 	if ((f = auth_openkeyfile(file, pw, options.strict_modes)) != NULL) {
-		found_key = check_authkeys_file(ssh, pw, f, file,
-		    key, authoptsp);
+		found_key = check_authkeys_file(pw, f, file,
+		    key, remote_ip, remote_host, authoptsp);
 		fclose(f);
 	}
 
@@ -922,8 +921,9 @@ user_key_allowed2(struct ssh *ssh, struct passwd *pw, struct sshkey *key,
  * returns 1 if the key is allowed or 0 otherwise.
  */
 static int
-user_key_command_allowed2(struct ssh *ssh, struct passwd *user_pw,
-    struct sshkey *key, struct sshauthopt **authoptsp)
+user_key_command_allowed2(struct passwd *user_pw, struct sshkey *key,
+    const char *remote_ip, const char *remote_host,
+    struct sshauthopt **authoptsp)
 {
 	struct passwd *runas_pw = NULL;
 	FILE *f = NULL;
@@ -1023,8 +1023,9 @@ user_key_command_allowed2(struct ssh *ssh, struct passwd *user_pw,
 	uid_swapped = 1;
 	temporarily_use_uid(runas_pw);
 
-	ok = check_authkeys_file(ssh, user_pw, f,
-	    options.authorized_keys_command, key, authoptsp);
+	ok = check_authkeys_file(user_pw, f,
+	    options.authorized_keys_command, key, remote_ip,
+	    remote_host, authoptsp);
 
 	fclose(f);
 	f = NULL;
@@ -1055,6 +1056,9 @@ int
 user_xkey_allowed(struct ssh *ssh, struct passwd *pw, ssh_verify_ctx *ctx,
     int auth_attempt, struct sshauthopt **authoptsp)
 {
+	const char *remote_ip = ssh_remote_ipaddr(ssh);
+	const char *remote_host = auth_get_canonical_hostname(ssh,
+	    options.use_dns);
 	struct sshkey *key = ctx->key;
 	u_int success, i;
 	char *file;
@@ -1079,19 +1083,21 @@ user_xkey_allowed(struct ssh *ssh, struct passwd *pw, ssh_verify_ctx *ctx,
 			continue;
 		file = expand_authorized_keys(
 		    options.authorized_keys_files[i], pw);
-		success = user_key_allowed2(ssh, pw, key, file, &opts);
+		success = user_key_allowed2(pw, key, file,
+		    remote_ip, remote_host, &opts);
 		free(file);
 		if (success) goto out;
 		sshauthopt_free(opts);
 		opts = NULL;
 	}
 
-	success = user_cert_trusted_ca(ssh, pw, key, &opts);
+	success = user_cert_trusted_ca(pw, key, remote_ip, remote_host, &opts);
 	if (success) goto out;
 	sshauthopt_free(opts);
 	opts = NULL;
 
-	success = user_key_command_allowed2(ssh, pw, key, &opts);
+	success = user_key_command_allowed2(pw, key, remote_ip, remote_host,
+	    &opts);
 
  out:
 	if (success &&
