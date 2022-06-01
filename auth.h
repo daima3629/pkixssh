@@ -2,7 +2,7 @@
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  *
- * Copyright (c) 2014-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2014-2022 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -135,8 +135,8 @@ int      auth_password(struct ssh *, const char *);
 
 int	 hostbased_xkey_allowed(struct ssh *, struct passwd *, ssh_verify_ctx *,
 	     const char *, char *);
-int	 user_xkey_allowed(struct ssh *, struct passwd *, ssh_verify_ctx *, int,
-	     struct sshauthopt **);
+int	 user_xkey_allowed(struct passwd *, ssh_verify_ctx *, int,
+	     const char *, const char *, struct sshauthopt **);
 
 int	 auth2_key_already_used(Authctxt *, const struct sshkey *);
 
