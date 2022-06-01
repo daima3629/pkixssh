@@ -1,4 +1,4 @@
-/* $OpenBSD: auth2-pubkey.c,v 1.114 2022/05/27 05:01:25 djm Exp $ */
+/* $OpenBSD: auth2-pubkey.c,v 1.115 2022/05/27 05:02:46 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2003-2022 Roumen Petrov.  All rights reserved.
@@ -27,11 +27,9 @@
 #include "includes.h"
 
 #include <sys/types.h>
-#include <sys/stat.h>
 
 #include <stdlib.h>
 #include <errno.h>
-#include <fcntl.h>
 #ifdef HAVE_PATHS_H
 # include <paths.h>
 #endif
@@ -265,26 +263,6 @@ done:
 }
 
 static int
-match_principals_option(const char *principal_list, struct sshkey_cert *cert)
-{
-	char *result;
-	u_int i;
-
-	/* XXX percent_expand() sequences for authorized_principals? */
-
-	for (i = 0; i < cert->nprincipals; i++) {
-		if ((result = match_list(cert->principals[i],
-		    principal_list, NULL)) != NULL) {
-			debug3("matched principal from key options \"%.100s\"",
-			    result);
-			free(result);
-			return 1;
-		}
-	}
-	return 0;
-}
-
-static int
 match_principals_file(struct passwd *pw, char *file,
     struct sshkey_cert *cert, struct sshauthopt **authoptsp)
 {
@@ -304,47 +282,6 @@ match_principals_file(struct passwd *pw, char *file,
 	fclose(f);
 	restore_uid();
 	return success;
-}
-
-static int
-key_match(const struct sshkey *key, const struct sshkey *found) {
-	/* key without X.509 identity - see check_authkey_line */
-	if (sshkey_is_x509(found)) return 0;
-
-	return sshkey_equal(key, found);
-}
-
-static int
-x509_match(const struct sshkey *key, const struct sshkey *found) {
-	/* key always is a X.509 identity - see check_authkey_line */
-	if (found == NULL)
-		return 0;
-
-	if (sshkey_is_x509(found)) {
-		if (!sshkey_equal_public(key, found))
-			return 0;
-
-		debug3_f("found matching certificate");
-		/* If self-issued is not enabled only verification
-		   process can allow received certificate. */
-		if (!ssh_x509flags.key_allow_selfissued) return 1;
-
-	{	/* The public key or X.509 certificate found in
-		   authorized keys file can allow self-issued. */
-		X509 *x = SSH_X509_get_cert(key->x509_data);
-		if (!ssh_X509_is_selfissued(x)) return 1;
-	}
-
-		/* If self-issued can be authorized (and allowed)
-		   by public key-material */
-	}
-
-	/* Note a X.509 certificate can be allowed by public key.
-	 * Also manage case for self-issued.
-	 * Code is same as sshkey_equal_public but without
-	 * compare by distinguished name.
-	 */
-	return sshkey_equal_public_pkey(key, found);
 }
 
 /*
@@ -482,213 +419,6 @@ match_principals_command(struct passwd *user_pw,
 	return found_principal;
 }
 
-/*
- * Check a single line of an authorized_keys-format file. Returns 0 if key
- * matches, -1 otherwise. Will return key/cert options via *authoptsp
- * on success. "loc" is used as file/line location in log messages.
- */
-static int
-check_authkey_line(struct passwd *pw, struct sshkey *key,
-    char *cp, const char *remote_ip, const char *remote_host, const char *loc,
-    struct sshauthopt **authoptsp)
-{
-	int want_keytype = sshkey_is_cert(key) || sshkey_is_x509(key)
-		? KEY_UNSPEC : key->type;
-	struct sshkey *found = NULL;
-	struct sshauthopt *keyopts = NULL, *certopts = NULL, *finalopts = NULL;
-	char *key_options = NULL, *fp = NULL;
-	const char *reason = NULL;
-	int ret = -1;
-
-	if (authoptsp != NULL)
-		*authoptsp = NULL;
-
-	if ((found = sshkey_new(want_keytype)) == NULL) {
-		debug3_f("keytype %d failed", want_keytype);
-		goto out;
-	}
-
-	/* XXX djm: peek at key type in line and skip if unwanted */
-
-	if (sshkey_read(found, &cp) != 0) {
-		/* no key?  check for options */
-		debug2("%s: check options: '%s'", loc, cp);
-		key_options = cp;
-		if (sshkey_advance_past_options(&cp) != 0) {
-			reason = "invalid key option string";
-			goto fail_reason;
-		}
-		skip_space(&cp);
-		if (sshkey_read(found, &cp) != 0) {
-			/* still no key?  advance to next line*/
-			debug2("%s: advance: '%s'", loc, cp);
-			goto out;
-		}
-	}
-	/* Parse key options now; we need to know if this is a CA key */
-	if ((keyopts = sshauthopt_parse(key_options, &reason)) == NULL) {
-		debug("%s: bad key options: %s", loc, reason);
-		auth_debug_add("%s: bad key options: %s", loc, reason);
-		goto out;
-	}
-	/* Ignore keys that don't match or incorrectly marked as CAs */
-	if (sshkey_is_cert(key)) {
-		/* Certificate; check signature key against CA */
-		if (!sshkey_equal(found, key->cert->signature_key) ||
-		    !keyopts->cert_authority)
-			goto out;
-	} else if (sshkey_is_x509(key)) {
-		/* Variable key always contain public key or
-		 * certificate. In case of X.509 certificate
-		 * x509 attribute of Key structure "found"
-		 * may contain only "Distinguished Name" !
-		 */
-		if (!x509_match(key, found))
-			goto out;
-	} else {
-		/* Plain key: check it against key found in file */
-		if (!key_match(key, found) || keyopts->cert_authority)
-			goto out;
-	}
-
-	/* We have a candidate key, perform authorisation checks */
-	fp = sshkey_is_x509(found)
-		? x509key_subject(found)
-		: sshkey_fingerprint(found, options.fingerprint_hash, SSH_FP_DEFAULT);
-	if (fp == NULL) {
-		if (sshkey_is_x509(found))
-			error_f("extract of X.509 distinguished name failed");
-		else
-			error_f("fingerprint failed");
-		goto out;
-	}
-
-	debug("%s: matching %s found: %s %s", loc,
-	    sshkey_is_cert(key) ? "CA" : "key", sshkey_type(found), fp);
-
-	if (auth_authorise_keyopts(pw, keyopts,
-	    sshkey_is_cert(key), remote_ip, remote_host, loc) != 0) {
-		reason = "Refused by key options";
-		goto fail_reason;
-	}
-
-	if (sshkey_is_x509(key)) {
-		verbose("Authorized by %s : %s", sshkey_type(found), fp);
-		finalopts = keyopts;
-		keyopts = NULL;
-		goto success;
-	}
-
-	/* That's all we need for plain keys. */
-	if (!sshkey_is_cert(key)) {
-		verbose("Accepted key %s %s found at %s",
-		    sshkey_type(found), fp, loc);
-		finalopts = keyopts;
-		keyopts = NULL;
-		goto success;
-	}
-
-	/*
-	 * Additional authorisation for certificates.
-	 */
-
-	/* Parse and check options present in certificate */
-	if ((certopts = sshauthopt_from_cert(key)) == NULL) {
-		reason = "Invalid certificate options";
-		goto fail_reason;
-	}
-	if (auth_authorise_keyopts(pw, certopts, 0,
-	    remote_ip, remote_host, loc) != 0) {
-		reason = "Refused by certificate options";
-		goto fail_reason;
-	}
-	if ((finalopts = sshauthopt_merge(keyopts, certopts, &reason)) == NULL)
-		goto fail_reason;
-
-	/*
-	 * If the user has specified a list of principals as
-	 * a key option, then prefer that list to matching
-	 * their username in the certificate principals list.
-	 */
-	if (keyopts->cert_principals != NULL &&
-	    !match_principals_option(keyopts->cert_principals, key->cert)) {
-		reason = "Certificate does not contain an authorized principal";
-		goto fail_reason;
-	}
-	if (sshkey_cert_check_authority_now(key, 0, 0, 0,
-	    keyopts->cert_principals == NULL ? pw->pw_name : NULL,
-	    &reason) != 0)
-		goto fail_reason;
-
-	verbose("Accepted certificate ID \"%s\" (serial %llu) "
-	    "signed by CA %s %s found at %s",
-	    key->cert->key_id,
-	    (unsigned long long)key->cert->serial,
-	    sshkey_type(found), fp, loc);
-
- success:
-	if (finalopts == NULL)
-		fatal_f("internal error: missing options");
-	if (authoptsp != NULL) {
-		*authoptsp = finalopts;
-		finalopts = NULL;
-	}
-	/* success */
-	ret = 0;
-	goto out;
-
- fail_reason:
-	error("%s", reason);
-	auth_debug_add("%s", reason);
- out:
-	free(fp);
-	sshauthopt_free(keyopts);
-	sshauthopt_free(certopts);
-	sshauthopt_free(finalopts);
-	sshkey_free(found);
-	return ret;
-}
-
-/*
- * Checks whether key is allowed in authorized_keys-format file,
- * returns 1 if the key is allowed or 0 otherwise.
- */
-static int
-check_authkeys_file(struct passwd *pw, FILE *f, char *file,
-    struct sshkey *key, const char *remote_ip,
-    const char *remote_host, struct sshauthopt **authoptsp)
-{
-	char *cp, *line = NULL, loc[256];
-	size_t linesize = 0;
-	int found_key = 0;
-	u_long linenum = 0, nonblank = 0;
-
-	if (authoptsp != NULL)
-		*authoptsp = NULL;
-
-	while (getline(&line, &linesize, f) != -1) {
-		linenum++;
-		/* Always consume entire file */
-		if (found_key)
-			continue;
-
-		/* Skip leading whitespace, empty and comment lines. */
-		cp = line;
-		skip_space(&cp);
-		if (!*cp || *cp == '\n' || *cp == '#')
-			continue;
-
-		nonblank++;
-		snprintf(loc, sizeof(loc), "%.200s:%lu", file, linenum);
-		if (check_authkey_line(pw, key, cp,
-		    remote_ip, remote_host, loc, authoptsp) == 0)
-			found_key = 1;
-	}
-	free(line);
-	debug2_f("%s: processed %lu/%lu lines", file, nonblank, linenum);
-	return found_key;
-}
-
 /* Authenticate a certificate key against TrustedUserCAKeys */
 static int
 user_cert_trusted_ca(struct passwd *pw, struct sshkey *key,
@@ -813,7 +543,7 @@ user_key_allowed2(struct passwd *pw, struct sshkey *key,
 
 	debug("trying public key file %s", file);
 	if ((f = auth_openkeyfile(file, pw, options.strict_modes)) != NULL) {
-		found_key = check_authkeys_file(pw, f, file,
+		found_key = auth_check_authkeys_file(pw, f, file,
 		    key, remote_ip, remote_host, authoptsp);
 		fclose(f);
 	}
@@ -929,7 +659,7 @@ user_key_command_allowed2(struct passwd *user_pw, struct sshkey *key,
 	uid_swapped = 1;
 	temporarily_use_uid(runas_pw);
 
-	ok = check_authkeys_file(user_pw, f,
+	ok = auth_check_authkeys_file(user_pw, f,
 	    options.authorized_keys_command, key, remote_ip,
 	    remote_host, authoptsp);
 
