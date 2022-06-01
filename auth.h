@@ -30,6 +30,7 @@
 #define AUTH_H
 
 #include <signal.h>
+#include <stdio.h>
 
 #ifdef HAVE_LOGIN_CAP
 #include <login_cap.h>
@@ -45,6 +46,7 @@ struct passwd;
 struct ssh;
 struct sshbuf;
 struct sshkey;
+struct sshkey_cert;
 struct sshauthopt;
 
 typedef struct Authctxt Authctxt;
@@ -229,6 +231,8 @@ struct passwd *fakepw(void);
 /* auth2-pubkeyfile.c */
 int	 auth_authorise_keyopts(struct passwd *, struct sshauthopt *, int,
     const char *, const char *, const char *);
+int	 auth_process_principals(FILE *, const char *,
+    const struct sshkey_cert *, struct sshauthopt **);
 
 int	 sys_auth_passwd(struct ssh *, const char *);
 

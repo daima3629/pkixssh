@@ -143,3 +143,95 @@ auth_authorise_keyopts(struct passwd *pw, struct sshauthopt *opts,
 
 	return 0;
 }
+
+/*
+ * Process a single authorized_principals format line. Returns 0 and sets
+ * authoptsp is principal is authorised, -1 otherwise. "loc" is used as a
+ * log preamble for file/line information.
+ */
+static int
+auth_check_principals_line(char *cp, const struct sshkey_cert *cert,
+    const char *loc, struct sshauthopt **authoptsp)
+{
+	u_int i, found = 0;
+	char *ep, *line_opts;
+	const char *reason = NULL;
+	struct sshauthopt *opts = NULL;
+
+	if (authoptsp != NULL)
+		*authoptsp = NULL;
+
+	/* Trim trailing whitespace. */
+	ep = cp + strlen(cp) - 1;
+	while (ep > cp && (*ep == '\n' || *ep == ' ' || *ep == '\t'))
+		*ep-- = '\0';
+
+	/*
+	 * If the line has internal whitespace then assume it has
+	 * key options.
+	 */
+	line_opts = NULL;
+	if ((ep = strrchr(cp, ' ')) != NULL ||
+	    (ep = strrchr(cp, '\t')) != NULL) {
+		for (; *ep == ' ' || *ep == '\t'; ep++)
+			;
+		line_opts = cp;
+		cp = ep;
+	}
+	if ((opts = sshauthopt_parse(line_opts, &reason)) == NULL) {
+		debug("%s: bad principals options: %s", loc, reason);
+		auth_debug_add("%s: bad principals options: %s", loc, reason);
+		return -1;
+	}
+	/* Check principals in cert against those on line */
+	for (i = 0; i < cert->nprincipals; i++) {
+		if (strcmp(cp, cert->principals[i]) != 0)
+			continue;
+		debug3("%s: matched principal \"%.100s\"",
+		    loc, cert->principals[i]);
+		found = 1;
+	}
+	if (found && authoptsp != NULL) {
+		*authoptsp = opts;
+		opts = NULL;
+	}
+	sshauthopt_free(opts);
+	return found ? 0 : -1;
+}
+
+int
+auth_process_principals(FILE *f, const char *file,
+    const struct sshkey_cert *cert, struct sshauthopt **authoptsp)
+{
+	char loc[256], *line = NULL, *cp, *ep;
+	size_t linesize = 0;
+	u_long linenum = 0, nonblank = 0;
+	u_int found_principal = 0;
+
+	if (authoptsp != NULL)
+		*authoptsp = NULL;
+
+	while (getline(&line, &linesize, f) != -1) {
+		linenum++;
+		/* Always consume entire input */
+		if (found_principal)
+			continue;
+
+		/* Skip leading whitespace. */
+		for (cp = line; *cp == ' ' || *cp == '\t'; cp++)
+			;
+		/* Skip blank and comment lines. */
+		if ((ep = strchr(cp, '#')) != NULL)
+			*ep = '\0';
+		if (!*cp || *cp == '\n')
+			continue;
+
+		nonblank++;
+		snprintf(loc, sizeof(loc), "%.200s:%lu", file, linenum);
+		if (auth_check_principals_line(cp, cert, loc, authoptsp) == 0)
+			found_principal = 1;
+	}
+	debug2_f("%s: processed %lu/%lu lines", file, nonblank, linenum);
+	free(line);
+	return found_principal;
+}
