@@ -249,11 +249,11 @@ manually using the following commands:
 
     ssh-keygen -t [type] -f /etc/ssh/ssh_host_key -N ""
 
-for each of the types you wish to generate (rsa, dsa or ecdsa) or
+for each of the types you wish to generate (rsa, ecdsa, ed25519 or dsa) or
 
     ssh-keygen -A
 
-to generate keys for all supported types.
+to generate keys for default types.
 
 Replacing /etc/ssh with the correct path to the configuration directory.
 (${prefix}/etc or whatever you specified with --sysconfdir during

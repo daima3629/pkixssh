@@ -1,4 +1,4 @@
-.\"	$OpenBSD: ssh-keygen.1,v 1.220 2022/02/06 00:29:03 jsg Exp $
+.\"	$OpenBSD: ssh-keygen.1,v 1.223 2022/06/03 03:17:42 dtucker Exp $
 .\"
 .\" Author: Tatu Ylonen <ylo@cs.hut.fi>
 .\" Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -44,7 +44,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: February 6 2022 $
+.Dd $Mdocdate: June 3 2022 $
 .Dt SSH-KEYGEN 1
 .Os
 .Sh NAME
@@ -249,9 +249,9 @@ should be placed to be activated.
 The options are as follows:
 .Bl -tag -width Ds
 .It Fl A
-For each of the key types (rsa, dsa, ecdsa and ed25519)
-for which host keys
-do not exist, generate the host keys with the default key file path,
+Generate host keys of all default key types (rsa, ecdsa, and
+ed25519) if they do not already exist.
+The host keys are generated with the default key file path,
 an empty passphrase, default bits for the key type, and default comment.
 If
 .Fl f
