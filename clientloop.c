@@ -1,4 +1,4 @@
-/* $OpenBSD: clientloop.c,v 1.377 2022/01/21 07:04:19 djm Exp $ */
+/* $OpenBSD: clientloop.c,v 1.380 2022/06/03 04:30:46 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -2537,7 +2537,8 @@ client_session2_setup(struct ssh *ssh, int id, int want_tty, int want_subsystem,
     const char *term, struct termios *tiop, int in_fd, struct sshbuf *cmd,
     char **env)
 {
-	int i, j, matched, len, r;
+	u_int i, j;
+	int matched, r;
 	char *name, *val;
 	Channel *c = NULL;
 
@@ -2614,19 +2615,19 @@ client_session2_setup(struct ssh *ssh, int id, int want_tty, int want_subsystem,
 		free(name);
 	}
 
-	len = sshbuf_len(cmd);
+{	size_t len = sshbuf_len(cmd);
 	if (len > 0) {
 		if (len > 900)
 			len = 900;
 		if (want_subsystem) {
 			debug("Sending subsystem: %.*s",
-			    len, sshbuf_ptr(cmd));
+			    (int)len, sshbuf_ptr(cmd));
 			channel_request_start(ssh, id, "subsystem", 1);
 			client_expect_confirm(ssh, id, "subsystem",
 			    CONFIRM_CLOSE);
 		} else {
 			debug("Sending command: %.*s",
-			    len, sshbuf_ptr(cmd));
+			    (int)len, sshbuf_ptr(cmd));
 			channel_request_start(ssh, id, "exec", 1);
 			client_expect_confirm(ssh, id, "exec", CONFIRM_CLOSE);
 		}
@@ -2639,6 +2640,7 @@ client_session2_setup(struct ssh *ssh, int id, int want_tty, int want_subsystem,
 		if ((r = sshpkt_send(ssh)) != 0)
 			fatal_fr(r, "send shell");
 	}
+}
 }
 
 static void

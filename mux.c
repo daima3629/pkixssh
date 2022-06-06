@@ -1,4 +1,4 @@
-/* $OpenBSD: mux.c,v 1.93 2022/05/05 00:55:11 djm Exp $ */
+/* $OpenBSD: mux.c,v 1.94 2022/06/03 04:30:47 djm Exp $ */
 /*
  * Copyright (c) 2002-2008 Damien Miller <djm@openbsd.org>
  * Copyright (c) 2018-2021 Roumen Petrov.  All rights reserved.
@@ -241,7 +241,8 @@ mux_master_control_cleanup_cb(struct ssh *ssh, int cid, void *arg)
 static int
 env_permitted(const char *env)
 {
-	int i, matched, ret;
+	u_int i;
+	int matched, ret;
 	char name[1024], *cp;
 
 	if ((cp = strchr(env, '=')) == NULL || cp == env)
@@ -1875,7 +1876,8 @@ mux_client_request_session(int fd)
 	const char *term;
 	u_int32_t echar, type, rid, sid, esid, exitval;
 	extern char **environ;
-	int r, i, rawmode, exitval_seen;
+	u_int i;
+	int r, rawmode, exitval_seen;
 
 	debug3_f("entering");
 

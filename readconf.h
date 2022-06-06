@@ -1,4 +1,4 @@
-/* $OpenBSD: readconf.h,v 1.145 2021/09/15 06:56:01 djm Exp $ */
+/* $OpenBSD: readconf.h,v 1.147 2022/06/03 04:30:47 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -146,10 +146,10 @@ typedef struct {
 	int	server_alive_interval;
 	int	server_alive_count_max;
 
-	int     num_send_env;
-	char   **send_env;
-	int     num_setenv;
-	char   **setenv;
+	u_int	num_send_env;
+	char	**send_env;
+	u_int	num_setenv;
+	char	**setenv;
 
 	char	*control_path;
 	int	control_master;
