@@ -1652,9 +1652,7 @@ parse_key_algorithms:
 		break;
 
 	case oLogVerbose:
-		cppptr = &options->log_verbose;
-		uintptr = &options->num_log_verbose;
-		found = *uintptr > 0;
+		found = options->num_log_verbose > 0;
 		i = 0;
 		while ((arg = argv_next(&ac, &av)) != NULL) {
 			if (*arg == '\0') {
@@ -1672,11 +1670,11 @@ parse_key_algorithms:
 				}
 			}
 			i++;
-			if (*activep && !found) {
-				*cppptr = xrecallocarray(*cppptr, *uintptr,
-				    *uintptr + 1, sizeof(**cppptr));
-				(*cppptr)[(*uintptr)++] = xstrdup(arg);
-			}
+			if (!*activep || found)
+				continue;
+			opt_array_append(filename, linenum,
+			    lookup_opcode_name(opcode),
+			    &options->log_verbose, &options->num_log_verbose, arg);
 		}
 		break;
 
@@ -1913,17 +1911,9 @@ parse_key_algorithms:
 			}
 			if (!*activep)
 				continue;
-			if (options->num_send_env >= INT_MAX) {
-				error("%s line %d: too many send env.",
-				    filename, linenum);
-				goto out;
-			}
-			options->send_env = xrecallocarray(
-			    options->send_env, options->num_send_env,
-			    options->num_send_env + 1,
-			    sizeof(*options->send_env));
-			options->send_env[options->num_send_env++] =
-			    xstrdup(arg);
+			opt_array_append(filename, linenum,
+			    lookup_opcode_name(opcode),
+			    &options->send_env, &options->num_send_env, arg);
 		}
 		break;
 
@@ -1942,16 +1932,9 @@ parse_key_algorithms:
 			}
 			if (!*activep || found)
 				continue;
-			/* Adding a setenv var */
-			if (options->num_setenv >= INT_MAX) {
-				error("%s line %d: too many SetEnv.",
-				    filename, linenum);
-				goto out;
-			}
-			options->setenv = xrecallocarray(
-			    options->setenv, options->num_setenv,
-			    options->num_setenv + 1, sizeof(*options->setenv));
-			options->setenv[options->num_setenv++] = xstrdup(arg);
+			opt_array_append(filename, linenum,
+			    lookup_opcode_name(opcode),
+			    &options->setenv, &options->num_setenv, arg);
 		}
 		break;
 
