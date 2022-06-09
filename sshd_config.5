@@ -20,7 +20,7 @@
 .\" Copyright (c) 1999,2000 Markus Friedl.  All rights reserved.
 .\" Copyright (c) 1999 Aaron Campbell.  All rights reserved.
 .\" Copyright (c) 1999 Theo de Raadt.  All rights reserved.
-.\" Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
+.\" Copyright (c) 2002-2022 Roumen Petrov.  All rights reserved.
 .\"
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions
@@ -42,8 +42,8 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: sshd_config.5,v 1.340 2022/03/31 17:58:44 naddy Exp $
-.Dd $Mdocdate: March 31 2022 $
+.\" $OpenBSD: sshd_config.5,v 1.341 2022/04/12 05:09:49 dtucker Exp $
+.Dd $Mdocdate: April 12 2022 $
 .Dt SSHD_CONFIG 5
 .Os
 .Sh NAME
@@ -1705,6 +1705,10 @@ by
 .Xr sshd 8
 as
 .Dq NAME=VALUE .
+Variables and their contents are specified as pattern-list.
+Lists may be separated by whitespace or spread across multiple
+.Cm SetEnv
+directives.
 The environment value may be quoted (e.g. if it contains whitespace
 characters).
 Environment variables set by

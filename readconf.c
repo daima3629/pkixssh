@@ -1,4 +1,4 @@
-/* $OpenBSD: readconf.c,v 1.366 2022/02/08 08:59:12 dtucker Exp $ */
+/* $OpenBSD: readconf.c,v 1.368 2022/06/03 04:30:47 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -1918,7 +1918,6 @@ parse_key_algorithms:
 		break;
 
 	case oSetEnv:
-		found = options->num_setenv > 0;
 		while ((arg = argv_next(&ac, &av)) != NULL) {
 			if (*arg == '\0') {
 				error("%s line %d: keyword %s empty argument",
@@ -1930,8 +1929,14 @@ parse_key_algorithms:
 				    filename, linenum);
 				goto out;
 			}
-			if (!*activep || found)
+			if (!*activep)
 				continue;
+			if (lookup_setenv_in_list(arg, options->setenv,
+			    options->num_setenv) != NULL) {
+				debug2("%s line %d: ignoring duplicate env "
+				    "name \"%.64s\"", filename, linenum, arg);
+				continue;
+			}
 			opt_array_append(filename, linenum,
 			    lookup_opcode_name(opcode),
 			    &options->setenv, &options->num_setenv, arg);

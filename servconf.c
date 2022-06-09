@@ -1,4 +1,4 @@
-/* $OpenBSD: servconf.c,v 1.384 2022/03/18 04:04:11 djm Exp $ */
+/* $OpenBSD: servconf.c,v 1.385 2022/06/03 04:30:47 djm Exp $ */
 /*
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
@@ -2320,7 +2320,6 @@ parse_string:
 		break;
 
 	case sSetEnv:
-		found = options->num_setenv > 0;
 		while ((arg = argv_next(&ac, &av)) != NULL) {
 			if (*arg == '\0') {
 				error("%s line %d: keyword %s empty argument",
@@ -2332,8 +2331,14 @@ parse_string:
 				    filename, linenum);
 				goto out;
 			}
-			if (!*activep || found)
+			if (!*activep)
 				continue;
+			if (lookup_setenv_in_list(arg, options->setenv,
+			    options->num_setenv) != NULL) {
+				debug2("%s line %d: ignoring duplicate env "
+				    "name \"%.64s\"", filename, linenum, arg);
+				continue;
+			}
 			opt_array_append(filename, linenum, keyword,
 			    &options->setenv, &options->num_setenv, arg);
 		}

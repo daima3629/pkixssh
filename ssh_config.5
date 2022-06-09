@@ -1828,6 +1828,12 @@ option) or
 .It Cm SetEnv
 Directly specify one or more environment variables and their contents to
 be sent to the server.
+Variables and their contents are specified as pattern-list.
+Lists may be separated by whitespace or spread across multiple
+.Cm SetEnv
+directives.
+The environment value may be quoted (e.g. if it contains whitespace
+characters).
 Similarly to
 .Cm SendEnv ,
 with the exception of the
