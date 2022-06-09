@@ -2301,9 +2301,16 @@ parse_string:
 
 	case sAcceptEnv:
 		while ((arg = argv_next(&ac, &av)) != NULL) {
-			if (*arg == '\0' || strchr(arg, '=') != NULL)
-				fatal("%s line %d: Invalid environment name.",
+			if (*arg == '\0') {
+				error("%s line %d: keyword %s empty argument",
+				    filename, linenum, keyword);
+				goto out;
+			}
+			if (strchr(arg, '=') != NULL) {
+				error("%s line %d: Invalid environment name.",
 				    filename, linenum);
+				goto out;
+			}
 			if (!*activep)
 				continue;
 			opt_array_append(filename, linenum, keyword,
@@ -2315,9 +2322,16 @@ parse_string:
 	case sSetEnv:
 		found = options->num_setenv > 0;
 		while ((arg = argv_next(&ac, &av)) != NULL) {
-			if (*arg == '\0' || strchr(arg, '=') == NULL)
-				fatal("%s line %d: Invalid environment.",
+			if (*arg == '\0') {
+				error("%s line %d: keyword %s empty argument",
+				    filename, linenum, keyword);
+				goto out;
+			}
+			if (strchr(arg, '=') == NULL) {
+				error("%s line %d: Invalid environment name.",
 				    filename, linenum);
+				goto out;
+			}
 			if (!*activep || found)
 				continue;
 			opt_array_append(filename, linenum, keyword,

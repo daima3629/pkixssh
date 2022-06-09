@@ -1926,7 +1926,7 @@ parse_key_algorithms:
 				goto out;
 			}
 			if (strchr(arg, '=') == NULL) {
-				error("%s line %d: Invalid SetEnv.",
+				error("%s line %d: Invalid environment name.",
 				    filename, linenum);
 				goto out;
 			}
