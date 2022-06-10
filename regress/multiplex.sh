@@ -1,4 +1,4 @@
-#	$OpenBSD: multiplex.sh,v 1.33 2020/06/24 15:16:23 markus Exp $
+#	$OpenBSD: multiplex.sh,v 1.34 2022/06/03 04:31:54 djm Exp $
 #	Placed in the Public Domain.
 
 make_tmpdir
@@ -28,7 +28,8 @@ start_sshd
 start_mux_master()
 {
 	trace "start master, fork to background"
-	$SSH -Nn2 -MS$CTL -F $OBJ/ssh_config -oSendEnv="_XXX_TEST" somehost &
+	$SSH -Nn2 -MS$CTL -F $OBJ/ssh_config -oSendEnv="_XXX_TEST" somehost \
+	    -E $TEST_REGRESS_LOGFILE 2>&1  &
 	# NB. $SSH_PID will be killed by test-exec.sh:cleanup on fatal errors.
 	SSH_PID=$!
 	wait_for_mux_master_ready
@@ -36,12 +37,21 @@ start_mux_master()
 
 start_mux_master
 
+verbose "test $tid: setenv"
+trace "setenv over multiplexed connection"
+$SSH -F $OBJ/ssh_config -oSetEnv="_XXX_TEST=blah _XXX_TEST=blah1" -S$CTL otherhost sh << 'EOF'
+	test X"$_XXX_TEST" = X"blah"
+EOF
+if test $? -ne 0 ; then
+	fail "environment not set"
+fi
+
 verbose "test $tid: envpass"
 trace "env passing over multiplexed connection"
 _XXX_TEST=blah ${SSH} -F $OBJ/ssh_config -oSendEnv="_XXX_TEST" -S$CTL otherhost sh << 'EOF'
 	test X"$_XXX_TEST" = X"blah"
 EOF
-if [ $? -ne 0 ]; then
+if test $? -ne 0 ; then
 	fail "environment not found"
 fi
 
