@@ -28,6 +28,7 @@ survey.sh
 /ssh-keysign
 /ssh-pkcs11-helper
 /sshd
+/logintest
 
 # fipshmac: FIPS-140-2 checksum files
 /.ssh*.hmac
