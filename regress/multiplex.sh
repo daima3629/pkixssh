@@ -55,12 +55,22 @@ if test $? -ne 0 ; then
 	fail "environment not found"
 fi
 
-verbose "test $tid: pass TERM"
+if tty > /dev/null ; then
+verbose "test $tid: pass TERM (tty)"
+else
+verbose "test $tid: pass TERM (stdin)"
+fi
 trace "pass env TERM over multiplexed connection"
+(
+if tty ; then
+TERM=blah $SSH -F $OBJ/ssh_config -S$CTL -t otherhost \
+	'echo XXX${TERM}TEST'
+else
 echo "simulate some build environments where stdin is not tty" | \
 TERM=blah $SSH -F $OBJ/ssh_config -S$CTL -tt otherhost \
-	"echo XXX\${TERM}TEST" 2>>$TEST_REGRESS_LOGFILE | \
-	grep XXXblahTEST > /dev/null
+	'echo XXX${TERM}TEST'
+fi
+) 2>>$TEST_REGRESS_LOGFILE | grep XXXblahTEST > /dev/null
 if test $? -ne 0 ; then
 	fail "pass env TERM fail"
 fi

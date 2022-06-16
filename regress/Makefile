@@ -63,6 +63,7 @@ LTESTS=		connect \
 		reconfigure \
 		dynamic-forward \
 		forwarding \
+		multiplex \
 		reexec \
 		brokenkeys \
 		sshcfgparse \
@@ -95,8 +96,6 @@ LTESTS=		connect \
 		knownhosts \
 		knownhosts-command
 
-# in some environments fail regularly:
-#		multiplex \
 # portability:
 #		percent \
 # extra setup:
