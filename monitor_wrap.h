@@ -1,6 +1,6 @@
 #ifndef _MM_WRAP_H_
 #define _MM_WRAP_H_
-/* $OpenBSD: monitor_wrap.h,v 1.48 2022/05/27 05:01:25 djm Exp $ */
+/* $OpenBSD: monitor_wrap.h,v 1.49 2022/06/15 16:08:25 djm Exp $ */
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * All rights reserved.
@@ -55,8 +55,8 @@ void mm_inform_authserv(char *, char *);
 struct passwd *mm_getpwnamallow(struct ssh *, const char *);
 char *mm_auth2_read_banner(void);
 int mm_auth_password(struct ssh *, char *);
-int mm_user_xkey_allowed(struct passwd *, ssh_verify_ctx *, int,
-	const char *, const char *, struct sshauthopt **);
+int mm_user_xkey_allowed(struct ssh *, struct passwd *, ssh_verify_ctx *, int,
+	struct sshauthopt **);
 int mm_hostbased_xkey_allowed(struct ssh *, struct passwd *,
 	ssh_verify_ctx *, const char *, const char *);
 int mm_Xkey_verify(ssh_verify_ctx *ctx,

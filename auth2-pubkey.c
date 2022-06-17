@@ -1,4 +1,4 @@
-/* $OpenBSD: auth2-pubkey.c,v 1.115 2022/05/27 05:02:46 djm Exp $ */
+/* $OpenBSD: auth2-pubkey.c,v 1.116 2022/06/15 16:08:25 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2003-2022 Roumen Petrov.  All rights reserved.
@@ -119,9 +119,6 @@ userauth_pubkey(struct ssh *ssh)
 	int r, pktype;
 	int authenticated = 0;
 	struct sshauthopt *authopts = NULL;
-	const char *remote_ip = ssh_remote_ipaddr(ssh);
-	const char *remote_host = auth_get_canonical_hostname(ssh,
-	    options.use_dns);
 
 	if ((r = sshpkt_get_u8(ssh, &have_sig)) != 0 ||
 	    (r = sshpkt_get_cstring(ssh, &pkalg, NULL)) != 0 ||
@@ -209,8 +206,7 @@ userauth_pubkey(struct ssh *ssh)
 #endif
 		/* test for correct signature */
 		authenticated = 0;
-		if (PRIVSEP(user_xkey_allowed(pw, &ctx, 1, remote_ip,
-			remote_host, &authopts)) &&
+		if (PRIVSEP(user_xkey_allowed(ssh, pw, &ctx, 1, &authopts)) &&
 		    PRIVSEP(Xkey_verify(&ctx, sig, slen,
 			sshbuf_ptr(b), sshbuf_len(b))) == 0) {
 			authenticated = 1;
@@ -235,8 +231,7 @@ userauth_pubkey(struct ssh *ssh)
 		 * if a user is not allowed to login. is this an
 		 * issue? -markus
 		 */
-		if (PRIVSEP(user_xkey_allowed(pw, &ctx, 0, remote_ip,
-			remote_host, NULL))) {
+		if (PRIVSEP(user_xkey_allowed(ssh, pw, &ctx, 0, NULL))) {
 			if ((r = sshpkt_start(ssh, SSH2_MSG_USERAUTH_PK_OK))
 			    != 0 ||
 			    (r = sshpkt_put_cstring(ssh, pkalg)) != 0 ||
@@ -694,10 +689,12 @@ user_key_command_allowed2(struct passwd *user_pw, struct sshkey *key,
  * Check whether key authenticates and authorises the user.
  */
 int
-user_xkey_allowed(struct passwd *pw, ssh_verify_ctx *ctx,
-    int auth_attempt, const char *remote_ip, const char *remote_host,
-    struct sshauthopt **authoptsp)
+user_xkey_allowed(struct ssh *ssh, struct passwd *pw, ssh_verify_ctx *ctx,
+    int auth_attempt, struct sshauthopt **authoptsp)
 {
+	const char *remote_ip = ssh_remote_ipaddr(ssh);
+	const char *remote_host = auth_get_canonical_hostname(ssh,
+	    options.use_dns);
 	struct sshkey *key = ctx->key;
 	u_int success, i;
 	char *file;

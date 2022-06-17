@@ -1,4 +1,4 @@
-/* $OpenBSD: monitor.c,v 1.233 2022/05/27 05:01:25 djm Exp $ */
+/* $OpenBSD: monitor.c,v 1.234 2022/06/15 16:08:25 djm Exp $ */
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * Copyright 2002 Markus Friedl <markus@openbsd.org>
@@ -1173,14 +1173,9 @@ mm_answer_keyallowed(struct ssh *ssh, int sock, struct sshbuf *m)
 				break;
 			/* NOTE: algorithm is already allowed
 			   in user authentication request. */
-			{
-			const char *remote_ip = ssh_remote_ipaddr(ssh);
-			const char *remote_host = auth_get_canonical_hostname(
-			    ssh, options.use_dns);
 			/* TODO: cast to int, but auth_attempt is unused */
-			allowed = user_xkey_allowed(authctxt->pw, &ctx,
-			    pubkey_auth_attempt, remote_ip, remote_host, &opts);
-			}
+			allowed = user_xkey_allowed(ssh, authctxt->pw, &ctx,
+			    pubkey_auth_attempt, &opts);
 			break;
 		case MM_HOSTKEY:
 			auth_method = "hostbased";
