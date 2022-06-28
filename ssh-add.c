@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-add.c,v 1.160 2021/04/03 06:18:41 djm Exp $ */
+/* $OpenBSD: ssh-add.c,v 1.166 2022/06/18 02:17:16 dtucker Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -140,7 +140,7 @@ delete_one(int agent_fd, const struct sshkey *key, const char *comment,
 	}
 	if (!qflag) {
 		fprintf(stderr, "Identity removed: %s %s (%s)\n", path,
-		    sshkey_type(key), comment);
+		    sshkey_type(key), comment ? comment : "no comment");
 	}
 	return 0;
 }
