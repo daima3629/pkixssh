@@ -1,4 +1,4 @@
-/* $OpenBSD: authfile.c,v 1.142 2022/01/01 01:55:30 jsg Exp $ */
+/* $OpenBSD: authfile.c,v 1.143 2022/06/21 14:52:13 tobhe Exp $ */
 /*
  * Copyright (c) 2000, 2013 Markus Friedl.  All rights reserved.
  * Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
@@ -516,7 +516,11 @@ sshkey_save_public(const struct sshkey *key, const char *path,
 		r = SSH_ERR_SYSTEM_ERROR;
 		goto fail;
 	}
-	(void)fclose(f);
+	if (fclose(f) != 0) {
+		r = SSH_ERR_SYSTEM_ERROR;
+		f = NULL;
+		goto fail;
+	}
 
 	return 0;
 fail:
