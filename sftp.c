@@ -1,4 +1,4 @@
-/* $OpenBSD: sftp.c,v 1.216 2022/05/13 06:31:50 djm Exp $ */
+/* $OpenBSD: sftp.c,v 1.217 2022/06/27 21:41:55 djm Exp $ */
 /*
  * Copyright (c) 2001-2004 Damien Miller <djm@openbsd.org>
  * Copyright (c) 2013-2021 Roumen Petrov.  All rights reserved.
@@ -2599,10 +2599,14 @@ main(int argc, char **argv)
 
 		connect_to_server(ssh_program, args.list, &in, &out);
 	} else {
-		args.list = NULL;
-		addargs(&args, "sftp-server");
-
-		connect_to_server(sftp_direct, args.list, &in, &out);
+		int r;
+		char **cpp;
+		if ((r = argv_split(sftp_direct, &tmp, &cpp)) != 0)
+			fatal_r(r, "Parse -D arguments");
+		if (cpp[0] == 0)
+			fatal("No sftp server specified via -D");
+		connect_to_server(cpp[0], cpp, &in, &out);
+		argv_free(cpp, tmp);
 	}
 	freeargs(&args);
 
