@@ -1007,7 +1007,7 @@ process_config_line_depth(Options *options, struct passwd *pw, const char *host,
 	opcode = parse_token(keyword, filename, linenum,
 	    options->ignored_unknown);
 
-	if (argv_split(str, &oac, &oav) != 0) {
+	if (argv_split(str, &oac, &oav, 1) != 0) {
 		error("%s line %d: invalid quotes", filename, linenum);
 		return -1;
 	}

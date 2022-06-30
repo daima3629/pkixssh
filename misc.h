@@ -184,7 +184,7 @@ const char *lookup_env_in_list(const char *env,
 const char *lookup_setenv_in_list(const char *env,
 	    char * const *envs, size_t nenvs);
 
-int	 argv_split(const char *, int *, char ***);
+int	 argv_split(const char *, int *, char ***, int);
 char	*argv_assemble(int, char **argv);
 char	*argv_next(int *, char ***);
 void	 argv_consume(int *);

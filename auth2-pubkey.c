@@ -330,7 +330,8 @@ match_principals_command(struct passwd *user_pw,
 	}
 
 	/* Turn the command into an argument vector */
-	if (argv_split(options.authorized_principals_command, &ac, &av) != 0) {
+	if (argv_split(options.authorized_principals_command,
+	    &ac, &av, 0) != 0) {
 		error("AuthorizedPrincipalsCommand \"%s\" contains "
 		    "invalid quotes", options.authorized_principals_command);
 		goto out;
@@ -607,7 +608,7 @@ user_key_command_allowed2(struct passwd *user_pw, struct sshkey *key,
 	}
 
 	/* Turn the command into an argument vector */
-	if (argv_split(options.authorized_keys_command, &ac, &av) != 0) {
+	if (argv_split(options.authorized_keys_command, &ac, &av, 0) != 0) {
 		error("AuthorizedKeysCommand \"%s\" contains invalid quotes",
 		    options.authorized_keys_command);
 		goto out;

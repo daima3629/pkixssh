@@ -2031,12 +2031,13 @@ daemonized(void)
  * and its members.
  */
 int
-argv_split(const char *s, int *argcp, char ***argvp)
+argv_split(const char *s, int *argcp, char ***argvp, int terminate_on_comment)
 {
 	int r = SSH_ERR_INTERNAL_ERROR;
 	int argc = 0, quote, i, j;
 	char *arg, **argv = xcalloc(1, sizeof(*argv));
 
+	UNUSED(terminate_on_comment);
 	*argvp = NULL;
 	*argcp = 0;
 

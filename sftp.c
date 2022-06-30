@@ -2601,7 +2601,7 @@ main(int argc, char **argv)
 	} else {
 		int r;
 		char **cpp;
-		if ((r = argv_split(sftp_direct, &tmp, &cpp)) != 0)
+		if ((r = argv_split(sftp_direct, &tmp, &cpp, 1)) != 0)
 			fatal_r(r, "Parse -D arguments");
 		if (cpp[0] == 0)
 			fatal("No sftp server specified via -D");
