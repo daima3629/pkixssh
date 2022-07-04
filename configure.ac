@@ -3521,37 +3521,6 @@ AC_ARG_WITH([sandbox],
 )
 
 AC_CACHE_CHECK(
-	[if setrlimit(RLIMIT_NOFILE,{0,0}) works],
-	[ssh_cv_setrlimit_nofile_zero], [
-AC_RUN_IFELSE(
-	[AC_LANG_PROGRAM([[
-#include <sys/types.h>
-#ifdef HAVE_SYS_TIME_H
-# include <sys/time.h>
-#endif
-#include <sys/resource.h>
-#include <errno.h>
-	]],[[
-	struct rlimit rl_zero;
-	int r;
-
-	rl_zero.rlim_cur = rl_zero.rlim_max = 0;
-	r = setrlimit(RLIMIT_NOFILE, &rl_zero);
-	if (r == -1) return 1;
-	]])],
-	[ssh_cv_setrlimit_nofile_zero=yes],
-	[ssh_cv_setrlimit_nofile_zero=no],
-	[ssh_cv_setrlimit_nofile_zero=cross]
-)
-])
-AS_IF([test $ssh_cv_setrlimit_nofile_zero = cross], [
-	AC_MSG_WARN([cross compiling: assuming working setrlimit(RLIMIT_NOFILE,{0,0})])
-	ssh_cv_setrlimit_nofile_zero=yes
-])
-dnl used in code below
-rlimit_nofile_zero_works=$ssh_cv_setrlimit_nofile_zero
-
-AC_CACHE_CHECK(
 	[if setrlimit RLIMIT_FSIZE works],
 	[ssh_cv_rlimit_fsize_work], [
 AC_RUN_IFELSE(
@@ -3638,8 +3607,7 @@ elif test "x$sandbox_arg" = "xsolaris" || \
 	SANDBOX_STYLE="solaris"
 	AC_DEFINE([SANDBOX_SOLARIS], [1], [Sandbox using Solaris/Illumos privileges])
 elif test "x$sandbox_arg" = "xrlimit" || \
-     ( test -z "$sandbox_arg" && test "x$ac_cv_func_setrlimit" = "xyes" && \
-       test "x$rlimit_nofile_zero_works" = "xyes" ) ; then
+     test -z "$sandbox_arg" && test "x$ac_cv_func_setrlimit" = "xyes" ; then
 	test "x$ac_cv_func_setrlimit" != "xyes" && \
 		AC_MSG_ERROR([rlimit sandbox requires setrlimit function])
 	SANDBOX_STYLE="rlimit"
