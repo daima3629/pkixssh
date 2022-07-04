@@ -3485,20 +3485,6 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM([[
 )
 fi
 
-# Decide which sandbox style to use
-sandbox_arg=""
-AC_ARG_WITH([sandbox],
-	[  --with-sandbox=style    Specify privilege separation sandbox (no, capsicum, darwin, rlimit, seccomp_filter, systrace, pledge)],
-	[
-		if test "x$withval" = "xyes" ; then
-			sandbox_arg=""
-		else
-			sandbox_arg="$withval"
-		fi
-	]
-)
-
-
 AC_CHECK_MEMBERS([struct pollfd.fd], [], [], [[
 #include <sys/types.h>
 #ifdef HAVE_POLL_H
@@ -3520,6 +3506,19 @@ AC_CHECK_TYPES([nfds_t], , , [
 # endif
 #endif
 ])
+
+# Decide which sandbox style to use
+sandbox_arg=""
+AC_ARG_WITH([sandbox],
+	[  --with-sandbox=style    Specify privilege separation sandbox (no, capsicum, darwin, rlimit, seccomp_filter, systrace, pledge)],
+	[
+		if test "x$withval" = "xyes" ; then
+			sandbox_arg=""
+		else
+			sandbox_arg="$withval"
+		fi
+	]
+)
 
 AC_CACHE_CHECK(
 	[if setrlimit(RLIMIT_NOFILE,{0,0}) works],
