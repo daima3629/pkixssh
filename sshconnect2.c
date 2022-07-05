@@ -1,4 +1,4 @@
-/* $OpenBSD: sshconnect2.c,v 1.356 2022/02/01 23:32:51 djm Exp $ */
+/* $OpenBSD: sshconnect2.c,v 1.359 2022/07/01 03:39:44 dtucker Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Damien Miller.  All rights reserved.
@@ -179,7 +179,7 @@ ssh_kex2(struct ssh *ssh, char *host, struct sockaddr *hostaddr, u_short port,
     const struct ssh_conn_info *cinfo)
 {
 	char *myproposal[PROPOSAL_MAX] = { KEX_CLIENT };
-	char *s;
+	char *s, *prop_kex = NULL, *prop_enc = NULL, *prop_hostkey = NULL;
 	struct kex *kex;
 	int r;
 
@@ -189,16 +189,17 @@ ssh_kex2(struct ssh *ssh, char *host, struct sockaddr *hostaddr, u_short port,
 
 	if ((s = kex_names_cat(options.kex_algorithms, "ext-info-c")) == NULL)
 		fatal_f("kex_names_cat");
-	myproposal[PROPOSAL_KEX_ALGS] = compat_kex_proposal(ssh, s);
+	myproposal[PROPOSAL_KEX_ALGS] = prop_kex =
+	    compat_kex_proposal(ssh, s);
 	myproposal[PROPOSAL_ENC_ALGS_CTOS] =
-	    compat_cipher_proposal(ssh, options.ciphers);
-	myproposal[PROPOSAL_ENC_ALGS_STOC] =
+	myproposal[PROPOSAL_ENC_ALGS_STOC] = prop_enc =
 	    compat_cipher_proposal(ssh, options.ciphers);
 	myproposal[PROPOSAL_COMP_ALGS_CTOS] =
-	    myproposal[PROPOSAL_COMP_ALGS_STOC] =
+	myproposal[PROPOSAL_COMP_ALGS_STOC] =
 	    (char *)compression_alg_list(options.compression);
 	myproposal[PROPOSAL_MAC_ALGS_CTOS] =
-	    myproposal[PROPOSAL_MAC_ALGS_STOC] = options.macs;
+	myproposal[PROPOSAL_MAC_ALGS_STOC] = options.macs;
+
 {	/* finalize set of client option HostKeyAlgorithms */
 	int user_prefered;
 	char *defalgs = default_hostkey_algorithms();
@@ -220,11 +221,11 @@ ssh_kex2(struct ssh *ssh, char *host, struct sockaddr *hostaddr, u_short port,
 		options.hostkeyalgorithms = defalgs;
 	}
 	if (user_prefered)
-		myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS] =
+		myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS] = prop_hostkey =
 		    compat_pkalg_proposal(ssh, options.hostkeyalgorithms);
 	else
 		/* Prefer algorithms that we already have keys for */
-		myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS] =
+		myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS] = prop_hostkey =
 		    compat_pkalg_proposal(ssh,
 		    order_hostkeyalgs(host, hostaddr, port, cinfo));
 }
@@ -256,7 +257,11 @@ ssh_kex2(struct ssh *ssh, char *host, struct sockaddr *hostaddr, u_short port,
 	    (r = ssh_packet_write_wait(ssh)) != 0)
 		fatal_fr(r, "send packet");
 #endif
+	/* Free only parts of proposal that were dynamically allocated here. */
 	free(s);
+	free(prop_kex);
+	free(prop_enc);
+	free(prop_hostkey);
 }
 
 /*

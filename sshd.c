@@ -1,4 +1,4 @@
-/* $OpenBSD: sshd.c,v 1.586 2022/06/17 01:00:03 dtucker Exp $ */
+/* $OpenBSD: sshd.c,v 1.590 2022/07/01 05:08:23 dtucker Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -2576,16 +2576,16 @@ do_ssh2_kex(struct ssh *ssh)
 {
 	char *myproposal[PROPOSAL_MAX] = { KEX_SERVER };
 	struct kex *kex;
+	char *prop_kex = NULL, *prop_enc = NULL, *prop_hostkey = NULL;
 	int r;
 
-	myproposal[PROPOSAL_KEX_ALGS] = compat_kex_proposal(ssh,
-	    options.kex_algorithms);
-	myproposal[PROPOSAL_ENC_ALGS_CTOS] = compat_cipher_proposal(ssh,
-	    options.ciphers);
-	myproposal[PROPOSAL_ENC_ALGS_STOC] = compat_cipher_proposal(ssh,
-	    options.ciphers);
+	myproposal[PROPOSAL_KEX_ALGS] = prop_kex =
+	    compat_kex_proposal(ssh, options.kex_algorithms);
+	myproposal[PROPOSAL_ENC_ALGS_CTOS] =
+	myproposal[PROPOSAL_ENC_ALGS_STOC] = prop_enc =
+	    compat_cipher_proposal(ssh, options.ciphers);
 	myproposal[PROPOSAL_MAC_ALGS_CTOS] =
-	    myproposal[PROPOSAL_MAC_ALGS_STOC] = options.macs;
+	myproposal[PROPOSAL_MAC_ALGS_STOC] = options.macs;
 
 	if (options.compression == COMP_NONE) {
 		myproposal[PROPOSAL_COMP_ALGS_CTOS] =
@@ -2596,8 +2596,8 @@ do_ssh2_kex(struct ssh *ssh)
 		ssh_packet_set_rekey_limits(ssh, options.rekey_limit,
 		    options.rekey_interval);
 
-	myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS] = compat_pkalg_proposal(
-	    ssh, list_hostkey_types());
+	myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS] = prop_hostkey =
+	    compat_pkalg_proposal(ssh, list_hostkey_types());
 
 	/* start key exchange */
 	if ((r = kex_setup(ssh, myproposal)) != 0)
@@ -2619,6 +2619,9 @@ do_ssh2_kex(struct ssh *ssh)
 	    (r = ssh_packet_write_wait(ssh)) != 0)
 		fatal_fr(r, "kex 1st message");
 #endif
+	free(prop_kex);
+	free(prop_enc);
+	free(prop_hostkey);
 	debug("KEX done");
 }
 
