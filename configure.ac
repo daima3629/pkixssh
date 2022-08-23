@@ -713,7 +713,6 @@ case "$host" in
 	AC_DEFINE([BROKEN_STRNLEN], 1, [strnlen broken, see APAR IY62551])
 	;;
 *-*-cygwin*)
-	check_for_libcrypt_later=1
 	LIBS="$LIBS /usr/lib/textreadmode.o"
 	AC_DEFINE([HAVE_CYGWIN], [1], [Define if you are on Cygwin])
 	AC_DEFINE([USE_PIPES], [1], [Use PIPES instead of a socketpair()])
@@ -794,7 +793,6 @@ main() { if (NSVersionOfRunTimeLibrary("System") >= (60 << 16))
 	AC_DEFINE([BROKEN_POLL], [1])
 	;;
 *-*-dragonfly*)
-	SSHDLIBS="$SSHDLIBS -lcrypt"
 	TEST_MALLOC_OPTIONS="AFGJPRX"
 	;;
 *-*-haiku*)
@@ -883,7 +881,6 @@ main() { if (NSVersionOfRunTimeLibrary("System") >= (60 << 16))
 	AC_DEFINE([LOCKED_PASSWD_STRING], ["*LK*"])
 	;;
 *-*-k*bsd*-gnu | *-*-kopensolaris*-gnu)
-	check_for_libcrypt_later=1
 	AC_DEFINE([PAM_TTY_KLUDGE])
 	AC_DEFINE([LOCKED_PASSWD_PREFIX], ["!"])
 	AC_DEFINE([SPT_TYPE], [SPT_REUSEARGV])
@@ -897,7 +894,6 @@ main() { if (NSVersionOfRunTimeLibrary("System") >= (60 << 16))
 		ac_cv_file__dev_ptmx=ignore;;
 	esac
 	use_pie=auto
-	check_for_libcrypt_later=1
 	check_for_openpty_ctty_bug=1
 	dnl Target SUSv3/POSIX.1-2001 plus BSD specifics.
 	dnl _DEFAULT_SOURCE is the new name for _BSD_SOURCE
@@ -1048,7 +1044,6 @@ mips-sony-bsd|mips-sony-newsos4)
 	SONY=1
 	;;
 *-*-netbsd*)
-	check_for_libcrypt_before=1
 	CPPFLAGS="$CPPFLAGS -D_OPENBSD_SOURCE"
 	AC_DEFINE([SSH_TUN_FREEBSD], [1], [Open tunnel devices the FreeBSD way])
 	AC_CHECK_HEADER([net/if_tap.h], ,
@@ -1060,7 +1055,6 @@ mips-sony-bsd|mips-sony-newsos4)
 	    [NetBSD read function is sometimes redirected, breaking atomicio comparisons against it])
 	;;
 *-*-freebsd*)
-	check_for_libcrypt_later=1
 	AC_DEFINE([LOCKED_PASSWD_PREFIX], ["*LOCKED*"], [Account locked with pw(1)])
 	AC_DEFINE([SSH_TUN_FREEBSD], [1], [Open tunnel devices the FreeBSD way])
 	AC_CHECK_HEADER([net/if_tap.h], ,
@@ -1221,7 +1215,6 @@ mips-sony-bsd|mips-sony-newsos4)
 	AC_DEFINE([BROKEN_SETREGID], [1])
 	AC_DEFINE([PASSWD_NEEDS_USERNAME])
 	AC_DEFINE([BROKEN_TCGETATTR_ICANON], [1])
-	check_for_libcrypt_later=1
 	case "$host" in
 	*-*-sysv5SCO_SV*)	# SCO OpenServer 6.x
 		maildir=/var/spool/mail
@@ -2989,19 +2982,6 @@ if test "x$openssl" = "xyes" ; then
 		]
 	)
 
-	# Some systems want crypt() from libcrypt, *not* the version in OpenSSL,
-	# because the system crypt() is more featureful.
-	if test "x$check_for_libcrypt_before" = "x1"; then
-		AC_CHECK_LIB([crypt], [crypt])
-	fi
-
-	# Some Linux systems (Slackware) need crypt() from libcrypt, *not* the
-	# version in OpenSSL.
-	if test "x$check_for_libcrypt_later" = "x1"; then
-		AC_CHECK_LIB([crypt], [crypt], [LIBS="$LIBS -lcrypt"])
-	fi
-	AC_CHECK_FUNCS([crypt DES_crypt])
-
 	# Check for SHA256, SHA384 and SHA512 support in OpenSSL
 	AC_CHECK_FUNCS([EVP_sha256 EVP_sha384 EVP_sha512], ,
 	    [unsupported_algorithms="$unsupported_algorithms \
@@ -3184,9 +3164,6 @@ if test "x$openssl" = "xyes" ; then
 			AC_MSG_RESULT([no])
 		]
 	)
-else
-	AC_CHECK_LIB([crypt], [crypt], [LIBS="$LIBS -lcrypt"])
-	AC_CHECK_FUNCS([crypt])
 fi
 
 use_dl=false
@@ -3240,6 +3217,15 @@ AC_CHECK_LIB([iaf], [ia_openinfo], [
 			[Define if system has libiaf that supports set_id])
 				])
 ])
+LIBS="$saved_LIBS"
+
+# Check for crypt() in libcrypt.  If we have it, we only need it for sshd.
+saved_LIBS="$LIBS"
+AC_CHECK_LIB([crypt], [crypt], [
+	LIBS="-lcrypt $LIBS"
+	SSHDLIBS="-lcrypt $SSHDLIBS"
+])
+AC_CHECK_FUNCS([crypt])
 LIBS="$saved_LIBS"
 
 ### Configure cryptographic random number support
@@ -5407,6 +5393,7 @@ fi
 
 # check for openssl 0.9.7+ functions ...
 AC_CHECK_FUNCS([ \
+  DES_crypt \
   EVP_MD_CTX_init \
 ])
 
