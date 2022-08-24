@@ -3087,10 +3087,13 @@ if test "x$openssl" = "xyes" ; then
 	#include <openssl/objects.h>
 	#include <openssl/opensslv.h>
 			]],[[
+			int ret = 0;
 			EC_KEY *e = EC_KEY_new_by_curve_name(NID_secp521r1);
 			const EVP_MD *m = EVP_sha512(); /* We need this too */
 			if (e == NULL || m == NULL)
-				return 1;
+				ret = 1;
+			EC_KEY_free(e);
+			return ret;
 			]])],
 			[ssh_cv_working_secp521r1=yes],
 			[ssh_cv_working_secp521r1=no],
