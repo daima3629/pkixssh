@@ -12,7 +12,7 @@
  */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
- * Copyright (c) 2004-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2004-2022 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -53,7 +53,6 @@
 #include "log.h"
 #include "match.h"
 #include "ssherr.h"
-#include <openssl/err.h>
 
 #define MSGBUFSIZ 1024
 
@@ -347,114 +346,6 @@ log_redirect_stderr_to(const char *logfile)
 LogLevel
 get_log_level(void) {
 	return log_level;
-}
-
-static char*
-get_one_crypto_error(char *buf, size_t len) {
-	unsigned long err_code;
-	const char *err_data;
-	int err_flags;
-
-#ifdef HAVE_ERR_GET_ERROR_ALL
-	err_code = ERR_get_error_all(NULL, NULL, NULL, &err_data, &err_flags);
-#else
-	err_code = ERR_get_error_line_data(NULL, NULL, &err_data, &err_flags);
-#endif
-	if (err_code == 0) return NULL;
-
-	if (!(err_flags & ERR_TXT_STRING))
-		err_data = NULL;
-
-{	char ebuf[4096];
-	ERR_error_string_n(err_code, ebuf, sizeof(ebuf));
-	snprintf(buf, len, "%s%s%s", ebuf
-	    , err_data ? ":" : ""
-	    , err_data ? err_data : ""
-	);
-}
-
-	return buf;
-}
-
-void
-sshlog_cryptoerr_all(const char *file, const char *func, int line,
-    LogLevel level
-) {
-	char ebuf[MSGBUFSIZ];
-	const char *emsg;
-	for (
-	    emsg = get_one_crypto_error(ebuf, sizeof(ebuf));
-	    emsg != NULL;
-	    emsg = get_one_crypto_error(ebuf, sizeof(ebuf))
-	)
-		sshlog(file, func, line, level,
-		    "%s: crypto message: '%s'", func, emsg);
-}
-
-static char*
-crypto_errormsg(char *buf, size_t len) {
-	unsigned long err_code;
-	const char *err_data;
-	int err_flags;
-
-	if (buf == NULL) goto out;
-
-#ifdef HAVE_ERR_GET_ERROR_ALL
-	err_code = ERR_get_error_all(NULL, NULL, NULL, &err_data, &err_flags);
-#else
-	err_code = ERR_get_error_line_data(NULL, NULL, &err_data, &err_flags);
-#endif
-	if (err_code == 0) {
-		if (len > 0) *buf = '\0';
-		goto out;
-	}
-	if (!(err_flags & ERR_TXT_STRING))
-		err_data = NULL;
-
-{	char ebuf[4096];
-	ERR_error_string_n(err_code, ebuf, sizeof(ebuf));
-	snprintf(buf, len, "%s%s%s", ebuf
-	    , err_data ? ":" : ""
-	    , err_data ? err_data : ""
-	);
-}
-
-out:
-	/* clear rest of errors in OpenSSL "error buffer" */
-	ERR_clear_error();
-	return buf;
-}
-
-void
-sshlog_cryptoerr_fmt(const char *file, const char *func, int line,
-    LogLevel level, const char *openssl_method, const char *fmt, ...)
-{
-	char *sep, mbuf[MSGBUFSIZ], ebuf[MSGBUFSIZ];
-	va_list args;
-
-	va_start(args, fmt);
-	vsnprintf(mbuf, sizeof(mbuf), fmt, args);
-	va_end(args);
-
-	sep = mbuf[0] != '\0' ? "/" : "",
-
-	crypto_errormsg(ebuf, sizeof(ebuf));
-
-	sshlog(file, func, line, level,
-	    "%s->%s%s%s%s last error: '%s'", func, openssl_method,
-	    sep, mbuf, sep, ebuf);
-}
-
-void
-sshlog_cryptoerr(const char *file, const char *func, int line,
-    LogLevel level, const char *openssl_method)
-{
-	char ebuf[MSGBUFSIZ];
-
-	crypto_errormsg(ebuf, sizeof(ebuf));
-
-	sshlog(file, func, line, level,
-	    "%s->%s last error: '%s'", func, openssl_method, ebuf);
 }
 
 
