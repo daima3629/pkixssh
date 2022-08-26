@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keygen.c,v 1.454 2022/06/03 03:17:42 dtucker Exp $ */
+/* $OpenBSD: ssh-keygen.c,v 1.455 2022/07/20 03:13:04 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1994 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -2466,37 +2466,43 @@ do_moduli_screen(const char *out_file, char **opts, size_t nopts)
 #endif /* WITH_OPENSSL */
 }
 
+/* Read and confirm a passphrase */
 static char *
-private_key_passphrase(void)
+read_check_passphrase(const char *prompt1, const char *prompt2,
+    const char *retry_prompt)
 {
 	char *passphrase1, *passphrase2;
 
-	/* Ask for a passphrase (twice). */
-	if (identity_passphrase)
-		passphrase1 = xstrdup(identity_passphrase);
-	else if (identity_new_passphrase)
-		passphrase1 = xstrdup(identity_new_passphrase);
-	else {
-passphrase_again:
-		passphrase1 =
-			read_passphrase("Enter passphrase (empty for no "
-			    "passphrase): ", RP_ALLOW_STDIN);
-		passphrase2 = read_passphrase("Enter same passphrase again: ",
-		    RP_ALLOW_STDIN);
-		if (strcmp(passphrase1, passphrase2) != 0) {
-			/*
-			 * The passphrases do not match.  Clear them and
-			 * retry.
-			 */
-			freezero(passphrase1, strlen(passphrase1));
+	for (;;) {
+		passphrase1 = read_passphrase(prompt1, RP_ALLOW_STDIN);
+		passphrase2 = read_passphrase(prompt2, RP_ALLOW_STDIN);
+		if (strcmp(passphrase1, passphrase2) == 0) {
 			freezero(passphrase2, strlen(passphrase2));
-			printf("Passphrases do not match.  Try again.\n");
-			goto passphrase_again;
+			return passphrase1;
 		}
-		/* Clear the other copy of the passphrase. */
+		/* The passphrases do not match. Clear them and retry. */
+		freezero(passphrase1, strlen(passphrase1));
 		freezero(passphrase2, strlen(passphrase2));
+		fputs(retry_prompt, stdout);
+		fputc('\n', stdout);
+		fflush(stdout);
 	}
-	return passphrase1;
+	/* NOTREACHED */
+	return NULL;
+}
+
+static char *
+private_key_passphrase(void)
+{
+	if (identity_passphrase)
+		return xstrdup(identity_passphrase);
+	if (identity_new_passphrase)
+		return xstrdup(identity_new_passphrase);
+
+	return read_check_passphrase(
+	    "Enter passphrase (empty for no passphrase): ",
+	    "Enter same passphrase again: ",
+	    "Passphrases do not match.  Try again.");
 }
 
 static void
