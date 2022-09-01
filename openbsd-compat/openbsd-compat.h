@@ -330,6 +330,10 @@ void explicit_bzero(void *p, size_t n);
 void freezero(void *, size_t);
 #endif
 
+#ifndef HAVE_TIMEGM
+time_t timegm(struct tm *);
+#endif
+
 char *xcrypt(const char *password, const char *salt);
 char *shadow_pw(struct passwd *pw);
 
