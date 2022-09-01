@@ -1,4 +1,4 @@
-/* $OpenBSD: sftp-server.c,v 1.139 2022/02/01 23:32:51 djm Exp $ */
+/* $OpenBSD: sftp-server.c,v 1.141 2022/08/12 05:20:28 djm Exp $ */
 /*
  * Copyright (c) 2000-2004 Markus Friedl.  All rights reserved.
  * Copyright (c) 2021 Roumen Petrov.  All rights reserved.
@@ -143,6 +143,7 @@ static void process_extended_fsync(u_int32_t id);
 static void process_extended_lsetstat(u_int32_t id);
 static void process_extended_limits(u_int32_t id);
 static void process_extended_expand(u_int32_t id);
+static void process_extended_home_directory(u_int32_t id);
 static void process_extended(u_int32_t id);
 
 struct sftp_handler {
@@ -188,6 +189,8 @@ static const struct sftp_handler extended_handlers[] = {
 	{ "limits", "limits@openssh.com", 0, process_extended_limits, 0 },
 	{ "expand-path", "expand-path@openssh.com", 0,
 	    process_extended_expand, 0 },
+	{ "home-directory", "home-directory", 0,
+	    process_extended_home_directory, 0 },
 	{ NULL, NULL, 0, NULL, 0 }
 };
 
@@ -737,6 +740,7 @@ process_init(void)
 	compose_extension(msg, "lsetstat@openssh.com", "1");
 	compose_extension(msg, "limits@openssh.com", "1");
 	compose_extension(msg, "expand-path@openssh.com", "1");
+	compose_extension(msg, "home-directory", "1");
 
 	send_msg(msg);
 	sshbuf_free(msg);
@@ -1602,6 +1606,31 @@ process_extended_expand(u_int32_t id)
 	}
  out:
 	free(path);
+}
+
+static void
+process_extended_home_directory(u_int32_t id)
+{
+	char *username;
+	struct passwd *user_pw;
+	int r;
+	Stat s;
+
+	if ((r = sshbuf_get_cstring(iqueue, &username, NULL)) != 0)
+		fatal_fr(r, "parse");
+
+	debug3("request %u: home-directory \"%s\"", id, username);
+	if ((user_pw = getpwnam(username)) == NULL) {
+		send_status(id, errno_to_portable(errno));
+		goto out;
+	}
+
+	verbose("home-directory \"%s\"", pw->pw_dir);
+	attrib_clear(&s.attrib);
+	s.name = s.long_name = pw->pw_dir;
+	send_names(id, 1, &s);
+ out:
+	free(username);
 }
 
 static void
