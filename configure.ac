@@ -1969,6 +1969,7 @@ AC_CHECK_FUNCS([ \
 	futimes \
 	getaddrinfo \
 	getcwd \
+	getentropy \
 	getgrouplist \
 	getifaddrs \
 	getline \

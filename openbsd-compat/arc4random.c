@@ -6,7 +6,7 @@
  * Copyright (c) 1996, David Mazieres <dm@uun.org>
  * Copyright (c) 2008, Damien Miller <djm@openbsd.org>
  * Copyright (c) 2013, Markus Friedl <markus@openbsd.org>
- * Copyright (c) 2014-2018, Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2014-2022, Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -39,8 +39,14 @@
 #endif
 
 
-#ifdef HAVE_SYS_RANDOM_H
-# include <sys/random.h>
+/*
+ * If we're not using a native getentropy, use the one from bsd-getentropy.c
+ * under a different name, so that if in future these binaries are run on
+ * a system that has a native getentropy OpenSSL cannot call the wrong one.
+ */
+#ifndef HAVE_GETENTROPY
+extern int _ssh_compat_getentropy(void *s, size_t len);
+# define getentropy(x, y) (_ssh_compat_getentropy((x), (y)))
 #endif
 
 #ifdef OPENSSL_FIPS
@@ -148,44 +154,6 @@ _rs_init(u_char *buf, size_t n)
 	chacha_ivsetup(&rs, buf + KEYSZ);
 }
 
-#ifndef WITH_OPENSSL
-# ifndef SSH_RANDOM_DEV
-#  define SSH_RANDOM_DEV "/dev/urandom"
-# endif /* SSH_RANDOM_DEV */
-static void
-getrnd(u_char *s, size_t len)
-{
-	int fd;
-	ssize_t r;
-	size_t o = 0;
-
-#ifdef HAVE_GETRANDOM
-	if ((r = getrandom(s, len, 0)) > 0 && (size_t)r == len)
-		return;
-#endif /* HAVE_GETRANDOM */
-
-	if ((fd = open(SSH_RANDOM_DEV, O_RDONLY)) == -1) {
-		int save_errno = errno;
-		/* Try egd/prngd before giving up. */
-		if (seed_from_prngd(s, len) == 0)
-			return;
-		fatal("Couldn't open %s: %s", SSH_RANDOM_DEV,
-		    strerror(save_errno));
-	}
-	while (o < len) {
-		r = read(fd, s + o, len - o);
-		if (r == -1) {
-			if (errno == EAGAIN || errno == EINTR ||
-			    errno == EWOULDBLOCK)
-				continue;
-			fatal("read %s: %s", SSH_RANDOM_DEV, strerror(errno));
-		}
-		o += r;
-	}
-	close(fd);
-}
-#endif /* WITH_OPENSSL */
-
 static void
 _rs_stir(void)
 {
@@ -196,7 +164,8 @@ _rs_stir(void)
 		fatal("Couldn't obtain random bytes (error 0x%lx)",
 		    (unsigned long)ERR_get_error());
 #else
-	getrnd(rnd, sizeof(rnd));
+	if (getentropy(rnd, sizeof rnd) == -1)
+		fatal("getentropy failed");
 #endif
 
 	if (!rs_initialized) {
