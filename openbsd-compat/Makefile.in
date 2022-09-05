@@ -25,7 +25,9 @@ RANLIB=@RANLIB@
 INSTALL=@INSTALL@
 LDFLAGS=-L. @LDFLAGS@
 
-OPENBSD=base64.o \
+OPENBSD=arc4random.o \
+	arc4random_uniform.o \
+	base64.o \
 	basename.o \
 	bcrypt_pbkdf.o \
 	bindresvport.o \
@@ -72,8 +74,7 @@ OPENBSD=base64.o \
 	timingsafe_bcmp.o \
 	vis.o
 
-COMPAT=	arc4random.o \
-	bsd-asprintf.o \
+COMPAT=	bsd-asprintf.o \
 	bsd-closefrom.o \
 	bsd-cygwin_util.o \
 	bsd-err.o \

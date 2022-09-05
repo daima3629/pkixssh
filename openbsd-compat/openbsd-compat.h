@@ -223,13 +223,13 @@ void arc4random_buf(void *, size_t);
 #endif
 
 #if !HAVE_DECL_ARC4RANDOM_UNIFORM
-u_int32_t arc4random_uniform(u_int32_t);
+uint32_t arc4random_uniform(uint32_t);
 #endif
 
 #ifdef __ANDROID__
 /* defined but not declared */
 void arc4random_buf(void *, size_t);
-u_int32_t arc4random_uniform(u_int32_t);
+uint32_t arc4random_uniform(uint32_t);
 #endif
 
 #ifndef HAVE_ASPRINTF
