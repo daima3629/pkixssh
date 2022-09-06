@@ -493,26 +493,27 @@ regress-prep:
 
 
 REGRESSLIBS = $(LIBCOMPAT) libssh.a
+TESTLIBS = $(LIBS)
 
 regress/modpipe$(EXEEXT): regress/modpipe.o $(REGRESSLIBS)
 	$(LD) -o $@ regress/modpipe.o \
-	$(LDFLAGS) -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(LIBS)
+	$(LDFLAGS) -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(TESTLIBS)
 
 regress/setuid-allowed$(EXEEXT): regress/setuid-allowed.o $(REGRESSLIBS)
 	$(LD) -o $@ regress/setuid-allowed.o \
-	$(LDFLAGS) -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(LIBS)
+	$(LDFLAGS) -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(TESTLIBS)
 
 regress/netcat$(EXEEXT): regress/netcat.o $(REGRESSLIBS)
 	$(LD) -o $@ regress/netcat.o \
-	$(LDFLAGS) -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(LIBS)
+	$(LDFLAGS) -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(TESTLIBS)
 
 regress/check-perm$(EXEEXT): regress/check-perm.o $(REGRESSLIBS)
 	$(LD) -o $@ regress/check-perm.o \
-	$(LDFLAGS) -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(LIBS)
+	$(LDFLAGS) -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(TESTLIBS)
 
 regress/mkdtemp$(EXEEXT): regress/mkdtemp.o $(REGRESSLIBS)
 	$(LD) -o $@ regress/mkdtemp.o \
-	$(LDFLAGS) -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(LIBS)
+	$(LDFLAGS) -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(TESTLIBS)
 
 UNITTESTS_TEST_HELPER_OBJS=\
 	regress/unittests/test_helper/test_helper.o \
@@ -536,7 +537,7 @@ regress/unittests/sshbuf/test_sshbuf$(EXEEXT): ${UNITTESTS_TEST_SSHBUF_OBJS} \
     regress/unittests/test_helper/libtest_helper.a libssh.a
 	$(LD) -o $@ $(LDFLAGS) $(UNITTESTS_TEST_SSHBUF_OBJS) \
 	    regress/unittests/test_helper/libtest_helper.a \
-	    -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(LIBS)
+	    -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(TESTLIBS)
 
 UNITTESTS_TEST_SSHKEY_OBJS=\
 	regress/unittests/sshkey/test_fuzz.o \
@@ -549,7 +550,7 @@ regress/unittests/sshkey/test_sshkey$(EXEEXT): ${UNITTESTS_TEST_SSHKEY_OBJS} \
     regress/unittests/test_helper/libtest_helper.a libssh.a
 	$(LD) -o $@ $(LDFLAGS) $(UNITTESTS_TEST_SSHKEY_OBJS) \
 	    regress/unittests/test_helper/libtest_helper.a \
-	    -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(LIBS)
+	    -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(TESTLIBS)
 
 UNITTESTS_TEST_BITMAP_OBJS=\
 	regress/unittests/bitmap/tests.o
@@ -558,7 +559,7 @@ regress/unittests/bitmap/test_bitmap$(EXEEXT): ${UNITTESTS_TEST_BITMAP_OBJS} \
     regress/unittests/test_helper/libtest_helper.a libssh.a
 	$(LD) -o $@ $(LDFLAGS) $(UNITTESTS_TEST_BITMAP_OBJS) \
 	    regress/unittests/test_helper/libtest_helper.a \
-	    -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(LIBS)
+	    -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(TESTLIBS)
 
 UNITTESTS_TEST_AUTHOPT_OBJS=\
 	regress/unittests/authopt/tests.o \
@@ -570,7 +571,7 @@ regress/unittests/authopt/test_authopt$(EXEEXT): \
     regress/unittests/test_helper/libtest_helper.a libssh.a
 	$(LD) -o $@ $(LDFLAGS) $(UNITTESTS_TEST_AUTHOPT_OBJS) \
 	    regress/unittests/test_helper/libtest_helper.a \
-	    -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(LIBS)
+	    -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(TESTLIBS)
 
 UNITTESTS_TEST_CONVERSION_OBJS=\
 	regress/unittests/conversion/tests.o
@@ -580,7 +581,7 @@ regress/unittests/conversion/test_conversion$(EXEEXT): \
     regress/unittests/test_helper/libtest_helper.a libssh.a
 	$(LD) -o $@ $(LDFLAGS) $(UNITTESTS_TEST_CONVERSION_OBJS) \
 	    regress/unittests/test_helper/libtest_helper.a \
-	    -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(LIBS)
+	    -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(TESTLIBS)
 
 UNITTESTS_TEST_KEX_OBJS=\
 	regress/unittests/kex/tests.o \
@@ -590,7 +591,7 @@ regress/unittests/kex/test_kex$(EXEEXT): ${UNITTESTS_TEST_KEX_OBJS} \
     regress/unittests/test_helper/libtest_helper.a libssh.a
 	$(LD) -o $@ $(LDFLAGS) $(UNITTESTS_TEST_KEX_OBJS) \
 	    regress/unittests/test_helper/libtest_helper.a \
-	    -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(LIBS)
+	    -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(TESTLIBS)
 
 UNITTESTS_TEST_HOSTKEYS_OBJS=\
 	regress/unittests/hostkeys/tests.o \
@@ -601,7 +602,7 @@ regress/unittests/hostkeys/test_hostkeys$(EXEEXT): \
     regress/unittests/test_helper/libtest_helper.a libssh.a
 	$(LD) -o $@ $(LDFLAGS) $(UNITTESTS_TEST_HOSTKEYS_OBJS) \
 	    regress/unittests/test_helper/libtest_helper.a \
-	    -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(LIBS)
+	    -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(TESTLIBS)
 
 UNITTESTS_TEST_MATCH_OBJS=\
 	regress/unittests/match/tests.o
@@ -611,7 +612,7 @@ regress/unittests/match/test_match$(EXEEXT): \
     regress/unittests/test_helper/libtest_helper.a libssh.a
 	$(LD) -o $@ $(LDFLAGS) $(UNITTESTS_TEST_MATCH_OBJS) \
 	    regress/unittests/test_helper/libtest_helper.a \
-	    -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(LIBS)
+	    -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(TESTLIBS)
 
 UNITTESTS_TEST_MISC_OBJS=\
 	regress/unittests/misc/tests.o \
@@ -626,7 +627,7 @@ regress/unittests/misc/test_misc$(EXEEXT): \
     regress/unittests/test_helper/libtest_helper.a libssh.a
 	$(LD) -o $@ $(LDFLAGS) $(UNITTESTS_TEST_MISC_OBJS) \
 	    regress/unittests/test_helper/libtest_helper.a \
-	    -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(LIBS)
+	    -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(TESTLIBS)
 
 UNITTESTS_TEST_UTF8_OBJS=\
 	regress/unittests/utf8/tests.o
@@ -636,7 +637,7 @@ regress/unittests/utf8/test_utf8$(EXEEXT): \
     regress/unittests/test_helper/libtest_helper.a libssh.a
 	$(LD) -o $@ $(LDFLAGS) $(UNITTESTS_TEST_UTF8_OBJS) \
 	    regress/unittests/test_helper/libtest_helper.a \
-	    -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(LIBS)
+	    -lssh -lopenbsd-compat -lssh -lopenbsd-compat $(TESTLIBS)
 
 regress-binaries: regress-prep \
 	regress/modpipe$(EXEEXT) \
