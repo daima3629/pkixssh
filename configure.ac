@@ -5256,46 +5256,27 @@ AC_DEFINE_UNQUOTED([SSHCADIR], ["$sshcadir"], [Specify location of ssh CA root])
 AC_SUBST([sshcadir])
 
 
-ssh_x509store=yes #required since PKIX-SSH 9.0
-
-
 # enable/disable OCSP requests
+ssh_ocsp=:
 AC_ARG_ENABLE([ocsp],
 	[AS_HELP_STRING([--disable-ocsp], [Disable OCSP validation])],
-	[
-	if test "x$enableval" = "xyes"; then
-		if test "x$ssh_x509store" != "xyes"; then
-			AC_MSG_ERROR([cannot enable OCSP when x509store is disabled])
-		fi
-		ssh_ocsp=yes
-	else
-		ssh_ocsp=no
-	fi
-	],
-	[
-	if test "x$ssh_x509store" = "xyes"; then
-		ssh_ocsp=yes
-	else
-		ssh_ocsp=no
-		AC_MSG_NOTICE([x509store is disabled - skipping OCSP])
-	fi
-	])
-if test "x$ssh_ocsp" = "xyes"; then
+	[AS_IF([test "x$enableval" = "xno"], [ssh_ocsp=false])])
+AS_IF([$ssh_ocsp], [
 	AC_CHECK_FUNCS([OCSP_sendreq_bio],
 	[
 		AC_CHECK_HEADER([openssl/ocsp.h],
 		[],
 		[
-			ssh_ocsp=no
+			ssh_ocsp=false
 			AC_MSG_ERROR([OCSP header not found])
 		])
 	],
 	[
-		ssh_ocsp=no
+		ssh_ocsp=false
 		AC_MSG_WARN([Cannot find OCSP functions - OCSP is disabled])
 	])
-fi
-if test "x$ssh_ocsp" = "xyes"; then
+])
+AS_IF([$ssh_ocsp], [
 	save_LIBS="$LIBS"
 	AC_MSG_CHECKING([how to link programs using OpenSSL OCSP functions])
 	link_SSL=false
@@ -5333,11 +5314,13 @@ if test "x$ssh_ocsp" = "xyes"; then
 		[Define if you want to validate X.509 certificates with OCSP])
 	OCSP_ON=''
 	OCSP_OFF='#'
-else
+	OCSP_MSG=yes
+], [
 	LIBOCSP=
 	OCSP_ON='#'
 	OCSP_OFF=''
-fi
+	OCSP_MSG=no
+])
 AC_SUBST([LIBOCSP])
 AC_SUBST([OCSP_ON])
 AC_SUBST([OCSP_OFF])
@@ -5345,31 +5328,26 @@ AC_SUBST([OCSP_OFF])
 
 # enable LDAP queries
 LDAP_MSG=no
-if test "x$ssh_x509store" = "xyes"; then
-	AC_WITH_LDAP
-	if test "x$LDAP_ON" = "x"; then
-		LDAP_MSG=yes
-		AC_CHECK_PROGS([LDAPADD],
-			[openldapadd ldapadd], [false],
-			[PATH="$LDAP_BINDIR:$PATH"])
-	fi
-	AC_LDAP_FUNCS([\
-		ldap_initialize \
-		ldap_parse_result \
-		ldap_sasl_bind_s \
-		ldap_search_ext_s \
-		ldap_unbind_ext_s \
-	])
-else
-	AC_MSG_NOTICE([x509store is disabled - skipping LDAP])
-fi
+AC_WITH_LDAP
+AS_IF([test "x$LDAP_ON" = "x"], [
+	LDAP_MSG=yes
+	AC_CHECK_PROGS([LDAPADD],
+		[openldapadd ldapadd], [false],
+		[PATH="$LDAP_BINDIR:$PATH"])
+])
+AC_LDAP_FUNCS([\
+	ldap_initialize \
+	ldap_parse_result \
+	ldap_sasl_bind_s \
+	ldap_search_ext_s \
+	ldap_unbind_ext_s \
+])
 
 
 ssh_x509dn_email=yes
-if test "x$ssh_x509store" = "xyes"; then
-	# Check for Email in X.509 'Distinguished Name'
-	AC_MSG_CHECKING([for Email in X.509 'Distinguished Name'])
-	AC_RUN_IFELSE([AC_LANG_PROGRAM([[
+# Check for Email in X.509 'Distinguished Name'
+AC_MSG_CHECKING([for Email in X.509 'Distinguished Name'])
+AC_RUN_IFELSE([AC_LANG_PROGRAM([[
 #include <openssl/evp.h>
 	]], [[
 	int nid = OBJ_txt2nid("Email");
@@ -5385,19 +5363,11 @@ if test "x$ssh_x509store" = "xyes"; then
 		ssh_x509dn_email=no
 	]
 )
-	# Check for the existence of "X509_VERIFY_PARAM *param" (OpenSSL 0.9.8+)
-	# Instead to check for member param we check for get functions
-	dnl AC_CHECK_MEMBERS([X509_STORE_CTX.param],,,[#include <openssl/x509_vfy.h>])
-	AC_CHECK_FUNCS([X509_STORE_CTX_get0_param])
-	dnl OpenSSL 1.1 changes X509_STORE_CTX and X509_VERIFY_PARAM to opaque structure.
-	dnl Until OpenSSL 1.1.0d+ there is no function to get "check" time.
-	AC_CHECK_FUNCS([X509_VERIFY_PARAM_get_time])
-fi
-if test "x$ssh_x509dn_email" = "xno"; then
+AS_IF([test "x$ssh_x509dn_email" = "xno"], [
 	AC_DEFINE(
 		[SSH_OPENSSL_DN_WITHOUT_EMAIL], [1],
 		[Define if your openssl library don't support Email in X.509 'Distinguished Name'])
-fi
+])
 
 # check for openssl 0.9.7+ functions ...
 AC_CHECK_FUNCS([ \
@@ -5419,6 +5389,11 @@ AC_CHECK_FUNCS([ \
   EVP_PKEY_cmp \
   RSA_generate_key_ex \
 ])
+
+# Check for the existence of "X509_VERIFY_PARAM *param" (OpenSSL 0.9.8+)
+# Instead to check for member param we check for get functions
+dnl AC_CHECK_MEMBERS([X509_STORE_CTX.param],,,[#include <openssl/x509_vfy.h>])
+AC_CHECK_FUNCS([X509_STORE_CTX_get0_param])
 
 # check for openssl 1.0.0+ functions ...
 AC_CHECK_FUNCS([ \
@@ -5463,6 +5438,10 @@ AC_CHECK_FUNCS([ \
   X509_STORE_get0_objects \
   X509_STORE_lock \
 ])
+dnl OpenSSL 1.1 changes X509_STORE_CTX and X509_VERIFY_PARAM to opaque structure.
+dnl Until OpenSSL 1.1.0d+ there is no function to get "check" time.
+AC_CHECK_FUNCS([X509_VERIFY_PARAM_get_time])
+
 # check for functions randomly implemented for compatibility with openssl 1.1+
 AC_CHECK_FUNCS([ \
   DSA_get0_key \
@@ -6050,8 +6029,7 @@ echo "                   SELinux support: $SELINUX_MSG"
 echo "                   PKCS#11 support: $PKCS11_MSG"
 echo "              TCP Wrappers support: $TCPW_MSG"
 echo "              MD5 password support: $MD5_MSG"
-echo "               X.509 store support: $ssh_x509store"
-echo "                      OCSP support: $ssh_ocsp"
+echo "                      OCSP support: $OCSP_MSG"
 echo "                      LDAP queries: $LDAP_MSG"
 echo "                   libedit support: $LIBEDIT_MSG"
 echo "                   libldns support: $LDNS_MSG"
@@ -6077,9 +6055,9 @@ echo "    Compiler flags: ${CFLAGS}"
 echo "Preprocessor flags: ${CPPFLAGS}"
 echo "      Linker flags: ${LDFLAGS}"
 echo "         Libraries: ${LIBS}"
-if test "x$ssh_ocsp" = "xyes" ; then
+AS_IF([$ssh_ocsp], [
 echo "    OCSP libraries: $LIBOCSP"
-fi
+])
 if test ! -z "${SSHDLIBS}"; then
 echo "         +for sshd: ${SSHDLIBS}"
 fi
