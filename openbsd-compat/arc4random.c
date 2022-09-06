@@ -132,12 +132,36 @@ arc4random(void) {
 #define IVSZ	8
 #define BLOCKSZ	64
 #define RSBUFSZ	(16*BLOCKSZ)
-static int rs_initialized;
 static pid_t rs_stir_pid;
-static chacha_ctx rs;		/* chacha context for random keystream */
-static u_char rs_buf[RSBUFSZ];	/* keystream blocks */
-static size_t rs_have;		/* valid bytes at end of rs_buf */
-static size_t rs_count;		/* bytes till reseed */
+
+static struct _rs {
+	size_t		rs_have;	/* valid bytes at end of rs_buf */
+	size_t		rs_count;	/* bytes till reseed */
+} *rs = NULL;
+
+static struct _rsx {
+	chacha_ctx	rs_chacha;	/* chacha context for random keystream */
+	u_char		rs_buf[RSBUFSZ];	/* keystream blocks */
+} *rsx = NULL;
+
+
+static inline int
+_rs_allocate(struct _rs **rsp, struct _rsx **rsxp)
+{
+	if ((*rsp = mmap(NULL, sizeof(**rsp), PROT_READ|PROT_WRITE,
+	    MAP_ANON|MAP_PRIVATE, -1, 0)) == MAP_FAILED)
+		return (-1);
+
+	if ((*rsxp = mmap(NULL, sizeof(**rsxp), PROT_READ|PROT_WRITE,
+	    MAP_ANON|MAP_PRIVATE, -1, 0)) == MAP_FAILED) {
+		munmap(*rsp, sizeof(**rsp));
+		*rsp = NULL;
+		return (-1);
+	}
+
+	return (0);
+}
+
 
 static inline void _rs_rekey(u_char *dat, size_t datlen);
 
@@ -146,8 +170,14 @@ _rs_init(u_char *buf, size_t n)
 {
 	if (n < KEYSZ + IVSZ)
 		return;
-	chacha_keysetup(&rs, buf, KEYSZ * 8);
-	chacha_ivsetup(&rs, buf + KEYSZ);
+
+	if (rs == NULL) {
+		if (_rs_allocate(&rs, &rsx) == -1)
+			_exit(1);
+	}
+
+	chacha_keysetup(&rsx->rs_chacha, buf, KEYSZ * 8);
+	chacha_ivsetup(&rsx->rs_chacha, buf + KEYSZ);
 }
 
 static void
@@ -164,18 +194,17 @@ _rs_stir(void)
 		fatal("getentropy failed");
 #endif
 
-	if (!rs_initialized) {
-		rs_initialized = 1;
+	if (rs == NULL)
 		_rs_init(rnd, sizeof(rnd));
-	} else
+	else
 		_rs_rekey(rnd, sizeof(rnd));
 	explicit_bzero(rnd, sizeof(rnd));
 
 	/* invalidate rs_buf */
-	rs_have = 0;
-	memset(rs_buf, 0, RSBUFSZ);
+	rs->rs_have = 0;
+	memset(rsx->rs_buf, 0, sizeof(rsx->rs_buf));
 
-	rs_count = 1600000;
+	rs->rs_count = 1600000;
 }
 
 static inline void
@@ -183,33 +212,34 @@ _rs_stir_if_needed(size_t len)
 {
 	pid_t pid = getpid();
 
-	if (rs_count <= len || !rs_initialized || rs_stir_pid != pid) {
+	if (rs == NULL || rs->rs_count <= len || rs_stir_pid != pid) {
 		rs_stir_pid = pid;
 		_rs_stir();
 	} else
-		rs_count -= len;
+		rs->rs_count -= len;
 }
 
 static inline void
 _rs_rekey(u_char *dat, size_t datlen)
 {
 #ifndef KEYSTREAM_ONLY
-	memset(rs_buf, 0,RSBUFSZ);
+	memset(rsx->rs_buf, 0, sizeof(rsx->rs_buf));
 #endif
 	/* fill rs_buf with the keystream */
-	chacha_encrypt_bytes(&rs, rs_buf, rs_buf, RSBUFSZ);
+	chacha_encrypt_bytes(&rsx->rs_chacha, rsx->rs_buf,
+	    rsx->rs_buf, sizeof(rsx->rs_buf));
 	/* mix in optional user provided data */
 	if (dat) {
 		size_t i, m;
 
 		m = MINIMUM(datlen, KEYSZ + IVSZ);
 		for (i = 0; i < m; i++)
-			rs_buf[i] ^= dat[i];
+			rsx->rs_buf[i] ^= dat[i];
 	}
 	/* immediately reinit for backtracking resistance */
-	_rs_init(rs_buf, KEYSZ + IVSZ);
-	memset(rs_buf, 0, KEYSZ + IVSZ);
-	rs_have = RSBUFSZ - KEYSZ - IVSZ;
+	_rs_init(rsx->rs_buf, KEYSZ + IVSZ);
+	memset(rsx->rs_buf, 0, KEYSZ + IVSZ);
+	rs->rs_have = sizeof(rsx->rs_buf) - KEYSZ - IVSZ;
 }
 
 static inline void
@@ -220,15 +250,18 @@ _rs_random_buf(void *_buf, size_t n)
 
 	_rs_stir_if_needed(n);
 	while (n > 0) {
-		if (rs_have > 0) {
-			m = MINIMUM(n, rs_have);
-			memcpy(buf, rs_buf + RSBUFSZ - rs_have, m);
-			memset(rs_buf + RSBUFSZ - rs_have, 0, m);
+		if (rs->rs_have > 0) {
+			u_char *keystream;
+			m = MINIMUM(n, rs->rs_have);
+			keystream = rsx->rs_buf + sizeof(rsx->rs_buf)
+			    - rs->rs_have;
+			memcpy(buf, keystream, m);
+			memset(keystream, 0, m);
 			buf += m;
 			n -= m;
-			rs_have -= m;
+			rs->rs_have -= m;
 		}
-		if (rs_have == 0)
+		if (rs->rs_have == 0)
 			_rs_rekey(NULL, 0);
 	}
 }
@@ -237,12 +270,15 @@ _rs_random_buf(void *_buf, size_t n)
 static inline void
 _rs_random_u32(uint32_t *val)
 {
+	u_char *keystream;
+
 	_rs_stir_if_needed(sizeof(*val));
-	if (rs_have < sizeof(*val))
+	if (rs->rs_have < sizeof(*val))
 		_rs_rekey(NULL, 0);
-	memcpy(val, rs_buf + RSBUFSZ - rs_have, sizeof(*val));
-	memset(rs_buf + RSBUFSZ - rs_have, 0, sizeof(*val));
-	rs_have -= sizeof(*val);
+	keystream = rsx->rs_buf + sizeof(rsx->rs_buf) - rs->rs_have;
+	memcpy(val, keystream, sizeof(*val));
+	memset(keystream, 0, sizeof(*val));
+	rs->rs_have -= sizeof(*val);
 }
 # endif /*ndef HAVE_ARC4RANDOM*/
 
