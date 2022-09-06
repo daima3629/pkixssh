@@ -1,7 +1,4 @@
-/* OPENBSD ORIGINAL: lib/libc/crypto/arc4random.c */
-
 /*	$OpenBSD: arc4random.c,v 1.25 2013/10/01 18:34:57 markus Exp $	*/
-
 /*
  * Copyright (c) 1996, David Mazieres <dm@uun.org>
  * Copyright (c) 2008, Damien Miller <djm@openbsd.org>
@@ -21,15 +18,14 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-/*
- * ChaCha based random number generator for OpenBSD.
- */
-
 #include "includes.h"
 
 #include <sys/types.h>
 
 #include <fcntl.h>
+#ifdef HAVE_STDINT_H
+# include <stdint.h>
+#endif
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -76,9 +72,9 @@ extern int _ssh_compat_getentropy(void *s, size_t len);
 static int rc4_ready = 0;
 
 void      fips_arc4random_stir(void);
-u_int32_t fips_arc4random(void);
+uint32_t  fips_arc4random(void);
 void      save_arc4random_stir(void);
-u_int32_t save_arc4random(void);
+uint32_t  save_arc4random(void);
 
 /* FIXME: based on readhat/fedora fips patch */
 void
@@ -90,7 +86,7 @@ fips_arc4random_stir(void) {
 		    ERR_get_error());
 	rc4_ready = 1;
 }
-u_int32_t
+uint32_t
 fips_arc4random(void) {
 	unsigned int r = 0;
 	void *rp = &r;
@@ -111,7 +107,7 @@ arc4random_stir(void) {
 		save_arc4random_stir();
 }
 
-u_int32_t
+uint32_t
 arc4random(void) {
 	return FIPS_mode()
 		? fips_arc4random()
@@ -238,8 +234,8 @@ _rs_random_buf(void *_buf, size_t n)
 }
 
 # ifndef HAVE_ARC4RANDOM
-static void
-_rs_random_u32(u_int32_t *val)
+static inline void
+_rs_random_u32(uint32_t *val)
 {
 	_rs_stir_if_needed(sizeof(*val));
 	if (rs_have < sizeof(*val))
@@ -247,7 +243,6 @@ _rs_random_u32(u_int32_t *val)
 	memcpy(val, rs_buf + RSBUFSZ - rs_have, sizeof(*val));
 	memset(rs_buf + RSBUFSZ - rs_have, 0, sizeof(*val));
 	rs_have -= sizeof(*val);
-	return;
 }
 # endif /*ndef HAVE_ARC4RANDOM*/
 
@@ -270,30 +265,11 @@ arc4random_stir(void)
 }
 # endif /*ndef HAVE_ARC4RANDOM_STIR*/
 
-# if 0 /*UNUSED*/
-void
-arc4random_addrandom(u_char *dat, int datlen)
-{
-	int m;
-
-	_ARC4_LOCK();
-	if (!rs_initialized)
-		_rs_stir();
-	while (datlen > 0) {
-		m = MINIMUM(datlen, KEYSZ + IVSZ);
-		_rs_rekey(dat, m);
-		dat += m;
-		datlen -= m;
-	}
-	_ARC4_UNLOCK();
-}
-# endif /*UNUSED*/
-
 # ifndef HAVE_ARC4RANDOM
-u_int32_t
+uint32_t
 arc4random(void)
 {
-	u_int32_t val;
+	uint32_t val;
 
 	_ARC4_LOCK();
 	_rs_random_u32(&val);
@@ -303,7 +279,7 @@ arc4random(void)
 # endif /*ndef HAVE_ARC4RANDOM*/
 
 /*
- * If we are providing arc4random, then we can provide a more efficient 
+ * If we are providing arc4random, then we can provide a more efficient
  * arc4random_buf().
  */
 # if !defined(HAVE_ARC4RANDOM_BUF) && !defined(HAVE_ARC4RANDOM)
@@ -330,7 +306,7 @@ void
 arc4random_buf(void *_buf, size_t n)
 {
 	size_t i;
-	u_int32_t r = 0;
+	uint32_t r = 0;
 	char *buf = (char *)_buf;
 
 	for (i = 0; i < n; i++) {
@@ -342,25 +318,3 @@ arc4random_buf(void *_buf, size_t n)
 	explicit_bzero(&r, sizeof(r));
 }
 #endif /* !defined(HAVE_ARC4RANDOM_BUF) && defined(HAVE_ARC4RANDOM) */
-
-#if 0
-/*-------- Test code for i386 --------*/
-#include <stdio.h>
-#include <machine/pctr.h>
-int
-main(int argc, char **argv)
-{
-	const int iter = 1000000;
-	int     i;
-	pctrval v;
-
-	v = rdtsc();
-	for (i = 0; i < iter; i++)
-		arc4random();
-	v = rdtsc() - v;
-	v /= iter;
-
-	printf("%qd cycles\n", v);
-	exit(0);
-}
-#endif
