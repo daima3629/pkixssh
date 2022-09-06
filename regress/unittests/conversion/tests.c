@@ -12,6 +12,7 @@
 #include <string.h>
 
 #include "misc.h"
+#include "ssherr.h"
 
 void
 tests(void)
@@ -85,6 +86,67 @@ tests(void)
 	res = fmttime(((((4)*7+5)*24+11)*60+12)*60+13);
 	ASSERT_STRING_EQ(res, "4w5d11h");
 	free(res);
+}
+	TEST_DONE();
+
+{	uint64_t t;
+	/* XXX timezones/DST make verification of this tricky */
+	/* XXX maybe setenv TZ and tzset() to make it unambiguous? */
+	TEST_START("misc_parse_absolute_time");
+	ASSERT_INT_EQ(parse_absolute_time("20000101", &t), 0);
+	ASSERT_INT_EQ(parse_absolute_time("200001011223", &t), 0);
+	ASSERT_INT_EQ(parse_absolute_time("20000101122345", &t), 0);
+
+	/* forced UTC TZ */
+	ASSERT_INT_EQ(parse_absolute_time("20000101Z", &t), 0);
+	ASSERT_U64_EQ(t, 946684800);
+	ASSERT_INT_EQ(parse_absolute_time("200001011223Z", &t), 0);
+	ASSERT_U64_EQ(t, 946729380);
+	ASSERT_INT_EQ(parse_absolute_time("20000101122345Z", &t), 0);
+	ASSERT_U64_EQ(t, 946729425);
+	ASSERT_INT_EQ(parse_absolute_time("20000101UTC", &t), 0);
+	ASSERT_U64_EQ(t, 946684800);
+	ASSERT_INT_EQ(parse_absolute_time("200001011223UTC", &t), 0);
+	ASSERT_U64_EQ(t, 946729380);
+	ASSERT_INT_EQ(parse_absolute_time("20000101122345UTC", &t), 0);
+	ASSERT_U64_EQ(t, 946729425);
+
+	/* Bad month */
+	ASSERT_INT_EQ(parse_absolute_time("20001301", &t),
+	    SSH_ERR_INVALID_FORMAT);
+	ASSERT_INT_EQ(parse_absolute_time("20000001", &t),
+	    SSH_ERR_INVALID_FORMAT);
+	/* Incomplete */
+	ASSERT_INT_EQ(parse_absolute_time("2", &t),
+	    SSH_ERR_INVALID_FORMAT);
+	ASSERT_INT_EQ(parse_absolute_time("2000", &t),
+	    SSH_ERR_INVALID_FORMAT);
+	ASSERT_INT_EQ(parse_absolute_time("20000", &t),
+	    SSH_ERR_INVALID_FORMAT);
+	ASSERT_INT_EQ(parse_absolute_time("200001", &t),
+	    SSH_ERR_INVALID_FORMAT);
+	ASSERT_INT_EQ(parse_absolute_time("2000010", &t),
+	    SSH_ERR_INVALID_FORMAT);
+	ASSERT_INT_EQ(parse_absolute_time("200001010", &t),
+	    SSH_ERR_INVALID_FORMAT);
+	/* Bad day, hour, minute, second */
+	ASSERT_INT_EQ(parse_absolute_time("20000199", &t),
+	    SSH_ERR_INVALID_FORMAT);
+	ASSERT_INT_EQ(parse_absolute_time("200001019900", &t),
+	    SSH_ERR_INVALID_FORMAT);
+	ASSERT_INT_EQ(parse_absolute_time("200001010099", &t),
+	    SSH_ERR_INVALID_FORMAT);
+	ASSERT_INT_EQ(parse_absolute_time("20000101000099", &t),
+	    SSH_ERR_INVALID_FORMAT);
+	/* Invalid TZ specifier */
+	ASSERT_INT_EQ(parse_absolute_time("20000101ZZ", &t),
+	    SSH_ERR_INVALID_FORMAT);
+	ASSERT_INT_EQ(parse_absolute_time("20000101PDT", &t),
+	    SSH_ERR_INVALID_FORMAT);
+	ASSERT_INT_EQ(parse_absolute_time("20000101U", &t),
+	    SSH_ERR_INVALID_FORMAT);
+	ASSERT_INT_EQ(parse_absolute_time("20000101UTCUTC", &t),
+	    SSH_ERR_INVALID_FORMAT);
 }
 	TEST_DONE();
 }

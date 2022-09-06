@@ -600,10 +600,13 @@ The string
 .Dq always
 to indicate the custom certificate has no specified start time.
 .It
-A date or time in YYYYMMDD format, a in YYYYMMDDHHMM[SS] format.
+A date or time in the system time zone formatted as YYYYMMDD or
+YYYYMMDDHHMM[SS].
 .It
-A relative time (to the current time) consisting of a minus sign followed by
-an interval in the format described in the
+A date or time in the UTC time zone as YYYYMMDDZ or YYYYMMDDHHMM[SS]Z.
+.It
+A relative time before the current system time consisting of a minus sign
+followed by an interval in the format described in the
 TIME FORMATS section of
 .Xr sshd_config 5 .
 .It
@@ -617,7 +620,17 @@ The end time may be specified similarly to the start time:
 .It
 The string
 .Dq forever
-to indicate the custom certificate has no expiry date.
+to indicate the custom certificate has no specified end time.
+.It
+A date or time in the system time zone formatted as YYYYMMDD or
+YYYYMMDDHHMM[SS].
+.It
+A date or time in the UTC time zone as YYYYMMDDZ or YYYYMMDDHHMM[SS]Z.
+.It
+A relative time after the current system time consisting of a plus sign
+followed by an interval in the format described in the
+TIME FORMATS section of
+.Xr sshd_config 5 .
 .It
 A raw seconds since epoch (Jan 1 1970 00:00:00 UTC) as a hexadecimal
 number beginning with
@@ -632,6 +645,8 @@ Valid from now to 52 weeks and one day from now.
 Valid from four weeks ago to four weeks from now.
 .It 20100101123000:20110101123000
 Valid from 12:30 PM, January 1st, 2010 to 12:30 PM, January 1st, 2011.
+.It 20100101123000Z:20110101123000Z
+Similar, but interpreted in the UTC time zone rather than the system time zone.
 .It -1d:20110101
 Valid from yesterday to midnight, January 1st, 2011.
 .It 0x1:0x2000000000
