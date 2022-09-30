@@ -1,4 +1,4 @@
-/* $OpenBSD: servconf.c,v 1.385 2022/06/03 04:30:47 djm Exp $ */
+/* $OpenBSD: servconf.c,v 1.386 2022/09/17 10:34:29 djm Exp $ */
 /*
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
@@ -241,6 +241,7 @@ initialize_server_options(ServerOptions *options)
 	options->fingerprint_hash = -1;
 	options->disable_forwarding = -1;
 	options->expose_userauth_info = -1;
+	options->required_rsa_size = -1;
 }
 
 /* Returns 1 if a string option is unset or set to "none" or 0 otherwise. */
@@ -491,6 +492,8 @@ fill_default_server_options(ServerOptions *options)
 		options->disable_forwarding = 0;
 	if (options->expose_userauth_info == -1)
 		options->expose_userauth_info = 0;
+	if (options->required_rsa_size == -1)
+		options->required_rsa_size = SSH_RSA_MINIMUM_MODULUS_SIZE;
 
 	assemble_algorithms(options);
 
@@ -612,6 +615,7 @@ typedef enum {
 	sStreamLocalBindMask, sStreamLocalBindUnlink,
 	sAllowStreamLocalForwarding, sFingerprintHash, sDisableForwarding,
 	sExposeAuthInfo, sRDomain,
+	sRequiredRSASize,
 	sDeprecated, sIgnore, sUnsupported
 } ServerOpCodes;
 
@@ -792,6 +796,7 @@ static struct {
 	{ "rdomain", sUnsupported, SSHCFG_ALL },
 #endif
 	{ "casignaturealgorithms", sCASignatureAlgorithms, SSHCFG_ALL },
+	{ "requiredrsasize", sRequiredRSASize, SSHCFG_ALL },
 	{ NULL, sBadOption, 0 }
 };
 
@@ -2712,6 +2717,10 @@ parse_string:
 		break;
 #endif
 
+	case sRequiredRSASize:
+		intptr = &options->required_rsa_size;
+		goto parse_int;
+
 	case sDeprecated:
 	case sIgnore:
 #ifndef USE_OPENSSL_STORE2
@@ -2893,6 +2902,7 @@ copy_set_server_options(ServerOptions *dst, ServerOptions *src, int preauth)
 	M_CP_INTOPT(rekey_limit);
 	M_CP_INTOPT(rekey_interval);
 	M_CP_INTOPT(log_level);
+	M_CP_INTOPT(required_rsa_size);
 
 	/*
 	 * The bind_mask is a mode_t that may be unsigned, so we can't use
@@ -3195,6 +3205,7 @@ dump_config(ServerOptions *o)
 	dump_cfg_int(sMaxSessions, o->max_sessions);
 	dump_cfg_int(sClientAliveInterval, o->client_alive_interval);
 	dump_cfg_int(sClientAliveCountMax, o->client_alive_count_max);
+	dump_cfg_int(sRequiredRSASize, o->required_rsa_size);
 	dump_cfg_oct(sStreamLocalBindMask, o->fwd_opts.streamlocal_bind_mask);
 
 	/* formatted integer arguments */
