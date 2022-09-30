@@ -1,8 +1,9 @@
-/*	$OpenBSD: arc4random.c,v 1.25 2013/10/01 18:34:57 markus Exp $	*/
+/*	$OpenBSD: arc4random.c,v 1.58 2022/07/31 13:41:45 tb Exp $	*/
 /*
  * Copyright (c) 1996, David Mazieres <dm@uun.org>
  * Copyright (c) 2008, Damien Miller <djm@openbsd.org>
  * Copyright (c) 2013, Markus Friedl <markus@openbsd.org>
+ * Copyright (c) 2014, Theo de Raadt <deraadt@openbsd.org>
  * Copyright (c) 2014-2022, Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
@@ -23,6 +24,7 @@
 #include <sys/types.h>
 
 #include <fcntl.h>
+#include <signal.h>
 #ifdef HAVE_STDINT_H
 # include <stdint.h>
 #endif
@@ -127,23 +129,47 @@ arc4random(void) {
 /* OpenSSH isn't multithreaded */
 #define _ARC4_LOCK()
 #define _ARC4_UNLOCK()
+#define _ARC4_ATFORK(f)
 
 #define KEYSZ	32
 #define IVSZ	8
 #define BLOCKSZ	64
 #define RSBUFSZ	(16*BLOCKSZ)
-static pid_t rs_stir_pid;
+
+#define REKEY_BASE	(1024*1024) /* NB. should be a power of 2 */
 
 static struct _rs {
 	size_t		rs_have;	/* valid bytes at end of rs_buf */
 	size_t		rs_count;	/* bytes till reseed */
 } *rs = NULL;
 
+/* Maybe be preserved in fork children, if _rs_allocate() decides. */
 static struct _rsx {
 	chacha_ctx	rs_chacha;	/* chacha context for random keystream */
 	u_char		rs_buf[RSBUFSZ];	/* keystream blocks */
 } *rsx = NULL;
 
+static volatile sig_atomic_t _rs_forked;
+
+static inline void
+_rs_forkhandler(void)
+{
+	_rs_forked = 1;
+}
+
+static inline void
+_rs_forkdetect(void)
+{
+	static pid_t _rs_pid = 0;
+	pid_t pid = getpid();
+
+	if (_rs_pid == 0 || _rs_pid == 1 || _rs_pid != pid || _rs_forked) {
+		_rs_pid = pid;
+		_rs_forked = 0;
+		if (rs != NULL)
+			memset(rs, 0, sizeof(*rs));
+	}
+}
 
 static inline int
 _rs_allocate(struct _rs **rsp, struct _rsx **rsxp)
@@ -159,6 +185,7 @@ _rs_allocate(struct _rs **rsp, struct _rsx **rsxp)
 		return (-1);
 	}
 
+	_ARC4_ATFORK(_rs_forkhandler);
 	return (0);
 }
 
@@ -184,6 +211,7 @@ static void
 _rs_stir(void)
 {
 	u_char rnd[KEYSZ + IVSZ];
+	uint32_t rekey_fuzz = 0;
 
 #ifdef WITH_OPENSSL
 	if (RAND_bytes(rnd, sizeof(rnd)) <= 0)
@@ -198,24 +226,27 @@ _rs_stir(void)
 		_rs_init(rnd, sizeof(rnd));
 	else
 		_rs_rekey(rnd, sizeof(rnd));
-	explicit_bzero(rnd, sizeof(rnd));
+	explicit_bzero(rnd, sizeof(rnd));	/* discard source seed */
 
 	/* invalidate rs_buf */
 	rs->rs_have = 0;
 	memset(rsx->rs_buf, 0, sizeof(rsx->rs_buf));
 
-	rs->rs_count = 1600000;
+	/* rekey interval should not be predictable */
+	chacha_encrypt_bytes(&rsx->rs_chacha, (uint8_t *)&rekey_fuzz,
+	    (uint8_t *)&rekey_fuzz, sizeof(rekey_fuzz));
+	rs->rs_count = REKEY_BASE + (rekey_fuzz % REKEY_BASE);
 }
 
 static inline void
 _rs_stir_if_needed(size_t len)
 {
-	pid_t pid = getpid();
-
-	if (rs == NULL || rs->rs_count <= len || rs_stir_pid != pid) {
-		rs_stir_pid = pid;
+	_rs_forkdetect();
+	if (rs == NULL || rs->rs_count <= len)
 		_rs_stir();
-	} else
+	if (rs->rs_count <= len)
+		rs->rs_count = 0;
+	else
 		rs->rs_count -= len;
 }
 
@@ -312,6 +343,7 @@ arc4random(void)
 	_ARC4_UNLOCK();
 	return val;
 }
+DEF_WEAK(arc4random);
 # endif /*ndef HAVE_ARC4RANDOM*/
 
 /*
@@ -326,6 +358,7 @@ arc4random_buf(void *buf, size_t n)
 	_rs_random_buf(buf, n);
 	_ARC4_UNLOCK();
 }
+DEF_WEAK(arc4random_buf);
 # endif /*!defined(HAVE_ARC4RANDOM_BUF) && !defined(HAVE_ARC4RANDOM)*/
 
 #ifdef OPENSSL_FIPS
