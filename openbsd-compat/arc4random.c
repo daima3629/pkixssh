@@ -151,11 +151,13 @@ static struct _rsx {
 
 static volatile sig_atomic_t _rs_forked;
 
+#if 0 /* UNUSED */
 static inline void
 _rs_forkhandler(void)
 {
 	_rs_forked = 1;
 }
+#endif
 
 static inline void
 _rs_forkdetect(void)
