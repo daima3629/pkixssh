@@ -2364,6 +2364,19 @@ sshbuf_read_priv_xmss(struct sshbuf *buf, struct sshkey *key) {
 #endif /*WITH_XMSS*/
 
 
+int
+sshkey_check_length(const struct sshkey *k)
+{
+#ifdef WITH_OPENSSL
+	if (k->pk != NULL)
+		return sshpkey_verify_length(k->pk);
+#else
+	UNUSED(k);
+#endif
+	return 0;
+}
+
+
 static int
 sshkey_from_blob_internal(struct sshbuf *b, struct sshkey **keyp,
     int allow_cert)

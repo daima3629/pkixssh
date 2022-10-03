@@ -1,4 +1,4 @@
-/* $OpenBSD: auth2-pubkey.c,v 1.116 2022/06/15 16:08:25 djm Exp $ */
+/* $OpenBSD: auth2-pubkey.c,v 1.117 2022/09/17 10:34:29 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2003-2022 Roumen Petrov.  All rights reserved.
@@ -162,6 +162,13 @@ userauth_pubkey(struct ssh *ssh)
 		    "(null)" : key->cert->signature_type);
 		goto done;
 	}
+#if 0
+	/* NOTE: key size is validated on read, sign and verify */
+	if ((r = sshkey_check_length(key)) != 0) {
+		error_r(r, "refusing %s key", sshkey_type(key));
+		goto done;
+	}
+#endif
 
 {	ssh_verify_ctx ctx = { pkalg, key, &ssh->compat, NULL };
 

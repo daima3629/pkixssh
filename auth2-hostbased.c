@@ -1,4 +1,4 @@
-/* $OpenBSD: auth2-hostbased.c,v 1.49 2022/01/06 22:01:14 djm Exp $ */
+/* $OpenBSD: auth2-hostbased.c,v 1.50 2022/09/17 10:34:29 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2004-2022 Roumen Petrov.  All rights reserved.
@@ -138,6 +138,13 @@ userauth_hostbased(struct ssh *ssh)
 		    "(null)" : key->cert->signature_type);
 		goto done;
 	}
+#if 0
+	/* NOTE: key size is validated on read, sign and verify */
+	if ((r = sshkey_check_length(key)) != 0) {
+		error_r(r, "refusing %s key", sshkey_type(key));
+		goto done;
+	}
+#endif
 
 	if (!authctxt->valid || authctxt->user == NULL) {
 		debug2_f("disabled because of invalid user");

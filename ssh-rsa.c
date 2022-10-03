@@ -76,9 +76,12 @@ ssh_rsa_alg_info(const char *alg) {
 	return NULL;
 }
 
+/* global option overridable by configuration */
+int required_rsa_size = SSH_RSA_MINIMUM_MODULUS_SIZE;
+
 int
 sshrsa_verify_length(int bits) {
-	return bits < SSH_RSA_MINIMUM_MODULUS_SIZE
+	return bits < required_rsa_size
 	    ? SSH_ERR_KEY_LENGTH : 0;
 }
 

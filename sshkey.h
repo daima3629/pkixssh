@@ -2,7 +2,7 @@
 
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2022 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -271,6 +271,11 @@ int	sshkey_private_to_bio(struct sshkey *key, BIO *bio,
 
 int	sshrsa_verify_length(int bits);
 int	sshdsa_verify_length(int bits);
+# ifdef WITH_OPENSSL
+int	sshpkey_verify_length(EVP_PKEY *pk);
+#endif
+
+int	sshkey_check_length(const struct sshkey *);
 
 /* stateful keys (e.g. XMSS) */
 int	 sshkey_set_filename(struct sshkey *, const char *);

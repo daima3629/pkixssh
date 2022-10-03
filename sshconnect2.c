@@ -1,8 +1,8 @@
-/* $OpenBSD: sshconnect2.c,v 1.359 2022/07/01 03:39:44 dtucker Exp $ */
+/* $OpenBSD: sshconnect2.c,v 1.361 2022/09/17 10:33:18 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Damien Miller.  All rights reserved.
- * Copyright (c) 2006-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2006-2022 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -94,6 +94,11 @@ verify_host_key_callback(struct sshkey *hostkey, struct ssh *ssh)
 {
 	struct kex *kex = ssh->kex;
 
+#if 0
+	/* NOTE: key size is validated on read, sign and verify */
+	if (sshkey_check_length(host_key) != 0)
+		fatal_r(r, "Bad server host key");
+#endif
 	if (verify_host_key(xxx_host, xxx_hostaddr, kex->hostkey_alg, hostkey,
 	    xxx_conn_info) == -1)
 		fatal("Host key verification failed.");
@@ -1424,6 +1429,15 @@ load_identity_file(Identity *id)
 			quit = 1;
 			break;
 		}
+	#if 0
+		/* NOTE: key size is validated on read, sign and verify */
+		if (!quit && (r = sshkey_check_length(private)) != 0) {
+			debug_r(r, "skipping key %s", id->filename);
+			sshkey_free(private);
+			private = NULL;
+			quit = 1;
+		}
+	#endif
 		if (!quit && private != NULL && id->agent_fd == -1 &&
 		    !(id->key && id->isprivate))
 			maybe_add_key_to_agent(id->filename, private, comment,
@@ -1498,6 +1512,14 @@ pubkey_prepare(struct ssh *ssh, Authctxt *authctxt)
 		close(agent_fd);
 	} else {
 		for (j = 0; j < idlist->nkeys; j++) {
+		#if 0
+			/* NOTE: key size is validated on read, sign and verify */
+			if ((r = sshkey_check_length(idlist->keys[j])) != 0) {
+				debug_r(r, "ignoring %s agent key",
+				    sshkey_ssh_name(idlist->keys[j]));
+				continue;
+			}
+		#endif
 			found = 0;
 			TAILQ_FOREACH(id, &files, next) {
 				/*

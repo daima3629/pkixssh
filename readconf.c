@@ -150,6 +150,9 @@
 
 */
 
+/* used in ssh-rsa.c */
+extern int required_rsa_size;
+
 static int read_config_file_depth(const char *filename, struct passwd *pw,
     const char *host, const char *original_host, Options *options,
     int flags, int *activep, int *want_final_pass, int depth);
@@ -2808,7 +2811,16 @@ fill_default_options(Options * options)
 	if (options->sk_provider == NULL)
 		options->sk_provider = xstrdup("$SSH_SK_PROVIDER");
 	if (options->required_rsa_size == -1)
-		options->required_rsa_size = SSH_RSA_MINIMUM_MODULUS_SIZE;
+		/* get default */
+		options->required_rsa_size = required_rsa_size;
+	else
+		/* transfer */
+		if (options->required_rsa_size < required_rsa_size) {
+			error("RSA key size %d is less then minimum %d.",
+			    options->required_rsa_size, required_rsa_size);
+			return -1;
+		}
+		required_rsa_size = options->required_rsa_size;
 
 	/* expand KEX and etc. name lists */
 {	char *all;

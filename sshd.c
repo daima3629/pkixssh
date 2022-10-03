@@ -1,4 +1,4 @@
-/* $OpenBSD: sshd.c,v 1.590 2022/07/01 05:08:23 dtucker Exp $ */
+/* $OpenBSD: sshd.c,v 1.591 2022/09/17 10:34:29 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -20,7 +20,7 @@
  *
  * Copyright (c) 2000, 2001, 2002 Markus Friedl.  All rights reserved.
  * Copyright (c) 2002 Niels Provos.  All rights reserved.
- * Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2022 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -2049,6 +2049,15 @@ main(int ac, char **av)
 				fatal_r(r, "Could not demote key: \"%s\"",
 				    options.host_key_files[i]);
 		}
+	#if 0
+		/* NOTE: key size is validated on read, sign and verify */
+		if (pubkey != NULL && (r = sshkey_check_length(pubkey)) != 0) {
+			error_fr(r, "Host key %s", options.host_key_files[i]);
+			sshkey_free(pubkey);
+			sshkey_free(key);
+			continue;
+		}
+	#endif
 		sensitive_data.host_keys[i] = key;
 		sensitive_data.host_pubkeys[i] = pubkey;
 		sensitive_data.host_algorithms[i] = Xkey_algoriths(pubkey);

@@ -112,6 +112,9 @@ extern char *server_pkalgs;
 extern int use_privsep;
 extern struct sshbuf *cfg;
 
+/* used in ssh-rsa.c */
+extern int required_rsa_size;
+
 /* Initializes the server options to their default values. */
 
 void
@@ -493,7 +496,14 @@ fill_default_server_options(ServerOptions *options)
 	if (options->expose_userauth_info == -1)
 		options->expose_userauth_info = 0;
 	if (options->required_rsa_size == -1)
-		options->required_rsa_size = SSH_RSA_MINIMUM_MODULUS_SIZE;
+		/* get default */
+		options->required_rsa_size = required_rsa_size;
+	else
+		/* transfer */
+		if (options->required_rsa_size < required_rsa_size)
+			fatal("RSA key size %d is less then minimum %d.",
+			    options->required_rsa_size, required_rsa_size);
+		required_rsa_size = options->required_rsa_size;
 
 	assemble_algorithms(options);
 
