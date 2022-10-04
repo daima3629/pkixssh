@@ -2706,6 +2706,12 @@ AC_ARG_WITH([ssl-engine],
 	[with_ssl_engine=check]
 )
 
+# enable/disable OCSP requests
+ssh_ocsp=:
+AC_ARG_ENABLE([ocsp],
+	[AS_HELP_STRING([--disable-ocsp], [Disable OCSP validation])],
+	[AS_IF([test "x$enableval" = "xno"], [ssh_ocsp=false])])
+
 # Where to place ssh CA root
 sshcadir='${sysconfdir}/ca'
 sshcadir=`eval echo ${sshcadir}`
@@ -5055,6 +5061,78 @@ AC_ARG_WITH([kerberos5],
 AC_SUBST([GSSLIBS])
 AC_SUBST([K5LIBS])
 
+
+# Postponed OpenSSL checks as ssl library may depend on kerberos.
+AS_IF([$ssh_ocsp], [
+	AC_CHECK_FUNCS([OCSP_sendreq_bio],
+	[
+		AC_CHECK_HEADER([openssl/ocsp.h],
+		[],
+		[
+			ssh_ocsp=false
+			AC_MSG_ERROR([OCSP header not found])
+		])
+	],
+	[
+		ssh_ocsp=false
+		AC_MSG_WARN([Cannot find OCSP functions - OCSP is disabled])
+	])
+])
+AS_IF([$ssh_ocsp], [
+	save_LIBS="$LIBS"
+	AC_MSG_CHECKING([how to link programs using OpenSSL OCSP functions])
+	AS_IF([test -n "$SSL_K5LIBS"], [
+		SSL_K5LIBS=$K5LIBS
+	], [
+		SSL_K5LIBS="-lkrb5 -lk5crypto -lcom_err"
+	])
+	link_SSL=false
+	for L in "" "$SSL_K5LIBS" ; do
+		LIBS="-lssl $L $CRYPTO_LIBS $save_LIBS"
+		AC_LINK_IFELSE([
+			AC_LANG_PROGRAM([[
+#include <openssl/ssl.h>
+]], [[
+#ifdef HAVE_OPENSSL_INIT_CRYPTO
+  OPENSSL_init_ssl(0, NULL);
+#else
+  SSL_library_init();
+#endif
+]])],
+			[link_SSL=:]
+		)
+		$link_SSL && break
+	done
+	AS_IF([$link_SSL], [
+		LIBOCSP="-lssl $L"
+		AC_MSG_RESULT([$LIBOCSP])
+	], [
+		AC_MSG_RESULT([fail])
+		AC_MSG_ERROR([cannot link with OpenSSL ssl library])
+	])
+	# check for openssl ssl 1.1+ functions ...
+	AC_CHECK_FUNCS([ \
+	  TLS_client_method \
+	])
+	LIBS="$save_LIBS"
+
+	AC_DEFINE(
+		[SSH_OCSP_ENABLED], [1],
+		[Define if you want to validate X.509 certificates with OCSP])
+	OCSP_ON=''
+	OCSP_OFF='#'
+	OCSP_MSG=yes
+], [
+	LIBOCSP=
+	OCSP_ON='#'
+	OCSP_OFF=''
+	OCSP_MSG=no
+])
+AC_SUBST([LIBOCSP])
+AC_SUBST([OCSP_ON])
+AC_SUBST([OCSP_OFF])
+
+
 # Looking for programs, paths and files
 
 PRIVSEP_PATH=/var/empty
@@ -5483,76 +5561,6 @@ AC_ARG_WITH([bsd-auth],
 		fi
 	]
 )
-
-
-# enable/disable OCSP requests
-ssh_ocsp=:
-AC_ARG_ENABLE([ocsp],
-	[AS_HELP_STRING([--disable-ocsp], [Disable OCSP validation])],
-	[AS_IF([test "x$enableval" = "xno"], [ssh_ocsp=false])])
-AS_IF([$ssh_ocsp], [
-	AC_CHECK_FUNCS([OCSP_sendreq_bio],
-	[
-		AC_CHECK_HEADER([openssl/ocsp.h],
-		[],
-		[
-			ssh_ocsp=false
-			AC_MSG_ERROR([OCSP header not found])
-		])
-	],
-	[
-		ssh_ocsp=false
-		AC_MSG_WARN([Cannot find OCSP functions - OCSP is disabled])
-	])
-])
-AS_IF([$ssh_ocsp], [
-	save_LIBS="$LIBS"
-	AC_MSG_CHECKING([how to link programs using OpenSSL OCSP functions])
-	link_SSL=false
-	for L in "" "-lkrb5 -lk5crypto -lcom_err" ; do
-		LIBS="-lssl $L $CRYPTO_LIBS $save_LIBS"
-		AC_LINK_IFELSE([
-			AC_LANG_PROGRAM([[
-#include <openssl/ssl.h>
-]], [[
-#ifdef HAVE_OPENSSL_INIT_CRYPTO
-  OPENSSL_init_ssl(0, NULL);
-#else
-  SSL_library_init();
-#endif
-]])],
-			[link_SSL=:]
-		)
-		$link_SSL && break
-	done
-	if $link_SSL ; then
-		LIBOCSP="-lssl $L"
-		AC_MSG_RESULT([$LIBOCSP])
-	else
-		AC_MSG_RESULT([fail])
-		AC_MSG_ERROR([cannot link with OpenSSL ssl library])
-	fi
-	# check for openssl ssl 1.1+ functions ...
-	AC_CHECK_FUNCS([ \
-	  TLS_client_method \
-	])
-	LIBS="$save_LIBS"
-
-	AC_DEFINE(
-		[SSH_OCSP_ENABLED], [1],
-		[Define if you want to validate X.509 certificates with OCSP])
-	OCSP_ON=''
-	OCSP_OFF='#'
-	OCSP_MSG=yes
-], [
-	LIBOCSP=
-	OCSP_ON='#'
-	OCSP_OFF=''
-	OCSP_MSG=no
-])
-AC_SUBST([LIBOCSP])
-AC_SUBST([OCSP_ON])
-AC_SUBST([OCSP_OFF])
 
 
 # enable LDAP queries
