@@ -5484,38 +5484,6 @@ AC_ARG_WITH([bsd-auth],
 	]
 )
 
-# X.509 support
-ssh_x509=yes
-
-AC_MSG_CHECKING([whether crypto is LibreSSL >= 2.6.0])
-AC_EGREP_CPP([LibreSSL 2.[^0-5]], AC_LANG_PROGRAM(
-  [[
-#include <openssl/opensslv.h>
-const char crypto[] = LIBRESSL_VERSION_TEXT;
-  ]], [[
-  ]]),
-  [ libressl_26plus=:
-    AC_MSG_RESULT([yes])],
-  [ libressl_26plus=false
-    AC_MSG_RESULT([no])]
-)
-if $libressl_26plus ; then
-  AC_MSG_WARN([
-
-  **************************************************************
-  *                                                            *
-  *  LibreSSL versions 2.6.* may fail on DSA/ECDSA signatures  *
-  *                                                            *
-  **************************************************************
-])
-fi
-
-
-# Reserved for future use
-#AC_DEFINE(
-#    [X509_DISABLED], [1],
-#    [Define if you want to disable X.509 certificates])
-
 
 # enable/disable OCSP requests
 ssh_ocsp=:
