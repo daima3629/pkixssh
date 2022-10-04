@@ -2706,6 +2706,26 @@ AC_ARG_WITH([ssl-engine],
 	[with_ssl_engine=check]
 )
 
+# Where to place ssh CA root
+sshcadir='${sysconfdir}/ca'
+sshcadir=`eval echo ${sshcadir}`
+sshcadir=`eval echo ${sshcadir}`
+case $sshcadir in
+	NONE/*) sshcadir=`echo $sshcadir | sed "s~NONE~$ac_default_prefix~"` ;;
+esac
+
+AC_ARG_WITH([sshca-dir],
+	[AS_HELP_STRING([--with-sshca-dir=DIR], [Specify location of ssh CA root])],
+	[
+		AS_IF([test "x$withval" != "xno"], [
+			sshcadir=$withval
+		])
+	]
+)
+
+AC_DEFINE_UNQUOTED([SSHCADIR], ["$sshcadir"], [Specify location of ssh CA root])
+AC_SUBST([sshcadir])
+
 COMMENT_OUT_ECC="#no ecc#"
 COMMENT_OUT_ECC256="#no ecc256#"
 COMMENT_OUT_ECC384="#no ecc384#"
@@ -5234,26 +5254,6 @@ fi
 #AC_DEFINE(
 #    [X509_DISABLED], [1],
 #    [Define if you want to disable X.509 certificates])
-
-# Where to place ssh CA root
-sshcadir='${sysconfdir}/ca'
-sshcadir=`eval echo ${sshcadir}`
-sshcadir=`eval echo ${sshcadir}`
-case $sshcadir in
-	NONE/*) sshcadir=`echo $sshcadir | sed "s~NONE~$ac_default_prefix~"` ;;
-esac
-
-AC_ARG_WITH([sshca-dir],
-	[AS_HELP_STRING([--with-sshca-dir=PATH], [Specify location of ssh CA root])],
-	[
-		if test "x$withval" != "xno" ; then
-			sshcadir=$withval
-		fi
-	]
-)
-
-AC_DEFINE_UNQUOTED([SSHCADIR], ["$sshcadir"], [Specify location of ssh CA root])
-AC_SUBST([sshcadir])
 
 
 # enable/disable OCSP requests
