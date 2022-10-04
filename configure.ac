@@ -3397,6 +3397,64 @@ AC_DEFINE_UNQUOTED([STORE_FIND_CRITERION_CONST], [$store_find_criterion_const],
 )
 
 
+# FIPS enabled OpenSSL
+AC_ARG_VAR([FIPSLD_CC],[actual compiler to be used by openssl fips compiler])
+
+OPENSSL_FIPS_MODE=no
+AC_ARG_ENABLE([openssl-fips],
+  [AS_HELP_STRING([--enable-openssl-fips], [Enable build with FIPS-enabled openssl])],
+  [ac_openssl_fips=$enableval],
+  [ac_openssl_fips=none]
+)
+
+AS_IF([test "x$ac_openssl_fips" = "xyes"], [
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+#include <openssl/opensslconf.h>
+    ]],[[
+#ifndef OPENSSL_FIPS
+error OPENSSL_FIPS is not defined
+#endif
+    ]])],
+    [],
+    [AC_MSG_ERROR([cannot found fips capable openssl header])]
+  )
+  AC_CHECK_FUNC(
+    [FIPS_mode],
+    [],
+    [AC_MSG_ERROR([cannot found fips capable openssl library])]
+  )
+  OPENSSL_FIPS_MODE=yes
+])
+AC_SUBST([OPENSSL_FIPS_MODE])
+
+FIPS_LIBS=
+FIPSHMAC=:
+AS_IF([test "x$OPENSSL_FIPS_MODE" = "xyes"], [
+  # some system distribute openssl/fips.h
+  AC_CHECK_HEADERS([openssl/fips.h])
+
+  # on some systems FIPS error string are not loaded with other errors!?
+  AC_CHECK_DECLS([ERR_load_FIPS_strings], [],[], [
+#ifdef HAVE_OPENSSL_FIPS_H
+# include <openssl/fips.h>
+#endif
+  ])
+  AC_CHECK_FUNCS([ \
+    ERR_load_FIPS_strings \
+  ])
+
+  # check for Red Hat specific fips library
+  AC_CHECK_LIB([fipscheck], [FIPSCHECK_verify],
+  [
+    FIPS_LIBS="-lfipscheck"
+    AC_CHECK_HEADERS([fipscheck.h])
+    FIPSHMAC=fipshmac
+  ])
+])
+AC_SUBST([FIPS_LIBS])
+AC_SUBST([FIPSHMAC])
+
+
 use_dl=false
 # PKCS#11 depends on OpenSSL and requires dlopen() and co.
 if test $PKCS11_MSG = yes ; then
@@ -5547,67 +5605,6 @@ AC_LDAP_FUNCS([\
 ])
 
 
-# test FIPS enabled openssl
-AC_ARG_VAR([FIPSLD_CC],[actual compiler to be used by openssl fips compiler])
-OPENSSL_FIPS_MODE=no
-AC_ARG_ENABLE([openssl-fips],
-  [AS_HELP_STRING([--enable-openssl-fips], [Enable build with FIPS-enabled openssl])],
-  [ac_openssl_fips=$enableval],
-  [ac_openssl_fips=none]
-)
-
-if test yes = $ac_openssl_fips; then
-  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
-#include <openssl/opensslconf.h>
-    ]],[[
-#ifndef OPENSSL_FIPS
-error OPENSSL_FIPS is not defined
-#endif
-    ]])],
-    [],
-    [AC_MSG_ERROR([cannot found fips capable openssl header])]
-  )
-fi
-if test yes = $ac_openssl_fips; then
-  AC_CHECK_FUNC(
-    [FIPS_mode],
-    [],
-    [AC_MSG_ERROR([cannot found fips capable openssl library])]
-  )
-fi
-if test yes = $ac_openssl_fips; then
-  OPENSSL_FIPS_MODE=yes
-fi
-AC_SUBST([OPENSSL_FIPS_MODE])
-
-FIPS_LIBS=
-FIPSHMAC=':'
-if test yes = $OPENSSL_FIPS_MODE; then
-  # some system distribute openssl/fips.h
-  AC_CHECK_HEADERS([openssl/fips.h])
-
-  # on some systems FIPS error string are not loaded with other erros!?
-  AC_CHECK_DECLS([ERR_load_FIPS_strings], [],[], [
-#ifdef HAVE_OPENSSL_FIPS_H
-# include <openssl/fips.h>
-#endif
-  ])
-  AC_CHECK_FUNCS([ \
-    ERR_load_FIPS_strings \
-  ])
-
-  # check for Red Hat specific fips library
-  AC_CHECK_LIB([fipscheck], [FIPSCHECK_verify],
-  [
-    FIPS_LIBS="-lfipscheck"
-    AC_CHECK_HEADERS([fipscheck.h])
-    FIPSHMAC=fipshmac
-  ])
-fi
-AC_SUBST([FIPS_LIBS])
-AC_SUBST([FIPSHMAC])
-
-
 # Where to place sshd.pid
 piddir=/var/run
 # make sure the directory exists
@@ -5952,12 +5949,12 @@ AC_CONFIG_FILES([Makefile buildpkg.sh opensshd.init openssh.xml \
 	openbsd-compat/Makefile openbsd-compat/regress/Makefile \
 	tests/env tests/CA/Makefile \
 	survey.sh])
-if test yes = $OPENSSL_FIPS_MODE; then
-  if test -n "$FIPSLD_CC"; then
+AS_IF([test "x$OPENSSL_FIPS_MODE" = "xyes"], [
+  AS_IF([test -n "$FIPSLD_CC"], [
     CC='FIPSLD_CC=$(FIPSLD_CC) '$CC
     LD='FIPSLD_CC=$(FIPSLD_CC) '$LD
-  fi
-fi
+  ])
+])
 AC_OUTPUT
 
 # Print summary of options
@@ -6023,9 +6020,9 @@ echo "                FIPS capable build: $OPENSSL_FIPS_MODE"
 echo ""
 
 echo "              Host: ${host}"
-if test yes = $OPENSSL_FIPS_MODE; then
+AS_IF([test "x$OPENSSL_FIPS_MODE" = "xyes"], [
 echo "   Actual compiler: $FIPSLD_CC"
-fi
+])
 echo "          Compiler: ${CC}"
 echo "    Compiler flags: ${CFLAGS}"
 echo "Preprocessor flags: ${CPPFLAGS}"
@@ -6059,10 +6056,10 @@ echo "           LDAP bin dir: ${LDAP_BINDIR}"
 echo ""
 fi
 
-if test yes = $OPENSSL_FIPS_MODE; then
+AS_IF([test "x$OPENSSL_FIPS_MODE" = "xyes"], [
 echo "    FIPS libraries: $FIPS_LIBS"
 echo ""
-fi
+])
 
 if test "x$PAM_MSG" = "xyes" ; then
 	echo "PAM is enabled. You may need to install a PAM control file "
