@@ -5344,31 +5344,6 @@ AC_LDAP_FUNCS([\
 ])
 
 
-ssh_x509dn_email=yes
-# Check for Email in X.509 'Distinguished Name'
-AC_MSG_CHECKING([for Email in X.509 'Distinguished Name'])
-AC_RUN_IFELSE([AC_LANG_PROGRAM([[
-#include <openssl/evp.h>
-	]], [[
-	int nid = OBJ_txt2nid("Email");
-	if (nid == NID_undef) return 1;
-	]])],
-	[	AC_MSG_RESULT(yes)	],
-	[
-		AC_MSG_RESULT(no)
-		ssh_x509dn_email=no
-	],
-	[
-		AC_MSG_WARN([cross compiling: assuming no])
-		ssh_x509dn_email=no
-	]
-)
-AS_IF([test "x$ssh_x509dn_email" = "xno"], [
-	AC_DEFINE(
-		[SSH_OPENSSL_DN_WITHOUT_EMAIL], [1],
-		[Define if your openssl library don't support Email in X.509 'Distinguished Name'])
-])
-
 # check for openssl 0.9.7+ functions ...
 AC_CHECK_FUNCS([ \
   DES_crypt \

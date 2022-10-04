@@ -482,14 +482,6 @@ x509key_str2X509NAME(const char* _str, X509_NAME *_name) {
 			*++s = 0;
 		}
 		nid = OBJ_txt2nid(p);
-#ifdef SSH_OPENSSL_DN_WITHOUT_EMAIL
-		if (nid == NID_undef) {
-			/* work around for OpenSSL 0.9.7+ */
-			if (strcasecmp(p, "Email") == 0) {
-				nid = OBJ_txt2nid("emailAddress");
-			}
-		}
-#endif /* def SSH_OPENSSL_DN_WITHOUT_EMAIL */
 		if (nid == NID_undef) {
 			error_f("cannot get nid from string '%.200s'", p);
 			ret = 0;
