@@ -3194,6 +3194,209 @@ if test "x$openssl" = "xyes" ; then
 	)
 fi
 
+
+# check for openssl 0.9.7+ functions ...
+AC_CHECK_FUNCS([ \
+  DES_crypt \
+  EVP_MD_CTX_init \
+])
+
+# check for openssl 0.9.8+ headers ...
+AC_CHECK_HEADERS([ \
+  openssl/ec.h \
+])
+
+# check for openssl 0.9.8+ functions ...
+dnl BN_is_negative is macro in 0.9.8*-1.0.2*
+AC_CHECK_FUNCS([ \
+  BN_is_prime_ex \
+  DSA_generate_parameters_ex \
+  EVP_CIPHER_CTX_new \
+  EVP_PKEY_cmp \
+  RSA_generate_key_ex \
+])
+
+# Check for the existence of "X509_VERIFY_PARAM *param" (OpenSSL 0.9.8+)
+# Instead to check for member param we check for get functions
+dnl AC_CHECK_MEMBERS([X509_STORE_CTX.param],,,[#include <openssl/x509_vfy.h>])
+AC_CHECK_FUNCS([X509_STORE_CTX_get0_param])
+
+# check for openssl 1.0.0+ functions ...
+AC_CHECK_FUNCS([ \
+  ERR_remove_thread_state \
+  EVP_MD_flags \
+  EVP_PKEY_base_id \
+  EVP_PKEY_print_params \
+  X509_STORE_set_verify_cb \
+])
+
+# check for some structures
+AC_CHECK_MEMBERS([ECDSA_METHOD.name], [], [],
+[#include <openssl/ecdsa.h>]
+)
+
+# check for openssl 1.0.2+ functions ...
+AC_CHECK_FUNCS([ \
+  ECDSA_METHOD_new \
+])
+
+# check for openssl 1.1+ functions ...
+AC_CHECK_FUNCS([ \
+  ASN1_STRING_get0_data \
+  BN_is_negative \
+  DH_get0_key \
+  DSA_SIG_get0 \
+  DSA_SIG_set0 \
+  EC_KEY_METHOD_new \
+  ECDSA_SIG_get0 \
+  ECDSA_SIG_set0 \
+  EVP_chacha20 \
+  EVP_CIPHER_CTX_iv \
+  EVP_MD_CTX_new \
+  RSA_meth_new \
+  RSA_PKCS1_OpenSSL \
+  X509_CRL_get0_lastUpdate \
+  X509_get0_tbs_sigalg \
+  X509_get_extension_flags \
+  X509_get_key_usage \
+  X509_OBJECT_new \
+  X509_STORE_CTX_get_by_subject \
+  X509_STORE_get0_objects \
+  X509_STORE_lock \
+])
+dnl OpenSSL 1.1 changes X509_STORE_CTX and X509_VERIFY_PARAM to opaque structure.
+dnl Until OpenSSL 1.1.0d+ there is no function to get "check" time.
+AC_CHECK_FUNCS([X509_VERIFY_PARAM_get_time])
+
+# check for functions randomly implemented for compatibility with openssl 1.1+
+AC_CHECK_FUNCS([ \
+  DSA_get0_key \
+  OPENSSL_cleanup \
+  RSA_meth_get_pub_enc \
+  RSA_meth_set1_name \
+  RSA_meth_set_priv_enc \
+  RSA_get0_key \
+  X509_OBJECT_get0_X509 \
+])
+# check for removed in openssl 1.1+ functions ...
+AC_CHECK_FUNCS([ \
+  EVP_dss1 \
+])
+# check for openssl 1.1.+ declarations ...
+AC_CHECK_DECLS([DEFINE_STACK_OF],,,[
+#include <openssl/opensslconf.h>
+#include <openssl/safestack.h>
+])
+# check for openssl 1.1+ opaque structures ...
+AC_CHECK_TYPES([struct x509_lookup_method_st], [], [], [
+#include <openssl/x509_vfy.h>
+])
+
+# check for openssl 1.1.1+ functions ...
+AC_CHECK_FUNCS([ \
+  EC_POINT_get_affine_coordinates \
+])
+
+# activate openssl(1.1.1+) store functionality
+USE_OPENSSL_STORE2=false
+AC_CHECK_FUNC([OSSL_STORE_open])
+if test "x$ac_cv_func_OSSL_STORE_open" = xyes ; then
+  AC_DEFINE(
+    [USE_OPENSSL_STORE2],
+    [1], [Use OpenSSL STORE functionality])
+  USE_OPENSSL_STORE2=:
+fi
+AC_SUBST([USE_OPENSSL_STORE2])
+
+# check for openssl 3.0+ functions ...
+AC_CHECK_FUNCS([ \
+  BN_check_prime \
+  EC_GROUP_get_field_type \
+  ERR_get_error_all \
+  EVP_KEYMGMT_get0_provider \
+  EVP_MD_get_flags \
+  EVP_PKEY_eq \
+  EVP_PKEY_get_base_id \
+  X509_LOOKUP_store \
+])
+
+# check for deprecated 3.0+ functions ...
+AC_CHECK_FUNCS([ \
+  AES_encrypt \
+])
+
+# functions in openssl compatible libraries
+AC_CHECK_DECLS([UTF8_getc],,,[
+#include <openssl/asn1.h>
+])
+AC_CHECK_FUNCS([ \
+  EVP_CIPHER_CTX_get_iv \
+  UTF8_getc \
+])
+
+# ASN1_STRING_length const argument >= 1.0
+AC_MSG_CHECKING([whether ASN1_STRING_length declare const argument])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+#include <openssl/asn1.h>
+int ASN1_STRING_length(const ASN1_STRING *x) {
+  (void) x; return 0;
+}
+]], [[
+  ASN1_STRING_length(NULL);
+]])],
+[ AC_MSG_RESULT([yes])
+  asn1_string_length_const="const"
+],
+[ AC_MSG_RESULT([no])
+  asn1_string_length_const="/* not const */"
+]
+)
+AC_DEFINE_UNQUOTED([ASN1_STRING_LENGTH_CONST], [$asn1_string_length_const],
+  [Define as const if ASN1_STRING_CONST() declare const argument]
+)
+
+# check for function sk_OPENSSL_STRING_new_null inlined in openssl 1.1+ ...
+AC_CACHE_CHECK(
+  [for sk_OPENSSL_STRING_new_null],
+  [ac_cv_func_sk_OPENSSL_STRING_new_null],
+  AC_LINK_IFELSE(
+    [AC_LANG_PROGRAM(
+      [[
+      #include <openssl/safestack.h>
+      ]],[[
+      void *q;
+      q = sk_OPENSSL_STRING_new_null();
+      ]])
+    ],
+    [ ac_cv_func_sk_OPENSSL_STRING_new_null=yes ],
+    [ ac_cv_func_sk_OPENSSL_STRING_new_null=no ]
+  )
+)
+if test "x$ac_cv_func_sk_OPENSSL_STRING_new_null" = xyes; then
+  AC_DEFINE(
+    [HAVE_SK_OPENSSL_STRING_NEW_NULL],
+    [1], [Define to 1 if you have the 'sk_OPENSSL_STRING_new_null' function.])
+fi
+
+AC_MSG_CHECKING([whether store find method uses const criteria])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+#include <openssl/store.h>
+typedef int (*OSSL_STORE_find_fn)(OSSL_STORE_LOADER_CTX *ctx,
+    const OSSL_STORE_SEARCH *criteria);
+]],[[
+]])],
+[ AC_MSG_RESULT([yes])
+  store_find_criterion_const="const"
+],
+[ AC_MSG_RESULT([no])
+  store_find_criterion_const="/* not const */"
+]
+)
+AC_DEFINE_UNQUOTED([STORE_FIND_CRITERION_CONST], [$store_find_criterion_const],
+  [Define as const if store find method uses const criteria]
+)
+
+
 use_dl=false
 # PKCS#11 depends on OpenSSL and requires dlopen() and co.
 if test $PKCS11_MSG = yes ; then
@@ -5342,208 +5545,6 @@ AC_LDAP_FUNCS([\
 	ldap_search_ext_s \
 	ldap_unbind_ext_s \
 ])
-
-
-# check for openssl 0.9.7+ functions ...
-AC_CHECK_FUNCS([ \
-  DES_crypt \
-  EVP_MD_CTX_init \
-])
-
-# check for openssl 0.9.8+ headers ...
-AC_CHECK_HEADERS([ \
-  openssl/ec.h \
-])
-
-# check for openssl 0.9.8+ functions ...
-dnl BN_is_negative is macro in 0.9.8*-1.0.2*
-AC_CHECK_FUNCS([ \
-  BN_is_prime_ex \
-  DSA_generate_parameters_ex \
-  EVP_CIPHER_CTX_new \
-  EVP_PKEY_cmp \
-  RSA_generate_key_ex \
-])
-
-# Check for the existence of "X509_VERIFY_PARAM *param" (OpenSSL 0.9.8+)
-# Instead to check for member param we check for get functions
-dnl AC_CHECK_MEMBERS([X509_STORE_CTX.param],,,[#include <openssl/x509_vfy.h>])
-AC_CHECK_FUNCS([X509_STORE_CTX_get0_param])
-
-# check for openssl 1.0.0+ functions ...
-AC_CHECK_FUNCS([ \
-  ERR_remove_thread_state \
-  EVP_MD_flags \
-  EVP_PKEY_base_id \
-  EVP_PKEY_print_params \
-  X509_STORE_set_verify_cb \
-])
-
-# check for some structures
-AC_CHECK_MEMBERS([ECDSA_METHOD.name], [], [],
-[#include <openssl/ecdsa.h>]
-)
-
-# check for openssl 1.0.2+ functions ...
-AC_CHECK_FUNCS([ \
-  ECDSA_METHOD_new \
-])
-
-# check for openssl 1.1+ functions ...
-AC_CHECK_FUNCS([ \
-  ASN1_STRING_get0_data \
-  BN_is_negative \
-  DH_get0_key \
-  DSA_SIG_get0 \
-  DSA_SIG_set0 \
-  EC_KEY_METHOD_new \
-  ECDSA_SIG_get0 \
-  ECDSA_SIG_set0 \
-  EVP_chacha20 \
-  EVP_CIPHER_CTX_iv \
-  EVP_MD_CTX_new \
-  RSA_meth_new \
-  RSA_PKCS1_OpenSSL \
-  X509_CRL_get0_lastUpdate \
-  X509_get0_tbs_sigalg \
-  X509_get_extension_flags \
-  X509_get_key_usage \
-  X509_OBJECT_new \
-  X509_STORE_CTX_get_by_subject \
-  X509_STORE_get0_objects \
-  X509_STORE_lock \
-])
-dnl OpenSSL 1.1 changes X509_STORE_CTX and X509_VERIFY_PARAM to opaque structure.
-dnl Until OpenSSL 1.1.0d+ there is no function to get "check" time.
-AC_CHECK_FUNCS([X509_VERIFY_PARAM_get_time])
-
-# check for functions randomly implemented for compatibility with openssl 1.1+
-AC_CHECK_FUNCS([ \
-  DSA_get0_key \
-  OPENSSL_cleanup \
-  RSA_meth_get_pub_enc \
-  RSA_meth_set1_name \
-  RSA_meth_set_priv_enc \
-  RSA_get0_key \
-  X509_OBJECT_get0_X509 \
-])
-# check for removed in openssl 1.1+ functions ...
-AC_CHECK_FUNCS([ \
-  EVP_dss1 \
-])
-# check for openssl 1.1.+ declarations ...
-AC_CHECK_DECLS([DEFINE_STACK_OF],,,[
-#include <openssl/opensslconf.h>
-#include <openssl/safestack.h>
-])
-# check for openssl 1.1+ opaque structures ...
-AC_CHECK_TYPES([struct x509_lookup_method_st], [], [], [
-#include <openssl/x509_vfy.h>
-])
-
-# check for openssl 1.1.1+ functions ...
-AC_CHECK_FUNCS([ \
-  EC_POINT_get_affine_coordinates \
-])
-
-# activate openssl(1.1.1+) store functionality
-USE_OPENSSL_STORE2=false
-AC_CHECK_FUNC([OSSL_STORE_open])
-if test "x$ac_cv_func_OSSL_STORE_open" = xyes ; then
-  AC_DEFINE(
-    [USE_OPENSSL_STORE2],
-    [1], [Use OpenSSL STORE functionality])
-  USE_OPENSSL_STORE2=:
-fi
-AC_SUBST([USE_OPENSSL_STORE2])
-
-# check for openssl 3.0+ functions ...
-AC_CHECK_FUNCS([ \
-  BN_check_prime \
-  EC_GROUP_get_field_type \
-  ERR_get_error_all \
-  EVP_KEYMGMT_get0_provider \
-  EVP_MD_get_flags \
-  EVP_PKEY_eq \
-  EVP_PKEY_get_base_id \
-  X509_LOOKUP_store \
-])
-
-# check for deprecated 3.0+ functions ...
-AC_CHECK_FUNCS([ \
-  AES_encrypt \
-])
-
-# functions in openssl compatible libraries
-AC_CHECK_DECLS([UTF8_getc],,,[
-#include <openssl/asn1.h>
-])
-AC_CHECK_FUNCS([ \
-  EVP_CIPHER_CTX_get_iv \
-  UTF8_getc \
-])
-
-# ASN1_STRING_length const argument >= 1.0
-AC_MSG_CHECKING([whether ASN1_STRING_length declare const argument])
-AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
-#include <openssl/asn1.h>
-int ASN1_STRING_length(const ASN1_STRING *x) {
-  (void) x; return 0;
-}
-]], [[
-  ASN1_STRING_length(NULL);
-]])],
-[ AC_MSG_RESULT([yes])
-  asn1_string_length_const="const"
-],
-[ AC_MSG_RESULT([no])
-  asn1_string_length_const="/* not const */"
-]
-)
-AC_DEFINE_UNQUOTED([ASN1_STRING_LENGTH_CONST], [$asn1_string_length_const],
-  [Define as const if ASN1_STRING_CONST() declare const argument]
-)
-
-# check for function sk_OPENSSL_STRING_new_null inlined in openssl 1.1+ ...
-AC_CACHE_CHECK(
-  [for sk_OPENSSL_STRING_new_null],
-  [ac_cv_func_sk_OPENSSL_STRING_new_null],
-  AC_LINK_IFELSE(
-    [AC_LANG_PROGRAM(
-      [[
-      #include <openssl/safestack.h>
-      ]],[[
-      void *q;
-      q = sk_OPENSSL_STRING_new_null();
-      ]])
-    ],
-    [ ac_cv_func_sk_OPENSSL_STRING_new_null=yes ],
-    [ ac_cv_func_sk_OPENSSL_STRING_new_null=no ]
-  )
-)
-if test "x$ac_cv_func_sk_OPENSSL_STRING_new_null" = xyes; then
-  AC_DEFINE(
-    [HAVE_SK_OPENSSL_STRING_NEW_NULL],
-    [1], [Define to 1 if you have the 'sk_OPENSSL_STRING_new_null' function.])
-fi
-
-AC_MSG_CHECKING([whether store find method uses const criteria])
-AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
-#include <openssl/store.h>
-typedef int (*OSSL_STORE_find_fn)(OSSL_STORE_LOADER_CTX *ctx,
-    const OSSL_STORE_SEARCH *criteria);
-]],[[
-]])],
-[ AC_MSG_RESULT([yes])
-  store_find_criterion_const="const"
-],
-[ AC_MSG_RESULT([no])
-  store_find_criterion_const="/* not const */"
-]
-)
-AC_DEFINE_UNQUOTED([STORE_FIND_CRITERION_CONST], [$store_find_criterion_const],
-  [Define as const if store find method uses const criteria]
-)
 
 
 # test FIPS enabled openssl
