@@ -2813,7 +2813,7 @@ fill_default_options(Options * options)
 	if (options->required_rsa_size == -1)
 		/* get default */
 		options->required_rsa_size = required_rsa_size;
-	else
+	else {
 		/* transfer */
 		if (options->required_rsa_size < required_rsa_size) {
 			error("RSA key size %d is less then minimum %d.",
@@ -2821,6 +2821,7 @@ fill_default_options(Options * options)
 			return -1;
 		}
 		required_rsa_size = options->required_rsa_size;
+	}
 
 	/* expand KEX and etc. name lists */
 {	char *all;

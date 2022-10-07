@@ -498,12 +498,13 @@ fill_default_server_options(ServerOptions *options)
 	if (options->required_rsa_size == -1)
 		/* get default */
 		options->required_rsa_size = required_rsa_size;
-	else
+	else {
 		/* transfer */
 		if (options->required_rsa_size < required_rsa_size)
 			fatal("RSA key size %d is less then minimum %d.",
 			    options->required_rsa_size, required_rsa_size);
 		required_rsa_size = options->required_rsa_size;
+	}
 
 	assemble_algorithms(options);
 
