@@ -12,7 +12,7 @@
  * called by a name other than "ssh" or "Secure Shell".
  *
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
- * Copyright (c) 2011-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2022 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -119,6 +119,5 @@ u_int	 cipher_ctx_is_plaintext(struct sshcipher_ctx *);
 
 int	 cipher_get_keyiv(struct sshcipher_ctx *, u_char *, size_t);
 int	 cipher_set_keyiv(struct sshcipher_ctx *, const u_char *, size_t);
-int	 cipher_get_keyiv_len(const struct sshcipher_ctx *);
 
 #endif				/* CIPHER_H */
