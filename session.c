@@ -1326,7 +1326,7 @@ static void
 do_nologin(struct passwd *pw)
 {
 	FILE *f = NULL;
-	char buf[1024], *nl, *def_nl = _PATH_NOLOGIN;
+	const char *nl, *def_nl = _PATH_NOLOGIN;
 	struct stat sb;
 
 #ifdef HAVE_LOGIN_CAP
@@ -1351,6 +1351,7 @@ do_nologin(struct passwd *pw)
 	/* /etc/nologin exists.  Print its contents if we can and exit. */
 	logit("User %.100s not allowed because %s exists", pw->pw_name, nl);
 	if ((f = fopen(nl, "r")) != NULL) {
+		char buf[1024];
 		while (fgets(buf, sizeof(buf), f))
 			fputs(buf, stderr);
 		fclose(f);
