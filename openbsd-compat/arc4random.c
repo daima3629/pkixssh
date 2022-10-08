@@ -276,6 +276,17 @@ _rs_rekey(u_char *dat, size_t datlen)
 }
 
 static inline void
+_rsx_to_buf(void *buf, size_t len)
+{
+	u_char *keystream;
+
+	keystream = rsx->rs_buf + sizeof(rsx->rs_buf) - rs->rs_have;
+	memcpy(buf, keystream, len);
+	memset(keystream, 0, len);
+	rs->rs_have -= len;
+}
+
+static inline void
 _rs_random_buf(void *_buf, size_t n)
 {
 	u_char *buf = (u_char *)_buf;
@@ -284,15 +295,10 @@ _rs_random_buf(void *_buf, size_t n)
 	_rs_stir_if_needed(n);
 	while (n > 0) {
 		if (rs->rs_have > 0) {
-			u_char *keystream;
 			m = MINIMUM(n, rs->rs_have);
-			keystream = rsx->rs_buf + sizeof(rsx->rs_buf)
-			    - rs->rs_have;
-			memcpy(buf, keystream, m);
-			memset(keystream, 0, m);
+			_rsx_to_buf(buf, m);
 			buf += m;
 			n -= m;
-			rs->rs_have -= m;
 		}
 		if (rs->rs_have == 0)
 			_rs_rekey(NULL, 0);
@@ -300,18 +306,15 @@ _rs_random_buf(void *_buf, size_t n)
 }
 
 # ifndef HAVE_ARC4RANDOM
-static inline void
+static void
 _rs_random_u32(uint32_t *val)
 {
-	u_char *keystream;
+	size_t m = sizeof(*val);
 
-	_rs_stir_if_needed(sizeof(*val));
-	if (rs->rs_have < sizeof(*val))
+	_rs_stir_if_needed(m);
+	if (rs->rs_have < m)
 		_rs_rekey(NULL, 0);
-	keystream = rsx->rs_buf + sizeof(rsx->rs_buf) - rs->rs_have;
-	memcpy(val, keystream, sizeof(*val));
-	memset(keystream, 0, sizeof(*val));
-	rs->rs_have -= sizeof(*val);
+	_rsx_to_buf(val, m);
 }
 # endif /*ndef HAVE_ARC4RANDOM*/
 
