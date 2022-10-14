@@ -244,36 +244,28 @@ if test "$GCC" = "yes" || test "$GCC" = "egcs"; then
 		CFLAGS="$CFLAGS $t -Werror"
 		LDFLAGS="$LDFLAGS $t -Werror"
 		AC_LINK_IFELSE(
-			[AC_LANG_SOURCE([[
+			[AC_LANG_PROGRAM([[
 #include <stdio.h>
 
 int func (int t);
 int func (int t) {char b[100]; snprintf(b,sizeof b,"%d",t); return t;}
-
-int main(int argc, char* argv[]) {
+			]],[[
 	char x[256];
-	(void)argc; (void)argv;
 	snprintf(x, sizeof(x), "XXX%d", func(1));
-	return 0;
-}
 			 ]])],
 		    [ AC_MSG_RESULT([yes])
 		      CFLAGS="$saved_CFLAGS $t"
 		      LDFLAGS="$saved_LDFLAGS $t"
 		      AC_MSG_CHECKING([if $t works])
 		      AC_RUN_IFELSE(
-			[AC_LANG_SOURCE([[
+			[AC_LANG_PROGRAM([[
 #include <stdio.h>
 
 int func (int t);
 int func (int t) {char b[100]; snprintf(b,sizeof b,"%d",t); return t;}
-
-int main(int argc, char* argv[]) {
+			]],[[
 	char x[256];
-	(void)argc; (void)argv;
 	snprintf(x, sizeof(x), "XXX%d", func(1));
-	return 0;
-}
 			]])],
 			[ AC_MSG_RESULT([yes])
 			  break ],
@@ -739,13 +731,11 @@ case "$host" in
 *-*-darwin*)
 	use_pie=auto
 	AC_MSG_CHECKING([if we have working getaddrinfo])
-	AC_RUN_IFELSE([AC_LANG_SOURCE([[
+	AC_RUN_IFELSE([AC_LANG_PROGRAM([[
 #include <mach-o/dyld.h>
-main() { if (NSVersionOfRunTimeLibrary("System") >= (60 << 16))
-		return 0;
-	else
+			]],[[
+	if (NSVersionOfRunTimeLibrary("System") < (60 << 16))
 		return 1;
-}
 			]])],
 	[AC_MSG_RESULT([working])],
 	[AC_MSG_RESULT([buggy])
