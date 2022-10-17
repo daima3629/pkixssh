@@ -286,6 +286,7 @@ _rsx_to_buf(void *buf, size_t len)
 	rs->rs_have -= len;
 }
 
+# if !defined(HAVE_ARC4RANDOM_BUF) && !defined(HAVE_ARC4RANDOM)
 static inline void
 _rs_random_buf(void *_buf, size_t n)
 {
@@ -304,6 +305,7 @@ _rs_random_buf(void *_buf, size_t n)
 			_rs_rekey(NULL, 0);
 	}
 }
+# endif /*!defined(HAVE_ARC4RANDOM_BUF) && !defined(HAVE_ARC4RANDOM)*/
 
 # ifndef HAVE_ARC4RANDOM
 static void
