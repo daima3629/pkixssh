@@ -133,27 +133,16 @@ openpty_streams(int *amaster, int *aslave)
 }
 #endif
 
-/* NOTE:
- * Android API 23 defines function "openpty" but it is declared
- * only in unified headers.
- * As we prefer to use definition below we has to declare it with
- * same arguments - see configure.ac.
- */
-int
-openpty(int *amaster, int *aslave, char *name,
-    OPENPTY_CONST_ARG struct termios *termp,
-    OPENPTY_CONST_ARG struct winsize *winp
-) {
+
+static int
+ssh_openpty(int *amaster, int *aslave)
+{
 #if defined(HAVE__GETPTY)
 	/*
 	 * _getpty(3) exists in SGI Irix 4.x, 5.x & 6.x -- it generates more
 	 * pty's automagically when needed
 	 */
 	char *slave;
-
-	UNUSED(name);
-	UNUSED(termp);
-	UNUSED(winp);
 
 	if ((slave = _getpty(amaster, O_RDWR, 0622, 0)) == NULL)
 		return (-1);
@@ -197,10 +186,6 @@ openpty(int *amaster, int *aslave, char *name,
 #elif defined(HAVE_DEV_PTS_AND_PTC)
 	/* AIX-style pty code. */
 	const char *ttname;
-
-	UNUSED(name);
-	UNUSED(termp);
-	UNUSED(winp);
 
 	if ((*amaster = open("/dev/ptc", O_RDWR | O_NOCTTY)) == -1)
 		return (-1);
@@ -256,5 +241,21 @@ openpty(int *amaster, int *aslave, char *name,
 #endif
 }
 
+/* NOTE:
+ * Android API 23 defines function "openpty" but it is declared
+ * only in unified headers.
+ * Preferred is to use OS compatible definition - see configure.ac.
+ */
+int
+openpty(int *amaster, int *aslave, char *name,
+    OPENPTY_CONST_ARG struct termios *termp,
+    OPENPTY_CONST_ARG struct winsize *winp
+) {
+	UNUSED(name);
+	UNUSED(termp);
+	UNUSED(winp);
+
+	return ssh_openpty(amaster, aslave);
+}
 #endif /* !defined(HAVE_OPENPTY) */
 
