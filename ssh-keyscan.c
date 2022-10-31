@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keyscan.c,v 1.146 2022/08/19 04:02:46 dtucker Exp $ */
+/* $OpenBSD: ssh-keyscan.c,v 1.147 2022/10/28 02:29:34 djm Exp $ */
 /*
  * Copyright 1995, 1996 by David Mazieres <dm@lcs.mit.edu>.
  *
@@ -81,6 +81,7 @@
 #include "ssherr.h"
 #include "ssh_api.h"
 #include "dns.h"
+#include "addr.h"
 
 /* Operations on timespecs. */
 #ifndef timespecclear
@@ -380,7 +381,7 @@ tcpconnect(char *host)
 }
 
 static int
-conalloc(char *iname, char *oname, const char *keyname)
+conalloc(const char *iname, const char *oname, const char *keyname)
 {
 	char *namebase, *name, *namelist;
 	int s;
@@ -627,7 +628,7 @@ conloop(void)
 }
 
 static void
-do_host(char *host)
+do_one_host(char *host)
 {
 	char *name = strnnsep(&host, " \t\n");
 	const char *keyname;
@@ -655,6 +656,42 @@ do_host(char *host)
 			continue;
 		}
 		conalloc(name, *host ? host : name, keyname);
+	}
+}
+
+static void
+do_host(char *host)
+{
+	char daddr[128];
+	struct xaddr addr, end_addr;
+	u_int masklen;
+
+	if (host == NULL)
+		return;
+	if (addr_pton_cidr(host, &addr, &masklen) != 0) {
+		/* Assume argument is a hostname */
+		do_one_host(host);
+	} else {
+		/* Argument is a CIDR range */
+		debug("CIDR range %s", host);
+		end_addr = addr;
+		if (addr_host_to_all1s(&end_addr, masklen) != 0)
+			goto badaddr;
+		/*
+		 * Note: we deliberately include the all-zero/ones addresses.
+		 */
+		for (;;) {
+			if (addr_ntop(&addr, daddr, sizeof(daddr)) != 0) {
+ badaddr:
+				error("Invalid address %s", host);
+				return;
+			}
+			debug("CIDR expand: address %s", daddr);
+			do_one_host(daddr);
+			if (addr_cmp(&addr, &end_addr) == 0)
+				break;
+			addr_increment(&addr);
+		};
 	}
 }
 
