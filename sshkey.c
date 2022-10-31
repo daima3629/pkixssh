@@ -491,6 +491,32 @@ sshkey_type_plain(int type)
 	}
 }
 
+/* Return the cert equivalent to a plain key type */
+static int
+sshkey_type_certified(int type)
+{
+	switch (type) {
+#ifdef WITH_OPENSSL
+	case KEY_RSA:
+		return KEY_RSA_CERT;
+	case KEY_DSA:
+		return KEY_DSA_CERT;
+# ifdef OPENSSL_HAS_ECC
+	case KEY_ECDSA:
+		return KEY_ECDSA_CERT;
+# endif /* OPENSSL_HAS_ECC */
+#endif /* WITH_OPENSSL */
+	case KEY_ED25519:
+		return KEY_ED25519_CERT;
+#ifdef WITH_XMSS
+	case KEY_XMSS:
+		return KEY_XMSS_CERT;
+#endif /* WITH_XMSS */
+	default:
+		return -1;
+	}
+}
+
 #ifdef WITH_OPENSSL
 #ifdef OPENSSL_HAS_ECC
 /* XXX: these are really begging for a table-driven approach */
@@ -2738,29 +2764,8 @@ sshkey_to_certified(struct sshkey *k)
 {
 	int newtype;
 
-	switch (k->type) {
-#ifdef WITH_OPENSSL
-	case KEY_RSA:
-		newtype = KEY_RSA_CERT;
-		break;
-	case KEY_DSA:
-		newtype = KEY_DSA_CERT;
-		break;
-	case KEY_ECDSA:
-		newtype = KEY_ECDSA_CERT;
-		break;
-#endif /* WITH_OPENSSL */
-	case KEY_ED25519:
-		newtype = KEY_ED25519_CERT;
-		break;
-#ifdef WITH_XMSS
-	case KEY_XMSS:
-		newtype = KEY_XMSS_CERT;
-		break;
-#endif /* WITH_XMSS */
-	default:
+	if ((newtype = sshkey_type_certified(k->type)) == -1)
 		return SSH_ERR_INVALID_ARGUMENT;
-	}
 	if ((k->cert = cert_new()) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
 	k->type = newtype;
