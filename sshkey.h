@@ -249,7 +249,6 @@ int	 sshkey_sign(struct sshkey *, u_char **, size_t *,
 int	 sshkey_verify(const struct sshkey *, const u_char *, size_t,
     const u_char *, size_t, const char *, u_int);
 int	 sshkey_check_sigtype(const u_char *, size_t, const char *);
-const char *sshkey_sigalg_by_name(const char *);
 
 /* private key parsing and serialisation */
 int	sshkey_private_serialize(struct sshkey *key, struct sshbuf *buf);

@@ -211,11 +211,10 @@ sshkey_type_is_cert(int type)
 const char *
 sshkey_ssh_name(const struct sshkey *k)
 {
-	const char* p;
-
-	p = ssh_x509key_name(k);
-	if (p) return(p);
-
+{
+	const char* p = ssh_x509key_name(k);
+	if (p != NULL) return p;
+}
 	return sshkey_ssh_name_from_type_nid(k->type, k->ecdsa_nid);
 }
 
@@ -229,11 +228,12 @@ sshkey_ssh_name_plain(const struct sshkey *k)
 int
 sshkey_type_from_name(const char *name)
 {
+{
+	int k = ssh_x509key_type(name);
+	if (k != KEY_UNSPEC) return k;
+}
+{
 	const struct keytype *kt;
-	int k;
-
-	k = ssh_x509key_type(name);
-	if (k != KEY_UNSPEC) return(k);
 
 	for (kt = keytypes; kt->type != -1; kt++) {
 		/* Only allow shortname matches for plain key types */
@@ -241,6 +241,7 @@ sshkey_type_from_name(const char *name)
 		    (!kt->cert && strcasecmp(kt->shortname, name) == 0))
 			return kt->type;
 	}
+}
 	return KEY_UNSPEC;
 }
 
@@ -292,9 +293,8 @@ sshkey_ecdsa_nid_from_name(const char *name)
 char *
 sshkey_alg_list(int certs_only, int plain_only, int include_sigonly, char sep)
 {
-	char *tmp, *ret = NULL;
-	size_t nlen, rlen = 0;
-	const struct keytype *kt;
+	char *ret = NULL;
+	size_t rlen = 0;
 
 	if (!certs_only || plain_only) {
 		struct sshbuf *b;
@@ -309,8 +309,11 @@ sshkey_alg_list(int certs_only, int plain_only, int include_sigonly, char sep)
 		rlen = sshbuf_len(b);
 		sshbuf_free(b);
 	}
+{
+	const struct keytype *kt;
 
 	for (kt = keytypes; kt->type != -1; kt++) {
+		size_t nlen;
 		if (kt->name == NULL)
 			continue;
 		if (!include_sigonly && kt->sigonly)
@@ -320,14 +323,17 @@ sshkey_alg_list(int certs_only, int plain_only, int include_sigonly, char sep)
 		if (ret != NULL)
 			ret[rlen++] = sep;
 		nlen = strlen(kt->name);
-		if ((tmp = realloc(ret, rlen + nlen + 2)) == NULL) {
+	{	char *tmp = realloc(ret, rlen + nlen + 2);
+		if (tmp == NULL) {
 			free(ret);
 			return NULL;
 		}
 		ret = tmp;
+	}
 		memcpy(ret + rlen, kt->name, nlen + 1);
 		rlen += nlen;
 	}
+}
 	return ret;
 }
 
@@ -362,7 +368,6 @@ int
 sshkey_names_valid2(const char *names, int allow_wildcard)
 {
 	char *s, *cp, *p;
-	const struct keytype *kt;
 	int type;
 
 	if (names == NULL || strcmp(names, "") == 0)
@@ -379,22 +384,25 @@ sshkey_names_valid2(const char *names, int allow_wildcard)
 				 * If any has a positive or negative match then
 				 * the component is accepted.
 				 */
-				{
-					const SSHX509KeyAlgs *xkalg;
-					int loc;
-					for (
-					    loc = ssh_xkalg_ind(&xkalg, -1);
-					    loc >= 0;
-					    loc = ssh_xkalg_ind(&xkalg, loc)
-					) {
-						if (match_pattern_list(
-						    xkalg->name, p, 0) == 1) {
-							break;
-						}
+			{
+				const SSHX509KeyAlgs *xkalg;
+				int loc;
+				for (
+				    loc = ssh_xkalg_ind(&xkalg, -1);
+				    loc >= 0;
+				    loc = ssh_xkalg_ind(&xkalg, loc)
+				) {
+					if (match_pattern_list(
+					    xkalg->name, p, 0) == 1) {
+						break;
 					}
-					if (loc >= 0)
-						continue;
 				}
+				if (loc >= 0)
+					continue;
+			}
+			{
+				const struct keytype *kt;
+
 				for (kt = keytypes; kt->type != -1; kt++) {
 					if (match_pattern_list(kt->name,
 					    p, 0) == 1)
@@ -402,6 +410,7 @@ sshkey_names_valid2(const char *names, int allow_wildcard)
 				}
 				if (kt->type != -1)
 					continue;
+			}
 			}
 			free(s);
 			return 0;
@@ -2585,7 +2594,7 @@ sshkey_check_cert_sigtype(const struct sshkey *key, const char *allowed)
 /*
  * Returns the expected signature algorithm for a given public key algorithm.
  */
-const char *
+static const char *
 sshkey_sigalg_by_name(const char *name)
 {
 	const struct keytype *kt;
