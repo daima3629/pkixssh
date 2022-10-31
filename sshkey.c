@@ -2329,6 +2329,7 @@ sshbuf_read_priv_ed25519(struct sshbuf *buf, struct sshkey *key) {
 	if (key->pk != NULL) {
 		/* TODO match public vs private ? */
 		if (ssh_EVP_PKEY_eq(key->pk, pk) != 1) {
+			EVP_PKEY_free(pk);
 			r = SSH_ERR_INVALID_ARGUMENT;
 			goto err;
 		}
