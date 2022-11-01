@@ -1683,7 +1683,7 @@ sshkey_generate(int type, u_int bits, struct sshkey **keyp)
 	if (keyp == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;
 	*keyp = NULL;
-	if ((k = sshkey_new(KEY_UNSPEC)) == NULL)
+	if ((k = sshkey_new(type)) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
 	switch (type) {
 	case KEY_ED25519:
@@ -1725,7 +1725,6 @@ sshkey_generate(int type, u_int bits, struct sshkey **keyp)
 		ret = SSH_ERR_INVALID_ARGUMENT;
 	}
 	if (ret == 0) {
-		k->type = type;
 		*keyp = k;
 	} else
 		sshkey_free(k);
