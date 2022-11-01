@@ -331,4 +331,69 @@ evp_md_end:
 	return ret;
 }
 
+const struct sshkey_impl sshkey_rsa_impl = {
+	/* .name = */		"ssh-rsa",
+	/* .shortname = */	"RSA",
+	/* .sigalg = */		NULL,
+	/* .type = */		KEY_RSA,
+	/* .nid = */		0,
+	/* .cert = */		0,
+	/* .sigonly = */	0
+};
+
+const struct sshkey_impl sshkey_rsa_cert_impl = {
+	/* .name = */		"ssh-rsa-cert-v01@openssh.com",
+	/* .shortname = */	"RSA-CERT",
+	/* .sigalg = */		NULL,
+	/* .type = */		KEY_RSA_CERT,
+	/* .nid = */		0,
+	/* .cert = */		1,
+	/* .sigonly = */	0
+};
+
+#ifdef HAVE_EVP_SHA256
+const struct sshkey_impl sshkey_rsa_sha256_impl = {
+	/* .name = */		"rsa-sha2-256",
+	/* .shortname = */	"RSA",
+	/* .sigalg = */		NULL,
+	/* .type = */		KEY_RSA,
+	/* .nid = */		0,
+	/* .cert = */		0,
+	/* .sigonly = */	1
+};
+
+const struct sshkey_impl sshkey_rsa_sha512_impl = {
+	/* .name = */		"rsa-sha2-512",
+	/* .shortname = */	"RSA",
+	/* .sigalg = */		NULL,
+	/* .type = */		KEY_RSA,
+	/* .nid = */		0,
+	/* .cert = */		0,
+	/* .sigonly = */	1
+};
+
+const struct sshkey_impl sshkey_rsa_sha256_cert_impl = {
+	/* .name = */		"rsa-sha2-256-cert-v01@openssh.com",
+	/* .shortname = */	"RSA-CERT",
+	/* .sigalg = */		"rsa-sha2-256",
+	/* .type = */		KEY_RSA_CERT,
+	/* .nid = */		0,
+	/* .cert = */		1,
+	/* .sigonly = */	1
+};
+
+const struct sshkey_impl sshkey_rsa_sha512_cert_impl = {
+	/* .name = */		"rsa-sha2-512-cert-v01@openssh.com",
+	/* .shortname = */	"RSA-CERT",
+	/* .sigalg = */		"rsa-sha2-512",
+	/* .type = */		KEY_RSA_CERT,
+	/* .nid = */		0,
+	/* .cert = */		1,
+	/* .sigonly = */	1
+};
+#endif /*def HAVE_EVP_SHA256*/
+#else
+
+typedef int ssh_rsa_empty_translation_unit;
+
 #endif /* WITH_OPENSSL */

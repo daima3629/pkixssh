@@ -160,3 +160,23 @@ ssh_ed25519_verify(const struct sshkey *key,
 	free(ktype);
 	return r;
 }
+
+const struct sshkey_impl sshkey_ed25519_impl = {
+	/* .name = */		"ssh-ed25519",
+	/* .shortname = */	"ED25519",
+	/* .sigalg = */		NULL,
+	/* .type = */		KEY_ED25519,
+	/* .nid = */		0,
+	/* .cert = */		0,
+	/* .sigonly = */	0
+};
+
+const struct sshkey_impl sshkey_ed25519_cert_impl = {
+	/* .name = */		"ssh-ed25519-cert-v01@openssh.com",
+	/* .shortname = */	"ED25519-CERT",
+	/* .sigalg = */		NULL,
+	/* .type = */		KEY_ED25519_CERT,
+	/* .nid = */		0,
+	/* .cert = */		1,
+	/* .sigonly = */	0
+};

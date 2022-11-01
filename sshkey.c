@@ -99,70 +99,104 @@ static int sshkey_from_blob_internal(struct sshbuf *buf,
     struct sshkey **keyp, int allow_cert);
 
 /* Supported key types */
-struct keytype {
-	const char *name;
-	const char *shortname;
-	const char *sigalg;
-	int type;
-	int nid;
-	int cert;
-	int sigonly;
-};
-static const struct keytype keytypes[] = {
-	{ "ssh-ed25519", "ED25519", NULL, KEY_ED25519, 0, 0, 0 },
-	{ "ssh-ed25519-cert-v01@openssh.com", "ED25519-CERT", NULL,
-	    KEY_ED25519_CERT, 0, 1, 0 },
-#ifdef WITH_XMSS
-	{ "ssh-xmss@openssh.com", "XMSS", NULL, KEY_XMSS, 0, 0, 0 },
-	{ "ssh-xmss-cert-v01@openssh.com", "XMSS-CERT", NULL,
-	    KEY_XMSS_CERT, 0, 1, 0 },
-#endif /* WITH_XMSS */
+extern const struct sshkey_impl sshkey_ed25519_impl;
+extern const struct sshkey_impl sshkey_ed25519_cert_impl;
 #ifdef WITH_OPENSSL
-	{ "ssh-rsa", "RSA", NULL, KEY_RSA, 0, 0, 0 },
-#ifdef HAVE_EVP_SHA256
-	{ "rsa-sha2-256", "RSA", NULL, KEY_RSA, 0, 0, 1 },
-	{ "rsa-sha2-512", "RSA", NULL, KEY_RSA, 0, 0, 1 },
-#endif /*def HAVE_EVP_SHA256*/
-	{ "ssh-dss", "DSA", NULL, KEY_DSA, 0, 0, 0 },
 # ifdef OPENSSL_HAS_ECC
-	{ "ecdsa-sha2-nistp256", "ECDSA", NULL,
-	    KEY_ECDSA, NID_X9_62_prime256v1, 0, 0 },
-	{ "ecdsa-sha2-nistp384", "ECDSA", NULL,
-	    KEY_ECDSA, NID_secp384r1, 0, 0 },
+extern const struct sshkey_impl sshkey_ecdsa_nistp256_impl;
+extern const struct sshkey_impl sshkey_ecdsa_nistp256_cert_impl;
+extern const struct sshkey_impl sshkey_ecdsa_nistp384_impl;
+extern const struct sshkey_impl sshkey_ecdsa_nistp384_cert_impl;
 #  ifdef OPENSSL_HAS_NISTP521
-	{ "ecdsa-sha2-nistp521", "ECDSA", NULL,
-	    KEY_ECDSA, NID_secp521r1, 0, 0 },
+extern const struct sshkey_impl sshkey_ecdsa_nistp521_impl;
+extern const struct sshkey_impl sshkey_ecdsa_nistp521_cert_impl;
 #  endif /* OPENSSL_HAS_NISTP521 */
 # endif /* OPENSSL_HAS_ECC */
-	{ "ssh-rsa-cert-v01@openssh.com", "RSA-CERT", NULL,
-	    KEY_RSA_CERT, 0, 1, 0 },
+extern const struct sshkey_impl sshkey_rsa_impl;
+extern const struct sshkey_impl sshkey_rsa_cert_impl;
 #ifdef HAVE_EVP_SHA256
-	{ "rsa-sha2-256-cert-v01@openssh.com", "RSA-CERT",
-	    "rsa-sha2-256", KEY_RSA_CERT, 0, 1, 1 },
-	{ "rsa-sha2-512-cert-v01@openssh.com", "RSA-CERT",
-	    "rsa-sha2-512", KEY_RSA_CERT, 0, 1, 1 },
+extern const struct sshkey_impl sshkey_rsa_sha256_impl;
+extern const struct sshkey_impl sshkey_rsa_sha256_cert_impl;
+extern const struct sshkey_impl sshkey_rsa_sha512_impl;
+extern const struct sshkey_impl sshkey_rsa_sha512_cert_impl;
 #endif /*def HAVE_EVP_SHA256*/
-	{ "ssh-dss-cert-v01@openssh.com", "DSA-CERT", NULL,
-	    KEY_DSA_CERT, 0, 1, 0 },
-# ifdef OPENSSL_HAS_ECC
-	{ "ecdsa-sha2-nistp256-cert-v01@openssh.com", "ECDSA-CERT", NULL,
-	    KEY_ECDSA_CERT, NID_X9_62_prime256v1, 1, 0 },
-	{ "ecdsa-sha2-nistp384-cert-v01@openssh.com", "ECDSA-CERT", NULL,
-	    KEY_ECDSA_CERT, NID_secp384r1, 1, 0 },
-#  ifdef OPENSSL_HAS_NISTP521
-	{ "ecdsa-sha2-nistp521-cert-v01@openssh.com", "ECDSA-CERT", NULL,
-	    KEY_ECDSA_CERT, NID_secp521r1, 1, 0 },
-#  endif /* OPENSSL_HAS_NISTP521 */
-# endif /* OPENSSL_HAS_ECC */
+extern const struct sshkey_impl sshkey_dss_impl;
+extern const struct sshkey_impl sshkey_dsa_cert_impl;
 #endif /* WITH_OPENSSL */
-	{ NULL, NULL, NULL, -1, -1, 0, 0 }
+#ifdef WITH_XMSS
+extern const struct sshkey_impl sshkey_xmss_impl;
+extern const struct sshkey_impl sshkey_xmss_cert_impl;
+#endif /* WITH_XMSS */
+
+static const struct sshkey_impl * const keyimpls[] = {
+	&sshkey_ed25519_impl,
+	&sshkey_ed25519_cert_impl,
+#ifdef WITH_OPENSSL
+# ifdef OPENSSL_HAS_ECC
+	&sshkey_ecdsa_nistp256_impl,
+	&sshkey_ecdsa_nistp256_cert_impl,
+	&sshkey_ecdsa_nistp384_impl,
+	&sshkey_ecdsa_nistp384_cert_impl,
+#  ifdef OPENSSL_HAS_NISTP521
+	&sshkey_ecdsa_nistp521_impl,
+	&sshkey_ecdsa_nistp521_cert_impl,
+#  endif /* OPENSSL_HAS_NISTP521 */
+# endif /* OPENSSL_HAS_ECC */
+	&sshkey_rsa_impl,
+	&sshkey_rsa_cert_impl,
+#ifdef HAVE_EVP_SHA256
+	&sshkey_rsa_sha256_impl,
+	&sshkey_rsa_sha256_cert_impl,
+	&sshkey_rsa_sha512_impl,
+	&sshkey_rsa_sha512_cert_impl,
+#endif /*def HAVE_EVP_SHA256*/
+	&sshkey_dss_impl,
+	&sshkey_dsa_cert_impl,
+#endif /* WITH_OPENSSL */
+#ifdef WITH_XMSS
+	&sshkey_xmss_impl,
+	&sshkey_xmss_cert_impl,
+#endif /* WITH_XMSS */
+	NULL
 };
+
+
+static const struct sshkey_impl *
+sshkey_impl_from_type(int type)
+{
+	const struct sshkey_impl *const* p;
+
+	for (p = keyimpls; *p != NULL; p++) {
+		if ((*p)->type == type)
+			return *p;
+	}
+	return NULL;
+}
+
+static const struct sshkey_impl *
+sshkey_impl_from_type_nid(int type, int nid)
+{
+	const struct sshkey_impl *const* p;
+
+	for (p = keyimpls; *p != NULL; p++) {
+		if ((*p)->type == type &&
+		    ((*p)->nid == 0 || (*p)->nid == nid))
+			return *p;
+	}
+	return NULL;
+}
+
+static const struct sshkey_impl *
+sshkey_impl_from_key(const struct sshkey *k)
+{
+	if (k == NULL) return NULL;
+
+	return sshkey_impl_from_type_nid(k->type, k->ecdsa_nid);
+}
 
 const char *
 sshkey_type(const struct sshkey *k)
 {
-	const struct keytype *kt;
-
 	if (sshkey_is_x509(k)) {
 		switch (sshkey_type_plain(k->type)) {
 		case KEY_RSA:
@@ -176,36 +210,27 @@ sshkey_type(const struct sshkey *k)
 		}
 	}
 
-	for (kt = keytypes; kt->type != -1; kt++) {
-		if (kt->type == k->type)
-			return kt->shortname;
-	}
-	return "unknown";
+{
+	const struct sshkey_impl *impl = sshkey_impl_from_key(k);
+
+	return (impl != NULL) ? impl->shortname : "unknown";
+}
 }
 
 static const char *
 sshkey_ssh_name_from_type_nid(int type, int nid)
 {
-	const struct keytype *kt;
+	const struct sshkey_impl *impl = sshkey_impl_from_type_nid(type, nid);
 
-	for (kt = keytypes; kt->type != -1; kt++) {
-		if (!kt->name) continue; /* restore to openssh up to 6.2p2 */
-		if (kt->type == type && (kt->nid == 0 || kt->nid == nid))
-			return kt->name;
-	}
-	return "ssh-unknown";
+	return (impl != NULL) ? impl->name : "ssh-unknown";
 }
 
 int
 sshkey_type_is_cert(int type)
 {
-	const struct keytype *kt;
+	const struct sshkey_impl *impl = sshkey_impl_from_type(type);
 
-	for (kt = keytypes; kt->type != -1; kt++) {
-		if (kt->type == type)
-			return kt->cert;
-	}
-	return 0;
+	return (impl != NULL) ? impl->cert : 0;
 }
 
 const char *
@@ -233,13 +258,13 @@ sshkey_type_from_name(const char *name)
 	if (k != KEY_UNSPEC) return k;
 }
 {
-	const struct keytype *kt;
+	const struct sshkey_impl *const* p;
 
-	for (kt = keytypes; kt->type != -1; kt++) {
+	for (p = keyimpls; *p != NULL; p++) {
 		/* Only allow shortname matches for plain key types */
-		if ((kt->name != NULL && strcmp(name, kt->name) == 0) ||
-		    (!kt->cert && strcasecmp(kt->shortname, name) == 0))
-			return kt->type;
+		if ((strcmp((*p)->name, name) == 0) ||
+		    (!(*p)->cert && strcasecmp((*p)->shortname, name) == 0))
+			return (*p)->type;
 	}
 }
 	return KEY_UNSPEC;
@@ -275,18 +300,20 @@ sshkey_types_from_name(const char *name, int *type, int *subtype) {
 int
 sshkey_ecdsa_nid_from_name(const char *name)
 {
-	const struct keytype *kt;
-
 	if (strncmp(name, "x509v3-ecdsa-", 13) == 0) {
 		return sshkey_ecdsa_nid_from_name(name+7);
 	}
 
-	for (kt = keytypes; kt->type != -1; kt++) {
-		if (!key_type_is_ecdsa_variant(kt->type))
+{
+	const struct sshkey_impl *const* p;
+
+	for (p = keyimpls; *p != NULL; p++) {
+		if (!key_type_is_ecdsa_variant((*p)->type))
 			continue;
-		if (kt->name != NULL && strcmp(name, kt->name) == 0)
-			return kt->nid;
+		if (strcmp((*p)->name, name) == 0)
+			return (*p)->nid;
 	}
+}
 	return -1;
 }
 
@@ -310,19 +337,18 @@ sshkey_alg_list(int certs_only, int plain_only, int include_sigonly, char sep)
 		sshbuf_free(b);
 	}
 {
-	const struct keytype *kt;
+	const struct sshkey_impl *const* p;
 
-	for (kt = keytypes; kt->type != -1; kt++) {
+	for (p = keyimpls; *p != NULL; p++) {
 		size_t nlen;
-		if (kt->name == NULL)
+
+		if (!include_sigonly && (*p)->sigonly)
 			continue;
-		if (!include_sigonly && kt->sigonly)
-			continue;
-		if ((certs_only && !kt->cert) || (plain_only && kt->cert))
+		if ((certs_only && !(*p)->cert) || (plain_only && (*p)->cert))
 			continue;
 		if (ret != NULL)
 			ret[rlen++] = sep;
-		nlen = strlen(kt->name);
+		nlen = strlen((*p)->name);
 	{	char *tmp = realloc(ret, rlen + nlen + 2);
 		if (tmp == NULL) {
 			free(ret);
@@ -330,7 +356,7 @@ sshkey_alg_list(int certs_only, int plain_only, int include_sigonly, char sep)
 		}
 		ret = tmp;
 	}
-		memcpy(ret + rlen, kt->name, nlen + 1);
+		memcpy(ret + rlen, (*p)->name, nlen + 1);
 		rlen += nlen;
 	}
 }
@@ -340,16 +366,15 @@ sshkey_alg_list(int certs_only, int plain_only, int include_sigonly, char sep)
 int
 sshkey_algind(const char **name, u_int filter, int loc) {
 	int k, n;
-	const struct keytype *p;
 	int plain = (filter & SSHKEY_ALG_PLAINKEY) != 0;
 	int cert  = (filter & SSHKEY_ALG_CUSTCERT) != 0;
 
 	k = (loc < 0) ? 0 : (loc + 1);
-	n = sizeof(keytypes) / sizeof(keytypes[0]);
-	if (k < n) p = &keytypes[k];
+	n = sizeof(keyimpls) / sizeof(keyimpls[0]);
 
-	for (; k < n; k++, p++) {
-		if (p->name == NULL) continue;
+	for (; k < n; k++) {
+		const struct sshkey_impl *p = keyimpls[k];
+		if (p == NULL) continue;
 		if (p->cert) {
 			if (!cert) continue;
 		} else {
@@ -401,14 +426,15 @@ sshkey_names_valid2(const char *names, int allow_wildcard)
 					continue;
 			}
 			{
-				const struct keytype *kt;
+				const struct sshkey_impl *const* q;
 
-				for (kt = keytypes; kt->type != -1; kt++) {
-					if (match_pattern_list(kt->name,
-					    p, 0) == 1)
+				for (q = keyimpls; *q != NULL; q++) {
+					if (match_pattern_list(
+					    (*q)->name, p, 0) == 1) {
 						break;
+					}
 				}
-				if (kt->type != -1)
+				if (q != NULL)
 					continue;
 			}
 			}
@@ -1374,26 +1400,6 @@ sshkey_fingerprint(const struct sshkey *k, int dgst_alg,
 	freezero(dgst_raw, dgst_raw_len);
 	return retval;
 }
-
-#if 0 /* unused now */
-static int
-peek_type_nid(const char *s, size_t l, int *nid)
-{
-	const struct keytype *kt;
-
-	for (kt = keytypes; kt->type != -1; kt++) {
-		if (kt->name == NULL || strlen(kt->name) != l)
-			continue;
-		if (memcmp(s, kt->name, l) == 0) {
-			*nid = -1;
-			if (key_type_is_ecdsa_variant(kt->type))
-				*nid = kt->nid;
-			return kt->type;
-		}
-	}
-	return KEY_UNSPEC;
-}
-#endif
 
 /* XXX this can now be made const char * */
 int
@@ -2624,17 +2630,17 @@ sshkey_check_cert_sigtype(const struct sshkey *key, const char *allowed)
 static const char *
 sshkey_sigalg_by_name(const char *name)
 {
-	const struct keytype *kt;
+	const struct sshkey_impl *const* p;
 
-	for (kt = keytypes; kt->type != -1; kt++) {
-		if (strcmp(kt->name, name) != 0)
+	for (p = keyimpls; *p != NULL; p++) {
+		if (strcmp((*p)->name, name) != 0)
 			continue;
-		if (kt->sigalg != NULL)
-			return kt->sigalg;
-		if (!kt->cert)
-			return kt->name;
+		if ((*p)->sigalg != NULL)
+			return (*p)->sigalg;
+		if (!(*p)->cert)
+			return (*p)->name;
 		return sshkey_ssh_name_from_type_nid(
-		    sshkey_type_plain(kt->type), kt->nid);
+		    sshkey_type_plain((*p)->type), (*p)->nid);
 	}
 	return NULL;
 }

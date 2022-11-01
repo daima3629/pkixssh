@@ -342,4 +342,28 @@ parse_out:
 		freezero(sigblob, len);
 	return ret;
 }
+
+const struct sshkey_impl sshkey_dss_impl = {
+	/* .name = */		"ssh-dss",
+	/* .shortname = */	"DSA",
+	/* .sigalg = */		NULL,
+	/* .type = */		KEY_DSA,
+	/* .nid = */		0,
+	/* .cert = */		0,
+	/* .sigonly = */	0
+};
+
+const struct sshkey_impl sshkey_dsa_cert_impl = {
+	/* .name = */		"ssh-dss-cert-v01@openssh.com",
+	/* .shortname = */	"DSA-CERT",
+	/* .sigalg = */		NULL,
+	/* .type = */		KEY_DSA_CERT,
+	/* .nid = */		0,
+	/* .cert = */		1,
+	/* .sigonly = */	0
+};
+#else
+
+typedef int ssh_dss_empty_translation_unit;
+
 #endif /* WITH_OPENSSL */

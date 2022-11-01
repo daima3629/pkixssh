@@ -183,4 +183,28 @@ ssh_xmss_verify(const struct sshkey *key,
 	free(ktype);
 	return r;
 }
+
+const struct sshkey_impl sshkey_xmss_impl = {
+	/* .name = */		"ssh-xmss@openssh.com",
+	/* .shortname = */	"XMSS",
+	/* .sigalg = */		NULL,
+	/* .type = */		KEY_XMSS,
+	/* .nid = */		0,
+	/* .cert = */		0,
+	/* .sigonly = */	0
+};
+
+const struct sshkey_impl sshkey_xmss_cert_impl = {
+	/* .name = */		"ssh-xmss-cert-v01@openssh.com",
+	/* .shortname = */	"XMSS-CERT",
+	/* .sigalg = */		NULL,
+	/* .type = */		KEY_XMSS_CERT,
+	/* .nid = */		0,
+	/* .cert = */		1,
+	/* .sigonly = */	0
+};
+#else
+
+typedef int ssh_xmss_empty_translation_unit;
+
 #endif /* WITH_XMSS */
