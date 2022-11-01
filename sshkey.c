@@ -948,7 +948,7 @@ to_blob_buf(const struct sshkey *key, struct sshbuf *b, int force_plain,
 # endif
 	case KEY_RSA:
 		if ((ret = sshbuf_put_cstring(b, typename)) != 0 ||
-		    (ret = sshbuf_write_pub_rsa_inv(b, key)) != 0)
+		    (ret = sshbuf_write_pub_rsa(b, key)) != 0)
 			return ret;
 		break;
 #endif /* WITH_OPENSSL */
@@ -2457,7 +2457,7 @@ sshkey_from_blob_internal(struct sshbuf *b, struct sshkey **keyp,
 		}
 		/* FALLTHROUGH */
 	case KEY_RSA:
-		ret = sshbuf_read_pub_rsa_inv(b, key);
+		ret = sshbuf_read_pub_rsa(b, key);
 		if (ret != 0) goto out;
 		break;
 	case KEY_DSA_CERT:
@@ -2855,7 +2855,7 @@ sshkey_certify_custom(struct sshkey *k, struct sshkey *ca, const char *alg,
 		break;
 # endif /* OPENSSL_HAS_ECC */
 	case KEY_RSA_CERT:
-		if ((ret = sshbuf_write_pub_rsa_inv(cert, k)) != 0)
+		if ((ret = sshbuf_write_pub_rsa(cert, k)) != 0)
 			goto out;
 		break;
 #endif /* WITH_OPENSSL */
@@ -3124,7 +3124,7 @@ sshkey_private_serialize_opt(struct sshkey *key, struct sshbuf *buf,
 	switch (key->type) {
 #ifdef WITH_OPENSSL
 	case KEY_RSA:
-		if ((r = sshbuf_write_pub_rsa(b, key)) != 0 ||
+		if ((r = sshbuf_write_pub_rsa_priv(b, key)) != 0 ||
 		    (r = sshbuf_write_priv_rsa(b, key)) != 0)
 			goto out;
 		break;
@@ -3271,7 +3271,7 @@ sshkey_private_deserialize(struct sshbuf *buf, struct sshkey **kp)
 		break;
 # endif /* OPENSSL_HAS_ECC */
 	case KEY_RSA:
-		r = sshbuf_read_pub_rsa(buf, k);
+		r = sshbuf_read_pub_rsa_priv(buf, k);
 		if (r != 0) goto out;
 		/* FALLTHROUGH */
 	case KEY_RSA_CERT:

@@ -326,7 +326,7 @@ int	sshkey_generate_ecdsa(u_int bits, struct sshkey *key);
 #  endif /* OPENSSL_HAS_ECC */
 
 int	sshbuf_read_pub_rsa(struct sshbuf *buf, struct sshkey *key);
-int	sshbuf_read_pub_rsa_inv(struct sshbuf *buf, struct sshkey *key);
+int	sshbuf_read_pub_rsa_priv(struct sshbuf *buf, struct sshkey *key);
 int	sshbuf_read_priv_rsa(struct sshbuf *buf, struct sshkey *key);
 int	sshbuf_read_pub_dsa(struct sshbuf *buf, struct sshkey *key);
 int	sshbuf_read_priv_dsa(struct sshbuf *buf, struct sshkey *key);
@@ -336,7 +336,7 @@ int	sshbuf_read_priv_ecdsa(struct sshbuf *buf, struct sshkey *key);
 #  endif /* OPENSSL_HAS_ECC */
 
 int	sshbuf_write_pub_rsa(struct sshbuf *buf, const struct sshkey *key);
-int	sshbuf_write_pub_rsa_inv(struct sshbuf *buf, const struct sshkey *key);
+int	sshbuf_write_pub_rsa_priv(struct sshbuf *buf, const struct sshkey *key);
 int	sshbuf_write_priv_rsa(struct sshbuf *buf, const struct sshkey *key);
 int	sshbuf_write_pub_dsa(struct sshbuf *buf, const struct sshkey *key);
 int	sshbuf_write_priv_dsa(struct sshbuf *buf, const struct sshkey *key);

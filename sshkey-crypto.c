@@ -1329,7 +1329,7 @@ err:
 
 
 int
-sshbuf_read_pub_rsa(struct sshbuf *buf, struct sshkey *key) {
+sshbuf_read_pub_rsa_priv(struct sshbuf *buf, struct sshkey *key) {
 	int r;
 	BIGNUM *n = NULL, *e = NULL;
 
@@ -1358,7 +1358,7 @@ err:
 
 
 int
-sshbuf_write_pub_rsa(struct sshbuf *buf, const struct sshkey *key) {
+sshbuf_write_pub_rsa_priv(struct sshbuf *buf, const struct sshkey *key) {
 	int r;
 	const BIGNUM *n = NULL, *e = NULL;
 
@@ -1377,7 +1377,7 @@ sshbuf_write_pub_rsa(struct sshbuf *buf, const struct sshkey *key) {
 
 
 int
-sshbuf_read_pub_rsa_inv(struct sshbuf *buf, struct sshkey *key) {
+sshbuf_read_pub_rsa(struct sshbuf *buf, struct sshkey *key) {
 	int r;
 	BIGNUM *n = NULL, *e = NULL;
 
@@ -1405,7 +1405,7 @@ err:
 }
 
 int
-sshbuf_write_pub_rsa_inv(struct sshbuf *buf, const struct sshkey *key) {
+sshbuf_write_pub_rsa(struct sshbuf *buf, const struct sshkey *key) {
 	int r;
 	const BIGNUM *n = NULL, *e = NULL;
 
