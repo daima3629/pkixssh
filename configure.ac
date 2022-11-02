@@ -3213,8 +3213,7 @@ AC_CHECK_FUNCS([ \
 ])
 
 # Check for the existence of "X509_VERIFY_PARAM *param" (OpenSSL 0.9.8+)
-# Instead to check for member param we check for get functions
-dnl AC_CHECK_MEMBERS([X509_STORE_CTX.param],,,[#include <openssl/x509_vfy.h>])
+# Instead check for X509_STORE_CTX.param we check for get functions
 AC_CHECK_FUNCS([X509_STORE_CTX_get0_param])
 
 # check for openssl 1.0.0+ functions ...
@@ -3228,7 +3227,7 @@ AC_CHECK_FUNCS([ \
 
 # check for some structures
 AC_CHECK_MEMBERS([ECDSA_METHOD.name], [], [],
-[#include <openssl/ecdsa.h>]
+[[#include <openssl/ecdsa.h>]]
 )
 
 # check for openssl 1.0.2+ functions ...
@@ -4242,7 +4241,6 @@ if test "x$ac_cv_member_struct_statfs_f_files" = "xyes" ; then
   AC_DEFINE([USE_STRUCT_STATFS], [1],
     [Define to 1 if you have the `statfs' structure])
 fi
-ac_cv_member_struct_statfs_f_files=yes
 AC_CHECK_MEMBERS([struct statfs.f_flags], [], [], [statfs_includes])
 
 
@@ -4369,13 +4367,12 @@ if test "x$ac_cv_have_struct_in6_addr" = "xyes" ; then
 		[define if you have struct in6_addr data type])
 
 dnl Now check for sin6_scope_id
-	AC_CHECK_MEMBERS([struct sockaddr_in6.sin6_scope_id], , ,
-		[
+	AC_CHECK_MEMBERS([struct sockaddr_in6.sin6_scope_id], [], [], [[
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
 #include <netinet/in.h>
-		])
+]])
 fi
 
 AC_CACHE_CHECK([for struct addrinfo], ac_cv_have_struct_addrinfo, [
@@ -4875,8 +4872,9 @@ AC_SEARCH_LIBS([getrrsetbyname], [resolv],
 		    #include <arpa/nameser.h>])
 		AC_CHECK_MEMBER([HEADER.ad],
 			[AC_DEFINE([HAVE_HEADER_AD], [1],
-			    [Define if HEADER.ad exists in arpa/nameser.h])], ,
-			[#include <arpa/nameser.h>])
+			    [Define if HEADER.ad exists in arpa/nameser.h])],
+			[],
+			[[#include <arpa/nameser.h>]])
 	])
 
 AC_MSG_CHECKING([if struct __res_state _res is an extern])
@@ -5859,7 +5857,7 @@ AC_CHECK_MEMBER([struct lastlog.ll_line], [], [
     if test x$SKIP_DISABLE_LASTLOG_DEFINE != "xyes" ; then
 	AC_DEFINE([DISABLE_LASTLOG])
     fi
-	], [
+	], [[
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -5872,12 +5870,12 @@ AC_CHECK_MEMBER([struct lastlog.ll_line], [], [
 #ifdef HAVE_LASTLOG_H
 #include <lastlog.h>
 #endif
-	])
+	]])
 
 AC_CHECK_MEMBER([struct utmp.ut_line], [], [
 	AC_DEFINE([DISABLE_UTMP])
 	AC_DEFINE([DISABLE_WTMP])
-	], [
+	], [[
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -5890,7 +5888,7 @@ AC_CHECK_MEMBER([struct utmp.ut_line], [], [
 #ifdef HAVE_LASTLOG_H
 #include <lastlog.h>
 #endif
-	])
+	]])
 
 dnl Adding -Werror to CFLAGS early prevents configure tests from running.
 dnl Add now.
