@@ -36,15 +36,8 @@
 #include <openssl/err.h>
 #endif
 
-
-/*
- * If we're not using a native getentropy, use the one from bsd-getentropy.c
- * under a different name, so that if in future these binaries are run on
- * a system that has a native getentropy OpenSSL cannot call the wrong one.
- */
-#ifndef HAVE_GETENTROPY
-extern int _ssh_compat_getentropy(void *s, size_t len);
-# define getentropy(x, y) (_ssh_compat_getentropy((x), (y)))
+#ifndef WITH_OPENSSL
+extern int _ssh_compat_getentropy(void *, size_t);
 #endif
 
 #ifdef OPENSSL_FIPS
@@ -216,11 +209,12 @@ _rs_stir(void)
 	uint32_t rekey_fuzz = 0;
 
 #ifdef WITH_OPENSSL
+	/* Always prefer OpenSSL random functionality */
 	if (RAND_bytes(rnd, sizeof(rnd)) <= 0)
 		fatal("Couldn't obtain random bytes (error 0x%lx)",
 		    (unsigned long)ERR_get_error());
 #else
-	if (getentropy(rnd, sizeof rnd) == -1)
+	if (_ssh_compat_getentropy(rnd, sizeof rnd) == -1)
 		fatal("getentropy failed");
 #endif
 

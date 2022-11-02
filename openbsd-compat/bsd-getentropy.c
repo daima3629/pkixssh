@@ -19,7 +19,7 @@
 
 #include "includes.h"
 
-#if !defined(HAVE_GETENTROPY) && !defined(WITH_OPENSSL)
+#ifndef WITH_OPENSSL
 
 #ifndef SSH_RANDOM_DEV
 # define SSH_RANDOM_DEV "/dev/urandom"
@@ -47,6 +47,12 @@ _ssh_compat_getentropy(void *s, size_t len)
 	ssize_t r;
 	size_t o = 0;
 
+#ifdef HAVE_GETENTROPY
+	if (r = getentropy(s, len) == 0)
+		return 0;
+	if (errno != ENOSYS)
+		return -1;
+#endif /* HAVE_GETENTROPY */
 #ifdef HAVE_GETRANDOM
 	if ((r = getrandom(s, len, 0)) > 0 && (size_t)r == len)
 		return 0;
@@ -57,8 +63,9 @@ _ssh_compat_getentropy(void *s, size_t len)
 		/* Try egd/prngd before giving up. */
 		if (seed_from_prngd(s, len) == 0)
 			return 0;
-		fatal("Couldn't open %s: %s", SSH_RANDOM_DEV,
+		error("Couldn't open %s: %s", SSH_RANDOM_DEV,
 		    strerror(save_errno));
+		return -1;
 	}
 	while (o < len) {
 		r = read(fd, (u_char *)s + o, len - o);
@@ -66,11 +73,16 @@ _ssh_compat_getentropy(void *s, size_t len)
 			if (errno == EAGAIN || errno == EINTR ||
 			    errno == EWOULDBLOCK)
 				continue;
-			fatal("read %s: %s", SSH_RANDOM_DEV, strerror(errno));
+			error("read %s: %s", SSH_RANDOM_DEV, strerror(errno));
+			return -1;
 		}
 		o += r;
 	}
 	close(fd);
 	return 0;
 }
-#endif
+#else
+
+typedef int bsd_getentropy_empty_translation_unit;
+
+#endif /* ndef WITH_OPENSSL */
