@@ -39,6 +39,13 @@
 #include "log.h"
 
 
+static u_int
+ssh_rsa_size(const struct sshkey *key)
+{
+	return (key->pk != NULL) ? EVP_PKEY_bits(key->pk) : 0;
+}
+
+
 struct ssh_rsa_alg_st {
 	const char *name;
 	const int nid;
@@ -331,6 +338,10 @@ evp_md_end:
 	return ret;
 }
 
+static const struct sshkey_impl_funcs sshkey_rsa_funcs = {
+	/* .size = */		ssh_rsa_size
+};
+
 const struct sshkey_impl sshkey_rsa_impl = {
 	/* .name = */		"ssh-rsa",
 	/* .shortname = */	"RSA",
@@ -338,7 +349,9 @@ const struct sshkey_impl sshkey_rsa_impl = {
 	/* .type = */		KEY_RSA,
 	/* .nid = */		0,
 	/* .cert = */		0,
-	/* .sigonly = */	0
+	/* .sigonly = */	0,
+	/* .keybits = */	0,
+	/* .funcs = */		&sshkey_rsa_funcs
 };
 
 const struct sshkey_impl sshkey_rsa_cert_impl = {
@@ -348,7 +361,9 @@ const struct sshkey_impl sshkey_rsa_cert_impl = {
 	/* .type = */		KEY_RSA_CERT,
 	/* .nid = */		0,
 	/* .cert = */		1,
-	/* .sigonly = */	0
+	/* .sigonly = */	0,
+	/* .keybits = */	0,
+	/* .funcs = */		&sshkey_rsa_funcs
 };
 
 #ifdef HAVE_EVP_SHA256
@@ -359,7 +374,9 @@ const struct sshkey_impl sshkey_rsa_sha256_impl = {
 	/* .type = */		KEY_RSA,
 	/* .nid = */		0,
 	/* .cert = */		0,
-	/* .sigonly = */	1
+	/* .sigonly = */	1,
+	/* .keybits = */	0,
+	/* .funcs = */		&sshkey_rsa_funcs
 };
 
 const struct sshkey_impl sshkey_rsa_sha512_impl = {
@@ -369,7 +386,9 @@ const struct sshkey_impl sshkey_rsa_sha512_impl = {
 	/* .type = */		KEY_RSA,
 	/* .nid = */		0,
 	/* .cert = */		0,
-	/* .sigonly = */	1
+	/* .sigonly = */	1,
+	/* .keybits = */	0,
+	/* .funcs = */		&sshkey_rsa_funcs
 };
 
 const struct sshkey_impl sshkey_rsa_sha256_cert_impl = {
@@ -379,7 +398,9 @@ const struct sshkey_impl sshkey_rsa_sha256_cert_impl = {
 	/* .type = */		KEY_RSA_CERT,
 	/* .nid = */		0,
 	/* .cert = */		1,
-	/* .sigonly = */	1
+	/* .sigonly = */	1,
+	/* .keybits = */	0,
+	/* .funcs = */		&sshkey_rsa_funcs
 };
 
 const struct sshkey_impl sshkey_rsa_sha512_cert_impl = {
@@ -389,7 +410,9 @@ const struct sshkey_impl sshkey_rsa_sha512_cert_impl = {
 	/* .type = */		KEY_RSA_CERT,
 	/* .nid = */		0,
 	/* .cert = */		1,
-	/* .sigonly = */	1
+	/* .sigonly = */	1,
+	/* .keybits = */	0,
+	/* .funcs = */		&sshkey_rsa_funcs
 };
 #endif /*def HAVE_EVP_SHA256*/
 #else

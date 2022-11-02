@@ -2,7 +2,7 @@
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2010 Damien Miller.  All rights reserved.
- * Copyright (c) 2020-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2020-2022 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -43,6 +43,11 @@
 #include "log.h"
 #include "xmalloc.h"
 
+static u_int
+ssh_ecdsa_size(const struct sshkey *key)
+{
+	return (key->pk != NULL) ? EVP_PKEY_bits(key->pk) : 0;
+}
 
 static const EVP_MD*
 ssh_ecdsa_evp_md(const struct sshkey *key)
@@ -334,6 +339,10 @@ parse_out:
 	return ret;
 }
 
+static const struct sshkey_impl_funcs sshkey_ecdsa_funcs = {
+	/* .size = */		ssh_ecdsa_size
+};
+
 const struct sshkey_impl sshkey_ecdsa_nistp256_impl = {
 	/* .name = */		"ecdsa-sha2-nistp256",
 	/* .shortname = */	"ECDSA",
@@ -341,7 +350,9 @@ const struct sshkey_impl sshkey_ecdsa_nistp256_impl = {
 	/* .type = */		KEY_ECDSA,
 	/* .nid = */		NID_X9_62_prime256v1,
 	/* .cert = */		0,
-	/* .sigonly = */	0
+	/* .sigonly = */	0,
+	/* .keybits = */	0,
+	/* .funcs = */		&sshkey_ecdsa_funcs
 };
 
 const struct sshkey_impl sshkey_ecdsa_nistp256_cert_impl = {
@@ -351,7 +362,9 @@ const struct sshkey_impl sshkey_ecdsa_nistp256_cert_impl = {
 	/* .type = */		KEY_ECDSA_CERT,
 	/* .nid = */		NID_X9_62_prime256v1,
 	/* .cert = */		1,
-	/* .sigonly = */	0
+	/* .sigonly = */	0,
+	/* .keybits = */	0,
+	/* .funcs = */		&sshkey_ecdsa_funcs
 };
 
 const struct sshkey_impl sshkey_ecdsa_nistp384_impl = {
@@ -361,7 +374,9 @@ const struct sshkey_impl sshkey_ecdsa_nistp384_impl = {
 	/* .type = */		KEY_ECDSA,
 	/* .nid = */		NID_secp384r1,
 	/* .cert = */		0,
-	/* .sigonly = */	0
+	/* .sigonly = */	0,
+	/* .keybits = */	0,
+	/* .funcs = */		&sshkey_ecdsa_funcs
 };
 
 const struct sshkey_impl sshkey_ecdsa_nistp384_cert_impl = {
@@ -371,7 +386,9 @@ const struct sshkey_impl sshkey_ecdsa_nistp384_cert_impl = {
 	/* .type = */		KEY_ECDSA_CERT,
 	/* .nid = */		NID_secp384r1,
 	/* .cert = */		1,
-	/* .sigonly = */	0
+	/* .sigonly = */	0,
+	/* .keybits = */	0,
+	/* .funcs = */		&sshkey_ecdsa_funcs
 };
 
 #ifdef OPENSSL_HAS_NISTP521
@@ -382,7 +399,9 @@ const struct sshkey_impl sshkey_ecdsa_nistp521_impl = {
 	/* .type = */		KEY_ECDSA,
 	/* .nid = */		NID_secp521r1,
 	/* .cert = */		0,
-	/* .sigonly = */	0
+	/* .sigonly = */	0,
+	/* .keybits = */	0,
+	/* .funcs = */		&sshkey_ecdsa_funcs
 };
 
 const struct sshkey_impl sshkey_ecdsa_nistp521_cert_impl = {
@@ -392,7 +411,9 @@ const struct sshkey_impl sshkey_ecdsa_nistp521_cert_impl = {
 	/* .type = */		KEY_ECDSA_CERT,
 	/* .nid = */		NID_secp521r1,
 	/* .cert = */		1,
-	/* .sigonly = */	0
+	/* .sigonly = */	0,
+	/* .keybits = */	0,
+	/* .funcs = */		&sshkey_ecdsa_funcs
 };
 #endif /* OPENSSL_HAS_NISTP521 */
 #else

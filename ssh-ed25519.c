@@ -1,6 +1,7 @@
 /* $OpenBSD: ssh-ed25519.c,v 1.9 2020/10/18 11:32:02 djm Exp $ */
 /*
  * Copyright (c) 2013 Markus Friedl <markus@openbsd.org>
+ * Copyright (c) 2022 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -25,12 +26,31 @@
 #include <string.h>
 #include <stdarg.h>
 
+#include "evp-compat.h"
+
 #include "log.h"
 #include "sshbuf.h"
 #define SSHKEY_INTERNAL
 #include "sshkey.h"
 #include "ssherr.h"
 #include "ssh.h"
+
+
+static u_int
+ssh_ed25519_size(const struct sshkey *key)
+{
+#ifdef WITH_OPENSSL
+	if (key->pk != NULL) {
+		/* work-around, see OpenSSL issue #19070:
+		 * 253 in OpenSSL 1.1.1
+		 * 253 in OpenSSL 3.0 for non provider keys
+		return EVP_PKEY_bits(key->pk);
+		 */
+		return 256;
+	}
+#endif
+	return 256;
+}
 
 int
 ssh_ed25519_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
@@ -161,6 +181,10 @@ ssh_ed25519_verify(const struct sshkey *key,
 	return r;
 }
 
+static const struct sshkey_impl_funcs sshkey_ed25519_funcs = {
+	/* .size = */		ssh_ed25519_size
+};
+
 const struct sshkey_impl sshkey_ed25519_impl = {
 	/* .name = */		"ssh-ed25519",
 	/* .shortname = */	"ED25519",
@@ -168,7 +192,9 @@ const struct sshkey_impl sshkey_ed25519_impl = {
 	/* .type = */		KEY_ED25519,
 	/* .nid = */		0,
 	/* .cert = */		0,
-	/* .sigonly = */	0
+	/* .sigonly = */	0,
+	/* .keybits = */	256,
+	/* .funcs = */		&sshkey_ed25519_funcs
 };
 
 const struct sshkey_impl sshkey_ed25519_cert_impl = {
@@ -178,5 +204,7 @@ const struct sshkey_impl sshkey_ed25519_cert_impl = {
 	/* .type = */		KEY_ED25519_CERT,
 	/* .nid = */		0,
 	/* .cert = */		1,
-	/* .sigonly = */	0
+	/* .sigonly = */	0,
+	/* .keybits = */	256,
+	/* .funcs = */		&sshkey_ed25519_funcs
 };

@@ -184,6 +184,10 @@ ssh_xmss_verify(const struct sshkey *key,
 	return r;
 }
 
+static const struct sshkey_impl_funcs sshkey_xmss_funcs = {
+	/* .size = */		NULL
+};
+
 const struct sshkey_impl sshkey_xmss_impl = {
 	/* .name = */		"ssh-xmss@openssh.com",
 	/* .shortname = */	"XMSS",
@@ -191,7 +195,9 @@ const struct sshkey_impl sshkey_xmss_impl = {
 	/* .type = */		KEY_XMSS,
 	/* .nid = */		0,
 	/* .cert = */		0,
-	/* .sigonly = */	0
+	/* .sigonly = */	0,
+	/* .keybits = */	256,
+	/* .funcs = */		&sshkey_xmss_funcs
 };
 
 const struct sshkey_impl sshkey_xmss_cert_impl = {
@@ -201,7 +207,9 @@ const struct sshkey_impl sshkey_xmss_cert_impl = {
 	/* .type = */		KEY_XMSS_CERT,
 	/* .nid = */		0,
 	/* .cert = */		1,
-	/* .sigonly = */	0
+	/* .sigonly = */	0,
+	/* .keybits = */	256,
+	/* .funcs = */		&sshkey_xmss_funcs
 };
 #else
 

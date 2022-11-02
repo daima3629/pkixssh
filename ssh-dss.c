@@ -2,7 +2,7 @@
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2011 Dr. Stephen Henson.  All rights reserved.
- * Copyright (c) 2011-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2022 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -49,6 +49,12 @@
 
 #define INTBLOB_LEN	20
 #define SIGBLOB_LEN	(2*INTBLOB_LEN)
+
+static u_int
+ssh_dss_size(const struct sshkey *key)
+{
+	return (key->pk != NULL) ? EVP_PKEY_bits(key->pk) : 0;
+}
 
 int
 sshdsa_verify_length(int bits) {
@@ -343,6 +349,10 @@ parse_out:
 	return ret;
 }
 
+static const struct sshkey_impl_funcs sshkey_dss_funcs = {
+	/* .size = */		ssh_dss_size
+};
+
 const struct sshkey_impl sshkey_dss_impl = {
 	/* .name = */		"ssh-dss",
 	/* .shortname = */	"DSA",
@@ -350,7 +360,9 @@ const struct sshkey_impl sshkey_dss_impl = {
 	/* .type = */		KEY_DSA,
 	/* .nid = */		0,
 	/* .cert = */		0,
-	/* .sigonly = */	0
+	/* .sigonly = */	0,
+	/* .keybits = */	0,
+	/* .funcs = */		&sshkey_dss_funcs
 };
 
 const struct sshkey_impl sshkey_dsa_cert_impl = {
@@ -360,7 +372,9 @@ const struct sshkey_impl sshkey_dsa_cert_impl = {
 	/* .type = */		KEY_DSA_CERT,
 	/* .nid = */		0,
 	/* .cert = */		1,
-	/* .sigonly = */	0
+	/* .sigonly = */	0,
+	/* .keybits = */	0,
+	/* .funcs = */		&sshkey_dss_funcs
 };
 #else
 
