@@ -1664,56 +1664,24 @@ sshkey_generate(int type, u_int bits, struct sshkey **keyp)
 {
 	struct sshkey *k;
 	int ret = SSH_ERR_INTERNAL_ERROR;
+	const struct sshkey_impl *impl;
 
-	if (keyp == NULL)
+	if (keyp == NULL || type != sshkey_type_plain(type))
 		return SSH_ERR_INVALID_ARGUMENT;
 	*keyp = NULL;
+	if ((impl = sshkey_impl_from_type(type)) == NULL)
+		return SSH_ERR_KEY_TYPE_UNKNOWN;
+	if (impl->funcs->generate == NULL)
+		return SSH_ERR_FEATURE_UNSUPPORTED;
 	if ((k = sshkey_new(type)) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
-	switch (type) {
-	case KEY_ED25519:
-		if ((k->ed25519_pk = malloc(ED25519_PK_SZ)) == NULL ||
-		    (k->ed25519_sk = malloc(ED25519_SK_SZ)) == NULL) {
-			ret = SSH_ERR_ALLOC_FAIL;
-			break;
-		}
-		crypto_sign_ed25519_keypair(k->ed25519_pk, k->ed25519_sk);
-#ifdef OPENSSL_HAS_ED25519
-		k->pk = EVP_PKEY_new_raw_private_key(EVP_PKEY_ED25519, NULL,
-		    k->ed25519_sk, ED25519_SK_SZ - ED25519_PK_SZ);
-		if (k->pk == NULL) {
-			ret = SSH_ERR_LIBCRYPTO_ERROR;
-			break;
-		}
-#endif
-		ret = 0;
-		break;
-#ifdef WITH_XMSS
-	case KEY_XMSS:
-		ret = sshkey_xmss_generate_private_key(k, bits);
-		break;
-#endif /* WITH_XMSS */
-#ifdef WITH_OPENSSL
-	case KEY_DSA:
-		ret = sshkey_generate_dsa(bits, k);
-		break;
-# ifdef OPENSSL_HAS_ECC
-	case KEY_ECDSA:
-		ret = sshkey_generate_ecdsa(bits, k);
-		break;
-# endif /* OPENSSL_HAS_ECC */
-	case KEY_RSA:
-		ret = sshkey_generate_rsa(bits, k);
-		break;
-#endif /* WITH_OPENSSL */
-	default:
-		ret = SSH_ERR_INVALID_ARGUMENT;
-	}
-	if (ret == 0) {
-		*keyp = k;
-	} else
+	if ((ret = impl->funcs->generate(k, bits)) != 0) {
 		sshkey_free(k);
-	return ret;
+		return ret;
+	}
+	/* success */
+	*keyp = k;
+	return 0;
 }
 
 int

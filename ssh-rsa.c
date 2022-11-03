@@ -128,8 +128,8 @@ ssh_rsa_size(const struct sshkey *key)
 	return (key->pk != NULL) ? EVP_PKEY_bits(key->pk) : 0;
 }
 
-int
-sshkey_generate_rsa(u_int bits, struct sshkey *key) {
+static int
+ssh_rsa_generate(struct sshkey *key, int bits) {
 	EVP_PKEY *pk;
 	RSA *private = NULL;
 	BIGNUM *f4 = NULL;
@@ -417,7 +417,8 @@ evp_md_end:
 }
 
 static const struct sshkey_impl_funcs sshkey_rsa_funcs = {
-	/* .size = */		ssh_rsa_size
+	/* .size = */		ssh_rsa_size,
+	/* .generate = */	ssh_rsa_generate
 };
 
 const struct sshkey_impl sshkey_rsa_impl = {

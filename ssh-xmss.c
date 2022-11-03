@@ -188,7 +188,8 @@ ssh_xmss_verify(const struct sshkey *key,
 }
 
 static const struct sshkey_impl_funcs sshkey_xmss_funcs = {
-	/* .size = */		NULL
+	/* .size = */		NULL,
+	/* .generate = */	sshkey_xmss_generate_private_key
 };
 
 const struct sshkey_impl sshkey_xmss_impl = {

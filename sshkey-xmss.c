@@ -363,7 +363,7 @@ sshkey_xmss_deserialize_pk_info(struct sshkey *k, struct sshbuf *b)
 }
 
 int
-sshkey_xmss_generate_private_key(struct sshkey *k, u_int bits)
+sshkey_xmss_generate_private_key(struct sshkey *k, int bits)
 {
 	int r;
 	const char *name;

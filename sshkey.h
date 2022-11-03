@@ -145,6 +145,7 @@ struct sshkey_sig_details {
 
 struct sshkey_impl_funcs {
 	u_int (*size)(const struct sshkey *);	/* optional */
+	int (*generate)(struct sshkey *, int);	/* optional */
 };
 
 struct sshkey_impl {
@@ -334,12 +335,6 @@ int	sshkey_from_pkey(EVP_PKEY *pk, struct sshkey **keyp);
 void	sshkey_clear_pkey(struct sshkey *key);
 
 void	sshkey_move_pk(struct sshkey *from, struct sshkey *to);
-
-int	sshkey_generate_rsa(u_int bits, struct sshkey *key);
-int	sshkey_generate_dsa(u_int bits, struct sshkey *key);
-#  ifdef OPENSSL_HAS_ECC
-int	sshkey_generate_ecdsa(u_int bits, struct sshkey *key);
-#  endif /* OPENSSL_HAS_ECC */
 
 int	sshbuf_read_pub_rsa(struct sshbuf *buf, struct sshkey *key);
 int	sshbuf_read_pub_rsa_priv(struct sshbuf *buf, struct sshkey *key);

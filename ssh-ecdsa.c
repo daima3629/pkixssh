@@ -78,8 +78,8 @@ ssh_ecdsa_size(const struct sshkey *key)
 	return (key->pk != NULL) ? EVP_PKEY_bits(key->pk) : 0;
 }
 
-int
-sshkey_generate_ecdsa(u_int bits, struct sshkey *key) {
+static int
+ssh_ecdsa_generate(struct sshkey *key, int bits) {
 	EVP_PKEY *pk;
 	EC_KEY *private = NULL;
 	int r = 0, nid;
@@ -392,7 +392,8 @@ parse_out:
 }
 
 static const struct sshkey_impl_funcs sshkey_ecdsa_funcs = {
-	/* .size = */		ssh_ecdsa_size
+	/* .size = */		ssh_ecdsa_size,
+	/* .generate = */	ssh_ecdsa_generate
 };
 
 const struct sshkey_impl sshkey_ecdsa_nistp256_impl = {

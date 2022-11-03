@@ -97,8 +97,8 @@ ssh_dss_size(const struct sshkey *key)
 	return (key->pk != NULL) ? EVP_PKEY_bits(key->pk) : 0;
 }
 
-int
-sshkey_generate_dsa(u_int bits, struct sshkey *key) {
+static int
+ssh_dss_generate(struct sshkey *key, int bits) {
 	EVP_PKEY *pk;
 	DSA *private = NULL;
 	int r;
@@ -421,7 +421,8 @@ parse_out:
 }
 
 static const struct sshkey_impl_funcs sshkey_dss_funcs = {
-	/* .size = */		ssh_dss_size
+	/* .size = */		ssh_dss_size,
+	/* .generate = */	ssh_dss_generate
 };
 
 const struct sshkey_impl sshkey_dss_impl = {

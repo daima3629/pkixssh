@@ -54,6 +54,23 @@ ssh_ed25519_size(const struct sshkey *key)
 	return 256;
 }
 
+static int
+ssh_ed25519_generate(struct sshkey *key, int bits) {
+	UNUSED(bits);
+
+	if ((key->ed25519_pk = malloc(ED25519_PK_SZ)) == NULL ||
+	    (key->ed25519_sk = malloc(ED25519_SK_SZ)) == NULL)
+		return SSH_ERR_ALLOC_FAIL;
+	crypto_sign_ed25519_keypair(key->ed25519_pk, key->ed25519_sk);
+#ifdef OPENSSL_HAS_ED25519
+	key->pk = EVP_PKEY_new_raw_private_key(EVP_PKEY_ED25519, NULL,
+	    key->ed25519_sk, ED25519_SK_SZ - ED25519_PK_SZ);
+	if (key->pk == NULL)
+		return SSH_ERR_LIBCRYPTO_ERROR;
+#endif
+	return 0;
+}
+
 int
 ssh_ed25519_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
     const u_char *data, size_t datalen, u_int compat)
@@ -184,7 +201,8 @@ ssh_ed25519_verify(const struct sshkey *key,
 }
 
 static const struct sshkey_impl_funcs sshkey_ed25519_funcs = {
-	/* .size = */		ssh_ed25519_size
+	/* .size = */		ssh_ed25519_size,
+	/* .generate = */	ssh_ed25519_generate
 };
 
 const struct sshkey_impl sshkey_ed25519_impl = {
