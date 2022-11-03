@@ -128,7 +128,7 @@ void strmode(int mode, char *p);
 #endif
 
 #ifndef HAVE_STRPTIME
-#include  <time.h>
+# include <time.h>
 char *strptime(const char *buf, const char *fmt, struct tm *tm);
 #endif
 
@@ -331,6 +331,7 @@ void freezero(void *, size_t);
 #endif
 
 #ifndef HAVE_TIMEGM
+# include <time.h>
 time_t timegm(struct tm *);
 #endif
 
