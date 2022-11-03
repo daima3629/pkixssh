@@ -25,6 +25,15 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
+#ifndef USE_OPENSSL_PROVIDER
+/* TODO implement OpenSSL 3.1 API */
+# define OPENSSL_SUPPRESS_DEPRECATED
+#endif
+
 #include "includes.h"
 
 #ifdef WITH_OPENSSL
@@ -51,6 +60,28 @@
 #define INTBLOB_LEN	20
 #define SIGBLOB_LEN	(2*INTBLOB_LEN)
 
+#ifndef HAVE_DSA_GENERATE_PARAMETERS_EX	/* OpenSSL < 0.9.8 */
+static int
+DSA_generate_parameters_ex(DSA *dsa, int bits, const unsigned char *seed,
+    int seed_len, int *counter_ret, unsigned long *h_ret, void *cb)
+{
+	DSA *new_dsa, tmp_dsa;
+
+	if (cb != NULL)
+		fatal_f("callback args not supported");
+	new_dsa = DSA_generate_parameters(bits, (unsigned char *)seed, seed_len,
+	    counter_ret, h_ret, NULL, NULL);
+	if (new_dsa == NULL)
+		return 0;
+	/* swap dsa/new_dsa then free new_dsa */
+	tmp_dsa = *dsa;
+	*dsa = *new_dsa;
+	*new_dsa = tmp_dsa;
+	DSA_free(new_dsa);
+	return 1;
+}
+#endif
+
 int
 sshdsa_verify_length(int bits) {
 	return bits != SSH_DSA_BITS
@@ -64,6 +95,42 @@ static u_int
 ssh_dss_size(const struct sshkey *key)
 {
 	return (key->pk != NULL) ? EVP_PKEY_bits(key->pk) : 0;
+}
+
+int
+sshkey_generate_dsa(u_int bits, struct sshkey *key) {
+	EVP_PKEY *pk;
+	DSA *private = NULL;
+	int r;
+
+	r = sshdsa_verify_length(bits);
+	if (r != 0) return r;
+
+	if ((pk = EVP_PKEY_new()) == NULL ||
+	    (private = DSA_new()) == NULL
+	) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto err;
+	}
+
+	if (!DSA_generate_parameters_ex(private, bits, NULL, 0, NULL, NULL, NULL) ||
+	    !DSA_generate_key(private)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	if (!EVP_PKEY_set1_DSA(pk, private)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	key->pk = pk;
+	pk = NULL;
+
+err:
+	EVP_PKEY_free(pk);
+	DSA_free(private);
+	return r;
 }
 
 /* caller must free result */

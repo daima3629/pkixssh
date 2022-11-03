@@ -25,6 +25,15 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
+#ifndef USE_OPENSSL_PROVIDER
+/* TODO implement OpenSSL 3.1 API */
+# define OPENSSL_SUPPRESS_DEPRECATED
+#endif
+
 #define SSHKEY_INTERNAL
 #include "includes.h"
 
@@ -57,6 +66,9 @@ ssh_ecdsa_evp_md(const struct sshkey *key)
 	return NULL;
 }
 
+/* TODO move from sshkey-crypto.c as static inline */
+EC_KEY* ssh_EC_KEY_new_by_curve_name(int nid);
+
 
 /* key implementation */
 
@@ -64,6 +76,42 @@ static u_int
 ssh_ecdsa_size(const struct sshkey *key)
 {
 	return (key->pk != NULL) ? EVP_PKEY_bits(key->pk) : 0;
+}
+
+int
+sshkey_generate_ecdsa(u_int bits, struct sshkey *key) {
+	EVP_PKEY *pk;
+	EC_KEY *private = NULL;
+	int r = 0, nid;
+
+	nid = sshkey_ecdsa_bits_to_nid(bits);
+	if (nid == -1) return SSH_ERR_KEY_LENGTH;
+
+	if ((pk = EVP_PKEY_new()) == NULL ||
+	    (private = ssh_EC_KEY_new_by_curve_name(nid)) == NULL
+	) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto err;
+	}
+
+	if (EC_KEY_generate_key(private) != 1) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	if (!EVP_PKEY_set1_EC_KEY(pk, private)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	key->pk = pk;
+	pk = NULL;
+	key->ecdsa_nid = nid;
+
+err:
+	EVP_PKEY_free(pk);
+	EC_KEY_free(private);
+	return r;
 }
 
 /* caller must free result */

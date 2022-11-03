@@ -17,6 +17,15 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
+#ifndef USE_OPENSSL_PROVIDER
+/* TODO implement OpenSSL 3.1 API */
+# define OPENSSL_SUPPRESS_DEPRECATED
+#endif
+
 #include "includes.h"
 
 #ifdef WITH_OPENSSL
@@ -37,6 +46,31 @@
 #include "sshkey.h"
 #include "xmalloc.h"
 #include "log.h"
+
+
+#ifndef HAVE_RSA_GENERATE_KEY_EX	/* OpenSSL < 0.9.8 */
+static int
+RSA_generate_key_ex(RSA *rsa, int bits, BIGNUM *bn_e, void *cb)
+{
+	RSA *new_rsa, tmp_rsa;
+	unsigned long e;
+
+	if (cb != NULL)
+		fatal_f("callback args not supported");
+	e = BN_get_word(bn_e);
+	if (e == 0xffffffffL)
+		fatal_f("value of e too large");
+	new_rsa = RSA_generate_key(bits, e, NULL, NULL);
+	if (new_rsa == NULL)
+		return 0;
+	/* swap rsa/new_rsa then free new_rsa */
+	tmp_rsa = *rsa;
+	*rsa = *new_rsa;
+	*new_rsa = tmp_rsa;
+	RSA_free(new_rsa);
+	return 1;
+}
+#endif
 
 
 struct ssh_rsa_alg_st {
@@ -92,6 +126,48 @@ static u_int
 ssh_rsa_size(const struct sshkey *key)
 {
 	return (key->pk != NULL) ? EVP_PKEY_bits(key->pk) : 0;
+}
+
+int
+sshkey_generate_rsa(u_int bits, struct sshkey *key) {
+	EVP_PKEY *pk;
+	RSA *private = NULL;
+	BIGNUM *f4 = NULL;
+	int r;
+
+	r = sshrsa_verify_length(bits);
+	if (r != 0) return r;
+
+	if (bits > SSHBUF_MAX_BIGNUM * 8)
+		return SSH_ERR_KEY_LENGTH;
+
+	;
+	if ((pk = EVP_PKEY_new()) == NULL ||
+	    (private = RSA_new()) == NULL ||
+	    (f4 = BN_new()) == NULL
+	) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto err;
+	}
+	if (!BN_set_word(f4, RSA_F4) ||
+	    !RSA_generate_key_ex(private, bits, f4, NULL)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	if (!EVP_PKEY_set1_RSA(pk, private)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	key->pk = pk;
+	pk = NULL;
+
+err:
+	EVP_PKEY_free(pk);
+	RSA_free(private);
+	BN_free(f4);
+	return r;
 }
 
 /* RSASSA-PKCS1-v1_5 (PKCS #1 v2.0 signature) with SHA1 */
