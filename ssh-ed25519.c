@@ -36,6 +36,8 @@
 #include "ssh.h"
 
 
+/* key implementation */
+
 static u_int
 ssh_ed25519_size(const struct sshkey *key)
 {

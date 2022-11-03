@@ -39,13 +39,6 @@
 #include "log.h"
 
 
-static u_int
-ssh_rsa_size(const struct sshkey *key)
-{
-	return (key->pk != NULL) ? EVP_PKEY_bits(key->pk) : 0;
-}
-
-
 struct ssh_rsa_alg_st {
 	const char *name;
 	const int nid;
@@ -90,6 +83,15 @@ int
 sshrsa_verify_length(int bits) {
 	return bits < required_rsa_size
 	    ? SSH_ERR_KEY_LENGTH : 0;
+}
+
+
+/* key implementation */
+
+static u_int
+ssh_rsa_size(const struct sshkey *key)
+{
+	return (key->pk != NULL) ? EVP_PKEY_bits(key->pk) : 0;
 }
 
 /* RSASSA-PKCS1-v1_5 (PKCS #1 v2.0 signature) with SHA1 */

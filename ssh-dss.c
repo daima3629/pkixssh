@@ -47,19 +47,23 @@
 #include "xmalloc.h"
 #include "log.h"
 
+
 #define INTBLOB_LEN	20
 #define SIGBLOB_LEN	(2*INTBLOB_LEN)
-
-static u_int
-ssh_dss_size(const struct sshkey *key)
-{
-	return (key->pk != NULL) ? EVP_PKEY_bits(key->pk) : 0;
-}
 
 int
 sshdsa_verify_length(int bits) {
 	return bits != SSH_DSA_BITS
 	    ? SSH_ERR_KEY_LENGTH : 0;
+}
+
+
+/* key implementation */
+
+static u_int
+ssh_dss_size(const struct sshkey *key)
+{
+	return (key->pk != NULL) ? EVP_PKEY_bits(key->pk) : 0;
 }
 
 /* caller must free result */

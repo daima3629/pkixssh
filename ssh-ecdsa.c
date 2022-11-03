@@ -43,11 +43,6 @@
 #include "log.h"
 #include "xmalloc.h"
 
-static u_int
-ssh_ecdsa_size(const struct sshkey *key)
-{
-	return (key->pk != NULL) ? EVP_PKEY_bits(key->pk) : 0;
-}
 
 static const EVP_MD*
 ssh_ecdsa_evp_md(const struct sshkey *key)
@@ -60,6 +55,15 @@ ssh_ecdsa_evp_md(const struct sshkey *key)
 #endif /* OPENSSL_HAS_NISTP521 */
 	}
 	return NULL;
+}
+
+
+/* key implementation */
+
+static u_int
+ssh_ecdsa_size(const struct sshkey *key)
+{
+	return (key->pk != NULL) ? EVP_PKEY_bits(key->pk) : 0;
 }
 
 /* caller must free result */

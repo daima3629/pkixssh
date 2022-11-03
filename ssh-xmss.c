@@ -36,6 +36,9 @@
 
 #include "xmss_fast.h"
 
+
+/* key implementation */
+
 int
 ssh_xmss_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
     const u_char *data, size_t datalen, u_int compat)
