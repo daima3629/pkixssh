@@ -129,6 +129,12 @@ ssh_rsa_size(const struct sshkey *key)
 }
 
 static int
+ssh_rsa_equal(const struct sshkey *a, const struct sshkey *b)
+{
+	return sshkey_equal_public_pkey(a, b);
+}
+
+static int
 ssh_rsa_generate(struct sshkey *key, int bits) {
 	EVP_PKEY *pk;
 	RSA *private = NULL;
@@ -418,6 +424,7 @@ evp_md_end:
 
 static const struct sshkey_impl_funcs sshkey_rsa_funcs = {
 	/* .size = */		ssh_rsa_size,
+	/* .equal = */		ssh_rsa_equal,
 	/* .generate = */	ssh_rsa_generate
 };
 

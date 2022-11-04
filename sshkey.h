@@ -145,6 +145,7 @@ struct sshkey_sig_details {
 
 struct sshkey_impl_funcs {
 	u_int (*size)(const struct sshkey *);	/* optional */
+	int (*equal)(const struct sshkey *, const struct sshkey *);
 	int (*generate)(struct sshkey *, int);	/* optional */
 };
 

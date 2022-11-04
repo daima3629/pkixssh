@@ -802,6 +802,7 @@ cert_compare(struct sshkey_cert *a, struct sshkey_cert *b)
 int
 sshkey_equal_public(const struct sshkey *a, const struct sshkey *b)
 {
+	const struct sshkey_impl *impl;
 
 	if (a == NULL || b == NULL ||
 	    sshkey_type_plain(a->type) != sshkey_type_plain(b->type))
@@ -816,35 +817,9 @@ sshkey_equal_public(const struct sshkey *a, const struct sshkey *b)
   into 'key'(rsa,dsa,..) member of key structure.
 */
 
-	switch (a->type) {
-#ifdef WITH_OPENSSL
-	case KEY_RSA_CERT:
-	case KEY_RSA:
-		return sshkey_equal_public_pkey(a, b);
-	case KEY_DSA_CERT:
-	case KEY_DSA:
-		return sshkey_equal_public_pkey(a, b);
-# ifdef OPENSSL_HAS_ECC
-	case KEY_ECDSA_CERT:
-	case KEY_ECDSA:
-		return sshkey_equal_public_pkey(a, b);
-# endif /* OPENSSL_HAS_ECC */
-#endif /* WITH_OPENSSL */
-	case KEY_ED25519:
-	case KEY_ED25519_CERT:
-		return a->ed25519_pk != NULL && b->ed25519_pk != NULL &&
-		    memcmp(a->ed25519_pk, b->ed25519_pk, ED25519_PK_SZ) == 0;
-#ifdef WITH_XMSS
-	case KEY_XMSS:
-	case KEY_XMSS_CERT:
-		return a->xmss_pk != NULL && b->xmss_pk != NULL &&
-		    sshkey_xmss_pklen(a) == sshkey_xmss_pklen(b) &&
-		    memcmp(a->xmss_pk, b->xmss_pk, sshkey_xmss_pklen(a)) == 0;
-#endif /* WITH_XMSS */
-	default:
+	if ((impl = sshkey_impl_from_type(a->type)) == NULL)
 		return 0;
-	}
-	/* NOTREACHED */
+	return impl->funcs->equal(a, b);
 }
 
 int

@@ -39,6 +39,18 @@
 
 /* key implementation */
 
+static int
+ssh_xmss_equal(const struct sshkey *a, const struct sshkey *b)
+{
+	if (a->xmss_pk == NULL || b->xmss_pk == NULL)
+		return 0;
+	if (sshkey_xmss_pklen(a) != sshkey_xmss_pklen(b))
+		return 0;
+	if (memcmp(a->xmss_pk, b->xmss_pk, sshkey_xmss_pklen(a)) != 0)
+		return 0;
+	return 1;
+}
+
 int
 ssh_xmss_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
     const u_char *data, size_t datalen, u_int compat)
@@ -189,6 +201,7 @@ ssh_xmss_verify(const struct sshkey *key,
 
 static const struct sshkey_impl_funcs sshkey_xmss_funcs = {
 	/* .size = */		NULL,
+	/* .equal = */		ssh_xmss_equal,
 	/* .generate = */	sshkey_xmss_generate_private_key
 };
 

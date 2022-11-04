@@ -55,6 +55,16 @@ ssh_ed25519_size(const struct sshkey *key)
 }
 
 static int
+ssh_ed25519_equal(const struct sshkey *a, const struct sshkey *b)
+{
+	if (a->ed25519_pk == NULL || b->ed25519_pk == NULL)
+		return 0;
+	if (memcmp(a->ed25519_pk, b->ed25519_pk, ED25519_PK_SZ) != 0)
+		return 0;
+	return 1;
+}
+
+static int
 ssh_ed25519_generate(struct sshkey *key, int bits) {
 	UNUSED(bits);
 
@@ -202,6 +212,7 @@ ssh_ed25519_verify(const struct sshkey *key,
 
 static const struct sshkey_impl_funcs sshkey_ed25519_funcs = {
 	/* .size = */		ssh_ed25519_size,
+	/* .equal = */		ssh_ed25519_equal,
 	/* .generate = */	ssh_ed25519_generate
 };
 

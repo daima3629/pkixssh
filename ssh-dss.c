@@ -98,6 +98,12 @@ ssh_dss_size(const struct sshkey *key)
 }
 
 static int
+ssh_dss_equal(const struct sshkey *a, const struct sshkey *b)
+{
+	return sshkey_equal_public_pkey(a, b);
+}
+
+static int
 ssh_dss_generate(struct sshkey *key, int bits) {
 	EVP_PKEY *pk;
 	DSA *private = NULL;
@@ -422,6 +428,7 @@ parse_out:
 
 static const struct sshkey_impl_funcs sshkey_dss_funcs = {
 	/* .size = */		ssh_dss_size,
+	/* .equal = */		ssh_dss_equal,
 	/* .generate = */	ssh_dss_generate
 };
 
