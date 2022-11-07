@@ -139,6 +139,8 @@ struct sshkey {
 
 struct sshkey_impl_funcs {
 	u_int (*size)(const struct sshkey *);	/* optional */
+/*	int (*alloc)(struct sshkey *);		 reserved */
+	void (*cleanup)(struct sshkey *);	/* optional */
 	int (*equal)(const struct sshkey *, const struct sshkey *);
 	int (*generate)(struct sshkey *, int);	/* optional */
 };

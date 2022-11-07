@@ -128,6 +128,12 @@ ssh_rsa_size(const struct sshkey *key)
 	return (key->pk != NULL) ? EVP_PKEY_bits(key->pk) : 0;
 }
 
+static void
+ssh_rsa_cleanup(struct sshkey *k)
+{
+	sshkey_clear_pkey(k);
+}
+
 static int
 ssh_rsa_equal(const struct sshkey *a, const struct sshkey *b)
 {
@@ -424,6 +430,8 @@ evp_md_end:
 
 static const struct sshkey_impl_funcs sshkey_rsa_funcs = {
 	/* .size = */		ssh_rsa_size,
+	/* .alloc =		NULL, */
+	/* .cleanup = */	ssh_rsa_cleanup,
 	/* .equal = */		ssh_rsa_equal,
 	/* .generate = */	ssh_rsa_generate
 };

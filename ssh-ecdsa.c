@@ -78,6 +78,12 @@ ssh_ecdsa_size(const struct sshkey *key)
 	return (key->pk != NULL) ? EVP_PKEY_bits(key->pk) : 0;
 }
 
+static void
+ssh_ecdsa_cleanup(struct sshkey *k)
+{
+	sshkey_clear_pkey(k);
+}
+
 static int
 ssh_ecdsa_equal(const struct sshkey *a, const struct sshkey *b)
 {
@@ -399,6 +405,8 @@ parse_out:
 
 static const struct sshkey_impl_funcs sshkey_ecdsa_funcs = {
 	/* .size = */		ssh_ecdsa_size,
+	/* .alloc =		NULL, */
+	/* .cleanup = */	ssh_ecdsa_cleanup,
 	/* .equal = */		ssh_ecdsa_equal,
 	/* .generate = */	ssh_ecdsa_generate
 };

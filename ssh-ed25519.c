@@ -54,6 +54,18 @@ ssh_ed25519_size(const struct sshkey *key)
 	return 256;
 }
 
+static void
+ssh_ed25519_cleanup(struct sshkey *k)
+{
+#ifdef OPENSSL_HAS_ED25519
+	sshkey_clear_pkey(k);
+#endif
+	freezero(k->ed25519_pk, ED25519_PK_SZ);
+	k->ed25519_pk = NULL;
+	freezero(k->ed25519_sk, ED25519_SK_SZ);
+	k->ed25519_sk = NULL;
+}
+
 static int
 ssh_ed25519_equal(const struct sshkey *a, const struct sshkey *b)
 {
@@ -212,6 +224,8 @@ ssh_ed25519_verify(const struct sshkey *key,
 
 static const struct sshkey_impl_funcs sshkey_ed25519_funcs = {
 	/* .size = */		ssh_ed25519_size,
+	/* .alloc =		NULL, */
+	/* .cleanup = */	ssh_ed25519_cleanup,
 	/* .equal = */		ssh_ed25519_equal,
 	/* .generate = */	ssh_ed25519_generate
 };

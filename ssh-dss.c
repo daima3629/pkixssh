@@ -97,6 +97,12 @@ ssh_dss_size(const struct sshkey *key)
 	return (key->pk != NULL) ? EVP_PKEY_bits(key->pk) : 0;
 }
 
+static void
+ssh_dss_cleanup(struct sshkey *k)
+{
+	sshkey_clear_pkey(k);
+}
+
 static int
 ssh_dss_equal(const struct sshkey *a, const struct sshkey *b)
 {
@@ -428,6 +434,8 @@ parse_out:
 
 static const struct sshkey_impl_funcs sshkey_dss_funcs = {
 	/* .size = */		ssh_dss_size,
+	/* .alloc =		NULL, */
+	/* .cleanup = */	ssh_dss_cleanup,
 	/* .equal = */		ssh_dss_equal,
 	/* .generate = */	ssh_dss_generate
 };

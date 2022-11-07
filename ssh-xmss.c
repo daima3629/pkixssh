@@ -39,6 +39,20 @@
 
 /* key implementation */
 
+static void
+ssh_xmss_cleanup(struct sshkey *k)
+{
+	freezero(k->xmss_pk, sshkey_xmss_pklen(k));
+	k->xmss_pk = NULL;
+	freezero(k->xmss_sk, sshkey_xmss_sklen(k));
+	k->xmss_sk = NULL;
+	sshkey_xmss_free_state(k);
+	free(k->xmss_name);
+	k->xmss_name = NULL;
+	free(k->xmss_filename);
+	k->xmss_filename = NULL;
+}
+
 static int
 ssh_xmss_equal(const struct sshkey *a, const struct sshkey *b)
 {
@@ -201,6 +215,8 @@ ssh_xmss_verify(const struct sshkey *key,
 
 static const struct sshkey_impl_funcs sshkey_xmss_funcs = {
 	/* .size = */		NULL,
+	/* .alloc =		NULL, */
+	/* .cleanup = */	ssh_xmss_cleanup,
 	/* .equal = */		ssh_xmss_equal,
 	/* .generate = */	sshkey_xmss_generate_private_key
 };

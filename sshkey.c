@@ -662,6 +662,12 @@ struct sshkey *
 sshkey_new(int type)
 {
 	struct sshkey *k;
+	const struct sshkey_impl *impl = NULL;
+
+	if (type != KEY_UNSPEC) {
+		impl = sshkey_impl_from_type(type);
+		if (impl == NULL) return NULL;
+	}
 
 	if ((k = calloc(1, sizeof(*k))) == NULL)
 		return NULL;
@@ -674,34 +680,14 @@ sshkey_new(int type)
 	k->ed25519_pk = NULL;
 	k->xmss_sk = NULL;
 	k->xmss_pk = NULL;
-	switch (k->type) {
-#ifdef WITH_OPENSSL
-	case KEY_RSA:
-	case KEY_RSA_CERT:
-		/* no need to prealloc */
-		break;
-	case KEY_DSA:
-	case KEY_DSA_CERT:
-		/* no need to prealloc */
-		break;
-	case KEY_ECDSA:
-	case KEY_ECDSA_CERT:
-		/* Cannot do anything until we know the group */
-		break;
-#endif /* WITH_OPENSSL */
-	case KEY_ED25519:
-	case KEY_ED25519_CERT:
-	case KEY_XMSS:
-	case KEY_XMSS_CERT:
-		/* no need to prealloc */
-		break;
-	case KEY_UNSPEC:
-		break;
-	default:
-		free(k);
-		return NULL;
+#if 0	/* reserved */
+	if (impl != NULL && impl->funcs->alloc != NULL) {
+		if (impl->funcs->alloc(k) != 0) {
+			free(k);
+			return NULL;
+		}
 	}
-
+#endif
 	if (sshkey_is_cert(k)) {
 		if ((k->cert = cert_new()) == NULL) {
 			sshkey_free(k);
@@ -717,52 +703,12 @@ sshkey_free(struct sshkey *k)
 {
 	if (k == NULL)
 		return;
-	switch (k->type) {
-#ifdef WITH_OPENSSL
-	case KEY_RSA:
-	case KEY_RSA_CERT:
-		sshkey_clear_pkey(k);
-		break;
-	case KEY_DSA:
-	case KEY_DSA_CERT:
-		sshkey_clear_pkey(k);
-		break;
-# ifdef OPENSSL_HAS_ECC
-	case KEY_ECDSA:
-	case KEY_ECDSA_CERT:
-		sshkey_clear_pkey(k);
-		break;
-# endif /* OPENSSL_HAS_ECC */
-#endif /* WITH_OPENSSL */
-	case KEY_ED25519:
-	case KEY_ED25519_CERT:
-#ifdef OPENSSL_HAS_ED25519
-		sshkey_clear_pkey(k);
-#endif
-		freezero(k->ed25519_pk, ED25519_PK_SZ);
-		k->ed25519_pk = NULL;
-		freezero(k->ed25519_sk, ED25519_SK_SZ);
-		k->ed25519_sk = NULL;
-		break;
-#ifdef WITH_XMSS
-	case KEY_XMSS:
-	case KEY_XMSS_CERT:
-		freezero(k->xmss_pk, sshkey_xmss_pklen(k));
-		k->xmss_pk = NULL;
-		freezero(k->xmss_sk, sshkey_xmss_sklen(k));
-		k->xmss_sk = NULL;
-		sshkey_xmss_free_state(k);
-		free(k->xmss_name);
-		k->xmss_name = NULL;
-		free(k->xmss_filename);
-		k->xmss_filename = NULL;
-		break;
-#endif /* WITH_XMSS */
-	case KEY_UNSPEC:
-		break;
-	default:
-		break;
-	}
+{	const struct sshkey_impl *impl = (k->type != KEY_UNSPEC)
+	    ? sshkey_impl_from_type(k->type)
+	    : NULL;
+	if (impl != NULL && impl->funcs->cleanup != NULL)
+		impl->funcs->cleanup(k);
+}
 	if (k->x509_data != NULL) {
 		SSH_X509_free(k->x509_data);
 		k->x509_data = NULL;
