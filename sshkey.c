@@ -461,16 +461,12 @@ sshkey_size(const struct sshkey *k)
 static int
 sshkey_type_is_valid_ca(int type)
 {
-	switch (type) {
-	case KEY_RSA:
-	case KEY_DSA:
-	case KEY_ECDSA:
-	case KEY_ED25519:
-	case KEY_XMSS:
-		return 1;
-	default:
+	const struct sshkey_impl *impl;
+
+	if ((impl = sshkey_impl_from_type(type)) == NULL)
 		return 0;
-	}
+	/* All non-certificate types may act as CAs */
+	return !impl->cert;
 }
 
 int
