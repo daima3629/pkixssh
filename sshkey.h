@@ -137,12 +137,6 @@ struct sshkey {
 #define	ED25519_SK_SZ	crypto_sign_ed25519_SECRETKEYBYTES
 #define	ED25519_PK_SZ	crypto_sign_ed25519_PUBLICKEYBYTES
 
-/* Additional fields contained in signature */
-struct sshkey_sig_details {
-	uint32_t sk_counter;	/* U2F signature counter */
-	uint8_t sk_flags;	/* U2F signature flags; see ssh-sk.h */
-};
-
 struct sshkey_impl_funcs {
 	u_int (*size)(const struct sshkey *);	/* optional */
 	int (*equal)(const struct sshkey *, const struct sshkey *);

@@ -195,7 +195,7 @@ input_kex_dh_gex_reply(int type, u_int32_t seq, struct ssh *ssh)
 		shared_secret, hash, &hashlen)) != 0)
 		goto out;
 
-{	ssh_verify_ctx ctx = { kex->hostkey_alg, server_host_key, &ssh->compat, NULL };
+{	ssh_verify_ctx ctx = { kex->hostkey_alg, server_host_key, &ssh->compat };
 
 	r = Xkey_verify(&ctx, signature, slen, hash, hashlen);
 	if (r != 0) goto out;

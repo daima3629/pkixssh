@@ -1156,7 +1156,7 @@ mm_answer_keyallowed(struct ssh *ssh, int sock, struct sshbuf *m)
 
 	debug3_f("Xkey_from_blob: %s", pkalg);
 
-{	ssh_verify_ctx ctx = { pkalg, key, &ssh->compat, NULL };
+{	ssh_verify_ctx ctx = { pkalg, key, &ssh->compat };
 
 	if (key != NULL && authctxt->valid) {
 		/* These should not make it past the privsep child */
@@ -1419,7 +1419,7 @@ mm_answer_keyverify(struct ssh *ssh, int sock, struct sshbuf *m)
 	if (!valid_data)
 		fatal_f("bad signature data blob");
 
-{	ssh_verify_ctx ctx = { pkalg, key, &ssh->compat, NULL };
+{	ssh_verify_ctx ctx = { pkalg, key, &ssh->compat };
 
 	ret = Xkey_verify(&ctx, signature, signaturelen, data, datalen);
 	debug3_f("%s %s signature %s%s%s", auth_method, pkalg,

@@ -498,7 +498,7 @@ test_key(int agent_fd, const char *filename)
 		goto done;
 	}
 }
-{	ssh_verify_ctx ctx = { alg, key, &ctx_compat, NULL };
+{	ssh_verify_ctx ctx = { alg, key, &ctx_compat };
 
 	r = Xkey_verify(&ctx, sig, slen, data, sizeof(data));
 	if (r != 0) {

@@ -170,7 +170,7 @@ userauth_pubkey(struct ssh *ssh)
 	}
 #endif
 
-{	ssh_verify_ctx ctx = { pkalg, key, &ssh->compat, NULL };
+{	ssh_verify_ctx ctx = { pkalg, key, &ssh->compat };
 
 	key_s = format_key(key);
 	if (sshkey_is_cert(key))

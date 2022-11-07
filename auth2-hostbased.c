@@ -173,7 +173,7 @@ userauth_hostbased(struct ssh *ssh)
 
 	/* test for allowed key and correct signature */
 	authenticated = 0;
-{	ssh_verify_ctx ctx = { pkalg, key, &ssh->compat, NULL };
+{	ssh_verify_ctx ctx = { pkalg, key, &ssh->compat };
 
 	if (PRIVSEP(hostbased_xkey_allowed(ssh, authctxt->pw, &ctx,
 	    cuser, chost)) &&

@@ -2240,7 +2240,7 @@ client_global_hostkeys_private_confirm(struct ssh *ssh, int type,
 			ssh->kex->session_id)) != 0 ||
 		    (r = Xkey_puts(pkalg, key, signdata)) != 0)
 			fatal_fr(r, "compose signdata");
-	{	ssh_verify_ctx verify_ctx = { pkalg, key, &ssh->compat, NULL };
+	{	ssh_verify_ctx verify_ctx = { pkalg, key, &ssh->compat };
 
 		r = Xkey_verify(&verify_ctx, sig, siglen, sshbuf_ptr(signdata), sshbuf_len(signdata));
 		if (r != 0) {

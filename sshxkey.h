@@ -61,8 +61,6 @@ struct ssh_verify_context_st {
 	const char	*alg;		/* public key algorithm name (optional) */
 	struct sshkey	*key;		/* signing key */
 	ssh_compat	*compat;	/* ssh compatibilities */
-	struct sshkey_sig_details
-			*sig_details;	/* reserved for security key */
 };
 
 int	Xkey_verify(ssh_verify_ctx *ctx, const u_char *sig, size_t siglen, const u_char *data, size_t dlen);
