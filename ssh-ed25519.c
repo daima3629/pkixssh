@@ -94,16 +94,16 @@ ssh_ed25519_generate(struct sshkey *key, int bits) {
 }
 
 int
-ssh_ed25519_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
-    const u_char *data, size_t datalen, u_int compat)
+ssh_ed25519_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
+    const u_char *data, size_t datalen)
 {
+	const struct sshkey *key = ctx->key;
 	u_char *sig = NULL;
 	size_t slen = 0, len;
 	unsigned long long smlen;
 	int r, ret;
 	struct sshbuf *b = NULL;
 
-	UNUSED(compat);
 	if (lenp != NULL)
 		*lenp = 0;
 	if (sigp != NULL)
@@ -152,10 +152,11 @@ ssh_ed25519_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 }
 
 int
-ssh_ed25519_verify(const struct sshkey *key,
+ssh_ed25519_verify(const ssh_verify_ctx *ctx,
     const u_char *signature, size_t signaturelen,
-    const u_char *data, size_t datalen, u_int compat)
+    const u_char *data, size_t datalen)
 {
+	const struct sshkey *key = ctx->key;
 	struct sshbuf *b = NULL;
 	char *ktype = NULL;
 	const u_char *sigblob;
@@ -164,7 +165,6 @@ ssh_ed25519_verify(const struct sshkey *key,
 	unsigned long long smlen = 0, mlen = 0;
 	int r, ret;
 
-	UNUSED(compat);
 	if (key == NULL ||
 	    sshkey_type_plain(key->type) != KEY_ED25519 ||
 	    key->ed25519_pk == NULL ||

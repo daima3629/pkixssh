@@ -33,6 +33,7 @@
 #include "sshbuf.h"
 #include "ssherr.h"
 #include "sshkey.h"
+#include "compat.h"
 #include "authfile.h"
 #include "misc.h"
 #include "log.h"
@@ -809,10 +810,13 @@ ssh_krl_to_blob(struct ssh_krl *krl, struct sshbuf *buf,
 		    (r = sshkey_puts(sign_keys[i], buf)) != 0)
 			goto out;
 
-		if ((r = sshkey_sign(sign_keys[i], &sblob, &slen,
-		    sshbuf_ptr(buf), sshbuf_len(buf), NULL, NULL,
-		    NULL, 0)) != 0)
+	{	ssh_compat ctx_compat = { 0, 0 };
+		ssh_sign_ctx ctx = { NULL, sign_keys[i], &ctx_compat, NULL, NULL };
+
+		if ((r = sshkey_sign(&ctx, &sblob, &slen,
+		    sshbuf_ptr(buf), sshbuf_len(buf))) != 0)
 			goto out;
+	}
 		KRL_DBG(("signature sig len %zu", slen));
 		if ((r = sshbuf_put_string(buf, sblob, slen)) != 0)
 			goto out;
@@ -1076,9 +1080,13 @@ ssh_krl_from_blob(struct sshbuf *buf, struct ssh_krl **krlp,
 			goto out;
 		}
 		/* Check signature over entire KRL up to this point */
-		if ((r = sshkey_verify(key, blob, blen,
-		    sshbuf_ptr(buf), sig_off, NULL, 0)) != 0)
+	{	ssh_compat ctx_compat = { 0, 0 };
+		ssh_verify_ctx ctx = { NULL, key, &ctx_compat };
+
+		if ((r = sshkey_verify(&ctx, blob, blen,
+		    sshbuf_ptr(buf), sig_off)) != 0)
 			goto out;
+	}
 		/* Check if this key has already signed this KRL */
 		for (i = 0; i < nca_used; i++) {
 			if (sshkey_equal(ca_used[i], key)) {

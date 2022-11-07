@@ -201,15 +201,15 @@ clean:
 }
 
 int
-ssh_ecdsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
-    const u_char *data, size_t datalen, u_int compat)
+ssh_ecdsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
+    const u_char *data, size_t datalen)
 {
+	const struct sshkey *key = ctx->key;
 	ECDSA_SIG *sig = NULL;
 	size_t len;
 	struct sshbuf *b = NULL, *bb = NULL;
 	int ret;
 
-	UNUSED(compat);
 	if (lenp != NULL)
 		*lenp = 0;
 	if (sigp != NULL)
@@ -329,16 +329,16 @@ clean:
 }
 
 int
-ssh_ecdsa_verify(const struct sshkey *key,
+ssh_ecdsa_verify(const ssh_verify_ctx *ctx,
     const u_char *signature, size_t signaturelen,
-    const u_char *data, size_t datalen, u_int compat)
+    const u_char *data, size_t datalen)
 {
+	const struct sshkey *key = ctx->key;
 	ECDSA_SIG *sig = NULL;
 	struct sshbuf *b = NULL, *sigbuf = NULL;
 	char *ktype = NULL;
 	int ret;
 
-	UNUSED(compat);
 	if (signature == NULL || signaturelen == 0)
 		return SSH_ERR_INVALID_ARGUMENT;
 

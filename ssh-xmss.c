@@ -66,16 +66,16 @@ ssh_xmss_equal(const struct sshkey *a, const struct sshkey *b)
 }
 
 int
-ssh_xmss_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
-    const u_char *data, size_t datalen, u_int compat)
+ssh_xmss_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
+    const u_char *data, size_t datalen)
 {
+	const struct sshkey *key = ctx->key;
 	u_char *sig = NULL;
 	size_t slen = 0, len = 0, required_siglen;
 	unsigned long long smlen;
 	int r, ret;
 	struct sshbuf *b = NULL;
 
-	UNUSED(compat);
 	if (lenp != NULL)
 		*lenp = 0;
 	if (sigp != NULL)
@@ -139,10 +139,11 @@ ssh_xmss_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 }
 
 int
-ssh_xmss_verify(const struct sshkey *key,
+ssh_xmss_verify(const ssh_verify_ctx *ctx,
     const u_char *signature, size_t signaturelen,
-    const u_char *data, size_t datalen, u_int compat)
+    const u_char *data, size_t datalen)
 {
+	const struct sshkey *key = ctx->key;
 	struct sshbuf *b = NULL;
 	char *ktype = NULL;
 	const u_char *sigblob;
@@ -151,7 +152,6 @@ ssh_xmss_verify(const struct sshkey *key,
 	unsigned long long smlen = 0, mlen = 0;
 	int r, ret;
 
-	UNUSED(compat);
 	if (key == NULL ||
 	    sshkey_type_plain(key->type) != KEY_XMSS ||
 	    key->xmss_pk == NULL ||

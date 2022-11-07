@@ -543,12 +543,15 @@ do_convert_private_ssh2(struct sshbuf *b)
 		error_f("remaining bytes in key blob %d", rlen);
 
 	/* try the key */
-	if ((r = sshkey_sign(key, &sig, &slen, data, sizeof(data),
-	    NULL, NULL, NULL, 0)) != 0)
+{	ssh_compat ctx_compat = { 0, 0 };
+	ssh_sign_ctx sctx = { NULL, key, &ctx_compat, NULL, NULL };
+	ssh_verify_ctx vctx = { NULL, key, &ctx_compat };
+
+	if ((r = sshkey_sign(&sctx, &sig, &slen, data, sizeof(data))) != 0)
 		error_fr(r, "signing with converted key failed");
-	else if ((r = sshkey_verify(key, sig, slen, data, sizeof(data),
-	    NULL, 0)) != 0)
+	else if ((r = sshkey_verify(&vctx, sig, slen, data, sizeof(data))) != 0)
 		error_fr(r, "verification with converted key failed");
+}
 	if (r != 0) {
 		sshkey_free(key);
 		free(sig);

@@ -17,6 +17,7 @@
 #include "ssherr.h"
 #include "authfile.h"
 #include "sshkey.h"
+#include "compat.h"
 #include "sshbuf.h"
 
 #include "common.h"
@@ -66,25 +67,27 @@ sig_fuzz(struct sshkey *k, const char *sig_alg)
 	size_t l;
 	u_int fuzzers = FUZZ_1_BIT_FLIP | FUZZ_1_BYTE_FLIP | FUZZ_2_BYTE_FLIP |
 	    FUZZ_TRUNCATE_START | FUZZ_TRUNCATE_END;
+	ssh_compat ctx_compat = { 0, 0 };
+	ssh_sign_ctx sctx = { sig_alg, k, &ctx_compat, NULL, NULL };
+	ssh_verify_ctx vctx = { NULL, k, &ctx_compat };
 
 	if (test_is_fast())
 		fuzzers &= ~FUZZ_2_BYTE_FLIP;
 	if (test_is_slow())
 		fuzzers |= FUZZ_2_BIT_FLIP;
 
-	ASSERT_INT_EQ(sshkey_sign(k, &sig, &l, c, sizeof(c),
-	    sig_alg, NULL, NULL, 0), 0);
+	ASSERT_INT_EQ(sshkey_sign(&sctx, &sig, &l, c, sizeof(c)), 0);
 	ASSERT_SIZE_T_GT(l, 0);
 	fuzz = fuzz_begin(fuzzers, sig, l);
-	ASSERT_INT_EQ(sshkey_verify(k, sig, l, c, sizeof(c), NULL, 0), 0);
+	ASSERT_INT_EQ(sshkey_verify(&vctx, sig, l, c, sizeof(c)), 0);
 	free(sig);
 	TEST_ONERROR(onerror, fuzz);
 	for(; !fuzz_done(fuzz); fuzz_next(fuzz)) {
 		/* Ensure 1-bit difference at least */
 		if (fuzz_matches_original(fuzz))
 			continue;
-		ASSERT_INT_NE(sshkey_verify(k, fuzz_ptr(fuzz), fuzz_len(fuzz),
-		    c, sizeof(c), NULL, 0), 0);
+		ASSERT_INT_NE(sshkey_verify(&vctx, fuzz_ptr(fuzz), fuzz_len(fuzz),
+		    c, sizeof(c)), 0);
 	}
 	fuzz_cleanup(fuzz);
 }

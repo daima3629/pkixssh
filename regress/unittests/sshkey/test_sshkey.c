@@ -19,6 +19,7 @@
 #include "ssherr.h"
 #include "sshbuf.h"
 #include "sshkey.h"
+#include "compat.h"
 
 #include "authfile.h"
 #include "common.h"
@@ -126,8 +127,12 @@ build_cert(struct sshbuf *b, struct sshkey *k, const char *type,
 	ASSERT_INT_EQ(sshbuf_put_stringb(b, exts), 0); /* extensions */
 	ASSERT_INT_EQ(sshbuf_put_string(b, NULL, 0), 0); /* reserved */
 	ASSERT_INT_EQ(sshbuf_put_stringb(b, ca_buf), 0); /* signature key */
-	ASSERT_INT_EQ(sshkey_sign(sign_key, &sigblob, &siglen,
-	    sshbuf_ptr(b), sshbuf_len(b), sig_alg, NULL, NULL, 0), 0);
+{	ssh_compat ctx_compat = { 0, 0 };
+	ssh_sign_ctx ctx = { sig_alg, sign_key, &ctx_compat, NULL, NULL };
+
+	ASSERT_INT_EQ(sshkey_sign(&ctx, &sigblob, &siglen,
+	    sshbuf_ptr(b), sshbuf_len(b)), 0);
+}
 	ASSERT_INT_EQ(sshbuf_put_string(b, sigblob, siglen), 0); /* signature */
 
 	free(sigblob);
@@ -145,16 +150,19 @@ signature_test(struct sshkey *k, struct sshkey *bad, const char *sig_alg,
 {
 	size_t len;
 	u_char *sig;
+	ssh_compat ctx_compat = { 0, 0 };
+	ssh_sign_ctx sctx = { sig_alg, k, &ctx_compat, NULL, NULL };
+	ssh_verify_ctx vctx = { NULL, k, &ctx_compat };
+	ssh_verify_ctx vctxbad = { NULL, bad, &ctx_compat };
 
-	ASSERT_INT_EQ(sshkey_sign(k, &sig, &len, d, l, sig_alg,
-	    NULL, NULL, 0), 0);
+	ASSERT_INT_EQ(sshkey_sign(&sctx, &sig, &len, d, l), 0);
 	ASSERT_SIZE_T_GT(len, 8);
 	ASSERT_PTR_NE(sig, NULL);
-	ASSERT_INT_EQ(sshkey_verify(k, sig, len, d, l, NULL, 0), 0);
-	ASSERT_INT_NE(sshkey_verify(bad, sig, len, d, l, NULL, 0), 0);
+	ASSERT_INT_EQ(sshkey_verify(&vctx, sig, len, d, l), 0);
+	ASSERT_INT_NE(sshkey_verify(&vctxbad, sig, len, d, l), 0);
 	/* Fuzz test is more comprehensive, this is just a smoke test */
 	sig[len - 5] ^= 0x10;
-	ASSERT_INT_NE(sshkey_verify(k, sig, len, d, l, NULL, 0), 0);
+	ASSERT_INT_NE(sshkey_verify(&vctx, sig, len, d, l), 0);
 	free(sig);
 }
 

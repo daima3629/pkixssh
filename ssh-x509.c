@@ -1915,10 +1915,7 @@ Xkey_sign(ssh_sign_ctx *ctx,
 
 	/* check if public algorithm is with X.509 certificates */
 	if (ssh_xkalg_nameind(ctx->alg, &xkalg, -1) < 0) {
-		int ret = sshkey_sign(key, sigp, lenp,
-		    data, datalen,
-		    ctx->alg, ctx->provider, ctx->pin,
-		    ctx->compat->datafellows);
+		int ret = sshkey_sign(ctx, sigp, lenp, data, datalen);
 		if (ret == SSH_ERR_LIBCRYPTO_ERROR)
 			do_log_crypto_errors(SYSLOG_LEVEL_ERROR);
 		else
@@ -1978,8 +1975,8 @@ out:
 
 int
 Xkey_verify(ssh_verify_ctx *ctx,
-	    const u_char *sig, size_t siglen,
-	    const u_char *data, size_t dlen
+    const u_char *sig, size_t siglen,
+    const u_char *data, size_t dlen
 ) {
 	if (ctx->alg == NULL)
 		ctx->alg = sshkey_ssh_name(ctx->key);
@@ -1992,8 +1989,7 @@ Xkey_verify(ssh_verify_ctx *ctx,
 		    check_compat_fellows(ctx->compat, SSH_BUG_SIGTYPE)) {
 			ctx->alg = NULL;
 		}
-		return sshkey_verify(ctx->key, sig, siglen,
-		     data, dlen, ctx->alg, ctx->compat->datafellows);
+		return sshkey_verify(ctx, sig, siglen, data, dlen);
 	}
 }
 

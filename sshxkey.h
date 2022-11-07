@@ -45,23 +45,9 @@ int	Akey_to_blob(const struct sshkey *key, u_char **blobp, size_t *lenp);
 int	Akey_from_blob(const u_char *blob, size_t blen, struct sshkey **keyp);
 
 
-struct ssh_sign_context_st {
-	const char	*alg;		/* public key algorithm name (optional) */
-	struct sshkey	*key;		/* signing key */
-	ssh_compat	*compat;	/* ssh compatibilities */
-	const char	*provider;	/* reserved for security key provider */
-	const char	*pin;		/* reserved for security key pin */
-};
-
 int	Xkey_sign(ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp, const u_char *data, size_t datalen);
 int	Xkey_check_sigalg(ssh_sign_ctx *ctx, const u_char *sig, size_t siglen);
 
-
-struct ssh_verify_context_st {
-	const char	*alg;		/* public key algorithm name (optional) */
-	struct sshkey	*key;		/* signing key */
-	ssh_compat	*compat;	/* ssh compatibilities */
-};
 
 int	Xkey_verify(ssh_verify_ctx *ctx, const u_char *sig, size_t siglen, const u_char *data, size_t dlen);
 

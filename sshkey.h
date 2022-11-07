@@ -137,6 +137,21 @@ struct sshkey {
 #define	ED25519_SK_SZ	crypto_sign_ed25519_SECRETKEYBYTES
 #define	ED25519_PK_SZ	crypto_sign_ed25519_PUBLICKEYBYTES
 
+struct ssh_sign_context_st {
+	const char	*alg;		/* public key algorithm name (optional) */
+	struct sshkey	*key;		/* signing key */
+	ssh_compat	*compat;	/* ssh compatibilities */
+	const char	*provider;	/* reserved for security key provider */
+	const char	*pin;		/* reserved for security key pin */
+};
+
+struct ssh_verify_context_st {
+	const char	*alg;		/* public key algorithm name (optional) */
+	struct sshkey	*key;		/* signing key */
+	ssh_compat	*compat;	/* ssh compatibilities */
+};
+
+
 struct sshkey_impl_funcs {
 	u_int (*size)(const struct sshkey *);	/* optional */
 /*	int (*alloc)(struct sshkey *);		 reserved */
@@ -258,10 +273,10 @@ int	 sshkey_plain_to_blob(const struct sshkey *, u_char **, size_t *);
 int	 sshkey_putb_plain(const struct sshkey *, struct sshbuf *);
 
 int	 sshkey_sigtype(const u_char *, size_t, char **);
-int	 sshkey_sign(struct sshkey *, u_char **, size_t *,
-    const u_char *, size_t, const char *, const char *, const char *, u_int);
-int	 sshkey_verify(const struct sshkey *, const u_char *, size_t,
-    const u_char *, size_t, const char *, u_int);
+int	 sshkey_sign(const ssh_sign_ctx *, u_char **, size_t *,
+    const u_char *, size_t);
+int	 sshkey_verify(const ssh_verify_ctx *, const u_char *, size_t,
+    const u_char *, size_t);
 int	 sshkey_check_sigtype(const u_char *, size_t, const char *);
 
 /* private key parsing and serialisation */
@@ -299,32 +314,35 @@ int	 sshkey_private_serialize_maxsign(struct sshkey *key,
     struct sshbuf *buf, u_int32_t maxsign, int);
 
 #ifdef SSHKEY_INTERNAL
-int ssh_rsa_sign(const struct sshkey *key,
-    u_char **sigp, size_t *lenp, const u_char *data, size_t datalen,
-    const char *ident);
-int ssh_rsa_verify(const struct sshkey *key,
-    const u_char *sig, size_t siglen, const u_char *data, size_t datalen,
-    const char *alg);
-int ssh_dss_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
-    const u_char *data, size_t datalen, u_int compat);
-int ssh_dss_verify(const struct sshkey *key,
+int ssh_rsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
+    const u_char *data, size_t datalen);
+int ssh_rsa_verify(const ssh_verify_ctx *ctx,
+    const u_char *sig, size_t siglen,
+    const u_char *data, size_t datalen);
+
+int ssh_dss_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
+    const u_char *data, size_t datalen);
+int ssh_dss_verify(const ssh_verify_ctx *ctx,
     const u_char *signature, size_t signaturelen,
-    const u_char *data, size_t datalen, u_int compat);
-int ssh_ecdsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
-    const u_char *data, size_t datalen, u_int compat);
-int ssh_ecdsa_verify(const struct sshkey *key,
+    const u_char *data, size_t datalen);
+
+int ssh_ecdsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
+    const u_char *data, size_t datalen);
+int ssh_ecdsa_verify(const ssh_verify_ctx *ctx,
     const u_char *signature, size_t signaturelen,
-    const u_char *data, size_t datalen, u_int compat);
-int ssh_ed25519_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
-    const u_char *data, size_t datalen, u_int compat);
-int ssh_ed25519_verify(const struct sshkey *key,
+    const u_char *data, size_t datalen);
+
+int ssh_ed25519_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
+    const u_char *data, size_t datalen);
+int ssh_ed25519_verify(const ssh_verify_ctx *ctx,
     const u_char *signature, size_t signaturelen,
-    const u_char *data, size_t datalen, u_int compat);
-int ssh_xmss_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
-    const u_char *data, size_t datalen, u_int compat);
-int ssh_xmss_verify(const struct sshkey *key,
+    const u_char *data, size_t datalen);
+
+int ssh_xmss_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
+    const u_char *data, size_t datalen);
+int ssh_xmss_verify(const ssh_verify_ctx *ctx,
     const u_char *signature, size_t signaturelen,
-    const u_char *data, size_t datalen, u_int compat);
+    const u_char *data, size_t datalen);
 
 # ifdef WITH_OPENSSL
 int	sshkey_from_pkey(EVP_PKEY *pk, struct sshkey **keyp);

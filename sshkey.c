@@ -61,6 +61,7 @@
 #include "sshkey.h"
 #include "ssh-x509.h"
 #include "ssh-xkalg.h"
+#include "compat.h"
 #include "match.h"
 #include "log.h"
 
@@ -2106,9 +2107,13 @@ cert_parse(struct sshbuf *b, struct sshkey *key, struct sshbuf *certbuf)
 		ret = SSH_ERR_KEY_CERT_INVALID_SIGN_KEY;
 		goto out;
 	}
-	if ((ret = sshkey_verify(key->cert->signature_key, sig, slen,
-	    sshbuf_ptr(key->cert->certblob), signed_len, NULL, 0)) != 0)
+{	ssh_compat ctx_compat = { 0, 0 };
+	ssh_verify_ctx ctx = { NULL, key->cert->signature_key, &ctx_compat };
+
+	if ((ret = sshkey_verify(&ctx, sig, slen,
+	    sshbuf_ptr(key->cert->certblob), signed_len)) != 0)
 		goto out;
+}
 	if ((ret = sshkey_sigtype(sig, slen, &key->cert->signature_type)) != 0)
 		goto out;
 
@@ -2538,16 +2543,14 @@ sshkey_check_sigtype(const u_char *sig, size_t siglen,
 }
 
 int
-sshkey_sign(struct sshkey *key,
+sshkey_sign(const ssh_sign_ctx *ctx,
     u_char **sigp, size_t *lenp,
-    const u_char *data, size_t datalen,
-    const char *alg, const char *sk_provider, const char *sk_pin, u_int compat)
+    const u_char *data, size_t datalen)
 {
+	struct sshkey *key = ctx->key;
 	int was_shielded = sshkey_is_shielded(key);
 	int r = SSH_ERR_INTERNAL_ERROR;
 
-	UNUSED(sk_provider);
-	UNUSED(sk_pin);
 	if (sigp != NULL)
 		*sigp = NULL;
 	if (lenp != NULL)
@@ -2561,27 +2564,27 @@ sshkey_sign(struct sshkey *key,
 #ifdef WITH_OPENSSL
 	case KEY_DSA_CERT:
 	case KEY_DSA:
-		r = ssh_dss_sign(key, sigp, lenp, data, datalen, compat);
+		r = ssh_dss_sign(ctx, sigp, lenp, data, datalen);
 		break;
 # ifdef OPENSSL_HAS_ECC
 	case KEY_ECDSA_CERT:
 	case KEY_ECDSA:
-		r = ssh_ecdsa_sign(key, sigp, lenp, data, datalen, compat);
+		r = ssh_ecdsa_sign(ctx, sigp, lenp, data, datalen);
 		break;
 # endif /* OPENSSL_HAS_ECC */
 	case KEY_RSA_CERT:
 	case KEY_RSA:
-		r = ssh_rsa_sign(key, sigp, lenp, data, datalen, alg);
+		r = ssh_rsa_sign(ctx, sigp, lenp, data, datalen);
 		break;
 #endif /* WITH_OPENSSL */
 	case KEY_ED25519:
 	case KEY_ED25519_CERT:
-		r = ssh_ed25519_sign(key, sigp, lenp, data, datalen, compat);
+		r = ssh_ed25519_sign(ctx, sigp, lenp, data, datalen);
 		break;
 #ifdef WITH_XMSS
 	case KEY_XMSS:
 	case KEY_XMSS_CERT:
-		r = ssh_xmss_sign(key, sigp, lenp, data, datalen, compat);
+		r = ssh_xmss_sign(ctx, sigp, lenp, data, datalen);
 		break;
 #endif /* WITH_XMSS */
 	default:
@@ -2600,10 +2603,11 @@ sshkey_sign(struct sshkey *key,
  * If "alg" specified, then the signature must use that algorithm.
  */
 int
-sshkey_verify(const struct sshkey *key,
+sshkey_verify(const ssh_verify_ctx *ctx,
     const u_char *sig, size_t siglen,
-    const u_char *data, size_t dlen, const char *alg, u_int compat)
+    const u_char *data, size_t dlen)
 {
+	struct sshkey *key = ctx->key;
 	if (siglen == 0 || dlen > SSH_KEY_MAX_SIGN_DATA_SIZE)
 		return SSH_ERR_INVALID_ARGUMENT;
 
@@ -2611,23 +2615,23 @@ sshkey_verify(const struct sshkey *key,
 #ifdef WITH_OPENSSL
 	case KEY_DSA_CERT:
 	case KEY_DSA:
-		return ssh_dss_verify(key, sig, siglen, data, dlen, compat);
+		return ssh_dss_verify(ctx, sig, siglen, data, dlen);
 # ifdef OPENSSL_HAS_ECC
 	case KEY_ECDSA_CERT:
 	case KEY_ECDSA:
-		return ssh_ecdsa_verify(key, sig, siglen, data, dlen, compat);
+		return ssh_ecdsa_verify(ctx, sig, siglen, data, dlen);
 # endif /* OPENSSL_HAS_ECC */
 	case KEY_RSA_CERT:
 	case KEY_RSA:
-		return ssh_rsa_verify(key, sig, siglen, data, dlen, alg);
+		return ssh_rsa_verify(ctx, sig, siglen, data, dlen);
 #endif /* WITH_OPENSSL */
 	case KEY_ED25519:
 	case KEY_ED25519_CERT:
-		return ssh_ed25519_verify(key, sig, siglen, data, dlen, compat);
+		return ssh_ed25519_verify(ctx, sig, siglen, data, dlen);
 #ifdef WITH_XMSS
 	case KEY_XMSS:
 	case KEY_XMSS_CERT:
-		return ssh_xmss_verify(key, sig, siglen, data, dlen, compat);
+		return ssh_xmss_verify(ctx, sig, siglen, data, dlen);
 #endif /* WITH_XMSS */
 	default:
 		return SSH_ERR_KEY_TYPE_UNKNOWN;
@@ -2806,16 +2810,18 @@ sshkey_certify_custom(struct sshkey *k, struct sshkey *ca, const char *alg,
 	return ret;
 }
 
-static int
+static int /* TODO: use ssh_sign_ctx */
 default_key_sign(struct sshkey *key, u_char **sigp, size_t *lenp,
     const u_char *data, size_t datalen,
     const char *alg, const char *sk_provider, const char *sk_pin,
-    u_int compat, void *ctx)
+    u_int compat, void *reserved)
 {
-	if (ctx != NULL)
+	ssh_compat ctx_compat = { compat, 0 };
+	ssh_sign_ctx ctx = { alg, key, &ctx_compat, sk_provider, sk_pin };
+
+	if (reserved != NULL)
 		return SSH_ERR_INVALID_ARGUMENT;
-	return sshkey_sign(key, sigp, lenp, data, datalen, alg,
-	    sk_provider, sk_pin, compat);
+	return sshkey_sign(&ctx, sigp, lenp, data, datalen);
 }
 
 int

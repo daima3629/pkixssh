@@ -212,16 +212,16 @@ clean:
 
 
 int
-ssh_dss_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
-    const u_char *data, size_t datalen, u_int compat)
+ssh_dss_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
+    const u_char *data, size_t datalen)
 {
+	const struct sshkey *key = ctx->key;
 	DSA_SIG *sig = NULL;
 	u_char sigblob[SIGBLOB_LEN];
 	size_t rlen, slen, len, dlen = ssh_digest_bytes(SSH_DIGEST_SHA1);
 	struct sshbuf *b = NULL;
 	int ret = SSH_ERR_INVALID_ARGUMENT;
 
-	UNUSED(compat);
 	if (lenp != NULL)
 		*lenp = 0;
 	if (sigp != NULL)
@@ -351,10 +351,11 @@ clean:
 
 
 int
-ssh_dss_verify(const struct sshkey *key,
+ssh_dss_verify(const ssh_verify_ctx *ctx,
     const u_char *signature, size_t signaturelen,
-    const u_char *data, size_t datalen, u_int compat)
+    const u_char *data, size_t datalen)
 {
+	const struct sshkey *key = ctx->key;
 	DSA_SIG *sig = NULL;
 	u_char *sigblob = NULL;
 	size_t len, dlen = ssh_digest_bytes(SSH_DIGEST_SHA1);
@@ -362,7 +363,6 @@ ssh_dss_verify(const struct sshkey *key,
 	struct sshbuf *b = NULL;
 	char *ktype = NULL;
 
-	UNUSED(compat);
 	if (signature == NULL || signaturelen == 0)
 		return SSH_ERR_INVALID_ARGUMENT;
 	if (dlen == 0)

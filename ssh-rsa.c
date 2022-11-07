@@ -184,9 +184,10 @@ err:
 
 /* RSASSA-PKCS1-v1_5 (PKCS #1 v2.0 signature) with SHA1 */
 int
-ssh_rsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
-    const u_char *data, size_t datalen, const char *alg_ident)
+ssh_rsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
+    const u_char *data, size_t datalen)
 {
+	const struct sshkey *key = ctx->key;
 	u_char *sig = NULL;
 	size_t slen = 0;
 	u_int len;
@@ -199,10 +200,10 @@ ssh_rsa_sign(const struct sshkey *key, u_char **sigp, size_t *lenp,
 	if (sigp != NULL)
 		*sigp = NULL;
 
-	alg_info = ssh_rsa_alg_info(alg_ident);
+	alg_info = ssh_rsa_alg_info(ctx->alg);
 	if (alg_info == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;
-	debug3_f("alg=%s/%s", (alg_ident != NULL ? alg_ident : "(nil)"), alg_info->name);
+	debug3_f("alg=%s/%s", (ctx->alg != NULL ? ctx->alg : "(nil)"), alg_info->name);
 
 	ret = sshkey_validate_public_rsa(key);
 	if (ret != 0) return ret;
@@ -298,10 +299,11 @@ evp_end:
 }
 
 int
-ssh_rsa_verify(const struct sshkey *key,
-    const u_char *sig, size_t siglen, const u_char *data, size_t datalen,
-    const char *alg)
+ssh_rsa_verify(const ssh_verify_ctx *ctx,
+    const u_char *sig, size_t siglen, const u_char *data, size_t datalen)
 {
+	const struct sshkey *key = ctx->key;
+	const char *alg = ctx->alg;
 	char *sigtype = NULL;
 	struct ssh_rsa_alg_st *alg_info;
 	int ret;
