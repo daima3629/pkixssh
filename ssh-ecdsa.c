@@ -66,8 +66,59 @@ ssh_ecdsa_evp_md(const struct sshkey *key)
 	return NULL;
 }
 
-/* TODO move from sshkey-crypto.c as static inline */
-EC_KEY* ssh_EC_KEY_new_by_curve_name(int nid);
+static inline EC_KEY*
+ssh_EC_KEY_new_by_curve_name(int nid) {
+	EC_KEY *ec;
+
+	ec = EC_KEY_new_by_curve_name(nid);
+	if (ec == NULL) return NULL;
+
+#if defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x10100000L) || \
+    defined(LIBRESSL_VERSION_NUMBER)
+	/* Note since 1.1.0 OpenSSL uses named curve parameter encoding by default.
+	 * It seems to me default is changed in upcomming 3.0 but key is marked
+	 * properly when created by nid.
+	 */
+	EC_KEY_set_asn1_flag(ec, OPENSSL_EC_NAMED_CURVE);
+#endif
+	return ec;
+}
+
+extern int /*TODO static - see sshkey-crypto.c */
+sshkey_init_ecdsa_curve(struct sshkey *key, int nid);
+
+int
+sshkey_init_ecdsa_curve(struct sshkey *key, int nid) {
+	int r;
+	EVP_PKEY *pk;
+	EC_KEY *ec;
+
+	pk = EVP_PKEY_new();
+	if (pk == NULL)
+		return SSH_ERR_ALLOC_FAIL;
+
+	ec = ssh_EC_KEY_new_by_curve_name(nid);
+	if (ec == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto err;
+	}
+
+	if (!EVP_PKEY_set1_EC_KEY(pk, ec)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	/* success */
+	key->pk = pk;
+	pk = NULL;
+	key->ecdsa_nid = nid;
+	r = 0;
+
+err:
+	EC_KEY_free(ec);
+	EVP_PKEY_free(pk);
+	return r;
+}
 
 
 /* key implementation */
@@ -123,6 +174,37 @@ ssh_ecdsa_generate(struct sshkey *key, int bits) {
 err:
 	EVP_PKEY_free(pk);
 	EC_KEY_free(private);
+	return r;
+}
+
+extern int sshkey_copy_pub_ecdsa(const struct sshkey *from, struct sshkey *to);
+
+int
+sshkey_copy_pub_ecdsa(const struct sshkey *from, struct sshkey *to) {
+	int r;
+	EC_KEY *ec, *from_ec = NULL;
+
+	r = sshkey_init_ecdsa_curve(to, from->ecdsa_nid);
+	if (r != 0) return r;
+
+	ec = EVP_PKEY_get1_EC_KEY(to->pk);
+	if (ec == NULL) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	from_ec = EVP_PKEY_get1_EC_KEY(from->pk);
+	if (from_ec == NULL) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	if (EC_KEY_set_public_key(ec, EC_KEY_get0_public_key(from_ec)) != 1)
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+
+err:
+	EC_KEY_free(from_ec);
+	EC_KEY_free(ec);
 	return r;
 }
 
