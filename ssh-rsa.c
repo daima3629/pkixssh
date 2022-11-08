@@ -72,6 +72,36 @@ RSA_generate_key_ex(RSA *rsa, int bits, BIGNUM *bn_e, void *cb)
 }
 #endif
 
+#ifndef HAVE_RSA_GET0_KEY
+/* opaque RSA key structure */
+static inline void
+RSA_get0_key(const RSA *rsa, const BIGNUM **n, const BIGNUM **e, const BIGNUM **d) {
+	if (n != NULL) *n = rsa->n;
+	if (e != NULL) *e = rsa->e;
+	if (d != NULL) *d = rsa->d;
+}
+
+static inline int
+RSA_set0_key(RSA *rsa, BIGNUM *n, BIGNUM *e, BIGNUM *d) {
+/* If the fields in r are NULL, the corresponding input parameters MUST
+ * be non-NULL for n and e.  d may be left NULL (in case only the
+ * public key is used).
+ *
+ * It is an error to give the results from get0 on r as input
+ * parameters.
+ */
+	if (n == rsa->n || e == rsa->e
+	|| (rsa->d != NULL && d == rsa->d))
+		return 0;
+
+	if (n != NULL) { BN_free(rsa->n); rsa->n = n; }
+	if (e != NULL) { BN_free(rsa->e); rsa->e = e; }
+	if (d != NULL) { BN_free(rsa->d); rsa->d = d; }
+
+	return 1;
+}
+#endif /* ndef HAVE_RSA_GET0_KEY */
+
 
 struct ssh_rsa_alg_st {
 	const char *name;
@@ -117,6 +147,49 @@ int
 sshrsa_verify_length(int bits) {
 	return bits < required_rsa_size
 	    ? SSH_ERR_KEY_LENGTH : 0;
+}
+
+extern int /*TODO static - see sshkey-crypto.c */
+sshkey_init_rsa_key(struct sshkey *key, BIGNUM *n, BIGNUM *e, BIGNUM *d);
+
+int
+sshkey_init_rsa_key(struct sshkey *key, BIGNUM *n, BIGNUM *e, BIGNUM *d) {
+	int r;
+	EVP_PKEY *pk = NULL;
+	RSA *rsa = NULL;
+
+	pk = EVP_PKEY_new();
+	if (pk == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto err;
+	}
+	rsa = RSA_new();
+	if (rsa == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto err;
+	}
+
+	if (!EVP_PKEY_set1_RSA(pk, rsa)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	/* transfer to key must be last operation -
+	   if fail then caller could free arguments */
+	if (!RSA_set0_key(rsa, n, e, d)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	/* success */
+	key->pk = pk;
+	pk = NULL;
+	r = 0;
+
+err:
+	RSA_free(rsa);
+	EVP_PKEY_free(pk);
+	return r;
 }
 
 
@@ -179,6 +252,42 @@ err:
 	EVP_PKEY_free(pk);
 	RSA_free(private);
 	BN_free(f4);
+	return r;
+}
+
+extern int sshkey_copy_pub_rsa(const struct sshkey *from, struct sshkey *to);
+
+int
+sshkey_copy_pub_rsa(const struct sshkey *from, struct sshkey *to) {
+	int r;
+	BIGNUM *n = NULL, *e = NULL;
+
+{	RSA *rsa = EVP_PKEY_get1_RSA(from->pk);
+	const BIGNUM *k_n, *k_e;
+
+	if (rsa == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+	RSA_get0_key(rsa, &k_n, &k_e, NULL);
+	RSA_free(rsa);
+
+	if ((n = BN_dup(k_n)) == NULL ||
+	    (e = BN_dup(k_e)) == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto err;
+	}
+}
+
+	r = sshkey_init_rsa_key(to, n, e, NULL);
+	if (r != 0) goto err;
+	/* n = e = NULL; transferred */
+
+	/* success */
+	return 0;
+
+err:
+	BN_clear_free(n);
+	BN_clear_free(e);
+	sshkey_clear_pkey(to);
 	return r;
 }
 

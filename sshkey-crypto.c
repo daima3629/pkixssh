@@ -388,46 +388,6 @@ err:
 
 
 static int
-sshkey_init_rsa_key(struct sshkey *key, BIGNUM *n, BIGNUM *e, BIGNUM *d) {
-	int r;
-	EVP_PKEY *pk = NULL;
-	RSA *rsa = NULL;
-
-	pk = EVP_PKEY_new();
-	if (pk == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto err;
-	}
-	rsa = RSA_new();
-	if (rsa == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto err;
-	}
-
-	if (!EVP_PKEY_set1_RSA(pk, rsa)) {
-		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto err;
-	}
-
-	/* transfer to key must be last operation -
-	   if fail then caller could free arguments */
-	if (!RSA_set0_key(rsa, n, e, d)) {
-		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto err;
-	}
-
-	/* success */
-	key->pk = pk;
-	pk = NULL;
-	r = 0;
-
-err:
-	RSA_free(rsa);
-	EVP_PKEY_free(pk);
-	return r;
-}
-
-static int
 ssh_EVP_PKEY_complete_pub_rsa(EVP_PKEY *pk) {
 	int r;
 	RSA *rsa;
@@ -790,42 +750,6 @@ sshkey_clear_pkey(struct sshkey *key) {
 }
 
 
-extern int sshkey_copy_pub_rsa(const struct sshkey *from, struct sshkey *to);
-
-int
-sshkey_copy_pub_rsa(const struct sshkey *from, struct sshkey *to) {
-	int r;
-	BIGNUM *n = NULL, *e = NULL;
-
-{	RSA *rsa = EVP_PKEY_get1_RSA(from->pk);
-	const BIGNUM *k_n, *k_e;
-
-	if (rsa == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
-	RSA_get0_key(rsa, &k_n, &k_e, NULL);
-	RSA_free(rsa);
-
-	if ((n = BN_dup(k_n)) == NULL ||
-	    (e = BN_dup(k_e)) == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto err;
-	}
-}
-
-	r = sshkey_init_rsa_key(to, n, e, NULL);
-	if (r != 0) goto err;
-	/* n = e = NULL; transferred */
-
-	/* success */
-	return 0;
-
-err:
-	BN_clear_free(n);
-	BN_clear_free(e);
-	sshkey_clear_pkey(to);
-	return r;
-}
-
 #ifdef OPENSSL_HAS_ECC
 extern int sshkey_copy_pub_ecdsa(const struct sshkey *from, struct sshkey *to);
 
@@ -1024,6 +948,9 @@ sshkey_equal_public_pkey(const struct sshkey *ka, const struct sshkey *kb) {
 	return ssh_EVP_PKEY_eq(a, b) == 1;
 }
 
+
+extern int /* TODO: remove, see ssh-rsa.c */
+sshkey_init_rsa_key(struct sshkey *key, BIGNUM *n, BIGNUM *e, BIGNUM *d);
 
 int
 sshbuf_read_pub_rsa_priv(struct sshbuf *buf, struct sshkey *key) {
