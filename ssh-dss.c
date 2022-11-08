@@ -82,10 +82,130 @@ DSA_generate_parameters_ex(DSA *dsa, int bits, const unsigned char *seed,
 }
 #endif
 
+#ifndef HAVE_DSA_GET0_KEY
+/* opaque DSA key structure */
+static inline void
+DSA_get0_key(const DSA *dsa, const BIGNUM **pub_key, const BIGNUM **priv_key) {
+	if (pub_key  != NULL) *pub_key  = dsa->pub_key;
+	if (priv_key != NULL) *priv_key = dsa->priv_key;
+}
+
+static inline int
+DSA_set0_key(DSA *dsa, BIGNUM *pub_key, BIGNUM *priv_key) {
+/* If the pub_key in d is NULL, the corresponding input parameters MUST
+ * be non-NULL.  The priv_key field may be left NULL.
+ *
+ * It is an error to give the results from get0 on d as input
+ * parameters.
+ */
+	if (pub_key == dsa->pub_key
+	|| (dsa->priv_key != NULL && priv_key == dsa->priv_key)
+	)
+		return 0;
+
+	if (pub_key  != NULL) { BN_free(dsa->pub_key ); dsa->pub_key  = pub_key ; }
+	if (priv_key != NULL) { BN_free(dsa->priv_key); dsa->priv_key = priv_key; }
+
+	return 1;
+}
+
+
+static inline void
+DSA_get0_pqg(const DSA *dsa, const BIGNUM **p, const BIGNUM **q, const BIGNUM **g) {
+	if (p != NULL) *p = dsa->p;
+	if (q != NULL) *q = dsa->q;
+	if (g != NULL) *g = dsa->g;
+}
+
+static /*inline*/ int
+DSA_set0_pqg(DSA *dsa, BIGNUM *p, BIGNUM *q, BIGNUM *g) {
+	/* If the fields in d are NULL, the corresponding input
+	 * parameters MUST be non-NULL.
+	 *
+	 * It is an error to give the results from get0 on d
+	 * as input parameters.
+	 */
+	if (p == dsa->p || q == dsa->q || g == dsa->g)
+		return 0;
+
+	if (p != NULL) { BN_free(dsa->p); dsa->p = p; }
+	if (q != NULL) { BN_free(dsa->q); dsa->q = q; }
+	if (g != NULL) { BN_free(dsa->g); dsa->g = g; }
+
+	return 1;
+}
+#endif /* ndef HAVE_DSA_GET0_KEY */
+
 int
 sshdsa_verify_length(int bits) {
 	return bits != SSH_DSA_BITS
 	    ? SSH_ERR_KEY_LENGTH : 0;
+}
+
+extern int /*TODO static - see sshkey-crypto.c */
+sshkey_init_dsa_params(struct sshkey *key, BIGNUM *p, BIGNUM *q, BIGNUM *g);
+
+int
+sshkey_init_dsa_params(struct sshkey *key, BIGNUM *p, BIGNUM *q, BIGNUM *g) {
+	int r;
+	EVP_PKEY *pk = NULL;
+	DSA *dsa = NULL;
+
+	pk = EVP_PKEY_new();
+	if (pk == NULL)
+		return SSH_ERR_ALLOC_FAIL;
+
+	dsa = DSA_new();
+	if (dsa == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto err;
+	}
+
+	if (!EVP_PKEY_set1_DSA(pk, dsa)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	/* transfer to key must be last operation -
+	   if fail then caller could free arguments */
+	if (!DSA_set0_pqg(dsa, p, q, g)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	/* success */
+	key->pk = pk;
+	pk = NULL;
+	r =  0;
+
+err:
+	DSA_free(dsa);
+	EVP_PKEY_free(pk);
+	return r;
+}
+
+extern int /*TODO static - see sshkey-crypto.c */
+sshkey_set_dsa_key(struct sshkey *key, BIGNUM *pub_key, BIGNUM *priv_key);
+
+int
+sshkey_set_dsa_key(struct sshkey *key, BIGNUM *pub_key, BIGNUM *priv_key) {
+	int r;
+	DSA *dsa;
+
+	dsa = EVP_PKEY_get1_DSA(key->pk);
+	if (dsa == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+
+	if (!DSA_set0_key(dsa, pub_key, priv_key)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	/* success */
+	r = 0;
+err:
+	DSA_free(dsa);
+	return r;
 }
 
 
@@ -142,6 +262,51 @@ ssh_dss_generate(struct sshkey *key, int bits) {
 err:
 	EVP_PKEY_free(pk);
 	DSA_free(private);
+	return r;
+}
+
+extern int sshkey_copy_pub_dsa(const struct sshkey *from, struct sshkey *to);
+
+int
+sshkey_copy_pub_dsa(const struct sshkey *from, struct sshkey *to) {
+	int r;
+	BIGNUM *p = NULL, *q = NULL, *g = NULL, *pub_key = NULL;
+
+{	DSA *dsa = EVP_PKEY_get1_DSA(from->pk);
+	const BIGNUM *k_p, *k_q, *k_g, *k_pub_key;
+
+	if (dsa == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+	DSA_get0_pqg(dsa, &k_p, &k_q, &k_g);
+	DSA_get0_key(dsa, &k_pub_key, NULL);
+	DSA_free(dsa);
+
+	if ((p = BN_dup(k_p)) == NULL ||
+	    (q = BN_dup(k_q)) == NULL ||
+	    (g = BN_dup(k_g)) == NULL ||
+	    (pub_key = BN_dup(k_pub_key)) == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto err;
+	}
+}
+
+	r = sshkey_init_dsa_params(to, p, q, g);
+	if (r != 0) goto err;
+	p = q = g = NULL; /* transferred */
+
+	r = sshkey_set_dsa_key(to, pub_key, NULL);
+	if (r != 0) goto err;
+	/* pub_key = NULL; transferred */
+
+	/* success */
+	return 0;
+
+err:
+	BN_clear_free(p);
+	BN_clear_free(q);
+	BN_clear_free(g);
+	BN_clear_free(pub_key);
+	sshkey_clear_pkey(to);
 	return r;
 }
 
