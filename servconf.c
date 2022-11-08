@@ -1,4 +1,4 @@
-/* $OpenBSD: servconf.c,v 1.386 2022/09/17 10:34:29 djm Exp $ */
+/* $OpenBSD: servconf.c,v 1.387 2022/11/07 10:02:59 dtucker Exp $ */
 /*
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
@@ -2216,6 +2216,9 @@ parse_string:
 			    filename, linenum, keyword);
 		else
 			options->max_startups = options->max_startups_begin;
+		if (options->max_startups_begin <= 0)
+			fatal("%s line %d: Invalid %s spec.",
+			    filename, linenum, keyword);
 		break;
 
 	case sPerSourceNetBlockSize:
