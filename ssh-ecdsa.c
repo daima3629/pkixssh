@@ -177,10 +177,17 @@ err:
 	return r;
 }
 
+static void
+ssh_ecdsa_move_public(struct sshkey *from, struct sshkey *to) {
+	sshkey_move_pk(from, to);
+	to->ecdsa_nid = from->ecdsa_nid;
+	from->ecdsa_nid = -1;
+}
+
 extern int sshkey_copy_pub_ecdsa(const struct sshkey *from, struct sshkey *to);
 
-int
-sshkey_copy_pub_ecdsa(const struct sshkey *from, struct sshkey *to) {
+static int
+ssh_ecdsa_copy_public(const struct sshkey *from, struct sshkey *to) {
 	int r;
 	EC_KEY *ec, *from_ec = NULL;
 
@@ -490,7 +497,9 @@ static const struct sshkey_impl_funcs sshkey_ecdsa_funcs = {
 	/* .alloc =		NULL, */
 	/* .cleanup = */	ssh_ecdsa_cleanup,
 	/* .equal = */		ssh_ecdsa_equal,
-	/* .generate = */	ssh_ecdsa_generate
+	/* .generate = */	ssh_ecdsa_generate,
+	/* .move_public = */	ssh_ecdsa_move_public,
+	/* .copy_public = */	ssh_ecdsa_copy_public
 };
 
 const struct sshkey_impl sshkey_ecdsa_nistp256_impl = {

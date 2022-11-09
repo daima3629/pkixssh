@@ -93,6 +93,33 @@ ssh_ed25519_generate(struct sshkey *key, int bits) {
 	return 0;
 }
 
+static void
+ssh_ed25519_move_public(struct sshkey *from, struct sshkey *to) {
+#ifdef OPENSSL_HAS_ED25519
+	sshkey_move_pk(from, to);
+#endif
+	freezero(to->ed25519_pk, ED25519_PK_SZ);
+	to->ed25519_pk = from->ed25519_pk;
+	from->ed25519_pk = NULL;
+}
+
+static int
+ssh_ed25519_copy_public(const struct sshkey *from, struct sshkey *to)
+{
+	if (from->ed25519_pk == NULL)
+		return 0; /* XXX SSH_ERR_INTERNAL_ERROR ? */
+	if ((to->ed25519_pk = malloc(ED25519_PK_SZ)) == NULL)
+		return SSH_ERR_ALLOC_FAIL;
+	memcpy(to->ed25519_pk, from->ed25519_pk, ED25519_PK_SZ);
+#ifdef OPENSSL_HAS_ED25519
+	to->pk = EVP_PKEY_new_raw_public_key(EVP_PKEY_ED25519, NULL,
+	    to->ed25519_pk, ED25519_PK_SZ);
+	if (to->pk == NULL)
+		return SSH_ERR_LIBCRYPTO_ERROR;
+#endif
+	return 0;
+}
+
 int
 ssh_ed25519_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
     const u_char *data, size_t datalen)
@@ -227,7 +254,9 @@ static const struct sshkey_impl_funcs sshkey_ed25519_funcs = {
 	/* .alloc =		NULL, */
 	/* .cleanup = */	ssh_ed25519_cleanup,
 	/* .equal = */		ssh_ed25519_equal,
-	/* .generate = */	ssh_ed25519_generate
+	/* .generate = */	ssh_ed25519_generate,
+	/* .move_public = */	ssh_ed25519_move_public,
+	/* .copy_public = */	ssh_ed25519_copy_public
 };
 
 const struct sshkey_impl sshkey_ed25519_impl = {

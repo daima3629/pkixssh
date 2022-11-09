@@ -255,10 +255,13 @@ err:
 	return r;
 }
 
-extern int sshkey_copy_pub_rsa(const struct sshkey *from, struct sshkey *to);
+static void
+ssh_rsa_move_public(struct sshkey *from, struct sshkey *to) {
+	sshkey_move_pk(from, to);
+}
 
-int
-sshkey_copy_pub_rsa(const struct sshkey *from, struct sshkey *to) {
+static int
+ssh_rsa_copy_public(const struct sshkey *from, struct sshkey *to) {
 	int r;
 	BIGNUM *n = NULL, *e = NULL;
 
@@ -544,7 +547,9 @@ static const struct sshkey_impl_funcs sshkey_rsa_funcs = {
 	/* .alloc =		NULL, */
 	/* .cleanup = */	ssh_rsa_cleanup,
 	/* .equal = */		ssh_rsa_equal,
-	/* .generate = */	ssh_rsa_generate
+	/* .generate = */	ssh_rsa_generate,
+	/* .move_public = */	ssh_rsa_move_public,
+	/* .copy_public = */	ssh_rsa_copy_public
 };
 
 const struct sshkey_impl sshkey_rsa_impl = {

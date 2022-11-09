@@ -265,10 +265,13 @@ err:
 	return r;
 }
 
-extern int sshkey_copy_pub_dsa(const struct sshkey *from, struct sshkey *to);
+static void
+ssh_dss_move_public(struct sshkey *from, struct sshkey *to) {
+	sshkey_move_pk(from, to);
+}
 
-int
-sshkey_copy_pub_dsa(const struct sshkey *from, struct sshkey *to) {
+static int
+ssh_dss_copy_public(const struct sshkey *from, struct sshkey *to) {
 	int r;
 	BIGNUM *p = NULL, *q = NULL, *g = NULL, *pub_key = NULL;
 
@@ -602,7 +605,9 @@ static const struct sshkey_impl_funcs sshkey_dss_funcs = {
 	/* .alloc =		NULL, */
 	/* .cleanup = */	ssh_dss_cleanup,
 	/* .equal = */		ssh_dss_equal,
-	/* .generate = */	ssh_dss_generate
+	/* .generate = */	ssh_dss_generate,
+	/* .move_public = */	ssh_dss_move_public,
+	/* .copy_public = */	ssh_dss_copy_public
 };
 
 const struct sshkey_impl sshkey_dss_impl = {

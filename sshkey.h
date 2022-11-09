@@ -158,6 +158,8 @@ struct sshkey_impl_funcs {
 	void (*cleanup)(struct sshkey *);	/* optional */
 	int (*equal)(const struct sshkey *, const struct sshkey *);
 	int (*generate)(struct sshkey *, int);	/* optional */
+	void (*move_public)(struct sshkey *, struct sshkey *);
+	int (*copy_public)(const struct sshkey *, struct sshkey *);
 };
 
 struct sshkey_impl {

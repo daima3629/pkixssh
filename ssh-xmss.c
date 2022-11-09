@@ -2,6 +2,7 @@
 /*
  * Copyright (c) 2017 Stefan-Lukas Gazdag.
  * Copyright (c) 2017 Markus Friedl.
+ * Copyright (c) 2022 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -63,6 +64,47 @@ ssh_xmss_equal(const struct sshkey *a, const struct sshkey *b)
 	if (memcmp(a->xmss_pk, b->xmss_pk, sshkey_xmss_pklen(a)) != 0)
 		return 0;
 	return 1;
+}
+
+static void
+ssh_xmss_move_public(struct sshkey *from, struct sshkey *to) {
+	free(to->xmss_pk);
+	to->xmss_pk = from->xmss_pk;
+	from->xmss_pk = NULL;
+	free(to->xmss_state);
+	to->xmss_state = from->xmss_state;
+	from->xmss_state = NULL;
+	free(to->xmss_name);
+	to->xmss_name = from->xmss_name;
+	from->xmss_name = NULL;
+	free(to->xmss_filename);
+	to->xmss_filename = from->xmss_filename;
+	from->xmss_filename = NULL;
+}
+
+static int
+ssh_xmss_copy_public(const struct sshkey *from, struct sshkey *to)
+{
+	int r;
+
+	if ((r = sshkey_xmss_init(to, from->xmss_name)) != 0)
+		return r;
+	if (from->xmss_pk == NULL)
+		return 0; /* XXX SSH_ERR_INTERNAL_ERROR ? */
+
+{	size_t pklen = sshkey_xmss_pklen(from);
+	if (pklen == 0 || sshkey_xmss_pklen(to) != pklen)
+		return SSH_ERR_INTERNAL_ERROR;
+	if ((to->xmss_pk = malloc(pklen)) == NULL)
+		return SSH_ERR_ALLOC_FAIL;
+	memcpy(to->xmss_pk, from->xmss_pk, pklen);
+}
+{	/* simulate number of signatures left on pubkey */
+	u_int32_t left = sshkey_xmss_signatures_left(from);
+	if (left)
+		sshkey_xmss_enable_maxsign(to, left);
+}
+	return 0;
 }
 
 int
@@ -218,7 +260,9 @@ static const struct sshkey_impl_funcs sshkey_xmss_funcs = {
 	/* .alloc =		NULL, */
 	/* .cleanup = */	ssh_xmss_cleanup,
 	/* .equal = */		ssh_xmss_equal,
-	/* .generate = */	sshkey_xmss_generate_private_key
+	/* .generate = */	sshkey_xmss_generate_private_key,
+	/* .move_public = */	ssh_xmss_move_public,
+	/* .copy_public = */	ssh_xmss_copy_public
 };
 
 const struct sshkey_impl sshkey_xmss_impl = {

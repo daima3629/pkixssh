@@ -1426,56 +1426,14 @@ noblob:
 		ret->cert = k->cert;
 		k->cert = NULL;
 	}
-	switch (sshkey_type_plain(ret->type)) {
-#ifdef WITH_OPENSSL
-	case KEY_RSA:
-		sshkey_move_pk(k, ret);
-		break;
-	case KEY_DSA:
-		sshkey_move_pk(k, ret);
-		break;
-# ifdef OPENSSL_HAS_ECC
-	case KEY_ECDSA:
-		sshkey_move_pk(k, ret);
-		ret->ecdsa_nid = k->ecdsa_nid;
-		k->ecdsa_nid = -1;
-		break;
-# endif /* OPENSSL_HAS_ECC */
-#endif /* WITH_OPENSSL */
-	case KEY_ED25519:
-#ifdef OPENSSL_HAS_ED25519
-		sshkey_move_pk(k, ret);
-#endif
-		freezero(ret->ed25519_pk, ED25519_PK_SZ);
-		ret->ed25519_pk = k->ed25519_pk;
-		k->ed25519_pk = NULL;
-#ifdef DEBUG_PK
-		/* XXX */
-#endif
-		break;
-#ifdef WITH_XMSS
-	case KEY_XMSS:
-		free(ret->xmss_pk);
-		ret->xmss_pk = k->xmss_pk;
-		k->xmss_pk = NULL;
-		free(ret->xmss_state);
-		ret->xmss_state = k->xmss_state;
-		k->xmss_state = NULL;
-		free(ret->xmss_name);
-		ret->xmss_name = k->xmss_name;
-		k->xmss_name = NULL;
-		free(ret->xmss_filename);
-		ret->xmss_filename = k->xmss_filename;
-		k->xmss_filename = NULL;
-#ifdef DEBUG_PK
-		/* XXX */
-#endif
-		break;
-#endif /* WITH_XMSS */
-	default:
+{	const struct sshkey_impl *impl = sshkey_impl_from_type(
+	    sshkey_type_plain(ret->type));
+	if (impl == NULL) {
 		sshkey_free(k);
 		return SSH_ERR_INTERNAL_ERROR;
 	}
+	impl->funcs->move_public(k, ret);
+}
 	/* Test with loaded key, as for X.509 certificates
 	   we consider keys as equivalent if base type match
 	 */
@@ -1672,88 +1630,20 @@ sshkey_cert_copy(const struct sshkey *from_key, struct sshkey *to_key)
 	return r;
 }
 
-extern int sshkey_copy_pub_rsa(const struct sshkey *from, struct sshkey *to);
-extern int sshkey_copy_pub_dsa(const struct sshkey *from, struct sshkey *to);
-#ifdef OPENSSL_HAS_ECC
-extern int sshkey_copy_pub_ecdsa(const struct sshkey *from, struct sshkey *to);
-#endif
-
 int
 sshkey_from_private(const struct sshkey *k, struct sshkey **pkp)
 {
-	struct sshkey *n = NULL;
-	int r = SSH_ERR_INTERNAL_ERROR;
+	struct sshkey *n;
+	int r;
+	const struct sshkey_impl *impl;
 
 	*pkp = NULL;
+	if ((impl = sshkey_impl_from_key(k)) == NULL)
+		return SSH_ERR_KEY_TYPE_UNKNOWN;
 	if ((n = sshkey_new(k->type)) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
-
-	switch(k->type) {
-#ifdef WITH_OPENSSL
-	case KEY_DSA:
-	case KEY_DSA_CERT:
-		r = sshkey_copy_pub_dsa(k, n);
-		if (r != 0) goto out;
-		break;
-# ifdef OPENSSL_HAS_ECC
-	case KEY_ECDSA:
-	case KEY_ECDSA_CERT:
-		r = sshkey_copy_pub_ecdsa(k, n);
-		if (r != 0) goto out;
-		break;
-# endif /* OPENSSL_HAS_ECC */
-	case KEY_RSA:
-	case KEY_RSA_CERT:
-		r = sshkey_copy_pub_rsa(k, n);
-		if (r != 0) goto out;
-		break;
-#endif /* WITH_OPENSSL */
-	case KEY_ED25519:
-	case KEY_ED25519_CERT:
-		if (k->ed25519_pk != NULL) {
-			if ((n->ed25519_pk = malloc(ED25519_PK_SZ)) == NULL) {
-				r = SSH_ERR_ALLOC_FAIL;
-				goto out;
-			}
-			memcpy(n->ed25519_pk, k->ed25519_pk, ED25519_PK_SZ);
-#ifdef OPENSSL_HAS_ED25519
-			n->pk = EVP_PKEY_new_raw_public_key(EVP_PKEY_ED25519, NULL,
-			    n->ed25519_pk, ED25519_PK_SZ);
-			if (n->pk == NULL) {
-				r = SSH_ERR_LIBCRYPTO_ERROR;
-				break;
-			}
-#endif
-		}
-		break;
-#ifdef WITH_XMSS
-	case KEY_XMSS:
-	case KEY_XMSS_CERT:
-		if ((r = sshkey_xmss_init(n, k->xmss_name)) != 0)
-			goto out;
-		if (k->xmss_pk != NULL) {
-			u_int32_t left;
-			size_t pklen = sshkey_xmss_pklen(k);
-			if (pklen == 0 || sshkey_xmss_pklen(n) != pklen) {
-				r = SSH_ERR_INTERNAL_ERROR;
-				goto out;
-			}
-			if ((n->xmss_pk = malloc(pklen)) == NULL) {
-				r = SSH_ERR_ALLOC_FAIL;
-				goto out;
-			}
-			memcpy(n->xmss_pk, k->xmss_pk, pklen);
-			/* simulate number of signatures left on pubkey */
-			left = sshkey_xmss_signatures_left(k);
-			if (left)
-				sshkey_xmss_enable_maxsign(n, left);
-		}
-		break;
-#endif /* WITH_XMSS */
-	default:
-		r = SSH_ERR_KEY_TYPE_UNKNOWN;
+	if ((r = impl->funcs->copy_public(k, n)) != 0)
 		goto out;
-	}
 	if (sshkey_is_cert(k) && (r = sshkey_cert_copy(k, n)) != 0)
 		goto out;
 
