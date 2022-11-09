@@ -180,8 +180,8 @@ ssh_ed25519_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 
 int
 ssh_ed25519_verify(const ssh_verify_ctx *ctx,
-    const u_char *signature, size_t signaturelen,
-    const u_char *data, size_t datalen)
+    const u_char *sig, size_t siglen,
+    const u_char *data, size_t dlen)
 {
 	const struct sshkey *key = ctx->key;
 	struct sshbuf *b = NULL;
@@ -195,11 +195,11 @@ ssh_ed25519_verify(const ssh_verify_ctx *ctx,
 	if (key == NULL ||
 	    sshkey_type_plain(key->type) != KEY_ED25519 ||
 	    key->ed25519_pk == NULL ||
-	    datalen >= INT_MAX - crypto_sign_ed25519_BYTES ||
-	    signature == NULL || signaturelen == 0)
+	    dlen >= INT_MAX - crypto_sign_ed25519_BYTES ||
+	    sig == NULL || siglen == 0)
 		return SSH_ERR_INVALID_ARGUMENT;
 
-	if ((b = sshbuf_from(signature, signaturelen)) == NULL)
+	if ((b = sshbuf_from(sig, siglen)) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
 	if ((r = sshbuf_get_cstring(b, &ktype, NULL)) != 0 ||
 	    (r = sshbuf_get_string_direct(b, &sigblob, &len)) != 0)
@@ -216,23 +216,23 @@ ssh_ed25519_verify(const ssh_verify_ctx *ctx,
 		r = SSH_ERR_INVALID_FORMAT;
 		goto out;
 	}
-	if (datalen >= SIZE_MAX - len) {
+	if (dlen >= SIZE_MAX - len) {
 		r = SSH_ERR_INVALID_ARGUMENT;
 		goto out;
 	}
-	smlen = len + datalen;
+	smlen = len + dlen;
 	mlen = smlen;
 	if ((sm = malloc(smlen)) == NULL || (m = malloc(mlen)) == NULL) {
 		r = SSH_ERR_ALLOC_FAIL;
 		goto out;
 	}
 	memcpy(sm, sigblob, len);
-	memcpy(sm+len, data, datalen);
+	memcpy(sm+len, data, dlen);
 	if ((ret = crypto_sign_ed25519_open(m, &mlen, sm, smlen,
 	    key->ed25519_pk)) != 0) {
 		debug2_f("crypto_sign_ed25519_open failed: %d", ret);
 	}
-	if (ret != 0 || mlen != datalen) {
+	if (ret != 0 || mlen != dlen) {
 		r = SSH_ERR_SIGNATURE_INVALID;
 		goto out;
 	}
@@ -243,7 +243,7 @@ ssh_ed25519_verify(const ssh_verify_ctx *ctx,
 	if (sm != NULL)
 		freezero(sm, smlen);
 	if (m != NULL)
-		freezero(m, smlen);
+		freezero(m, smlen); /* NB mlen may be invalid if r != 0 */
 	sshbuf_free(b);
 	free(ktype);
 	return r;

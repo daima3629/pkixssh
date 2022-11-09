@@ -419,23 +419,23 @@ clean:
 
 int
 ssh_ecdsa_verify(const ssh_verify_ctx *ctx,
-    const u_char *signature, size_t signaturelen,
-    const u_char *data, size_t datalen)
+    const u_char *sig, size_t siglen,
+    const u_char *data, size_t dlen)
 {
 	const struct sshkey *key = ctx->key;
-	ECDSA_SIG *sig = NULL;
+	ECDSA_SIG *esig = NULL;
 	struct sshbuf *b = NULL, *sigbuf = NULL;
 	char *ktype = NULL;
 	int ret;
 
-	if (signature == NULL || signaturelen == 0)
+	if (sig == NULL || siglen == 0)
 		return SSH_ERR_INVALID_ARGUMENT;
 
 	ret = sshkey_validate_public_ecdsa(key);
 	if (ret != 0) return ret;
 
 	/* fetch signature */
-	if ((b = sshbuf_from(signature, signaturelen)) == NULL)
+	if ((b = sshbuf_from(sig, siglen)) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
 	if (sshbuf_get_cstring(b, &ktype, NULL) != 0 ||
 	    sshbuf_froms(b, &sigbuf) != 0) {
@@ -462,12 +462,12 @@ ssh_ecdsa_verify(const ssh_verify_ctx *ctx,
 		goto parse_out;
 	}
 
-	if ((sig = ECDSA_SIG_new()) == NULL) {
+	if ((esig = ECDSA_SIG_new()) == NULL) {
 		ret = SSH_ERR_ALLOC_FAIL;
 		goto parse_out;
 	}
 
-	if (!ECDSA_SIG_set0(sig, pr, ps))
+	if (!ECDSA_SIG_set0(esig, pr, ps))
 		ret = SSH_ERR_LIBCRYPTO_ERROR;
 
 parse_out:
@@ -482,12 +482,12 @@ parse_out:
 		ret = SSH_ERR_UNEXPECTED_TRAILING_DATA;
 		goto out;
 	}
-	ret = ssh_ecdsa_verify_pkey(key, sig, data, datalen);
+	ret = ssh_ecdsa_verify_pkey(key, esig, data, dlen);
 
  out:
 	sshbuf_free(sigbuf);
 	sshbuf_free(b);
-	ECDSA_SIG_free(sig);
+	ECDSA_SIG_free(esig);
 	free(ktype);
 	return ret;
 }

@@ -412,7 +412,8 @@ evp_end:
 
 int
 ssh_rsa_verify(const ssh_verify_ctx *ctx,
-    const u_char *sig, size_t siglen, const u_char *data, size_t datalen)
+    const u_char *sig, size_t siglen,
+    const u_char *data, size_t dlen)
 {
 	const struct sshkey *key = ctx->key;
 	const char *alg = ctx->alg;
@@ -510,7 +511,7 @@ ssh_rsa_verify(const ssh_verify_ctx *ctx,
 		goto evp_md_end;
 	}
 
-	ok = EVP_VerifyUpdate(md, data, datalen);
+	ok = EVP_VerifyUpdate(md, data, dlen);
 	if (ok <= 0) {
 #ifdef TRACE_EVP_ERROR
 		error_crypto("EVP_VerifyUpdate");

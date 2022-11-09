@@ -108,7 +108,8 @@ ssh_xmss_copy_public(const struct sshkey *from, struct sshkey *to)
 }
 
 int
-ssh_xmss_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
+ssh_xmss_sign(const ssh_sign_ctx *ctx,
+    u_char **sigp, size_t *lenp,
     const u_char *data, size_t datalen)
 {
 	const struct sshkey *key = ctx->key;
@@ -182,8 +183,8 @@ ssh_xmss_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 
 int
 ssh_xmss_verify(const ssh_verify_ctx *ctx,
-    const u_char *signature, size_t signaturelen,
-    const u_char *data, size_t datalen)
+    const u_char *sig, size_t siglen,
+    const u_char *data, size_t dlen)
 {
 	const struct sshkey *key = ctx->key;
 	struct sshbuf *b = NULL;
@@ -198,14 +199,14 @@ ssh_xmss_verify(const ssh_verify_ctx *ctx,
 	    sshkey_type_plain(key->type) != KEY_XMSS ||
 	    key->xmss_pk == NULL ||
 	    sshkey_xmss_params(key) == NULL ||
-	    signature == NULL || signaturelen == 0)
+	    sig == NULL || siglen == 0)
 		return SSH_ERR_INVALID_ARGUMENT;
 	if ((r = sshkey_xmss_siglen(key, &required_siglen)) != 0)
 		return r;
-	if (datalen >= INT_MAX - required_siglen)
+	if (dlen >= INT_MAX - required_siglen)
 		return SSH_ERR_INVALID_ARGUMENT;
 
-	if ((b = sshbuf_from(signature, signaturelen)) == NULL)
+	if ((b = sshbuf_from(sig, siglen)) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
 	if ((r = sshbuf_get_cstring(b, &ktype, NULL)) != 0 ||
 	    (r = sshbuf_get_string_direct(b, &sigblob, &len)) != 0)
@@ -222,23 +223,23 @@ ssh_xmss_verify(const ssh_verify_ctx *ctx,
 		r = SSH_ERR_INVALID_FORMAT;
 		goto out;
 	}
-	if (datalen >= SIZE_MAX - len) {
+	if (dlen >= SIZE_MAX - len) {
 		r = SSH_ERR_INVALID_ARGUMENT;
 		goto out;
 	}
-	smlen = len + datalen;
+	smlen = len + dlen;
 	mlen = smlen;
 	if ((sm = malloc(smlen)) == NULL || (m = malloc(mlen)) == NULL) {
 		r = SSH_ERR_ALLOC_FAIL;
 		goto out;
 	}
 	memcpy(sm, sigblob, len);
-	memcpy(sm+len, data, datalen);
+	memcpy(sm+len, data, dlen);
 	if ((ret = xmss_sign_open(m, &mlen, sm, smlen,
 	    key->xmss_pk, sshkey_xmss_params(key))) != 0) {
 		debug2_f("xmss_sign_open failed: %d", ret);
 	}
-	if (ret != 0 || mlen != datalen) {
+	if (ret != 0 || mlen != dlen) {
 		r = SSH_ERR_SIGNATURE_INVALID;
 		goto out;
 	}

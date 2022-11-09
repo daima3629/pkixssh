@@ -520,27 +520,27 @@ clean:
 
 int
 ssh_dss_verify(const ssh_verify_ctx *ctx,
-    const u_char *signature, size_t signaturelen,
-    const u_char *data, size_t datalen)
+    const u_char *sig, size_t siglen,
+    const u_char *data, size_t dlen)
 {
 	const struct sshkey *key = ctx->key;
-	DSA_SIG *sig = NULL;
+	DSA_SIG *dsig = NULL;
 	u_char *sigblob = NULL;
-	size_t len, dlen = ssh_digest_bytes(SSH_DIGEST_SHA1);
+	size_t len, hlen = ssh_digest_bytes(SSH_DIGEST_SHA1);
 	int ret = SSH_ERR_INTERNAL_ERROR;
 	struct sshbuf *b = NULL;
 	char *ktype = NULL;
 
-	if (signature == NULL || signaturelen == 0)
+	if (sig == NULL || siglen == 0)
 		return SSH_ERR_INVALID_ARGUMENT;
-	if (dlen == 0)
+	if (hlen == 0)
 		return SSH_ERR_INTERNAL_ERROR;
 
 	ret = sshkey_validate_public_dsa(key);
 	if (ret != 0) return ret;
 
 	/* fetch signature */
-	if ((b = sshbuf_from(signature, signaturelen)) == NULL)
+	if ((b = sshbuf_from(sig, siglen)) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
 	if (sshbuf_get_cstring(b, &ktype, NULL) != 0 ||
 	    sshbuf_get_string(b, &sigblob, &len) != 0) {
@@ -572,13 +572,13 @@ ssh_dss_verify(const ssh_verify_ctx *ctx,
 		goto parse_out;
 	}
 
-	sig = DSA_SIG_new();
-	if (sig == NULL) {
+	dsig = DSA_SIG_new();
+	if (dsig == NULL) {
 		ret = SSH_ERR_ALLOC_FAIL;
 		goto parse_out;
 	}
 
-	if (!DSA_SIG_set0(sig, pr, ps))
+	if (!DSA_SIG_set0(dsig, pr, ps))
 		ret = SSH_ERR_LIBCRYPTO_ERROR;
 
 parse_out:
@@ -589,10 +589,10 @@ parse_out:
 	}
 }
 
-	ret = ssh_dss_verify_pkey(key, sig, data, datalen);
+	ret = ssh_dss_verify_pkey(key, dsig, data, dlen);
 
  out:
-	DSA_SIG_free(sig);
+	DSA_SIG_free(dsig);
 	sshbuf_free(b);
 	free(ktype);
 	if (sigblob != NULL)
