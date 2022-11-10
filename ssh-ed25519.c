@@ -120,7 +120,7 @@ ssh_ed25519_copy_public(const struct sshkey *from, struct sshkey *to)
 	return 0;
 }
 
-int
+static int
 ssh_ed25519_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
     const u_char *data, size_t datalen)
 {
@@ -178,7 +178,7 @@ ssh_ed25519_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 	return r;
 }
 
-int
+static int
 ssh_ed25519_verify(const ssh_verify_ctx *ctx,
     const u_char *sig, size_t siglen,
     const u_char *data, size_t dlen)
@@ -256,7 +256,9 @@ static const struct sshkey_impl_funcs sshkey_ed25519_funcs = {
 	/* .equal = */		ssh_ed25519_equal,
 	/* .generate = */	ssh_ed25519_generate,
 	/* .move_public = */	ssh_ed25519_move_public,
-	/* .copy_public = */	ssh_ed25519_copy_public
+	/* .copy_public = */	ssh_ed25519_copy_public,
+	/* .sign = */		ssh_ed25519_sign,
+	/* .verify = */		ssh_ed25519_verify
 };
 
 const struct sshkey_impl sshkey_ed25519_impl = {

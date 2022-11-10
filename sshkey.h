@@ -160,6 +160,12 @@ struct sshkey_impl_funcs {
 	int (*generate)(struct sshkey *, int);	/* optional */
 	void (*move_public)(struct sshkey *, struct sshkey *);
 	int (*copy_public)(const struct sshkey *, struct sshkey *);
+	int (*sign)(const ssh_sign_ctx *ctx,
+	    u_char **sigp, size_t *lenp,
+	    const u_char *data, size_t dlen);
+	int (*verify)(const ssh_verify_ctx *ctx,
+	    const u_char *sig, size_t siglen,
+	    const u_char *data, size_t dlen);
 };
 
 struct sshkey_impl {
@@ -316,36 +322,6 @@ int	 sshkey_private_serialize_maxsign(struct sshkey *key,
     struct sshbuf *buf, u_int32_t maxsign, int);
 
 #ifdef SSHKEY_INTERNAL
-int ssh_rsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
-    const u_char *data, size_t datalen);
-int ssh_rsa_verify(const ssh_verify_ctx *ctx,
-    const u_char *sig, size_t siglen,
-    const u_char *data, size_t datalen);
-
-int ssh_dss_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
-    const u_char *data, size_t datalen);
-int ssh_dss_verify(const ssh_verify_ctx *ctx,
-    const u_char *signature, size_t signaturelen,
-    const u_char *data, size_t datalen);
-
-int ssh_ecdsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
-    const u_char *data, size_t datalen);
-int ssh_ecdsa_verify(const ssh_verify_ctx *ctx,
-    const u_char *signature, size_t signaturelen,
-    const u_char *data, size_t datalen);
-
-int ssh_ed25519_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
-    const u_char *data, size_t datalen);
-int ssh_ed25519_verify(const ssh_verify_ctx *ctx,
-    const u_char *signature, size_t signaturelen,
-    const u_char *data, size_t datalen);
-
-int ssh_xmss_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
-    const u_char *data, size_t datalen);
-int ssh_xmss_verify(const ssh_verify_ctx *ctx,
-    const u_char *signature, size_t signaturelen,
-    const u_char *data, size_t datalen);
-
 # ifdef WITH_OPENSSL
 int	sshkey_from_pkey(EVP_PKEY *pk, struct sshkey **keyp);
 

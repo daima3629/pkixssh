@@ -294,8 +294,7 @@ err:
 	return r;
 }
 
-/* RSASSA-PKCS1-v1_5 (PKCS #1 v2.0 signature) with SHA1 */
-int
+static int
 ssh_rsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
     const u_char *data, size_t datalen)
 {
@@ -410,7 +409,7 @@ evp_end:
 	return ret;
 }
 
-int
+static int
 ssh_rsa_verify(const ssh_verify_ctx *ctx,
     const u_char *sig, size_t siglen,
     const u_char *data, size_t dlen)
@@ -550,7 +549,9 @@ static const struct sshkey_impl_funcs sshkey_rsa_funcs = {
 	/* .equal = */		ssh_rsa_equal,
 	/* .generate = */	ssh_rsa_generate,
 	/* .move_public = */	ssh_rsa_move_public,
-	/* .copy_public = */	ssh_rsa_copy_public
+	/* .copy_public = */	ssh_rsa_copy_public,
+	/* .sign = */		ssh_rsa_sign,
+	/* .verify = */		ssh_rsa_verify
 };
 
 const struct sshkey_impl sshkey_rsa_impl = {

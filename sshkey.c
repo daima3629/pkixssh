@@ -2435,52 +2435,25 @@ sshkey_check_sigtype(const u_char *sig, size_t siglen,
 int
 sshkey_sign(const ssh_sign_ctx *ctx,
     u_char **sigp, size_t *lenp,
-    const u_char *data, size_t datalen)
+    const u_char *data, size_t dlen)
 {
 	struct sshkey *key = ctx->key;
-	int was_shielded = sshkey_is_shielded(key);
-	int r = SSH_ERR_INTERNAL_ERROR;
+	int was_shielded;
+	int r;
+	const struct sshkey_impl *impl;
 
 	if (sigp != NULL)
 		*sigp = NULL;
 	if (lenp != NULL)
 		*lenp = 0;
-	if (datalen > SSH_KEY_MAX_SIGN_DATA_SIZE)
+	if (dlen > SSH_KEY_MAX_SIGN_DATA_SIZE)
 		return SSH_ERR_INVALID_ARGUMENT;
-
+	if ((impl = sshkey_impl_from_key(key)) == NULL)
+		return SSH_ERR_KEY_TYPE_UNKNOWN;
+	was_shielded = sshkey_is_shielded(key);
 	if ((r = sshkey_unshield_private(key)) != 0)
 		return r;
-	switch (key->type) {
-#ifdef WITH_OPENSSL
-	case KEY_DSA_CERT:
-	case KEY_DSA:
-		r = ssh_dss_sign(ctx, sigp, lenp, data, datalen);
-		break;
-# ifdef OPENSSL_HAS_ECC
-	case KEY_ECDSA_CERT:
-	case KEY_ECDSA:
-		r = ssh_ecdsa_sign(ctx, sigp, lenp, data, datalen);
-		break;
-# endif /* OPENSSL_HAS_ECC */
-	case KEY_RSA_CERT:
-	case KEY_RSA:
-		r = ssh_rsa_sign(ctx, sigp, lenp, data, datalen);
-		break;
-#endif /* WITH_OPENSSL */
-	case KEY_ED25519:
-	case KEY_ED25519_CERT:
-		r = ssh_ed25519_sign(ctx, sigp, lenp, data, datalen);
-		break;
-#ifdef WITH_XMSS
-	case KEY_XMSS:
-	case KEY_XMSS_CERT:
-		r = ssh_xmss_sign(ctx, sigp, lenp, data, datalen);
-		break;
-#endif /* WITH_XMSS */
-	default:
-		r = SSH_ERR_KEY_TYPE_UNKNOWN;
-		break;
-	}
+	r = impl->funcs->sign(ctx, sigp, lenp, data, dlen);
 	if (was_shielded) {
 		int r2 = sshkey_shield_private(key);
 		if (r == 0) r = r2;
@@ -2498,34 +2471,13 @@ sshkey_verify(const ssh_verify_ctx *ctx,
     const u_char *data, size_t dlen)
 {
 	struct sshkey *key = ctx->key;
+	const struct sshkey_impl *impl;
+
 	if (siglen == 0 || dlen > SSH_KEY_MAX_SIGN_DATA_SIZE)
 		return SSH_ERR_INVALID_ARGUMENT;
-
-	switch (key->type) {
-#ifdef WITH_OPENSSL
-	case KEY_DSA_CERT:
-	case KEY_DSA:
-		return ssh_dss_verify(ctx, sig, siglen, data, dlen);
-# ifdef OPENSSL_HAS_ECC
-	case KEY_ECDSA_CERT:
-	case KEY_ECDSA:
-		return ssh_ecdsa_verify(ctx, sig, siglen, data, dlen);
-# endif /* OPENSSL_HAS_ECC */
-	case KEY_RSA_CERT:
-	case KEY_RSA:
-		return ssh_rsa_verify(ctx, sig, siglen, data, dlen);
-#endif /* WITH_OPENSSL */
-	case KEY_ED25519:
-	case KEY_ED25519_CERT:
-		return ssh_ed25519_verify(ctx, sig, siglen, data, dlen);
-#ifdef WITH_XMSS
-	case KEY_XMSS:
-	case KEY_XMSS_CERT:
-		return ssh_xmss_verify(ctx, sig, siglen, data, dlen);
-#endif /* WITH_XMSS */
-	default:
+	if ((impl = sshkey_impl_from_key(key)) == NULL)
 		return SSH_ERR_KEY_TYPE_UNKNOWN;
-	}
+	return impl->funcs->verify(ctx, sig, siglen, data, dlen);
 }
 
 /* Convert a plain key to their _CERT equivalent */

@@ -289,7 +289,7 @@ clean:
 	return 0;
 }
 
-int
+static int
 ssh_ecdsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
     const u_char *data, size_t datalen)
 {
@@ -417,7 +417,7 @@ clean:
 	return ret;
 }
 
-int
+static int
 ssh_ecdsa_verify(const ssh_verify_ctx *ctx,
     const u_char *sig, size_t siglen,
     const u_char *data, size_t dlen)
@@ -499,7 +499,9 @@ static const struct sshkey_impl_funcs sshkey_ecdsa_funcs = {
 	/* .equal = */		ssh_ecdsa_equal,
 	/* .generate = */	ssh_ecdsa_generate,
 	/* .move_public = */	ssh_ecdsa_move_public,
-	/* .copy_public = */	ssh_ecdsa_copy_public
+	/* .copy_public = */	ssh_ecdsa_copy_public,
+	/* .sign = */		ssh_ecdsa_sign,
+	/* .verify = */		ssh_ecdsa_verify
 };
 
 const struct sshkey_impl sshkey_ecdsa_nistp256_impl = {

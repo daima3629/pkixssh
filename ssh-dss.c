@@ -379,7 +379,7 @@ clean:
 }
 
 
-int
+static int
 ssh_dss_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
     const u_char *data, size_t datalen)
 {
@@ -518,7 +518,7 @@ clean:
 }
 
 
-int
+static int
 ssh_dss_verify(const ssh_verify_ctx *ctx,
     const u_char *sig, size_t siglen,
     const u_char *data, size_t dlen)
@@ -607,7 +607,9 @@ static const struct sshkey_impl_funcs sshkey_dss_funcs = {
 	/* .equal = */		ssh_dss_equal,
 	/* .generate = */	ssh_dss_generate,
 	/* .move_public = */	ssh_dss_move_public,
-	/* .copy_public = */	ssh_dss_copy_public
+	/* .copy_public = */	ssh_dss_copy_public,
+	/* .sign = */		ssh_dss_sign,
+	/* .verify = */		ssh_dss_verify
 };
 
 const struct sshkey_impl sshkey_dss_impl = {
