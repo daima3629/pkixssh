@@ -35,6 +35,50 @@
 #include "ssherr.h"
 #include "ssh.h"
 
+extern int /* TODO static - see sshkey.c */
+sshbuf_read_pub_ed25519(struct sshbuf *buf, struct sshkey *key);
+
+static int
+sshbuf_read_priv_ed25519(struct sshbuf *buf, struct sshkey *key) {
+	int r;
+	u_char *ed25519_sk = NULL;
+	size_t sklen = 0;
+
+	r = sshbuf_get_string(buf, &ed25519_sk, &sklen);
+	if (r != 0) goto err;
+
+	if (sklen != ED25519_SK_SZ) {
+		r = SSH_ERR_INVALID_FORMAT;
+		goto err;
+	}
+
+#ifdef OPENSSL_HAS_ED25519
+{	EVP_PKEY *pk = EVP_PKEY_new_raw_private_key(EVP_PKEY_ED25519, NULL,
+	    ed25519_sk, sklen - ED25519_PK_SZ);
+	if (pk == NULL) {
+		r = SSH_ERR_INVALID_FORMAT;
+		goto err;
+	}
+	if (key->pk != NULL) {
+		/* TODO match public vs private ? */
+		if (ssh_EVP_PKEY_eq(key->pk, pk) != 1) {
+			EVP_PKEY_free(pk);
+			r = SSH_ERR_INVALID_ARGUMENT;
+			goto err;
+		}
+		EVP_PKEY_free(key->pk);
+	}
+	key->pk = pk;
+}
+#endif
+	key->ed25519_sk = ed25519_sk;
+	ed25519_sk = NULL; /* transferred */
+
+err:
+	freezero(ed25519_sk, sklen);
+	return r;
+}
+
 
 /* key implementation */
 
@@ -118,6 +162,19 @@ ssh_ed25519_copy_public(const struct sshkey *from, struct sshkey *to)
 		return SSH_ERR_LIBCRYPTO_ERROR;
 #endif
 	return 0;
+}
+
+static int
+ssh_ed25519_deserialize_private(const char *pkalg, struct sshbuf *buf,
+    struct sshkey *key)
+{
+	int r;
+
+	UNUSED(pkalg);
+	/* NOTE !cert */
+	if ((r = sshbuf_read_pub_ed25519(buf, key)) != 0)
+		return r;
+	return sshbuf_read_priv_ed25519(buf, key);
 }
 
 static int
@@ -254,6 +311,7 @@ static const struct sshkey_impl_funcs sshkey_ed25519_funcs = {
 	/* .alloc =		NULL, */
 	/* .cleanup = */	ssh_ed25519_cleanup,
 	/* .equal = */		ssh_ed25519_equal,
+	/* .deserialize_private = */	ssh_ed25519_deserialize_private,
 	/* .generate = */	ssh_ed25519_generate,
 	/* .move_public = */	ssh_ed25519_move_public,
 	/* .copy_public = */	ssh_ed25519_copy_public,

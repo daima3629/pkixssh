@@ -157,6 +157,8 @@ struct sshkey_impl_funcs {
 /*	int (*alloc)(struct sshkey *);		 reserved */
 	void (*cleanup)(struct sshkey *);	/* optional */
 	int (*equal)(const struct sshkey *, const struct sshkey *);
+	int (*deserialize_private)(const char *, struct sshbuf *,
+	    struct sshkey *);
 	int (*generate)(struct sshkey *, int);	/* optional */
 	void (*move_public)(struct sshkey *, struct sshkey *);
 	int (*copy_public)(const struct sshkey *, struct sshkey *);
@@ -329,14 +331,21 @@ void	sshkey_clear_pkey(struct sshkey *key);
 
 void	sshkey_move_pk(struct sshkey *from, struct sshkey *to);
 
+#ifdef DEBUG_PK
+static void sshkey_dump(const char *func, const struct sshkey *key);
+#else
+static inline void
+sshkey_dump(const char *func, const struct sshkey *key) {
+	UNUSED(func);
+	UNUSED(key);
+}
+#endif
+#define SSHKEY_DUMP(...)	sshkey_dump(__func__, __VA_ARGS__)
+
 int	sshbuf_read_pub_rsa(struct sshbuf *buf, struct sshkey *key);
-int	sshbuf_read_pub_rsa_priv(struct sshbuf *buf, struct sshkey *key);
-int	sshbuf_read_priv_rsa(struct sshbuf *buf, struct sshkey *key);
 int	sshbuf_read_pub_dsa(struct sshbuf *buf, struct sshkey *key);
-int	sshbuf_read_priv_dsa(struct sshbuf *buf, struct sshkey *key);
 #  ifdef OPENSSL_HAS_ECC
 int	sshbuf_read_pub_ecdsa(struct sshbuf *buf, struct sshkey *key);
-int	sshbuf_read_priv_ecdsa(struct sshbuf *buf, struct sshkey *key);
 #  endif /* OPENSSL_HAS_ECC */
 
 int	sshbuf_write_pub_rsa(struct sshbuf *buf, const struct sshkey *key);

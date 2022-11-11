@@ -2019,7 +2019,10 @@ cert_parse(struct sshbuf *b, struct sshkey *key, struct sshbuf *certbuf)
 }
 
 #ifdef OPENSSL_HAS_ECC
-static int
+extern int /* TODO move to ssh-ecdsa.c */
+sshbuf_read_ec_curve(struct sshbuf *buf, const char *pkalg, struct sshkey *key);
+
+int
 sshbuf_read_ec_curve(struct sshbuf *buf, const char *pkalg, struct sshkey *key) {
 	int r, nid;
 
@@ -2044,7 +2047,10 @@ sshbuf_read_ec_curve(struct sshbuf *buf, const char *pkalg, struct sshkey *key) 
 }
 #endif /*def OPENSSL_HAS_ECC*/
 
-static int
+extern int /* TODO move to ssh-ed25519.c */
+sshbuf_read_pub_ed25519(struct sshbuf *buf, struct sshkey *key);
+
+int
 sshbuf_read_pub_ed25519(struct sshbuf *buf, struct sshkey *key) {
 	int r;
 	u_char *ed25519_pk = NULL;
@@ -2075,50 +2081,12 @@ err:
 	return r;
 }
 
-static int
-sshbuf_read_priv_ed25519(struct sshbuf *buf, struct sshkey *key) {
-	int r;
-	u_char *ed25519_sk = NULL;
-	size_t sklen = 0;
-
-	r = sshbuf_get_string(buf, &ed25519_sk, &sklen);
-	if (r != 0) goto err;
-
-	if (sklen != ED25519_SK_SZ) {
-		r = SSH_ERR_INVALID_FORMAT;
-		goto err;
-	}
-
-#ifdef OPENSSL_HAS_ED25519
-{	EVP_PKEY *pk = EVP_PKEY_new_raw_private_key(EVP_PKEY_ED25519, NULL,
-	    ed25519_sk, sklen - ED25519_PK_SZ);
-	if (pk == NULL) {
-		r = SSH_ERR_INVALID_FORMAT;
-		goto err;
-	}
-	if (key->pk != NULL) {
-		/* TODO match public vs private ? */
-		if (ssh_EVP_PKEY_eq(key->pk, pk) != 1) {
-			EVP_PKEY_free(pk);
-			r = SSH_ERR_INVALID_ARGUMENT;
-			goto err;
-		}
-		EVP_PKEY_free(key->pk);
-	}
-	key->pk = pk;
-}
-#endif
-	key->ed25519_sk = ed25519_sk;
-	ed25519_sk = NULL; /* transferred */
-
-err:
-	freezero(ed25519_sk, sklen);
-	return r;
-}
-
 
 #ifdef WITH_XMSS
-static int
+extern int /* TODO move to ssh-xmss.c */
+sshbuf_read_xmss_name(struct sshbuf *buf, struct sshkey *key);
+
+int
 sshbuf_read_xmss_name(struct sshbuf *buf, struct sshkey *key) {
 	int r;
 	char *xmss_name = NULL;
@@ -2132,7 +2100,10 @@ sshbuf_read_xmss_name(struct sshbuf *buf, struct sshkey *key) {
 	return r;
 }
 
-static int
+extern int /* TODO move to ssh-xmss.c */
+sshbuf_read_pub_xmss(struct sshbuf *buf, struct sshkey *key);
+
+int
 sshbuf_read_pub_xmss(struct sshbuf *buf, struct sshkey *key) {
 	int r;
 	u_char *xmss_pk = NULL;
@@ -2147,24 +2118,6 @@ sshbuf_read_pub_xmss(struct sshbuf *buf, struct sshkey *key) {
 	}
 
 	key->xmss_pk = xmss_pk;
-	return 0;
-}
-
-static int
-sshbuf_read_priv_xmss(struct sshbuf *buf, struct sshkey *key) {
-	int r;
-	u_char *xmss_sk = NULL;
-	size_t sklen = 0;
-
-	r = sshbuf_get_string(buf, &xmss_sk, &sklen);
-	if (r != 0) return r;
-
-	if (sklen != sshkey_xmss_sklen(key)) {
-		freezero(xmss_sk, sklen);
-		return SSH_ERR_INVALID_FORMAT;
-	}
-
-	key->xmss_sk = xmss_sk;
 	return 0;
 }
 #endif /*WITH_XMSS*/
@@ -2972,57 +2925,14 @@ sshkey_private_deserialize(struct sshbuf *buf, struct sshkey **kp)
 			goto out;
 		}
 	}
-	switch (type) {
-#ifdef WITH_OPENSSL
-	case KEY_DSA:
-		r = sshbuf_read_pub_dsa(buf, k);
-		if (r != 0) goto out;
-		/* FALLTHROUGH */
-	case KEY_DSA_CERT:
-		r = sshbuf_read_priv_dsa(buf, k);
-		if (r != 0) goto out;
-		break;
-# ifdef OPENSSL_HAS_ECC
-	case KEY_ECDSA:
-		if ((r = sshbuf_read_ec_curve(buf, tname, k)) != 0 ||
-		    (r = sshbuf_read_pub_ecdsa(buf, k)) != 0)
-			goto out;
-		/* FALLTHROUGH */
-	case KEY_ECDSA_CERT:
-		r = sshbuf_read_priv_ecdsa(buf, k);
-		if (r != 0) goto out;
-		break;
-# endif /* OPENSSL_HAS_ECC */
-	case KEY_RSA:
-		r = sshbuf_read_pub_rsa_priv(buf, k);
-		if (r != 0) goto out;
-		/* FALLTHROUGH */
-	case KEY_RSA_CERT:
-		r = sshbuf_read_priv_rsa(buf, k);
-		if (r != 0) goto out;
-		break;
-#endif /* WITH_OPENSSL */
-	case KEY_ED25519:
-	case KEY_ED25519_CERT:
-		if ((r = sshbuf_read_pub_ed25519(buf, k)) != 0 ||
-		    (r = sshbuf_read_priv_ed25519(buf, k)) != 0)
-			goto out;
-		break;
-#ifdef WITH_XMSS
-	case KEY_XMSS:
-	case KEY_XMSS_CERT:
-		if ((r = sshbuf_read_xmss_name(buf, k)) != 0 ||
-		    (r = sshbuf_read_pub_xmss(buf, k)) != 0 ||
-		    (r = sshbuf_read_priv_xmss(buf, k)) != 0 ||
-		/* optional internal state */
-		    (r = sshkey_xmss_deserialize_state_opt(k, buf) != 0))
-			goto out;
-		break;
-#endif /* WITH_XMSS */
-	default:
+{	const struct sshkey_impl *impl = sshkey_impl_from_type(type);
+	if (impl == NULL) {
 		r = SSH_ERR_KEY_TYPE_UNKNOWN;
 		goto out;
 	}
+	r = impl->funcs->deserialize_private(tname, buf, k);
+	if (r != SSH_ERR_SUCCESS) goto out;
+}
 	r = X509key_decode_identity(tname, buf, k);
 	if (r != SSH_ERR_SUCCESS) goto out;
 	/* success */

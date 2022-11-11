@@ -37,6 +37,30 @@
 
 #include "xmss_fast.h"
 
+extern int /* TODO static - see sshkey.c */
+sshbuf_read_xmss_name(struct sshbuf *buf, struct sshkey *key);
+
+extern int /* TODO static - see sshkey.c */
+sshbuf_read_pub_xmss(struct sshbuf *buf, struct sshkey *key);
+
+static int
+sshbuf_read_priv_xmss(struct sshbuf *buf, struct sshkey *key) {
+	int r;
+	u_char *xmss_sk = NULL;
+	size_t sklen = 0;
+
+	r = sshbuf_get_string(buf, &xmss_sk, &sklen);
+	if (r != 0) return r;
+
+	if (sklen != sshkey_xmss_sklen(key)) {
+		freezero(xmss_sk, sklen);
+		return SSH_ERR_INVALID_FORMAT;
+	}
+
+	key->xmss_sk = xmss_sk;
+	return 0;
+}
+
 
 /* key implementation */
 
@@ -104,6 +128,23 @@ ssh_xmss_copy_public(const struct sshkey *from, struct sshkey *to)
 	if (left)
 		sshkey_xmss_enable_maxsign(to, left);
 }
+	return 0;
+}
+
+static int
+ssh_xmss_deserialize_private(const char *pkalg, struct sshbuf *buf,
+    struct sshkey *key)
+{
+	int r;
+
+	UNUSED(pkalg);
+	/* NOTE !cert */
+	if ((r = sshbuf_read_xmss_name(buf, key)) != 0 ||
+	    (r = sshbuf_read_pub_xmss(buf, key)) != 0 ||
+	    (r = sshbuf_read_priv_xmss(buf, key)) != 0 ||
+	/* optional internal state */
+	    (r = sshkey_xmss_deserialize_state_opt(key, buf) != 0))
+		return r;
 	return 0;
 }
 
@@ -261,6 +302,7 @@ static const struct sshkey_impl_funcs sshkey_xmss_funcs = {
 	/* .alloc =		NULL, */
 	/* .cleanup = */	ssh_xmss_cleanup,
 	/* .equal = */		ssh_xmss_equal,
+	/* .deserialize_private = */	ssh_xmss_deserialize_private,
 	/* .generate = */	sshkey_xmss_generate_private_key,
 	/* .move_public = */	ssh_xmss_move_public,
 	/* .copy_public = */	ssh_xmss_copy_public,

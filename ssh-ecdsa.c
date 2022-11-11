@@ -120,6 +120,44 @@ err:
 	return r;
 }
 
+extern int /* TODO static - see sshkey.c */
+sshbuf_read_ec_curve(struct sshbuf *buf, const char *pkalg, struct sshkey *key);
+
+extern int /* TODO static - see sshkey-crypto.c */
+sshkey_validate_ec_priv(const EC_KEY *ec);
+
+static int
+sshbuf_read_priv_ecdsa(struct sshbuf *buf, struct sshkey *key) {
+	int r;
+	EC_KEY *ec = NULL;
+	BIGNUM *exponent = NULL;
+
+	if ((r = sshbuf_get_bignum2(buf, &exponent)) != 0)
+		goto err;
+
+	ec = EVP_PKEY_get1_EC_KEY(key->pk);
+	if (ec == NULL) {
+		r = SSH_ERR_INVALID_ARGUMENT;
+		goto err;
+	}
+
+	if (EC_KEY_set_private_key(ec, exponent) != 1) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+	/*no! exponent = NULL; transferred */
+
+	r = sshkey_validate_ec_priv(ec);
+	if (r != 0) goto err;
+
+	SSHKEY_DUMP(key);
+
+err:
+	BN_clear_free(exponent);
+	EC_KEY_free(ec);
+	return r;
+}
+
 
 /* key implementation */
 
@@ -213,6 +251,20 @@ err:
 	EC_KEY_free(from_ec);
 	EC_KEY_free(ec);
 	return r;
+}
+
+static int
+ssh_ecdsa_deserialize_private(const char *pkalg, struct sshbuf *buf,
+    struct sshkey *key)
+{
+	int r;
+
+	if (!sshkey_is_cert(key)) {
+		if ((r = sshbuf_read_ec_curve(buf, pkalg, key)) != 0 ||
+		    (r = sshbuf_read_pub_ecdsa(buf, key)) != 0)
+			return r;
+	}
+	return sshbuf_read_priv_ecdsa(buf, key);
 }
 
 /* caller must free result */
@@ -497,6 +549,7 @@ static const struct sshkey_impl_funcs sshkey_ecdsa_funcs = {
 	/* .alloc =		NULL, */
 	/* .cleanup = */	ssh_ecdsa_cleanup,
 	/* .equal = */		ssh_ecdsa_equal,
+	/* .deserialize_private = */	ssh_ecdsa_deserialize_private,
 	/* .generate = */	ssh_ecdsa_generate,
 	/* .move_public = */	ssh_ecdsa_move_public,
 	/* .copy_public = */	ssh_ecdsa_copy_public,

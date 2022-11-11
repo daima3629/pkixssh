@@ -189,12 +189,6 @@ sshkey_dump(const char *func, const struct sshkey *key) {
 	fprintf(stderr, "dump key %s():\n", func);
 	ssh_EVP_PKEY_print_fp(stderr, key->pk);
 }
-#else
-static inline void
-sshkey_dump(const char *func, const struct sshkey *key) {
-	UNUSED(func);
-	UNUSED(key);
-}
 #endif /* DEBUG_PK */
 
 #define SSHKEY_DUMP(...)	sshkey_dump(__func__, __VA_ARGS__)
@@ -242,7 +236,10 @@ sshkey_validate_ec_pub(const EC_KEY *ec) {
 	return 0;
 }
 
-static int
+extern int /* TODO move to ssh-ecdsa.c */
+sshkey_validate_ec_priv(const EC_KEY *ec);
+
+int
 sshkey_validate_ec_priv(const EC_KEY *ec) {
 	int r;
 	const BIGNUM *exponent;
@@ -327,8 +324,11 @@ sshpkey_verify_length(EVP_PKEY *pk) {
 #ifndef BN_FLG_CONSTTIME
 #  define BN_FLG_CONSTTIME 0x0 /* OpenSSL < 0.9.8 */
 #endif
+extern int /* TODO static, move to ssh-rsa.c */
+sshrsa_complete_crt_parameters(RSA *rsa, const BIGNUM *rsa_iqmp);
+
 /* TODO: new method compatible with OpenSSL 3.0 API */
-static int
+int
 sshrsa_complete_crt_parameters(RSA *rsa, const BIGNUM *rsa_iqmp)
 {
 	BN_CTX *ctx;
@@ -387,7 +387,10 @@ err:
 }
 
 
-static int
+extern int /* TODO static, move to ssh-rsa.c */
+ssh_EVP_PKEY_complete_pub_rsa(EVP_PKEY *pk);
+
+int
 ssh_EVP_PKEY_complete_pub_rsa(EVP_PKEY *pk) {
 	int r;
 	RSA *rsa;
@@ -865,34 +868,6 @@ sshkey_equal_public_pkey(const struct sshkey *ka, const struct sshkey *kb) {
 extern int /* TODO: remove, see ssh-rsa.c */
 sshkey_init_rsa_key(struct sshkey *key, BIGNUM *n, BIGNUM *e, BIGNUM *d);
 
-int
-sshbuf_read_pub_rsa_priv(struct sshbuf *buf, struct sshkey *key) {
-	int r;
-	BIGNUM *n = NULL, *e = NULL;
-
-	if ((r = sshbuf_get_bignum2(buf, &n)) != 0 ||
-	    (r = sshbuf_get_bignum2(buf, &e)) != 0)
-		goto err;
-
-	/* key attribute allocation */
-	r = sshkey_init_rsa_key(key, n, e, NULL);
-	if (r != 0) goto err;
-	n = e = NULL; /* transferred */
-
-	r = ssh_EVP_PKEY_complete_pub_rsa(key->pk);
-	if (r != 0) goto err;
-
-	/* success */
-	SSHKEY_DUMP(key);
-	return 0;
-
-err:
-	BN_clear_free(n);
-	BN_clear_free(e);
-	sshkey_clear_pkey(key);
-	return r;
-}
-
 
 int
 sshbuf_write_pub_rsa_priv(struct sshbuf *buf, const struct sshkey *key) {
@@ -958,54 +933,6 @@ sshbuf_write_pub_rsa(struct sshbuf *buf, const struct sshkey *key) {
 	return 0;
 }
 
-
-int
-sshbuf_read_priv_rsa(struct sshbuf *buf, struct sshkey *key) {
-	int r;
-	RSA *rsa = NULL;
-	BIGNUM *d = NULL, *iqmp = NULL, *p = NULL, *q = NULL;
-
-	if ((r = sshbuf_get_bignum2(buf, &d)) != 0 ||
-	    (r = sshbuf_get_bignum2(buf, &iqmp)) != 0 ||
-	    (r = sshbuf_get_bignum2(buf, &p)) != 0 ||
-	    (r = sshbuf_get_bignum2(buf, &q)) != 0)
-		goto err;
-
-	rsa = EVP_PKEY_get1_RSA(key->pk);
-	if (rsa == NULL) {
-		r = SSH_ERR_INVALID_ARGUMENT;
-		goto err;
-	}
-
-	if (!RSA_set0_key(rsa, NULL, NULL, d)) {
-		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto err;
-	}
-	d = NULL; /* transferred */
-
-	if (!RSA_set0_factors(rsa, p, q)) {
-		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto err;
-	}
-	p = q = NULL; /* transferred */
-
-	r = sshrsa_complete_crt_parameters(rsa, iqmp);
-	if (r != 0) goto err;
-
-	/* success */
-	SSHKEY_DUMP(key);
-	BN_clear_free(iqmp);
-	RSA_free(rsa);
-	return 0;
-
-err:
-	BN_clear_free(d);
-	BN_clear_free(p);
-	BN_clear_free(q);
-	BN_clear_free(iqmp);
-	RSA_free(rsa);
-	return r;
-}
 
 int
 sshbuf_write_priv_rsa(struct sshbuf *buf, const struct sshkey *key) {
@@ -1097,27 +1024,6 @@ sshbuf_write_pub_dsa(struct sshbuf *buf, const struct sshkey *key) {
 
 
 int
-sshbuf_read_priv_dsa(struct sshbuf *buf, struct sshkey *key) {
-	int r;
-	BIGNUM *priv_key = NULL;
-
-	if ((r = sshbuf_get_bignum2(buf, &priv_key)) != 0)
-		goto err;
-
-	r = sshkey_set_dsa_key(key, NULL, priv_key);
-	if (r != 0) goto err;
-	/* priv_key = NULL; transferred */
-
-	/* success */
-	SSHKEY_DUMP(key);
-	return 0;
-
-err:
-	BN_clear_free(priv_key);
-	return r;
-}
-
-int
 sshbuf_write_priv_dsa(struct sshbuf *buf, const struct sshkey *key) {
 	const BIGNUM *priv_key = NULL;
 
@@ -1172,38 +1078,6 @@ sshbuf_write_pub_ecdsa(struct sshbuf *buf, const struct sshkey *key) {
 
 	r = sshbuf_put_eckey(buf, ec);
 
-	EC_KEY_free(ec);
-	return r;
-}
-
-int
-sshbuf_read_priv_ecdsa(struct sshbuf *buf, struct sshkey *key) {
-	int r;
-	EC_KEY *ec = NULL;
-	BIGNUM *exponent = NULL;
-
-	if ((r = sshbuf_get_bignum2(buf, &exponent)) != 0)
-		goto err;
-
-	ec = EVP_PKEY_get1_EC_KEY(key->pk);
-	if (ec == NULL) {
-		r = SSH_ERR_INVALID_ARGUMENT;
-		goto err;
-	}
-
-	if (EC_KEY_set_private_key(ec, exponent) != 1) {
-		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto err;
-	}
-	/*no! exponent = NULL; transferred */
-
-	r = sshkey_validate_ec_priv(ec);
-	if (r != 0) goto err;
-
-	SSHKEY_DUMP(key);
-
-err:
-	BN_clear_free(exponent);
 	EC_KEY_free(ec);
 	return r;
 }
