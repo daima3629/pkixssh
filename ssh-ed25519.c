@@ -38,6 +38,16 @@
 extern int /* TODO static - see sshkey.c */
 sshbuf_read_pub_ed25519(struct sshbuf *buf, struct sshkey *key);
 
+static inline int
+sshbuf_write_pub_ed25519(struct sshbuf *buf, const struct sshkey *key) {
+	return sshbuf_put_string(buf, key->ed25519_pk, ED25519_PK_SZ);
+}
+
+static inline int
+sshbuf_write_priv_ed25519(struct sshbuf *buf, const struct sshkey *key) {
+	return sshbuf_put_string(buf, key->ed25519_sk, ED25519_SK_SZ);
+}
+
 static int
 sshbuf_read_priv_ed25519(struct sshbuf *buf, struct sshkey *key) {
 	int r;
@@ -118,6 +128,19 @@ ssh_ed25519_equal(const struct sshkey *a, const struct sshkey *b)
 	if (memcmp(a->ed25519_pk, b->ed25519_pk, ED25519_PK_SZ) != 0)
 		return 0;
 	return 1;
+}
+
+static int
+ssh_ed25519_serialize_private(const struct sshkey *key, struct sshbuf *buf,
+    enum sshkey_serialize_rep opts)
+{
+	int r;
+
+	UNUSED(opts);
+	/* NOTE !cert */
+	if ((r = sshbuf_write_pub_ed25519(buf, key)) != 0)
+		return r;
+	return sshbuf_write_priv_ed25519(buf, key);
 }
 
 static int
@@ -311,6 +334,7 @@ static const struct sshkey_impl_funcs sshkey_ed25519_funcs = {
 	/* .alloc =		NULL, */
 	/* .cleanup = */	ssh_ed25519_cleanup,
 	/* .equal = */		ssh_ed25519_equal,
+	/* .serialize_private = */	ssh_ed25519_serialize_private,
 	/* .deserialize_private = */	ssh_ed25519_deserialize_private,
 	/* .generate = */	ssh_ed25519_generate,
 	/* .move_public = */	ssh_ed25519_move_public,

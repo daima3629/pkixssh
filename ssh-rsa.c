@@ -226,6 +226,26 @@ err:
 extern int /* TODO static - see sshkey-crypto.c */
 sshrsa_complete_crt_parameters(RSA *rsa, const BIGNUM *rsa_iqmp);
 
+
+static int
+sshbuf_write_pub_rsa_priv(struct sshbuf *buf, const struct sshkey *key) {
+	int r;
+	const BIGNUM *n = NULL, *e = NULL;
+
+{	RSA *rsa = EVP_PKEY_get1_RSA(key->pk);
+	if (rsa == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+	RSA_get0_key(rsa, &n, &e, NULL);
+	RSA_free(rsa);
+}
+	if ((r = sshbuf_put_bignum2(buf, n)) != 0 ||
+	    (r = sshbuf_put_bignum2(buf, e)) != 0)
+		return r;
+
+	return 0;
+}
+
+
 static int
 sshbuf_read_priv_rsa(struct sshbuf *buf, struct sshkey *key) {
 	int r;
@@ -274,6 +294,28 @@ err:
 	return r;
 }
 
+static int
+sshbuf_write_priv_rsa(struct sshbuf *buf, const struct sshkey *key) {
+	int r;
+	const BIGNUM *d = NULL, *iqmp = NULL, *p = NULL, *q = NULL;
+
+{	RSA *rsa = EVP_PKEY_get1_RSA(key->pk);
+	if (rsa == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+	RSA_get0_key(rsa, NULL, NULL, &d);
+	RSA_get0_crt_params(rsa, NULL, NULL, &iqmp);
+	RSA_get0_factors(rsa, &p, &q);
+	RSA_free(rsa);
+}
+	if ((r = sshbuf_put_bignum2(buf, d)) != 0 ||
+	    (r = sshbuf_put_bignum2(buf, iqmp)) != 0 ||
+	    (r = sshbuf_put_bignum2(buf, p)) != 0 ||
+	    (r = sshbuf_put_bignum2(buf, q)) != 0)
+		return r;
+
+	return 0;
+}
+
 
 /* key implementation */
 
@@ -293,6 +335,20 @@ static int
 ssh_rsa_equal(const struct sshkey *a, const struct sshkey *b)
 {
 	return sshkey_equal_public_pkey(a, b);
+}
+
+static int
+ssh_rsa_serialize_private(const struct sshkey *key, struct sshbuf *buf,
+    enum sshkey_serialize_rep opts)
+{
+	int r;
+
+	UNUSED(opts);
+	if (!sshkey_is_cert(key)) {
+		if ((r = sshbuf_write_pub_rsa_priv(buf, key)) != 0)
+			return r;
+	}
+	return sshbuf_write_priv_rsa(buf, key);
 }
 
 static int
@@ -643,6 +699,7 @@ static const struct sshkey_impl_funcs sshkey_rsa_funcs = {
 	/* .alloc =		NULL, */
 	/* .cleanup = */	ssh_rsa_cleanup,
 	/* .equal = */		ssh_rsa_equal,
+	/* .serialize_private = */	ssh_rsa_serialize_private,
 	/* .deserialize_private = */	ssh_rsa_deserialize_private,
 	/* .generate = */	ssh_rsa_generate,
 	/* .move_public = */	ssh_rsa_move_public,

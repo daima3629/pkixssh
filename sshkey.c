@@ -792,37 +792,27 @@ sshkey_match_pkalg(struct sshkey *key, const char* pkalg) {
 }
 
 #ifdef OPENSSL_HAS_ECC
-static inline int
+static inline int /* TODO remove, see ssh-ecdsa.c */
 sshbuf_write_ec_curve(struct sshbuf *buf, const struct sshkey *key) {
 	const char *curve_name = sshkey_curve_nid_to_name(key->ecdsa_nid);
 	return sshbuf_put_cstring(buf, curve_name);
 }
 #endif /*def OPENSSL_HAS_ECC*/
 
-static inline int
+static inline int /* TODO remove, see ssh-ed25519.c */
 sshbuf_write_pub_ed25519(struct sshbuf *buf, const struct sshkey *key) {
 	return sshbuf_put_string(buf, key->ed25519_pk, ED25519_PK_SZ);
 }
 
-static inline int
-sshbuf_write_priv_ed25519(struct sshbuf *buf, const struct sshkey *key) {
-	return sshbuf_put_string(buf, key->ed25519_sk, ED25519_SK_SZ);
-}
-
 #ifdef WITH_XMSS
-static inline int
+static inline int /* TODO remove, see ssh-xmss.c */
 sshbuf_write_xmss_name(struct sshbuf *buf, const struct sshkey *key) {
 	return  sshbuf_put_cstring(buf, key->xmss_name);
 }
 
-static inline int
+static inline int /* TODO remove, see ssh-xmss.c */
 sshbuf_write_pub_xmss(struct sshbuf *buf, const struct sshkey *key) {
 	return sshbuf_put_string(buf, key->xmss_pk, sshkey_xmss_pklen(key));
-}
-
-static inline int
-sshbuf_write_priv_xmss(struct sshbuf *buf, const struct sshkey *key) {
-	return sshbuf_put_string(buf, key->xmss_sk, sshkey_xmss_sklen(key));
 }
 #endif /*def WITH_XMSS*/
 
@@ -2731,116 +2721,45 @@ int
 sshkey_private_serialize_opt(struct sshkey *key, struct sshbuf *buf,
     enum sshkey_serialize_rep opts)
 {
-	const char *pkalg;
-	int r = SSH_ERR_INTERNAL_ERROR;
-	int was_shielded = sshkey_is_shielded(key);
-	struct sshbuf *b = NULL;
+	const struct sshkey_impl *impl;
+	const char *pkalg = NULL;
+	int r;
+	int was_shielded;
+	struct sshbuf *b;
 
+	impl = sshkey_impl_from_key(key);
+	if (impl == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
 	if (sshkey_type_is_cert(key->type)) {
-		if (key->cert == NULL || sshbuf_len(key->cert->certblob) == 0) {
-			r = SSH_ERR_INVALID_ARGUMENT;
-			goto out;
-		}
+		if (key->cert == NULL ||
+		    sshbuf_len(key->cert->certblob) == 0)
+			return SSH_ERR_INVALID_ARGUMENT;
 	}
-	if ((r = sshkey_unshield_private(key)) != 0)
-		return r;
 #ifdef WITH_XMSS
 	if (sshkey_type_plain(key->type) == KEY_XMSS) {
-		if (key->xmss_name == NULL) {
-			r = SSH_ERR_INVALID_ARGUMENT;
-			goto out;
-		}
+		if (key->xmss_name == NULL)
+			return SSH_ERR_INVALID_ARGUMENT;
 	}
-#else
-	UNUSED(opts);
 #endif /* WITH_XMSS */
 	if ((b = sshbuf_new()) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
+
+	was_shielded = sshkey_is_shielded(key);
+	if ((r = sshkey_unshield_private(key)) != 0)
+		goto out;
 	pkalg = sshkey_ssh_name(key);
 	if ((r = sshbuf_put_cstring(b, pkalg)) != 0)
 		goto out;
-	switch (key->type) {
-#ifdef WITH_OPENSSL
-	case KEY_RSA_CERT:
-	case KEY_DSA_CERT:
-# ifdef OPENSSL_HAS_ECC
-	case KEY_ECDSA_CERT:
-# endif /* OPENSSL_HAS_ECC */
-#endif /* WITH_OPENSSL */
-	case KEY_ED25519_CERT:
-#ifdef WITH_XMSS
-	case KEY_XMSS_CERT:
-#endif /* WITH_XMSS */
+	if (sshkey_type_is_cert(key->type)) {
 		r = sshbuf_put_stringb(b, key->cert->certblob);
 		if (r != 0) goto out;
 	}
-	switch (key->type) {
-#ifdef WITH_OPENSSL
-	case KEY_RSA:
-		if ((r = sshbuf_write_pub_rsa_priv(b, key)) != 0 ||
-		    (r = sshbuf_write_priv_rsa(b, key)) != 0)
-			goto out;
-		break;
-	case KEY_RSA_CERT:
-		if ((r = sshbuf_write_priv_rsa(b, key)) != 0)
-			goto out;
-		break;
-	case KEY_DSA:
-		if ((r = sshbuf_write_pub_dsa(b, key)) != 0 ||
-		    (r = sshbuf_write_priv_dsa(b, key)) != 0)
-			goto out;
-		break;
-	case KEY_DSA_CERT:
-		if ((r = sshbuf_write_priv_dsa(b, key)) != 0)
-			goto out;
-		break;
-# ifdef OPENSSL_HAS_ECC
-	case KEY_ECDSA:
-		if ((r = sshbuf_write_ec_curve(b, key)) != 0 ||
-		    (r = sshbuf_write_pub_ecdsa(b, key)) != 0 ||
-		    (r = sshbuf_write_priv_ecdsa(b, key)) != 0)
-			goto out;
-		break;
-	case KEY_ECDSA_CERT:
-		if ((r = sshbuf_write_priv_ecdsa(b, key)) != 0)
-			goto out;
-		break;
-# endif /* OPENSSL_HAS_ECC */
-#endif /* WITH_OPENSSL */
-	case KEY_ED25519:
-		if ((r = sshbuf_write_pub_ed25519(b, key)) != 0 ||
-		    (r = sshbuf_write_priv_ed25519(b, key)) != 0)
-			goto out;
-		break;
-	case KEY_ED25519_CERT:
-		if ((r = sshbuf_write_pub_ed25519(b, key)) != 0 ||
-		    (r = sshbuf_write_priv_ed25519(b, key)) != 0)
-			goto out;
-		break;
-#ifdef WITH_XMSS
-	case KEY_XMSS:
-		if ((r = sshbuf_write_xmss_name(b, key)) != 0 ||
-		    (r = sshbuf_write_pub_xmss(b, key)) != 0 ||
-		    (r = sshbuf_write_priv_xmss(b, key)) != 0 ||
-		    (r = sshkey_xmss_serialize_state_opt(key, b, opts)) != 0)
-			goto out;
-		break;
-	case KEY_XMSS_CERT:
-		if ((r = sshbuf_write_xmss_name(b, key)) != 0 ||
-		    (r = sshbuf_write_pub_xmss(b, key)) != 0 ||
-		    (r = sshbuf_write_priv_xmss(b, key)) != 0 ||
-		    (r = sshkey_xmss_serialize_state_opt(key, b, opts)) != 0)
-			goto out;
-		break;
-#endif /* WITH_XMSS */
-	default:
-		r = SSH_ERR_INVALID_ARGUMENT;
-		goto out;
-	}
+
+	r = impl->funcs->serialize_private(key, b, opts);
+	if (r != SSH_ERR_SUCCESS) goto out;
 
 	r = X509key_encode_identity(pkalg, key, b);
-	if (r != SSH_ERR_SUCCESS)
-		goto out;
+	if (r != SSH_ERR_SUCCESS) goto out;
 
 	/*
 	 * success (but we still need to append the output to buf after

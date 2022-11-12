@@ -208,6 +208,7 @@ err:
 	return r;
 }
 
+
 static int
 sshbuf_read_priv_dsa(struct sshbuf *buf, struct sshkey *key) {
 	int r;
@@ -229,6 +230,19 @@ err:
 	return r;
 }
 
+static int
+sshbuf_write_priv_dsa(struct sshbuf *buf, const struct sshkey *key) {
+	const BIGNUM *priv_key = NULL;
+
+{	DSA *dsa = EVP_PKEY_get1_DSA(key->pk);
+	if (dsa == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+	DSA_get0_key(dsa, NULL, &priv_key);
+	DSA_free(dsa);
+}
+	return sshbuf_put_bignum2(buf, priv_key);
+}
+
 
 /* key implementation */
 
@@ -248,6 +262,20 @@ static int
 ssh_dss_equal(const struct sshkey *a, const struct sshkey *b)
 {
 	return sshkey_equal_public_pkey(a, b);
+}
+
+static int
+ssh_dss_serialize_private(const struct sshkey *key, struct sshbuf *buf,
+    enum sshkey_serialize_rep opts)
+{
+	int r;
+
+	UNUSED(opts);
+	if (!sshkey_is_cert(key)) {
+		if ((r = sshbuf_write_pub_dsa(buf, key)) != 0)
+			return r;
+	}
+	return sshbuf_write_priv_dsa(buf, key);
 }
 
 static int
@@ -640,6 +668,7 @@ static const struct sshkey_impl_funcs sshkey_dss_funcs = {
 	/* .alloc =		NULL, */
 	/* .cleanup = */	ssh_dss_cleanup,
 	/* .equal = */		ssh_dss_equal,
+	/* .serialize_private = */	ssh_dss_serialize_private,
 	/* .deserialize_private = */	ssh_dss_deserialize_private,
 	/* .generate = */	ssh_dss_generate,
 	/* .move_public = */	ssh_dss_move_public,

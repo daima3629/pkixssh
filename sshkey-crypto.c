@@ -870,25 +870,6 @@ sshkey_init_rsa_key(struct sshkey *key, BIGNUM *n, BIGNUM *e, BIGNUM *d);
 
 
 int
-sshbuf_write_pub_rsa_priv(struct sshbuf *buf, const struct sshkey *key) {
-	int r;
-	const BIGNUM *n = NULL, *e = NULL;
-
-{	RSA *rsa = EVP_PKEY_get1_RSA(key->pk);
-	if (rsa == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
-	RSA_get0_key(rsa, &n, &e, NULL);
-	RSA_free(rsa);
-}
-	if ((r = sshbuf_put_bignum2(buf, n)) != 0 ||
-	    (r = sshbuf_put_bignum2(buf, e)) != 0)
-		return r;
-
-	return 0;
-}
-
-
-int
 sshbuf_read_pub_rsa(struct sshbuf *buf, struct sshkey *key) {
 	int r;
 	BIGNUM *n = NULL, *e = NULL;
@@ -930,29 +911,6 @@ sshbuf_write_pub_rsa(struct sshbuf *buf, const struct sshkey *key) {
 	if ((r = sshbuf_put_bignum2(buf, e)) != 0 ||
 	    (r = sshbuf_put_bignum2(buf, n)) != 0)
 		return r;
-	return 0;
-}
-
-
-int
-sshbuf_write_priv_rsa(struct sshbuf *buf, const struct sshkey *key) {
-	int r;
-	const BIGNUM *d = NULL, *iqmp = NULL, *p = NULL, *q = NULL;
-
-{	RSA *rsa = EVP_PKEY_get1_RSA(key->pk);
-	if (rsa == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
-	RSA_get0_key(rsa, NULL, NULL, &d);
-	RSA_get0_crt_params(rsa, NULL, NULL, &iqmp);
-	RSA_get0_factors(rsa, &p, &q);
-	RSA_free(rsa);
-}
-	if ((r = sshbuf_put_bignum2(buf, d)) != 0 ||
-	    (r = sshbuf_put_bignum2(buf, iqmp)) != 0 ||
-	    (r = sshbuf_put_bignum2(buf, p)) != 0 ||
-	    (r = sshbuf_put_bignum2(buf, q)) != 0)
-		return r;
-
 	return 0;
 }
 
@@ -1023,20 +981,6 @@ sshbuf_write_pub_dsa(struct sshbuf *buf, const struct sshkey *key) {
 }
 
 
-int
-sshbuf_write_priv_dsa(struct sshbuf *buf, const struct sshkey *key) {
-	const BIGNUM *priv_key = NULL;
-
-{	DSA *dsa = EVP_PKEY_get1_DSA(key->pk);
-	if (dsa == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
-	DSA_get0_key(dsa, NULL, &priv_key);
-	DSA_free(dsa);
-}
-	return sshbuf_put_bignum2(buf, priv_key);
-}
-
-
 #ifdef OPENSSL_HAS_ECC
 extern int /* TODO: remove, see ssh-ecdsa.c */
 sshkey_init_ecdsa_curve(struct sshkey *key, int nid);
@@ -1080,19 +1024,6 @@ sshbuf_write_pub_ecdsa(struct sshbuf *buf, const struct sshkey *key) {
 
 	EC_KEY_free(ec);
 	return r;
-}
-
-int
-sshbuf_write_priv_ecdsa(struct sshbuf *buf, const struct sshkey *key) {
-	const BIGNUM *exponent = NULL;
-
-{	EC_KEY *ec = EVP_PKEY_get1_EC_KEY(key->pk);
-	if (ec == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
-	exponent = EC_KEY_get0_private_key(ec);
-	EC_KEY_free(ec);
-}
-	return sshbuf_put_bignum2(buf, exponent);
 }
 #endif /* OPENSSL_HAS_ECC */
 

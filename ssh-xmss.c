@@ -40,8 +40,20 @@
 extern int /* TODO static - see sshkey.c */
 sshbuf_read_xmss_name(struct sshbuf *buf, struct sshkey *key);
 
+static inline int
+sshbuf_write_xmss_name(struct sshbuf *buf, const struct sshkey *key) {
+	return  sshbuf_put_cstring(buf, key->xmss_name);
+}
+
+
 extern int /* TODO static - see sshkey.c */
 sshbuf_read_pub_xmss(struct sshbuf *buf, struct sshkey *key);
+
+static inline int
+sshbuf_write_pub_xmss(struct sshbuf *buf, const struct sshkey *key) {
+	return sshbuf_put_string(buf, key->xmss_pk, sshkey_xmss_pklen(key));
+}
+
 
 static int
 sshbuf_read_priv_xmss(struct sshbuf *buf, struct sshkey *key) {
@@ -59,6 +71,11 @@ sshbuf_read_priv_xmss(struct sshbuf *buf, struct sshkey *key) {
 
 	key->xmss_sk = xmss_sk;
 	return 0;
+}
+
+static inline int
+sshbuf_write_priv_xmss(struct sshbuf *buf, const struct sshkey *key) {
+	return sshbuf_put_string(buf, key->xmss_sk, sshkey_xmss_sklen(key));
 }
 
 
@@ -88,6 +105,21 @@ ssh_xmss_equal(const struct sshkey *a, const struct sshkey *b)
 	if (memcmp(a->xmss_pk, b->xmss_pk, sshkey_xmss_pklen(a)) != 0)
 		return 0;
 	return 1;
+}
+
+static int
+ssh_xmss_serialize_private(const struct sshkey *key, struct sshbuf *buf,
+    enum sshkey_serialize_rep opts)
+{
+	int r;
+
+	/* NOTE !cert */
+	if ((r = sshbuf_write_xmss_name(buf, key)) != 0 ||
+	    (r = sshbuf_write_pub_xmss(buf, key)) != 0 ||
+	    (r = sshbuf_write_priv_xmss(buf, key)) != 0 ||
+	    (r = sshkey_xmss_serialize_state_opt(key, buf, opts)) != 0)
+		return r;
+	return 0;
 }
 
 static void
@@ -302,6 +334,7 @@ static const struct sshkey_impl_funcs sshkey_xmss_funcs = {
 	/* .alloc =		NULL, */
 	/* .cleanup = */	ssh_xmss_cleanup,
 	/* .equal = */		ssh_xmss_equal,
+	/* .serialize_private = */	ssh_xmss_serialize_private,
 	/* .deserialize_private = */	ssh_xmss_deserialize_private,
 	/* .generate = */	sshkey_xmss_generate_private_key,
 	/* .move_public = */	ssh_xmss_move_public,

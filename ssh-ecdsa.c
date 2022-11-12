@@ -123,8 +123,15 @@ err:
 extern int /* TODO static - see sshkey.c */
 sshbuf_read_ec_curve(struct sshbuf *buf, const char *pkalg, struct sshkey *key);
 
+static inline int
+sshbuf_write_ec_curve(struct sshbuf *buf, const struct sshkey *key) {
+	const char *curve_name = sshkey_curve_nid_to_name(key->ecdsa_nid);
+	return sshbuf_put_cstring(buf, curve_name);
+}
+
 extern int /* TODO static - see sshkey-crypto.c */
 sshkey_validate_ec_priv(const EC_KEY *ec);
+
 
 static int
 sshbuf_read_priv_ecdsa(struct sshbuf *buf, struct sshkey *key) {
@@ -158,6 +165,19 @@ err:
 	return r;
 }
 
+static int
+sshbuf_write_priv_ecdsa(struct sshbuf *buf, const struct sshkey *key) {
+	const BIGNUM *exponent = NULL;
+
+{	EC_KEY *ec = EVP_PKEY_get1_EC_KEY(key->pk);
+	if (ec == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+	exponent = EC_KEY_get0_private_key(ec);
+	EC_KEY_free(ec);
+}
+	return sshbuf_put_bignum2(buf, exponent);
+}
+
 
 /* key implementation */
 
@@ -177,6 +197,21 @@ static int
 ssh_ecdsa_equal(const struct sshkey *a, const struct sshkey *b)
 {
 	return sshkey_equal_public_pkey(a, b);
+}
+
+static int
+ssh_ecdsa_serialize_private(const struct sshkey *key, struct sshbuf *buf,
+    enum sshkey_serialize_rep opts)
+{
+	int r;
+
+	UNUSED(opts);
+	if (!sshkey_is_cert(key)) {
+		if ((r = sshbuf_write_ec_curve(buf, key)) != 0 ||
+		    (r = sshbuf_write_pub_ecdsa(buf, key)) != 0)
+			return r;
+	}
+	return sshbuf_write_priv_ecdsa(buf, key);
 }
 
 static int
@@ -549,6 +584,7 @@ static const struct sshkey_impl_funcs sshkey_ecdsa_funcs = {
 	/* .alloc =		NULL, */
 	/* .cleanup = */	ssh_ecdsa_cleanup,
 	/* .equal = */		ssh_ecdsa_equal,
+	/* .serialize_private = */	ssh_ecdsa_serialize_private,
 	/* .deserialize_private = */	ssh_ecdsa_deserialize_private,
 	/* .generate = */	ssh_ecdsa_generate,
 	/* .move_public = */	ssh_ecdsa_move_public,
