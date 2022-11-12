@@ -2170,38 +2170,27 @@ sshkey_from_blob_internal(struct sshbuf *b, struct sshkey **keyp,
 		ret = SSH_ERR_ALLOC_FAIL;
 		goto out;
 	}
-	switch (type) {
-#ifdef WITH_OPENSSL
-	case KEY_RSA_CERT:
-		/* Skip nonce */
+	/* skip nonce that preceeds all custom certificates */
+	if (sshkey_type_is_cert(type)) {
 		if (sshbuf_get_string_direct(b, NULL, NULL) != 0) {
 			ret = SSH_ERR_INVALID_FORMAT;
 			goto out;
 		}
-		/* FALLTHROUGH */
+	}
+	switch (type) {
+#ifdef WITH_OPENSSL
+	case KEY_RSA_CERT:
 	case KEY_RSA:
 		ret = sshbuf_read_pub_rsa(b, key);
 		if (ret != 0) goto out;
 		break;
 	case KEY_DSA_CERT:
-		/* Skip nonce */
-		if (sshbuf_get_string_direct(b, NULL, NULL) != 0) {
-			ret = SSH_ERR_INVALID_FORMAT;
-			goto out;
-		}
-		/* FALLTHROUGH */
 	case KEY_DSA:
 		ret = sshbuf_read_pub_dsa(b, key);
 		if (ret != 0) goto out;
 		break;
 # ifdef OPENSSL_HAS_ECC
 	case KEY_ECDSA_CERT:
-		/* Skip nonce */
-		if (sshbuf_get_string_direct(b, NULL, NULL) != 0) {
-			ret = SSH_ERR_INVALID_FORMAT;
-			goto out;
-		}
-		/* FALLTHROUGH */
 	case KEY_ECDSA:
 		if ((ret = sshbuf_read_ec_curve(b, ktype, key)) != 0 ||
 		    (ret = sshbuf_read_pub_ecdsa(b, key)) != 0)
@@ -2210,24 +2199,12 @@ sshkey_from_blob_internal(struct sshbuf *b, struct sshkey **keyp,
 # endif /* OPENSSL_HAS_ECC */
 #endif /* WITH_OPENSSL */
 	case KEY_ED25519_CERT:
-		/* Skip nonce */
-		if (sshbuf_get_string_direct(b, NULL, NULL) != 0) {
-			ret = SSH_ERR_INVALID_FORMAT;
-			goto out;
-		}
-		/* FALLTHROUGH */
 	case KEY_ED25519:
 		if ((ret = sshbuf_read_pub_ed25519(b, key)) != 0)
 			goto out;
 		break;
 #ifdef WITH_XMSS
 	case KEY_XMSS_CERT:
-		/* Skip nonce */
-		if (sshbuf_get_string_direct(b, NULL, NULL) != 0) {
-			ret = SSH_ERR_INVALID_FORMAT;
-			goto out;
-		}
-		/* FALLTHROUGH */
 	case KEY_XMSS:
 		if ((ret = sshbuf_read_xmss_name(b, key)) != 0 ||
 		    (ret = sshbuf_read_pub_xmss(b, key)))
