@@ -60,6 +60,22 @@
 #define INTBLOB_LEN	20
 #define SIGBLOB_LEN	(2*INTBLOB_LEN)
 
+
+int
+sshdsa_verify_length(int bits) {
+	return bits != SSH_DSA_BITS
+	    ? SSH_ERR_KEY_LENGTH : 0;
+}
+
+
+#ifdef WITH_OPENSSL_3_1_API
+/* TODO: new methods compatible with OpenSSL 3.1 API.
+ * Remark: OpenSSL 3.0* is too buggy - almost each release fail
+ * or crash in regression tests.
+ */
+#else
+/* management of elementary DSA key */
+
 #ifndef HAVE_DSA_GENERATE_PARAMETERS_EX	/* OpenSSL < 0.9.8 */
 static int
 DSA_generate_parameters_ex(DSA *dsa, int bits, const unsigned char *seed,
@@ -136,18 +152,6 @@ DSA_set0_pqg(DSA *dsa, BIGNUM *p, BIGNUM *q, BIGNUM *g) {
 }
 #endif /* ndef HAVE_DSA_GET0_KEY */
 
-int
-sshdsa_verify_length(int bits) {
-	return bits != SSH_DSA_BITS
-	    ? SSH_ERR_KEY_LENGTH : 0;
-}
-
-
-/* management of elementary DSA key */
-/* TODO: new methods compatible with OpenSSL 3.1 API.
- * Remark: OpenSSL 3.0* is too buggy - almost each release fail
- * or crash in regression tests.
- */
 
 static int
 sshkey_init_dsa_params(struct sshkey *key, BIGNUM *p, BIGNUM *q, BIGNUM *g) {
@@ -374,6 +378,7 @@ err:
 	sshkey_clear_pkey(key);
 	return r;
 }
+#endif /* def WITH_OPENSSL_3_1_API */
 
 
 /* key implementation */

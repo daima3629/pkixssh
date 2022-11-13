@@ -66,6 +66,15 @@ ssh_ecdsa_evp_md(const struct sshkey *key)
 	return NULL;
 }
 
+
+#ifdef WITH_OPENSSL_3_1_API
+/* TODO: new methods compatible with OpenSSL 3.1 API.
+ * Remark: OpenSSL 3.0* is too buggy - almost each release fail
+ * or crash in regression tests.
+ */
+#else
+/* management of elementary EC key */
+
 static inline EC_KEY*
 ssh_EC_KEY_new_by_curve_name(int nid) {
 	EC_KEY *ec;
@@ -278,6 +287,7 @@ sshbuf_write_priv_ecdsa(struct sshbuf *buf, const struct sshkey *key) {
 }
 	return sshbuf_put_bignum2(buf, exponent);
 }
+#endif /* def WITH_OPENSSL_3_1_API */
 
 
 /* key implementation */

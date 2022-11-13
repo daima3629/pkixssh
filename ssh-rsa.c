@@ -48,6 +48,61 @@
 #include "log.h"
 
 
+struct ssh_rsa_alg_st {
+	const char *name;
+	const int nid;
+	const char *signame;
+};
+
+static struct ssh_rsa_alg_st
+ssh_rsa_algs[] = {
+#ifdef HAVE_EVP_SHA256
+	{ "rsa-sha2-256", NID_sha256, "rsa-sha2-256" },
+	{ "rsa-sha2-512", NID_sha512, "rsa-sha2-512" },
+#endif
+	{ "ssh-rsa", NID_sha1, "ssh-rsa" },
+#ifdef HAVE_EVP_SHA256
+	{ "rsa-sha2-256-cert-v01@openssh.com", NID_sha256, "rsa-sha2-256" },
+	{ "rsa-sha2-512-cert-v01@openssh.com", NID_sha512, "rsa-sha2-512" },
+#endif
+	{ "ssh-rsa-cert-v01@openssh.com", NID_sha1, "ssh-rsa" },
+	{ NULL, NID_undef, NULL }
+};
+
+static struct ssh_rsa_alg_st* ssh_rsa_alg_info(const char *alg);
+
+struct ssh_rsa_alg_st*
+ssh_rsa_alg_info(const char *alg) {
+	struct ssh_rsa_alg_st* p;
+
+	if (alg == NULL || *alg == '\0')
+		return ssh_rsa_alg_info("ssh-rsa");
+
+	for (p = ssh_rsa_algs; p->name != NULL; p++)
+		if (strcmp(alg, p->name) == 0)
+			return p;
+
+	return NULL;
+}
+
+/* global option overridable by configuration */
+int required_rsa_size = SSH_RSA_MINIMUM_MODULUS_SIZE;
+
+int
+sshrsa_verify_length(int bits) {
+	return bits < required_rsa_size
+	    ? SSH_ERR_KEY_LENGTH : 0;
+}
+
+
+#ifdef WITH_OPENSSL_3_1_API
+/* TODO: new methods compatible with OpenSSL 3.1 API.
+ * Remark: OpenSSL 3.0* is too buggy - almost each release fail
+ * or crash in regression tests.
+ */
+#else
+/* management of elementary RSA key */
+
 #ifndef HAVE_RSA_GENERATE_KEY_EX	/* OpenSSL < 0.9.8 */
 static int
 RSA_generate_key_ex(RSA *rsa, int bits, BIGNUM *bn_e, void *cb)
@@ -153,59 +208,6 @@ RSA_set0_factors(RSA *rsa, BIGNUM *p, BIGNUM *q) {
 }
 #endif /* ndef HAVE_RSA_GET0_KEY */
 
-
-struct ssh_rsa_alg_st {
-	const char *name;
-	const int nid;
-	const char *signame;
-};
-
-static struct ssh_rsa_alg_st
-ssh_rsa_algs[] = {
-#ifdef HAVE_EVP_SHA256
-	{ "rsa-sha2-256", NID_sha256, "rsa-sha2-256" },
-	{ "rsa-sha2-512", NID_sha512, "rsa-sha2-512" },
-#endif
-	{ "ssh-rsa", NID_sha1, "ssh-rsa" },
-#ifdef HAVE_EVP_SHA256
-	{ "rsa-sha2-256-cert-v01@openssh.com", NID_sha256, "rsa-sha2-256" },
-	{ "rsa-sha2-512-cert-v01@openssh.com", NID_sha512, "rsa-sha2-512" },
-#endif
-	{ "ssh-rsa-cert-v01@openssh.com", NID_sha1, "ssh-rsa" },
-	{ NULL, NID_undef, NULL }
-};
-
-static struct ssh_rsa_alg_st* ssh_rsa_alg_info(const char *alg);
-
-struct ssh_rsa_alg_st*
-ssh_rsa_alg_info(const char *alg) {
-	struct ssh_rsa_alg_st* p;
-
-	if (alg == NULL || *alg == '\0')
-		return ssh_rsa_alg_info("ssh-rsa");
-
-	for (p = ssh_rsa_algs; p->name != NULL; p++)
-		if (strcmp(alg, p->name) == 0)
-			return p;
-
-	return NULL;
-}
-
-/* global option overridable by configuration */
-int required_rsa_size = SSH_RSA_MINIMUM_MODULUS_SIZE;
-
-int
-sshrsa_verify_length(int bits) {
-	return bits < required_rsa_size
-	    ? SSH_ERR_KEY_LENGTH : 0;
-}
-
-
-/* management of elementary RSA key */
-/* TODO: new methods compatible with OpenSSL 3.1 API.
- * Remark: OpenSSL 3.0* is too buggy - almost each release fail
- * or crash in regression tests.
- */
 
 static int
 sshkey_init_rsa_key(struct sshkey *key, BIGNUM *n, BIGNUM *e, BIGNUM *d) {
@@ -366,7 +368,7 @@ err:
 #ifndef BN_FLG_CONSTTIME
 #  define BN_FLG_CONSTTIME 0x0 /* OpenSSL < 0.9.8 */
 #endif
-/* TODO: new method compatible with OpenSSL 3.0 API */
+
 static int
 sshrsa_complete_crt_parameters(RSA *rsa, const BIGNUM *rsa_iqmp)
 {
@@ -605,6 +607,7 @@ err:
 	sshkey_clear_pkey(key);
 	return r;
 }
+#endif /* def WITH_OPENSSL_3_1_API */
 
 
 /* key implementation */
