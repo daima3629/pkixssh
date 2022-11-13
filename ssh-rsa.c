@@ -109,6 +109,24 @@ RSA_get0_crt_params(const RSA *rsa, const BIGNUM **dmp1, const BIGNUM **dmq1, co
 	if (iqmp != NULL) *iqmp = rsa->iqmp;
 }
 
+static inline int
+RSA_set0_crt_params(RSA *rsa, BIGNUM *dmp1, BIGNUM *dmq1, BIGNUM *iqmp) {
+/* If the fields in r are NULL, the corresponding input parameters MUST
+ * be non-NULL.
+ *
+ * It is an error to give the results from get0 on r as input
+ * parameters.
+ */
+	if (dmp1 == rsa->dmp1 || dmq1 == rsa->dmq1 || iqmp == rsa->iqmp)
+		return 0;
+
+	if (dmp1 != NULL) { BN_free(rsa->dmp1); rsa->dmp1 = dmp1; }
+	if (dmq1 != NULL) { BN_free(rsa->dmq1); rsa->dmq1 = dmq1; }
+	if (iqmp != NULL) { BN_free(rsa->iqmp); rsa->iqmp = iqmp; }
+
+	return 1;
+}
+
 
 static inline void
 RSA_get0_factors(const RSA *rsa, const BIGNUM **p, const BIGNUM **q) {
@@ -182,10 +200,14 @@ sshrsa_verify_length(int bits) {
 	    ? SSH_ERR_KEY_LENGTH : 0;
 }
 
-extern int /*TODO static - see sshkey-crypto.c */
-sshkey_init_rsa_key(struct sshkey *key, BIGNUM *n, BIGNUM *e, BIGNUM *d);
 
-int
+/* management of elementary RSA key */
+/* TODO: new methods compatible with OpenSSL 3.1 API.
+ * Remark: OpenSSL 3.0* is too buggy - almost each release fail
+ * or crash in regression tests.
+ */
+
+static int
 sshkey_init_rsa_key(struct sshkey *key, BIGNUM *n, BIGNUM *e, BIGNUM *d) {
 	int r;
 	EVP_PKEY *pk = NULL;
@@ -341,8 +363,67 @@ err:
 }
 
 
-extern int /* TODO static - see sshkey-crypto.c */
-sshrsa_complete_crt_parameters(RSA *rsa, const BIGNUM *rsa_iqmp);
+#ifndef BN_FLG_CONSTTIME
+#  define BN_FLG_CONSTTIME 0x0 /* OpenSSL < 0.9.8 */
+#endif
+/* TODO: new method compatible with OpenSSL 3.0 API */
+static int
+sshrsa_complete_crt_parameters(RSA *rsa, const BIGNUM *rsa_iqmp)
+{
+	BN_CTX *ctx;
+	BIGNUM *aux = NULL, *d = NULL;
+	BIGNUM *dmq1 = NULL, *dmp1 = NULL, *iqmp = NULL;
+	int r;
+
+	ctx = BN_CTX_new();
+	if (ctx == NULL)
+		return SSH_ERR_ALLOC_FAIL;
+	if ((aux = BN_new()) == NULL ||
+	    (iqmp = BN_dup(rsa_iqmp)) == NULL ||
+	    (dmq1 = BN_new()) == NULL ||
+	    (dmp1 = BN_new()) == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto err;
+	}
+	BN_set_flags(aux, BN_FLG_CONSTTIME);
+
+{	const BIGNUM *p, *q;
+	RSA_get0_factors(rsa, &p, &q);
+	{	const BIGNUM *key_d;
+		RSA_get0_key(rsa, NULL, NULL, &key_d);
+		if ((d = BN_dup(key_d)) == NULL) {
+			r = SSH_ERR_ALLOC_FAIL;
+			goto err;
+		}
+		BN_set_flags(d, BN_FLG_CONSTTIME);
+	}
+
+	if ((BN_sub(aux, q, BN_value_one()) == 0) ||
+	    (BN_mod(dmq1, d, aux, ctx) == 0) ||
+	    (BN_sub(aux, p, BN_value_one()) == 0) ||
+	    (BN_mod(dmp1, d, aux, ctx) == 0)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+}
+	if (!RSA_set0_crt_params(rsa, dmp1, dmq1, iqmp)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+	dmp1 = dmq1 = iqmp = NULL; /* transferred */
+
+	/* success */
+	r = 0;
+
+err:
+	BN_clear_free(aux);
+	BN_clear_free(d);
+	BN_clear_free(dmp1);
+	BN_clear_free(dmq1);
+	BN_clear_free(iqmp);
+	BN_CTX_free(ctx);
+	return r;
+}
 
 
 static int
@@ -432,6 +513,97 @@ sshbuf_write_priv_rsa(struct sshbuf *buf, const struct sshkey *key) {
 		return r;
 
 	return 0;
+}
+
+
+extern int /* method used localy only in ssh-keygen.c */
+sshbuf_read_custom_rsa(struct sshbuf *buf, struct sshkey *key);
+
+int
+sshbuf_read_custom_rsa(struct sshbuf *buf, struct sshkey *key) {
+	int r;
+	RSA *rsa = NULL;
+	BIGNUM *n = NULL, *e;
+	BIGNUM *d = NULL, *iqmp = NULL, *p = NULL, *q = NULL;
+
+	e = BN_new();
+	if (e == NULL)
+		return SSH_ERR_ALLOC_FAIL;
+
+{	BN_ULONG rsa_e;
+	u_char e1, e2, e3;
+
+	if ((r = sshbuf_get_u8(buf, &e1)) != 0 ||
+	    (e1 < 30 && (r = sshbuf_get_u8(buf, &e2)) != 0) ||
+	    (e1 < 30 && (r = sshbuf_get_u8(buf, &e3)) != 0)) {
+		r = SSH_ERR_INVALID_FORMAT;
+		goto err;
+	}
+
+	rsa_e = e1;
+	debug3("e %lx", (unsigned long)rsa_e);
+	if (rsa_e < 30) {
+		rsa_e <<= 8;
+		rsa_e += e2;
+		debug3("e %lx", (unsigned long)rsa_e);
+		rsa_e <<= 8;
+		rsa_e += e3;
+		debug3("e %lx", (unsigned long)rsa_e);
+	}
+
+	if (!BN_set_word(e, rsa_e)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+}
+
+	if ((r = sshbuf_get_bignum1x(buf, &d)) != 0 ||
+	    (r = sshbuf_get_bignum1x(buf, &n)) != 0 ||
+	    (r = sshbuf_get_bignum1x(buf, &iqmp)) != 0 ||
+	    (r = sshbuf_get_bignum1x(buf, &q)) != 0 ||
+	    (r = sshbuf_get_bignum1x(buf, &p)) != 0)
+		goto err;
+
+	/* key attribute allocation */
+	r = sshkey_init_rsa_key(key, n, e, d);
+	if (r != 0) goto err;
+	n = e = d = NULL; /* transferred */
+
+	r = ssh_EVP_PKEY_complete_pub_rsa(key->pk);
+	if (r != 0) goto err;
+
+	rsa = EVP_PKEY_get1_RSA(key->pk);
+	if (rsa == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto err;
+	}
+
+	if (!RSA_set0_factors(rsa, p, q)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+	p = q = NULL; /* transferred */
+
+	r = sshrsa_complete_crt_parameters(rsa, iqmp);
+	if (r != 0) goto err;
+
+	/* success */
+	key->type = KEY_RSA;
+	SSHKEY_DUMP(key);
+	BN_clear_free(iqmp);
+	RSA_free(rsa);
+	return 0;
+
+err:
+	BN_clear_free(n);
+	BN_clear_free(e);
+	BN_clear_free(d);
+	BN_clear_free(p);
+	BN_clear_free(q);
+	BN_clear_free(iqmp);
+	RSA_free(rsa);
+	sshkey_clear_pkey(key);
+	return r;
 }
 
 

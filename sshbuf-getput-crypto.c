@@ -1,6 +1,7 @@
 /*	$OpenBSD: sshbuf-getput-crypto.c,v 1.8 2019/11/15 06:00:20 djm Exp $	*/
 /*
  * Copyright (c) 2011 Damien Miller
+ * Copyright (c) 2020-2022 Roumen Petrov
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -175,10 +176,6 @@ sshbuf_put_eckey(struct sshbuf *buf, const EC_KEY *v)
 	    EC_KEY_get0_group(v));
 }
 #endif /* OPENSSL_HAS_ECC */
-
-/* method used localy only in ssh-keygen.c */
-extern int
-sshbuf_get_bignum1x(struct sshbuf *buf, BIGNUM **valp);
 
 /*
  * This is almost exactly the bignum1 encoding, but with 32 bit for length

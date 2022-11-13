@@ -1,7 +1,7 @@
 /*	$OpenBSD: sshbuf.h,v 1.24 2022/01/01 05:55:06 jsg Exp $	*/
 /*
  * Copyright (c) 2011 Damien Miller
- * Copyright (c) 2020 Roumen Petrov
+ * Copyright (c) 2020-2022 Roumen Petrov
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -232,6 +232,7 @@ int	sshbuf_put_bignum2_bytes(struct sshbuf *buf, const void *v, size_t len);
 int	sshbuf_get_bignum2_bytes_direct(struct sshbuf *buf,
 	    const u_char **valp, size_t *lenp);
 #ifdef WITH_OPENSSL
+int	sshbuf_get_bignum1x(struct sshbuf *buf, BIGNUM **valp);
 int	sshbuf_get_bignum2(struct sshbuf *buf, BIGNUM **valp);
 int	sshbuf_put_bignum2(struct sshbuf *buf, const BIGNUM *v);
 # ifdef OPENSSL_HAS_ECC

@@ -142,10 +142,14 @@ sshdsa_verify_length(int bits) {
 	    ? SSH_ERR_KEY_LENGTH : 0;
 }
 
-extern int /*TODO static - see sshkey-crypto.c */
-sshkey_init_dsa_params(struct sshkey *key, BIGNUM *p, BIGNUM *q, BIGNUM *g);
 
-int
+/* management of elementary DSA key */
+/* TODO: new methods compatible with OpenSSL 3.1 API.
+ * Remark: OpenSSL 3.0* is too buggy - almost each release fail
+ * or crash in regression tests.
+ */
+
+static int
 sshkey_init_dsa_params(struct sshkey *key, BIGNUM *p, BIGNUM *q, BIGNUM *g) {
 	int r;
 	EVP_PKEY *pk = NULL;
@@ -184,10 +188,7 @@ err:
 	return r;
 }
 
-extern int /*TODO static - see sshkey-crypto.c */
-sshkey_set_dsa_key(struct sshkey *key, BIGNUM *pub_key, BIGNUM *priv_key);
-
-int
+static int
 sshkey_set_dsa_key(struct sshkey *key, BIGNUM *pub_key, BIGNUM *priv_key) {
 	int r;
 	DSA *dsa;
@@ -328,6 +329,50 @@ sshbuf_write_priv_dsa(struct sshbuf *buf, const struct sshkey *key) {
 	DSA_free(dsa);
 }
 	return sshbuf_put_bignum2(buf, priv_key);
+}
+
+
+extern int /* method used localy only in ssh-keygen.c */
+sshbuf_read_custom_dsa(struct sshbuf *buf, struct sshkey *key);
+
+int
+sshbuf_read_custom_dsa(struct sshbuf *buf, struct sshkey *key) {
+	int r;
+	BIGNUM *p = NULL, *q = NULL, *g = NULL;
+	BIGNUM *pub_key = NULL, *priv_key = NULL;
+
+	if ((r = sshbuf_get_bignum1x(buf, &p)) != 0 ||
+	    (r = sshbuf_get_bignum1x(buf, &g)) != 0 ||
+	    (r = sshbuf_get_bignum1x(buf, &q)) != 0 ||
+	    (r = sshbuf_get_bignum1x(buf, &pub_key)) != 0 ||
+	    (r = sshbuf_get_bignum1x(buf, &priv_key)) != 0)
+		goto err;
+
+	/* key attribute allocation */
+	r = sshkey_init_dsa_params(key, p, q, g);
+	if (r != 0) goto err;
+	p = q = g = NULL; /* transferred */
+
+	r = sshkey_set_dsa_key(key, pub_key, priv_key);
+	if (r != 0) goto err;
+	pub_key = priv_key = NULL; /* transferred */
+
+	r = sshkey_validate_public_dsa(key);
+	if (r != 0) goto err;
+
+	/* success */
+	key->type = KEY_DSA;
+	SSHKEY_DUMP(key);
+	return 0;
+
+err:
+	BN_clear_free(p);
+	BN_clear_free(q);
+	BN_clear_free(g);
+	BN_clear_free(pub_key);
+	BN_clear_free(priv_key);
+	sshkey_clear_pkey(key);
+	return r;
 }
 
 
