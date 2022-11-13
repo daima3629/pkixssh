@@ -157,6 +157,8 @@ struct sshkey_impl_funcs {
 /*	int (*alloc)(struct sshkey *);		 reserved */
 	void (*cleanup)(struct sshkey *);	/* optional */
 	int (*equal)(const struct sshkey *, const struct sshkey *);
+	int (*deserialize_public)(const char *, struct sshbuf *,
+	    struct sshkey *);
 	int (*serialize_private)(const struct sshkey *, struct sshbuf *,
 	    enum sshkey_serialize_rep);
 	int (*deserialize_private)(const char *, struct sshbuf *,
@@ -343,12 +345,6 @@ sshkey_dump(const char *func, const struct sshkey *key) {
 }
 #endif
 #define SSHKEY_DUMP(...)	sshkey_dump(__func__, __VA_ARGS__)
-
-int	sshbuf_read_pub_rsa(struct sshbuf *buf, struct sshkey *key);
-int	sshbuf_read_pub_dsa(struct sshbuf *buf, struct sshkey *key);
-#  ifdef OPENSSL_HAS_ECC
-int	sshbuf_read_pub_ecdsa(struct sshbuf *buf, struct sshkey *key);
-#  endif /* OPENSSL_HAS_ECC */
 
 int	sshbuf_write_pub_rsa(struct sshbuf *buf, const struct sshkey *key);
 int	sshbuf_write_pub_dsa(struct sshbuf *buf, const struct sshkey *key);

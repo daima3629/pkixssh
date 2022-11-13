@@ -228,6 +228,35 @@ err:
 extern int /*TODO static - see sshkey-crypto.c */
 ssh_EVP_PKEY_complete_pub_rsa(EVP_PKEY *pk);
 
+
+static int
+sshbuf_read_pub_rsa(struct sshbuf *buf, struct sshkey *key) {
+	int r;
+	BIGNUM *n = NULL, *e = NULL;
+
+	if ((r = sshbuf_get_bignum2(buf, &e)) != 0 ||
+	    (r = sshbuf_get_bignum2(buf, &n)) != 0)
+		goto err;
+
+	/* key attribute allocation */
+	r = sshkey_init_rsa_key(key, n, e, NULL);
+	if (r != 0) goto err;
+	n = e = NULL; /* transferred */
+
+	r = ssh_EVP_PKEY_complete_pub_rsa(key->pk);
+	if (r != 0) goto err;
+
+	/* success */
+	SSHKEY_DUMP(key);
+	return 0;
+
+err:
+	BN_clear_free(n);
+	BN_clear_free(e);
+	sshkey_clear_pkey(key);
+	return r;
+}
+
 static int
 sshbuf_read_pub_rsa_priv(struct sshbuf *buf, struct sshkey *key) {
 	int r;
@@ -255,6 +284,7 @@ err:
 	sshkey_clear_pkey(key);
 	return r;
 }
+
 
 extern int /* TODO static - see sshkey-crypto.c */
 sshrsa_complete_crt_parameters(RSA *rsa, const BIGNUM *rsa_iqmp);
@@ -463,6 +493,14 @@ err:
 	BN_clear_free(e);
 	sshkey_clear_pkey(to);
 	return r;
+}
+
+static int
+ssh_rsa_deserialize_public(const char *pkalg, struct sshbuf *buf,
+    struct sshkey *key)
+{
+	UNUSED(pkalg);
+	return sshbuf_read_pub_rsa(buf, key);
 }
 
 static int
@@ -732,6 +770,7 @@ static const struct sshkey_impl_funcs sshkey_rsa_funcs = {
 	/* .alloc =		NULL, */
 	/* .cleanup = */	ssh_rsa_cleanup,
 	/* .equal = */		ssh_rsa_equal,
+	/* .deserialize_public = */	ssh_rsa_deserialize_public,
 	/* .serialize_private = */	ssh_rsa_serialize_private,
 	/* .deserialize_private = */	ssh_rsa_deserialize_private,
 	/* .generate = */	ssh_rsa_generate,

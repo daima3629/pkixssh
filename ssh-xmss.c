@@ -37,8 +37,19 @@
 
 #include "xmss_fast.h"
 
-extern int /* TODO static - see sshkey.c */
-sshbuf_read_xmss_name(struct sshbuf *buf, struct sshkey *key);
+static int
+sshbuf_read_xmss_name(struct sshbuf *buf, struct sshkey *key) {
+	int r;
+	char *xmss_name = NULL;
+
+	r = sshbuf_get_cstring(buf, &xmss_name, NULL);
+	if (r != 0) return r;
+
+	r = sshkey_xmss_init(key, xmss_name);
+
+	free(xmss_name);
+	return r;
+}
 
 static inline int
 sshbuf_write_xmss_name(struct sshbuf *buf, const struct sshkey *key) {
@@ -46,8 +57,23 @@ sshbuf_write_xmss_name(struct sshbuf *buf, const struct sshkey *key) {
 }
 
 
-extern int /* TODO static - see sshkey.c */
-sshbuf_read_pub_xmss(struct sshbuf *buf, struct sshkey *key);
+static int
+sshbuf_read_pub_xmss(struct sshbuf *buf, struct sshkey *key) {
+	int r;
+	u_char *xmss_pk = NULL;
+	size_t pklen;
+
+	r = sshbuf_get_string(buf, &xmss_pk, &pklen);
+	if (r != 0) return r;
+
+	if (pklen == 0 || pklen != sshkey_xmss_pklen(key)) {
+		freezero(xmss_pk, pklen);
+		return SSH_ERR_INVALID_FORMAT;
+	}
+
+	key->xmss_pk = xmss_pk;
+	return 0;
+}
 
 static inline int
 sshbuf_write_pub_xmss(struct sshbuf *buf, const struct sshkey *key) {
@@ -160,6 +186,24 @@ ssh_xmss_copy_public(const struct sshkey *from, struct sshkey *to)
 	if (left)
 		sshkey_xmss_enable_maxsign(to, left);
 }
+	return 0;
+}
+
+static int
+ssh_xmss_deserialize_public(const char *pkalg, struct sshbuf *buf,
+    struct sshkey *key)
+{
+	int r;
+
+	UNUSED(pkalg);
+	if ((r = sshbuf_read_xmss_name(buf, key)) != 0 ||
+	    (r = sshbuf_read_pub_xmss(buf, key)))
+		return r;
+
+	if (!sshkey_is_cert(key)) {
+		if ((r = sshkey_xmss_deserialize_pk_info(key, buf)) != 0)
+			return r;
+	}
 	return 0;
 }
 
@@ -334,6 +378,7 @@ static const struct sshkey_impl_funcs sshkey_xmss_funcs = {
 	/* .alloc =		NULL, */
 	/* .cleanup = */	ssh_xmss_cleanup,
 	/* .equal = */		ssh_xmss_equal,
+	/* .deserialize_public = */	ssh_xmss_deserialize_public,
 	/* .serialize_private = */	ssh_xmss_serialize_private,
 	/* .deserialize_private = */	ssh_xmss_deserialize_private,
 	/* .generate = */	sshkey_xmss_generate_private_key,

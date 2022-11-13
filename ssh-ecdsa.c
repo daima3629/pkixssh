@@ -84,10 +84,7 @@ ssh_EC_KEY_new_by_curve_name(int nid) {
 	return ec;
 }
 
-extern int /*TODO static - see sshkey-crypto.c */
-sshkey_init_ecdsa_curve(struct sshkey *key, int nid);
-
-int
+static int
 sshkey_init_ecdsa_curve(struct sshkey *key, int nid) {
 	int r;
 	EVP_PKEY *pk;
@@ -120,8 +117,29 @@ err:
 	return r;
 }
 
-extern int /* TODO static - see sshkey.c */
-sshbuf_read_ec_curve(struct sshbuf *buf, const char *pkalg, struct sshkey *key);
+static int
+sshbuf_read_ec_curve(struct sshbuf *buf, const char *pkalg, struct sshkey *key) {
+	int r, nid;
+
+	nid = sshkey_ecdsa_nid_from_name(pkalg);
+	debug3_f("pkalg/nid: %s/%d", pkalg, nid);
+	if (nid == -1)
+		return SSH_ERR_INVALID_ARGUMENT;
+
+{	char *curve;
+
+	r = sshbuf_get_cstring(buf, &curve, NULL);
+	if (r != 0) return r;
+
+	if (nid != sshkey_curve_name_to_nid(curve))
+		r = SSH_ERR_EC_CURVE_MISMATCH;
+
+	free(curve);
+}
+	if (r == 0)
+		key->ecdsa_nid = nid;
+	return r;
+}
 
 static inline int
 sshbuf_write_ec_curve(struct sshbuf *buf, const struct sshkey *key) {
@@ -129,8 +147,39 @@ sshbuf_write_ec_curve(struct sshbuf *buf, const struct sshkey *key) {
 	return sshbuf_put_cstring(buf, curve_name);
 }
 
+
+extern int /* TODO static - see sshkey-crypto.c */
+sshkey_validate_ec_pub(const EC_KEY *ec);
+
 extern int /* TODO static - see sshkey-crypto.c */
 sshkey_validate_ec_priv(const EC_KEY *ec);
+
+
+static int
+sshbuf_read_pub_ecdsa(struct sshbuf *buf, struct sshkey *key) {
+	int r;
+	EC_KEY *ec;
+
+	r = sshkey_init_ecdsa_curve(key, key->ecdsa_nid);
+	if (r != 0) return r;
+
+	ec = EVP_PKEY_get1_EC_KEY(key->pk);
+	if (ec == NULL)
+		return SSH_ERR_LIBCRYPTO_ERROR;
+
+	r = sshbuf_get_eckey(buf, ec);
+	if (r != 0) goto err;
+
+	r = sshkey_validate_ec_pub(ec);
+	if (r != 0) goto err;
+
+	/* success */
+	SSHKEY_DUMP(key);
+
+err:
+	EC_KEY_free(ec);
+	return r;
+}
 
 
 static int
@@ -286,6 +335,17 @@ err:
 	EC_KEY_free(from_ec);
 	EC_KEY_free(ec);
 	return r;
+}
+
+static int
+ssh_ecdsa_deserialize_public(const char *pkalg, struct sshbuf *buf,
+    struct sshkey *key)
+{
+	int r;
+
+	if ((r = sshbuf_read_ec_curve(buf, pkalg, key)) != 0)
+		return r;
+	return sshbuf_read_pub_ecdsa(buf, key);
 }
 
 static int
@@ -584,6 +644,7 @@ static const struct sshkey_impl_funcs sshkey_ecdsa_funcs = {
 	/* .alloc =		NULL, */
 	/* .cleanup = */	ssh_ecdsa_cleanup,
 	/* .equal = */		ssh_ecdsa_equal,
+	/* .deserialize_public = */	ssh_ecdsa_deserialize_public,
 	/* .serialize_private = */	ssh_ecdsa_serialize_private,
 	/* .deserialize_private = */	ssh_ecdsa_deserialize_private,
 	/* .generate = */	ssh_ecdsa_generate,

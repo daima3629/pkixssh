@@ -210,6 +210,44 @@ err:
 
 
 static int
+sshbuf_read_pub_dsa(struct sshbuf *buf, struct sshkey *key) {
+	int r;
+	BIGNUM *p = NULL, *q = NULL, *g = NULL;
+	BIGNUM *pub_key = NULL;
+
+	if ((r = sshbuf_get_bignum2(buf, &p)) != 0 ||
+	    (r = sshbuf_get_bignum2(buf, &q)) != 0 ||
+	    (r = sshbuf_get_bignum2(buf, &g)) != 0 ||
+	    (r = sshbuf_get_bignum2(buf, &pub_key)) != 0)
+		goto err;
+
+	/* key attribute allocation */
+	r = sshkey_init_dsa_params(key, p, q, g);
+	if (r != 0) goto err;
+	p = q = g = NULL; /* transferred */
+
+	r = sshkey_set_dsa_key(key, pub_key, NULL);
+	if (r != 0) goto err;
+	pub_key = NULL; /* transferred */
+
+	r = sshkey_validate_public_dsa(key);
+	if (r != 0) goto err;
+
+	/* success */
+	SSHKEY_DUMP(key);
+	return 0;
+
+err:
+	BN_clear_free(p);
+	BN_clear_free(q);
+	BN_clear_free(g);
+	BN_clear_free(pub_key);
+	sshkey_clear_pkey(key);
+	return r;
+}
+
+
+static int
 sshbuf_read_priv_dsa(struct sshbuf *buf, struct sshkey *key) {
 	int r;
 	BIGNUM *priv_key = NULL;
@@ -360,6 +398,14 @@ err:
 	BN_clear_free(pub_key);
 	sshkey_clear_pkey(to);
 	return r;
+}
+
+static int
+ssh_dss_deserialize_public(const char *pkalg, struct sshbuf *buf,
+    struct sshkey *key)
+{
+	UNUSED(pkalg);
+	return sshbuf_read_pub_dsa(buf, key);
 }
 
 static int
@@ -668,6 +714,7 @@ static const struct sshkey_impl_funcs sshkey_dss_funcs = {
 	/* .alloc =		NULL, */
 	/* .cleanup = */	ssh_dss_cleanup,
 	/* .equal = */		ssh_dss_equal,
+	/* .deserialize_public = */	ssh_dss_deserialize_public,
 	/* .serialize_private = */	ssh_dss_serialize_private,
 	/* .deserialize_private = */	ssh_dss_deserialize_private,
 	/* .generate = */	ssh_dss_generate,

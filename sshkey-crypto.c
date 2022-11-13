@@ -217,7 +217,10 @@ sshkey_validate_dsa_pub(const DSA *dsa) {
 }
 
 #ifdef OPENSSL_HAS_ECC
-static int
+extern int /* TODO move to ssh-ecdsa.c */
+sshkey_validate_ec_pub(const EC_KEY *ec);
+
+int
 sshkey_validate_ec_pub(const EC_KEY *ec) {
 	int r;
 
@@ -863,34 +866,6 @@ sshkey_init_rsa_key(struct sshkey *key, BIGNUM *n, BIGNUM *e, BIGNUM *d);
 
 
 int
-sshbuf_read_pub_rsa(struct sshbuf *buf, struct sshkey *key) {
-	int r;
-	BIGNUM *n = NULL, *e = NULL;
-
-	if ((r = sshbuf_get_bignum2(buf, &e)) != 0 ||
-	    (r = sshbuf_get_bignum2(buf, &n)) != 0)
-		goto err;
-
-	/* key attribute allocation */
-	r = sshkey_init_rsa_key(key, n, e, NULL);
-	if (r != 0) goto err;
-	n = e = NULL; /* transferred */
-
-	r = ssh_EVP_PKEY_complete_pub_rsa(key->pk);
-	if (r != 0) goto err;
-
-	/* success */
-	SSHKEY_DUMP(key);
-	return 0;
-
-err:
-	BN_clear_free(n);
-	BN_clear_free(e);
-	sshkey_clear_pkey(key);
-	return r;
-}
-
-int
 sshbuf_write_pub_rsa(struct sshbuf *buf, const struct sshkey *key) {
 	int r;
 	const BIGNUM *n = NULL, *e = NULL;
@@ -913,43 +888,6 @@ sshkey_init_dsa_params(struct sshkey *key, BIGNUM *p, BIGNUM *q, BIGNUM *g);
 
 extern int /* TODO: remove, see ssh-dss.c */
 sshkey_set_dsa_key(struct sshkey *key, BIGNUM *pub_key, BIGNUM *priv_key);
-
-int
-sshbuf_read_pub_dsa(struct sshbuf *buf, struct sshkey *key) {
-	int r;
-	BIGNUM *p = NULL, *q = NULL, *g = NULL;
-	BIGNUM *pub_key = NULL;
-
-	if ((r = sshbuf_get_bignum2(buf, &p)) != 0 ||
-	    (r = sshbuf_get_bignum2(buf, &q)) != 0 ||
-	    (r = sshbuf_get_bignum2(buf, &g)) != 0 ||
-	    (r = sshbuf_get_bignum2(buf, &pub_key)) != 0)
-		goto err;
-
-	/* key attribute allocation */
-	r = sshkey_init_dsa_params(key, p, q, g);
-	if (r != 0) goto err;
-	p = q = g = NULL; /* transferred */
-
-	r = sshkey_set_dsa_key(key, pub_key, NULL);
-	if (r != 0) goto err;
-	pub_key = NULL; /* transferred */
-
-	r = sshkey_validate_public_dsa(key);
-	if (r != 0) goto err;
-
-	/* success */
-	SSHKEY_DUMP(key);
-	return 0;
-
-err:
-	BN_clear_free(p);
-	BN_clear_free(q);
-	BN_clear_free(g);
-	BN_clear_free(pub_key);
-	sshkey_clear_pkey(key);
-	return r;
-}
 
 int
 sshbuf_write_pub_dsa(struct sshbuf *buf, const struct sshkey *key) {
@@ -975,35 +913,6 @@ sshbuf_write_pub_dsa(struct sshbuf *buf, const struct sshkey *key) {
 
 
 #ifdef OPENSSL_HAS_ECC
-extern int /* TODO: remove, see ssh-ecdsa.c */
-sshkey_init_ecdsa_curve(struct sshkey *key, int nid);
-
-int
-sshbuf_read_pub_ecdsa(struct sshbuf *buf, struct sshkey *key) {
-	int r;
-	EC_KEY *ec;
-
-	r = sshkey_init_ecdsa_curve(key, key->ecdsa_nid);
-	if (r != 0) return r;
-
-	ec = EVP_PKEY_get1_EC_KEY(key->pk);
-	if (ec == NULL)
-		return SSH_ERR_LIBCRYPTO_ERROR;
-
-	r = sshbuf_get_eckey(buf, ec);
-	if (r != 0) goto err;
-
-	r = sshkey_validate_ec_pub(ec);
-	if (r != 0) goto err;
-
-	/* success */
-	SSHKEY_DUMP(key);
-
-err:
-	EC_KEY_free(ec);
-	return r;
-}
-
 int
 sshbuf_write_pub_ecdsa(struct sshbuf *buf, const struct sshkey *key) {
 	int r;
