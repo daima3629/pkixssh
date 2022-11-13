@@ -821,7 +821,6 @@ to_blob_buf(const struct sshkey *key, struct sshbuf *b, int force_plain,
   enum sshkey_serialize_rep opts)
 {
 	int type, ret = SSH_ERR_INTERNAL_ERROR;
-	const char *typename;
 
 	UNUSED(opts);
 	if (key == NULL)
@@ -840,33 +839,33 @@ to_blob_buf(const struct sshkey *key, struct sshbuf *b, int force_plain,
 		return 0;
 	}
 
+{	const char *typename;
 	typename = sshkey_ssh_name_from_type_nid(type, key->ecdsa_nid);
+	if ((ret = sshbuf_put_cstring(b, typename)) != 0)
+		return ret;
+}
 	switch (type) {
 #ifdef WITH_OPENSSL
 	case KEY_DSA:
-		if ((ret = sshbuf_put_cstring(b, typename)) != 0 ||
-		    (ret = sshbuf_write_pub_dsa(b, key)) != 0)
+		if ((ret = sshbuf_write_pub_dsa(b, key)) != 0)
 			return ret;
 		break;
 # ifdef OPENSSL_HAS_ECC
 	case KEY_ECDSA:
-		if ((ret = sshbuf_put_cstring(b, typename)) != 0 ||
-		    (ret = sshbuf_write_ec_curve(b, key)) != 0 ||
+		if ((ret = sshbuf_write_ec_curve(b, key)) != 0 ||
 		    (ret = sshbuf_write_pub_ecdsa(b, key)) != 0)
 			return ret;
 		break;
 # endif
 	case KEY_RSA:
-		if ((ret = sshbuf_put_cstring(b, typename)) != 0 ||
-		    (ret = sshbuf_write_pub_rsa(b, key)) != 0)
+		if ((ret = sshbuf_write_pub_rsa(b, key)) != 0)
 			return ret;
 		break;
 #endif /* WITH_OPENSSL */
 	case KEY_ED25519:
 		if (key->ed25519_pk == NULL)
 			return SSH_ERR_INVALID_ARGUMENT;
-		if ((ret = sshbuf_put_cstring(b, typename)) != 0 ||
-		    (ret = sshbuf_write_pub_ed25519(b, key)) != 0)
+		if ((ret = sshbuf_write_pub_ed25519(b, key)) != 0)
 			return ret;
 		break;
 #ifdef WITH_XMSS
@@ -874,8 +873,7 @@ to_blob_buf(const struct sshkey *key, struct sshbuf *b, int force_plain,
 		if (key->xmss_name == NULL || key->xmss_pk == NULL ||
 		    sshkey_xmss_pklen(key) == 0)
 			return SSH_ERR_INVALID_ARGUMENT;
-		if ((ret = sshbuf_put_cstring(b, typename)) != 0 ||
-		    (ret = sshbuf_write_xmss_name(b, key)) != 0 ||
+		if ((ret = sshbuf_write_xmss_name(b, key)) != 0 ||
 		    (ret = sshbuf_write_pub_xmss(b,key)) != 0 ||
 		    (ret = sshkey_xmss_serialize_pk_info(key, b, opts)) != 0)
 			return ret;
