@@ -225,8 +225,63 @@ err:
 	return r;
 }
 
+
+static int
+sshkey_validate_rsa_pub(const RSA *rsa) {
+	int r;
+	const BIGNUM *n = NULL;
+
+	RSA_get0_key(rsa, &n, NULL, NULL);
+
+	r = sshrsa_verify_length(BN_num_bits(n));
+	if (r != 0) return r;
+
+	/* other checks ? */
+	return 0;
+}
+
+int
+sshkey_validate_public_rsa(const struct sshkey *key) {
+	int r;
+
+	if (key == NULL) return SSH_ERR_INVALID_ARGUMENT;
+
+{	RSA *rsa = EVP_PKEY_get1_RSA(key->pk);
+	if (rsa == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+	r = sshkey_validate_rsa_pub(rsa);
+	RSA_free(rsa);
+}
+	return r;
+}
+
+
 extern int /*TODO static - see sshkey-crypto.c */
 ssh_EVP_PKEY_complete_pub_rsa(EVP_PKEY *pk);
+
+int
+ssh_EVP_PKEY_complete_pub_rsa(EVP_PKEY *pk) {
+	int r;
+	RSA *rsa;
+
+	rsa = EVP_PKEY_get1_RSA(pk);
+	if (rsa == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+
+	r = sshkey_validate_rsa_pub(rsa);
+	if (r != 0) goto err;
+
+	if (RSA_blinding_on(rsa, NULL) != 1) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	/* success */
+	r = 0;
+err:
+	RSA_free(rsa);
+	return r;
+}
 
 
 static int

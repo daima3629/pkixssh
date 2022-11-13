@@ -148,8 +148,60 @@ sshbuf_write_ec_curve(struct sshbuf *buf, const struct sshkey *key) {
 }
 
 
-extern int /* TODO static - see sshkey-crypto.c */
-sshkey_validate_ec_pub(const EC_KEY *ec);
+static int
+sshkey_validate_ec_pub(const EC_KEY *ec) {
+	int r;
+
+	r = sshkey_ec_validate_public(EC_KEY_get0_group(ec),
+	    EC_KEY_get0_public_key(ec));
+	if (r != 0) return r;
+
+	/* other checks ? */
+	return 0;
+}
+
+int
+sshkey_validate_public_ecdsa(const struct sshkey *key) {
+	int r;
+
+	if (key == NULL) return SSH_ERR_INVALID_ARGUMENT;
+
+{	EC_KEY *ec = EVP_PKEY_get1_EC_KEY(key->pk);
+	if (ec == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+	r = sshkey_validate_ec_pub(ec);
+	EC_KEY_free(ec);
+}
+	return r;
+}
+
+
+extern int /*TODO static - see sshkey-crypto.c */
+ssh_EVP_PKEY_complete_pub_ecdsa(EVP_PKEY *pk);
+
+int
+ssh_EVP_PKEY_complete_pub_ecdsa(EVP_PKEY *pk) {
+	int r, nid;
+	EC_KEY *ec;
+
+	ec = EVP_PKEY_get1_EC_KEY(pk);
+	if (ec == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+
+	nid = ssh_EC_KEY_preserve_nid(ec);
+	if (nid < 0) {
+		error_f("unsupported elliptic curve");
+		r = SSH_ERR_EC_CURVE_INVALID;
+		goto err;
+	}
+
+	r = sshkey_validate_ec_pub(ec);
+
+err:
+	EC_KEY_free(ec);
+	return r;
+}
+
 
 extern int /* TODO static - see sshkey-crypto.c */
 sshkey_validate_ec_priv(const EC_KEY *ec);

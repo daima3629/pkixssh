@@ -187,51 +187,7 @@ sshkey_dump(const char *func, const struct sshkey *key) {
 #define SSHKEY_DUMP(...)	sshkey_dump(__func__, __VA_ARGS__)
 
 
-/* TODO: validation of deprecated in OpenSSL 3.0 elementary keys */
-static int
-sshkey_validate_rsa_pub(const RSA *rsa) {
-	int r;
-	const BIGNUM *n = NULL;
-
-	RSA_get0_key(rsa, &n, NULL, NULL);
-
-	r = sshrsa_verify_length(BN_num_bits(n));
-	if (r != 0) return r;
-
-	/* other checks ? */
-	return 0;
-}
-
-static int
-sshkey_validate_dsa_pub(const DSA *dsa) {
-	int r;
-	const BIGNUM *p = NULL;
-
-	DSA_get0_pqg(dsa, &p, NULL, NULL);
-
-	r = sshdsa_verify_length(BN_num_bits(p));
-	if (r != 0) return r;
-
-	/* other checks ? */
-	return 0;
-}
-
 #ifdef OPENSSL_HAS_ECC
-extern int /* TODO move to ssh-ecdsa.c */
-sshkey_validate_ec_pub(const EC_KEY *ec);
-
-int
-sshkey_validate_ec_pub(const EC_KEY *ec) {
-	int r;
-
-	r = sshkey_ec_validate_public(EC_KEY_get0_group(ec),
-	    EC_KEY_get0_public_key(ec));
-	if (r != 0) return r;
-
-	/* other checks ? */
-	return 0;
-}
-
 extern int /* TODO move to ssh-ecdsa.c */
 sshkey_validate_ec_priv(const EC_KEY *ec);
 
@@ -358,48 +314,14 @@ err:
 }
 
 
-extern int /* TODO static, move to ssh-rsa.c */
+extern int /* TODO static, see ssh-rsa.c */
 ssh_EVP_PKEY_complete_pub_rsa(EVP_PKEY *pk);
 
-int
-ssh_EVP_PKEY_complete_pub_rsa(EVP_PKEY *pk) {
-	int r;
-	RSA *rsa;
+extern int /* TODO static, see ssh-dsa.c */
+ssh_EVP_PKEY_complete_pub_dsa(EVP_PKEY *pk);
 
-	rsa = EVP_PKEY_get1_RSA(pk);
-	if (rsa == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
-
-	r = sshkey_validate_rsa_pub(rsa);
-	if (r != 0) goto err;
-
-	if (RSA_blinding_on(rsa, NULL) != 1) {
-		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto err;
-	}
-
-	/* success */
-	r = 0;
-err:
-	RSA_free(rsa);
-	return r;
-}
-
-
-static int
-ssh_EVP_PKEY_complete_pub_dsa(EVP_PKEY *pk) {
-	int r;
-	DSA *dsa;
-
-	dsa = EVP_PKEY_get1_DSA(pk);
-	if (dsa == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
-
-	r = sshkey_validate_dsa_pub(dsa);
-
-	DSA_free(dsa);
-	return r;
-}
+extern int /*TODO static, see ssh-ecdsa.c */
+ssh_EVP_PKEY_complete_pub_ecdsa(EVP_PKEY *pk);
 
 
 #ifdef OPENSSL_HAS_ECC
@@ -452,29 +374,6 @@ ssh_EC_KEY_preserve_nid(EC_KEY *ec)
 	EC_GROUP_free(eg);
 }
 	return nids[k];
-}
-
-static int
-ssh_EVP_PKEY_complete_pub_ecdsa(EVP_PKEY *pk) {
-	int r, nid;
-	EC_KEY *ec;
-
-	ec = EVP_PKEY_get1_EC_KEY(pk);
-	if (ec == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
-
-	nid = ssh_EC_KEY_preserve_nid(ec);
-	if (nid < 0) {
-		error_f("unsupported elliptic curve");
-		r = SSH_ERR_EC_CURVE_INVALID;
-		goto err;
-	}
-
-	r = sshkey_validate_ec_pub(ec);
-
-err:
-	EC_KEY_free(ec);
-	return r;
 }
 #endif /*def OPENSSL_HAS_ECC*/
 
@@ -679,55 +578,6 @@ sshkey_move_pk(struct sshkey *from, struct sshkey *to) {
 	SSHKEY_DUMP(to);
 }
 
-
-int
-sshkey_validate_public_rsa(const struct sshkey *key) {
-	int r;
-
-	if (key == NULL) return SSH_ERR_INVALID_ARGUMENT;
-
-{	RSA *rsa = EVP_PKEY_get1_RSA(key->pk);
-	if (rsa == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
-	r = sshkey_validate_rsa_pub(rsa);
-	RSA_free(rsa);
-}
-	return r;
-}
-
-
-int
-sshkey_validate_public_dsa(const struct sshkey *key) {
-	int r;
-
-	if (key == NULL) return SSH_ERR_INVALID_ARGUMENT;
-
-{	DSA *dsa = EVP_PKEY_get1_DSA(key->pk);
-	if (dsa == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
-	r = sshkey_validate_dsa_pub(dsa);
-	DSA_free(dsa);
-}
-	return r;
-}
-
-
-#ifdef OPENSSL_HAS_ECC
-int
-sshkey_validate_public_ecdsa(const struct sshkey *key) {
-	int r;
-
-	if (key == NULL) return SSH_ERR_INVALID_ARGUMENT;
-
-{	EC_KEY *ec = EVP_PKEY_get1_EC_KEY(key->pk);
-	if (ec == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
-	r = sshkey_validate_ec_pub(ec);
-	EC_KEY_free(ec);
-}
-	return r;
-}
-#endif /* OPENSSL_HAS_ECC */
 
 int
 sshkey_validate_public(const struct sshkey *key) {

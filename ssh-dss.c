@@ -210,6 +210,55 @@ err:
 
 
 static int
+sshkey_validate_dsa_pub(const DSA *dsa) {
+	int r;
+	const BIGNUM *p = NULL;
+
+	DSA_get0_pqg(dsa, &p, NULL, NULL);
+
+	r = sshdsa_verify_length(BN_num_bits(p));
+	if (r != 0) return r;
+
+	/* other checks ? */
+	return 0;
+}
+
+int
+sshkey_validate_public_dsa(const struct sshkey *key) {
+	int r;
+
+	if (key == NULL) return SSH_ERR_INVALID_ARGUMENT;
+
+{	DSA *dsa = EVP_PKEY_get1_DSA(key->pk);
+	if (dsa == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+	r = sshkey_validate_dsa_pub(dsa);
+	DSA_free(dsa);
+}
+	return r;
+}
+
+
+extern int /*TODO static - see sshkey-crypto.c */
+ssh_EVP_PKEY_complete_pub_dsa(EVP_PKEY *pk);
+
+int
+ssh_EVP_PKEY_complete_pub_dsa(EVP_PKEY *pk) {
+	int r;
+	DSA *dsa;
+
+	dsa = EVP_PKEY_get1_DSA(pk);
+	if (dsa == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+
+	r = sshkey_validate_dsa_pub(dsa);
+
+	DSA_free(dsa);
+	return r;
+}
+
+
+static int
 sshbuf_read_pub_dsa(struct sshbuf *buf, struct sshkey *key) {
 	int r;
 	BIGNUM *p = NULL, *q = NULL, *g = NULL;
