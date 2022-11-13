@@ -555,65 +555,6 @@ sshkey_equal_public_pkey(const struct sshkey *ka, const struct sshkey *kb) {
 }
 
 
-int
-sshbuf_write_pub_rsa(struct sshbuf *buf, const struct sshkey *key) {
-	int r;
-	const BIGNUM *n = NULL, *e = NULL;
-
-{	RSA *rsa = EVP_PKEY_get1_RSA(key->pk);
-	if (rsa == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
-	RSA_get0_key(rsa, &n, &e, NULL);
-	RSA_free(rsa);
-}
-	if ((r = sshbuf_put_bignum2(buf, e)) != 0 ||
-	    (r = sshbuf_put_bignum2(buf, n)) != 0)
-		return r;
-	return 0;
-}
-
-
-int
-sshbuf_write_pub_dsa(struct sshbuf *buf, const struct sshkey *key) {
-	int r;
-	const BIGNUM *p = NULL, *q = NULL, *g = NULL;
-	const BIGNUM *pub_key = NULL;
-
-{	DSA *dsa = EVP_PKEY_get1_DSA(key->pk);
-	if (dsa == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
-	DSA_get0_pqg(dsa, &p, &q, &g);
-	DSA_get0_key(dsa, &pub_key, NULL);
-	DSA_free(dsa);
-}
-	if ((r = sshbuf_put_bignum2(buf, p)) != 0 ||
-	    (r = sshbuf_put_bignum2(buf, q)) != 0 ||
-	    (r = sshbuf_put_bignum2(buf, g)) != 0 ||
-	    (r = sshbuf_put_bignum2(buf, pub_key)) != 0)
-		return r;
-
-	return 0;
-}
-
-
-#ifdef OPENSSL_HAS_ECC
-int
-sshbuf_write_pub_ecdsa(struct sshbuf *buf, const struct sshkey *key) {
-	int r;
-	EC_KEY *ec;
-
-	ec = EVP_PKEY_get1_EC_KEY(key->pk);
-	if (ec == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
-
-	r = sshbuf_put_eckey(buf, ec);
-
-	EC_KEY_free(ec);
-	return r;
-}
-#endif /* OPENSSL_HAS_ECC */
-
-
 /* write identity in PEM formats - PKCS#8 or Traditional */
 int
 sshkey_private_to_bio(struct sshkey *key, BIO *bio,

@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-rsa.c,v 1.67 2018/07/03 11:39:54 djm Exp $ */
+/* $OpenBSD: ssh-rsa.c,v 1.78 2022/10/28 02:47:04 djm Exp $ */
 /*
  * Copyright (c) 2000, 2003 Markus Friedl <markus@openbsd.org>
  * Copyright (c) 2011 Dr. Stephen Henson.  All rights reserved.
@@ -337,6 +337,23 @@ err:
 }
 
 static int
+sshbuf_write_pub_rsa(struct sshbuf *buf, const struct sshkey *key) {
+	int r;
+	const BIGNUM *n = NULL, *e = NULL;
+
+{	RSA *rsa = EVP_PKEY_get1_RSA(key->pk);
+	if (rsa == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+	RSA_get0_key(rsa, &n, &e, NULL);
+	RSA_free(rsa);
+}
+	if ((r = sshbuf_put_bignum2(buf, e)) != 0 ||
+	    (r = sshbuf_put_bignum2(buf, n)) != 0)
+		return r;
+	return 0;
+}
+
+static int
 sshbuf_read_pub_rsa_priv(struct sshbuf *buf, struct sshkey *key) {
 	int r;
 	BIGNUM *n = NULL, *e = NULL;
@@ -628,6 +645,14 @@ static int
 ssh_rsa_equal(const struct sshkey *a, const struct sshkey *b)
 {
 	return sshkey_equal_public_pkey(a, b);
+}
+
+static int
+ssh_rsa_serialize_public(const struct sshkey *key, struct sshbuf *buf,
+    enum sshkey_serialize_rep opts)
+{
+	UNUSED(opts);
+	return sshbuf_write_pub_rsa(buf, key);
 }
 
 static int
@@ -1000,6 +1025,7 @@ static const struct sshkey_impl_funcs sshkey_rsa_funcs = {
 	/* .alloc =		NULL, */
 	/* .cleanup = */	ssh_rsa_cleanup,
 	/* .equal = */		ssh_rsa_equal,
+	/* .serialize_public = */	ssh_rsa_serialize_public,
 	/* .deserialize_public = */	ssh_rsa_deserialize_public,
 	/* .serialize_private = */	ssh_rsa_serialize_private,
 	/* .deserialize_private = */	ssh_rsa_deserialize_private,

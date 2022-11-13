@@ -1,6 +1,7 @@
-/* $OpenBSD: sshkey-xmss.c,v 1.11 2021/04/03 06:18:41 djm Exp $ */
+/* $OpenBSD: sshkey-xmss.c,v 1.12 2022/10/28 00:39:29 djm Exp $ */
 /*
  * Copyright (c) 2017 Markus Friedl.  All rights reserved.
+ * Copyright (c) 2022 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -328,10 +329,10 @@ sshkey_xmss_serialize_pk_info(const struct sshkey *k, struct sshbuf *b,
 	u_int32_t idx;
 	int r;
 
-	if (state == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
 	if (opts != SSHKEY_SERIALIZE_INFO)
 		return 0;
+	if (state == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
 	idx = k->xmss_sk ? PEEK_U32(k->xmss_sk) : state->idx;
 	if ((r = sshbuf_put_u8(b, have_info)) != 0 ||
 	    (r = sshbuf_put_u32(b, idx)) != 0 ||

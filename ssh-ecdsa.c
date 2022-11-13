@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-ecdsa.c,v 1.16 2019/01/21 09:54:11 djm Exp $ */
+/* $OpenBSD: ssh-ecdsa.c,v 1.25 2022/10/28 00:44:44 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2010 Damien Miller.  All rights reserved.
@@ -242,6 +242,21 @@ err:
 	return r;
 }
 
+static int
+sshbuf_write_pub_ecdsa(struct sshbuf *buf, const struct sshkey *key) {
+	int r;
+	EC_KEY *ec;
+
+	ec = EVP_PKEY_get1_EC_KEY(key->pk);
+	if (ec == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+
+	r = sshbuf_put_eckey(buf, ec);
+
+	EC_KEY_free(ec);
+	return r;
+}
+
 
 static int
 sshbuf_read_priv_ecdsa(struct sshbuf *buf, struct sshkey *key) {
@@ -308,6 +323,18 @@ static int
 ssh_ecdsa_equal(const struct sshkey *a, const struct sshkey *b)
 {
 	return sshkey_equal_public_pkey(a, b);
+}
+
+static int
+ssh_ecdsa_serialize_public(const struct sshkey *key, struct sshbuf *buf,
+    enum sshkey_serialize_rep opts)
+{
+	int r;
+
+	UNUSED(opts);
+	if ((r = sshbuf_write_ec_curve(buf, key)) != 0)
+		return r;
+	return sshbuf_write_pub_ecdsa(buf, key);
 }
 
 static int
@@ -706,6 +733,7 @@ static const struct sshkey_impl_funcs sshkey_ecdsa_funcs = {
 	/* .alloc =		NULL, */
 	/* .cleanup = */	ssh_ecdsa_cleanup,
 	/* .equal = */		ssh_ecdsa_equal,
+	/* .serialize_public = */	ssh_ecdsa_serialize_public,
 	/* .deserialize_public = */	ssh_ecdsa_deserialize_public,
 	/* .serialize_private = */	ssh_ecdsa_serialize_private,
 	/* .deserialize_private = */	ssh_ecdsa_deserialize_private,

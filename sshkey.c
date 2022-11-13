@@ -1,4 +1,4 @@
-/* $OpenBSD: sshkey.c,v 1.121 2022/05/05 01:04:14 djm Exp $ */
+/* $OpenBSD: sshkey.c,v 1.134 2022/10/28 02:47:04 djm Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Alexander von Gernler.  All rights reserved.
@@ -791,42 +791,19 @@ sshkey_match_pkalg(struct sshkey *key, const char* pkalg) {
 	);
 }
 
-#ifdef OPENSSL_HAS_ECC
-static inline int /* TODO remove, see ssh-ecdsa.c */
-sshbuf_write_ec_curve(struct sshbuf *buf, const struct sshkey *key) {
-	const char *curve_name = sshkey_curve_nid_to_name(key->ecdsa_nid);
-	return sshbuf_put_cstring(buf, curve_name);
-}
-#endif /*def OPENSSL_HAS_ECC*/
-
-static inline int /* TODO remove, see ssh-ed25519.c */
-sshbuf_write_pub_ed25519(struct sshbuf *buf, const struct sshkey *key) {
-	return sshbuf_put_string(buf, key->ed25519_pk, ED25519_PK_SZ);
-}
-
-#ifdef WITH_XMSS
-static inline int /* TODO remove, see ssh-xmss.c */
-sshbuf_write_xmss_name(struct sshbuf *buf, const struct sshkey *key) {
-	return  sshbuf_put_cstring(buf, key->xmss_name);
-}
-
-static inline int /* TODO remove, see ssh-xmss.c */
-sshbuf_write_pub_xmss(struct sshbuf *buf, const struct sshkey *key) {
-	return sshbuf_put_string(buf, key->xmss_pk, sshkey_xmss_pklen(key));
-}
-#endif /*def WITH_XMSS*/
-
 static int
 to_blob_buf(const struct sshkey *key, struct sshbuf *b, int force_plain,
   enum sshkey_serialize_rep opts)
 {
-	int type, ret = SSH_ERR_INTERNAL_ERROR;
+	int type, ret;
+	const struct sshkey_impl *impl;
 
-	UNUSED(opts);
 	if (key == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;
 
 	type = force_plain ? sshkey_type_plain(key->type) : key->type;
+	if ((impl = sshkey_impl_from_type(type)) == NULL)
+		return SSH_ERR_KEY_TYPE_UNKNOWN;
 
 	if (sshkey_type_is_cert(type)) {
 		if (key->cert == NULL)
@@ -844,45 +821,7 @@ to_blob_buf(const struct sshkey *key, struct sshbuf *b, int force_plain,
 	if ((ret = sshbuf_put_cstring(b, typename)) != 0)
 		return ret;
 }
-	switch (type) {
-#ifdef WITH_OPENSSL
-	case KEY_DSA:
-		if ((ret = sshbuf_write_pub_dsa(b, key)) != 0)
-			return ret;
-		break;
-# ifdef OPENSSL_HAS_ECC
-	case KEY_ECDSA:
-		if ((ret = sshbuf_write_ec_curve(b, key)) != 0 ||
-		    (ret = sshbuf_write_pub_ecdsa(b, key)) != 0)
-			return ret;
-		break;
-# endif
-	case KEY_RSA:
-		if ((ret = sshbuf_write_pub_rsa(b, key)) != 0)
-			return ret;
-		break;
-#endif /* WITH_OPENSSL */
-	case KEY_ED25519:
-		if (key->ed25519_pk == NULL)
-			return SSH_ERR_INVALID_ARGUMENT;
-		if ((ret = sshbuf_write_pub_ed25519(b, key)) != 0)
-			return ret;
-		break;
-#ifdef WITH_XMSS
-	case KEY_XMSS:
-		if (key->xmss_name == NULL || key->xmss_pk == NULL ||
-		    sshkey_xmss_pklen(key) == 0)
-			return SSH_ERR_INVALID_ARGUMENT;
-		if ((ret = sshbuf_write_xmss_name(b, key)) != 0 ||
-		    (ret = sshbuf_write_pub_xmss(b,key)) != 0 ||
-		    (ret = sshkey_xmss_serialize_pk_info(key, b, opts)) != 0)
-			return ret;
-		break;
-#endif /* WITH_XMSS */
-	default:
-		return SSH_ERR_KEY_TYPE_UNKNOWN;
-	}
-	return 0;
+	return impl->funcs->serialize_public(key, b, opts);
 }
 
 int
@@ -2287,6 +2226,7 @@ sshkey_certify_custom(struct sshkey *k, struct sshkey *ca, const char *alg,
     const char *sk_provider, const char *sk_pin,
     sshkey_certify_signer *signer, void *signer_ctx)
 {
+	const struct sshkey_impl *impl;
 	struct sshbuf *principals = NULL;
 	u_char *ca_blob = NULL, *sig_blob = NULL, nonce[32];
 	size_t i, ca_len, sig_len;
@@ -2301,6 +2241,8 @@ sshkey_certify_custom(struct sshkey *k, struct sshkey *ca, const char *alg,
 		return SSH_ERR_KEY_TYPE_UNKNOWN;
 	if (!sshkey_type_is_valid_ca(ca->type))
 		return SSH_ERR_KEY_CERT_INVALID_SIGN_KEY;
+	if ((impl = sshkey_impl_from_key(k)) == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
 
 	/*
 	 * If no alg specified as argument but a signature_type was set,
@@ -2336,45 +2278,12 @@ sshkey_certify_custom(struct sshkey *k, struct sshkey *ca, const char *alg,
 	if ((ret = sshbuf_put_string(cert, nonce, sizeof(nonce))) != 0)
 		goto out;
 
-	/* XXX this substantially duplicates to_blob(); refactor */
-	switch (k->type) {
-#ifdef WITH_OPENSSL
-	case KEY_DSA_CERT:
-		if ((ret = sshbuf_write_pub_dsa(cert, k)) != 0)
-			goto out;
-		break;
-# ifdef OPENSSL_HAS_ECC
-	case KEY_ECDSA_CERT:
-		if ((ret = sshbuf_write_ec_curve(cert, k)) != 0 ||
-		    (ret = sshbuf_write_pub_ecdsa(cert, k)) != 0)
-			goto out;
-		break;
-# endif /* OPENSSL_HAS_ECC */
-	case KEY_RSA_CERT:
-		if ((ret = sshbuf_write_pub_rsa(cert, k)) != 0)
-			goto out;
-		break;
-#endif /* WITH_OPENSSL */
-	case KEY_ED25519_CERT:
-		if ((ret = sshbuf_write_pub_ed25519(cert, k)) != 0)
-			goto out;
-		break;
-#ifdef WITH_XMSS
-	case KEY_XMSS_CERT:
-		if (k->xmss_name == NULL) {
-			ret = SSH_ERR_INVALID_ARGUMENT;
-			goto out;
-		}
-		if ((ret = sshbuf_write_xmss_name(cert, k)) ||
-		    (ret = sshbuf_write_pub_xmss(cert, k)) != 0)
-			goto out;
-		break;
-#endif /* WITH_XMSS */
-	default:
-		ret = SSH_ERR_INVALID_ARGUMENT;
+	/* Public key next */
+	if ((ret = impl->funcs->serialize_public(k, cert,
+	    SSHKEY_SERIALIZE_DEFAULT)) != 0)
 		goto out;
-	}
 
+	/* Then remaining cert fields */
 	if ((ret = sshbuf_put_u64(cert, k->cert->serial)) != 0 ||
 	    (ret = sshbuf_put_u32(cert, k->cert->type)) != 0 ||
 	    (ret = sshbuf_put_cstring(cert, k->cert->key_id)) != 0)

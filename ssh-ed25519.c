@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-ed25519.c,v 1.9 2020/10/18 11:32:02 djm Exp $ */
+/* $OpenBSD: ssh-ed25519.c,v 1.19 2022/10/28 00:44:44 djm Exp $ */
 /*
  * Copyright (c) 2013 Markus Friedl <markus@openbsd.org>
  * Copyright (c) 2022 Roumen Petrov.  All rights reserved.
@@ -72,11 +72,6 @@ sshbuf_write_pub_ed25519(struct sshbuf *buf, const struct sshkey *key) {
 }
 
 
-static inline int
-sshbuf_write_priv_ed25519(struct sshbuf *buf, const struct sshkey *key) {
-	return sshbuf_put_string(buf, key->ed25519_sk, ED25519_SK_SZ);
-}
-
 static int
 sshbuf_read_priv_ed25519(struct sshbuf *buf, struct sshkey *key) {
 	int r;
@@ -118,6 +113,11 @@ err:
 	return r;
 }
 
+static inline int
+sshbuf_write_priv_ed25519(struct sshbuf *buf, const struct sshkey *key) {
+	return sshbuf_put_string(buf, key->ed25519_sk, ED25519_SK_SZ);
+}
+
 
 /* key implementation */
 
@@ -157,6 +157,17 @@ ssh_ed25519_equal(const struct sshkey *a, const struct sshkey *b)
 	if (memcmp(a->ed25519_pk, b->ed25519_pk, ED25519_PK_SZ) != 0)
 		return 0;
 	return 1;
+}
+
+static int
+ssh_ed25519_serialize_public(const struct sshkey *key, struct sshbuf *buf,
+    enum sshkey_serialize_rep opts)
+{
+	UNUSED(opts);
+	if (key->ed25519_pk == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+
+	return sshbuf_write_pub_ed25519(buf, key);
 }
 
 static int
@@ -371,6 +382,7 @@ static const struct sshkey_impl_funcs sshkey_ed25519_funcs = {
 	/* .alloc =		NULL, */
 	/* .cleanup = */	ssh_ed25519_cleanup,
 	/* .equal = */		ssh_ed25519_equal,
+	/* .serialize_public = */	ssh_ed25519_serialize_public,
 	/* .deserialize_public = */	ssh_ed25519_deserialize_public,
 	/* .serialize_private = */	ssh_ed25519_serialize_private,
 	/* .deserialize_private = */	ssh_ed25519_deserialize_private,

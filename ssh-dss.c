@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-dss.c,v 1.39 2020/02/26 13:40:09 jsg Exp $ */
+/* $OpenBSD: ssh-dss.c,v 1.48 2022/10/28 00:44:44 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2011 Dr. Stephen Henson.  All rights reserved.
@@ -300,6 +300,28 @@ err:
 	return r;
 }
 
+static int
+sshbuf_write_pub_dsa(struct sshbuf *buf, const struct sshkey *key) {
+	int r;
+	const BIGNUM *p = NULL, *q = NULL, *g = NULL;
+	const BIGNUM *pub_key = NULL;
+
+{	DSA *dsa = EVP_PKEY_get1_DSA(key->pk);
+	if (dsa == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+	DSA_get0_pqg(dsa, &p, &q, &g);
+	DSA_get0_key(dsa, &pub_key, NULL);
+	DSA_free(dsa);
+}
+	if ((r = sshbuf_put_bignum2(buf, p)) != 0 ||
+	    (r = sshbuf_put_bignum2(buf, q)) != 0 ||
+	    (r = sshbuf_put_bignum2(buf, g)) != 0 ||
+	    (r = sshbuf_put_bignum2(buf, pub_key)) != 0)
+		return r;
+
+	return 0;
+}
+
 
 static int
 sshbuf_read_priv_dsa(struct sshbuf *buf, struct sshkey *key) {
@@ -399,6 +421,14 @@ static int
 ssh_dss_equal(const struct sshkey *a, const struct sshkey *b)
 {
 	return sshkey_equal_public_pkey(a, b);
+}
+
+static int
+ssh_dss_serialize_public(const struct sshkey *key, struct sshbuf *buf,
+    enum sshkey_serialize_rep opts)
+{
+	UNUSED(opts);
+	return sshbuf_write_pub_dsa(buf, key);
 }
 
 static int
@@ -813,6 +843,7 @@ static const struct sshkey_impl_funcs sshkey_dss_funcs = {
 	/* .alloc =		NULL, */
 	/* .cleanup = */	ssh_dss_cleanup,
 	/* .equal = */		ssh_dss_equal,
+	/* .serialize_public = */	ssh_dss_serialize_public,
 	/* .deserialize_public = */	ssh_dss_deserialize_public,
 	/* .serialize_private = */	ssh_dss_serialize_private,
 	/* .deserialize_private = */	ssh_dss_deserialize_private,
