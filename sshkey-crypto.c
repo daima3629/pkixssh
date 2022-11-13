@@ -73,13 +73,6 @@ RSA_set0_key(RSA *rsa, BIGNUM *n, BIGNUM *e, BIGNUM *d) {
 }
 
 
-static inline void
-RSA_get0_crt_params(const RSA *rsa, const BIGNUM **dmp1, const BIGNUM **dmq1, const BIGNUM **iqmp) {
-	if (dmp1 != NULL) *dmp1 = rsa->dmp1;
-	if (dmq1 != NULL) *dmq1 = rsa->dmq1;
-	if (iqmp != NULL) *iqmp = rsa->iqmp;
-}
-
 static inline int
 RSA_set0_crt_params(RSA *rsa, BIGNUM *dmp1, BIGNUM *dmq1, BIGNUM *iqmp) {
 /* If the fields in r are NULL, the corresponding input parameters MUST
@@ -99,14 +92,14 @@ RSA_set0_crt_params(RSA *rsa, BIGNUM *dmp1, BIGNUM *dmq1, BIGNUM *iqmp) {
 }
 
 
-static inline void
+static inline void /* TODO: remove, see ssh-rsa.c */
 RSA_get0_factors(const RSA *rsa, const BIGNUM **p, const BIGNUM **q) {
 	if (p != NULL) *p = rsa->p;
 	if (q != NULL) *q = rsa->q;
 }
 
 
-static inline int
+static inline int /* TODO: remove, see ssh-rsa.c */
 RSA_set0_factors(RSA *rsa, BIGNUM *p, BIGNUM *q) {
 /* If the fields in r are NULL, the corresponding input parameters MUST
  * be non-NULL.
