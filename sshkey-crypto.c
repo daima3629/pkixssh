@@ -184,18 +184,6 @@ err:
 #endif
 
 
-
-
-extern int /* TODO static, see ssh-rsa.c */
-ssh_EVP_PKEY_complete_pub_rsa(EVP_PKEY *pk);
-
-extern int /* TODO static, see ssh-dsa.c */
-ssh_EVP_PKEY_complete_pub_dsa(EVP_PKEY *pk);
-
-extern int /*TODO static, see ssh-ecdsa.c */
-ssh_EVP_PKEY_complete_pub_ecdsa(EVP_PKEY *pk);
-
-
 #ifdef OPENSSL_HAS_ECC
 int
 ssh_EC_KEY_preserve_nid(EC_KEY *ec)
@@ -250,6 +238,9 @@ ssh_EC_KEY_preserve_nid(EC_KEY *ec)
 #endif /*def OPENSSL_HAS_ECC*/
 
 
+extern int
+ssh_EVP_PKEY_complete_pub_rsa(EVP_PKEY *pk);
+
 static int
 sshkey_from_pkey_rsa(EVP_PKEY *pk, struct sshkey **keyp) {
 	int r;
@@ -270,6 +261,9 @@ sshkey_from_pkey_rsa(EVP_PKEY *pk, struct sshkey **keyp) {
 	*keyp = key;
 	return 0;
 }
+
+extern int
+ssh_EVP_PKEY_complete_pub_dsa(EVP_PKEY *pk);
 
 static int
 sshkey_from_pkey_dsa(EVP_PKEY *pk, struct sshkey **keyp) {
@@ -293,6 +287,9 @@ sshkey_from_pkey_dsa(EVP_PKEY *pk, struct sshkey **keyp) {
 }
 
 #ifdef OPENSSL_HAS_ECC
+extern int
+ssh_EVP_PKEY_complete_pub_ecdsa(EVP_PKEY *pk);
+
 static int
 sshkey_from_pkey_ecdsa(EVP_PKEY *pk, struct sshkey **keyp) {
 	int r;

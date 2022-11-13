@@ -280,7 +280,7 @@ sshkey_validate_public_rsa(const struct sshkey *key) {
 }
 
 
-extern int /*TODO static - see sshkey-crypto.c */
+extern int /* see sshkey-crypto.c */
 ssh_EVP_PKEY_complete_pub_rsa(EVP_PKEY *pk);
 
 int

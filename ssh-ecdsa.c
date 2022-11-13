@@ -185,7 +185,7 @@ sshkey_validate_public_ecdsa(const struct sshkey *key) {
 }
 
 
-extern int /*TODO static - see sshkey-crypto.c */
+extern int /* see sshkey-crypto.c */
 ssh_EVP_PKEY_complete_pub_ecdsa(EVP_PKEY *pk);
 
 int
