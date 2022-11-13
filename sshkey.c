@@ -827,30 +827,21 @@ to_blob_buf(const struct sshkey *key, struct sshbuf *b, int force_plain,
 	if (key == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;
 
-	if (sshkey_is_cert(key)) {
+	type = force_plain ? sshkey_type_plain(key->type) : key->type;
+
+	if (sshkey_type_is_cert(type)) {
 		if (key->cert == NULL)
 			return SSH_ERR_EXPECTED_CERT;
 		if (sshbuf_len(key->cert->certblob) == 0)
 			return SSH_ERR_KEY_LACKS_CERTBLOB;
-	}
-	type = force_plain ? sshkey_type_plain(key->type) : key->type;
-	typename = sshkey_ssh_name_from_type_nid(type, key->ecdsa_nid);
-
-	switch (type) {
-#ifdef WITH_OPENSSL
-	case KEY_DSA_CERT:
-	case KEY_ECDSA_CERT:
-	case KEY_RSA_CERT:
-#endif /* WITH_OPENSSL */
-	case KEY_ED25519_CERT:
-#ifdef WITH_XMSS
-	case KEY_XMSS_CERT:
-#endif /* WITH_XMSS */
 		/* Use the existing blob */
-		/* XXX modified flag? */
 		if ((ret = sshbuf_putb(b, key->cert->certblob)) != 0)
 			return ret;
-		break;
+		return 0;
+	}
+
+	typename = sshkey_ssh_name_from_type_nid(type, key->ecdsa_nid);
+	switch (type) {
 #ifdef WITH_OPENSSL
 	case KEY_DSA:
 		if ((ret = sshbuf_put_cstring(b, typename)) != 0 ||
