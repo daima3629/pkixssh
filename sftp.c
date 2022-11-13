@@ -2347,6 +2347,7 @@ connect_to_server(const char *path, char **args, int *in, int *out)
 {
 	int c_in, c_out;
 
+{	/* get connection in/out hanldes */
 #ifdef USE_PIPES
 	int pin[2], pout[2];
 
@@ -2364,7 +2365,7 @@ connect_to_server(const char *path, char **args, int *in, int *out)
 	*in = *out = inout[0];
 	c_in = c_out = inout[1];
 #endif /* USE_PIPES */
-
+}
 	if ((sshpid = fork()) == -1)
 		fatal("fork: %s", strerror(errno));
 	else if (sshpid == 0) {
