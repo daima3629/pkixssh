@@ -291,31 +291,6 @@ err:
 }
 #endif
 
-int
-sshpkey_verify_length(EVP_PKEY *pk) {
-	int r;
-	int evp_id = EVP_PKEY_base_id(pk);
-
-	switch (evp_id) {
-	case EVP_PKEY_RSA: {
-		RSA *rsa = EVP_PKEY_get1_RSA(pk);
-		if (rsa == NULL) return SSH_ERR_INVALID_ARGUMENT;
-		r = sshkey_validate_rsa_pub(rsa);
-		RSA_free(rsa);
-	} break;
-	case EVP_PKEY_DSA: {
-		DSA *dsa = EVP_PKEY_get1_DSA(pk);
-		if (dsa == NULL) return SSH_ERR_INVALID_ARGUMENT;
-		r = sshkey_validate_dsa_pub(dsa);
-		DSA_free(dsa);
-	} break;
-	default:
-		r = 0;
-	}
-
-	return r;
-}
-
 
 #ifndef BN_FLG_CONSTTIME
 #  define BN_FLG_CONSTTIME 0x0 /* OpenSSL < 0.9.8 */

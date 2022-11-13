@@ -2013,8 +2013,13 @@ int
 sshkey_check_length(const struct sshkey *k)
 {
 #ifdef WITH_OPENSSL
-	if (k->pk != NULL)
-		return sshpkey_verify_length(k->pk);
+	/* NOTE RSA/DSA keys validates only length */
+	switch(sshkey_type_plain(k->type)) {
+	case KEY_RSA:
+		return sshkey_validate_public_rsa(k);
+	case KEY_DSA:
+		return sshkey_validate_public_dsa(k);
+	}
 #else
 	UNUSED(k);
 #endif

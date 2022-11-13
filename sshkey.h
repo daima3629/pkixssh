@@ -313,9 +313,6 @@ int	sshkey_private_to_bio(struct sshkey *key, BIO *bio,
 
 int	sshrsa_verify_length(int bits);
 int	sshdsa_verify_length(int bits);
-# ifdef WITH_OPENSSL
-int	sshpkey_verify_length(EVP_PKEY *pk);
-#endif
 
 int	sshkey_check_length(const struct sshkey *);
 
