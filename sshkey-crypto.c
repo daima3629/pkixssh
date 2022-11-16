@@ -43,34 +43,6 @@
 #include "crypto_api.h" /*for some Ed25519 defines */
 #include "log.h"
 
-#ifndef HAVE_RSA_GET0_KEY
-/* opaque RSA key structure */
-static inline void
-RSA_get0_key(const RSA *rsa, const BIGNUM **n, const BIGNUM **e, const BIGNUM **d) {
-	if (n != NULL) *n = rsa->n;
-	if (e != NULL) *e = rsa->e;
-	if (d != NULL) *d = rsa->d;
-}
-#endif /*ndef HAVE_RSA_GET0_KEY*/
-
-#ifndef HAVE_DSA_GET0_KEY
-/* opaque DSA key structure */
-static inline void
-DSA_get0_key(const DSA *dsa, const BIGNUM **pub_key, const BIGNUM **priv_key) {
-	if (pub_key  != NULL) *pub_key  = dsa->pub_key;
-	if (priv_key != NULL) *priv_key = dsa->priv_key;
-}
-
-
-static inline void
-DSA_get0_pqg(const DSA *dsa, const BIGNUM **p, const BIGNUM **q, const BIGNUM **g) {
-	if (p != NULL) *p = dsa->p;
-	if (q != NULL) *q = dsa->q;
-	if (g != NULL) *g = dsa->g;
-}
-#endif /*ndef HAVE_DSA_GET0_KEY*/
-
-
 #ifdef DEBUG_PK
 static void
 ssh_EVP_PKEY_print_fp(FILE *fp, const EVP_PKEY *pkey) {
@@ -464,58 +436,8 @@ sshkey_validate_public(const struct sshkey *key) {
 
 
 #ifndef HAVE_EVP_PKEY_CMP	/* OpenSSL < 0.9.8 */
-static int/*bool*/
-ssh_EVP_PKEY_cmp_rsa(const EVP_PKEY *ka, const EVP_PKEY *kb) {
-	int ret = -1;
-	RSA *a, *b;
-	const BIGNUM *a_n, *a_e;
-	const BIGNUM *b_n, *b_e;
-
-	a = EVP_PKEY_get1_RSA((EVP_PKEY*)ka);
-	b = EVP_PKEY_get1_RSA((EVP_PKEY*)kb);
-	if (a == NULL || b == NULL) goto err;
-
-	RSA_get0_key(a, &a_n, &a_e, NULL);
-	RSA_get0_key(b, &b_n, &b_e, NULL);
-
-	ret =
-	    BN_cmp(a_n, b_n) == 0 &&
-	    BN_cmp(a_e, b_e) == 0;
-
-err:
-	RSA_free(b);
-	RSA_free(a);
-	return ret;
-}
-
-static int/*bool*/
-ssh_EVP_PKEY_cmp_dsa(const EVP_PKEY *ka, const EVP_PKEY *kb) {
-	int ret = -1;
-	DSA *a, *b = NULL;
-	const BIGNUM *a_p, *a_q, *a_g, *a_pub_key;
-	const BIGNUM *b_p, *b_q, *b_g, *b_pub_key;
-
-	a = EVP_PKEY_get1_DSA((EVP_PKEY*)ka);
-	b = EVP_PKEY_get1_DSA((EVP_PKEY*)kb);
-	if (a == NULL || b == NULL) goto err;
-
-	DSA_get0_pqg(a, &a_p, &a_q, &a_g);
-	DSA_get0_key(a, &a_pub_key, NULL);
-
-	DSA_get0_pqg(b, &b_p, &b_q, &b_g);
-	DSA_get0_key(b, &b_pub_key, NULL);
-
-	ret =
-	    BN_cmp(a_p, b_p) == 0 &&
-	    BN_cmp(a_q, b_q) == 0 &&
-	    BN_cmp(a_g, b_g) == 0 &&
-	    BN_cmp(a_pub_key, b_pub_key) == 0;
-
-err:
-	DSA_free(b);
-	DSA_free(a);
-	return ret;
-}
+extern int ssh_EVP_PKEY_cmp_rsa(const EVP_PKEY *a, const EVP_PKEY *b);
+extern int ssh_EVP_PKEY_cmp_dsa(const EVP_PKEY *a, const EVP_PKEY *b);
 
 static int
 EVP_PKEY_cmp(const EVP_PKEY *a, const EVP_PKEY *b) {

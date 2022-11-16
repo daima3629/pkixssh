@@ -208,6 +208,35 @@ RSA_set0_factors(RSA *rsa, BIGNUM *p, BIGNUM *q) {
 }
 #endif /* ndef HAVE_RSA_GET0_KEY */
 
+#ifndef HAVE_EVP_PKEY_CMP	/* OpenSSL < 0.9.8 */
+extern int /* see sshkey-crypto.c */
+ssh_EVP_PKEY_cmp_rsa(const EVP_PKEY *ka, const EVP_PKEY *kb);
+
+int
+ssh_EVP_PKEY_cmp_rsa(const EVP_PKEY *ka, const EVP_PKEY *kb) {
+	int ret = -1;
+	RSA *a, *b;
+	const BIGNUM *a_n, *a_e;
+	const BIGNUM *b_n, *b_e;
+
+	a = EVP_PKEY_get1_RSA((EVP_PKEY*)ka);
+	b = EVP_PKEY_get1_RSA((EVP_PKEY*)kb);
+	if (a == NULL || b == NULL) goto err;
+
+	RSA_get0_key(a, &a_n, &a_e, NULL);
+	RSA_get0_key(b, &b_n, &b_e, NULL);
+
+	ret =
+	    BN_cmp(a_n, b_n) == 0 &&
+	    BN_cmp(a_e, b_e) == 0;
+
+err:
+	RSA_free(b);
+	RSA_free(a);
+	return ret;
+}
+#endif
+
 
 static int
 sshkey_init_rsa_key(struct sshkey *key, BIGNUM *n, BIGNUM *e, BIGNUM *d) {
