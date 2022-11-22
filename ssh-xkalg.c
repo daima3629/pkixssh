@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2005-2022 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -33,7 +33,6 @@
 #include "match.h"
 #include "myproposal.h"
 #include "xmalloc.h"
-#include "evp-compat.h"
 #include "compat.h"
 
 #define SHARAW_DIGEST_LENGTH (2*SHA_DIGEST_LENGTH)
@@ -406,62 +405,6 @@ logit("TRACE_XKALG fill_default_xkalg:");
 	initialize_xkalg();
 	if (p[0].name == NULL) add_default_xkalg();
 }
-
-
-#if defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x10000000L)
-/* work-arounds for limited EVP digests in OpenSSL 0.9.8* ...
- * (missing ecdsa support)
- */
-
-#if defined(OPENSSL_HAS_NISTP256) || defined(OPENSSL_HAS_NISTP384) || defined(OPENSSL_HAS_NISTP521)
-static inline void
-ssh_EVP_MD_ecdsa_init(EVP_MD *t, const EVP_MD *s) {
-    memcpy(t, s, sizeof(*t));
-    t->sign = (evp_sign_method*)ECDSA_sign;
-    t->verify = (evp_verify_method*)ECDSA_verify;
-    t->required_pkey_type[0] = EVP_PKEY_EC;
-    t->required_pkey_type[1] = 0;
-}
-#endif
-
-
-#ifdef OPENSSL_HAS_NISTP256
-/* Test for NID_X9_62_prime256v1(nistp256) includes test for EVP_sha256 */
-static EVP_MD ecdsa_sha256_md = { NID_undef };
-
-const EVP_MD*
-ssh_ecdsa_EVP_sha256(void) {
-    if (ecdsa_sha256_md.type == NID_undef)
-	ssh_EVP_MD_ecdsa_init(&ecdsa_sha256_md, EVP_sha256());
-    return &ecdsa_sha256_md;
-}
-#endif
-
-#ifdef OPENSSL_HAS_NISTP384
-/* Test for NID_secp384r1(nistp384) includes test for EVP_sha384 */
-static EVP_MD ecdsa_sha384_md = { NID_undef };
-
-const EVP_MD*
-ssh_ecdsa_EVP_sha384(void) {
-    if (ecdsa_sha384_md.type == NID_undef)
-	ssh_EVP_MD_ecdsa_init(&ecdsa_sha384_md, EVP_sha384());
-    return &ecdsa_sha384_md;
-}
-#endif
-
-#ifdef OPENSSL_HAS_NISTP521
-/* Test for NID_secp521r1(nistp521) includes test for EVP_sha512 */
-static EVP_MD ecdsa_sha512_md = { NID_undef };
-
-const EVP_MD*
-ssh_ecdsa_EVP_sha512(void) {
-    if (ecdsa_sha512_md.type == NID_undef)
-	ssh_EVP_MD_ecdsa_init(&ecdsa_sha512_md, EVP_sha512());
-    return &ecdsa_sha512_md;
-}
-#endif
-
-#endif /*defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x10000000L)*/
 
 
 #ifdef OPENSSL_HAS_ECC
