@@ -685,7 +685,7 @@ struct winsize {
 # define DO_LOG_SAFE_IN_SIGHAND
 #endif
 
-#ifndef GETPGRP_VOID
+#if !GETPGRP_VOID
 # include <unistd.h>
 # define getpgrp() getpgrp(0)
 #endif
