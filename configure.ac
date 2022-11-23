@@ -440,7 +440,6 @@ AC_CHECK_HEADERS([ \
 	ia.h \
 	iaf.h \
 	ifaddrs.h \
-	inttypes.h \
 	langinfo.h \
 	limits.h \
 	locale.h \
@@ -460,9 +459,6 @@ AC_CHECK_HEADERS([ \
 	sha2.h \
 	shadow.h \
 	stddef.h \
-	stdint.h \
-	string.h \
-	strings.h \
 	sys/bitypes.h \
 	sys/byteorder.h \
 	sys/bsdtty.h \
@@ -479,7 +475,6 @@ AC_CHECK_HEADERS([ \
 	sys/ptrace.h \
 	sys/random.h \
 	sys/select.h \
-	sys/stat.h \
 	sys/stream.h \
 	sys/stropts.h \
 	sys/strtio.h \
