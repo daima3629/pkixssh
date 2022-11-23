@@ -1,7 +1,7 @@
 #ifndef SSH_XKALG_H
 #define SSH_XKALG_H
 /*
- * Copyright (c) 2005-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2005-2022 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,22 +29,9 @@
 #include "sshkey.h"
 
 
-typedef int	(*fEVP_SignFinal)(EVP_MD_CTX *ctx, unsigned char *md, unsigned int *s, EVP_PKEY *pkey);
-typedef int	(*fEVP_VerifyFinal)(EVP_MD_CTX *ctx, const unsigned char *sigbuf, unsigned int siglen, EVP_PKEY *pkey);
-
-struct ssh_x509_md_st {
-	const char       *name;
-	const EVP_MD     *evp;
-	fEVP_SignFinal    SignFinal;
-	fEVP_VerifyFinal  VerifyFinal;
-};
-typedef struct ssh_x509_md_st ssh_x509_md;
-
-void	ssh_xkalg_dgst_compat(ssh_x509_md *dest, const ssh_x509_md *src, ssh_compat *compat);
-
 typedef struct {
 	const char   *name;
-	ssh_x509_md   dgst;
+	ssh_evp_md   *dgst;
 	const char   *signame;
 	int           basetype;
 	int           chain;

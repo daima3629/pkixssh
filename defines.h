@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1999-2003 Damien Miller.  All rights reserved.
- * Copyright (c) 2011-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2022 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -989,5 +989,6 @@ struct winsize {
 typedef struct ssh_compat_st ssh_compat;
 typedef struct ssh_sign_context_st ssh_sign_ctx;
 typedef struct ssh_verify_context_st ssh_verify_ctx;
+typedef struct ssh_evp_md_st ssh_evp_md;
 
 #endif /* _DEFINES_H */

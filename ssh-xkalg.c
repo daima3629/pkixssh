@@ -27,283 +27,12 @@
 #include <openssl/sha.h>
 #include <openssl/evp.h>
 
-#include "sshkey.h"
+#include "sshxkey.h"
 #include "sshbuf.h"
 #include "log.h"
 #include "match.h"
 #include "myproposal.h"
 #include "xmalloc.h"
-#include "compat.h"
-
-#define SHARAW_DIGEST_LENGTH (2*SHA_DIGEST_LENGTH)
-
-
-#ifdef OPENSSL_NO_DSA
-#  error "OPENSSL_NO_DSA"
-#endif
-#ifdef OPENSSL_NO_SHA
-#  error "OPENSSL_NO_SHA"
-#endif
-
-
-static int
-DSS1RAW_SignFinal(EVP_MD_CTX *ctx, unsigned char *sigret, unsigned int *siglen, EVP_PKEY *pkey) {
-	int ret;
-	unsigned char buf[20+2*(SHA_DIGEST_LENGTH)];
-	unsigned int  len;
-
-	ret = EVP_SignFinal(ctx, buf, &len, pkey);
-	if (ret <= 0) goto done;
-
-	ret = -1;
-{
-	DSA_SIG *sig;
-
-{	/* decode DSA signature */
-	const unsigned char *psig = buf;
-	sig = d2i_DSA_SIG(NULL, &psig, (long)len);
-}
-
-	*siglen = SHARAW_DIGEST_LENGTH;
-	if (sig != NULL) {
-		const BIGNUM *ps, *pr;
-		u_int rlen, slen;
-
-		DSA_SIG_get0(sig, &pr, &ps);
-
-		rlen = BN_num_bytes(pr);
-		slen = BN_num_bytes(ps);
-
-		if (rlen > SHA_DIGEST_LENGTH || slen > SHA_DIGEST_LENGTH) {
-			error_f("bad sig size %u %u", rlen, slen);
-			goto done;
-		}
-
-		explicit_bzero(sigret, SHARAW_DIGEST_LENGTH);
-		BN_bn2bin(pr, sigret + SHARAW_DIGEST_LENGTH - SHA_DIGEST_LENGTH - rlen);
-		BN_bn2bin(ps, sigret + SHARAW_DIGEST_LENGTH - slen);
-
-		ret = 1;
-	}
-	DSA_SIG_free(sig);
-}
-done:
-	return(ret);
-}
-
-
-static int
-DSS1RAW_VerifyFinal(EVP_MD_CTX *ctx, const unsigned char *sigbuf, unsigned int siglen, EVP_PKEY *pkey) {
-	DSA_SIG *sig;
-
-	if (siglen != SHARAW_DIGEST_LENGTH) return -1;
-
-/* decode DSA r&s from SecSH signature blob */
-{	BIGNUM *ps, *pr;
-
-	pr = BN_bin2bn(sigbuf                  , SHA_DIGEST_LENGTH, NULL);
-	ps = BN_bin2bn(sigbuf+SHA_DIGEST_LENGTH, SHA_DIGEST_LENGTH, NULL);
-	if ((pr == NULL) || (ps == NULL)) goto parse_err;
-
-	sig = DSA_SIG_new();
-	if (sig == NULL) goto parse_err;
-
-	if (DSA_SIG_set0(sig, pr, ps))
-		goto process;
-
-	DSA_SIG_free(sig);
-
-parse_err:
-	BN_free(pr);
-	BN_free(ps);
-	return -1;
-}
-
-process:
-{	int len, slen;
-	unsigned char *buf;
-	int ret;
-
-	len = i2d_DSA_SIG(sig, NULL);
-	if (len <= 0) {
-		DSA_SIG_free(sig);
-		return -1;
-	}
-
-	buf = xmalloc(len);  /*fatal on error*/
-
-{	/* encode DSA signature */
-	unsigned char *pbuf = buf;
-	slen = i2d_DSA_SIG(sig, &pbuf);
-}
-
-	ret = (len == slen)
-		? EVP_VerifyFinal(ctx, buf, len, pkey)
-		: -1;
-
-	freezero(buf, len);
-	DSA_SIG_free(sig);
-
-	return ret;
-}
-}
-
-
-#ifdef OPENSSL_HAS_ECC
-static int
-SSH_ECDSA_SignFinal(EVP_MD_CTX *ctx, unsigned char *sigret, unsigned int *siglen, EVP_PKEY *pkey) {
-	ECDSA_SIG *sig;
-	unsigned int len;
-
-{	int ret;
-	unsigned char buf[20+2*(SHA512_DIGEST_LENGTH)];
-
-	ret = EVP_SignFinal(ctx, buf, &len, pkey);
-	if (ret <= 0) return ret;
-
-{	/* decode ECDSA signature */
-	const unsigned char *psig = buf;
-	sig = d2i_ECDSA_SIG(NULL, &psig, (long)len);
-}
-
-	if (sig == NULL) return -1;
-}
-
-/* encode ECDSA r&s into SecSH signature blob */
-{	int r;
-	struct sshbuf *buf = NULL;
-	const BIGNUM *pr, *ps;
-
-	buf = sshbuf_new();
-	if (buf == NULL) goto encode_err;
-
-	ECDSA_SIG_get0(sig, &pr, &ps);
-
-	r = sshbuf_put_bignum2(buf, pr);
-	if (r != 0) goto encode_err;
-
-	r = sshbuf_put_bignum2(buf, ps);
-	if (r != 0) goto encode_err;
-
-	len = sshbuf_len(buf);
-	if ((size_t)len != sshbuf_len(buf)) goto encode_err;
-
-	memcpy(sigret, sshbuf_ptr(buf), len);
-	*siglen = len;
-
-	sshbuf_free(buf);
-	ECDSA_SIG_free(sig);
-	return 1;
-
-encode_err:
-	sshbuf_free(buf);
-	ECDSA_SIG_free(sig);
-	return -1;
-}
-}
-#endif /*def OPENSSL_HAS_ECC*/
-
-
-#ifdef OPENSSL_HAS_ECC
-static int
-SSH_ECDSA_VerifyFinal(EVP_MD_CTX *ctx, const unsigned char *sigblob, unsigned int siglen, EVP_PKEY *pkey) {
-	ECDSA_SIG *sig;
-
-	if ((SSHX_RFC6187_ASN1_OPAQUE_ECDSA_SIGNATURE & xcompat) != 0)
-		return EVP_VerifyFinal(ctx, sigblob, siglen, pkey);
-
-/* decode ECDSA r&s from SecSH signature blob */
-{	int r;
-	struct sshbuf *buf;
-	const unsigned char *bnbuf;
-	size_t bnlen;
-	BIGNUM *pr = NULL, *ps = NULL;
-
-	buf = sshbuf_from(sigblob, (size_t) siglen);
-	if (buf == NULL) return -1;
-
-	/* extract mpint r */
-	r = sshbuf_get_bignum2_bytes_direct(buf, &bnbuf, &bnlen);
-	if (r != 0) goto parse_err;
-
-	pr = BN_bin2bn(bnbuf, bnlen, NULL);
-	if (pr == NULL) goto parse_err;
-
-	/* extract mpint s */
-	r = sshbuf_get_bignum2_bytes_direct(buf, &bnbuf, &bnlen);
-	if (r != 0) goto parse_err;
-
-	ps = BN_bin2bn(bnbuf, bnlen, NULL);
-	if (ps == NULL) goto parse_err;
-
-	sig = ECDSA_SIG_new();
-	if (sig == NULL) goto parse_err;
-
-	if (ECDSA_SIG_set0(sig, pr, ps)) {
-		sshbuf_free(buf);
-		goto process;
-	}
-
-	ECDSA_SIG_free(sig);
-
-parse_err:
-	BN_free(ps);
-	BN_free(pr);
-	sshbuf_free(buf);
-	return -1;
-}
-
-process:
-{	int len, slen;
-	unsigned char *buf;
-	int ret;
-
-	len = i2d_ECDSA_SIG(sig, NULL);
-	if (len <= 0) {
-		ECDSA_SIG_free(sig);
-		return -1;
-	}
-
-	buf = xmalloc(len);  /*fatal on error*/
-
-{	/* encode ECDSA signature */
-	unsigned char *pbuf = buf;
-	slen = i2d_ECDSA_SIG(sig, &pbuf);
-}
-
-	ret = (len == slen)
-		? EVP_VerifyFinal(ctx, buf, slen, pkey)
-		: -1;
-
-	freezero(buf, len);
-	ECDSA_SIG_free(sig);
-
-	return ret;
-}
-}
-#endif /*def OPENSSL_HAS_ECC*/
-
-
-void
-ssh_xkalg_dgst_compat(ssh_x509_md *dest, const ssh_x509_md *src, ssh_compat *compat) {
-	dest->name = src->name;
-	dest->evp = src->evp;
-
-#ifdef OPENSSL_HAS_ECC
-	if (check_compat_extra(compat, SSHX_RFC6187_ASN1_OPAQUE_ECDSA_SIGNATURE)) {
-		if (src->SignFinal == SSH_ECDSA_SignFinal) {
-			dest->SignFinal = EVP_SignFinal;
-			dest->VerifyFinal = EVP_VerifyFinal;
-			return;
-		}
-	}
-#else
-	(void)compat;
-#endif /*ndef OPENSSL_HAS_ECC*/
-
-	dest->SignFinal = src->SignFinal;
-	dest->VerifyFinal = src->VerifyFinal;
-}
 
 
 /* SSH X509 public key algorithms*/
@@ -324,10 +53,7 @@ logit("TRACE_XKALG initialize_xkalg:");
 	k = sizeof(x509keyalgs) / sizeof(x509keyalgs[0]);
 	for (; k > 0; k--, p++) {
 		p->name = NULL;
-		p->dgst.name = NULL;
-		p->dgst.evp = NULL;
-		p->dgst.SignFinal = EVP_SignFinal;
-		p->dgst.VerifyFinal = EVP_VerifyFinal;
+		p->dgst = NULL;
 		p->signame = NULL;
 		p->basetype = KEY_UNSPEC;
 		p->subtype = -1;
@@ -407,70 +133,56 @@ logit("TRACE_XKALG fill_default_xkalg:");
 }
 
 
-#ifdef OPENSSL_HAS_ECC
-static inline void
-wrap_digest_ecdsa(SSHX509KeyAlgs* p) {
-	p->dgst.SignFinal = SSH_ECDSA_SignFinal;
-	p->dgst.VerifyFinal = SSH_ECDSA_VerifyFinal;
-}
-#endif /*def OPENSSL_HAS_ECC*/
-
-
 static int
 ssh_x509key_alg_digest(SSHX509KeyAlgs* p, const char *dgstname) {
-	const EVP_MD* md = NULL;
+	int id;
 
 	if (dgstname == NULL) {
 		fatal_f("dgstname is NULL");
 		return(-1); /*unreachable code*/
 	}
 
-	if (strcasecmp("rsa-sha1", dgstname) == 0) { md = EVP_sha1(); goto done; }
-	if (strcasecmp("rsa-md5" , dgstname) == 0) { md = EVP_md5(); goto done; }
+	if (strcasecmp("rsa-sha1", dgstname) == 0) {
+		id = SSH_MD_RSA_SHA1; goto done; }
+	if (strcasecmp("rsa-md5" , dgstname) == 0) {
+		id = SSH_MD_RSA_MD5; goto done; }
 #ifdef HAVE_EVP_SHA256
-	if (strcasecmp("rsa2048-sha256", dgstname) == 0) { md = EVP_sha256(); goto done; }
+	if (strcasecmp("rsa2048-sha256", dgstname) == 0) {
+		id = SSH_MD_RSA_SHA256; goto done; }
 #endif
 
 #ifdef OPENSSL_HAS_NISTP256
 	if (strcasecmp("ssh-sha256"  , dgstname) == 0) {
-		md = ssh_ecdsa_EVP_sha256();
-		wrap_digest_ecdsa(p);
-		goto done;
-	}
-	if (strcasecmp("sha256"  , dgstname) == 0) { md = ssh_ecdsa_EVP_sha256(); goto done; }
+		id = SSH_MD_EC_SHA256_SSH; goto done; }
+	if (strcasecmp("sha256"  , dgstname) == 0) {
+		id = SSH_MD_EC_SHA256; goto done; }
 #endif
 #ifdef OPENSSL_HAS_NISTP384
 	if (strcasecmp("ssh-sha384"  , dgstname) == 0) {
-		md = ssh_ecdsa_EVP_sha384();
-		wrap_digest_ecdsa(p);
-		goto done;
+		id = SSH_MD_EC_SHA384_SSH; goto done;
 	}
-	if (strcasecmp("sha384"  , dgstname) == 0) { md = ssh_ecdsa_EVP_sha384(); goto done; }
+	if (strcasecmp("sha384"  , dgstname) == 0) {
+		id = SSH_MD_EC_SHA384; goto done; }
 #endif
 #ifdef OPENSSL_HAS_NISTP521
 	if (strcasecmp("ssh-sha512"  , dgstname) == 0) {
-		md = ssh_ecdsa_EVP_sha512();
-		wrap_digest_ecdsa(p);
-		goto done;
+		id = SSH_MD_EC_SHA512_SSH; goto done;
 	}
-	if (strcasecmp("sha512"  , dgstname) == 0) { md = ssh_ecdsa_EVP_sha512(); goto done; }
+	if (strcasecmp("sha512"  , dgstname) == 0) {
+		id = SSH_MD_EC_SHA512; goto done; }
 #endif
 
-	if (strcasecmp("dss-asn1", dgstname) == 0) { md = EVP_dss1(); goto done; }
+	if (strcasecmp("dss-asn1", dgstname) == 0) {
+		id = SSH_MD_DSA_SHA1; goto done; }
 	if (strcasecmp("dss-raw" , dgstname) == 0) {
-		md = EVP_dss1();
-		p->dgst.SignFinal = DSS1RAW_SignFinal;
-		p->dgst.VerifyFinal = DSS1RAW_VerifyFinal;
-		goto done;
-	}
+		id = SSH_MD_DSA_RAW; goto done; }
 
-	return(-1);
+	return -1;
 
 done:
-	p->dgst.name = dgstname;
-	p->dgst.evp = md;
+	p->dgst = ssh_evp_md_find(id);
 
-	return(0);
+	return 0;
 }
 
 

@@ -62,7 +62,7 @@ check_rsa2048_sha256(const SSHX509KeyAlgs *xkalg, const struct sshkey *key) {
 	    /* TODO generic */
 	    (key->type == KEY_RSA) &&
 	    (sshkey_size(key) < 2048) &&
-	    (EVP_MD_size(xkalg->dgst.evp) >= SHA256_DIGEST_LENGTH)
+	    (EVP_MD_size(xkalg->dgst->md()) >= SHA256_DIGEST_LENGTH)
 	)
 		return 0;
 #else
@@ -1604,7 +1604,7 @@ plain_alg:
 
 static int
 ssh_x509_EVP_PKEY_sign(
-	EVP_PKEY *privkey, const ssh_x509_md *dgst,
+	EVP_PKEY *privkey, const ssh_evp_md *dgst,
 	u_char *sigret, u_int *siglen,
 	const u_char *data, u_int datalen
 ) {
@@ -1617,7 +1617,7 @@ ssh_x509_EVP_PKEY_sign(
 		return -1;
 	}
 
-	ret = EVP_SignInit_ex(ctx, dgst->evp, NULL);
+	ret = EVP_SignInit_ex(ctx, dgst->md(), NULL);
 	if (ret <= 0) {
 		error_f("init fail");
 		goto done;
@@ -1675,17 +1675,17 @@ ssh_x509_sign(
 	 */
 	sigret = xmalloc(keylen+20/*?*/); /*fatal on error*/
 
-	debug3_f("alg=%.50s, md=%.30s", xkalg->name, xkalg->dgst.name);
+	debug3_f("alg=%.50s, dgst->id=%d", xkalg->name, xkalg->dgst->id);
 
 {	u_int len = datalen;
-	ssh_x509_md dgst;
+	ssh_evp_md dgst;
 
 	if ((size_t)len != datalen) {
 		r = SSH_ERR_INVALID_ARGUMENT;
 		goto done;
 	}
 
-	ssh_xkalg_dgst_compat(&dgst, &xkalg->dgst, ctx->compat);
+	ssh_xkalg_dgst_compat(&dgst, xkalg->dgst, ctx->compat);
 
 	if (ssh_x509_EVP_PKEY_sign(key->pk, &dgst, sigret, &siglen, data, len) <= 0) {
 		do_log_crypto_errors(SYSLOG_LEVEL_ERROR);
@@ -1740,7 +1740,7 @@ done:
 
 static int
 ssh_xkalg_verify(
-	EVP_PKEY* pubkey, const ssh_x509_md *dgst,
+	EVP_PKEY* pubkey, const ssh_evp_md *dgst,
 	u_char *sigblob, u_int len, const u_char *data, u_int datalen
 ) {
 	int ret;
@@ -1752,7 +1752,7 @@ ssh_xkalg_verify(
 		return -1;
 	}
 
-	ret = EVP_VerifyInit(ctx, dgst->evp);
+	ret = EVP_VerifyInit_ex(ctx, dgst->md(), NULL);
 	if (ret <= 0) {
 		error_f("verify-init fail");
 		goto done;
@@ -1875,10 +1875,13 @@ end_sign_blob:
 	 /* verify signed data */
 {	int ret;
 	for (; loc >= 0; loc = ssh_xkalg_nameind(ctx->alg, &xkalg, loc)) {
-		const ssh_x509_md *dgst = &xkalg->dgst;
-		debug3_f("md=%.30s, loc=%d", dgst->name, loc);
+		ssh_evp_md dgst;
 
-		ret = ssh_xkalg_verify(pubkey, dgst, sigblob, len, data, datalen);
+		debug3_f("dgst->id=%d, loc=%d", xkalg->dgst->id, loc);
+
+		ssh_xkalg_dgst_compat(&dgst, xkalg->dgst, ctx->compat);
+
+		ret = ssh_xkalg_verify(pubkey, &dgst, sigblob, len, data, datalen);
 		if (ret > 0) break;
 
 		do_log_crypto_errors(SYSLOG_LEVEL_ERROR);
