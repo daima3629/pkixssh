@@ -658,8 +658,7 @@ ssh_dss_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 	const struct sshkey *key = ctx->key;
 	DSA_SIG *sig = NULL;
 	u_char sigblob[SIGBLOB_LEN];
-	size_t rlen, slen, len, dlen = ssh_digest_bytes(SSH_DIGEST_SHA1);
-	struct sshbuf *b = NULL;
+	size_t rlen, slen, dlen = ssh_digest_bytes(SSH_DIGEST_SHA1);
 	int ret = SSH_ERR_INVALID_ARGUMENT;
 
 	if (lenp != NULL)
@@ -693,28 +692,11 @@ ssh_dss_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 	BN_bn2bin(ps, sigblob + SIGBLOB_LEN - slen);
 }
 
-	if ((b = sshbuf_new()) == NULL) {
-		ret = SSH_ERR_ALLOC_FAIL;
-		goto out;
-	}
-	if ((ret = sshbuf_put_cstring(b, "ssh-dss")) != 0 ||
-	    (ret = sshbuf_put_string(b, sigblob, SIGBLOB_LEN)) != 0)
-		goto out;
+	ret = ssh_encode_signature(sigp, lenp,
+	    "ssh-dss", sigblob, SIGBLOB_LEN);
 
-	len = sshbuf_len(b);
-	if (sigp != NULL) {
-		if ((*sigp = malloc(len)) == NULL) {
-			ret = SSH_ERR_ALLOC_FAIL;
-			goto out;
-		}
-		memcpy(*sigp, sshbuf_ptr(b), len);
-	}
-	if (lenp != NULL)
-		*lenp = len;
-	ret = 0;
  out:
 	DSA_SIG_free(sig);
-	sshbuf_free(b);
 	return ret;
 }
 

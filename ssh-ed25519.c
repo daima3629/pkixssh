@@ -254,10 +254,9 @@ ssh_ed25519_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 {
 	const struct sshkey *key = ctx->key;
 	u_char *sig = NULL;
-	size_t slen = 0, len;
+	size_t slen = 0;
 	unsigned long long smlen;
-	int r, ret;
-	struct sshbuf *b = NULL;
+	int r;
 
 	if (lenp != NULL)
 		*lenp = 0;
@@ -273,33 +272,16 @@ ssh_ed25519_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 	if ((sig = malloc(slen)) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
 
-	if ((ret = crypto_sign_ed25519(sig, &smlen, data, datalen,
-	    key->ed25519_sk)) != 0 || smlen <= datalen) {
+	if (crypto_sign_ed25519(sig, &smlen, data, datalen,
+	    key->ed25519_sk) != 0 || smlen <= datalen) {
 		r = SSH_ERR_INVALID_ARGUMENT; /* XXX better error? */
 		goto out;
 	}
-	/* encode signature */
-	if ((b = sshbuf_new()) == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto out;
-	}
-	if ((r = sshbuf_put_cstring(b, "ssh-ed25519")) != 0 ||
-	    (r = sshbuf_put_string(b, sig, smlen - datalen)) != 0)
-		goto out;
-	len = sshbuf_len(b);
-	if (sigp != NULL) {
-		if ((*sigp = malloc(len)) == NULL) {
-			r = SSH_ERR_ALLOC_FAIL;
-			goto out;
-		}
-		memcpy(*sigp, sshbuf_ptr(b), len);
-	}
-	if (lenp != NULL)
-		*lenp = len;
-	/* success */
-	r = 0;
+
+	r = ssh_encode_signature(sigp, lenp,
+	    "ssh-ed25519", sig, smlen - datalen);
+
  out:
-	sshbuf_free(b);
 	if (sig != NULL)
 		freezero(sig, slen);
 

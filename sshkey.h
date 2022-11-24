@@ -325,6 +325,9 @@ int	 sshkey_forward_state(const struct sshkey *, u_int32_t, int);
 int	 sshkey_private_serialize_maxsign(struct sshkey *key,
     struct sshbuf *buf, u_int32_t maxsign, int);
 
+int	 ssh_encode_signature(u_char **, size_t *, const u_char *,
+    const u_char *, size_t);
+
 #ifdef SSHKEY_INTERNAL
 # ifdef WITH_OPENSSL
 int	sshkey_from_pkey(EVP_PKEY *pk, struct sshkey **keyp);

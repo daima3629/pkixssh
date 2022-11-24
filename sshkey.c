@@ -2147,6 +2147,40 @@ sshkey_check_sigtype(const u_char *sig, size_t siglen,
 }
 
 int
+ssh_encode_signature(u_char **sigp, size_t *lenp,
+    const u_char *signame, const u_char *sigret, size_t siglen
+) {
+	int r;
+	struct sshbuf *buf;
+
+	debug3_f("signame=%s", signame);
+
+	buf = sshbuf_new();
+	if (buf == NULL)
+		return SSH_ERR_ALLOC_FAIL;
+
+	r = sshbuf_put_cstring(buf, signame);
+	if (r != 0) goto done;
+
+	r = sshbuf_put_string(buf, sigret, siglen);
+	if (r != 0) goto done;
+
+{	size_t len = sshbuf_len(buf);
+	if (sigp != NULL) {
+		*sigp = xmalloc(len); /*fatal on error*/
+		memcpy(*sigp, sshbuf_ptr(buf), len);
+	}
+	if (lenp != NULL)
+		*lenp = len;
+}
+
+done:
+	sshbuf_free(buf);
+
+	return r;
+}
+
+int
 sshkey_sign(const ssh_sign_ctx *ctx,
     u_char **sigp, size_t *lenp,
     const u_char *data, size_t dlen)

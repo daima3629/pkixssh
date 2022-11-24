@@ -531,8 +531,7 @@ ssh_ecdsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 {
 	const struct sshkey *key = ctx->key;
 	ECDSA_SIG *sig = NULL;
-	size_t len;
-	struct sshbuf *b = NULL, *bb = NULL;
+	struct sshbuf *bb = NULL;
 	int ret;
 
 	if (lenp != NULL)
@@ -546,7 +545,7 @@ ssh_ecdsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 	ret = ssh_ecdsa_sign_pkey(key, &sig, data, datalen);
 	if (ret != 0) goto out;
 
-	if ((bb = sshbuf_new()) == NULL || (b = sshbuf_new()) == NULL) {
+	if ((bb = sshbuf_new()) == NULL) {
 		ret = SSH_ERR_ALLOC_FAIL;
 		goto out;
 	}
@@ -557,22 +556,11 @@ ssh_ecdsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 	    (ret = sshbuf_put_bignum2(bb, ps)) != 0)
 		goto out;
 }
-	if ((ret = sshbuf_put_cstring(b, sshkey_ssh_name_plain(key))) != 0 ||
-	    (ret = sshbuf_put_stringb(b, bb)) != 0)
-		goto out;
-	len = sshbuf_len(b);
-	if (sigp != NULL) {
-		if ((*sigp = malloc(len)) == NULL) {
-			ret = SSH_ERR_ALLOC_FAIL;
-			goto out;
-		}
-		memcpy(*sigp, sshbuf_ptr(b), len);
-	}
-	if (lenp != NULL)
-		*lenp = len;
-	ret = 0;
+
+	ret = ssh_encode_signature(sigp, lenp,
+	    sshkey_ssh_name_plain(key), sshbuf_ptr(bb), sshbuf_len(bb));
+
  out:
-	sshbuf_free(b);
 	sshbuf_free(bb);
 	ECDSA_SIG_free(sig);
 	return ret;

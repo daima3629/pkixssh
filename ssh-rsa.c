@@ -811,7 +811,6 @@ ssh_rsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 	u_int len;
 	struct ssh_rsa_alg_st *alg_info;
 	int ret;
-	struct sshbuf *b = NULL;
 
 	if (lenp != NULL)
 		*lenp = 0;
@@ -891,28 +890,12 @@ evp_end:
 		ret = SSH_ERR_INTERNAL_ERROR;
 		goto out;
 	}
-	/* encode signature */
-	if ((b = sshbuf_new()) == NULL) {
-		ret = SSH_ERR_ALLOC_FAIL;
-		goto out;
-	}
-	if ((ret = sshbuf_put_cstring(b, alg_info->signame)) != 0 ||
-	    (ret = sshbuf_put_string(b, sig, slen)) != 0)
-		goto out;
-	len = sshbuf_len(b);
-	if (sigp != NULL) {
-		if ((*sigp = malloc(len)) == NULL) {
-			ret = SSH_ERR_ALLOC_FAIL;
-			goto out;
-		}
-		memcpy(*sigp, sshbuf_ptr(b), len);
-	}
-	if (lenp != NULL)
-		*lenp = len;
+
+	ret = ssh_encode_signature(sigp, lenp,
+	    alg_info->signame, sig, slen);
 
  out:
 	freezero(sig, slen);
-	sshbuf_free(b);
 	return ret;
 }
 

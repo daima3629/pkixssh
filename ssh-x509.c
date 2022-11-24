@@ -1694,38 +1694,8 @@ ssh_x509_sign(
 	}
 }
 
-{	/* create ssh signature blob */
-	struct sshbuf *buf;
-	const char *signame;
-
-	buf = sshbuf_new();
-	if (buf == NULL) {
-		error_f("out of memory - sshbuf_new");
-		r = SSH_ERR_ALLOC_FAIL;
-		goto done;
-	}
-
-	signame = X509PUBALG_SIGNAME(xkalg);
-	debug3_f("signame=%.50s", signame);
-
-	r = sshbuf_put_cstring(buf, signame);
-	if (r != 0) goto end_sign_blob;
-
-	r = sshbuf_put_string(buf, sigret, siglen);
-	if (r != 0) goto end_sign_blob;
-
-{	size_t len = sshbuf_len(buf);
-	if (sigp != NULL) {
-		*sigp = xmalloc(len); /*fatal on error*/
-		memcpy(*sigp, sshbuf_ptr(buf), len);
-	}
-	if (lenp != NULL)
-		*lenp = len;
-}
-
-end_sign_blob:
-	sshbuf_free(buf);
-}
+	r = ssh_encode_signature(sigp, lenp,
+	    X509PUBALG_SIGNAME(xkalg), sigret, siglen);
 
 done:
 	if (sigret != NULL) {
