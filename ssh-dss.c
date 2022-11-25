@@ -52,7 +52,7 @@
 #include "ssherr.h"
 #include "digest.h"
 #define SSHKEY_INTERNAL
-#include "sshkey.h"
+#include "sshxkey.h"
 #include "xmalloc.h"
 #include "log.h"
 
@@ -587,14 +587,15 @@ ssh_dss_deserialize_private(const char *pkalg, struct sshbuf *buf,
 
 /* caller must free result */
 static DSA_SIG*
-ssh_dss_sign_pkey(const struct sshkey *key, const u_char *data, u_int datalen)
+ssh_dss_sign_pkey(const ssh_evp_md *dgst, EVP_PKEY *privkey,
+    const u_char *data, u_int datalen)
 {
 	DSA_SIG *sig = NULL;
 	u_char *tsig = NULL;
 	u_int slen, len;
 	int ret;
 
-	slen = EVP_PKEY_size(key->pk);
+	slen = EVP_PKEY_size(privkey);
 	tsig = xmalloc(slen);	/*fatal on error*/
 
 {
@@ -607,7 +608,7 @@ ssh_dss_sign_pkey(const struct sshkey *key, const u_char *data, u_int datalen)
 		goto clean;
 	}
 
-	ret = EVP_SignInit_ex(md, EVP_dss1(), NULL);
+	ret = EVP_SignInit_ex(md, dgst->md(), NULL);
 	if (ret <= 0) {
 #ifdef TRACE_EVP_ERROR
 		error_crypto("EVP_SignInit_ex");
@@ -623,7 +624,7 @@ ssh_dss_sign_pkey(const struct sshkey *key, const u_char *data, u_int datalen)
 		goto clean;
 	}
 
-	ret = EVP_SignFinal(md, tsig, &len, key->pk);
+	ret = EVP_SignFinal(md, tsig, &len, privkey);
 	if (ret <= 0) {
 #ifdef TRACE_EVP_ERROR
 		error_crypto("EVP_SignFinal");
@@ -656,6 +657,7 @@ ssh_dss_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
     const u_char *data, size_t datalen)
 {
 	const struct sshkey *key = ctx->key;
+	const ssh_evp_md *dgst;
 	DSA_SIG *sig = NULL;
 	u_char sigblob[SIGBLOB_LEN];
 	size_t rlen, slen, dlen = ssh_digest_bytes(SSH_DIGEST_SHA1);
@@ -672,7 +674,9 @@ ssh_dss_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 	ret = sshkey_validate_public_dsa(key);
 	if (ret != 0) return ret;
 
-	sig = ssh_dss_sign_pkey(key, data, datalen);
+	dgst = ssh_evp_md_find(SSH_MD_DSA_RAW);
+
+	sig = ssh_dss_sign_pkey(dgst, key->pk, data, datalen);
 	if (sig == NULL) {
 		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto out;

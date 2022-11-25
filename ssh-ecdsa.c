@@ -46,24 +46,28 @@
 
 #include <string.h>
 
-#include "sshkey.h"
+#include "sshxkey.h"
 #include "sshbuf.h"
 #include "ssherr.h"
 #include "log.h"
 #include "xmalloc.h"
 
 
-static const EVP_MD*
-ssh_ecdsa_evp_md(const struct sshkey *key)
+static const ssh_evp_md*
+ssh_ecdsa_dgst(const struct sshkey *key)
 {
+	int id;
+
 	switch (key->ecdsa_nid) {
-	case NID_X9_62_prime256v1: return ssh_ecdsa_EVP_sha256();
-	case NID_secp384r1:	   return ssh_ecdsa_EVP_sha384();
+	case NID_X9_62_prime256v1: id = SSH_MD_EC_SHA256_SSH; break;
+	case NID_secp384r1:	   id = SSH_MD_EC_SHA384_SSH; break;
 #ifdef OPENSSL_HAS_NISTP521
-	case NID_secp521r1:	   return ssh_ecdsa_EVP_sha512();
+	case NID_secp521r1:	   id = SSH_MD_EC_SHA512_SSH; break;
 #endif /* OPENSSL_HAS_NISTP521 */
+	default:
+		return NULL;
 	}
-	return NULL;
+	return ssh_evp_md_find(id);
 }
 
 
@@ -453,19 +457,15 @@ ssh_ecdsa_deserialize_private(const char *pkalg, struct sshbuf *buf,
 
 /* caller must free result */
 static int
-ssh_ecdsa_sign_pkey(const struct sshkey *key,
+ssh_ecdsa_sign_pkey(const ssh_evp_md *dgst, EVP_PKEY *privkey,
     ECDSA_SIG **sigp, const u_char *data, u_int datalen
 ) {
 	ECDSA_SIG *sig = NULL;
-	const EVP_MD *type;
 	u_char *tsig = NULL;
 	u_int slen, len;
 	int ret;
 
-	type = ssh_ecdsa_evp_md(key);
-	if (type == NULL) return SSH_ERR_INTERNAL_ERROR;
-
-	slen = EVP_PKEY_size(key->pk);
+	slen = EVP_PKEY_size(privkey);
 	tsig = xmalloc(slen);	/*fatal on error*/
 
 {
@@ -478,7 +478,7 @@ ssh_ecdsa_sign_pkey(const struct sshkey *key,
 		goto clean;
 	}
 
-	ret = EVP_SignInit_ex(md, type, NULL);
+	ret = EVP_SignInit_ex(md, dgst->md(), NULL);
 	if (ret <= 0) {
 #ifdef TRACE_EVP_ERROR
 		error_crypto("EVP_SignInit_ex");
@@ -494,7 +494,7 @@ ssh_ecdsa_sign_pkey(const struct sshkey *key,
 		goto clean;
 	}
 
-	ret = EVP_SignFinal(md, tsig, &len, key->pk);
+	ret = EVP_SignFinal(md, tsig, &len, privkey);
 	if (ret <= 0) {
 #ifdef TRACE_EVP_ERROR
 		error_crypto("EVP_SignFinal");
@@ -530,6 +530,7 @@ ssh_ecdsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
     const u_char *data, size_t datalen)
 {
 	const struct sshkey *key = ctx->key;
+	const ssh_evp_md *dgst;
 	ECDSA_SIG *sig = NULL;
 	struct sshbuf *bb = NULL;
 	int ret;
@@ -539,10 +540,13 @@ ssh_ecdsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 	if (sigp != NULL)
 		*sigp = NULL;
 
+	dgst = ssh_ecdsa_dgst(key);
+	if (dgst == NULL) return SSH_ERR_INTERNAL_ERROR;
+
 	ret = sshkey_validate_public_ecdsa(key);
 	if (ret != 0) return ret;
 
-	ret = ssh_ecdsa_sign_pkey(key, &sig, data, datalen);
+	ret = ssh_ecdsa_sign_pkey(dgst, key->pk, &sig, data, datalen);
 	if (ret != 0) goto out;
 
 	if ((bb = sshbuf_new()) == NULL) {
@@ -567,16 +571,12 @@ ssh_ecdsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 }
 
 static int
-ssh_ecdsa_verify_pkey(const struct sshkey *key,
+ssh_ecdsa_verify_pkey(const ssh_evp_md *dgst, EVP_PKEY *pubkey,
     ECDSA_SIG *sig, const u_char *data, u_int datalen)
 {
 	int ret;
 	u_char *tsig = NULL;
 	u_int len;
-	const EVP_MD *type;
-
-	type = ssh_ecdsa_evp_md(key);
-	if (type == NULL) return SSH_ERR_INTERNAL_ERROR;
 
 	/* Sig is in ECDSA_SIG structure, convert to encoded buffer */
 	len = i2d_ECDSA_SIG(sig, NULL);
@@ -598,7 +598,7 @@ ssh_ecdsa_verify_pkey(const struct sshkey *key,
 		goto clean;
 	}
 
-	ok = EVP_VerifyInit(md, type);
+	ok = EVP_VerifyInit(md, dgst->md());
 	if (ok <= 0) {
 #ifdef TRACE_EVP_ERROR
 		error_crypto("EVP_VerifyInit");
@@ -616,7 +616,7 @@ ssh_ecdsa_verify_pkey(const struct sshkey *key,
 		goto clean;
 	}
 
-	ok = EVP_VerifyFinal(md, tsig, len, key->pk);
+	ok = EVP_VerifyFinal(md, tsig, len, pubkey);
 	if (ok < 0) {
 #ifdef TRACE_EVP_ERROR
 		error_crypto("EVP_VerifyFinal");
@@ -647,6 +647,7 @@ ssh_ecdsa_verify(const ssh_verify_ctx *ctx,
     const u_char *data, size_t dlen)
 {
 	const struct sshkey *key = ctx->key;
+	const ssh_evp_md *dgst;
 	ECDSA_SIG *esig = NULL;
 	struct sshbuf *b = NULL, *sigbuf = NULL;
 	char *ktype = NULL;
@@ -654,6 +655,9 @@ ssh_ecdsa_verify(const ssh_verify_ctx *ctx,
 
 	if (sig == NULL || siglen == 0)
 		return SSH_ERR_INVALID_ARGUMENT;
+
+	dgst = ssh_ecdsa_dgst(key);
+	if (dgst == NULL) return SSH_ERR_INTERNAL_ERROR;
 
 	ret = sshkey_validate_public_ecdsa(key);
 	if (ret != 0) return ret;
@@ -706,7 +710,7 @@ parse_out:
 		ret = SSH_ERR_UNEXPECTED_TRAILING_DATA;
 		goto out;
 	}
-	ret = ssh_ecdsa_verify_pkey(key, esig, data, dlen);
+	ret = ssh_ecdsa_verify_pkey(dgst, key->pk, esig, data, dlen);
 
  out:
 	sshbuf_free(sigbuf);
