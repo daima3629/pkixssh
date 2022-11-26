@@ -224,15 +224,6 @@ EC_POINT_set_affine_coordinates(
 #endif /*def OPENSSL_HAS_ECC*/
 #endif /*ndef HAVE_EC_POINT_GET_AFFINE_COORDINATES*/
 
-#ifndef HAVE_EC_GROUP_GET_FIELD_TYPE		/* OpenSSL < 3.0.0 */
-#ifdef OPENSSL_HAS_ECC
-static inline int
-EC_GROUP_get_field_type(const EC_GROUP *group) {
-	return EC_METHOD_get_field_type(EC_GROUP_method_of(group));
-}
-#endif /*def OPENSSL_HAS_ECC*/
-#endif /*ndef HAVE_EC_GROUP_GET_FIELD_TYPE*/
-
 
 #ifndef HAVE_EVP_DSS1
 /* removed in OpenSSL 1.1 */

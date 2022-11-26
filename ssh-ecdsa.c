@@ -53,6 +53,14 @@
 #include "xmalloc.h"
 
 
+#ifndef HAVE_EC_GROUP_GET_FIELD_TYPE		/* OpenSSL < 3.0.0 */
+static inline int
+EC_GROUP_get_field_type(const EC_GROUP *group) {
+	return EC_METHOD_get_field_type(EC_GROUP_method_of(group));
+}
+#endif /*ndef HAVE_EC_GROUP_GET_FIELD_TYPE*/
+
+
 static const ssh_evp_md*
 ssh_ecdsa_dgst(const struct sshkey *key)
 {
@@ -158,6 +166,126 @@ static inline int
 sshbuf_write_ec_curve(struct sshbuf *buf, const struct sshkey *key) {
 	const char *curve_name = sshkey_curve_nid_to_name(key->ecdsa_nid);
 	return sshbuf_put_cstring(buf, curve_name);
+}
+
+
+#ifdef DEBUG_KEXECDH
+static void
+dump_ec_point(const EC_GROUP *g, const EC_POINT *p)
+{
+	BIGNUM *x, *y = NULL;
+
+	if (p == NULL) {
+		fputs("point=(NULL)\n", stderr);
+		return;
+	}
+	if (EC_GROUP_get_field_type(g) != NID_X9_62_prime_field) {
+		fprintf(stderr, "%s: group is not a prime field\n", __func__);
+		return;
+	}
+
+	x = BN_new();
+	y = BN_new();
+	if (x == NULL || y == NULL) {
+		fprintf(stderr, "%s: BN_new failed\n", __func__);
+		goto err;
+	}
+	if (EC_POINT_get_affine_coordinates(g, p, x, y, NULL) != 1) {
+		fprintf(stderr, "%s: EC_POINT_get_affine_coordinates\n", __func__);
+		goto err;
+	}
+
+	fputs("x=", stderr);
+	BN_print_fp(stderr, x);
+	fputs("\n", stderr);
+
+	fputs("y=", stderr);
+	BN_print_fp(stderr, y);
+	fputs("\n", stderr);
+
+err:
+	BN_clear_free(x);
+	BN_clear_free(y);
+}
+#endif
+
+int
+sshkey_ec_validate_public(const EC_GROUP *group, const EC_POINT *public)
+{
+	EC_POINT *nq = NULL;
+	BIGNUM *order = NULL, *x = NULL, *y = NULL, *tmp = NULL;
+	int ret = SSH_ERR_KEY_INVALID_EC_VALUE;
+
+	/*
+	 * NB. This assumes OpenSSL has already verified that the public
+	 * point lies on the curve. This is done by EC_POINT_oct2point()
+	 * implicitly calling EC_POINT_is_on_curve(). If this code is ever
+	 * reachable with public points not unmarshalled using
+	 * EC_POINT_oct2point then the caller will need to explicitly check.
+	 */
+#ifdef DEBUG_KEXECDH
+	fputs("public key:\n", stderr);
+	dump_ec_point(group, public);
+#endif
+
+	/*
+	 * We shouldn't ever hit this case because bignum_get_ecpoint()
+	 * refuses to load GF2m points.
+	 */
+	if (EC_GROUP_get_field_type(group) !=
+	    NID_X9_62_prime_field)
+		goto out;
+
+	/* Q != infinity */
+	if (EC_POINT_is_at_infinity(group, public))
+		goto out;
+
+	if ((x = BN_new()) == NULL ||
+	    (y = BN_new()) == NULL ||
+	    (order = BN_new()) == NULL ||
+	    (tmp = BN_new()) == NULL) {
+		ret = SSH_ERR_ALLOC_FAIL;
+		goto out;
+	}
+
+	/* log2(x) > log2(order)/2, log2(y) > log2(order)/2 */
+	if (EC_GROUP_get_order(group, order, NULL) != 1 ||
+	    EC_POINT_get_affine_coordinates(group, public,
+	    x, y, NULL) != 1) {
+		ret = SSH_ERR_LIBCRYPTO_ERROR;
+		goto out;
+	}
+	if (BN_num_bits(x) <= BN_num_bits(order) / 2 ||
+	    BN_num_bits(y) <= BN_num_bits(order) / 2)
+		goto out;
+
+	/* nQ == infinity (n == order of subgroup) */
+	if ((nq = EC_POINT_new(group)) == NULL) {
+		ret = SSH_ERR_ALLOC_FAIL;
+		goto out;
+	}
+	if (EC_POINT_mul(group, nq, NULL, public, order, NULL) != 1) {
+		ret = SSH_ERR_LIBCRYPTO_ERROR;
+		goto out;
+	}
+	if (EC_POINT_is_at_infinity(group, nq) != 1)
+		goto out;
+
+	/* x < order - 1, y < order - 1 */
+	if (!BN_sub(tmp, order, BN_value_one())) {
+		ret = SSH_ERR_LIBCRYPTO_ERROR;
+		goto out;
+	}
+	if (BN_cmp(x, tmp) >= 0 || BN_cmp(y, tmp) >= 0)
+		goto out;
+	ret = 0;
+ out:
+	BN_clear_free(x);
+	BN_clear_free(y);
+	BN_clear_free(order);
+	BN_clear_free(tmp);
+	EC_POINT_free(nq);
+	return ret;
 }
 
 
