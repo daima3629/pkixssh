@@ -268,7 +268,7 @@ ssh_add_x509key_alg(const char *data) {
 
 #ifdef OPENSSL_FIPS
 	if (FIPS_mode()) {
-		if ((EVP_MD_flags(p->dgst.evp) & EVP_MD_FLAG_FIPS) == 0) {
+		if ((EVP_MD_flags(p->dgst->md()) & EVP_MD_FLAG_FIPS) == 0) {
 			error_f("%s in not enabled in FIPS mode ", mdname);
 			goto err;
 		}
