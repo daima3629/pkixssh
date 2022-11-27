@@ -583,27 +583,17 @@ ssh_ecdsa_deserialize_private(const char *pkalg, struct sshbuf *buf,
 	return sshbuf_read_priv_ecdsa(buf, key);
 }
 
-/* caller must free result */
 static int
 ssh_ecdsa_sign_pkey(const ssh_evp_md *dgst, EVP_PKEY *privkey,
-    ECDSA_SIG **sigp, const u_char *data, u_int datalen
+    u_char *sig, u_int *siglen, const u_char *data, u_int datalen
 ) {
-	ECDSA_SIG *sig = NULL;
-	u_char *tsig = NULL;
-	u_int slen, len;
 	int ret;
-
-	slen = EVP_PKEY_size(privkey);
-	tsig = xmalloc(slen);	/*fatal on error*/
-
-{
 	EVP_MD_CTX *md;
 
 	md = EVP_MD_CTX_new();
 	if (md == NULL) {
-		ret = -1;
 		error_f("out of memory");
-		goto clean;
+		return -1;
 	}
 
 	ret = EVP_SignInit_ex(md, dgst->md(), NULL);
@@ -622,7 +612,7 @@ ssh_ecdsa_sign_pkey(const ssh_evp_md *dgst, EVP_PKEY *privkey,
 		goto clean;
 	}
 
-	ret = EVP_SignFinal(md, tsig, &len, privkey);
+	ret = dgst->SignFinal(md, sig, siglen, privkey);
 	if (ret <= 0) {
 #ifdef TRACE_EVP_ERROR
 		error_crypto("EVP_SignFinal");
@@ -632,25 +622,7 @@ ssh_ecdsa_sign_pkey(const ssh_evp_md *dgst, EVP_PKEY *privkey,
 
 clean:
 	EVP_MD_CTX_free(md);
-}
-
-	if (ret > 0) {
-		/* decode DSA signature */
-		const u_char *psig = tsig;
-		sig = d2i_ECDSA_SIG(NULL, &psig, (long)len);
-	}
-
-	if (tsig != NULL) {
-		/* clean up */
-		memset(tsig, 'd', slen);
-		free(tsig);
-	}
-
-	if (sig == NULL)
-		return SSH_ERR_LIBCRYPTO_ERROR;
-
-	*sigp = sig;
-	return 0;
+	return ret;
 }
 
 static int
@@ -659,8 +631,8 @@ ssh_ecdsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 {
 	const struct sshkey *key = ctx->key;
 	const ssh_evp_md *dgst;
-	ECDSA_SIG *sig = NULL;
-	struct sshbuf *bb = NULL;
+	u_char sigblob[20+2*64/*SHA512_DIGEST_LENGTH*/];
+	u_int siglen;
 	int ret;
 
 	if (lenp != NULL)
@@ -674,27 +646,15 @@ ssh_ecdsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 	ret = sshkey_validate_public_ecdsa(key);
 	if (ret != 0) return ret;
 
-	ret = ssh_ecdsa_sign_pkey(dgst, key->pk, &sig, data, datalen);
-	if (ret != 0) goto out;
-
-	if ((bb = sshbuf_new()) == NULL) {
-		ret = SSH_ERR_ALLOC_FAIL;
+	if (ssh_ecdsa_sign_pkey(dgst, key->pk, sigblob, &siglen, data, datalen) <= 0) {
+		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto out;
 	}
-{
-	const BIGNUM *pr, *ps;
-	ECDSA_SIG_get0(sig, &pr, &ps);
-	if ((ret = sshbuf_put_bignum2(bb, pr)) != 0 ||
-	    (ret = sshbuf_put_bignum2(bb, ps)) != 0)
-		goto out;
-}
 
 	ret = ssh_encode_signature(sigp, lenp,
-	    sshkey_ssh_name_plain(key), sshbuf_ptr(bb), sshbuf_len(bb));
+	    sshkey_ssh_name_plain(key), sigblob, siglen);
 
  out:
-	sshbuf_free(bb);
-	ECDSA_SIG_free(sig);
 	return ret;
 }
 
