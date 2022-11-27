@@ -921,6 +921,7 @@ process:
 static ssh_evp_md dgsts[] = {
 #ifdef HAVE_EVP_SHA256
 	{ SSH_MD_RSA_SHA256, EVP_sha256, EVP_SignFinal, EVP_VerifyFinal },
+	{ SSH_MD_RSA_SHA512, EVP_sha512, EVP_SignFinal, EVP_VerifyFinal },
 #endif /* def HAVE_EVP_SHA256 */
 #ifdef OPENSSL_HAS_ECC	/* ECC imply SHA-256 */
 	{ SSH_MD_EC_SHA256_SSH, ssh_ecdsa_EVP_sha256, SSH_ECDSA_SignFinal, SSH_ECDSA_VerifyFinal },

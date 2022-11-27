@@ -32,41 +32,40 @@
 
 #include <sys/types.h>
 
-#include <openssl/evp.h>
-#include <openssl/err.h>
+#include "evp-compat.h"
+#include <openssl/bn.h>
 
 #include <stdarg.h>
 #include <string.h>
 
-#include "evp-compat.h"
 #include "sshbuf.h"
 #include "compat.h"
 #include "ssherr.h"
 #define SSHKEY_INTERNAL
-#include "sshkey.h"
+#include "sshxkey.h"
 #include "xmalloc.h"
 #include "log.h"
 
 
 struct ssh_rsa_alg_st {
 	const char *name;
-	const int nid;
 	const char *signame;
+	const int id;
 };
 
 static struct ssh_rsa_alg_st
 ssh_rsa_algs[] = {
 #ifdef HAVE_EVP_SHA256
-	{ "rsa-sha2-256", NID_sha256, "rsa-sha2-256" },
-	{ "rsa-sha2-512", NID_sha512, "rsa-sha2-512" },
+	{ "rsa-sha2-256", "rsa-sha2-256", SSH_MD_RSA_SHA256 },
+	{ "rsa-sha2-512", "rsa-sha2-512", SSH_MD_RSA_SHA512 },
 #endif
-	{ "ssh-rsa", NID_sha1, "ssh-rsa" },
+	{ "ssh-rsa", "ssh-rsa", SSH_MD_RSA_SHA1 },
 #ifdef HAVE_EVP_SHA256
-	{ "rsa-sha2-256-cert-v01@openssh.com", NID_sha256, "rsa-sha2-256" },
-	{ "rsa-sha2-512-cert-v01@openssh.com", NID_sha512, "rsa-sha2-512" },
+	{ "rsa-sha2-256-cert-v01@openssh.com", "rsa-sha2-256", SSH_MD_RSA_SHA256 },
+	{ "rsa-sha2-512-cert-v01@openssh.com", "rsa-sha2-512", SSH_MD_RSA_SHA512 },
 #endif
-	{ "ssh-rsa-cert-v01@openssh.com", NID_sha1, "ssh-rsa" },
-	{ NULL, NID_undef, NULL }
+	{ "ssh-rsa-cert-v01@openssh.com", "ssh-rsa", SSH_MD_RSA_SHA1 },
+	{ NULL, NULL, -1 }
 };
 
 static struct ssh_rsa_alg_st* ssh_rsa_alg_info(const char *alg);
@@ -806,6 +805,7 @@ ssh_rsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
     const u_char *data, size_t datalen)
 {
 	const struct sshkey *key = ctx->key;
+	const ssh_evp_md *dgst;
 	u_char *sig = NULL;
 	size_t slen = 0;
 	u_int len;
@@ -825,15 +825,10 @@ ssh_rsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 	ret = sshkey_validate_public_rsa(key);
 	if (ret != 0) return ret;
 
-{	/* EVP_Sign... */
-	const EVP_MD *evp_md;
-	int ok = -1;
+	dgst = ssh_evp_md_find(alg_info->id);
 
-	if ((evp_md = EVP_get_digestbynid(alg_info->nid)) == NULL) {
-		error_f("EVP_get_digestbynid %d failed", alg_info->nid);
-		ret = SSH_ERR_INTERNAL_ERROR;
-		goto out;
-	}
+{	/* EVP_Sign... */
+	int ok = -1;
 
 	slen = EVP_PKEY_size(key->pk);
 	debug3_f("slen=%ld", (long)slen);
@@ -846,7 +841,7 @@ ssh_rsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 		goto evp_end;
 	}
 
-	ok = EVP_SignInit_ex(md, evp_md, NULL);
+	ok = EVP_SignInit_ex(md, dgst->md(), NULL);
 	if (ok <= 0) {
 #ifdef TRACE_EVP_ERROR
 		error_crypto("EVP_SignInit_ex");
@@ -905,6 +900,7 @@ ssh_rsa_verify(const ssh_verify_ctx *ctx,
     const u_char *data, size_t dlen)
 {
 	const struct sshkey *key = ctx->key;
+	const ssh_evp_md *dgst;
 	const char *alg = ctx->alg;
 	char *sigtype = NULL;
 	struct ssh_rsa_alg_st *alg_info;
@@ -943,7 +939,7 @@ ssh_rsa_verify(const ssh_verify_ctx *ctx,
 			ret = SSH_ERR_INVALID_ARGUMENT;
 			goto out;
 		}
-		if (alg_info->nid != want_info->nid) {
+		if (alg_info->id != want_info->id) {
 			ret = SSH_ERR_SIGNATURE_INVALID;
 			goto out;
 		}
@@ -956,6 +952,8 @@ ssh_rsa_verify(const ssh_verify_ctx *ctx,
 		ret = SSH_ERR_UNEXPECTED_TRAILING_DATA;
 		goto out;
 	}
+
+	dgst = ssh_evp_md_find(alg_info->id);
 
 	modlen = EVP_PKEY_size(key->pk);
 	if (len > modlen) {
@@ -976,13 +974,6 @@ ssh_rsa_verify(const ssh_verify_ctx *ctx,
 
 {	/* EVP_Verify... */
 	int ok;
-	const EVP_MD *evp_md;
-
-	if ((evp_md = EVP_get_digestbynid(alg_info->nid)) == NULL) {
-		error_f("EVP_get_digestbynid %d failed", alg_info->nid);
-		ret = SSH_ERR_INTERNAL_ERROR;
-		goto out;
-	}
 
 	/* now verify signature */
 	EVP_MD_CTX *md = EVP_MD_CTX_new();
@@ -991,7 +982,7 @@ ssh_rsa_verify(const ssh_verify_ctx *ctx,
 		goto out;
 	}
 
-	ok = EVP_VerifyInit(md, evp_md);
+	ok = EVP_VerifyInit(md, dgst->md());
 	if (ok <= 0) {
 #ifdef TRACE_EVP_ERROR
 		error_crypto("EVP_VerifyInit");
