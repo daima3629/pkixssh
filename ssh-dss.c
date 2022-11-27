@@ -706,7 +706,8 @@ ssh_dss_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 
 
 static int
-ssh_dss_verify_pkey(const struct sshkey *key, DSA_SIG *sig, const u_char *data, u_int datalen)
+ssh_dss_verify_pkey(const ssh_evp_md *dgst, EVP_PKEY *pubkey,
+    DSA_SIG *sig, const u_char *data, u_int datalen)
 {
 	int ret;
 	u_char *tsig = NULL;
@@ -732,7 +733,7 @@ ssh_dss_verify_pkey(const struct sshkey *key, DSA_SIG *sig, const u_char *data, 
 		goto clean;
 	}
 
-	ok = EVP_VerifyInit(md, EVP_dss1());
+	ok = EVP_VerifyInit(md, dgst->md());
 	if (ok <= 0) {
 #ifdef TRACE_EVP_ERROR
 		error_crypto("EVP_VerifyInit");
@@ -750,7 +751,7 @@ ssh_dss_verify_pkey(const struct sshkey *key, DSA_SIG *sig, const u_char *data, 
 		goto clean;
 	}
 
-	ok = EVP_VerifyFinal(md, tsig, len, key->pk);
+	ok = EVP_VerifyFinal(md, tsig, len, pubkey);
 	if (ok < 0) {
 #ifdef TRACE_EVP_ERROR
 		error_crypto("EVP_VerifyFinal");
@@ -782,6 +783,7 @@ ssh_dss_verify(const ssh_verify_ctx *ctx,
     const u_char *data, size_t dlen)
 {
 	const struct sshkey *key = ctx->key;
+	const ssh_evp_md *dgst;
 	DSA_SIG *dsig = NULL;
 	u_char *sigblob = NULL;
 	size_t len, hlen = ssh_digest_bytes(SSH_DIGEST_SHA1);
@@ -793,6 +795,9 @@ ssh_dss_verify(const ssh_verify_ctx *ctx,
 		return SSH_ERR_INVALID_ARGUMENT;
 	if (hlen == 0)
 		return SSH_ERR_INTERNAL_ERROR;
+
+	dgst = ssh_evp_md_find(SSH_MD_DSA_RAW);
+	if (dgst == NULL) return SSH_ERR_INTERNAL_ERROR;
 
 	ret = sshkey_validate_public_dsa(key);
 	if (ret != 0) return ret;
@@ -847,7 +852,7 @@ parse_out:
 	}
 }
 
-	ret = ssh_dss_verify_pkey(key, dsig, data, dlen);
+	ret = ssh_dss_verify_pkey(dgst, key->pk, dsig, data, dlen);
 
  out:
 	DSA_SIG_free(dsig);
