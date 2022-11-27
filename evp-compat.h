@@ -58,12 +58,6 @@
 #include "openbsd-compat/openssl-compat.h"
 
 #include <string.h>	/*for memset*/
-/* Unlike OPENSSL_strdup (0.8.k+), BUF_strdup is defined in
- * all OpenSSL versions (SSLeay 0.8.1) until 1.1.0.
- * As is always available at run-time in compatible
- * functions below it is preferred function.
- */
-#include <openssl/buffer.h>	/*for BUF_strdup*/
 
 
 #if defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x10000000L)

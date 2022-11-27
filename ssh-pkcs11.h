@@ -58,6 +58,15 @@ void ERR_PKCS11_PUT_error(int function, int reason, char *file, int line, const 
 void ERR_load_PKCS11_strings(void);
 
 
+/* Unlike OPENSSL_strdup (0.8.k+), BUF_strdup is defined in
+ * all OpenSSL versions (SSLeay 0.8.1) until 1.1.0.
+ * As is always available at run-time in compatible
+ * functions below it is preferred function.
+ * Used in compatible functions below only if OpenSSL < 1.1.0.
+ */
+#include <openssl/buffer.h>	/*for BUF_strdup*/
+
+
 #ifdef USE_RSA_METHOD
 #ifndef HAVE_RSA_METH_NEW		/* OpenSSL < 1.1 */
 /* Partial backport of opaque RSA from OpenSSL >= 1.1 by commits
