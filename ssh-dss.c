@@ -40,9 +40,8 @@
 
 #include <sys/types.h>
 
-#include <openssl/bn.h>
-#include <openssl/evp.h>
 #include "evp-compat.h"
+#include <openssl/bn.h>
 
 #include <stdarg.h>
 #include <string.h>
@@ -585,27 +584,17 @@ ssh_dss_deserialize_private(const char *pkalg, struct sshbuf *buf,
 	return sshbuf_read_priv_dsa(buf, key);
 }
 
-/* caller must free result */
-static DSA_SIG*
+static int
 ssh_dss_sign_pkey(const ssh_evp_md *dgst, EVP_PKEY *privkey,
-    const u_char *data, u_int datalen)
+    u_char *sig, u_int *siglen, const u_char *data, u_int datalen)
 {
-	DSA_SIG *sig = NULL;
-	u_char *tsig = NULL;
-	u_int slen, len;
 	int ret;
-
-	slen = EVP_PKEY_size(privkey);
-	tsig = xmalloc(slen);	/*fatal on error*/
-
-{
 	EVP_MD_CTX *md;
 
 	md = EVP_MD_CTX_new();
 	if (md == NULL) {
-		ret = -1;
 		error_f("out of memory");
-		goto clean;
+		return -1;
 	}
 
 	ret = EVP_SignInit_ex(md, dgst->md(), NULL);
@@ -624,7 +613,7 @@ ssh_dss_sign_pkey(const ssh_evp_md *dgst, EVP_PKEY *privkey,
 		goto clean;
 	}
 
-	ret = EVP_SignFinal(md, tsig, &len, privkey);
+	ret = dgst->SignFinal(md, sig, siglen, privkey);
 	if (ret <= 0) {
 #ifdef TRACE_EVP_ERROR
 		error_crypto("EVP_SignFinal");
@@ -634,21 +623,7 @@ ssh_dss_sign_pkey(const ssh_evp_md *dgst, EVP_PKEY *privkey,
 
 clean:
 	EVP_MD_CTX_free(md);
-}
-
-	if (ret > 0) {
-		/* decode DSA signature */
-		const u_char *psig = tsig;
-		sig = d2i_DSA_SIG(NULL, &psig, len);
-	}
-
-	if (tsig != NULL) {
-		/* clean up */
-		memset(tsig, 'd', slen);
-		free(tsig);
-	}
-
-	return sig;
+	return ret;
 }
 
 
@@ -658,49 +633,29 @@ ssh_dss_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 {
 	const struct sshkey *key = ctx->key;
 	const ssh_evp_md *dgst;
-	DSA_SIG *sig = NULL;
 	u_char sigblob[SIGBLOB_LEN];
-	size_t rlen, slen, dlen = ssh_digest_bytes(SSH_DIGEST_SHA1);
-	int ret = SSH_ERR_INVALID_ARGUMENT;
+	u_int siglen;
+	int ret;
 
 	if (lenp != NULL)
 		*lenp = 0;
 	if (sigp != NULL)
 		*sigp = NULL;
 
-	if (dlen == 0)
-		return SSH_ERR_INTERNAL_ERROR;
-
 	ret = sshkey_validate_public_dsa(key);
 	if (ret != 0) return ret;
 
 	dgst = ssh_evp_md_find(SSH_MD_DSA_RAW);
 
-	sig = ssh_dss_sign_pkey(dgst, key->pk, data, datalen);
-	if (sig == NULL) {
+	if (ssh_dss_sign_pkey(dgst, key->pk, sigblob, &siglen, data, datalen) <= 0) {
 		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto out;
 	}
 
-{	const BIGNUM *ps, *pr;
-	DSA_SIG_get0(sig, &pr, &ps);
-
-	rlen = BN_num_bytes(pr);
-	slen = BN_num_bytes(ps);
-	if (rlen > INTBLOB_LEN || slen > INTBLOB_LEN) {
-		ret = SSH_ERR_INTERNAL_ERROR;
-		goto out;
-	}
-	explicit_bzero(sigblob, SIGBLOB_LEN);
-	BN_bn2bin(pr, sigblob + SIGBLOB_LEN - INTBLOB_LEN - rlen);
-	BN_bn2bin(ps, sigblob + SIGBLOB_LEN - slen);
-}
-
 	ret = ssh_encode_signature(sigp, lenp,
-	    "ssh-dss", sigblob, SIGBLOB_LEN);
+	    "ssh-dss", sigblob, siglen);
 
  out:
-	DSA_SIG_free(sig);
 	return ret;
 }
 
