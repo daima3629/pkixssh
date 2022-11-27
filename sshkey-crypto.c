@@ -848,26 +848,21 @@ SSH_ECDSA_VerifyFinal(EVP_MD_CTX *ctx, const unsigned char *sigblob, unsigned in
 /* decode ECDSA r&s from SecSH signature blob */
 {	int r;
 	struct sshbuf *buf;
-	const unsigned char *bnbuf;
-	size_t bnlen;
 	BIGNUM *pr = NULL, *ps = NULL;
 
 	buf = sshbuf_from(sigblob, (size_t) siglen);
 	if (buf == NULL) return -1;
 
 	/* extract mpint r */
-	r = sshbuf_get_bignum2_bytes_direct(buf, &bnbuf, &bnlen);
+	r = sshbuf_get_bignum2(buf, &pr);
 	if (r != 0) goto parse_err;
-
-	pr = BN_bin2bn(bnbuf, bnlen, NULL);
-	if (pr == NULL) goto parse_err;
 
 	/* extract mpint s */
-	r = sshbuf_get_bignum2_bytes_direct(buf, &bnbuf, &bnlen);
+	r = sshbuf_get_bignum2(buf, &ps);
 	if (r != 0) goto parse_err;
 
-	ps = BN_bin2bn(bnbuf, bnlen, NULL);
-	if (ps == NULL) goto parse_err;
+	/* unexpected trailing data */
+	if (sshbuf_len(buf) != 0) goto parse_err;
 
 	sig = ECDSA_SIG_new();
 	if (sig == NULL) goto parse_err;
