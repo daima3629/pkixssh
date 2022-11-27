@@ -1603,45 +1603,6 @@ plain_alg:
 
 
 static int
-ssh_x509_EVP_PKEY_sign(
-	EVP_PKEY *privkey, const ssh_evp_md *dgst,
-	u_char *sigret, u_int *siglen,
-	const u_char *data, u_int datalen
-) {
-	int ret;
-	EVP_MD_CTX *ctx;
-
-	ctx = EVP_MD_CTX_new();
-	if (ctx == NULL) {
-		error_f("out of memory");
-		return -1;
-	}
-
-	ret = EVP_SignInit_ex(ctx, dgst->md(), NULL);
-	if (ret <= 0) {
-		error_f("init fail");
-		goto done;
-	}
-
-	ret = EVP_SignUpdate(ctx, data, datalen);
-	if (ret <= 0) {
-		error_f("update fail");
-		goto done;
-	}
-
-	ret = dgst->SignFinal(ctx, sigret, siglen, privkey);
-	if (ret <= 0) {
-		error_f("final fail");
-		goto done;
-	}
-
-done:
-	EVP_MD_CTX_free(ctx);
-	return ret;
-}
-
-
-static int
 ssh_x509_sign(
 	const SSHX509KeyAlgs *xkalg, ssh_sign_ctx *ctx,
 	u_char **sigp, size_t *lenp, const u_char *data, size_t datalen
@@ -1687,7 +1648,7 @@ ssh_x509_sign(
 
 	ssh_xkalg_dgst_compat(&dgst, xkalg->dgst, ctx->compat);
 
-	if (ssh_x509_EVP_PKEY_sign(key->pk, &dgst, sigret, &siglen, data, len) <= 0) {
+	if (ssh_pkey_sign(&dgst, key->pk, sigret, &siglen, data, len) <= 0) {
 		do_log_crypto_errors(SYSLOG_LEVEL_ERROR);
 		r = SSH_ERR_LIBCRYPTO_ERROR;
 		goto done;
@@ -1705,44 +1666,6 @@ done:
 
 	debug3_f("return %d", r);
 	return r;
-}
-
-
-static int
-ssh_xkalg_verify(
-	EVP_PKEY* pubkey, const ssh_evp_md *dgst,
-	u_char *sigblob, u_int len, const u_char *data, u_int datalen
-) {
-	int ret;
-	EVP_MD_CTX *ctx;
-
-	ctx = EVP_MD_CTX_new();
-	if (ctx == NULL) {
-		error_f("out of memory");
-		return -1;
-	}
-
-	ret = EVP_VerifyInit_ex(ctx, dgst->md(), NULL);
-	if (ret <= 0) {
-		error_f("verify-init fail");
-		goto done;
-	}
-
-	ret = EVP_VerifyUpdate(ctx, data, datalen);
-	if (ret <= 0) {
-		error_f("verify-update fail");
-		goto done;
-	}
-
-	ret = dgst->VerifyFinal(ctx, sigblob, len, pubkey);
-	if (ret <= 0) {
-		error_f("verify-final fail");
-		goto done;
-	}
-
-done:
-	EVP_MD_CTX_free(ctx);
-	return ret;
 }
 
 
@@ -1851,7 +1774,7 @@ end_sign_blob:
 
 		ssh_xkalg_dgst_compat(&dgst, xkalg->dgst, ctx->compat);
 
-		ret = ssh_xkalg_verify(pubkey, &dgst, sigblob, len, data, datalen);
+		ret = ssh_pkey_verify(&dgst, pubkey, sigblob, len, data, datalen);
 		if (ret > 0) break;
 
 		do_log_crypto_errors(SYSLOG_LEVEL_ERROR);

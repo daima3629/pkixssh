@@ -981,6 +981,100 @@ ssh_xkalg_dgst_compat(ssh_evp_md *dest, const ssh_evp_md *src, ssh_compat *compa
 	dest->VerifyFinal = src->VerifyFinal;
 }
 
+
+int
+ssh_pkey_sign(
+	const ssh_evp_md *dgst, EVP_PKEY *privkey,
+	u_char *sig, u_int *siglen, const u_char *data, u_int datalen
+) {
+	int ret;
+	EVP_MD_CTX *ctx;
+
+	ctx = EVP_MD_CTX_new();
+	if (ctx == NULL) {
+		error_f("out of memory");
+		return -1;
+	}
+
+	ret = EVP_SignInit_ex(ctx, dgst->md(), NULL);
+	if (ret <= 0) {
+		error_f("init fail");
+#ifdef TRACE_EVP_ERROR
+		error_crypto("EVP_SignInit_ex");
+#endif
+		goto done;
+	}
+
+	ret = EVP_SignUpdate(ctx, data, datalen);
+	if (ret <= 0) {
+		error_f("update fail");
+#ifdef TRACE_EVP_ERROR
+		error_crypto("EVP_SignUpdate");
+#endif
+		goto done;
+	}
+
+	ret = dgst->SignFinal(ctx, sig, siglen, privkey);
+	if (ret <= 0) {
+		error_f("final fail");
+#ifdef TRACE_EVP_ERROR
+		error_crypto("EVP_SignFinal");
+#endif
+		goto done;
+	}
+
+done:
+	EVP_MD_CTX_free(ctx);
+	return ret;
+}
+
+
+int
+ssh_pkey_verify(
+	const ssh_evp_md *dgst, EVP_PKEY *pubkey,
+	u_char *sig, u_int siglen, const u_char *data, u_int datalen
+) {
+	int ret;
+	EVP_MD_CTX *ctx;
+
+	ctx = EVP_MD_CTX_new();
+	if (ctx == NULL) {
+		error_f("out of memory");
+		return -1;
+	}
+
+	ret = EVP_VerifyInit_ex(ctx, dgst->md(), NULL);
+	if (ret <= 0) {
+		error_f("init fail");
+#ifdef TRACE_EVP_ERROR
+		error_crypto("EVP_VerifyInit");
+#endif
+		goto done;
+	}
+
+	ret = EVP_VerifyUpdate(ctx, data, datalen);
+	if (ret <= 0) {
+		error_f("update fail");
+#ifdef TRACE_EVP_ERROR
+		error_crypto("EVP_VerifyUpdate");
+#endif
+		goto done;
+	}
+
+	ret = dgst->VerifyFinal(ctx, sig, siglen, pubkey);
+	if (ret <= 0) {
+		error_f("final fail");
+#ifdef TRACE_EVP_ERROR
+		error_crypto("EVP_VerifyFinal");
+#endif
+		goto done;
+	}
+
+done:
+	EVP_MD_CTX_free(ctx);
+	return ret;
+}
+
 #else
 
 typedef int sshkey_crypto_empty_translation_unit;
