@@ -806,7 +806,6 @@ ssh_rsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 {
 	const struct sshkey *key = ctx->key;
 	const ssh_evp_md *dgst;
-	u_char *sig = NULL;
 	size_t slen = 0;
 	u_int len;
 	struct ssh_rsa_alg_st *alg_info;
@@ -827,55 +826,14 @@ ssh_rsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 
 	dgst = ssh_evp_md_find(alg_info->id);
 
-{	/* EVP_Sign... */
-	int ok = -1;
-
 	slen = EVP_PKEY_size(key->pk);
 	debug3_f("slen=%ld", (long)slen);
-	sig = xmalloc(slen);	/*fatal on error*/
 
-{	EVP_MD_CTX *md = EVP_MD_CTX_new();
-	if (md == NULL) {
-		error_f("out of memory");
-		ret = SSH_ERR_ALLOC_FAIL;
-		goto evp_end;
-	}
-
-	ok = EVP_SignInit_ex(md, dgst->md(), NULL);
-	if (ok <= 0) {
-#ifdef TRACE_EVP_ERROR
-		error_crypto("EVP_SignInit_ex");
-#endif
+{	u_char sig[slen];
+	if (ssh_pkey_sign(dgst, key->pk, sig, &len, data, datalen) <= 0) {
 		ret = SSH_ERR_LIBCRYPTO_ERROR;
-		goto evp_md_end;
+		goto out;
 	}
-
-	ok = EVP_SignUpdate(md, data, datalen);
-	if (ok <= 0) {
-#ifdef TRACE_EVP_ERROR
-		error_crypto("EVP_SignUpdate");
-#endif
-		ret = SSH_ERR_LIBCRYPTO_ERROR;
-		goto evp_md_end;
-	}
-
-	ok = EVP_SignFinal(md, sig, &len, key->pk);
-	if (ok <= 0) {
-#ifdef TRACE_EVP_ERROR
-		error_crypto("EVP_SignFinal");
-#endif
-		ret = SSH_ERR_LIBCRYPTO_ERROR;
-		goto evp_md_end;
-	}
-	ret = SSH_ERR_SUCCESS;
-
-evp_md_end:
-	EVP_MD_CTX_free(md);
-}
-evp_end:
-
-	if (ret != SSH_ERR_SUCCESS) goto out;
-}
 
 	if (len < slen) {
 		size_t diff = slen - len;
@@ -888,9 +846,8 @@ evp_end:
 
 	ret = ssh_encode_signature(sigp, lenp,
 	    alg_info->signame, sig, slen);
-
+}
  out:
-	freezero(sig, slen);
 	return ret;
 }
 

@@ -584,48 +584,6 @@ ssh_ecdsa_deserialize_private(const char *pkalg, struct sshbuf *buf,
 }
 
 static int
-ssh_ecdsa_sign_pkey(const ssh_evp_md *dgst, EVP_PKEY *privkey,
-    u_char *sig, u_int *siglen, const u_char *data, u_int datalen
-) {
-	int ret;
-	EVP_MD_CTX *md;
-
-	md = EVP_MD_CTX_new();
-	if (md == NULL) {
-		error_f("out of memory");
-		return -1;
-	}
-
-	ret = EVP_SignInit_ex(md, dgst->md(), NULL);
-	if (ret <= 0) {
-#ifdef TRACE_EVP_ERROR
-		error_crypto("EVP_SignInit_ex");
-#endif
-		goto clean;
-	}
-
-	ret = EVP_SignUpdate(md, data, datalen);
-	if (ret <= 0) {
-#ifdef TRACE_EVP_ERROR
-		error_crypto("EVP_SignUpdate");
-#endif
-		goto clean;
-	}
-
-	ret = dgst->SignFinal(md, sig, siglen, privkey);
-	if (ret <= 0) {
-#ifdef TRACE_EVP_ERROR
-		error_crypto("EVP_SignFinal");
-#endif
-		goto clean;
-	}
-
-clean:
-	EVP_MD_CTX_free(md);
-	return ret;
-}
-
-static int
 ssh_ecdsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
     const u_char *data, size_t datalen)
 {
@@ -646,7 +604,7 @@ ssh_ecdsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 	ret = sshkey_validate_public_ecdsa(key);
 	if (ret != 0) return ret;
 
-	if (ssh_ecdsa_sign_pkey(dgst, key->pk, sigblob, &siglen, data, datalen) <= 0) {
+	if (ssh_pkey_sign(dgst, key->pk, sigblob, &siglen, data, datalen) <= 0) {
 		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto out;
 	}
