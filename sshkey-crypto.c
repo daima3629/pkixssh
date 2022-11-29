@@ -1028,7 +1028,7 @@ done:
 int
 ssh_pkey_verify(
 	const ssh_evp_md *dgst, EVP_PKEY *pubkey,
-	u_char *sig, u_int siglen, const u_char *data, u_int datalen
+	const u_char *sig, u_int siglen, const u_char *data, u_int datalen
 ) {
 	int ret;
 	EVP_MD_CTX *ctx;
@@ -1059,7 +1059,6 @@ ssh_pkey_verify(
 
 	ret = dgst->VerifyFinal(ctx, sig, siglen, pubkey);
 	if (ret <= 0) {
-		error_f("final fail");
 #ifdef TRACE_EVP_ERROR
 		error_crypto("EVP_VerifyFinal");
 #endif
