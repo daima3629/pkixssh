@@ -38,12 +38,67 @@
 #include "evp-compat.h"
 #include <openssl/pem.h>
 
+#include <string.h>	/*for memcpy*/
+
 #include "ssh-x509.h"
 #include "compat.h"
 #include "ssherr.h"
 #include "crypto_api.h" /*for some Ed25519 defines */
 #include "xmalloc.h"
 #include "log.h"
+
+
+#ifndef HAVE_DSA_SIG_GET0		/* OpenSSL < 1.1 */
+static inline void
+DSA_SIG_get0(const DSA_SIG *sig, const BIGNUM **pr, const BIGNUM **ps) {
+	if (pr != NULL) *pr = sig->r;
+	if (ps != NULL) *ps = sig->s;
+}
+#endif /*ndef HAVE_DSA_SIG_GET0	OpenSSL < 1.1 */
+
+#ifndef HAVE_DSA_SIG_SET0		/* OpenSSL < 1.1 */
+static inline int/*bool*/
+DSA_SIG_set0(DSA_SIG *sig, BIGNUM *r, BIGNUM *s) {
+	if (r == NULL || s == NULL) return 0;
+
+	BN_clear_free(sig->r);
+	BN_clear_free(sig->s);
+
+	sig->r = r;
+	sig->s = s;
+	return 1;
+}
+#endif /*ndef HAVE_DSA_SIG_SET0	OpenSSL < 1.1 */
+
+#ifdef OPENSSL_HAS_ECC
+#ifndef HAVE_ECDSA_SIG_GET0		/* OpenSSL < 1.1 */
+static inline void
+ECDSA_SIG_get0(const ECDSA_SIG *sig, const BIGNUM **pr, const BIGNUM **ps) {
+    if (pr != NULL) *pr = sig->r;
+    if (ps != NULL) *ps = sig->s;
+}
+#endif /*ndef HAVE_ECDSA_SIG_GET0	OpenSSL < 1.1 */
+
+#ifndef HAVE_ECDSA_SIG_SET0		/* OpenSSL < 1.1 */
+static inline int/*bool*/
+ECDSA_SIG_set0(ECDSA_SIG *sig, BIGNUM *r, BIGNUM *s) {
+	if (r == NULL || s == NULL) return 0;
+
+	BN_clear_free(sig->r);
+	BN_clear_free(sig->s);
+
+	sig->r = r;
+	sig->s = s;
+	return 1;
+}
+#endif /*ndef HAVE_ECDSA_SIG_SET0	OpenSSL < 1.1 */
+#endif /*def OPENSSL_HAS_ECC*/
+
+#ifndef HAVE_EVP_DSS1
+/* removed in OpenSSL 1.1 */
+static inline const EVP_MD* EVP_dss1(void) { return EVP_sha1(); }
+#endif
+
 
 #ifdef DEBUG_PK
 static void
@@ -645,6 +700,7 @@ ssh_EVP_MD_ecdsa_init(EVP_MD *t, const EVP_MD *s) {
 /* Test for NID_X9_62_prime256v1(nistp256) includes test for EVP_sha256 */
 static EVP_MD ecdsa_sha256_md = { NID_undef };
 
+const EVP_MD* ssh_ecdsa_EVP_sha256(void);
 const EVP_MD*
 ssh_ecdsa_EVP_sha256(void) {
     if (ecdsa_sha256_md.type == NID_undef)
@@ -657,6 +713,7 @@ ssh_ecdsa_EVP_sha256(void) {
 /* Test for NID_secp384r1(nistp384) includes test for EVP_sha384 */
 static EVP_MD ecdsa_sha384_md = { NID_undef };
 
+const EVP_MD* ssh_ecdsa_EVP_sha384(void);
 const EVP_MD*
 ssh_ecdsa_EVP_sha384(void) {
     if (ecdsa_sha384_md.type == NID_undef)
@@ -669,12 +726,25 @@ ssh_ecdsa_EVP_sha384(void) {
 /* Test for NID_secp521r1(nistp521) includes test for EVP_sha512 */
 static EVP_MD ecdsa_sha512_md = { NID_undef };
 
+const EVP_MD* ssh_ecdsa_EVP_sha512(void);
 const EVP_MD*
 ssh_ecdsa_EVP_sha512(void) {
     if (ecdsa_sha512_md.type == NID_undef)
 	ssh_EVP_MD_ecdsa_init(&ecdsa_sha512_md, EVP_sha512());
     return &ecdsa_sha512_md;
 }
+#endif
+
+#else /*defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x10000000L)*/
+
+#ifdef OPENSSL_HAS_NISTP256
+static inline const EVP_MD* ssh_ecdsa_EVP_sha256(void) { return EVP_sha256(); }
+#endif
+#ifdef OPENSSL_HAS_NISTP384
+static inline const EVP_MD* ssh_ecdsa_EVP_sha384(void) { return EVP_sha384(); }
+#endif
+#ifdef OPENSSL_HAS_NISTP521
+static inline const EVP_MD* ssh_ecdsa_EVP_sha512(void) { return EVP_sha512(); }
 #endif
 
 #endif /*defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x10000000L)*/

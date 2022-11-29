@@ -57,38 +57,6 @@
 #ifdef WITH_OPENSSL
 #include "openbsd-compat/openssl-compat.h"
 
-#include <string.h>	/*for memset*/
-
-
-#if defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x10000000L)
-/* work-arounds for limited EVP digests in OpenSSL 0.9.8* ...
- * (missing ecdsa support)
- */
-
-#ifdef OPENSSL_HAS_NISTP256
-const EVP_MD* ssh_ecdsa_EVP_sha256(void);
-#endif
-#ifdef OPENSSL_HAS_NISTP384
-const EVP_MD* ssh_ecdsa_EVP_sha384(void);
-#endif
-#ifdef OPENSSL_HAS_NISTP521
-const EVP_MD* ssh_ecdsa_EVP_sha512(void);
-#endif
-
-#else
-
-#ifdef OPENSSL_HAS_NISTP256
-static inline const EVP_MD* ssh_ecdsa_EVP_sha256(void) { return EVP_sha256(); }
-#endif
-#ifdef OPENSSL_HAS_NISTP384
-static inline const EVP_MD* ssh_ecdsa_EVP_sha384(void) { return EVP_sha384(); }
-#endif
-#ifdef OPENSSL_HAS_NISTP521
-static inline const EVP_MD* ssh_ecdsa_EVP_sha512(void) { return EVP_sha512(); }
-#endif
-
-#endif /*defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x10000000L)*/
-
 
 #ifndef HAVE_EVP_MD_CTX_NEW		/* OpenSSL < 1.1 */
 static inline EVP_MD_CTX*
@@ -124,56 +92,6 @@ EVP_MD_flags(const EVP_MD *md) {
 #endif /* ndef HAVE_EVP_MD_FLAGS	OpenSSL < 1.0 */
 
 
-#ifndef OPENSSL_NO_DSA
-#ifndef HAVE_DSA_SIG_GET0		/* OpenSSL < 1.1 */
-static inline void
-DSA_SIG_get0(const DSA_SIG *sig, const BIGNUM **pr, const BIGNUM **ps) {
-	if (pr != NULL) *pr = sig->r;
-	if (ps != NULL) *ps = sig->s;
-}
-#endif /*ndef HAVE_DSA_SIG_GET0	OpenSSL < 1.1 */
-
-#ifndef HAVE_DSA_SIG_SET0		/* OpenSSL < 1.1 */
-static inline int/*bool*/
-DSA_SIG_set0(DSA_SIG *sig, BIGNUM *r, BIGNUM *s) {
-	if (r == NULL || s == NULL) return 0;
-
-	BN_clear_free(sig->r);
-	BN_clear_free(sig->s);
-
-	sig->r = r;
-	sig->s = s;
-	return 1;
-}
-#endif /*ndef HAVE_DSA_SIG_SET0	OpenSSL < 1.1 */
-#endif /*ndef OPENSSL_NO_DSA*/
-
-
-#ifdef OPENSSL_HAS_ECC
-#ifndef HAVE_ECDSA_SIG_GET0		/* OpenSSL < 1.1 */
-static inline void
-ECDSA_SIG_get0(const ECDSA_SIG *sig, const BIGNUM **pr, const BIGNUM **ps) {
-    if (pr != NULL) *pr = sig->r;
-    if (ps != NULL) *ps = sig->s;
-}
-#endif /*ndef HAVE_ECDSA_SIG_GET0	OpenSSL < 1.1 */
-
-#ifndef HAVE_ECDSA_SIG_SET0		/* OpenSSL < 1.1 */
-static inline int/*bool*/
-ECDSA_SIG_set0(ECDSA_SIG *sig, BIGNUM *r, BIGNUM *s) {
-	if (r == NULL || s == NULL) return 0;
-
-	BN_clear_free(sig->r);
-	BN_clear_free(sig->s);
-
-	sig->r = r;
-	sig->s = s;
-	return 1;
-}
-#endif /*ndef HAVE_ECDSA_SIG_SET0	OpenSSL < 1.1 */
-#endif /*OPENSSL_HAS_ECC*/
-
-
 #ifndef HAVE_EVP_PKEY_BASE_ID		/* OpenSSL < 1.0 */
 # ifdef HAVE_EVP_PKEY_GET_BASE_ID	/* OpenSSL >= 3.0 */
 /* EVP_PKEY_base_id is define to EVP_PKEY_get_base_id */
@@ -194,35 +112,6 @@ EVP_PKEY_base_id(const EVP_PKEY *pkey) {
 
 int ssh_EVP_PKEY_eq(const EVP_PKEY *a, const EVP_PKEY *b);
 
-
-#ifndef HAVE_EC_POINT_GET_AFFINE_COORDINATES		/* OpenSSL < 1.1.1 */
-#ifdef OPENSSL_HAS_ECC
-/* Functions are available even in 0.9.7* but EC is not activated
- * as NIST curves are not supported yet.
- */
-static inline int
-EC_POINT_get_affine_coordinates(
-    const EC_GROUP *group, const EC_POINT *p,
-    BIGNUM *x, BIGNUM *y, BN_CTX *ctx
-) {
-	return EC_POINT_get_affine_coordinates_GFp(group, p, x, y, ctx);
-}
-
-static inline int
-EC_POINT_set_affine_coordinates(
-    const EC_GROUP *group, EC_POINT *p,
-    const BIGNUM *x, const BIGNUM *y, BN_CTX *ctx
-) {
-	return EC_POINT_set_affine_coordinates_GFp(group, p, x, y, ctx);
-}
-#endif /*def OPENSSL_HAS_ECC*/
-#endif /*ndef HAVE_EC_POINT_GET_AFFINE_COORDINATES*/
-
-
-#ifndef HAVE_EVP_DSS1
-/* removed in OpenSSL 1.1 */
-static inline const EVP_MD* EVP_dss1(void) { return EVP_sha1(); }
-#endif
 
 #if !HAVE_DECL_UTF8_GETC
 /* hidden in some OpenSSL compatible libraries */

@@ -67,6 +67,7 @@
 extern int X509_from_blob(const u_char *blob, size_t blen, X509 **xp);
 extern struct sshkey* x509_to_key(X509 *x509);
 
+
 #ifndef HAVE_RSA_GET0_KEY
 /* opaque RSA key structure */
 static inline int
@@ -89,6 +90,23 @@ RSA_set0_key(RSA *rsa, BIGNUM *n, BIGNUM *e, BIGNUM *d) {
 	return 1;
 }
 #endif /*ndef HAVE_RSA_GET0_KEY*/
+
+#ifdef OPENSSL_HAS_ECC
+#ifndef HAVE_ECDSA_SIG_SET0		/* OpenSSL < 1.1 */
+static inline int/*bool*/
+ECDSA_SIG_set0(ECDSA_SIG *sig, BIGNUM *r, BIGNUM *s) {
+	if (r == NULL || s == NULL) return 0;
+
+	BN_clear_free(sig->r);
+	BN_clear_free(sig->s);
+
+	sig->r = r;
+	sig->s = s;
+	return 1;
+}
+#endif /*ndef HAVE_ECDSA_SIG_SET0	OpenSSL < 1.1 */
+#endif /*OPENSSL_HAS_ECC*/
+
 
 struct pkcs11_slotinfo {
 	CK_TOKEN_INFO		token;

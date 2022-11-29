@@ -27,6 +27,8 @@ void	pkcs11_terminate(void);
 #include "sshkey.h"
 #include "evp-compat.h"
 
+#include <string.h>	/*for memset*/
+
 /* Errors for pkcs11_add_provider() */
 #define	SSH_PKCS11_ERR_GENERIC			-1
 #define	SSH_PKCS11_ERR_LOGIN_FAIL		-2
