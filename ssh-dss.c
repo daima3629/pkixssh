@@ -620,30 +620,15 @@ ssh_dss_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 
 static int
 ssh_dss_verify_pkey(const ssh_evp_md *dgst, EVP_PKEY *pubkey,
-    DSA_SIG *sig, const u_char *data, u_int datalen)
+    u_char *sig, u_int siglen, const u_char *data, u_int datalen)
 {
-	int ret;
-	u_char *tsig = NULL;
-	u_int len;
-
-	/* Sig is in DSA_SIG structure, convert to encoded buffer */
-	len = i2d_DSA_SIG(sig, NULL);
-	tsig = xmalloc(len);	/*fatal on error*/
-
-	{ /* encode a DSA signature */
-		u_char *psig = tsig;
-		i2d_DSA_SIG(sig, &psig);
-	}
-
-{ /* now verify signature */
 	int ok;
 	EVP_MD_CTX *md;
 
 	md = EVP_MD_CTX_new();
 	if (md == NULL) {
 		error_f("out of memory");
-		ret = SSH_ERR_ALLOC_FAIL;
-		goto clean;
+		return -1;
 	}
 
 	ok = EVP_VerifyInit(md, dgst->md());
@@ -651,7 +636,6 @@ ssh_dss_verify_pkey(const ssh_evp_md *dgst, EVP_PKEY *pubkey,
 #ifdef TRACE_EVP_ERROR
 		error_crypto("EVP_VerifyInit");
 #endif
-		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto clean;
 	}
 
@@ -660,33 +644,20 @@ ssh_dss_verify_pkey(const ssh_evp_md *dgst, EVP_PKEY *pubkey,
 #ifdef TRACE_EVP_ERROR
 		error_crypto("EVP_VerifyUpdate");
 #endif
-		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto clean;
 	}
 
-	ok = EVP_VerifyFinal(md, tsig, len, pubkey);
+	ok = dgst->VerifyFinal(md, sig, siglen, pubkey);
 	if (ok < 0) {
 #ifdef TRACE_EVP_ERROR
 		error_crypto("EVP_VerifyFinal");
 #endif
-		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto clean;
 	}
-	ret = (ok == 0)
-		? SSH_ERR_SIGNATURE_INVALID
-		: SSH_ERR_SUCCESS;
 
 clean:
 	EVP_MD_CTX_free(md);
-}
-
-	if (tsig != NULL) {
-		/* clean up */
-		memset(tsig, 'd', len);
-		free(tsig);
-	}
-
-	return ret;
+	return ok;
 }
 
 
@@ -697,17 +668,14 @@ ssh_dss_verify(const ssh_verify_ctx *ctx,
 {
 	const struct sshkey *key = ctx->key;
 	const ssh_evp_md *dgst;
-	DSA_SIG *dsig = NULL;
 	u_char *sigblob = NULL;
-	size_t len, hlen = ssh_digest_bytes(SSH_DIGEST_SHA1);
+	size_t len;
 	int ret = SSH_ERR_INTERNAL_ERROR;
 	struct sshbuf *b = NULL;
 	char *ktype = NULL;
 
 	if (sig == NULL || siglen == 0)
 		return SSH_ERR_INVALID_ARGUMENT;
-	if (hlen == 0)
-		return SSH_ERR_INTERNAL_ERROR;
 
 	dgst = ssh_evp_md_find(SSH_MD_DSA_RAW);
 	if (dgst == NULL) return SSH_ERR_INTERNAL_ERROR;
@@ -731,44 +699,24 @@ ssh_dss_verify(const ssh_verify_ctx *ctx,
 		ret = SSH_ERR_UNEXPECTED_TRAILING_DATA;
 		goto out;
 	}
-
 	if (len != SIGBLOB_LEN) {
 		ret = SSH_ERR_INVALID_FORMAT;
 		goto out;
 	}
 
-{	/* parse signature */
-	BIGNUM *pr, *ps;
-
-	ret = 0;
-	pr = BN_bin2bn(sigblob, INTBLOB_LEN, NULL);
-	ps = BN_bin2bn(sigblob+ INTBLOB_LEN, INTBLOB_LEN, NULL);
-	if ((pr == NULL) || (ps == NULL)) {
-		ret = SSH_ERR_LIBCRYPTO_ERROR;
-		goto parse_out;
-	}
-
-	dsig = DSA_SIG_new();
-	if (dsig == NULL) {
-		ret = SSH_ERR_ALLOC_FAIL;
-		goto parse_out;
-	}
-
-	if (!DSA_SIG_set0(dsig, pr, ps))
-		ret = SSH_ERR_LIBCRYPTO_ERROR;
-
-parse_out:
-	if (ret != 0) {
-		BN_free(pr);
-		BN_free(ps);
+{	u_int lenblob = (u_int)len; /*safe cast*/
+	u_int datalen = (u_int)dlen;
+	if ((size_t)datalen != dlen) {
+		ret = SSH_ERR_INVALID_ARGUMENT;
 		goto out;
+	}
+	if (ssh_dss_verify_pkey(dgst, key->pk,
+	    sigblob, lenblob, data, datalen) <= 0) {
+		ret = SSH_ERR_SIGNATURE_INVALID;
 	}
 }
 
-	ret = ssh_dss_verify_pkey(dgst, key->pk, dsig, data, dlen);
-
  out:
-	DSA_SIG_free(dsig);
 	sshbuf_free(b);
 	free(ktype);
 	if (sigblob != NULL)
