@@ -2276,7 +2276,14 @@ parse_x509_from_private_fileblob(struct sshbuf *blob,
 
 	if (keyp != NULL) *keyp = NULL;
 
-	mbio = BIO_new_mem_buf(sshbuf_ptr(blob), sshbuf_len(blob));
+{	size_t bloblen = sshbuf_len(blob);
+	int len = (int)bloblen;
+	/* NOTE -1 is impossible value with buffer */
+	if (len <= 0 || (size_t)len != bloblen)
+		return SSH_ERR_INVALID_ARGUMENT;
+	/* NOTE constant argument in OpenSSL patch 1.0.2g! */
+	mbio = BIO_new_mem_buf((void*)sshbuf_ptr(blob), len);
+}
 	if (mbio == NULL) return SSH_ERR_ALLOC_FAIL;
 
 	x509 = PEM_read_bio_X509(mbio, NULL, NULL, NULL);
