@@ -929,48 +929,16 @@ ssh_rsa_verify(const ssh_verify_ctx *ctx,
 		len = modlen;
 	}
 
-{	/* EVP_Verify... */
-	int ok;
-
-	/* now verify signature */
-	EVP_MD_CTX *md = EVP_MD_CTX_new();
-	if (md == NULL) {
-		ret = SSH_ERR_ALLOC_FAIL;
+{	u_int lenblob = len; /*safe cast*/
+	u_int datalen = dlen;
+	if ((size_t)datalen != dlen) {
+		ret = SSH_ERR_INVALID_ARGUMENT;
 		goto out;
 	}
-
-	ok = EVP_VerifyInit(md, dgst->md());
-	if (ok <= 0) {
-#ifdef TRACE_EVP_ERROR
-		error_crypto("EVP_VerifyInit");
-#endif
-		ret = SSH_ERR_LIBCRYPTO_ERROR;
-		goto evp_md_end;
+	if (ssh_pkey_verify(dgst, key->pk,
+	    sigblob, lenblob, data, datalen) <= 0) {
+		ret = SSH_ERR_SIGNATURE_INVALID;
 	}
-
-	ok = EVP_VerifyUpdate(md, data, dlen);
-	if (ok <= 0) {
-#ifdef TRACE_EVP_ERROR
-		error_crypto("EVP_VerifyUpdate");
-#endif
-		ret = SSH_ERR_LIBCRYPTO_ERROR;
-		goto evp_md_end;
-	}
-
-	ok = EVP_VerifyFinal(md, sigblob, len, key->pk);
-	if (ok < 0) {
-#ifdef TRACE_EVP_ERROR
-		error_crypto("EVP_VerifyFinal");
-#endif
-		ret = SSH_ERR_LIBCRYPTO_ERROR;
-		goto evp_md_end;
-	}
-	ret = (ok == 0)
-		? SSH_ERR_SIGNATURE_INVALID
-		: SSH_ERR_SUCCESS;
-
-evp_md_end:
-	EVP_MD_CTX_free(md);
 }
 
  out:

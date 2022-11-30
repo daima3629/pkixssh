@@ -633,48 +633,6 @@ ssh_ecdsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 }
 
 static int
-ssh_ecdsa_verify_pkey(const ssh_evp_md *dgst, EVP_PKEY *pubkey,
-    const u_char *sig, u_int siglen, const u_char *data, u_int datalen)
-{
-	int ok;
-	EVP_MD_CTX *md;
-
-	md = EVP_MD_CTX_new();
-	if (md == NULL) {
-		error_f("out of memory");
-		return -1;
-	}
-
-	ok = EVP_VerifyInit(md, dgst->md());
-	if (ok <= 0) {
-#ifdef TRACE_EVP_ERROR
-		error_crypto("EVP_VerifyInit");
-#endif
-		goto clean;
-	}
-
-	ok = EVP_VerifyUpdate(md, data, datalen);
-	if (ok <= 0) {
-#ifdef TRACE_EVP_ERROR
-		error_crypto("EVP_VerifyUpdate");
-#endif
-		goto clean;
-	}
-
-	ok = dgst->VerifyFinal(md, sig, siglen, pubkey);
-	if (ok < 0) {
-#ifdef TRACE_EVP_ERROR
-		error_crypto("EVP_VerifyFinal");
-#endif
-		goto clean;
-	}
-
-clean:
-	EVP_MD_CTX_free(md);
-	return ok;
-}
-
-static int
 ssh_ecdsa_verify(const ssh_verify_ctx *ctx,
     const u_char *sig, size_t siglen,
     const u_char *data, size_t dlen)
@@ -722,7 +680,7 @@ ssh_ecdsa_verify(const ssh_verify_ctx *ctx,
 		ret = SSH_ERR_INVALID_ARGUMENT;
 		goto out;
 	}
-	if (ssh_ecdsa_verify_pkey(dgst, key->pk,
+	if (ssh_pkey_verify(dgst, key->pk,
 		sshbuf_ptr(sigbuf), lenblob, data, datalen) <= 0)
 		ret = SSH_ERR_SIGNATURE_INVALID;
 }
