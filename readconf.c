@@ -1,4 +1,4 @@
-/* $OpenBSD: readconf.c,v 1.369 2022/09/17 10:33:18 djm Exp $ */
+/* $OpenBSD: readconf.c,v 1.370 2022/11/28 01:37:36 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -214,6 +214,7 @@ typedef enum {
 	oFingerprintHash, oUpdateHostkeys, oHostbasedAcceptedAlgorithms,
 	oPubkeyAcceptedAlgorithms, oCASignatureAlgorithms, oProxyJump,
 	oSecurityKeyProvider, oKnownHostsCommand, oRequiredRSASize,
+	oEnableEscapeCommandline,
 	oIgnore, oIgnoredUnknownOption, oDeprecated, oUnsupported
 } OpCodes;
 
@@ -383,6 +384,7 @@ static struct {
 	{ "proxyjump", oProxyJump },
 	{ "knownhostscommand", oKnownHostsCommand },
 	{ "requiredrsasize", oRequiredRSASize },
+	{ "enableescapecommandline", oEnableEscapeCommandline },
 
 	{ NULL, oBadOption }
 };
@@ -2340,6 +2342,10 @@ parse_key_algorithms:
 			*charptr = xstrdup(arg);
 		break;
 
+	case oEnableEscapeCommandline:
+		intptr = &options->enable_escape_commandline;
+		goto parse_flag;
+
 	case oRequiredRSASize:
 		intptr = &options->required_rsa_size;
 		goto parse_int;
@@ -2622,6 +2628,7 @@ initialize_options(Options * options)
 	options->update_hostkeys = -1;
 	options->known_hosts_command = NULL;
 	options->required_rsa_size = -1;
+	options->enable_escape_commandline = -1;
 }
 
 void
@@ -2822,6 +2829,8 @@ fill_default_options(Options * options)
 		}
 		required_rsa_size = options->required_rsa_size;
 	}
+	if (options->enable_escape_commandline == -1)
+		options->enable_escape_commandline = 1;
 
 	/* expand KEX and etc. name lists */
 {	char *all;
@@ -3464,6 +3473,7 @@ dump_client_config(Options *o, const char *host)
 	dump_cfg_fmtint(oVerifyHostKeyDNS, o->verify_host_key_dns);
 	dump_cfg_fmtint(oVisualHostKey, o->visual_host_key);
 	dump_cfg_fmtint(oUpdateHostkeys, o->update_hostkeys);
+	dump_cfg_fmtint(oEnableEscapeCommandline, o->enable_escape_commandline);
 
 	/* Integer options */
 	dump_cfg_int(oCanonicalizeMaxDots, o->canonicalize_max_dots);
