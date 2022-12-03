@@ -761,6 +761,17 @@ client_register_global_confirm(global_confirm_cb *cb, void *ctx)
 	TAILQ_INSERT_TAIL(&global_confirms, gc, entry);
 }
 
+static int
+can_update_hostkeys(void)
+{
+	if (options.update_hostkeys == SSH_UPDATE_HOSTKEYS_ASK &&
+	    options.batch_mode)
+		return 0; /* won't ask in batchmode, so don't even try */
+	if (!options.update_hostkeys || options.num_user_hostfiles <= 0)
+		return 0;
+	return 1;
+}
+
 static void
 process_cmdline(struct ssh *ssh)
 {
@@ -2296,10 +2307,8 @@ client_input_hostkeys(struct ssh *ssh)
 
 	if (hostkeys_seen)
 		fatal_f("server already sent hostkeys");
-	if (options.update_hostkeys == SSH_UPDATE_HOSTKEYS_ASK &&
-	    options.batch_mode)
-		return 1; /* won't ask in batchmode, so don't even try */
-	if (!options.update_hostkeys || options.num_user_hostfiles <= 0)
+	hostkeys_seen = 1;
+	if (!can_update_hostkeys())
 		return 1;
 
 	ctx = xcalloc(1, sizeof(*ctx));
