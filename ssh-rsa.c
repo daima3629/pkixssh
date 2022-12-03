@@ -830,6 +830,15 @@ ssh_rsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 	debug3_f("slen=%ld", (long)slen);
 
 {	u_char sig[slen];
+	if (ssh_pkey_sign(dgst, key->pk, NULL, &len, data, datalen) <= 0) {
+		ret = SSH_ERR_LIBCRYPTO_ERROR;
+		goto out;
+	}
+	/* paranoid check */
+	if (len > slen) {
+		ret = SSH_ERR_INTERNAL_ERROR;
+		goto out;
+	}
 	if (ssh_pkey_sign(dgst, key->pk, sig, &len, data, datalen) <= 0) {
 		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto out;
@@ -839,9 +848,6 @@ ssh_rsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 		size_t diff = slen - len;
 		memmove(sig + diff, sig, len);
 		explicit_bzero(sig, diff);
-	} else if (len > slen) {
-		ret = SSH_ERR_INTERNAL_ERROR;
-		goto out;
 	}
 
 	ret = ssh_encode_signature(sigp, lenp,

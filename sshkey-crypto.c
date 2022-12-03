@@ -758,6 +758,11 @@ DSS1RAW_SignFinal(EVP_MD_CTX *ctx, unsigned char *sigret, unsigned int *siglen, 
 	unsigned char buf[20+2*(SHA_DIGEST_LENGTH)];
 	unsigned int  len;
 
+	ret = EVP_SignFinal(ctx, NULL, &len, pkey);
+	if (ret <= 0) return ret;
+	/* paranoid check */
+	if ((size_t)len > sizeof(buf)) return -1;
+
 	ret = EVP_SignFinal(ctx, buf, &len, pkey);
 	if (ret <= 0) goto done;
 
@@ -863,6 +868,11 @@ SSH_ECDSA_SignFinal(EVP_MD_CTX *ctx, unsigned char *sigret, unsigned int *siglen
 
 {	int ret;
 	unsigned char buf[20+2*(SHA512_DIGEST_LENGTH)];
+
+	ret = EVP_SignFinal(ctx, NULL, &len, pkey);
+	if (ret <= 0) return ret;
+	/* paranoid check */
+	if ((size_t)len > sizeof(buf)) return -1;
 
 	ret = EVP_SignFinal(ctx, buf, &len, pkey);
 	if (ret <= 0) return ret;
