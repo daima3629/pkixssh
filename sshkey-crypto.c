@@ -754,9 +754,11 @@ static inline const EVP_MD* ssh_ecdsa_EVP_sha512(void) { return EVP_sha512(); }
 
 static int
 DSS1RAW_SignFinal(EVP_MD_CTX *ctx, unsigned char *sigret, unsigned int *siglen, EVP_PKEY *pkey) {
-	int ret;
-	unsigned char buf[20+2*(SHA_DIGEST_LENGTH)];
+	DSA_SIG *sig;
 	unsigned int  len;
+
+{	int ret;
+	unsigned char buf[20+2*(SHA_DIGEST_LENGTH)];
 
 	ret = EVP_SignFinal(ctx, NULL, &len, pkey);
 	if (ret <= 0) return ret;
@@ -764,42 +766,42 @@ DSS1RAW_SignFinal(EVP_MD_CTX *ctx, unsigned char *sigret, unsigned int *siglen, 
 	if ((size_t)len > sizeof(buf)) return -1;
 
 	ret = EVP_SignFinal(ctx, buf, &len, pkey);
-	if (ret <= 0) goto done;
-
-	ret = -1;
-{
-	DSA_SIG *sig;
+	if (ret <= 0) return ret;
 
 {	/* decode DSA signature */
 	const unsigned char *psig = buf;
 	sig = d2i_DSA_SIG(NULL, &psig, (long)len);
 }
 
-	*siglen = SHARAW_DIGEST_LENGTH;
-	if (sig != NULL) {
-		const BIGNUM *ps, *pr;
-		u_int rlen, slen;
-
-		DSA_SIG_get0(sig, &pr, &ps);
-
-		rlen = BN_num_bytes(pr);
-		slen = BN_num_bytes(ps);
-
-		if (rlen > SHA_DIGEST_LENGTH || slen > SHA_DIGEST_LENGTH) {
-			error_f("bad sig size %u %u", rlen, slen);
-			goto done;
-		}
-
-		explicit_bzero(sigret, SHARAW_DIGEST_LENGTH);
-		BN_bn2bin(pr, sigret + SHARAW_DIGEST_LENGTH - SHA_DIGEST_LENGTH - rlen);
-		BN_bn2bin(ps, sigret + SHARAW_DIGEST_LENGTH - slen);
-
-		ret = 1;
-	}
-	DSA_SIG_free(sig);
+	if (sig == NULL) return -1;
 }
-done:
-	return(ret);
+
+/* encode DSA r&s into SecSH signature blob */
+{	u_int rlen, slen;
+	const BIGNUM *ps, *pr;
+
+	DSA_SIG_get0(sig, &pr, &ps);
+
+	rlen = BN_num_bytes(pr);
+	slen = BN_num_bytes(ps);
+
+	if (rlen > SHA_DIGEST_LENGTH || slen > SHA_DIGEST_LENGTH) {
+		error_f("bad sig size %u %u", rlen, slen);
+		goto parse_err;
+	}
+
+	explicit_bzero(sigret, SHARAW_DIGEST_LENGTH);
+	BN_bn2bin(pr, sigret + SHARAW_DIGEST_LENGTH - SHA_DIGEST_LENGTH - rlen);
+	BN_bn2bin(ps, sigret + SHARAW_DIGEST_LENGTH - slen);
+	*siglen = SHARAW_DIGEST_LENGTH;
+
+	DSA_SIG_free(sig);
+	return 1;
+
+parse_err:
+	DSA_SIG_free(sig);
+	return -1;
+}
 }
 
 
