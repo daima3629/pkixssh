@@ -750,23 +750,65 @@ static inline const EVP_MD* ssh_ecdsa_EVP_sha512(void) { return EVP_sha512(); }
 #endif /*defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x10000000L)*/
 
 
+#ifdef HAVE_EVP_DIGESTSIGNINIT
+static inline int
+SSH_SignFinal(EVP_MD_CTX *ctx, unsigned char *sig, size_t *siglen) {
+	return EVP_DigestSignFinal(ctx, sig, siglen);
+}
+#else
+static inline int
+SSH_SignFinal(EVP_MD_CTX *ctx, unsigned char *md, unsigned int *s, EVP_PKEY *pkey) {
+	return EVP_SignFinal(ctx, md, s, pkey);
+}
+#endif
+
+
+#ifdef HAVE_EVP_DIGESTSIGNINIT	/* OpenSSL >= 1.0 */
+static inline int
+buf_EVP_DigestSignFinal(EVP_MD_CTX *ctx,
+    unsigned char *sigret, size_t maxlen, size_t *siglen
+) {
+	int ret = EVP_DigestSignFinal(ctx, NULL, siglen);
+	if (ret <= 0) return ret;
+
+	/* paranoid check */
+	if (*siglen > maxlen) return -1;
+
+	return EVP_DigestSignFinal(ctx, sigret, siglen);
+}
+#endif /*def HAVE_EVP_DIGESTSIGNINIT**/
+
+
 #define SHARAW_DIGEST_LENGTH (2*SHA_DIGEST_LENGTH)
 
 static int
-DSS1RAW_SignFinal(EVP_MD_CTX *ctx, unsigned char *sigret, unsigned int *siglen, EVP_PKEY *pkey) {
+DSS1RAW_SignFinal(
+#ifdef HAVE_EVP_DIGESTSIGNINIT
+	EVP_MD_CTX *ctx, unsigned char *sigret, size_t *siglen
+#else
+	EVP_MD_CTX *ctx, unsigned char *sigret, unsigned int *siglen, EVP_PKEY *pkey
+#endif	
+) {
 	DSA_SIG *sig;
-	unsigned int  len;
+#ifdef HAVE_EVP_DIGESTSIGNINIT
+	size_t len;
+#else
+	unsigned int len;
+#endif
 
 {	int ret;
 	unsigned char buf[20+2*(SHA_DIGEST_LENGTH)];
 
-	ret = EVP_SignFinal(ctx, NULL, &len, pkey);
+#ifdef HAVE_EVP_DIGESTSIGNINIT
+	ret = buf_EVP_DigestSignFinal(ctx, buf, sizeof(buf), &len);
 	if (ret <= 0) return ret;
-	/* paranoid check */
-	if ((size_t)len > sizeof(buf)) return -1;
-
+#else
+	/* NOTE: Function EVP_SignFinal() in OpenSSL before 1.0 does not
+	 * return signature length if signature argument is NULL.
+	 */
 	ret = EVP_SignFinal(ctx, buf, &len, pkey);
 	if (ret <= 0) return ret;
+#endif
 
 {	/* decode DSA signature */
 	const unsigned char *psig = buf;
@@ -864,20 +906,33 @@ process:
 
 #ifdef OPENSSL_HAS_ECC
 static int
-SSH_ECDSA_SignFinal(EVP_MD_CTX *ctx, unsigned char *sigret, unsigned int *siglen, EVP_PKEY *pkey) {
+SSH_ECDSA_SignFinal(
+#ifdef HAVE_EVP_DIGESTSIGNINIT
+EVP_MD_CTX *ctx, unsigned char *sigret, size_t *siglen
+#else
+EVP_MD_CTX *ctx, unsigned char *sigret, unsigned int *siglen, EVP_PKEY *pkey
+#endif
+) {
 	ECDSA_SIG *sig;
+#ifdef HAVE_EVP_DIGESTSIGNINIT
+	size_t len;
+#else
 	unsigned int len;
+#endif
 
 {	int ret;
 	unsigned char buf[20+2*(SHA512_DIGEST_LENGTH)];
 
-	ret = EVP_SignFinal(ctx, NULL, &len, pkey);
+#ifdef HAVE_EVP_DIGESTSIGNINIT
+	ret = buf_EVP_DigestSignFinal(ctx, buf, sizeof(buf), &len);
 	if (ret <= 0) return ret;
-	/* paranoid check */
-	if ((size_t)len > sizeof(buf)) return -1;
-
+#else
+	/* NOTE: Function EVP_SignFinal() in OpenSSL before 1.0 does not
+	 * return signature length if signature argument is NULL.
+	 */
 	ret = EVP_SignFinal(ctx, buf, &len, pkey);
 	if (ret <= 0) return ret;
+#endif
 
 {	/* decode ECDSA signature */
 	const unsigned char *psig = buf;
@@ -997,8 +1052,8 @@ process:
 /* order by usability */
 static ssh_evp_md dgsts[] = {
 #ifdef HAVE_EVP_SHA256
-	{ SSH_MD_RSA_SHA256, EVP_sha256, EVP_SignFinal, EVP_VerifyFinal },
-	{ SSH_MD_RSA_SHA512, EVP_sha512, EVP_SignFinal, EVP_VerifyFinal },
+	{ SSH_MD_RSA_SHA256, EVP_sha256, SSH_SignFinal, EVP_VerifyFinal },
+	{ SSH_MD_RSA_SHA512, EVP_sha512, SSH_SignFinal, EVP_VerifyFinal },
 #endif /* def HAVE_EVP_SHA256 */
 #ifdef OPENSSL_HAS_ECC	/* ECC imply SHA-256 */
 	{ SSH_MD_EC_SHA256_SSH, ssh_ecdsa_EVP_sha256, SSH_ECDSA_SignFinal, SSH_ECDSA_VerifyFinal },
@@ -1008,18 +1063,18 @@ static ssh_evp_md dgsts[] = {
 # endif /* def HAVE_EVP_SHA512 */
 #endif /* def OPENSSL_HAS_ECC */
 
-	{ SSH_MD_RSA_SHA1, EVP_sha1, EVP_SignFinal, EVP_VerifyFinal },
-	{ SSH_MD_RSA_MD5, EVP_md5, EVP_SignFinal, EVP_VerifyFinal },
+	{ SSH_MD_RSA_SHA1, EVP_sha1, SSH_SignFinal, EVP_VerifyFinal },
+	{ SSH_MD_RSA_MD5, EVP_md5, SSH_SignFinal, EVP_VerifyFinal },
 
-	{ SSH_MD_DSA_SHA1, EVP_dss1, EVP_SignFinal, EVP_VerifyFinal },
+	{ SSH_MD_DSA_SHA1, EVP_dss1, SSH_SignFinal, EVP_VerifyFinal },
 	{ SSH_MD_DSA_RAW, EVP_dss1, DSS1RAW_SignFinal, DSS1RAW_VerifyFinal },
 
 #ifdef OPENSSL_HAS_ECC
 	/* PKIX-SSH pre 10.0 does not implement properly rfc6187 */
-	{ SSH_MD_EC_SHA256, ssh_ecdsa_EVP_sha256, EVP_SignFinal, EVP_VerifyFinal },
-	{ SSH_MD_EC_SHA384, ssh_ecdsa_EVP_sha384, EVP_SignFinal, EVP_VerifyFinal },
+	{ SSH_MD_EC_SHA256, ssh_ecdsa_EVP_sha256, SSH_SignFinal, EVP_VerifyFinal },
+	{ SSH_MD_EC_SHA384, ssh_ecdsa_EVP_sha384, SSH_SignFinal, EVP_VerifyFinal },
 # ifdef HAVE_EVP_SHA512
-	{ SSH_MD_EC_SHA512, ssh_ecdsa_EVP_sha512, EVP_SignFinal, EVP_VerifyFinal },
+	{ SSH_MD_EC_SHA512, ssh_ecdsa_EVP_sha512, SSH_SignFinal, EVP_VerifyFinal },
 # endif /* def HAVE_EVP_SHA512 */
 #endif /* def OPENSSL_HAS_ECC */
 	{ -1, NULL, NULL , NULL }
@@ -1046,7 +1101,7 @@ ssh_xkalg_dgst_compat(ssh_evp_md *dest, const ssh_evp_md *src, ssh_compat *compa
 #ifdef OPENSSL_HAS_ECC
 	if (check_compat_extra(compat, SSHX_RFC6187_ASN1_OPAQUE_ECDSA_SIGNATURE)) {
 		if (src->SignFinal == SSH_ECDSA_SignFinal) {
-			dest->SignFinal = EVP_SignFinal;
+			dest->SignFinal = SSH_SignFinal;
 			dest->VerifyFinal = EVP_VerifyFinal;
 			return;
 		}
@@ -1074,7 +1129,11 @@ ssh_pkey_sign(
 		return -1;
 	}
 
+#ifdef HAVE_EVP_DIGESTSIGNINIT
+	ret = EVP_DigestSignInit(ctx, NULL, dgst->md(), NULL, privkey);
+#else
 	ret = EVP_SignInit_ex(ctx, dgst->md(), NULL);
+#endif
 	if (ret <= 0) {
 		error_f("init fail");
 #ifdef TRACE_EVP_ERROR
@@ -1092,7 +1151,14 @@ ssh_pkey_sign(
 		goto done;
 	}
 
+#ifdef HAVE_EVP_DIGESTSIGNINIT
+{	size_t siglen_t;
+	ret = dgst->SignFinal(ctx, sig, &siglen_t);
+	*siglen = siglen_t; /*safe cast*/
+}
+#else
 	ret = dgst->SignFinal(ctx, sig, siglen, privkey);
+#endif
 	if (ret <= 0) {
 		error_f("final fail");
 #ifdef TRACE_EVP_ERROR

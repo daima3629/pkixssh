@@ -830,6 +830,10 @@ ssh_rsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 	debug3_f("slen=%ld", (long)slen);
 
 {	u_char sig[slen];
+#ifdef HAVE_EVP_DIGESTSIGNINIT /* OpenSSL >= 1.0 */
+	/* NOTE: Function EVP_SignFinal() in OpenSSL before 1.0 does not
+	 * return signature length if signature argument is NULL.
+	 */
 	if (ssh_pkey_sign(dgst, key->pk, NULL, &len, data, datalen) <= 0) {
 		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto out;
@@ -839,6 +843,7 @@ ssh_rsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 		ret = SSH_ERR_INTERNAL_ERROR;
 		goto out;
 	}
+#endif /*def HAVE_EVP_DIGESTSIGNINIT*/
 	if (ssh_pkey_sign(dgst, key->pk, sig, &len, data, datalen) <= 0) {
 		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto out;
@@ -848,6 +853,11 @@ ssh_rsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 		size_t diff = slen - len;
 		memmove(sig + diff, sig, len);
 		explicit_bzero(sig, diff);
+#ifndef HAVE_EVP_DIGESTSIGNINIT
+	} else if (len > slen) {
+		ret = SSH_ERR_INTERNAL_ERROR;
+		goto out;
+#endif /*ndef HAVE_EVP_DIGESTSIGNINIT*/
 	}
 
 	ret = ssh_encode_signature(sigp, lenp,

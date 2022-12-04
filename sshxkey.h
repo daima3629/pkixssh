@@ -66,13 +66,17 @@ int	Xkey_verify(ssh_verify_ctx *ctx, const u_char *sig, size_t siglen, const u_c
 #define SSH_MD_RSA_SHA256	23
 #define SSH_MD_RSA_SHA512	24
 
-typedef int	(*fEVP_SignFinal)(EVP_MD_CTX *ctx, unsigned char *md, unsigned int *s, EVP_PKEY *pkey);
+#ifdef HAVE_EVP_DIGESTSIGNINIT
+typedef int	(*fSSH_SignFinal)(EVP_MD_CTX *ctx, unsigned char *sig, size_t *siglen);
+#else
+typedef int	(*fSSH_SignFinal)(EVP_MD_CTX *ctx, unsigned char *md, unsigned int *s, EVP_PKEY *pkey);
+#endif
 typedef int	(*fEVP_VerifyFinal)(EVP_MD_CTX *ctx, const unsigned char *sigbuf, unsigned int siglen, EVP_PKEY *pkey);
 
 struct ssh_evp_md_st {
 	int id;
 	const EVP_MD *(*md)(void);
-	fEVP_SignFinal SignFinal;
+	fSSH_SignFinal SignFinal;
 	fEVP_VerifyFinal VerifyFinal;
 };
 

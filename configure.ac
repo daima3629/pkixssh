@@ -3224,6 +3224,7 @@ AC_CHECK_FUNCS([X509_STORE_CTX_get0_param])
 # check for openssl 1.0.0+ functions ...
 AC_CHECK_FUNCS([ \
   ERR_remove_thread_state \
+  EVP_DigestSignInit \
   EVP_MD_flags \
   EVP_PKEY_base_id \
   EVP_PKEY_print_params \
