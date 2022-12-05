@@ -720,7 +720,8 @@ Enables the command line option in the
 .Cm EscapeChar
 menu for interactive sessions (default
 .Ql ~C ) .
-By default, the command line is enabled.
+By default, the command line is enabled unless system support
+.Xr pledge 2 .
 .It Cm EnableSSHKeysign
 Setting this option to
 .Cm yes

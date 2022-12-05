@@ -2830,7 +2830,11 @@ fill_default_options(Options * options)
 		required_rsa_size = options->required_rsa_size;
 	}
 	if (options->enable_escape_commandline == -1)
+#ifndef HAVE_PLEDGE
 		options->enable_escape_commandline = 1;
+#else
+		options->enable_escape_commandline = 0;
+#endif
 
 	/* expand KEX and etc. name lists */
 {	char *all;
