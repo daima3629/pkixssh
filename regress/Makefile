@@ -1,4 +1,4 @@
-#	$OpenBSD: Makefile,v 1.120 2022/01/06 21:46:56 dtucker Exp $
+#	$OpenBSD: Makefile,v 1.121 2022/12/01 02:22:13 dtucker Exp $
 
 tests: unit file-tests t-exec
 check-core: tests
@@ -138,6 +138,7 @@ CLEANFILES=	*.core actual agent-ca agent-ca.pub agent-key.* authkeys_orig \
 		rsa_ssh2_cr.prv rsa_ssh2_crnl.prv scp-ssh-wrapper.exe \
 		scp-ssh-wrapper.scp sftp-server.log \
 		sftp-server.sh sftp.log ssh-log-wrapper.sh ssh.log \
+		ssh-agent.log ssh-add.log \
 		ssh-rsa_oldfmt knownhosts_command \
 		ssh_config ssh_config.* ssh_proxy ssh_proxy.orig ssh_proxy_* \
 		sshd.log sshd_config sshd_config_minimal \

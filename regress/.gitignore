@@ -66,6 +66,8 @@ ready
 regress.log
 remote_pid
 revoked-*
+ssh-agent.log
+ssh-add.log
 ssh-rsa-agent*
 ssh-rsa
 ssh-rsa.pub
