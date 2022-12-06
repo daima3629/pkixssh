@@ -636,7 +636,7 @@ ssh_ecdsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 static int
 ssh_ecdsa_verify(const ssh_verify_ctx *ctx,
     const u_char *sig, size_t siglen,
-    const u_char *data, size_t dlen)
+    const u_char *data, size_t datalen)
 {
 	const struct sshkey *key = ctx->key;
 	const ssh_evp_md *dgst;
@@ -672,13 +672,8 @@ ssh_ecdsa_verify(const ssh_verify_ctx *ctx,
 
 {	size_t len = sshbuf_len(sigbuf);
 	u_int lenblob = (u_int)len;
-	u_int datalen = (u_int)dlen;
 	if ((size_t)lenblob != len) {
 		ret = SSH_ERR_INVALID_FORMAT;
-		goto out;
-	}
-	if ((size_t)datalen != dlen) {
-		ret = SSH_ERR_INVALID_ARGUMENT;
 		goto out;
 	}
 	if (ssh_pkey_verify(dgst, key->pk,

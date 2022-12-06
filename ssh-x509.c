@@ -1638,17 +1638,11 @@ ssh_x509_sign(
 
 	debug3_f("alg=%.50s, dgst->id=%d", xkalg->name, xkalg->dgst->id);
 
-{	u_int len = datalen;
-	ssh_evp_md dgst;
-
-	if ((size_t)len != datalen) {
-		r = SSH_ERR_INVALID_ARGUMENT;
-		goto done;
-	}
+{	ssh_evp_md dgst;
 
 	ssh_xkalg_dgst_compat(&dgst, xkalg->dgst, ctx->compat);
 
-	if (ssh_pkey_sign(&dgst, key->pk, sigret, &siglen, data, len) <= 0) {
+	if (ssh_pkey_sign(&dgst, key->pk, sigret, &siglen, data, datalen) <= 0) {
 		do_log_crypto_errors(SYSLOG_LEVEL_ERROR);
 		r = SSH_ERR_LIBCRYPTO_ERROR;
 		goto done;
@@ -1673,7 +1667,7 @@ static int
 ssh_x509_verify(
 	ssh_verify_ctx *ctx,
 	const u_char *sig, size_t siglen,
-	const u_char *data, size_t dlen
+	const u_char *data, size_t datalen
 ) {
 	int r = SSH_ERR_INTERNAL_ERROR;
 	const struct sshkey *key;
@@ -1682,17 +1676,12 @@ ssh_x509_verify(
 	EVP_PKEY* pubkey;
 	u_char *sigblob = NULL;
 	u_int len = 0;
-	u_int datalen;
 
 	key = ctx->key;
 	debug3_f("key alg/type/name: %s/%s/%s",
 	    ctx->alg, sshkey_type(key), sshkey_ssh_name(key));
 	debug3_f("compatibility: { 0x%08x, 0x%08x }",
 	    ctx->compat->datafellows, ctx->compat->extra);
-
-	if (dlen > INT_MAX)
-		return SSH_ERR_INVALID_ARGUMENT;
-	datalen = dlen;
 
 	loc = ssh_xkalg_nameind(ctx->alg, &xkalg, -1);
 	if (loc < 0) {

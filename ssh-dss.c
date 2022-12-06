@@ -621,7 +621,7 @@ ssh_dss_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 static int
 ssh_dss_verify(const ssh_verify_ctx *ctx,
     const u_char *sig, size_t siglen,
-    const u_char *data, size_t dlen)
+    const u_char *data, size_t datalen)
 {
 	const struct sshkey *key = ctx->key;
 	const ssh_evp_md *dgst;
@@ -662,11 +662,6 @@ ssh_dss_verify(const ssh_verify_ctx *ctx,
 	}
 
 {	u_int lenblob = (u_int)len; /*safe cast*/
-	u_int datalen = (u_int)dlen;
-	if ((size_t)datalen != dlen) {
-		ret = SSH_ERR_INVALID_ARGUMENT;
-		goto out;
-	}
 	if (ssh_pkey_verify(dgst, key->pk,
 	    sigblob, lenblob, data, datalen) <= 0) {
 		ret = SSH_ERR_SIGNATURE_INVALID;

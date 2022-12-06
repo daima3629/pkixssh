@@ -1150,7 +1150,7 @@ ssh_xkalg_dgst_compat(ssh_evp_md *dest, const ssh_evp_md *src, ssh_compat *compa
 int
 ssh_pkey_sign(
 	const ssh_evp_md *dgst, EVP_PKEY *privkey,
-	u_char *sig, u_int *siglen, const u_char *data, u_int datalen
+	u_char *sig, u_int *siglen, const u_char *data, size_t datalen
 ) {
 	int ret;
 	EVP_MD_CTX *ctx;
@@ -1177,7 +1177,15 @@ ssh_pkey_sign(
 #ifdef HAVE_EVP_DIGESTSIGNINIT
 	ret = EVP_DigestSignUpdate(ctx, data, datalen);
 #else
+# if OPENSSL_VERSION_NUMBER < 0x00908000L
+{
+	u_int dlen = datalen;
+	if ((size_t)dlen != datalen) return -1;
+	ret = EVP_SignUpdate(ctx, data, dlen);
+}
+# else
 	ret = EVP_SignUpdate(ctx, data, datalen);
+# endif
 #endif
 	if (ret <= 0) {
 		error_f("update fail");
@@ -1211,7 +1219,7 @@ done:
 int
 ssh_pkey_verify(
 	const ssh_evp_md *dgst, EVP_PKEY *pubkey,
-	const u_char *sig, u_int siglen, const u_char *data, u_int datalen
+	const u_char *sig, u_int siglen, const u_char *data, size_t datalen
 ) {
 	int ret;
 	EVP_MD_CTX *ctx;
@@ -1238,7 +1246,15 @@ ssh_pkey_verify(
 #ifdef HAVE_EVP_DIGESTSIGNINIT
 	ret = EVP_DigestVerifyUpdate(ctx, data, datalen);
 #else
+# if OPENSSL_VERSION_NUMBER < 0x00908000L
+{
+	u_int dlen = datalen;
+	if ((size_t)dlen != datalen) return -1;
+	ret = EVP_VerifyUpdate(ctx, data, dlen);
+}
+# else
 	ret = EVP_VerifyUpdate(ctx, data, datalen);
+# endif
 #endif
 	if (ret <= 0) {
 		error_f("update fail");

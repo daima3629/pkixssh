@@ -88,8 +88,8 @@ void	ssh_xkalg_dgst_compat(ssh_evp_md *dest, const ssh_evp_md *src, ssh_compat *
 
 
 int	ssh_pkey_sign(const ssh_evp_md *dgst, EVP_PKEY *privkey,
-	    u_char *sig, u_int *siglen, const u_char *data, u_int datalen);
+	    u_char *sig, u_int *siglen, const u_char *data, size_t datalen);
 int	ssh_pkey_verify(const ssh_evp_md *dgst, EVP_PKEY *pubkey,
-	    const u_char *sig, u_int siglen, const u_char *data, u_int datalen);
+	    const u_char *sig, u_int siglen, const u_char *data, size_t datalen);
 
 #endif /* SSHXKEY_H */
