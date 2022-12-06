@@ -1137,16 +1137,20 @@ ssh_pkey_sign(
 	if (ret <= 0) {
 		error_f("init fail");
 #ifdef TRACE_EVP_ERROR
-		error_crypto("EVP_SignInit_ex");
+		error_crypto("SignInit");
 #endif
 		goto done;
 	}
 
+#ifdef HAVE_EVP_DIGESTSIGNINIT
+	ret = EVP_DigestSignUpdate(ctx, data, datalen);
+#else
 	ret = EVP_SignUpdate(ctx, data, datalen);
+#endif
 	if (ret <= 0) {
 		error_f("update fail");
 #ifdef TRACE_EVP_ERROR
-		error_crypto("EVP_SignUpdate");
+		error_crypto("SignUpdate");
 #endif
 		goto done;
 	}
@@ -1160,9 +1164,8 @@ ssh_pkey_sign(
 	ret = dgst->SignFinal(ctx, sig, siglen, privkey);
 #endif
 	if (ret <= 0) {
-		error_f("final fail");
 #ifdef TRACE_EVP_ERROR
-		error_crypto("EVP_SignFinal");
+		error_crypto("SignFinal");
 #endif
 		goto done;
 	}
