@@ -220,7 +220,7 @@ if test "$GCC" = "yes" || test "$GCC" = "egcs"; then
 	#-#OSSH_CHECK_CFLAG_LINK([-ftrapv])
 
 	# TODO: wipe used registers
-	# clang 15 seems to have a big in -fzero-call-used-regs=all.  See
+	# clang 15 seems to have a bug in -fzero-call-used-regs=all.  See
 	# https://github.com/llvm/llvm-project/issues/59242
 	#case "$CLANG_VER" in
 	#15.*) OSSH_CHECK_CFLAG_COMPILE([-fzero-call-used-regs=used]) ;;
