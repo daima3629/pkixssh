@@ -70,8 +70,8 @@ int	Xkey_verify(ssh_verify_ctx *ctx, const u_char *sig, size_t siglen, const u_c
 typedef int	(*fSSH_SignFinal)(EVP_MD_CTX *ctx, unsigned char *sig, size_t *siglen);
 typedef int	(*fSSH_VerifyFinal)(EVP_MD_CTX *ctx, const unsigned char *sig, size_t siglen);
 #else
-typedef int	(*fSSH_SignFinal)(EVP_MD_CTX *ctx, unsigned char *md, unsigned int *s, EVP_PKEY *pkey);
-typedef int	(*fSSH_VerifyFinal)(EVP_MD_CTX *ctx, const unsigned char *sigbuf, unsigned int siglen, EVP_PKEY *pkey);
+typedef int	(*fSSH_SignFinal)(EVP_MD_CTX *ctx, unsigned char *md, size_t *s, EVP_PKEY *pkey);
+typedef int	(*fSSH_VerifyFinal)(EVP_MD_CTX *ctx, const unsigned char *sigbuf, size_t siglen, EVP_PKEY *pkey);
 #endif
 
 struct ssh_evp_md_st {
@@ -88,8 +88,8 @@ void	ssh_xkalg_dgst_compat(ssh_evp_md *dest, const ssh_evp_md *src, ssh_compat *
 
 
 int	ssh_pkey_sign(const ssh_evp_md *dgst, EVP_PKEY *privkey,
-	    u_char *sig, u_int *siglen, const u_char *data, size_t datalen);
+	    u_char *sig, size_t *siglen, const u_char *data, size_t datalen);
 int	ssh_pkey_verify(const ssh_evp_md *dgst, EVP_PKEY *pubkey,
-	    const u_char *sig, u_int siglen, const u_char *data, size_t datalen);
+	    const u_char *sig, size_t siglen, const u_char *data, size_t datalen);
 
 #endif /* SSHXKEY_H */

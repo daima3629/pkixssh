@@ -806,8 +806,7 @@ ssh_rsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 {
 	const struct sshkey *key = ctx->key;
 	const ssh_evp_md *dgst;
-	size_t slen = 0;
-	u_int len;
+	size_t slen = 0, len;
 	struct ssh_rsa_alg_st *alg_info;
 	int ret;
 
@@ -945,12 +944,10 @@ ssh_rsa_verify(const ssh_verify_ctx *ctx,
 		len = modlen;
 	}
 
-{	u_int lenblob = len; /*safe cast*/
 	if (ssh_pkey_verify(dgst, key->pk,
-	    sigblob, lenblob, data, datalen) <= 0) {
+	    sigblob, len, data, datalen) <= 0) {
 		ret = SSH_ERR_SIGNATURE_INVALID;
 	}
-}
 
  out:
 	freezero(sigblob, len);

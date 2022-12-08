@@ -761,11 +761,17 @@ SSH_VerifyFinal(EVP_MD_CTX *ctx, const unsigned char *sig, size_t siglen) {
 }
 #else
 static inline int
-SSH_SignFinal(EVP_MD_CTX *ctx, unsigned char *md, unsigned int *s, EVP_PKEY *pkey) {
-	return EVP_SignFinal(ctx, md, s, pkey);
+SSH_SignFinal(EVP_MD_CTX *ctx, unsigned char *md, size_t *s, EVP_PKEY *pkey) {
+	unsigned int t;
+	int ret = EVP_SignFinal(ctx, md, &t, pkey);
+	*s = t;
+	return ret;
 }
 static inline int
-SSH_VerifyFinal(EVP_MD_CTX *ctx, const unsigned char *sigbuf, unsigned int siglen, EVP_PKEY *pkey) {
+SSH_VerifyFinal(EVP_MD_CTX *ctx, const unsigned char *sigbuf, size_t siglen_t, EVP_PKEY *pkey) {
+	unsigned int siglen = siglen_t;
+	/* paranoid check */
+	if ((size_t)siglen != siglen_t) return -1;
 # if OPENSSL_VERSION_NUMBER < 0x00908000L
 	return EVP_VerifyFinal(ctx, (unsigned char*)sigbuf, siglen, pkey);
 # else
@@ -798,15 +804,11 @@ DSS1RAW_SignFinal(
 #ifdef HAVE_EVP_DIGESTSIGNINIT
 	EVP_MD_CTX *ctx, unsigned char *sigret, size_t *siglen
 #else
-	EVP_MD_CTX *ctx, unsigned char *sigret, unsigned int *siglen, EVP_PKEY *pkey
+	EVP_MD_CTX *ctx, unsigned char *sigret, size_t *siglen, EVP_PKEY *pkey
 #endif	
 ) {
 	DSA_SIG *sig;
-#ifdef HAVE_EVP_DIGESTSIGNINIT
 	size_t len;
-#else
-	unsigned int len;
-#endif
 
 {	int ret;
 	unsigned char buf[20+2*(SHA_DIGEST_LENGTH)];
@@ -818,13 +820,16 @@ DSS1RAW_SignFinal(
 	/* NOTE: Function EVP_SignFinal() in OpenSSL before 1.0 does not
 	 * return signature length if signature argument is NULL.
 	 */
-	ret = EVP_SignFinal(ctx, buf, &len, pkey);
+{	unsigned int t;
+	ret = EVP_SignFinal(ctx, buf, &t, pkey);
+	len = t;
+}
 	if (ret <= 0) return ret;
 #endif
 
 {	/* decode DSA signature */
 	const unsigned char *psig = buf;
-	sig = d2i_DSA_SIG(NULL, &psig, (long)len);
+	sig = d2i_DSA_SIG(NULL, &psig, (long)/*safe cast*/len);
 }
 
 	if (sig == NULL) return -1;
@@ -864,7 +869,7 @@ DSS1RAW_VerifyFinal(
 #ifdef HAVE_EVP_DIGESTSIGNINIT
 EVP_MD_CTX *ctx, const unsigned char *sigbuf, size_t siglen
 #else
-EVP_MD_CTX *ctx, const unsigned char *sigbuf, unsigned int siglen, EVP_PKEY *pkey
+EVP_MD_CTX *ctx, const unsigned char *sigbuf, size_t siglen, EVP_PKEY *pkey
 #endif
 ) {
 	DSA_SIG *sig;
@@ -932,15 +937,11 @@ SSH_ECDSA_SignFinal(
 #ifdef HAVE_EVP_DIGESTSIGNINIT
 EVP_MD_CTX *ctx, unsigned char *sigret, size_t *siglen
 #else
-EVP_MD_CTX *ctx, unsigned char *sigret, unsigned int *siglen, EVP_PKEY *pkey
+EVP_MD_CTX *ctx, unsigned char *sigret, size_t *siglen, EVP_PKEY *pkey
 #endif
 ) {
 	ECDSA_SIG *sig;
-#ifdef HAVE_EVP_DIGESTSIGNINIT
 	size_t len;
-#else
-	unsigned int len;
-#endif
 
 {	int ret;
 	unsigned char buf[20+2*(SHA512_DIGEST_LENGTH)];
@@ -952,13 +953,16 @@ EVP_MD_CTX *ctx, unsigned char *sigret, unsigned int *siglen, EVP_PKEY *pkey
 	/* NOTE: Function EVP_SignFinal() in OpenSSL before 1.0 does not
 	 * return signature length if signature argument is NULL.
 	 */
-	ret = EVP_SignFinal(ctx, buf, &len, pkey);
+{	unsigned int t;
+	ret = EVP_SignFinal(ctx, buf, &t, pkey);
+	len = t;
+}
 	if (ret <= 0) return ret;
 #endif
 
 {	/* decode ECDSA signature */
 	const unsigned char *psig = buf;
-	sig = d2i_ECDSA_SIG(NULL, &psig, (long)len);
+	sig = d2i_ECDSA_SIG(NULL, &psig, (long)/*safe cast*/len);
 }
 
 	if (sig == NULL) return -1;
@@ -981,7 +985,7 @@ EVP_MD_CTX *ctx, unsigned char *sigret, unsigned int *siglen, EVP_PKEY *pkey
 	if (r != 0) goto encode_err;
 
 	len = sshbuf_len(buf);
-	if ((size_t)len != sshbuf_len(buf)) goto encode_err;
+	if (len != sshbuf_len(buf)) goto encode_err;
 
 	memcpy(sigret, sshbuf_ptr(buf), len);
 	*siglen = len;
@@ -1005,7 +1009,7 @@ SSH_ECDSA_VerifyFinal(
 #ifdef HAVE_EVP_DIGESTSIGNINIT
 EVP_MD_CTX *ctx, const unsigned char *sigblob, size_t siglen
 #else
-EVP_MD_CTX *ctx, const unsigned char *sigblob, unsigned int siglen, EVP_PKEY *pkey
+EVP_MD_CTX *ctx, const unsigned char *sigblob, size_t siglen, EVP_PKEY *pkey
 #endif
 ) {
 	ECDSA_SIG *sig;
@@ -1015,7 +1019,7 @@ EVP_MD_CTX *ctx, const unsigned char *sigblob, unsigned int siglen, EVP_PKEY *pk
 	struct sshbuf *buf;
 	BIGNUM *pr = NULL, *ps = NULL;
 
-	buf = sshbuf_from(sigblob, (size_t) siglen);
+	buf = sshbuf_from(sigblob, siglen);
 	if (buf == NULL) return -1;
 
 	/* extract mpint r */
@@ -1150,7 +1154,7 @@ ssh_xkalg_dgst_compat(ssh_evp_md *dest, const ssh_evp_md *src, ssh_compat *compa
 int
 ssh_pkey_sign(
 	const ssh_evp_md *dgst, EVP_PKEY *privkey,
-	u_char *sig, u_int *siglen, const u_char *data, size_t datalen
+	u_char *sig, size_t *siglen, const u_char *data, size_t datalen
 ) {
 	int ret;
 	EVP_MD_CTX *ctx;
@@ -1196,10 +1200,7 @@ ssh_pkey_sign(
 	}
 
 #ifdef HAVE_EVP_DIGESTSIGNINIT
-{	size_t siglen_t;
-	ret = dgst->SignFinal(ctx, sig, &siglen_t);
-	*siglen = siglen_t; /*safe cast*/
-}
+	ret = dgst->SignFinal(ctx, sig, siglen);
 #else
 	ret = dgst->SignFinal(ctx, sig, siglen, privkey);
 #endif
@@ -1219,7 +1220,7 @@ done:
 int
 ssh_pkey_verify(
 	const ssh_evp_md *dgst, EVP_PKEY *pubkey,
-	const u_char *sig, u_int siglen, const u_char *data, size_t datalen
+	const u_char *sig, size_t siglen, const u_char *data, size_t datalen
 ) {
 	int ret;
 	EVP_MD_CTX *ctx;

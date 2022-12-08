@@ -1611,7 +1611,7 @@ ssh_x509_sign(
 	const struct sshkey *key = ctx->key;
 	int  keylen = 0;
 	u_char *sigret = NULL;
-	u_int  siglen;
+	size_t siglen;
 
 	debug3_f("key alg/type/name: %s/%s/%s",
 	    ctx->alg, sshkey_type(key), sshkey_ssh_name(key));
@@ -1675,7 +1675,7 @@ ssh_x509_verify(
 	int loc;
 	EVP_PKEY* pubkey;
 	u_char *sigblob = NULL;
-	u_int len = 0;
+	size_t len = 0;
 
 	key = ctx->key;
 	debug3_f("key alg/type/name: %s/%s/%s",
@@ -1727,19 +1727,8 @@ ssh_x509_verify(
 }
 	if (r != 0) goto end_sign_blob;
 
-	/* extract signature blob */
-{	size_t lenblob = 0;
-
-	r = sshbuf_get_string(buf, &sigblob, &lenblob);
+	r = sshbuf_get_string(buf, &sigblob, &len);
 	if (r != 0) goto end_sign_blob;
-
-	if (lenblob > INT_MAX) {
-		r = SSH_ERR_SIGNATURE_INVALID;
-		len = INT_MAX;
-		goto end_sign_blob;
-	}
-	len = lenblob;
-}
 
 	/* check consistency */
 {	size_t rlen = sshbuf_len(buf);
