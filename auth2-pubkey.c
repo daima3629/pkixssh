@@ -549,7 +549,7 @@ user_key_allowed2(struct passwd *pw, struct sshkey *key,
 	/* Temporarily use the user's uid. */
 	temporarily_use_uid(pw);
 
-	debug("trying public key file %s", file);
+	debug("trying authorized keys file %s", file);
 	if ((f = auth_openkeyfile(file, pw, options.strict_modes)) != NULL) {
 		found_key = auth_check_authkeys_file(pw, f, file,
 		    key, remote_ip, remote_host, authoptsp);
