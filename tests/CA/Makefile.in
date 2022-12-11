@@ -39,13 +39,15 @@ ca-test/catest-bundle.crt: ca-test/catest.config
 	$(SHELL) $(srcdir)/2-cre_cakeys.sh
 
 # ===
-hostkeys: testhostkey_rsa.certstamp testhostkey_dsa.certstamp
+hostkeys: testhostkey_rsa.certstamp
 
 testhostkey_rsa:
 	@$(SHELL) $(srcdir)/2-cre_key.sh rsa server $@
 
 testhostkey_rsa.certstamp: testhostkey_rsa ca-test/catest-bundle.crt
 	@$(SHELL) $(srcdir)/3-cre_certs.sh rsa server testhostkey_rsa
+
+@COMMENT_OUT_DSA@hostkeys: testhostkey_dsa.certstamp
 
 testhostkey_dsa:
 	@$(SHELL) $(srcdir)/2-cre_key.sh dsa server $@
@@ -77,13 +79,15 @@ testhostkey_eccnistp521.certstamp: testhostkey_eccnistp521 ca-test/catest-bundle
 
 
 # ===
-identities: testid_rsa.certstamp testid_dsa.certstamp
+identities: testid_rsa.certstamp
 
 testid_rsa:
 	@$(SHELL) $(srcdir)/2-cre_key.sh rsa client $@
 
 testid_rsa.certstamp: testid_rsa ca-test/catest-bundle.crt
 	@$(SHELL) $(srcdir)/3-cre_certs.sh rsa client testid_rsa
+
+@COMMENT_OUT_DSA@identities: testid_dsa.certstamp
 
 testid_dsa:
 	@$(SHELL) $(srcdir)/2-cre_key.sh dsa client $@
@@ -115,13 +119,15 @@ testid_eccnistp521.certstamp: testid_eccnistp521 ca-test/catest-bundle.crt
 
 
 # ===
-selfidentities: selfid_rsa.certstamp selfid_dsa.certstamp
+selfidentities: selfid_rsa.certstamp
 
 selfid_rsa.certstamp: selfid_rsa
 	@$(SHELL) $(srcdir)/3-cre_certs.sh rsa self selfid_rsa
 
 selfid_rsa:
 	@$(SHELL) $(srcdir)/2-cre_key.sh rsa self $@
+
+@COMMENT_OUT_DSA@selfidentities: selfid_dsa.certstamp
 
 selfid_dsa.certstamp: selfid_dsa
 	@$(SHELL) $(srcdir)/3-cre_certs.sh dsa self selfid_dsa
@@ -132,13 +138,15 @@ selfid_dsa:
 
 # ===
 @OCSP_OFF@ocsp_certs:
-@OCSP_ON@ocsp_certs: testocsp_rsa.certstamp testocsp_dsa.certstamp
+@OCSP_ON@ocsp_certs: testocsp_rsa.certstamp
 
 testocsp_rsa.certstamp: testocsp_rsa ca-test/catest-bundle.crt
 	@$(SHELL) $(srcdir)/3-cre_certs.sh rsa ocsp testocsp_rsa
 
 testocsp_rsa:
 	@$(SHELL) $(srcdir)/2-cre_key.sh rsa ocsp $@
+
+@OCSP_ON@@COMMENT_OUT_DSA@ocsp_certs: testocsp_dsa.certstamp
 
 testocsp_dsa.certstamp: testocsp_dsa ca-test/catest-bundle.crt
 	@$(SHELL) $(srcdir)/3-cre_certs.sh dsa ocsp testocsp_dsa

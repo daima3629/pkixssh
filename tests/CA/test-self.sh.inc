@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2006-2020 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2006-2022 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -45,7 +45,12 @@ test_self() {
       dn_msg="${extd}Distinguished Name${norm}";;
   esac
 
-    for type in rsa dsa ; do
+    t_dsa=
+    if test -n "$SSH_ALGS_X509_DSA" ; then
+      t_dsa=dsa
+    fi
+
+    for type in rsa $t_dsa ; do
       SSH_CLIENTKEY="selfid_$type"
 
       identity_file="$SSH_CLIENTKEY-$type"

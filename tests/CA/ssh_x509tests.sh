@@ -1,5 +1,5 @@
 #! /bin/sh
-# Copyright (c) 2002-2021 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2002-2022 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -62,10 +62,7 @@ SSH_REPLY="${CWD}/.ssh_x509.reply"
 SSH_EXTRA_OPTIONS=""
 
 
-TEST_SSH_CLIENTKEYS="\
-  testid_rsa
-  testid_dsa
-"
+TEST_SSH_CLIENTKEYS=testid_rsa
 
 SSH_ALGS_X509_RSA=
 SSH_ALGS_X509_DSA=
@@ -100,11 +97,17 @@ for a in `$TEST_SSH_SSH -Q key` ; do
       ;;
     esac
     SSH_EC_CURVES="$SSH_EC_CURVES $curve"
-    TEST_SSH_CLIENTKEYS="$TEST_SSH_CLIENTKEYS testid_ecc$curve"
     SSH_EC_ALGS_PLAIN="$SSH_EC_ALGS_PLAIN `echo $a | sed 's/x509v3-//'`"
     SSH_ALGS_X509_EC="$SSH_ALGS_X509_EC $a"
     ;;
   esac
+done
+
+if test -n "$SSH_ALGS_X509_DSA" ; then
+  TEST_SSH_CLIENTKEYS="$TEST_SSH_CLIENTKEYS testid_dsa"
+fi
+for curve in $SSH_EC_CURVES ; do
+  TEST_SSH_CLIENTKEYS="$TEST_SSH_CLIENTKEYS testid_ecc$curve"
 done
 
 

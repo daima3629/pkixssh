@@ -2727,6 +2727,10 @@ AC_ARG_WITH([sshca-dir],
 AC_DEFINE_UNQUOTED([SSHCADIR], ["$sshcadir"], [Specify location of ssh CA root])
 AC_SUBST([sshcadir])
 
+# reserved for future removal
+COMMENT_OUT_DSA=
+AC_SUBST([COMMENT_OUT_DSA])
+
 COMMENT_OUT_ECC="#no ecc#"
 COMMENT_OUT_ECC256="#no ecc256#"
 COMMENT_OUT_ECC384="#no ecc384#"
