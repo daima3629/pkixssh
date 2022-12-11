@@ -1,5 +1,5 @@
 #! /bin/sh
-# Copyright (c) 2002-2021 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2002-2022 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -129,6 +129,7 @@ EOF
   ; show_status $? "- ${extd}CSR${norm}" ||
     return $?
 
+  echo >> "$CA_LOG"
   echo "=== create a new CRT ===" >> "$CA_LOG"
   $OPENSSL ca -config "$SSH_CACFGFILE" \
     -batch \
@@ -239,7 +240,9 @@ cre_p12 () {
   fi
   printf '%s' "- ${extd}PKCS #12${norm} file"
   ( cat "$SSH_BASE_KEY-$type$subtype"
-    cat "$SSH_CAROOT/crt/$CAKEY_PREFIX-$type.crt.pem"
+    if test "$SSH_SELFCERT" != "yes"; then
+      cat "$SSH_CAROOT/crt/$CAKEY_PREFIX-$type.crt.pem"
+    fi
   ) | \
   $OPENSSL pkcs12 $P12_OPT \
     -passin pass: \
@@ -324,3 +327,4 @@ cre_all; retval=$?
 
 show_status $retval "Creation of ${extd}$SSH_BASE_DN_CN${norm} certificates, keys, etc."
 echo
+exit $retval
