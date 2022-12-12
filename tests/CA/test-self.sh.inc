@@ -50,7 +50,14 @@ test_self() {
       t_dsa=dsa
     fi
 
-    for type in rsa $t_dsa ; do
+    t_ecp256=
+    for N in $SSH_EC_CURVES "" ; do
+      case "$N" in
+        nistp256) t_ecp256=eccnistp256;;
+      esac
+    done
+
+    for type in rsa $t_dsa $t_ecp256 ; do
       SSH_CLIENTKEY="selfid_$type"
 
       identity_file="$SSH_CLIENTKEY-$type"

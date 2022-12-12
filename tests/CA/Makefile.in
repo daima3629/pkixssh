@@ -135,6 +135,14 @@ selfid_dsa.certstamp: selfid_dsa
 selfid_dsa:
 	@$(SHELL) $(srcdir)/2-cre_key.sh dsa self $@
 
+@COMMENT_OUT_ECC256@selfidentities: selfid_eccnistp256.certstamp
+
+selfid_eccnistp256.certstamp: selfid_eccnistp256
+	@$(SHELL) $(srcdir)/3-cre_certs.sh ec256 self selfid_eccnistp256
+
+selfid_eccnistp256:
+	@$(SHELL) $(srcdir)/2-cre_key.sh ec256 self $@
+
 
 # ===
 @OCSP_OFF@ocsp_certs:
