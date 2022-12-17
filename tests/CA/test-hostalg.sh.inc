@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2012-2018 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2012-2022 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -64,24 +64,32 @@ EOF
   grep -v HostKey $SSHD_CFG.tmp > $SSHD_CFG
   rm $SSHD_CFG.tmp
 
-  cat >> "$SSHD_CFG" <<EOF
-# x509v3-*-rsa (legacy or RFC6187)
-HostKey "$CWD/testhostkey_rsa-$RSA_DGST"
-# x509v3-*-dss (legacy or RFC6187)
-HostKey "$CWD/testhostkey_dsa-dsa"
-# x509v3-ecdsa-sha2-* (RFC6187)
-EOF
+if test -n "$SSH_ALGS_X509_RSA" ; then
 (
+  echo "# x509v3-*-rsa (legacy or RFC6187)"
+  echo "HostKey \"$CWD/testhostkey_rsa-$RSA_DGST\""
+) >> "$SSHD_CFG"
+fi
+if test -n "$SSH_ALGS_X509_DSA" ; then
+(
+  echo "# x509v3-*-dss (legacy or RFC6187)"
+  echo "HostKey \"$CWD/testhostkey_dsa-dsa\""
+) >> "$SSHD_CFG"
+fi
+if test -n "$SSH_ALGS_X509_EC" ; then
+(
+  echo "# x509v3-ecdsa-sha2-* (RFC6187)"
   for alg in $SSH_ALGS_X509_EC ; do
     case $alg in
     x509v3-ecdsa-sha2-*)
       curve=`echo $alg | sed 's/^.*ecdsa-sha2-//'`
       hostkey=ecc$curve-$RSA_DGST
-      echo HostKey "\"$CWD/testhostkey_$hostkey\""
+      echo "HostKey \"$CWD/testhostkey_$hostkey\""
       ;;
     esac
   done
 ) >> "$SSHD_CFG"
+fi
 
   runSSHdaemon || return $?
   (
@@ -91,12 +99,8 @@ EOF
     printSeparator
 
     for alg in \
-      $SSH_ALGS_X509_RSA \
-      $SSH_ALGS_X509_DSA \
-      $SSH_ALGS_X509_EC \
-      ssh-rsa \
-      ssh-dss \
-      $SSH_EC_ALGS_PLAIN \
+      $SSH_ALGS_X509 \
+      $SSH_ALGS_PLAIN \
     ; do
 
       plainkey=:
@@ -104,6 +108,7 @@ EOF
 
       case $alg in
       x509v3-*-rsa|\
+      rsa-sha2-*|\
       ssh-rsa)         hostkey=rsa;;
       *ecdsa-sha2-*)
                        curve=`echo $alg | sed 's/^.*ecdsa-sha2-//'`

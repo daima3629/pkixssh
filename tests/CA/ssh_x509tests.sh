@@ -62,14 +62,18 @@ SSH_REPLY="${CWD}/.ssh_x509.reply"
 SSH_EXTRA_OPTIONS=""
 
 
-TEST_SSH_CLIENTKEYS=testid_rsa
+TEST_SSH_CLIENTKEYS=
+TEST_OCSP_RESPKEYS=
 
+SSH_ALGS_PLAIN_RSA=
 SSH_ALGS_X509_RSA=
+SSH_ALGS_PLAIN_DSA=
 SSH_ALGS_X509_DSA=
 # some vendor specific openssl libraries does not support nistp521
 SSH_EC_CURVES=
-SSH_EC_ALGS_PLAIN=
+SSH_ALGS_PLAIN_EC=
 SSH_ALGS_X509_EC=
+
 HAVE_EVP_SHA256=false
 
 for a in `$TEST_SSH_SSH -Q key` ; do
@@ -97,29 +101,46 @@ for a in `$TEST_SSH_SSH -Q key` ; do
       ;;
     esac
     SSH_EC_CURVES="$SSH_EC_CURVES $curve"
-    SSH_EC_ALGS_PLAIN="$SSH_EC_ALGS_PLAIN `echo $a | sed 's/x509v3-//'`"
+    SSH_ALGS_PLAIN_EC="$SSH_ALGS_PLAIN_EC `echo $a | sed 's/x509v3-//'`"
     SSH_ALGS_X509_EC="$SSH_ALGS_X509_EC $a"
     ;;
   esac
 done
 
+# if exist X.509 algorithm must exist corresponding plain-key
+if test -n "$SSH_ALGS_X509_RSA" ; then
+  TEST_SSH_CLIENTKEYS="$TEST_SSH_CLIENTKEYS testid_rsa"
+  TEST_OCSP_RESPKEYS="$TEST_OCSP_RESPKEYS testocsp_rsa"
+  SSH_ALGS_PLAIN_RSA=ssh-rsa
+fi
 if test -n "$SSH_ALGS_X509_DSA" ; then
   TEST_SSH_CLIENTKEYS="$TEST_SSH_CLIENTKEYS testid_dsa"
+  TEST_OCSP_RESPKEYS="$TEST_OCSP_RESPKEYS testocsp_dsa"
+  SSH_ALGS_PLAIN_DSA=ssh-dss
 fi
-for curve in $SSH_EC_CURVES ; do
+for curve in $SSH_EC_CURVES "" ; do
+  test -z "$curve" && break
   TEST_SSH_CLIENTKEYS="$TEST_SSH_CLIENTKEYS testid_ecc$curve"
+  TEST_OCSP_RESPKEYS="$TEST_OCSP_RESPKEYS testocsp_ecc$curve"
 done
 
+# if SHA-256 is supported must exist RSA RFC8332 algorithms
+if $HAVE_EVP_SHA256 ; then
+  SSH_ALGS_PLAIN_RSA="$SSH_ALGS_PLAIN_RSA rsa-sha2-256 rsa-sha2-512"
+fi
+
+SSH_ALGS_PLAIN="\
+  $SSH_ALGS_PLAIN_RSA \
+  $SSH_ALGS_PLAIN_DSA \
+  $SSH_ALGS_PLAIN_EC \
+"
+SSH_ALGS_X509="\
+  $SSH_ALGS_X509_RSA \
+  $SSH_ALGS_X509_DSA \
+  $SSH_ALGS_X509_EC \
+"
 
 # OpenSSL OCSP limitation: only rsa keys for versions before 1.x
-TEST_OCSP_RESPKEYS="\
-  testocsp_rsa \
-  testocsp_dsa \
-"
-for curve in $SSH_EC_CURVES ; do
-    TEST_OCSP_RESPKEYS="$TEST_OCSP_RESPKEYS testocsp_ecc$curve"
-done
-
 # OCSP tests are slow as OpenSSL OCSP sample responder does not reuse
 # socked address. So each test has to wait timeout to expire ~ 60 sec.
 # Lets use only rsa for now.

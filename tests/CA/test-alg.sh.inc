@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2004-2018 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2004-2022 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -70,7 +70,9 @@ EOF
       must_fail=yes
       if test -z "$withcert" ; then
         case $SSH_CLIENTKEY in
-        *_rsa)  test $alg = ssh-rsa && must_fail=;;
+        *_rsa)  case $alg in
+                rsa-sha2-*|ssh-rsa) must_fail=;;
+                esac;;
         *_dsa)  test $alg = ssh-dss && must_fail=;;
         *_ecc*) curve=`echo $SSH_CLIENTKEY | sed 's/^.*_ecc//'`
                 test $alg = ecdsa-sha2-$curve && must_fail=;;
@@ -133,21 +135,14 @@ testAlg2 () {
   printSeparator
   echo "  - client failback to ${attn}${alg}${norm} algorithm"
 
-  # list only public key algorithms for 'plain' keys
-  pkalg="ssh-rsa,ssh-dss"
-  if test -n "$SSH_EC_ALGS_PLAIN" ; then
-    for a in $SSH_EC_ALGS_PLAIN ; do
-      pkalg="$pkalg,$a"
-    done
-  fi
-
   creTestSSHDcfgFile
   cat >> "$SSHD_CFG" <<EOF
 CACertificateFile /file/not/found
 CACertificatePath /path/not/found
 CARevocationFile  /crlfile/not/found
 CARevocationPath  /crlpath/not/found
-PubkeyAlgorithms $pkalg
+# list only public key algorithms for 'plain' keys
+PubkeyAlgorithms `echo $SSH_ALGS_PLAIN | sed -e 's/ /,/g'`
 EOF
 
   runSSHdaemon || return $?
@@ -158,7 +153,10 @@ PubkeyAlgorithms $alg
     for SSH_CLIENTKEY in $TEST_SSH_CLIENTKEYS; do
       must_fail=
       case $SSH_CLIENTKEY in
-      *_rsa)  test $alg = ssh-rsa || must_fail=yes;;
+      *_rsa)  case $alg in
+              rsa-sha2-*|ssh-rsa);;
+              *) must_fail=yes;;
+              esac;;
       *_dsa)  test $alg = ssh-dss || must_fail=yes;;
       *_ecc*) curve=`echo $SSH_CLIENTKEY | sed 's/^.*_ecc//'`
               test $alg = ecdsa-sha2-$curve || must_fail=yes;;
@@ -246,12 +244,8 @@ do_test () {
   echo "* ${extd}against ${attn}CACertificateFile${norm} and different publickey ${attn}algorithms${norm}:"
 
   for alg in \
-    "ssh-rsa" \
-    "ssh-dss" \
-    $SSH_EC_ALGS_PLAIN \
-    $SSH_ALGS_X509_RSA \
-    $SSH_ALGS_X509_DSA \
-    $SSH_ALGS_X509_EC \
+    $SSH_ALGS_PLAIN \
+    $SSH_ALGS_X509 \
   ; do
 
     testAlg1; retval=$?
@@ -261,9 +255,7 @@ do_test () {
   done
 
   for alg in \
-    "ssh-rsa" \
-    "ssh-dss" \
-    $SSH_EC_ALGS_PLAIN \
+    $SSH_ALGS_PLAIN \
   ; do
     testAlg2; retval=$?
     if test $retval -ne 0; then
