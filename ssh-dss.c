@@ -592,7 +592,7 @@ ssh_dss_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 	const struct sshkey *key = ctx->key;
 	const ssh_evp_md *dgst;
 	u_char sigblob[SIGBLOB_LEN];
-	size_t siglen;
+	size_t siglen = sizeof(sigblob);
 	int ret;
 
 	if (lenp != NULL)

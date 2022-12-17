@@ -1634,7 +1634,8 @@ ssh_x509_sign(
 	 * allocate extra size as signature like this for ecdsa
 	 * keys contain bytes with size of encoded items
 	 */
-	sigret = xmalloc(keylen+20/*?*/); /*fatal on error*/
+	siglen = keylen + 20/*?*/;
+	sigret = xmalloc(siglen); /*fatal on error*/
 
 	debug3_f("alg=%.50s, dgst->id=%d", xkalg->name, xkalg->dgst->id);
 

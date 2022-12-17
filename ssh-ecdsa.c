@@ -607,7 +607,7 @@ ssh_ecdsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 	const struct sshkey *key = ctx->key;
 	const ssh_evp_md *dgst;
 	u_char sigblob[20+2*64/*SHA512_DIGEST_LENGTH*/];
-	size_t siglen;
+	size_t siglen = sizeof(sigblob);
 	int ret;
 
 	if (lenp != NULL)
