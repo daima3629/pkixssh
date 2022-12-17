@@ -487,6 +487,9 @@ sshkey_validate_public(const struct sshkey *key) {
 #ifdef OPENSSL_HAS_ECC
 	case EVP_PKEY_EC:	return sshkey_validate_public_ecdsa(key);
 #endif
+#ifdef OPENSSL_HAS_ED25519
+	case EVP_PKEY_ED25519:	return 0 /* TODO? */;
+#endif
 	}
 	return SSH_ERR_KEY_TYPE_UNKNOWN;
 }
@@ -748,6 +751,11 @@ static inline const EVP_MD* ssh_ecdsa_EVP_sha512(void) { return EVP_sha512(); }
 #endif
 
 #endif /*defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x10000000L)*/
+
+
+#ifdef HAVE_EVP_DIGESTSIGN
+static inline const EVP_MD* ssh_EVP_none(void) { return NULL; }
+#endif
 
 
 #ifdef HAVE_EVP_DIGESTSIGNINIT
@@ -1113,6 +1121,9 @@ static ssh_evp_md dgsts[] = {
 	{ SSH_MD_EC_SHA512, ssh_ecdsa_EVP_sha512, SSH_SignFinal, SSH_VerifyFinal },
 # endif /* def HAVE_EVP_SHA512 */
 #endif /* def OPENSSL_HAS_ECC */
+#ifdef HAVE_EVP_DIGESTSIGN
+	{ SSH_MD_NONE, ssh_EVP_none, NULL, NULL },
+#endif
 	{ -1, NULL, NULL , NULL }
 };
 
@@ -1174,6 +1185,46 @@ ssh_pkey_sign(
 		error_f("init fail");
 #ifdef TRACE_EVP_ERROR
 		error_crypto("SignInit");
+#endif
+		goto done;
+	}
+
+	if (dgst->md() == NULL) {
+#ifdef HAVE_EVP_DIGESTSIGN
+		u_char *sigbuf;
+		size_t len;
+
+		ret = EVP_DigestSign(ctx, NULL, &len, data, datalen);
+		if (ret <= 0) {
+#ifdef TRACE_EVP_ERROR
+			error_crypto("DigestSign");
+#endif
+			goto done;
+		}
+
+		sigbuf = OPENSSL_malloc(len);
+		if (sigbuf == NULL) {
+			ret = -1;
+			goto done;
+		}
+		explicit_bzero(sigbuf, len);
+
+		ret = EVP_DigestSign(ctx, sigbuf, &len, data, datalen);
+		if (ret <= 0) {
+			OPENSSL_free(sigbuf);
+#ifdef TRACE_EVP_ERROR
+			error_crypto("DigestSign");
+#endif
+			goto done;
+		}
+		/*space ensured by caller*/
+		memcpy(sig, sigbuf, len);
+		*siglen = len;
+
+		explicit_bzero(sigbuf, len);
+		OPENSSL_free(sigbuf);
+#else
+		ret = -1; /*unreachable*/
 #endif
 		goto done;
 	}
@@ -1240,6 +1291,19 @@ ssh_pkey_verify(
 		error_f("init fail");
 #ifdef TRACE_EVP_ERROR
 		error_crypto("VerifyInit");
+#endif
+		goto done;
+	}
+
+	if (dgst->md() == NULL) {
+#ifdef HAVE_EVP_DIGESTSIGN
+		ret = EVP_DigestVerify(ctx, sig, siglen, data, datalen);
+#ifdef TRACE_EVP_ERROR
+		if (ret <= 0)
+			error_crypto("DigestVerify");
+#endif
+#else
+		ret = -1; /*unreachable*/
 #endif
 		goto done;
 	}

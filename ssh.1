@@ -20,7 +20,7 @@
 .\" Copyright (c) 1999,2000 Markus Friedl.  All rights reserved.
 .\" Copyright (c) 1999 Aaron Campbell.  All rights reserved.
 .\" Copyright (c) 1999 Theo de Raadt.  All rights reserved.
-.\" Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
+.\" Copyright (c) 2002-2022 Roumen Petrov.  All rights reserved.
 .\"
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions
@@ -43,7 +43,7 @@
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
 .\" $OpenBSD: ssh.1,v 1.433 2022/11/28 01:37:36 djm Exp $
-.Dd $Mdocdate: November 28 2022 $
+.Dd $Mdocdate: December 17 2022 $
 .Dt SSH 1
 .Os
 .Sh NAME
@@ -346,7 +346,7 @@ or
 to load identifies using engine or store functionality
 provided by cryptographic library.
 .Pp
-For RSA, ECDSA or DSA identity file may contain X.509 certificate that
+For RSA, ECDSA, Ed25519 or DSA identity file may contain X.509 certificate that
 match key. In addition file may contain extra X.509 certificates.
 Extra certificates along with certificates from X.509 store are used
 to build chain of certificates leading to a trusted certificate
@@ -909,7 +909,7 @@ or
 .Pa ~/.ssh/id_rsa.pub
 (RSA)
 in the user's home directory.
-For RSA, ECDSA or DSA identity files may contain private key,
+For RSA, ECDSA, Ed25519 or DSA identity files may contain private key,
 X.509 certificate that match it and extra X.509 certificates.
 In this case *.pub file must contain certificate that match key.
 The user should then copy the public key or X.509 certificate
@@ -1569,7 +1569,7 @@ It is possible to specify a passphrase when
 generating the key which will be used to encrypt the
 sensitive part of this file using 256-bit AES.
 .Pp
-For RSA, ECDSA or DSA identity file (private key)
+For RSA, ECDSA, Ed25519 or DSA identity file (private key)
 may contain X.509 certificate that match key.
 In addition file may contain extra X.509 certificates.
 Extra certificates along with certificates from X.509 store are used
@@ -1646,7 +1646,7 @@ The file format and configuration options are described in
 .It Pa /etc/ssh/ssh_host_rsa_key
 These files contain the private parts of the host keys
 and are used for host-based authentication.
-For RSA, ECDSA or DSA keys files may contain X.509 certificate that
+For RSA, ECDSA, Ed25519 or DSA keys files may contain X.509 certificate that
 match it.
 In addition file may contain extra X.509 certificates.
 Extra certificates along with certificates from X.509 store are used
@@ -1825,6 +1825,14 @@ if an error occurred.
 .%D March 2011
 .%R RFC 6187
 .%T X.509v3 Certificates for Secure Shell Authentication
+.Re
+.It
+.Rs
+.%A S. Josefsson
+.%A I. Liusvaara
+.%D January 2017
+.%R RFC 8032
+.%T Edwards-Curve Digital Signature Algorithm (EdDSA)
 .Re
 .It
 .Rs

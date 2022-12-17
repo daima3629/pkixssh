@@ -118,6 +118,12 @@ logit("TRACE_XKALG add_default_xkalg:");
 	 */
 	if (ssh_add_x509key_alg("x509v3-sign-dss,dss-raw") < 0)
 		fatal_f("oops");
+
+#ifdef OPENSSL_HAS_ED25519
+	/* NOTE: OPENSSL_HAS_ED25519 implies HAVE_EVP_DIGESTSIGN */
+	if (ssh_add_x509key_alg("x509v3-ssh-ed25519,none,ssh-ed25519") < 0)
+		fatal_f("oops");
+#endif
 }
 
 
@@ -176,6 +182,11 @@ ssh_x509key_alg_digest(SSHX509KeyAlgs* p, const char *dgstname) {
 		id = SSH_MD_DSA_SHA1; goto done; }
 	if (strcasecmp("dss-raw" , dgstname) == 0) {
 		id = SSH_MD_DSA_RAW; goto done; }
+
+#ifdef HAVE_EVP_DIGESTSIGN
+	if (strcasecmp("none", dgstname) == 0) {
+		id = SSH_MD_NONE; goto done; }
+#endif
 
 	return -1;
 
@@ -256,6 +267,12 @@ ssh_add_x509key_alg(const char *data) {
 		p->basetype = KEY_DSA;
 		p->chain = 0;
 	} else
+#ifdef OPENSSL_HAS_ED25519
+	if (strncmp(name, "x509v3-ssh-ed25519", 18) == 0) {
+		p->basetype = KEY_ED25519;
+		p->chain = 1;
+	} else
+#endif
 	{
 		error_f("unsupported public key algorithm '%s'", name);
 		goto err;
@@ -467,6 +484,9 @@ ssh_xkalg_listall(struct sshbuf *b, const char *sep) {
 	ssh_xkalg_list(KEY_ECDSA, b, sep);
 	ssh_xkalg_list(KEY_RSA, b, sep);
 	ssh_xkalg_list(KEY_DSA, b, sep);
+#ifdef OPENSSL_HAS_ED25519
+	ssh_xkalg_list(KEY_ED25519, b, sep);
+#endif
 }
 
 

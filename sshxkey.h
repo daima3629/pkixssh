@@ -65,6 +65,7 @@ int	Xkey_verify(ssh_verify_ctx *ctx, const u_char *sig, size_t siglen, const u_c
 #define SSH_MD_EC_SHA512_SSH	22
 #define SSH_MD_RSA_SHA256	23
 #define SSH_MD_RSA_SHA512	24
+#define SSH_MD_NONE		30
 
 #ifdef HAVE_EVP_DIGESTSIGNINIT
 typedef int	(*fSSH_SignFinal)(EVP_MD_CTX *ctx, unsigned char *sig, size_t *siglen);

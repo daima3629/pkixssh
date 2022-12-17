@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2011-2020 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2011-2022 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -109,7 +109,8 @@ EOF
     (
       for SSH_CLIENTKEY in $TEST_SSH_CLIENTKEYS; do
         case $SSH_CLIENTKEY in
-          *ecc*) continue;;
+          *eccnistp*) continue;;
+          *ed25519) continue;;
           *rsa) keytype="rsa";;
           *dsa) keytype="dsa";;
           *)    echo "${warn}unknown client key type : $SSH_CLIENTKEY${norm}"

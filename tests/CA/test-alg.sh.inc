@@ -76,6 +76,7 @@ EOF
         *_dsa)  test $alg = ssh-dss && must_fail=;;
         *_ecc*) curve=`echo $SSH_CLIENTKEY | sed 's/^.*_ecc//'`
                 test $alg = ecdsa-sha2-$curve && must_fail=;;
+        *_ed25519) test $alg = ssh-ed25519 && must_fail=;;
         *)
           echo "${warn}unknown 'plain' client key type${norm}" >&2
           exit 1;;
@@ -103,6 +104,7 @@ EOF
           *_dsa*) expr $alg : 'x509v3-.*-dss' >/dev/null && must_fail=;;
           *_ecc*) curve=`echo $SSH_CLIENTKEY | sed 's/^.*_ecc//'`
                   test $alg = x509v3-ecdsa-sha2-$curve && must_fail=;;
+          *_ed25519) test $alg = x509v3-ssh-ed25519 && must_fail=;;
           *)
             echo "${warn}unknown 'x.509' client key type${norm}" >&2
             exit 1;;
@@ -160,6 +162,7 @@ PubkeyAlgorithms $alg
       *_dsa)  test $alg = ssh-dss || must_fail=yes;;
       *_ecc*) curve=`echo $SSH_CLIENTKEY | sed 's/^.*_ecc//'`
               test $alg = ecdsa-sha2-$curve || must_fail=yes;;
+      *_ed25519) test $alg = ssh-ed25519 || must_fail=yes;;
       *)
         echo "${warn}unknown client key type${norm}" >&2
         exit 1;;

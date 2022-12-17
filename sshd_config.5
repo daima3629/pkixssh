@@ -43,7 +43,7 @@
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
 .\" $OpenBSD: sshd_config.5,v 1.343 2022/09/17 10:34:29 djm Exp $
-.Dd $Mdocdate: September 17 2022 $
+.Dd $Mdocdate: December 17 2022 $
 .Dt SSHD_CONFIG 5
 .Os
 .Sh NAME
@@ -846,7 +846,7 @@ option restricts which of the keys are actually used by
 .Pp
 It is possible to have multiple host key files.
 .Pp
-For RSA, ECDSA or DSA host key file may contain X.509 certificate that
+For RSA, ECDSA, Ed25519 or DSA host key file may contain X.509 certificate that
 match it. In addition file may contain extra X.509 certificates.
 Extra certificates along with certificates from X.509 store are used
 to build chain of certificates leading to a trusted certificate
@@ -2022,6 +2022,7 @@ in form specified in
 .Sx X509 Key Algorithms Format .
 Programs use the first listed for
 .Cm ECDSA ,
+.Cm Ed25519 ,
 .Cm RSA ,
 or
 .Cm DSA
@@ -2044,6 +2045,15 @@ The default for certificates with ECDSA keys is:
 .Cm X509KeyAlgorithm
 .Sm off
 .Ar x509v3-ecdsa-sha2-nistp521 , Ar ssh-sha512 , Ar ecdsa-sha2-nistp521
+.Sm on
+.El
+.Pp
+The default for certificates with Ed25519 keys is:
+.Bl -item -offset indent -compact
+.It
+.Cm X509KeyAlgorithm
+.Sm off
+.Ar x509v3-ssh-ed25519 , Ar none , Ar ssh-ed25519
 .Sm on
 .El
 .Pp
@@ -2233,6 +2243,9 @@ format as specified in
 .It Cm ssh-sha512
 : ECDSA key and signature as specified in
 .Dq RFC 6187 .
+.It Cm none
+: Ed25519 key with PureEdDSA signature as specified in
+.Dq RFC 8032 .
 .El
 and optional
 .Ar signature-identifier .

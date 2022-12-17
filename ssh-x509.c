@@ -178,6 +178,9 @@ ssh_x509_support_plain_type(int k_type) {
 #ifdef OPENSSL_HAS_ECC
 	    (k_type == KEY_ECDSA) ||
 #endif
+#ifdef OPENSSL_HAS_ED25519
+	    (k_type == KEY_ED25519) ||
+#endif
 	    (k_type == KEY_DSA)
 	) ? 1 : 0;
 }

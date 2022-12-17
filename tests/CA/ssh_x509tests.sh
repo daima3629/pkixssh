@@ -73,6 +73,8 @@ SSH_ALGS_X509_DSA=
 SSH_EC_CURVES=
 SSH_ALGS_PLAIN_EC=
 SSH_ALGS_X509_EC=
+SSH_ALGS_PLAIN_ED25519=
+SSH_ALGS_X509_ED25519=
 
 HAVE_EVP_SHA256=false
 
@@ -104,6 +106,9 @@ for a in `$TEST_SSH_SSH -Q key` ; do
     SSH_ALGS_PLAIN_EC="$SSH_ALGS_PLAIN_EC `echo $a | sed 's/x509v3-//'`"
     SSH_ALGS_X509_EC="$SSH_ALGS_X509_EC $a"
     ;;
+  x509v3-*-ed25519)
+    SSH_ALGS_X509_ED25519="$SSH_ALGS_X509_ED25519 $a"
+    ;;
   esac
 done
 
@@ -123,6 +128,10 @@ for curve in $SSH_EC_CURVES "" ; do
   TEST_SSH_CLIENTKEYS="$TEST_SSH_CLIENTKEYS testid_ecc$curve"
   TEST_OCSP_RESPKEYS="$TEST_OCSP_RESPKEYS testocsp_ecc$curve"
 done
+if test -n "$SSH_ALGS_X509_ED25519" ; then
+  TEST_SSH_CLIENTKEYS="$TEST_SSH_CLIENTKEYS testid_ed25519"
+  SSH_ALGS_PLAIN_ED25519=ssh-ed25519
+fi
 
 # if SHA-256 is supported must exist RSA RFC8332 algorithms
 if $HAVE_EVP_SHA256 ; then
@@ -133,11 +142,13 @@ SSH_ALGS_PLAIN="\
   $SSH_ALGS_PLAIN_RSA \
   $SSH_ALGS_PLAIN_DSA \
   $SSH_ALGS_PLAIN_EC \
+  $SSH_ALGS_PLAIN_ED25519 \
 "
 SSH_ALGS_X509="\
   $SSH_ALGS_X509_RSA \
   $SSH_ALGS_X509_DSA \
   $SSH_ALGS_X509_EC \
+  $SSH_ALGS_X509_ED25519 \
 "
 
 # OpenSSL OCSP limitation: only rsa keys for versions before 1.x

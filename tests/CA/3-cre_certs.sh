@@ -45,6 +45,7 @@ dsa)	key_type_name="DSA";;
 ec256)	key_type_name="ECDSA(nistp256)";;
 ec384)	key_type_name="ECDSA(nistp384)";;
 ec521)	key_type_name="ECDSA(nistp521)";;
+ed25519)	key_type_name="ED25519";;
 *)	echo "${warn}unsupported key type: ${attn}$1${norm}" >&2
 	exit 1
   ;;

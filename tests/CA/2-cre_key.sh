@@ -1,5 +1,5 @@
 #! /bin/sh
-# Copyright (c) 2011-2021 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2011-2022 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -55,6 +55,9 @@ ec384)	opts="$opts -t ecdsa -b 384"
   ;;
 ec521)	opts="$opts -t ecdsa -b 521"
 	typemsg="ECDSA(nistp521)"
+  ;;
+ed25519)opts="$opts -t ed25519"
+	typemsg="ED25519"
   ;;
 *)	echo "${warn}unsupported key type: ${attn}$1${norm}" >&2
 	exit 1

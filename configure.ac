@@ -2740,6 +2740,10 @@ AC_SUBST([COMMENT_OUT_ECC256])
 AC_SUBST([COMMENT_OUT_ECC384])
 AC_SUBST([COMMENT_OUT_ECC521])
 
+# OpenSSL >= 1.1.1
+COMMENT_OUT_ED25519="#no ed25519#"
+AC_SUBST([COMMENT_OUT_ED25519])
+
 if test "x$openssl" = "xyes" ; then
 
 	save_LIBS="$LIBS"
@@ -3192,6 +3196,7 @@ if test "x$openssl" = "xyes" ; then
 			AC_MSG_RESULT([yes])
 			AC_DEFINE([OPENSSL_HAS_ED25519], [1],
 			    [libcrypto has ed25519 support])
+			COMMENT_OUT_ED25519=
 		],
 		[
 			AC_MSG_RESULT([no])
@@ -3300,6 +3305,7 @@ AC_CHECK_TYPES([struct x509_lookup_method_st], [], [], [
 # check for openssl 1.1.1+ functions ...
 AC_CHECK_FUNCS([ \
   EC_POINT_get_affine_coordinates \
+  EVP_DigestSign \
 ])
 
 # activate openssl(1.1.1+) store functionality

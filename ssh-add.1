@@ -1,4 +1,4 @@
-.\"	$OpenBSD: ssh-add.1,v 1.81 2020/07/14 23:57:01 djm Exp $
+.\"	$OpenBSD: ssh-add.1,v 1.84 2022/02/04 02:49:17 dtucker Exp $
 .\"
 .\" Author: Tatu Ylonen <ylo@cs.hut.fi>
 .\" Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -14,7 +14,7 @@
 .\" Copyright (c) 1999,2000 Markus Friedl.  All rights reserved.
 .\" Copyright (c) 1999 Aaron Campbell.  All rights reserved.
 .\" Copyright (c) 1999 Theo de Raadt.  All rights reserved.
-.\" Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
+.\" Copyright (c) 2002-2022 Roumen Petrov.  All rights reserved.
 .\"
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions
@@ -44,7 +44,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: July 20 2020 $
+.Dd $Mdocdate: December 17 2022 $
 .Dt SSH-ADD 1
 .Os
 .Sh NAME
@@ -68,7 +68,7 @@
 adds private key identities to the authentication agent,
 .Xr ssh-agent 1 .
 .Pp
-For RSA, ECDSA or DSA identity may contain X.509 certificate that
+For RSA, ECDSA, Ed25519  or DSA identity may contain X.509 certificate that
 match private key. This certificate will be loaded as well.
 Also identity may contain extra X.509 certificates.
 Agent client uses those extra certificates along with certificates
@@ -253,7 +253,7 @@ socket used to communicate with the agent.
 Contains the DSA, ECDSA, Ed25519 or RSA authentication identity of the user.
 .El
 .Pp
-For RSA, ECDSA or DSA identity file may contain X.509 certificate that
+For RSA, ECDSA, Ed25519 or DSA identity file may contain X.509 certificate that
 match private key and extra X.509 certificates.
 .Pp
 Identity files should not be readable by anyone but the user.

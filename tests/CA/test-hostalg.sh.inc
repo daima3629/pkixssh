@@ -90,6 +90,12 @@ if test -n "$SSH_ALGS_X509_EC" ; then
   done
 ) >> "$SSHD_CFG"
 fi
+if test -n "$SSH_ALGS_X509_ED25519" ; then
+(
+  echo "# x509v3-ssh-ed25519"
+  echo "HostKey \"$CWD/testhostkey_ed25519-$RSA_DGST\""
+) >> "$SSHD_CFG"
+fi
 
   runSSHdaemon || return $?
   (
@@ -115,6 +121,8 @@ fi
                        hostkey=ecc$curve;;
       x509v3-*-dss|\
       ssh-dss)         hostkey=dsa;;
+      x509v3-*-ed25519|\
+      ssh-ed25519)     hostkey=ed25519;;
       *)
         echo "${warn}unsupported public key algorithm : $alg${norm}" >&2
         exit 1;;

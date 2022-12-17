@@ -20,7 +20,7 @@
 .\" Copyright (c) 1999,2000 Markus Friedl.  All rights reserved.
 .\" Copyright (c) 1999 Aaron Campbell.  All rights reserved.
 .\" Copyright (c) 1999 Theo de Raadt.  All rights reserved.
-.\" Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
+.\" Copyright (c) 2002-2022 Roumen Petrov.  All rights reserved.
 .\"
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions
@@ -43,7 +43,7 @@
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
 .\" $OpenBSD: sshd.8,v 1.321 2022/09/11 06:38:11 jmc Exp $
-.Dd $Mdocdate: September 11 2022 $
+.Dd $Mdocdate: December 17 2022 $
 .Dt SSHD 8
 .Os
 .Sh NAME
@@ -181,7 +181,7 @@ and
 It is possible to have multiple host key files for
 the different host key algorithms.
 .Pp
-For RSA, ECDSA or DSA host key may contain X.509 certificate that
+For RSA, ECDSA, Ed25519 or DSA host key may contain X.509 certificate that
 match it. In addition file may contain extra X.509 certificates.
 Extra certificates along with certificates from X.509 store are used
 to build chain of certificates leading to a trusted certificate
@@ -488,6 +488,8 @@ x509v3-ecdsa-sha2-nistp521
 x509v3-ssh-dss
 .It
 x509v3-sign-dss
+.It
+x509v3-ssh-ed25519
 .El
 .Pp
 Instead of
@@ -1015,7 +1017,7 @@ Used to verify and validate client X.509 certificate.
 .It Pa /etc/ssh/ssh_host_ed25519_key
 .It Pa /etc/ssh/ssh_host_rsa_key
 These files contain the private parts of the host keys.
-For RSA, ECDSA or DSA keys file may contain X.509 certificate that
+For RSA, ECDSA, Ed25519 or DSA keys file may contain X.509 certificate that
 match it. In addition file may contain extra X.509 certificates.
 Extra certificates along with certificates from X.509 store are used
 to build chain of certificates leading to a trusted certificate

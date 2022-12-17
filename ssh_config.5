@@ -43,7 +43,7 @@
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
 .\" $OpenBSD: ssh_config.5,v 1.376 2022/11/28 01:37:36 djm Exp $
-.Dd $Mdocdate: November 28 2022 $
+.Dd $Mdocdate: December 17 2022 $
 .Dt SSH_CONFIG 5
 .Os
 .Sh NAME
@@ -987,7 +987,7 @@ default set.
 The default for this option depend from
 .Cm X509KeyAlgorithm .
 By default it contain unique list build from names of X509KeyAlgorithm
-defined for ECDSA, RSA and DSA keys, followed by
+defined for ECDSA, Ed25519, RSA and DSA keys, followed by
 .Bd -literal -offset 3n
 ssh-ed25519-cert-v01@openssh.com,
 ecdsa-sha2-nistp256-cert-v01@openssh.com,
@@ -1087,7 +1087,7 @@ The default is
 and
 .Pa ~/.ssh/id_dsa .
 .Pp
-For RSA, ECDSA or DSA identity file may contain X.509 certificate that
+For RSA, ECDSA, Ed25519 or DSA identity file may contain X.509 certificate that
 match key. In addition file may contain extra X.509 certificates.
 Extra certificates along with certificates from X.509 store are used
 to build chain of certificates leading to a trusted certificate
@@ -2176,6 +2176,7 @@ section of
 .Xr sshd_config 5 .
 Programs use the first listed for
 .Cm ECDSA ,
+.Cm Ed25519 ,
 .Cm RSA ,
 or
 .Cm DSA
@@ -2197,6 +2198,14 @@ The default for certificates with ECDSA keys is:
 .Cm X509KeyAlgorithm
 .Sm off
 .Ar x509v3-ecdsa-sha2-nistp521 , Ar ssh-sha512 , Ar ecdsa-sha2-nistp521
+.Sm on
+.El
+.Pp
+The default for certificates with Ed25519 keys is:
+.Bl -item -offset indent -compact
+.Cm X509KeyAlgorithm
+.Sm off
+.Ar x509v3-ssh-ed25519 , Ar none , Ar ssh-ed25519
 .Sm on
 .El
 .Pp

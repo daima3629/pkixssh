@@ -77,6 +77,13 @@ testhostkey_eccnistp521:
 testhostkey_eccnistp521.certstamp: testhostkey_eccnistp521 ca-test/catest-bundle.crt
 	@$(SHELL) $(srcdir)/3-cre_certs.sh ec521 server testhostkey_eccnistp521
 
+@COMMENT_OUT_ED25519@hostkeys: testhostkey_ed25519.certstamp
+
+testhostkey_ed25519:
+	@$(SHELL) $(srcdir)/2-cre_key.sh ed25519 server $@
+
+testhostkey_ed25519.certstamp: testhostkey_ed25519 ca-test/catest-bundle.crt
+	@$(SHELL) $(srcdir)/3-cre_certs.sh ed25519 server testhostkey_ed25519
 
 # ===
 identities: testid_rsa.certstamp
@@ -117,6 +124,13 @@ testid_eccnistp521:
 testid_eccnistp521.certstamp: testid_eccnistp521 ca-test/catest-bundle.crt
 	@$(SHELL) $(srcdir)/3-cre_certs.sh ec521 client testid_eccnistp521
 
+@COMMENT_OUT_ED25519@identities: testid_ed25519.certstamp
+
+testid_ed25519:
+	@$(SHELL) $(srcdir)/2-cre_key.sh ed25519 client $@
+
+testid_ed25519.certstamp: testid_ed25519 ca-test/catest-bundle.crt
+	@$(SHELL) $(srcdir)/3-cre_certs.sh ed25519 client testid_ed25519
 
 # ===
 selfidentities: selfid_rsa.certstamp
@@ -184,6 +198,13 @@ testocsp_eccnistp521.certstamp: testocsp_eccnistp521 ca-test/catest-bundle.crt
 testocsp_eccnistp521:
 	@$(SHELL) $(srcdir)/2-cre_key.sh ec521 ocsp $@
 
+@OCSP_ON@@COMMENT_OUT_ED25519@ocsp_certs: testocsp_ed25519.certstamp
+
+testocsp_ed25519.certstamp: testocsp_ed25519 ca-test/catest-bundle.crt
+	@$(SHELL) $(srcdir)/3-cre_certs.sh ed25519 ocsp testocsp_ed25519
+
+testocsp_ed25519:
+	@$(SHELL) $(srcdir)/2-cre_key.sh ed25519 ocsp $@
 
 # ===
 crl_files: ca-test/catest-bundle.crl

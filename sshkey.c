@@ -206,6 +206,8 @@ sshkey_type(const struct sshkey *k)
 			return k->pk ? "ECDSA+cert" : "X509(ecdsa)";
 		case KEY_DSA:
 			return k->pk ? "DSA+cert" : "X509(dsa)";
+		case KEY_ED25519:
+			return k->pk ? "ED25519+cert" : "X509(ed25519)";
 		default:
 			break;
 		}

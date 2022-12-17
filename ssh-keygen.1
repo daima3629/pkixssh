@@ -1,4 +1,4 @@
-.\"	$OpenBSD: ssh-keygen.1,v 1.225 2022/08/16 20:24:08 jmc Exp $
+.\"	$OpenBSD: ssh-keygen.1,v 1.226 2022/09/10 08:50:53 jsg Exp $
 .\"
 .\" Author: Tatu Ylonen <ylo@cs.hut.fi>
 .\" Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -14,7 +14,7 @@
 .\" Copyright (c) 1999,2000 Markus Friedl.  All rights reserved.
 .\" Copyright (c) 1999 Aaron Campbell.  All rights reserved.
 .\" Copyright (c) 1999 Theo de Raadt.  All rights reserved.
-.\" Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
+.\" Copyright (c) 2002-2022 Roumen Petrov.  All rights reserved.
 .\"
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions
@@ -44,7 +44,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: August 16 2022 $
+.Dd $Mdocdate: December 17 2022 $
 .Dt SSH-KEYGEN 1
 .Os
 .Sh NAME
@@ -1054,7 +1054,7 @@ authentication identity of the user.
 .Pp
 This file should not be readable by anyone but the user.
 .Pp
-For RSA, ECDSA or DSA identity file may contain X.509 certificate that
+For RSA, ECDSA, Ed25519 or DSA identity file may contain X.509 certificate that
 match it. In addition file may contain extra X.509 certificates.
 Extra certificates along with certificates from X.509 store are used
 to build chain of certificates leading to a trusted certificate
@@ -1082,10 +1082,11 @@ where the user wishes to log in using public key authentication.
 There is no need to keep the contents of this file secret.
 If file
 .Pa ~/.ssh/id_rsa ,
-.Pa ~/.ssh/id_ecdsa
+.Pa ~/.ssh/id_ecdsa ,
+.Pa ~/.ssh/id_ed25519 ,
 or
 .Pa ~/.ssh/id_dsa
-contain RSA/ECDSA/DSA private key and X.509 certificates
+contain RSA/ECDSA/Ed25519/DSA private key and X.509 certificates
 public key file must contain certificate that match private key!
 Use
 .Nm

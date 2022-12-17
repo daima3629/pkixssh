@@ -1,7 +1,7 @@
 .\" $OpenBSD: ssh-keysign.8,v 1.17 2022/03/31 17:27:27 naddy Exp $
 .\"
 .\" Copyright (c) 2002 Markus Friedl.  All rights reserved.
-.\" Copyright (c) 2002-2016 Roumen Petrov.  All rights reserved.
+.\" Copyright (c) 2002-2022 Roumen Petrov.  All rights reserved.
 .\"
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions
@@ -31,7 +31,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: March 31 2022 $
+.Dd $Mdocdate: December 17 2022 $
 .Dt SSH-KEYSIGN 8
 .Os
 .Sh NAME
@@ -82,7 +82,7 @@ Since they are readable only by root,
 .Nm
 must be set-uid root if host-based authentication is used.
 .Pp
-For RSA, ECDSA or DSA host key file may contain X.509 certificate that
+For RSA, ECDSA, Ed25519 or DSA host key file may contain X.509 certificate that
 match the key. In addition file may contain extra X.509 certificates.
 Extra certificates along with certificates from X.509 store are used
 to build chain of certificates leading to a trusted certificate
