@@ -1224,8 +1224,11 @@ ssh_pkey_sign(
 #endif
 			goto done;
 		}
-		/*space ensured by caller*/
-		memcpy(sig, sigbuf, len);
+		/* NULL if caller checks for signature buffer size */
+		if (sig != NULL) {
+			/*space ensured by caller*/
+			memcpy(sig, sigbuf, len);
+		}
 		*siglen = len;
 
 		explicit_bzero(sigbuf, len);
