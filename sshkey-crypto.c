@@ -765,7 +765,8 @@ SSH_SignFinal(EVP_MD_CTX *ctx, unsigned char *sig, size_t *siglen) {
 }
 static inline int
 SSH_VerifyFinal(EVP_MD_CTX *ctx, const unsigned char *sig, size_t siglen) {
-	return EVP_DigestVerifyFinal(ctx, sig, siglen);
+	/*safe cast for OpenSSL < 1.1*/
+	return EVP_DigestVerifyFinal(ctx, (unsigned char *)sig, siglen);
 }
 #else
 static inline int
