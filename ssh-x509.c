@@ -1646,6 +1646,19 @@ ssh_x509_sign(
 
 	ssh_xkalg_dgst_compat(&dgst, xkalg->dgst, ctx->compat);
 
+#ifdef HAVE_EVP_DIGESTSIGNINIT /* OpenSSL >= 1.0 */
+{	size_t slen;
+	if (ssh_pkey_sign(&dgst, key->pk, NULL, &slen, data, datalen) <= 0) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto done;
+	}
+	/* paranoid check */
+	if (slen > siglen) {
+		r = SSH_ERR_INTERNAL_ERROR;
+		goto done;
+	}
+}
+#endif /*def HAVE_EVP_DIGESTSIGNINIT*/
 	if (ssh_pkey_sign(&dgst, key->pk, sigret, &siglen, data, datalen) <= 0) {
 		do_log_crypto_errors(SYSLOG_LEVEL_ERROR);
 		r = SSH_ERR_LIBCRYPTO_ERROR;

@@ -858,9 +858,12 @@ DSS1RAW_SignFinal(
 		goto parse_err;
 	}
 
-	explicit_bzero(sigret, SHARAW_DIGEST_LENGTH);
-	BN_bn2bin(pr, sigret + SHARAW_DIGEST_LENGTH - SHA_DIGEST_LENGTH - rlen);
-	BN_bn2bin(ps, sigret + SHARAW_DIGEST_LENGTH - slen);
+	/* NULL if caller checks for signature buffer size */
+	if (sigret != NULL) {
+		explicit_bzero(sigret, SHARAW_DIGEST_LENGTH);
+		BN_bn2bin(pr, sigret + SHARAW_DIGEST_LENGTH - SHA_DIGEST_LENGTH - rlen);
+		BN_bn2bin(ps, sigret + SHARAW_DIGEST_LENGTH - slen);
+	}
 	*siglen = SHARAW_DIGEST_LENGTH;
 
 	DSA_SIG_free(sig);
@@ -996,7 +999,10 @@ EVP_MD_CTX *ctx, unsigned char *sigret, size_t *siglen, EVP_PKEY *pkey
 	len = sshbuf_len(buf);
 	if (len != sshbuf_len(buf)) goto encode_err;
 
-	memcpy(sigret, sshbuf_ptr(buf), len);
+	/* NULL if caller checks for signature buffer size */
+	if (sigret != NULL) {
+		memcpy(sigret, sshbuf_ptr(buf), len);
+	}
 	*siglen = len;
 
 	sshbuf_free(buf);
