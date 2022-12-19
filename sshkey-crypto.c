@@ -682,6 +682,10 @@ err:
 
 
 /* digest compatibility */
+#undef WRAP_OPENSSL_EC_EVP_SHA256
+#undef WRAP_OPENSSL_EC_EVP_SHA384
+#undef WRAP_OPENSSL_EC_EVP_SHA512
+
 #if defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x10000000L)
 /* work-arounds for limited EVP digests in OpenSSL 0.9.8* ...
  * (missing ecdsa support)
@@ -700,11 +704,11 @@ ssh_EVP_MD_ecdsa_init(EVP_MD *t, const EVP_MD *s) {
 
 
 #ifdef OPENSSL_HAS_NISTP256
+# define WRAP_OPENSSL_EC_EVP_SHA256
 /* Test for NID_X9_62_prime256v1(nistp256) includes test for EVP_sha256 */
 static EVP_MD ecdsa_sha256_md = { NID_undef };
 
-const EVP_MD* ssh_ecdsa_EVP_sha256(void);
-const EVP_MD*
+static inline const EVP_MD*
 ssh_ecdsa_EVP_sha256(void) {
     if (ecdsa_sha256_md.type == NID_undef)
 	ssh_EVP_MD_ecdsa_init(&ecdsa_sha256_md, EVP_sha256());
@@ -713,11 +717,11 @@ ssh_ecdsa_EVP_sha256(void) {
 #endif
 
 #ifdef OPENSSL_HAS_NISTP384
+# define WRAP_OPENSSL_EC_EVP_SHA384
 /* Test for NID_secp384r1(nistp384) includes test for EVP_sha384 */
 static EVP_MD ecdsa_sha384_md = { NID_undef };
 
-const EVP_MD* ssh_ecdsa_EVP_sha384(void);
-const EVP_MD*
+static inline const EVP_MD*
 ssh_ecdsa_EVP_sha384(void) {
     if (ecdsa_sha384_md.type == NID_undef)
 	ssh_EVP_MD_ecdsa_init(&ecdsa_sha384_md, EVP_sha384());
@@ -726,11 +730,11 @@ ssh_ecdsa_EVP_sha384(void) {
 #endif
 
 #ifdef OPENSSL_HAS_NISTP521
+# define WRAP_OPENSSL_EC_EVP_SHA512
 /* Test for NID_secp521r1(nistp521) includes test for EVP_sha512 */
 static EVP_MD ecdsa_sha512_md = { NID_undef };
 
-const EVP_MD* ssh_ecdsa_EVP_sha512(void);
-const EVP_MD*
+static inline const EVP_MD*
 ssh_ecdsa_EVP_sha512(void) {
     if (ecdsa_sha512_md.type == NID_undef)
 	ssh_EVP_MD_ecdsa_init(&ecdsa_sha512_md, EVP_sha512());
@@ -738,19 +742,18 @@ ssh_ecdsa_EVP_sha512(void) {
 }
 #endif
 
-#else /*defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x10000000L)*/
+#endif /*defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x10000000L)*/
 
-#ifdef OPENSSL_HAS_NISTP256
+#if defined(OPENSSL_HAS_NISTP256) && !defined(WRAP_OPENSSL_EC_EVP_SHA256)
 static inline const EVP_MD* ssh_ecdsa_EVP_sha256(void) { return EVP_sha256(); }
 #endif
-#ifdef OPENSSL_HAS_NISTP384
+#if defined(OPENSSL_HAS_NISTP384) && !defined(WRAP_OPENSSL_EC_EVP_SHA384)
 static inline const EVP_MD* ssh_ecdsa_EVP_sha384(void) { return EVP_sha384(); }
 #endif
-#ifdef OPENSSL_HAS_NISTP521
+#if defined(OPENSSL_HAS_NISTP521) && !defined(WRAP_OPENSSL_EC_EVP_SHA512)
 static inline const EVP_MD* ssh_ecdsa_EVP_sha512(void) { return EVP_sha512(); }
 #endif
 
-#endif /*defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x10000000L)*/
 
 
 #ifdef HAVE_EVP_DIGESTSIGN
@@ -1106,13 +1109,15 @@ static ssh_evp_md dgsts[] = {
 	{ SSH_MD_RSA_SHA256, EVP_sha256, SSH_SignFinal, SSH_VerifyFinal },
 	{ SSH_MD_RSA_SHA512, EVP_sha512, SSH_SignFinal, SSH_VerifyFinal },
 #endif /* def HAVE_EVP_SHA256 */
-#ifdef OPENSSL_HAS_ECC	/* ECC imply SHA-256 */
+#ifdef OPENSSL_HAS_NISTP256
 	{ SSH_MD_EC_SHA256_SSH, ssh_ecdsa_EVP_sha256, SSH_ECDSA_SignFinal, SSH_ECDSA_VerifyFinal },
+#endif
+#ifdef OPENSSL_HAS_NISTP384
 	{ SSH_MD_EC_SHA384_SSH, ssh_ecdsa_EVP_sha384, SSH_ECDSA_SignFinal, SSH_ECDSA_VerifyFinal },
-# ifdef HAVE_EVP_SHA512
+#endif
+#ifdef OPENSSL_HAS_NISTP521
 	{ SSH_MD_EC_SHA512_SSH, ssh_ecdsa_EVP_sha512, SSH_ECDSA_SignFinal, SSH_ECDSA_VerifyFinal },
-# endif /* def HAVE_EVP_SHA512 */
-#endif /* def OPENSSL_HAS_ECC */
+#endif
 
 	{ SSH_MD_RSA_SHA1, EVP_sha1, SSH_SignFinal, SSH_VerifyFinal },
 	{ SSH_MD_RSA_MD5, EVP_md5, SSH_SignFinal, SSH_VerifyFinal },
@@ -1120,14 +1125,17 @@ static ssh_evp_md dgsts[] = {
 	{ SSH_MD_DSA_SHA1, EVP_dss1, SSH_SignFinal, SSH_VerifyFinal },
 	{ SSH_MD_DSA_RAW, EVP_dss1, DSS1RAW_SignFinal, DSS1RAW_VerifyFinal },
 
-#ifdef OPENSSL_HAS_ECC
 	/* PKIX-SSH pre 10.0 does not implement properly rfc6187 */
+#ifdef OPENSSL_HAS_NISTP256
 	{ SSH_MD_EC_SHA256, ssh_ecdsa_EVP_sha256, SSH_SignFinal, SSH_VerifyFinal },
+#endif
+#ifdef OPENSSL_HAS_NISTP384
 	{ SSH_MD_EC_SHA384, ssh_ecdsa_EVP_sha384, SSH_SignFinal, SSH_VerifyFinal },
-# ifdef HAVE_EVP_SHA512
+#endif
+#ifdef OPENSSL_HAS_NISTP521
 	{ SSH_MD_EC_SHA512, ssh_ecdsa_EVP_sha512, SSH_SignFinal, SSH_VerifyFinal },
-# endif /* def HAVE_EVP_SHA512 */
-#endif /* def OPENSSL_HAS_ECC */
+#endif
+
 #ifdef HAVE_EVP_DIGESTSIGN
 	{ SSH_MD_NONE, ssh_EVP_none, NULL, NULL },
 #endif
