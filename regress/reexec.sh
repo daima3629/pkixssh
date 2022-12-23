@@ -23,6 +23,8 @@ copy_tests ()
 	    cat ${DATA} > ${COPY}
 	if [ $? -ne 0 ]; then
 		fail "ssh cat $DATA failed"
+		rm -f ${COPY}
+		return
 	fi
 	cmp ${DATA} ${COPY}		|| fail "corrupted copy"
 	rm -f ${COPY}
