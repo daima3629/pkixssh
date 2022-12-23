@@ -422,16 +422,16 @@ cleanup ()
 
 start_debug_log ()
 {
-	echo "trace: $@" >$TEST_REGRESS_LOGFILE
-	echo "trace: $@" >$TEST_SSH_LOGFILE
-	echo "trace: $@" >$TEST_SSHD_LOGFILE
+	echo "begin: $@" >$TEST_REGRESS_LOGFILE
+	echo "begin: $@" >$TEST_SSH_LOGFILE
+	echo "begin: $@" >$TEST_SSHD_LOGFILE
 }
 
 save_debug_log ()
 {
-	echo $@ >>$TEST_REGRESS_LOGFILE
-	echo $@ >>$TEST_SSH_LOGFILE
-	echo $@ >>$TEST_SSHD_LOGFILE
+	echo ${1+"$@"} >>$TEST_REGRESS_LOGFILE
+	echo ${1+"$@"} >>$TEST_SSH_LOGFILE
+	echo ${1+"$@"} >>$TEST_SSHD_LOGFILE
 	(cat $TEST_REGRESS_LOGFILE; echo) >>$OBJ/failed-regress.log
 	(cat $TEST_SSH_LOGFILE; echo) >>$OBJ/failed-ssh.log
 	(cat $TEST_SSHD_LOGFILE; echo) >>$OBJ/failed-sshd.log
@@ -439,7 +439,9 @@ save_debug_log ()
 
 trace ()
 {
-	start_debug_log ${1+"$@"}
+	echo "trace: $@" >>$TEST_REGRESS_LOGFILE
+	echo "trace: $@" >>$TEST_SSH_LOGFILE
+	echo "trace: $@" >>$TEST_SSHD_LOGFILE
 	if [ "X$TEST_SSH_TRACE" = "Xyes" ]; then
 		echo ${1+"$@"}
 	fi
