@@ -145,6 +145,25 @@ int allow_severity;
 int deny_severity;
 #endif /* LIBWRAP */
 
+#if 0
+/* Random seed after closefrom() breaks daemon functionality.
+ * Failure it not common. For instance "reexec" regression test may
+ * fail in audit enabled builds.
+ *
+ * Remark:
+ * Postponed random seed is work-around for random generator provided
+ * by some engine, i.e. these that open descriptors for their own use.
+ *
+ * NOTE: If random seed is postponed reexec functionality may clobber
+ * file descriptors. Re-exec is based on hard-coded descriptor numbers
+ * and that all descriptors after certain number are closed.
+ * For instance OpenSSL 1.1.1* may keep random device file descriptors
+ * open. In such case postponed random seed change numbers used. In
+ * consequence hard-coded "reexec" number may clash with used.
+ */
+# define POSTPONE_RANDOM_SEED
+#endif
+
 /* Re-exec fds */
 #define REEXEC_DEVCRYPTO_RESERVED_FD	(STDERR_FILENO + 1)
 #define REEXEC_STARTUP_PIPE_FD		(STDERR_FILENO + 2)
@@ -1756,6 +1775,10 @@ main(int ac, char **av)
 	/* Ensure that fds 0, 1 and 2 are open or directed to /dev/null */
 	sanitise_stdfd();
 
+#ifndef POSTPONE_RANDOM_SEED
+	seed_rng();
+#endif
+
 	/* Initialize configuration options to their default values. */
 	initialize_server_options(&options);
 
@@ -1884,7 +1907,9 @@ main(int ac, char **av)
 	else
 		closefrom(REEXEC_DEVCRYPTO_RESERVED_FD);
 
+#ifdef POSTPONE_RANDOM_SEED
 	seed_rng();
+#endif
 
 	/* If requested, redirect the logs to the specified logfile. */
 	if (logfile != NULL)
