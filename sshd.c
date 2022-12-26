@@ -1775,6 +1775,14 @@ main(int ac, char **av)
 	/* Ensure that fds 0, 1 and 2 are open or directed to /dev/null */
 	sanitise_stdfd();
 
+#ifdef HAVE_RAND_KEEP_RANDOM_DEVICES_OPEN
+	/* Disable the retention of file descriptors used as random seed
+	 * sources - ensure consistent OpenSSL functionality between
+	 * different OS version, releases and event build configurations.
+	 * Note this is OpenSSL pre 1.1.1 functionality.
+	 */
+	RAND_keep_random_devices_open(0);
+#endif
 #ifndef POSTPONE_RANDOM_SEED
 	seed_rng();
 #endif

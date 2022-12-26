@@ -3306,6 +3306,7 @@ AC_CHECK_TYPES([struct x509_lookup_method_st], [], [], [
 AC_CHECK_FUNCS([ \
   EC_POINT_get_affine_coordinates \
   EVP_DigestSign \
+  RAND_keep_random_devices_open \
 ])
 
 # activate openssl(1.1.1+) store functionality
