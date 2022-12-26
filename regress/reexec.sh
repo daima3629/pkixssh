@@ -6,6 +6,8 @@ tid="reexec tests"
 SSHD_ORIG=$SSHD
 SSHD_COPY=$OBJ/sshd
 
+cp $OBJ/sshd_config $OBJ/sshd_config.orig
+
 # Start a sshd and then delete it
 start_sshd_copy ()
 {
@@ -32,7 +34,8 @@ copy_tests ()
 
 verbose "test config passing"
 
-cp $OBJ/sshd_config $OBJ/sshd_config.orig
+cp $OBJ/sshd_config.orig $OBJ/sshd_config
+
 start_sshd
 echo "InvalidXXX=no" >> $OBJ/sshd_config
 
@@ -40,12 +43,12 @@ copy_tests
 
 stop_sshd
 
-cp $OBJ/sshd_config.orig $OBJ/sshd_config
-
 # cygwin can't fork a deleted binary
 if [ "$os" != "cygwin" ]; then
 
 verbose "test reexec fallback"
+
+cp $OBJ/sshd_config.orig $OBJ/sshd_config
 
 start_sshd_copy
 rm -f $SSHD_COPY
