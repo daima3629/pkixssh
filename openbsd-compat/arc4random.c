@@ -152,6 +152,7 @@ _rs_forkhandler(void)
 }
 #endif
 
+# ifndef HAVE_ARC4RANDOM
 static inline void
 _rs_forkdetect(void)
 {
@@ -165,6 +166,7 @@ _rs_forkdetect(void)
 			memset(rs, 0, sizeof(*rs));
 	}
 }
+#endif
 
 static inline int
 _rs_allocate(struct _rs **rsp, struct _rsx **rsxp)
@@ -244,6 +246,7 @@ _rs_stir(void)
 	rs->rs_count = REKEY_BASE + (rekey_fuzz % REKEY_BASE);
 }
 
+# ifndef HAVE_ARC4RANDOM
 static inline void
 _rs_stir_if_needed(size_t len)
 {
@@ -255,6 +258,7 @@ _rs_stir_if_needed(size_t len)
 	else
 		rs->rs_count -= len;
 }
+# endif /*ndef HAVE_ARC4RANDOM*/
 
 static inline void
 _rs_rekey(u_char *dat, size_t datlen)
@@ -279,6 +283,7 @@ _rs_rekey(u_char *dat, size_t datlen)
 	rs->rs_have = sizeof(rsx->rs_buf) - KEYSZ - IVSZ;
 }
 
+# ifndef HAVE_ARC4RANDOM
 static inline void
 _rsx_to_buf(void *buf, size_t len)
 {
@@ -289,6 +294,7 @@ _rsx_to_buf(void *buf, size_t len)
 	memset(keystream, 0, len);
 	rs->rs_have -= len;
 }
+#endif
 
 # if !defined(HAVE_ARC4RANDOM_BUF) && !defined(HAVE_ARC4RANDOM)
 static inline void
