@@ -1,4 +1,4 @@
-/* $OpenBSD: sshd.c,v 1.593 2022/12/04 23:50:49 cheloha Exp $ */
+/* $OpenBSD: sshd.c,v 1.594 2022/12/16 06:56:47 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -1754,6 +1754,13 @@ main(int ac, char **av)
 #endif /*def OPENSSL_FIPS*/
 	pssh_x509store_verify_cert = ssh_x509store_verify_cert;
 	pssh_x509store_build_certchain = ssh_x509store_build_certchain;
+
+/* work-around for environments that fail to clear masked signal on fork or exec */
+{	sigset_t sigmask;
+
+	sigemptyset(&sigmask);
+	sigprocmask(SIG_SETMASK, &sigmask, NULL);
+}
 
 	/* Save argv. Duplicate so setproctitle emulation doesn't clobber it */
 	saved_argc = ac;
