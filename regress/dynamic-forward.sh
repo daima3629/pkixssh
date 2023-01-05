@@ -15,17 +15,16 @@ else
 fi
 trace "will use ProxyCommand $proxycmd"
 
-start_sshd
-
-for d in D R; do
+start_ssh() {
+	direction="$1"
 	n=0
 	error="1"
-	trace "start dynamic forwarding, fork to background"
+	trace "start dynamic -$direction forwarding, fork to background"
 
 	rm -f $pidfile
 	while [ "$error" -ne 0 -a "$n" -lt 3 ]; do
 		n=`expr $n + 1`
-		${SSH} -F $OBJ/ssh_config -f -$d $FWDPORT -q \
+		$SSH -F $OBJ/ssh_config -f -$direction $FWDPORT -q \
 		    -oExitOnForwardFailure=yes somehost exec sh -c \
 			\'"echo \$\$ > $pidfile; exec sleep 444"\'
 		error=$?
@@ -37,20 +36,12 @@ for d in D R; do
 	if [ "$error" -ne 0 ]; then
 		fatal "failed to start dynamic forwarding"
 	fi
+}
 
-	for s in 4 5; do
-	    for h in 127.0.0.1 localhost; do
-		trace "testing ssh socks version $s host $h (-$d)"
-		${SSH} -F $OBJ/ssh_config \
-			-o "ProxyCommand ${proxycmd}${s} $h $PORT" \
-			somehost cat ${DATA} > ${COPY}
-		test -f ${COPY}	 || fail "failed copy ${DATA}"
-		cmp ${DATA} ${COPY} || fail "corrupted copy of ${DATA}"
-	    done
-	done
-
+stop_ssh() {
 	if test -f $pidfile ; then
 		remote=`cat $pidfile`
+
 		trace "terminate remote shell, pid $remote"
 		if [ $remote -gt 1 ]; then
 			kill -HUP $remote
@@ -58,5 +49,26 @@ for d in D R; do
 	else
 		fail "no pid file: $pidfile"
 	fi
+}
 
+check_socks() {
+	direction="$1"
+	for s in 4 5; do
+	    for h in 127.0.0.1 localhost; do
+		trace "testing ssh socks version $s host $h (-$direction)"
+		$SSH -F $OBJ/ssh_config \
+			-o "ProxyCommand ${proxycmd}${s} $h $PORT" \
+			somehost cat ${DATA} > ${COPY}
+		test -f ${COPY}	 || fail "failed copy ${DATA}"
+		cmp ${DATA} ${COPY} || fail "corrupted copy of ${DATA}"
+	    done
+	done
+}
+
+start_sshd
+
+for d in D R; do
+	start_ssh $d
+	check_socks $d
+	stop_ssh
 done
