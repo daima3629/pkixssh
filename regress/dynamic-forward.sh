@@ -1,10 +1,12 @@
-#	$OpenBSD: dynamic-forward.sh,v 1.13 2017/09/21 19:18:12 markus Exp $
+#	$OpenBSD: dynamic-forward.sh,v 1.14 2023/01/02 07:03:57 djm Exp $
 #	Placed in the Public Domain.
 
 tid="dynamic forwarding"
 
 pidfile=$OBJ/remote_pid
 FWDPORT=`expr $PORT + 1`
+
+cp $OBJ/ssh_config $OBJ/ssh_config.orig
 
 if have_prog nc && nc -h 2>&1 | grep "proxy address" >/dev/null; then
 	proxycmd="nc -x 127.0.0.1:$FWDPORT -X"
@@ -17,9 +19,11 @@ trace "will use ProxyCommand $proxycmd"
 
 start_ssh() {
 	direction="$1"
+	arg="$2"
 	n=0
 	error="1"
 	trace "start dynamic -$direction forwarding, fork to background"
+	(cat $OBJ/ssh_config.orig ; echo "$arg") > $OBJ/ssh_config
 
 	rm -f $pidfile
 	while [ "$error" -ne 0 -a "$n" -lt 3 ]; do
@@ -53,12 +57,25 @@ stop_ssh() {
 
 check_socks() {
 	direction="$1"
+	expect_success="$2"
 	for s in 4 5; do
 	    for h in 127.0.0.1 localhost; do
 		trace "testing ssh socks version $s host $h (-$direction)"
 		$SSH -F $OBJ/ssh_config \
-			-o "ProxyCommand ${proxycmd}${s} $h $PORT" \
+			-o "ProxyCommand ${proxycmd}${s} $h $PORT 2>/dev/null" \
 			somehost cat ${DATA} > ${COPY}
+		r=$?
+		if test "x$expect_success" = "xN" ; then
+			if test $r -eq 0 ; then
+				fail "ssh unexpectedly succeeded"
+				r=33
+			fi
+			return $r
+		fi
+		if test $r -ne 0 ; then
+			fail "ssh failed with exit status $r"
+			return $r
+		fi
 		test -f ${COPY}	 || fail "failed copy ${DATA}"
 		cmp ${DATA} ${COPY} || fail "corrupted copy of ${DATA}"
 	    done
@@ -68,7 +85,32 @@ check_socks() {
 start_sshd
 
 for d in D R; do
+	verbose "test -$d forwarding"
 	start_ssh $d
-	check_socks $d
+	check_socks $d Y
+	stop_ssh
+	test "x$d" = "xR" || continue
+
+	# Test PermitRemoteOpen
+	verbose "PermitRemoteOpen=any"
+	start_ssh $d PermitRemoteOpen=any
+	check_socks $d Y
+	stop_ssh
+
+	verbose "PermitRemoteOpen=none"
+	start_ssh $d PermitRemoteOpen=none
+	check_socks $d N
+	stop_ssh
+
+	verbose "PermitRemoteOpen=explicit"
+	start_ssh $d \
+	    PermitRemoteOpen="127.0.0.1:$PORT [::1]:$PORT localhost:$PORT"
+	check_socks $d Y
+	stop_ssh
+
+	verbose "PermitRemoteOpen=disallowed"
+	start_ssh $d \
+	    PermitRemoteOpen="127.0.0.1:1 [::1]:1 localhost:1"
+	check_socks $d N
 	stop_ssh
 done

@@ -1,4 +1,4 @@
-/* $OpenBSD: readconf.c,v 1.370 2022/11/28 01:37:36 djm Exp $ */
+/* $OpenBSD: readconf.c,v 1.371 2023/01/02 07:03:30 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -1743,19 +1743,8 @@ parse_key_algorithms:
 	case oPermitRemoteOpen: {
 		uintptr = &options->num_permitted_remote_opens;
 		cppptr = &options->permitted_remote_opens;
-		arg = argv_next(&ac, &av);
-		if (arg == NULL || *arg == '\0')
-			fatal("%s line %d: missing %s specification",
-			    filename, linenum, lookup_opcode_name(opcode));
 		found = *uintptr > 0;
-		if (strcmp(arg, "any") == 0 || strcmp(arg, "none") == 0) {
-			if (*activep && !found) {
-				*uintptr = 1;
-				*cppptr = xcalloc(1, sizeof(**cppptr));
-				(*cppptr)[0] = xstrdup(arg);
-			}
-			break;
-		}
+		i = 0;
 		while ((arg = argv_next(&ac, &av)) != NULL) {
 			if (*arg == '\0') {
 				error("%s line %d: keyword %s empty argument",
@@ -1763,24 +1752,40 @@ parse_key_algorithms:
 				goto out;
 			}
 			arg2 = xstrdup(arg);
-		{	char *p = hpdelim(&arg);
-			if (p == NULL) {
-				fatal("%s line %d: missing host in %s",
-				    filename, linenum,
-				    lookup_opcode_name(opcode));
+			/* Allow any/none only in first position */
+			if (strcmp(arg, "any") == 0 || strcmp(arg, "none") == 0) {
+				if (i > 0 || ac > 0) {
+					error("%s line %d: keyword %s \"%s\" "
+					    "argument must appear alone.",
+					    filename, linenum, keyword, arg);
+					free(arg2);
+					goto out;
+				}
+			} else {
+			{	char *p = hpdelim(&arg);
+				if (p == NULL) {
+					error("%s line %d: missing host in %s",
+					    filename, linenum,
+					    lookup_opcode_name(opcode));
+					free(arg2);
+					goto out;
+				}
+				p = cleanhostname(p);
 			}
-			p = cleanhostname(p);
-		}
-			/*
-			 * don't want to use permitopen_port to avoid
-			 * dependency on channels.[ch] here.
-			 */
-			if (arg == NULL ||
-			    (strcmp(arg, "*") != 0 && a2port(arg) <= 0)) {
-				fatal("%s line %d: bad port number in %s",
-				    filename, linenum,
-				    lookup_opcode_name(opcode));
+				/*
+				 * don't want to use permitopen_port to avoid
+				 * dependency on channels.[ch] here.
+				 */
+				if (arg == NULL ||
+				    (strcmp(arg, "*") != 0 && a2port(arg) <= 0)) {
+					error("%s line %d: bad port number in %s",
+					    filename, linenum,
+					    lookup_opcode_name(opcode));
+					free(arg2);
+					goto out;
+				}
 			}
+			i++;
 			if (*activep && !found) {
 				opt_array_append(filename, linenum,
 				    lookup_opcode_name(opcode),
