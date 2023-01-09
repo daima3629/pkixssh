@@ -8,14 +8,7 @@ FWDPORT=`expr $PORT + 1`
 
 cp $OBJ/ssh_config $OBJ/ssh_config.orig
 
-if have_prog nc && nc -h 2>&1 | grep "proxy address" >/dev/null; then
-	proxycmd="nc -x 127.0.0.1:$FWDPORT -X"
-elif have_prog connect; then
-	proxycmd="connect -S 127.0.0.1:$FWDPORT -"
-else
-	skip "no suitable ProxyCommand found"
-fi
-trace "will use ProxyCommand $proxycmd"
+proxycmd="$OBJ/netcat -x 127.0.0.1:$FWDPORT -X"
 
 start_ssh() {
 	direction="$1"
