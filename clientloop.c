@@ -1,4 +1,4 @@
-/* $OpenBSD: clientloop.c,v 1.385 2022/11/29 22:41:14 dtucker Exp $ */
+/* $OpenBSD: clientloop.c,v 1.387 2023/01/06 02:39:59 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -13,7 +13,7 @@
  *
  *
  * Copyright (c) 1999 Theo de Raadt.  All rights reserved.
- * Copyright (c) 2017-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2017-2023 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -1047,15 +1047,12 @@ process_escapes(struct ssh *ssh, Channel *c,
 				    efc->escape_char)) != 0)
 					fatal_fr(r, "sshbuf_putf");
 				if (c && c->ctl_chan != -1) {
-					chan_read_failed(ssh, c);
-					chan_write_failed(ssh, c);
+					channel_force_close(ssh, c);
 					if (c->detach_user) {
 						c->detach_user(ssh,
 						    c->self, NULL);
 					}
 					c->type = SSH_CHANNEL_ABANDONED;
-					sshbuf_reset(c->input);
-					chan_ibuf_empty(ssh, c);
 					return 0;
 				} else
 					quit_pending = 1;

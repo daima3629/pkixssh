@@ -1,4 +1,4 @@
-/* $OpenBSD: channels.h,v 1.143 2022/05/05 00:56:58 djm Exp $ */
+/* $OpenBSD: channels.h,v 1.147 2023/01/06 02:47:18 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -12,7 +12,7 @@
  */
 /*
  * Copyright (c) 1999, 2000, 2001, 2002 Markus Friedl.  All rights reserved.
- * Copyright (c) 2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2021-2023 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -271,6 +271,7 @@ void	 channel_set_fds(struct ssh *, int, int, int, int, int,
 void	 channel_free(struct ssh *, Channel *);
 void	 channel_free_all(struct ssh *);
 void	 channel_stop_listening(struct ssh *);
+void	 channel_force_close(struct ssh *, Channel *);
 
 void	 channel_send_open(struct ssh *, int);
 void	 channel_request_start(struct ssh *, int, char *, int);

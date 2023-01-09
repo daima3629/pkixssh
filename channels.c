@@ -1,4 +1,4 @@
-/* $OpenBSD: channels.c,v 1.421 2022/11/18 19:47:40 mbuhl Exp $ */
+/* $OpenBSD: channels.c,v 1.426 2023/01/06 02:47:18 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -17,7 +17,7 @@
  * Copyright (c) 1999, 2000, 2001, 2002 Markus Friedl.  All rights reserved.
  * Copyright (c) 1999 Dug Song.  All rights reserved.
  * Copyright (c) 1999 Theo de Raadt.  All rights reserved.
- * Copyright (c) 2015-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2015-2023 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -1241,6 +1241,30 @@ x11_open_helper(struct ssh *ssh, struct sshbuf *b)
 	return 1;
 }
 
+void
+channel_force_close(struct ssh *ssh, Channel *c)
+{
+	debug3_f("channel %d", c->self);
+
+	if (c->istate == CHAN_INPUT_OPEN)
+		chan_read_failed(ssh, c);
+
+	sshbuf_reset(c->input);
+	if (c->istate == CHAN_INPUT_WAIT_DRAIN)
+		chan_ibuf_empty(ssh, c);
+
+	sshbuf_reset(c->output);
+	if (c->ostate == CHAN_OUTPUT_OPEN ||
+	    c->ostate == CHAN_OUTPUT_WAIT_DRAIN)
+		chan_write_failed(ssh, c);
+
+	if (channel_close_fd(ssh, c, SSH_CHANNEL_FD_ERROR) < 0) {
+		error_f("channel %d: close() failed for "
+		    "extended fd %d [i%d o%d]: %.100s", c->self, c->efd,
+		    c->istate, c->ostate, strerror(errno));
+	}
+}
+
 static void
 channel_pre_x11_open(struct ssh *ssh, Channel *c,
     fd_set *readset, fd_set *writeset)
@@ -1256,11 +1280,7 @@ channel_pre_x11_open(struct ssh *ssh, Channel *c,
 		logit("X11 connection rejected because of wrong authentication.");
 		debug2("X11 rejected %d i%d/o%d",
 		    c->self, c->istate, c->ostate);
-		chan_read_failed(ssh, c);
-		sshbuf_reset(c->input);
-		chan_ibuf_empty(ssh, c);
-		sshbuf_reset(c->output);
-		chan_write_failed(ssh, c);
+		channel_force_close(ssh, c);
 		debug2("X11 closed %d i%d/o%d", c->self, c->istate, c->ostate);
 	}
 }
@@ -1608,12 +1628,8 @@ channel_pre_dynamic(struct ssh *ssh, Channel *c,
 static void
 rdynamic_close(struct ssh *ssh, Channel *c)
 {
+	channel_force_close(ssh, c);
 	c->type = SSH_CHANNEL_OPEN;
-	chan_read_failed(ssh, c);
-	sshbuf_reset(c->input);
-	chan_ibuf_empty(ssh, c);
-	sshbuf_reset(c->output);
-	chan_write_failed(ssh, c);
 }
 
 /* reverse dynamic port forwarding */
