@@ -109,23 +109,16 @@
 	  c[sizeof(INTERNAL_SFTP_NAME) - 1] == '\t'))
 
 /* func */
-
-Session *session_new(void);
-void	session_set_fds(struct ssh *, Session *, int, int, int, int, int);
-void	session_pty_cleanup(Session *);
-void	session_proctitle(Session *);
-int	session_setup_x11fwd(struct ssh *, Session *);
-int	do_exec_pty(struct ssh *, Session *, const char *);
-int	do_exec_no_pty(struct ssh *, Session *, const char *);
-int	do_exec(struct ssh *, Session *, const char *);
-void	do_login(struct ssh *, Session *, const char *);
-void	do_child(struct ssh *, Session *, const char *);
-void	do_motd(void);
-int	check_quietlogin(Session *, const char *);
-
-static void do_authenticated2(struct ssh *, Authctxt *);
-
-static int session_pty_req(struct ssh *, Session *);
+static void	session_set_fds(struct ssh *, Session *, int, int, int, int, int);
+static void	session_pty_cleanup(Session *);
+static void	session_proctitle(Session *);
+static int	session_setup_x11fwd(struct ssh *, Session *);
+static void	do_login(struct ssh *, Session *, const char *);
+static void	do_child(struct ssh *, Session *, const char *);
+static void	do_motd(void);
+static int	check_quietlogin(Session *, const char *);
+static void	do_authenticated2(struct ssh *, Authctxt *);
+static int	session_pty_req(struct ssh *, Session *);
 
 /* import */
 extern ServerOptions options;
@@ -397,7 +390,7 @@ xauth_valid_string(const char *s)
  * will call do_child from the child, and server_loop from the parent after
  * setting up file descriptors and such.
  */
-int
+static int
 do_exec_no_pty(struct ssh *ssh, Session *s, const char *command)
 {
 	pid_t pid;
@@ -570,7 +563,7 @@ do_exec_no_pty(struct ssh *ssh, Session *s, const char *command)
  * setting up file descriptors, controlling tty, updating wtmp, utmp,
  * lastlog, and other such operations.
  */
-int
+static int
 do_exec_pty(struct ssh *ssh, Session *s, const char *command)
 {
 	int fdout, ptyfd, ttyfd, ptymaster;
@@ -673,7 +666,7 @@ do_exec_pty(struct ssh *ssh, Session *s, const char *command)
  * This is called to fork and execute a command.  If another command is
  * to be forced, execute that instead.
  */
-int
+static int
 do_exec(struct ssh *ssh, Session *s, const char *command)
 {
 	int ret;
@@ -753,7 +746,7 @@ do_exec(struct ssh *ssh, Session *s, const char *command)
 }
 
 /* administrative, login(1)-like work */
-void
+static void
 do_login(struct ssh *ssh, Session *s, const char *command)
 {
 	socklen_t fromlen;
@@ -806,7 +799,7 @@ do_login(struct ssh *ssh, Session *s, const char *command)
 /*
  * Display the message of the day.
  */
-void
+static void
 do_motd(void)
 {
 	FILE *f;
@@ -831,7 +824,7 @@ do_motd(void)
 /*
  * Check for quiet login, either .hushlogin or command given.
  */
-int
+static int
 check_quietlogin(Session *s, const char *command)
 {
 	char buf[256];
@@ -1571,7 +1564,7 @@ child_close_fds(struct ssh *ssh)
  * ids, and executing the command or shell.
  */
 #define ARGV_MAX 10
-void
+static void
 do_child(struct ssh *ssh, Session *s, const char *command)
 {
 	extern char **environ;
@@ -2334,7 +2327,7 @@ session_input_channel_req(struct ssh *ssh, Channel *c, const char *rtype)
 	return success;
 }
 
-void
+static void
 session_set_fds(struct ssh *ssh, Session *s,
     int fdin, int fdout, int fderr, int ignore_fderr, int is_tty)
 {
@@ -2387,7 +2380,7 @@ session_pty_cleanup2(Session *s)
 	s->ttyfd = -1;
 }
 
-void
+static void
 session_pty_cleanup(Session *s)
 {
 	PRIVSEP(session_pty_cleanup2(s));
@@ -2645,7 +2638,7 @@ session_tty_list(void)
 	return buf;
 }
 
-void
+static void
 session_proctitle(Session *s)
 {
 	if (s->pw == NULL)
@@ -2654,7 +2647,7 @@ session_proctitle(Session *s)
 		setproctitle("%s@%s", s->pw->pw_name, session_tty_list());
 }
 
-int
+static int
 session_setup_x11fwd(struct ssh *ssh, Session *s)
 {
 	struct stat st;
