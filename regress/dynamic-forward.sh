@@ -10,6 +10,11 @@ cp $OBJ/ssh_config $OBJ/ssh_config.orig
 
 proxycmd="$OBJ/netcat -x 127.0.0.1:$FWDPORT -X"
 
+SKIP_IPV6=false
+if ! config_defined HAVE_STRUCT_IN6_ADDR ; then
+	SKIP_IPV6=true
+fi
+
 start_ssh() {
 	direction="$1"
 	arg="$2"
@@ -75,6 +80,12 @@ check_socks() {
 	done
 }
 
+gen_permit_argument() {
+	permit="127.0.0.1:$1"
+	$SKIP_IPV6 || permit="$permit [::1]:$1"
+	permit="$permit localhost:$1"
+}
+
 start_sshd
 
 for d in D R; do
@@ -96,14 +107,14 @@ for d in D R; do
 	stop_ssh
 
 	verbose "PermitRemoteOpen=explicit"
-	start_ssh $d \
-	    PermitRemoteOpen="127.0.0.1:$PORT [::1]:$PORT localhost:$PORT"
+	gen_permit_argument $PORT
+	start_ssh $d PermitRemoteOpen="$permit"
 	check_socks $d Y
 	stop_ssh
 
 	verbose "PermitRemoteOpen=disallowed"
-	start_ssh $d \
-	    PermitRemoteOpen="127.0.0.1:1 [::1]:1 localhost:1"
+	gen_permit_argument 1
+	start_ssh $d PermitRemoteOpen="$permit"
 	check_socks $d N
 	stop_ssh
 done
