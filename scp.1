@@ -13,13 +13,13 @@
 .\"
 .\" Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
 .\"                    All rights reserved
-.\" Copyright (c) 2022 Roumen Petrov.  All rights reserved.
+.\" Copyright (c) 2011-2023 Roumen Petrov.  All rights reserved.
 .\"
 .\" Created: Sun May  7 00:14:37 1995 ylo
 .\"
-.\" $OpenBSD: scp.1,v 1.105 2021/09/20 06:53:56 djm Exp $
+.\" $OpenBSD: scp.1,v 1.112 2022/12/16 07:13:22 djm Exp $
 .\"
-.Dd $Mdocdate: September 20 2021 $
+.Dd $Mdocdate: January 10 2023 $
 .Dt SCP 1
 .Os
 .Sh NAME
@@ -37,6 +37,7 @@
 .Op Fl o Ar ssh_option
 .Op Fl P Ar port
 .Op Fl S Ar program
+.Op Fl X Ar sftp_option
 .Ar source ... target
 .Sh DESCRIPTION
 .Nm
@@ -229,6 +230,21 @@ and
 to print debugging messages about their progress.
 This is helpful in
 debugging connection, authentication, and configuration problems.
+.It Fl X Ar sftp_option
+Specify an option that controls aspects of SFTP protocol behaviour.
+The valid options are:
+.Bl -tag -width Ds
+.It Cm nrequests Ns = Ns Ar value
+Controls how many concurrent SFTP read or write requests may be in progress
+at any point in time during a download or upload.
+By default 64 requests may be active concurrently.
+Maximum accepted value is 1024.
+.It Cm buffer Ns = Ns Ar value
+Controls the maximum buffer size for a single SFTP read/write operation used
+during download or upload.
+By default a 32KB buffer is used.
+Maximum accepted value is 256K.
+.El
 .El
 .Sh ENVIRONMENT
 .Bl -tag -width Ds

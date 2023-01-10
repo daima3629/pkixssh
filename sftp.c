@@ -2418,7 +2418,7 @@ usage(void)
 	    "          [-D sftp_server_command] [-F ssh_config] [-i identity_file]\n"
 	    "          [-J destination] [-l limit] [-o ssh_option] [-P port]\n"
 	    "          [-R num_requests] [-S program] [-s subsystem | sftp_server]\n"
-	    "          destination\n",
+	    "          [-X sftp_option] destination\n",
 	    __progname);
 	exit(1);
 }
@@ -2426,8 +2426,8 @@ usage(void)
 int
 main(int argc, char **argv)
 {
-	int in, out, ch, err, tmp, port = -1, noisy = 0;
-	char *host = NULL, *user, *cp, *file2 = NULL;
+	int r, in, out, ch, err, tmp, port = -1, noisy = 0;
+	char *host = NULL, *user, *file2 = NULL;
 	int debug_level = 0;
 	char *file1 = NULL, *sftp_server = NULL;
 	const char *ssh_program = _PATH_SSH_PROGRAM, *sftp_direct = NULL;
@@ -2439,7 +2439,7 @@ main(int argc, char **argv)
 	struct sftp_conn *conn;
 	size_t copy_buffer_len = 0;
 	size_t num_requests = 0;
-	long long limit_kbps = 0;
+	long long llv, limit_kbps = 0;
 
 	ssh_malloc_init();	/* must be called before any mallocs */
 	/* Ensure that fds 0, 1 and 2 are open or directed to /dev/null */
@@ -2463,7 +2463,7 @@ main(int argc, char **argv)
 	infile = stdin;
 
 	while ((ch = getopt(argc, argv,
-	    "1246AafhNpqrvCc:D:i:l:o:s:S:b:B:F:J:P:R:")) != -1) {
+	    "1246AafhNpqrvCc:D:i:l:o:s:S:b:B:F:J:P:R:X:")) != -1) {
 		switch (ch) {
 		/* Passed through to ssh(1) */
 		case '4':
@@ -2505,10 +2505,7 @@ main(int argc, char **argv)
 			global_aflag = 1;
 			break;
 		case 'B':
-			copy_buffer_len = strtol(optarg, &cp, 10);
-			if (copy_buffer_len == 0 || *cp != '\0')
-				fatal("Invalid buffer size \"%s\"", optarg);
-			break;
+			goto parse_copy_buffer_len;
 		case 'b':
 			if (batchmode)
 				fatal("Batch file already specified.");
@@ -2544,17 +2541,42 @@ main(int argc, char **argv)
 			global_rflag = 1;
 			break;
 		case 'R':
-			num_requests = strtol(optarg, &cp, 10);
-			if (num_requests == 0 || *cp != '\0')
-				fatal("Invalid number of requests \"%s\"",
-				    optarg);
-			break;
+			goto parse_num_requests;
 		case 's':
 			sftp_server = optarg;
 			break;
 		case 'S':
 			ssh_program = optarg;
 			replacearg(&args, 0, "%s", ssh_program);
+			break;
+		case 'X':
+			/* Please keep in sync with scp.c -X */
+			if (strncmp(optarg, "buffer=", 7) == 0) {
+				optarg += 7;
+parse_copy_buffer_len:
+				r = scan_scaled(optarg, &llv);
+				if (r == 0 && (llv <= 0 || llv > 256 * 1024)) {
+					r = -1;
+					errno = EINVAL;
+				}
+				if (r == -1) {
+					fatal("Invalid buffer size \"%s\": %s",
+					     optarg, strerror(errno));
+				}
+				copy_buffer_len = (size_t)llv;
+			} else if (strncmp(optarg, "nrequests=", 10) == 0) {
+				optarg += 10;
+parse_num_requests:
+				llv = strtonum(optarg, 1, 1024/*RLIMIT_NOFILE?*/,
+				    &errstr);
+				if (errstr != NULL) {
+					fatal("Invalid number of requests "
+					    "\"%s\": %s", optarg, errstr);
+				}
+				num_requests = (size_t)llv;
+			} else {
+				fatal("Invalid -X option");
+			}
 			break;
 		case 'h':
 		default:
@@ -2632,7 +2654,6 @@ main(int argc, char **argv)
 
 		connect_to_server(ssh_program, args.list, &in, &out);
 	} else {
-		int r;
 		char **cpp;
 		if ((r = argv_split(sftp_direct, &tmp, &cpp, 1)) != 0)
 			fatal_r(r, "Parse -D arguments");

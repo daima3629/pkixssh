@@ -1,6 +1,7 @@
-.\" $OpenBSD: sftp.1,v 1.141 2022/06/27 21:41:55 djm Exp $
+.\" $OpenBSD: sftp.1,v 1.143 2022/12/16 03:40:03 djm Exp $
 .\"
 .\" Copyright (c) 2001 Damien Miller.  All rights reserved.
+.\" Copyright (c) 2011-2023 Roumen Petrov.  All rights reserved.
 .\"
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions
@@ -30,7 +31,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: June 27 2022 $
+.Dd $Mdocdate: January 10 2023 $
 .Dt SFTP 1
 .Os
 .Sh NAME
@@ -52,6 +53,7 @@
 .Op Fl R Ar num_requests
 .Op Fl S Ar program
 .Op Fl s Ar subsystem | sftp_server
+.Op Fl X Ar sftp_option
 .Ar destination
 .Sh DESCRIPTION
 .Nm
@@ -264,6 +266,25 @@ does not have an sftp subsystem configured.
 .It Fl v
 Raise logging level.
 This option is also passed to ssh.
+.It Fl X Ar sftp_option
+Specify an option that controls aspects of SFTP protocol behaviour.
+The valid options are:
+.Bl -tag -width Ds
+.It Cm nrequests Ns = Ns Ar value
+Controls how many concurrent SFTP read or write requests may be in progress
+at any point in time during a download or upload.
+By default 64 requests may be active concurrently.
+Maximum accepted value is 1024.
+Option replaces
+.Fl R .
+.It Cm buffer Ns = Ns Ar value
+Controls the maximum buffer size for a single SFTP read/write operation used
+during download or upload.
+By default a 32KB buffer is used.
+Maximum accepted value is 256K.
+Option replaces
+.Fl B .
+.El
 .El
 .Sh INTERACTIVE COMMANDS
 Once in interactive mode,
