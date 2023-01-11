@@ -1,4 +1,4 @@
-/*  $OpenBSD: sntrup761.c,v 1.5 2021/01/08 02:33:13 dtucker Exp $ */
+/*  $OpenBSD: sntrup761.c,v 1.6 2023/01/11 02:13:52 djm Exp $ */
 
 /*
  * Public Domain, Authors:
