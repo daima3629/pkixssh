@@ -1,4 +1,4 @@
-/* $OpenBSD: readconf.c,v 1.371 2023/01/02 07:03:30 djm Exp $ */
+/* $OpenBSD: readconf.c,v 1.372 2023/01/13 02:58:20 dtucker Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -2525,6 +2525,7 @@ initialize_options(Options * options)
 	options->va.responder_url = NULL;
 #endif /*def SSH_OCSP_ENABLED*/
 	/* Standard Options */
+	options->host_arg = NULL;
 	options->forward_agent = -1;
 	options->forward_agent_sock_path = NULL;
 	options->forward_x11 = -1;
@@ -3423,6 +3424,7 @@ dump_client_config(Options *o, const char *host)
 	char buf[8];
 
 	/* Most interesting options first: user, host, port */
+	dump_cfg_string(oHost, o->host_arg);
 	dump_cfg_string(oUser, o->user);
 	dump_cfg_string(oHostname, host);
 	dump_cfg_int(oPort, o->port);
