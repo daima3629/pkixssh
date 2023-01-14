@@ -3114,14 +3114,25 @@ static void
 dump_cfg_strarray_oneline(ServerOpCodes code, u_int count, char **vals)
 {
 	u_int i;
+	const char *def = "";
 
-	if (count <= 0 && code != sAuthenticationMethods)
-		return;
+	if ((int)count < 0) return;
+
+	if (count == 0) {
+		switch(code) {
+		case sAuthenticationMethods:
+			def = " any"; break;
+		case sLogVerbose:
+			def = " none"; break;
+		default:
+			return;
+		}
+	}
+
 	printf("%s", lookup_opcode_name(code));
+	printf(def);
 	for (i = 0; i < count; i++)
 		printf(" %s",  vals[i]);
-	if (code == sAuthenticationMethods && count == 0)
-		printf(" any");
 	printf("\n");
 }
 

@@ -3364,9 +3364,15 @@ static void
 dump_cfg_strarray_oneline(OpCodes code, u_int count, char **vals)
 {
 	u_int i;
+	const char *def = "";
 
-	if (count == 0 || (int)count == -1) return;
+	if ((int)count < 0) return;
+
+	if (count == 0)
+		def = " none";
+
 	printf("%s", lookup_opcode_name(code));
+	printf(def);
 	for (i = 0; i < count; i++)
 		printf(" %s",  vals[i]);
 	printf("\n");

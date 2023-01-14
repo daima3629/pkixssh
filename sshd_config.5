@@ -43,7 +43,7 @@
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
 .\" $OpenBSD: sshd_config.5,v 1.343 2022/09/17 10:34:29 djm Exp $
-.Dd $Mdocdate: December 17 2022 $
+.Dd $Mdocdate: January 13 2023 $
 .Dt SSHD_CONFIG 5
 .Os
 .Sh NAME
@@ -1167,7 +1167,9 @@ everything in the
 function, and all code in the
 .Pa packet.c
 file.
-This option is intended for debugging and no overrides are enabled by default.
+This option is intended for debugging and no overrides are enabled by default,
+i.e. default value is
+.Cm none .
 .It Cm MACs
 Specifies the available MAC (message authentication code) algorithms.
 The MAC algorithm is used for data integrity protection.
