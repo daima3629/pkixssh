@@ -1,9 +1,8 @@
-#	$OpenBSD: dynamic-forward.sh,v 1.14 2023/01/02 07:03:57 djm Exp $
+#	$OpenBSD: dynamic-forward.sh,v 1.15 2023/01/06 08:50:33 dtucker Exp $
 #	Placed in the Public Domain.
 
 tid="dynamic forwarding"
 
-pidfile=$OBJ/remote_pid
 FWDPORT=`expr $PORT + 1`
 
 cp $OBJ/ssh_config $OBJ/ssh_config.orig
@@ -15,6 +14,46 @@ if ! config_defined HAVE_STRUCT_IN6_ADDR ; then
 	SKIP_IPV6=true
 fi
 
+WAIT_SECONDS=20
+make_tmpdir
+CTL=${SSH_REGRESS_TMP}/ctl-sock
+
+wait_for_process_to_exit() {
+	_pid=$1
+	_n=0
+	while kill -0 $_pid 2>/dev/null ; do
+		test $_n -eq 1 && trace "waiting for $_pid to exit"
+		_n=`expr $_n + 1`
+		test $_n -ge $WAIT_SECONDS && return 1
+		sleep 1
+	done
+	return 0
+}
+
+mux_cmd() {
+	$REAL_SSH -q -F $OBJ/ssh_proxy -S $CTL -O $1 somehost 2>&1
+}
+
+mux_exit() {
+	_sshpid=`mux_cmd check | cut -f 2 -d = | cut -f 1 -d ')'`
+	r=$?
+	test $r -ne 0 && return $r
+	test -z "$_sshpid" && return 0
+	mux_cmd exit
+	r=$?
+	if test $r -ne 0 ; then
+		fatal "forwarding ssh process did not respond to close"
+		return $r
+	fi
+	wait_for_process_to_exit $_sshpid
+	r=$?
+	if test $r -ne 0 ; then
+		fatal "forwarding ssh process did not exit"
+	fi
+	return $r
+}
+
+
 start_ssh() {
 	direction="$1"
 	arg="$2"
@@ -22,35 +61,19 @@ start_ssh() {
 	error="1"
 	trace "start dynamic -$direction forwarding, fork to background"
 	(cat $OBJ/ssh_config.orig ; echo "$arg") > $OBJ/ssh_config
-
-	rm -f $pidfile
-	while [ "$error" -ne 0 -a "$n" -lt 3 ]; do
-		n=`expr $n + 1`
-		$SSH -F $OBJ/ssh_config -f -$direction $FWDPORT -q \
-		    -oExitOnForwardFailure=yes somehost exec sh -c \
-			\'"echo \$\$ > $pidfile; exec sleep 444"\'
-		error=$?
-		if [ "$error" -ne 0 ]; then
-			trace "forward failed attempt $n err $error"
-			sleep $n
-		fi
-	done
-	if [ "$error" -ne 0 ]; then
-		fatal "failed to start dynamic forwarding"
-	fi
+	$REAL_SSH -nN -F $OBJ/ssh_config -f -vvvv -E$TEST_SSH_LOGFILE \
+	    -$direction $FWDPORT -oExitOnForwardFailure=yes \
+	    -oControlMaster=yes -oControlPath=$CTL somehost
+	r=$?
+	test $r -eq 0 || fatal "failed to start dynamic forwarding $r"
+	mux_cmd check >/dev/null
+	r=$?
+	test $r -ne 0 && fatal "forwarding ssh process unresponsive"
+	return $r
 }
 
 stop_ssh() {
-	if test -f $pidfile ; then
-		remote=`cat $pidfile`
-
-		trace "terminate remote shell, pid $remote"
-		if [ $remote -gt 1 ]; then
-			kill -HUP $remote
-		fi
-	else
-		fail "no pid file: $pidfile"
-	fi
+	mux_exit
 }
 
 check_socks() {
@@ -59,7 +82,7 @@ check_socks() {
 	for s in 4 5; do
 	    for h in 127.0.0.1 localhost; do
 		trace "testing ssh socks version $s host $h (-$direction)"
-		$SSH -F $OBJ/ssh_config \
+		$REAL_SSH -q -F $OBJ/ssh_config \
 			-o "ProxyCommand ${proxycmd}${s} $h $PORT 2>/dev/null" \
 			somehost cat ${DATA} > ${COPY}
 		r=$?
@@ -87,6 +110,7 @@ gen_permit_argument() {
 }
 
 start_sshd
+trap "stop_ssh" EXIT
 
 for d in D R; do
 	verbose "test -$d forwarding"
