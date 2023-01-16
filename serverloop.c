@@ -1,4 +1,4 @@
-/* $OpenBSD: serverloop.c,v 1.230 2022/01/06 21:55:23 djm Exp $ */
+/* $OpenBSD: serverloop.c,v 1.232 2022/04/20 04:19:11 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -13,7 +13,7 @@
  *
  * SSH2 support by Markus Friedl.
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2017-2022 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2017-2023 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -261,31 +261,29 @@ wait_until_can_do_something(struct ssh *ssh,
  * in buffers and processed later.
  */
 static int
-process_input(struct ssh *ssh, fd_set *readset, int connection_in)
+process_input(struct ssh *ssh, int connection_in)
 {
 	int r, len;
 	char buf[16384];
 
 	/* Read and buffer any input data from the client. */
-	if (FD_ISSET(connection_in, readset)) {
-		len = read(connection_in, buf, sizeof(buf));
-		if (len == 0) {
-			verbose("Connection closed by %.100s port %d",
-			    ssh_remote_ipaddr(ssh), ssh_remote_port(ssh));
-			return -1;
-		} else if (len == -1) {
-			if (errno == EINTR || errno == EAGAIN ||
-			    errno == EWOULDBLOCK)
-				return 0;
-			verbose("Read error from remote host %s port %d: %s",
-			    ssh_remote_ipaddr(ssh), ssh_remote_port(ssh),
-			    strerror(errno));
-			cleanup_exit(255);
-		}
-		/* Buffer any received data. */
-		if ((r = ssh_packet_process_incoming(ssh, buf, len)) != 0)
-			fatal_fr(r, "ssh_packet_process_incoming");
+	len = read(connection_in, buf, sizeof(buf));
+	if (len == -1) {
+		if (errno == EAGAIN || errno == EINTR || errno == EWOULDBLOCK)
+			return 0;
+		verbose("Read error from remote host %s port %d: %s",
+		    ssh_remote_ipaddr(ssh), ssh_remote_port(ssh),
+		    strerror(errno));
+		cleanup_exit(255);
+	} else if (len == 0) {
+		verbose("Connection closed by %.100s port %d",
+		    ssh_remote_ipaddr(ssh), ssh_remote_port(ssh));
+		return -1;
 	}
+	/* Buffer any received data. */
+	if ((r = ssh_packet_process_incoming(ssh, buf, len)) != 0)
+		fatal_fr(r, "ssh_packet_process_incoming");
+
 	return 0;
 }
 
@@ -293,16 +291,14 @@ process_input(struct ssh *ssh, fd_set *readset, int connection_in)
  * Sends data from internal buffers to client program stdin.
  */
 static void
-process_output(struct ssh *ssh, fd_set *writeset, int connection_out)
+process_output(struct ssh *ssh)
 {
 	int r;
 
 	/* Send any buffered packet data to the client. */
-	if (FD_ISSET(connection_out, writeset)) {
-		if ((r = ssh_packet_write_poll(ssh)) != 0) {
-			sshpkt_fatal(ssh, r, "%s: ssh_packet_write_poll",
-			    __func__);
-		}
+	if ((r = ssh_packet_write_poll(ssh)) != 0) {
+		sshpkt_fatal(ssh, r, "%s: ssh_packet_write_poll",
+		    __func__);
 	}
 }
 
@@ -358,6 +354,8 @@ server_loop2(struct ssh *ssh, Authctxt *authctxt)
 	server_init_dispatch(ssh);
 
 	for (;;) {
+		int conn_in_ready, conn_out_ready;
+
 		process_buffered_input_packets(ssh);
 
 		if (!ssh_packet_is_rekeying(ssh) &&
@@ -382,6 +380,8 @@ server_loop2(struct ssh *ssh, Authctxt *authctxt)
 		wait_until_can_do_something(ssh, connection_in, connection_out,
 		    &readset, &writeset, &max_fd, &nalloc, rekey_timeout_ms,
 		    &osigset);
+		conn_in_ready = FD_ISSET(connection_in, readset);
+		conn_out_ready = FD_ISSET(connection_out, writeset);
 		if (sigprocmask(SIG_SETMASK, &osigset, NULL) == -1)
 			error_f("osigset sigprocmask: %s", strerror(errno));
 
@@ -393,14 +393,16 @@ server_loop2(struct ssh *ssh, Authctxt *authctxt)
 
 		if (!ssh_packet_is_rekeying(ssh))
 			channel_after_select(ssh, readset, writeset);
-		if (process_input(ssh, readset, connection_in) < 0)
+		if (conn_in_ready &&
+		    process_input(ssh, connection_in) < 0)
 			break;
 	{	/* A timeout may have triggered rekeying */
 		int r = ssh_packet_check_rekey(ssh);
 		if (r != 0)
 			fatal_fr(r, "cannot start rekeying");
 	}
-		process_output(ssh, writeset, connection_out);
+		if (conn_out_ready)
+			process_output(ssh);
 	}
 	collect_children(ssh);
 

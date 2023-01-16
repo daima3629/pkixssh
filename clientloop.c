@@ -616,7 +616,7 @@ client_suspend_self(struct sshbuf *bin, struct sshbuf *bout, struct sshbuf *berr
 }
 
 static void
-client_process_net_input(struct ssh *ssh, fd_set *readset)
+client_process_net_input(struct ssh *ssh)
 {
 	char buf[SSH_IOBUFSZ];
 	int len;
@@ -625,38 +625,36 @@ client_process_net_input(struct ssh *ssh, fd_set *readset)
 	 * Read input from the server, and add any such data to the buffer of
 	 * the packet subsystem.
 	 */
-	if (FD_ISSET(connection_in, readset)) {
-		schedule_server_alive_check();
-		/* Read as much as possible. */
-		len = read(connection_in, buf, sizeof(buf));
-		if (len == 0) {
-			/*
-			 * Received EOF.  The remote host has closed the
-			 * connection.
-			 */
-			quit_message("Connection to %s closed by remote host.",
-			    host);
-			return;
-		}
+	schedule_server_alive_check();
+	/* Read as much as possible. */
+	len = read(connection_in, buf, sizeof(buf));
+	if (len == 0) {
 		/*
-		 * There is a kernel bug on Solaris that causes select to
-		 * sometimes wake up even though there is no data available.
+		 * Received EOF.  The remote host has closed the
+		 * connection.
 		 */
-		if (len == -1 &&
-		    (errno == EAGAIN || errno == EINTR || errno == EWOULDBLOCK))
-			len = 0;
-
-		if (len == -1) {
-			/*
-			 * An error has encountered.  Perhaps there is a
-			 * network problem.
-			 */
-			quit_message("Read from remote host %s: %s",
-			    host, strerror(errno));
-			return;
-		}
-		ssh_packet_process_incoming(ssh, buf, len);
+		quit_message("Connection to %s closed by remote host.",
+		    host);
+		return;
 	}
+	/*
+	 * There is a kernel bug on Solaris that causes select to
+	 * sometimes wake up even though there is no data available.
+	 */
+	if (len == -1 &&
+	    (errno == EAGAIN || errno == EINTR || errno == EWOULDBLOCK))
+		len = 0;
+
+	if (len == -1) {
+		/*
+		 * An error has encountered.  Perhaps there is a
+		 * network problem.
+		 */
+		quit_message("Read from remote host %s: %s",
+		    host, strerror(errno));
+		return;
+	}
+	ssh_packet_process_incoming(ssh, buf, len);
 }
 
 static void
@@ -1391,6 +1389,7 @@ client_loop(struct ssh *ssh, int have_pty, int escape_char_arg,
 
 	/* Main loop of the client for the interactive session mode. */
 	while (!quit_pending) {
+		int conn_in_ready, conn_out_ready;
 
 		/* Process buffered packets sent by the server. */
 		client_process_buffered_input_packets(ssh);
@@ -1430,6 +1429,8 @@ client_loop(struct ssh *ssh, int have_pty, int escape_char_arg,
 		max_fd2 = max_fd;
 		client_wait_until_can_do_something(ssh, &readset, &writeset,
 		    &max_fd2, &nalloc, ssh_packet_is_rekeying(ssh));
+		conn_in_ready = FD_ISSET(connection_in, readset);
+		conn_out_ready = FD_ISSET(connection_out, writeset);
 
 		if (quit_pending)
 			break;
@@ -1439,7 +1440,8 @@ client_loop(struct ssh *ssh, int have_pty, int escape_char_arg,
 			channel_after_select(ssh, readset, writeset);
 
 		/* Buffer input from the connection.  */
-		client_process_net_input(ssh, readset);
+		if (conn_in_ready)
+			client_process_net_input(ssh);
 
 		if (quit_pending)
 			break;
@@ -1452,7 +1454,7 @@ client_loop(struct ssh *ssh, int have_pty, int escape_char_arg,
 		 * Send as much buffered packet data as possible to the
 		 * sender.
 		 */
-		if (FD_ISSET(connection_out, writeset)) {
+		if (conn_out_ready) {
 			if ((r = ssh_packet_write_poll(ssh)) != 0) {
 				sshpkt_fatal(ssh, r,
 				    "%s: ssh_packet_write_poll", __func__);
