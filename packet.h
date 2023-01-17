@@ -1,9 +1,9 @@
-/* $OpenBSD: packet.h,v 1.93 2021/07/16 09:00:23 djm Exp $ */
+/* $OpenBSD: packet.h,v 1.94 2022/01/22 00:49:34 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
- * Copyright (c) 2019-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2019-2023 Roumen Petrov.  All rights reserved.
  * Interface for the packet protocol functions.
  *
  * As far as I am concerned, the code I have written for this software
@@ -128,6 +128,7 @@ int	 ssh_packet_read_expect(struct ssh *, u_int type);
 int      ssh_packet_read_poll(struct ssh *);
 int ssh_packet_read_poll2(struct ssh *, u_char *, u_int32_t *seqnr_p);
 int	 ssh_packet_process_incoming(struct ssh *, const char *buf, u_int len);
+int	 ssh_packet_process_read(struct ssh *, int, size_t);
 int      ssh_packet_read_seqnr(struct ssh *, u_char *, u_int32_t *seqnr_p);
 int      ssh_packet_read_poll_seqnr(struct ssh *, u_char *, u_int32_t *seqnr_p);
 

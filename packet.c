@@ -1,4 +1,4 @@
-/* $OpenBSD: packet.c,v 1.306 2022/01/21 06:58:06 djm Exp $ */
+/* $OpenBSD: packet.c,v 1.308 2022/08/31 02:56:40 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -15,7 +15,7 @@
  *
  * SSH2 packet format added by Markus Friedl.
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2018-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2018-2023 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -1797,6 +1797,32 @@ ssh_packet_process_incoming(struct ssh *ssh, const char *buf, u_int len)
 	if ((r = sshbuf_put(state->input, buf, len)) != 0)
 		return r;
 
+	return 0;
+}
+
+/* Reads and buffers data from the specified fd */
+int
+ssh_packet_process_read(struct ssh *ssh, int fd, size_t maxlen)
+{
+	struct session_state *state = ssh->state;
+	int r;
+	size_t rlen;
+
+	r = sshbuf_read(fd, state->input, maxlen, &rlen);
+	if (r != 0) return r;
+
+	if (state->packet_discard) {
+		r = sshbuf_consume_end(state->input, rlen);
+		if (r != 0) return r;
+
+		state->keep_alive_timeouts = 0; /* ?? */
+
+		if (rlen >= state->packet_discard) {
+			r = ssh_packet_stop_discard(ssh);
+			if (r != 0) return r;
+		}
+		state->packet_discard -= rlen;
+	}
 	return 0;
 }
 
