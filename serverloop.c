@@ -77,6 +77,7 @@
 #include "dispatch.h"
 #include "auth-options.h"
 #include "serverloop.h"
+#include "ssherr.h"
 
 extern ServerOptions options;
 
@@ -260,11 +261,28 @@ wait_until_can_do_something(struct ssh *ssh,
  * Processes input from the client and the program.  Input data is stored
  * in buffers and processed later.
  */
+#ifndef SSHD_IOBUFSZ
+# ifdef HAVE_CYGWIN
+   /* Windows is sensitive to read buffer size */
+#  define SSHD_IOBUFSZ	65535	/* 64 * 1024 - 1 */
+# else
+#  define SSHD_IOBUFSZ 	(4*1024)
+# endif
+#endif
+/*	32k	16k	8k	4k
+memory:	1,345	1(*)	0,920	0,867
+buffer:	1,357	1,031	0,927	0,891
+Relative time for sftp 64M upload where (*) is old basis.
+Deviation:
+memory:	0,096	0,127	0,134	0,098
+buffer:	0,099	0,199	0,133	0,197
+*/
 static int
 process_input(struct ssh *ssh, int connection_in)
 {
+#if 1	/* read into memory buffer */
 	int r, len;
-	char buf[16384];
+	char buf[SSHD_IOBUFSZ];
 
 	/* Read and buffer any input data from the client. */
 	len = read(connection_in, buf, sizeof(buf));
@@ -276,7 +294,7 @@ process_input(struct ssh *ssh, int connection_in)
 		    strerror(errno));
 		cleanup_exit(255);
 	} else if (len == 0) {
-		verbose("Connection closed by %.100s port %d",
+		verbose("Connection closed by remote host %s port %d",
 		    ssh_remote_ipaddr(ssh), ssh_remote_port(ssh));
 		return -1;
 	}
@@ -285,6 +303,27 @@ process_input(struct ssh *ssh, int connection_in)
 		fatal_fr(r, "ssh_packet_process_incoming");
 
 	return 0;
+#else	/* direct read into input buffer */
+	int r;
+
+	r = ssh_packet_process_read(ssh, connection_in, SSHD_IOBUFSZ);
+	if (r == 0) return r; /* success */
+
+	if (r == SSH_ERR_SYSTEM_ERROR) {
+		if (errno == EAGAIN || errno == EINTR || errno == EWOULDBLOCK)
+			return 0;
+		if (errno == EPIPE) {
+			verbose("Connection closed by remote host %s port %d",
+			    ssh_remote_ipaddr(ssh), ssh_remote_port(ssh));
+			return -1;
+		}
+		verbose("Read error from remote host %s port %d: %s",
+		    ssh_remote_ipaddr(ssh), ssh_remote_port(ssh),
+		    strerror(errno));
+		cleanup_exit(255);
+	}
+	return -1;
+#endif
 }
 
 /*

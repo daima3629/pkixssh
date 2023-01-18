@@ -615,18 +615,34 @@ client_suspend_self(struct sshbuf *bin, struct sshbuf *bout, struct sshbuf *berr
 	enter_raw_mode(options.request_tty == REQUEST_TTY_FORCE);
 }
 
+/*
+ * Read input from the server, and add any such data to the buffer of
+ * the packet subsystem.
+ */
+/* Read as much as possible. */
+#ifndef SSH_IOBUFSZ
+# ifdef HAVE_CYGWIN
+   /* Windows is sensitive to read buffer size */
+#  define SSH_IOBUFSZ	65535	/* 64 * 1024 - 1 */
+# else
+#  define SSH_IOBUFSZ	(8*1024)
+#endif
+#endif
+/*	256к	64к	32к	16к	8к	4к
+memory:	1,001	0,997	0,995	1,000	1(*)	1,003
+buffer:	1,001	0,994	1,003	0,996	0,991	0,998
+Relative time for sftp 64M download where (*) is old basis.
+Deviation:
+memory:	0,244	0,236	0,205	0,121	0,129	0,082
+buffer:	0,165	0,080	0,100	0,074	0,124	0,160
+*/
 static void
 client_process_net_input(struct ssh *ssh)
 {
+#if 0	/* read into memory buffer */
 	char buf[SSH_IOBUFSZ];
 	int len;
 
-	/*
-	 * Read input from the server, and add any such data to the buffer of
-	 * the packet subsystem.
-	 */
-	schedule_server_alive_check();
-	/* Read as much as possible. */
 	len = read(connection_in, buf, sizeof(buf));
 	if (len == 0) {
 		/*
@@ -655,6 +671,23 @@ client_process_net_input(struct ssh *ssh)
 		return;
 	}
 	ssh_packet_process_incoming(ssh, buf, len);
+#else	/* direct read into input buffer */
+	int r;
+
+	r = ssh_packet_process_read(ssh, connection_in, SSH_IOBUFSZ);
+	if (r == 0) return; /* success */
+
+	if (r == SSH_ERR_SYSTEM_ERROR) {
+		if (errno == EAGAIN || errno == EINTR || errno == EWOULDBLOCK)
+			return;
+		if (errno == EPIPE) {
+			quit_message("Connection to %s closed by remote host.",
+			    host);
+			return;
+		}
+	}
+	quit_message("Read from remote host %s: %s", host, ssh_err(r));
+#endif
 }
 
 static void
@@ -1440,8 +1473,10 @@ client_loop(struct ssh *ssh, int have_pty, int escape_char_arg,
 			channel_after_select(ssh, readset, writeset);
 
 		/* Buffer input from the connection.  */
-		if (conn_in_ready)
+		if (conn_in_ready) {
+			schedule_server_alive_check();
 			client_process_net_input(ssh);
+		}
 
 		if (quit_pending)
 			break;

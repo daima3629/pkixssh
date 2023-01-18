@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1999-2003 Damien Miller.  All rights reserved.
- * Copyright (c) 2011-2022 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2023 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -871,10 +871,6 @@ struct winsize {
 
 #ifndef INET6_ADDRSTRLEN	/* for non IPv6 machines */
 #define INET6_ADDRSTRLEN 46
-#endif
-
-#ifndef SSH_IOBUFSZ
-# define SSH_IOBUFSZ 8192
 #endif
 
 /*

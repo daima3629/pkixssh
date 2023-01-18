@@ -1,6 +1,6 @@
 #
 # Copyright (c) 1999-2004 Damien Miller
-# Copyright (c) 2002-2022 Roumen Petrov
+# Copyright (c) 2002-2023 Roumen Petrov
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -720,7 +720,6 @@ case "$host" in
 	AC_DEFINE([NO_X11_UNIX_SOCKETS], [1],
 		[Define if X11 doesn't support AF_UNIX sockets on that system])
 	AC_DEFINE([DISABLE_FD_PASSING])
-	AC_DEFINE([SSH_IOBUFSZ], [65535], [Windows is sensitive to read buffer size])
 	AC_DEFINE([FILESYSTEM_NO_BACKSLASH], [1], [File names may not contain backslash characters])
 	# Cygwin defines optargs, optargs as declspec(dllimport) for historical
 	# reasons which cause compile warnings, so we disable those warnings.
