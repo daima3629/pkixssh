@@ -1,4 +1,4 @@
-/* $OpenBSD: sshd.c,v 1.594 2022/12/16 06:56:47 djm Exp $ */
+/* $OpenBSD: sshd.c,v 1.596 2023/01/18 01:50:21 millert Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -1071,7 +1071,7 @@ usage(void)
 {
 	fprintf(stderr, "%s, %s\n", SSH_RELEASE, ssh_OpenSSL_version_text());
 	fprintf(stderr,
-"usage: sshd [-46DdeiqTt] [-C connection_spec] [-c host_cert_file]\n"
+"usage: sshd [-46DdeiqTtV] [-C connection_spec] [-c host_cert_file]\n"
 "            [-E log_file] [-f config_file] [-g login_grace_time]\n"
 "            [-h host_key_file] [-o option] [-p port] [-u len]\n"
 	);
@@ -1799,7 +1799,7 @@ main(int ac, char **av)
 
 	/* Parse command-line arguments. */
 	while ((opt = getopt(ac, av,
-	    "C:E:b:c:f:g:h:k:o:p:u:46DQRTdeiqrt")) != -1) {
+	    "C:E:b:c:f:g:h:k:o:p:u:46DQRTdeiqrtV")) != -1) {
 		switch (opt) {
 		case '4':
 			options.address_family = AF_INET;
@@ -1908,6 +1908,10 @@ main(int ac, char **av)
 				exit(1);
 			free(line);
 			break;
+		case 'V':
+			fprintf(stderr, "%s, %s\n",
+			    SSH_RELEASE, ssh_OpenSSL_version_text());
+			exit(0);
 		default:
 			usage();
 			break;
