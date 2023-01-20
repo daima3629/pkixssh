@@ -932,7 +932,7 @@ struct winsize {
 /* NOTE:
  * OpenSSL 1.1.* resets EVP_CIPHER_CTX on each call of EVP_CipherInit()!
  * Remark: Pre 1.1.0 behaviour is restored in 1.1.0g (issue #4613).
- * Let mark EVP_CipherInit as broken for all OpenSSL 1.1.* releases:
+ * Let mark EVP_CipherInit as broken for all OpenSSL 1.1.0* releases:
  * - LibreSSL not impacted
  * - OPENSSL_init_crypto: OpenSSL 1.1 function
  * - EC_POINT_get_affine_coordinates: OpenSSL 1.1.1 function
