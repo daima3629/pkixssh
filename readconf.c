@@ -3372,8 +3372,7 @@ dump_cfg_strarray_oneline(OpCodes code, u_int count, char **vals)
 	if (count == 0)
 		def = " none";
 
-	printf("%s", lookup_opcode_name(code));
-	printf(def);
+	printf("%s%s", lookup_opcode_name(code), def);
 	for (i = 0; i < count; i++)
 		printf(" %s",  vals[i]);
 	printf("\n");

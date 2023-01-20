@@ -3129,8 +3129,7 @@ dump_cfg_strarray_oneline(ServerOpCodes code, u_int count, char **vals)
 		}
 	}
 
-	printf("%s", lookup_opcode_name(code));
-	printf(def);
+	printf("%s%s", lookup_opcode_name(code), def);
 	for (i = 0; i < count; i++)
 		printf(" %s",  vals[i]);
 	printf("\n");
