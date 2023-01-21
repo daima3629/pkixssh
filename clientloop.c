@@ -1468,9 +1468,8 @@ client_loop(struct ssh *ssh, int have_pty, int escape_char_arg,
 		if (quit_pending)
 			break;
 
-		/* Do channel operations unless rekeying in progress. */
-		if (!ssh_packet_is_rekeying(ssh))
-			channel_after_select(ssh, readset, writeset);
+		/* Do channel operations. */
+		channel_after_select(ssh, readset, writeset);
 
 		/* Buffer input from the connection.  */
 		if (conn_in_ready) {

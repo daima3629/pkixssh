@@ -430,8 +430,7 @@ server_loop2(struct ssh *ssh, Authctxt *authctxt)
 			cleanup_exit(255);
 		}
 
-		if (!ssh_packet_is_rekeying(ssh))
-			channel_after_select(ssh, readset, writeset);
+		channel_after_select(ssh, readset, writeset);
 		if (conn_in_ready &&
 		    process_input(ssh, connection_in) < 0)
 			break;

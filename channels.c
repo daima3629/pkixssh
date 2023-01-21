@@ -2572,7 +2572,8 @@ channel_prepare_select(struct ssh *ssh, fd_set **readsetp, fd_set **writesetp,
 void
 channel_after_select(struct ssh *ssh, fd_set *readset, fd_set *writeset)
 {
-	channel_handler(ssh, CHAN_POST, readset, writeset, NULL);
+	if (!ssh_packet_is_rekeying(ssh))
+		channel_handler(ssh, CHAN_POST, readset, writeset, NULL);
 }
 
 /*
