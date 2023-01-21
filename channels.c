@@ -1653,7 +1653,7 @@ rdynamic_close(struct ssh *ssh, Channel *c)
 
 /* reverse dynamic port forwarding */
 static void
-channel_before_prepare_select_rdynamic(struct ssh *ssh, Channel *c)
+channel_before_prepare_io_rdynamic(struct ssh *ssh, Channel *c)
 {
 	const u_char *p;
 	u_int have, len;
@@ -2515,7 +2515,7 @@ channel_handler(struct ssh *ssh, int table,
  * the network-input but before channel_prepare_select().
  */
 static void
-channel_before_prepare_select(struct ssh *ssh)
+channel_before_prepare_io(struct ssh *ssh)
 {
 	struct ssh_channels *sc = ssh->chanctxt;
 	Channel *c;
@@ -2526,7 +2526,7 @@ channel_before_prepare_select(struct ssh *ssh)
 		if (c == NULL)
 			continue;
 		if (c->type == SSH_CHANNEL_RDYNAMIC_OPEN)
-			channel_before_prepare_select_rdynamic(ssh, c);
+			channel_before_prepare_io_rdynamic(ssh, c);
 	}
 }
 
@@ -2540,7 +2540,7 @@ channel_prepare_select(struct ssh *ssh, fd_set **readsetp, fd_set **writesetp,
 {
 	u_int n, sz, nfdset;
 
-	channel_before_prepare_select(ssh); /* might update channel_max_fd */
+	channel_before_prepare_io(ssh); /* might create a new channel */
 
 	n = MAXIMUM(*maxfdp, ssh->chanctxt->channel_max_fd);
 
