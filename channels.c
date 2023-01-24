@@ -2431,11 +2431,9 @@ enum channel_table { CHAN_PRE, CHAN_POST };
 
 /* populate collect wanted io-events by channel pre-callback */
 static void
-channel_mask_io_want(Channel *c, int table, fd_set *readset, fd_set *writeset)
+channel_mask_io_want(Channel *c, fd_set *readset, fd_set *writeset)
 {
 	u_int event = c->io_want;
-
-	if (table == CHAN_POST)  return;
 
 #define EVENT_SET(fd, set, flag) \
 	if ((event & flag) != 0) FD_SET(fd, set)
@@ -2452,14 +2450,12 @@ channel_mask_io_want(Channel *c, int table, fd_set *readset, fd_set *writeset)
 
 /* set events ready for processing by channel post-callback */
 static void
-channel_mask_io_ready(Channel *c, int table, fd_set *readset, fd_set *writeset)
+channel_mask_io_ready(Channel *c, fd_set *readset, fd_set *writeset)
 {
 	u_int event = 0;
 
-	if (table == CHAN_PRE)  return;
-
 #define EVENT_ISSET(fd, set, flag) \
-	if (fd >= 0 && FD_ISSET(fd, set)) event |= flag
+	if (fd >= 0 && FD_ISSET(fd, set)) event |= (u_int)flag
 
 	EVENT_ISSET(c->rfd , readset , SSH_CHAN_IO_RFD   );
 	EVENT_ISSET(c->wfd , writeset, SSH_CHAN_IO_WFD   );
@@ -2473,8 +2469,7 @@ channel_mask_io_ready(Channel *c, int table, fd_set *readset, fd_set *writeset)
 }
 
 static void
-channel_handler(struct ssh *ssh, int table,
-    fd_set *readset, fd_set *writeset, time_t *unpause_secs)
+channel_handler(struct ssh *ssh, int table, time_t *unpause_secs)
 {
 	struct ssh_channels *sc = ssh->chanctxt;
 	chan_fn **ftab = table == CHAN_PRE ? sc->channel_pre : sc->channel_post;
@@ -2500,11 +2495,7 @@ channel_handler(struct ssh *ssh, int table,
 			 * Run handlers that are not paused.
 			 */
 			if (c->notbefore <= now)
-			{
-				channel_mask_io_ready(c, table, readset, writeset);
 				(*ftab[c->type])(ssh, c);
-				channel_mask_io_want(c, table, readset, writeset);
-			}
 			else if (unpause_secs != NULL) {
 				/*
 				 * Collect the time that the earliest
@@ -2576,9 +2567,22 @@ channel_prepare_select(struct ssh *ssh, fd_set **readsetp, fd_set **writesetp,
 	memset(*readsetp, 0, sz);
 	memset(*writesetp, 0, sz);
 
-	if (!ssh_packet_is_rekeying(ssh))
-		channel_handler(ssh, CHAN_PRE, *readsetp, *writesetp,
-		    minwait_secs);
+	if (ssh_packet_is_rekeying(ssh)) return;
+
+	channel_handler(ssh, CHAN_PRE, minwait_secs);
+
+{	/* convert c->io_want into read/write sets */
+	struct ssh_channels *sc = ssh->chanctxt;
+	u_int i;
+	Channel *c;
+
+	for (i = 0; i < sc->channels_alloc; i++) {
+		c = sc->channels[i];
+		if (c == NULL)
+			continue;
+		channel_mask_io_want(c, *readsetp, *writesetp);
+	}
+}
 }
 
 /*
@@ -2588,8 +2592,21 @@ channel_prepare_select(struct ssh *ssh, fd_set **readsetp, fd_set **writesetp,
 void
 channel_after_select(struct ssh *ssh, fd_set *readset, fd_set *writeset)
 {
-	if (!ssh_packet_is_rekeying(ssh))
-		channel_handler(ssh, CHAN_POST, readset, writeset, NULL);
+	if (ssh_packet_is_rekeying(ssh)) return;
+
+{	/* convert read/write sets into c->io_ready */
+	struct ssh_channels *sc = ssh->chanctxt;
+	u_int i;
+	Channel *c;
+
+	for (i = 0; i < sc->channels_alloc; i++) {
+		c = sc->channels[i];
+		if (c == NULL)
+			continue;
+		channel_mask_io_ready(c, readset, writeset);
+	}
+}
+	channel_handler(ssh, CHAN_POST, NULL);
 }
 
 /*
