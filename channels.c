@@ -902,13 +902,14 @@ channel_format_status(const Channel *c)
 	char *ret = NULL;
 
 	xasprintf(&ret, "t%d [%s] %s%u i%u/%zu o%u/%zu e[%s]/%zu "
-	    "fd %d/%d/%d sock %d cc %d",
+	    "fd %d/%d/%d sock %d cc %d io 0x%02x/0x%02x",
 	    c->type, (c->xctype != NULL ? c->xctype : c->ctype),
 	    c->have_remote_id ? "r" : "nr", c->remote_id,
 	    c->istate, sshbuf_len(c->input),
 	    c->ostate, sshbuf_len(c->output),
 	    channel_format_extended_usage(c), sshbuf_len(c->extended),
-	    c->rfd, c->wfd, c->efd, c->sock, c->ctl_chan);
+	    c->rfd, c->wfd, c->efd, c->sock, c->ctl_chan,
+	    c->io_want, c->io_ready);
 	return ret;
 }
 
