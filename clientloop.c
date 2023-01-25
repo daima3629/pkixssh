@@ -112,6 +112,19 @@
 #include "ssherr.h"
 #include "hostfile.h"
 
+/* read buffer size used in main loop */
+#ifndef SSH_IOBUFSZ
+# define SSH_IOBUFSZ	(8*1024)
+#endif
+/*	256к	64к	32к	16к	8к	4к
+memory:	1.001	0.997	0.995	1.000	1(*)	1.003
+buffer:	1.001	0.994	1.003	0.996	0.991	0.998
+Relative time for sftp 64M download where (*) is old basis.
+Deviation:
+memory:	0.244	0.236	0.205	0.121	0.129	0.082
+buffer:	0.165	0.080	0.100	0.074	0.124	0.160
+*/
+
 /* import options */
 extern Options options;
 
@@ -620,22 +633,6 @@ client_suspend_self(struct sshbuf *bin, struct sshbuf *bout, struct sshbuf *berr
  * the packet subsystem.
  */
 /* Read as much as possible. */
-#ifndef SSH_IOBUFSZ
-# ifdef HAVE_CYGWIN
-   /* Windows is sensitive to read buffer size */
-#  define SSH_IOBUFSZ	65535	/* 64 * 1024 - 1 */
-# else
-#  define SSH_IOBUFSZ	(8*1024)
-#endif
-#endif
-/*	256к	64к	32к	16к	8к	4к
-memory:	1,001	0,997	0,995	1,000	1(*)	1,003
-buffer:	1,001	0,994	1,003	0,996	0,991	0,998
-Relative time for sftp 64M download where (*) is old basis.
-Deviation:
-memory:	0,244	0,236	0,205	0,121	0,129	0,082
-buffer:	0,165	0,080	0,100	0,074	0,124	0,160
-*/
 static void
 client_process_net_input(struct ssh *ssh)
 {

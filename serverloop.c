@@ -79,6 +79,19 @@
 #include "serverloop.h"
 #include "ssherr.h"
 
+/* read buffer size used in main loop */
+#ifndef SSHD_IOBUFSZ
+# define SSHD_IOBUFSZ 	(4*1024)
+#endif
+/*	32k	16k	8k	4k
+memory:	1.345	1(*)	0.920	0.867
+buffer:	1.357	1.031	0.927	0.891
+Relative time for sftp 64M upload where (*) is old basis.
+Deviation:
+memory:	0.096	0.127	0.134	0.098
+buffer:	0.099	0.199	0.133	0.197
+*/
+
 extern ServerOptions options;
 
 /* XXX */
@@ -261,22 +274,6 @@ wait_until_can_do_something(struct ssh *ssh,
  * Processes input from the client and the program.  Input data is stored
  * in buffers and processed later.
  */
-#ifndef SSHD_IOBUFSZ
-# ifdef HAVE_CYGWIN
-   /* Windows is sensitive to read buffer size */
-#  define SSHD_IOBUFSZ	65535	/* 64 * 1024 - 1 */
-# else
-#  define SSHD_IOBUFSZ 	(4*1024)
-# endif
-#endif
-/*	32k	16k	8k	4k
-memory:	1,345	1(*)	0,920	0,867
-buffer:	1,357	1,031	0,927	0,891
-Relative time for sftp 64M upload where (*) is old basis.
-Deviation:
-memory:	0,096	0,127	0,134	0,098
-buffer:	0,099	0,199	0,133	0,197
-*/
 static int
 process_input(struct ssh *ssh, int connection_in)
 {
