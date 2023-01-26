@@ -72,6 +72,7 @@
 #include "xmalloc.h"
 #include "ssh.h"
 #include "ssh2.h"
+#include "ssherr.h"
 #include "sshbuf.h"
 #include "packet.h"
 #include "log.h"
@@ -82,6 +83,23 @@
 #include "authfd.h"
 #include "pathnames.h"
 #include "match.h"
+
+/* read buffer size */
+#ifndef CHAN_RBUF
+# define CHAN_RBUF	(4*1024)
+#endif
+/*	64к	32к	16к	8к	4к
+orig:	3.635	3.657	1(*)	0.688	0.615
++buf:	3.710	3.672'	0.996	0.689	0.611
+Relative time for sftp 64M download where (*) is original basis
+and ' is basis only for direct read into buffer.
+Deviation:
+orig:	0.184	0.523	0.330	0.162	0.046
++buf:	0.783	0.252	0.307	0.175	0.135
+*/
+#if 0
+# define USE_DIRECT_READ
+#endif
 
 /* -- agent forwarding */
 #define	NUM_SOCKS	10
@@ -1991,6 +2009,45 @@ channel_handle_rfd(struct ssh *ssh, Channel *c)
 	if (!force && (c->io_ready & SSH_CHAN_IO_RFD) == 0)
 		return 1;
 
+#ifdef USE_DIRECT_READ
+	/*
+	 * For "simple" channels (i.e. not datagram or filtered), we can
+	 * read directly to the channel buffer.
+	 */
+	if (!pty_zeroread && c->input_filter == NULL && !c->datagram) {
+		size_t have, avail, maxlen = CHAN_RBUF;
+
+		if ((avail = sshbuf_avail(c->input)) == 0)
+			return 1; /* Shouldn't happen */
+
+		/* Only OPEN channels have valid rwin */
+		if (c->type == SSH_CHANNEL_OPEN) {
+			if ((have = sshbuf_len(c->input)) >= c->remote_window)
+				return 1; /* shouldn't happen */
+			if (maxlen > c->remote_window - have)
+				maxlen = c->remote_window - have;
+		}
+		if (maxlen > avail)
+			maxlen = avail;
+		if ((r = sshbuf_read(c->rfd, c->input, maxlen, NULL)) != 0) {
+			if (r == SSH_ERR_SYSTEM_ERROR) {
+				if (errno == EINTR || (!force &&
+				    (errno == EAGAIN || errno == EWOULDBLOCK)))
+					return 1;
+				if (errno == EPIPE) {
+					debug2("channel %d: read channel closed"
+					    " by remote rfd %d", c->self, c->rfd);
+					goto rfail;
+				}
+			}
+			debug2("channel %d: read failed rfd %d maxlen %zu: %s",
+			    c->self, c->rfd, maxlen, ssh_err(r));
+			goto rfail;
+		}
+		return 1;
+	}
+#endif /*def USE_DIRECT_READ*/
+
 	errno = 0;
 	len = read(c->rfd, buf, sizeof(buf));
 	/* fixup AIX zero-length read with errno set to look more like errors */
@@ -2003,6 +2060,9 @@ channel_handle_rfd(struct ssh *ssh, Channel *c)
 		debug2("channel %d: read<=0 rfd %d len %zd: %s",
 		    c->self, c->rfd, len,
 		    len == 0 ? "closed" : strerror(errno));
+#ifdef USE_DIRECT_READ
+ rfail:
+#endif
 		if (c->type != SSH_CHANNEL_OPEN) {
 			debug2("channel %d: not open", c->self);
 			chan_mark_dead(ssh, c);

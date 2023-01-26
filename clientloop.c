@@ -124,6 +124,9 @@ Deviation:
 memory:	0.244	0.236	0.205	0.121	0.129	0.082
 buffer:	0.165	0.080	0.100	0.074	0.124	0.160
 */
+#if 0
+# define USE_DIRECT_READ
+#endif
 
 /* import options */
 extern Options options;
@@ -636,7 +639,8 @@ client_suspend_self(struct sshbuf *bin, struct sshbuf *bout, struct sshbuf *berr
 static void
 client_process_net_input(struct ssh *ssh)
 {
-#if 0	/* read into memory buffer */
+#ifndef USE_DIRECT_READ
+	/* read into memory buffer */
 	char buf[SSH_IOBUFSZ];
 	int len;
 
@@ -668,7 +672,8 @@ client_process_net_input(struct ssh *ssh)
 		return;
 	}
 	ssh_packet_process_incoming(ssh, buf, len);
-#else	/* direct read into input buffer */
+#else
+	/* direct read into input buffer */
 	int r;
 
 	r = ssh_packet_process_read(ssh, connection_in, SSH_IOBUFSZ);

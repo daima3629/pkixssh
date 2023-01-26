@@ -250,9 +250,6 @@ struct Channel {
 #define SSH_CHAN_IO_SOCK_W		0x20
 #define SSH_CHAN_IO_SOCK		(SSH_CHAN_IO_SOCK_R|SSH_CHAN_IO_SOCK_W)
 
-/* Read buffer size */
-#define CHAN_RBUF	(16*1024)
-
 /* Maximum channel input buffer size */
 #define CHAN_INPUT_MAX	(16*1024*1024)
 

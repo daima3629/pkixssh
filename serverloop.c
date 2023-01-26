@@ -91,6 +91,9 @@ Deviation:
 memory:	0.096	0.127	0.134	0.098
 buffer:	0.099	0.199	0.133	0.197
 */
+#if 0
+# define USE_DIRECT_READ
+#endif
 
 extern ServerOptions options;
 
@@ -277,7 +280,8 @@ wait_until_can_do_something(struct ssh *ssh,
 static int
 process_input(struct ssh *ssh, int connection_in)
 {
-#if 1	/* read into memory buffer */
+#ifndef USE_DIRECT_READ
+	/* read into memory buffer */
 	int r, len;
 	char buf[SSHD_IOBUFSZ];
 
@@ -300,7 +304,8 @@ process_input(struct ssh *ssh, int connection_in)
 		fatal_fr(r, "ssh_packet_process_incoming");
 
 	return 0;
-#else	/* direct read into input buffer */
+#else
+	/* direct read into input buffer */
 	int r;
 
 	r = ssh_packet_process_read(ssh, connection_in, SSHD_IOBUFSZ);
