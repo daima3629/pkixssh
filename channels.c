@@ -85,6 +85,7 @@
 #include "match.h"
 
 /* read buffer size */
+/* NOTE keep synchronised with port-net.c */
 #ifndef CHAN_RBUF
 # define CHAN_RBUF	(4*1024)
 #endif

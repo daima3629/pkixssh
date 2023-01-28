@@ -373,6 +373,14 @@ sys_tun_open(int tun, int mode, char **ifname)
 #define OPENBSD_AF_INET		2
 #define OPENBSD_AF_INET6	24
 
+#if defined(SSH_TUN_PREPEND_AF)
+/* read buffer size */
+/* NOTE keep synchronised with channels.c */
+# ifndef CHAN_RBUF
+#  define CHAN_RBUF	(4*1024)
+# endif
+#endif
+
 int
 sys_tun_infilter(struct ssh *ssh, struct Channel *c, char *buf, int _len)
 {
