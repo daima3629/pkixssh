@@ -236,7 +236,11 @@ cre_ssh_pubkey () {
 
 cre_p12 () {
   P12_OPT=
-  if test -n "$OPENSSL_FIPS"; then
+  # let use more "modern" ciphers with OpenSSL 1.1+
+  # prevent needs to activate legacy provider in OpenSSL 3.0+
+  if $openssl_use_pkey ; then
+    P12_OPT="$P12_OPT -keypbe AES-256-CBC -certpbe AES-256-CBC"
+  elif test -n "$OPENSSL_FIPS"; then
     P12_OPT="$P12_OPT -keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES"
   fi
   printf '%s' "- ${extd}PKCS #12${norm} file"
