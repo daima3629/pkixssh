@@ -742,6 +742,8 @@ store_load_key(const char *url) {
 	if (ret == NULL) return NULL;
 
 	store_ctx = OSSL_STORE_open(url, ssh_ui_method, NULL, NULL, NULL);
+	debug3_f("ctx: %p", (void*)store_ctx);
+	do_log_crypto_errors(SYSLOG_LEVEL_DEBUG3);
 	if (store_ctx == NULL) goto done;
 
 	while (!OSSL_STORE_eof(store_ctx) ) {
@@ -752,6 +754,7 @@ store_load_key(const char *url) {
 		if (store_info == NULL) break;
 
 		info_type = OSSL_STORE_INFO_get_type(store_info);
+		debug3_f("type: %d", info_type);
 		switch (info_type) {
 		case OSSL_STORE_INFO_PKEY: {
 			ret->pk = OSSL_STORE_INFO_get0_PKEY(store_info);
@@ -765,6 +768,7 @@ store_load_key(const char *url) {
 		}
 		OSSL_STORE_INFO_free(store_info);
 	}
+	do_log_crypto_errors(SYSLOG_LEVEL_DEBUG3);
 	OSSL_STORE_close(store_ctx);
 
 done:
