@@ -6,3 +6,4 @@ testhostkey_*
 testocsp_*
 selfid_*
 *.log
+ssh_askpass-p12

@@ -186,6 +186,12 @@ else
   echo "OCSP: disabled"
   SSH_X509TESTS=`echo "${SSH_X509TESTS}" | sed -e 's|ocsp||g'`
 fi
+if $USE_OPENSSL_STORE2 ; then
+  echo "STORE: enabled"
+else
+  echo "STORE: disabled"
+  SSH_X509TESTS=`echo "${SSH_X509TESTS}" | sed -e 's|store_file||g'`
+fi
 echo SSH_X509TESTS: $SSH_X509TESTS
 
 

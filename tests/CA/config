@@ -73,6 +73,7 @@ SSH_X509TESTS="\
  alg
  hostalg
  algfmt
+ store_file
  ocsp
 "
 # uncomment next line if your system provides OpenLDAP server
@@ -185,6 +186,7 @@ SSHSERVER_LOGLEVEL=FATAL
 # === certificates:
 
 KEY_PASS="change_it"
+P12_PASS="p12_test"
 RSAKEYBITS=2048
 CAKEY_PREFIX="catest"
 

@@ -251,7 +251,7 @@ cre_p12 () {
   ) | \
   $OPENSSL pkcs12 $P12_OPT \
     -passin pass: \
-    -passout pass: \
+    -passout pass:$P12_PASS \
     -out "$SSH_BASE_KEY-$type$subtype".p12 \
     -export \
   ; show_status $?
