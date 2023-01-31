@@ -376,6 +376,9 @@ sys_tun_open(int tun, int mode, char **ifname)
 #if defined(SSH_TUN_PREPEND_AF)
 /* read buffer size */
 /* NOTE keep synchronised with channels.c */
+#if defined(HAVE_CYGWIN) && !defined(CHAN_RBUF)	/* unused */
+# define CHAN_RBUF	(64*1024)
+#endif
 # ifndef CHAN_RBUF
 #  define CHAN_RBUF	(4*1024)
 # endif

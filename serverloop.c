@@ -80,6 +80,9 @@
 #include "ssherr.h"
 
 /* read buffer size used in main loop */
+#if defined(HAVE_CYGWIN) && !defined(SSHD_IOBUFSZ)
+# define SSHD_IOBUFSZ	(64*1024)
+#endif
 #ifndef SSHD_IOBUFSZ
 # define SSHD_IOBUFSZ 	(4*1024)
 #endif

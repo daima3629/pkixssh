@@ -113,6 +113,9 @@
 #include "hostfile.h"
 
 /* read buffer size used in main loop */
+#if defined(HAVE_CYGWIN) && !defined(SSH_IOBUFSZ)
+# define SSH_IOBUFSZ	(64*1024)
+#endif
 #ifndef SSH_IOBUFSZ
 # define SSH_IOBUFSZ	(8*1024)
 #endif
