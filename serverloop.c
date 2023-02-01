@@ -185,18 +185,25 @@ static void
 wait_until_can_do_something(struct ssh *ssh,
     int connection_in, int connection_out,
     fd_set **readsetp, fd_set **writesetp, int *maxfdp,
-    u_int *nallocp, u_int64_t max_time_ms, sigset_t *sigsetp)
+    u_int *nallocp, sigset_t *sigsetp)
 {
 	struct timespec ts, *tsp;
 	int ret;
 	time_t minwait_secs = 0;
 	int client_alive_scheduled = 0;
+	u_int64_t max_time_ms;
 	/* time we last heard from the client OR sent a keepalive */
 	static time_t last_client_time = 0;
 
 	/* Allocate and update pselect() masks for channel descriptors. */
 	channel_prepare_select(ssh, readsetp, writesetp, maxfdp,
 	    nallocp, &minwait_secs);
+
+	if (options.rekey_interval > 0 &&
+	    !ssh_packet_is_rekeying(ssh))
+		max_time_ms = ssh_packet_get_rekey_timeout(ssh) * 1000;
+	else
+		max_time_ms = 0;
 
 	/* XXX need proper deadline system for rekey/client alive */
 	if (minwait_secs != 0)
@@ -374,7 +381,6 @@ server_loop2(struct ssh *ssh, Authctxt *authctxt)
 	fd_set *readset = NULL, *writeset = NULL;
 	int max_fd;
 	u_int nalloc = 0, connection_in, connection_out;
-	u_int64_t rekey_timeout_ms = 0;
 	sigset_t bsigset, osigset;
 
 	UNUSED(authctxt);
@@ -405,13 +411,6 @@ server_loop2(struct ssh *ssh, Authctxt *authctxt)
 		if (!ssh_packet_is_rekeying(ssh) &&
 		    ssh_packet_not_very_much_data_to_write(ssh))
 			channel_output_poll(ssh);
-		if (options.rekey_interval > 0 &&
-		    !ssh_packet_is_rekeying(ssh)) {
-			rekey_timeout_ms = ssh_packet_get_rekey_timeout(ssh) *
-			    1000;
-		} else {
-			rekey_timeout_ms = 0;
-		}
 
 		/*
 		 * Block SIGCHLD while we check for dead children, then pass
@@ -422,7 +421,7 @@ server_loop2(struct ssh *ssh, Authctxt *authctxt)
 			error_f("bsigset sigprocmask: %s", strerror(errno));
 		collect_children(ssh);
 		wait_until_can_do_something(ssh, connection_in, connection_out,
-		    &readset, &writeset, &max_fd, &nalloc, rekey_timeout_ms,
+		    &readset, &writeset, &max_fd, &nalloc,
 		    &osigset);
 		conn_in_ready = FD_ISSET(connection_in, readset);
 		conn_out_ready = FD_ISSET(connection_out, writeset);
