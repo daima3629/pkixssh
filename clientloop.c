@@ -531,11 +531,11 @@ client_wait_until_can_do_something(struct ssh *ssh,
     fd_set **readsetp, fd_set **writesetp,
     int *maxfdp, u_int *nallocp, int rekeying)
 {
-	struct timeval tv, *tvp;
-	int timeout_secs;
-	time_t minwait_secs = 0, now = monotime();
+	struct timespec timeout;
+	time_t minwait_secs = 0;
 	int ret;
 
+	ptimeout_init(&timeout);
 	/* Add any selections by the channel mechanism. */
 	channel_prepare_select(ssh, readsetp, writesetp, maxfdp,
 	    nallocp, &minwait_secs);
@@ -560,31 +560,19 @@ client_wait_until_can_do_something(struct ssh *ssh,
 	 * some selected descriptor can be read, written, or has some other
 	 * event pending, or a timeout expires.
 	 */
-
-	timeout_secs = INT_MAX; /* we use INT_MAX to mean no timeout */
-	if (options.server_alive_interval > 0)
-		timeout_secs = MAXIMUM(server_alive_time - now, 0);
-	if (options.rekey_interval > 0 && !rekeying)
-		timeout_secs = MINIMUM(timeout_secs,
-		    ssh_packet_get_rekey_timeout(ssh));
 	set_control_persist_exit_time(ssh);
-	if (control_persist_exit_time > 0) {
-		timeout_secs = MINIMUM(timeout_secs,
-			control_persist_exit_time - now);
-		if (timeout_secs < 0)
-			timeout_secs = 0;
-	}
+	if (control_persist_exit_time > 0)
+		ptimeout_deadline_monotime(&timeout, control_persist_exit_time);
+	if (options.server_alive_interval > 0)
+		ptimeout_deadline_monotime(&timeout, server_alive_time);
+	if (options.rekey_interval > 0 && !rekeying)
+		ptimeout_deadline_sec(&timeout,
+		    ssh_packet_get_rekey_timeout(ssh));
 	if (minwait_secs != 0)
-		timeout_secs = MINIMUM(timeout_secs, (int)minwait_secs);
-	if (timeout_secs == INT_MAX)
-		tvp = NULL;
-	else {
-		tv.tv_sec = timeout_secs;
-		tv.tv_usec = 0;
-		tvp = &tv;
-	}
+		ptimeout_deadline_sec(&timeout, (int)minwait_secs);
 
-	ret = select((*maxfdp)+1, *readsetp, *writesetp, NULL, tvp);
+	ret = pselect((*maxfdp)+1, *readsetp, *writesetp, NULL,
+	    ptimeout_get_tsp(&timeout), NULL);
 	if (ret == -1) {
 		/*
 		 * We have to clear the select masks, because we return.
