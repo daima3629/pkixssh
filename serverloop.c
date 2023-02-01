@@ -266,18 +266,24 @@ wait_until_can_do_something(struct ssh *ssh,
 		memset(*writesetp, 0, *nallocp);
 		if (errno != EINTR)
 			error("pselect: %.100s", strerror(errno));
-	} else if (client_alive_scheduled) {
+		return;
+	}
+
+	/* ClientAliveInterval probing */
+	if (client_alive_scheduled) {
 		time_t now = monotime();
 
 		/*
 		 * If the pselect timed out, or returned for some other reason
 		 * but we haven't heard from the client in time, send keepalive.
 		 */
-		if (ret == 0 || (last_client_time != 0 && last_client_time +
-		    options.client_alive_interval <= now)) {
+		if (ret == 0 &&
+		    now > last_client_time + options.client_alive_interval) {
+			/* ppoll timed out and we're due to probe */
 			client_alive_check(ssh);
 			last_client_time = now;
-		} else if (FD_ISSET(connection_in, *readsetp)) {
+		} else if (ret != 0 && FD_ISSET(connection_in, *readsetp)) {
+			/* Data from peer; reset probe timer. */
 			last_client_time = now;
 		}
 	}
