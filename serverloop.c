@@ -1,4 +1,4 @@
-/* $OpenBSD: serverloop.c,v 1.232 2022/04/20 04:19:11 djm Exp $ */
+/* $OpenBSD: serverloop.c,v 1.233 2023/01/06 02:38:23 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -187,27 +187,20 @@ wait_until_can_do_something(struct ssh *ssh,
     fd_set **readsetp, fd_set **writesetp, int *maxfdp,
     u_int *nallocp, sigset_t *sigsetp)
 {
-	struct timespec ts, *tsp;
+	struct timespec timeout;
 	int ret;
-	time_t minwait_secs = 0;
 	int client_alive_scheduled = 0;
-	u_int64_t max_time_ms;
 	/* time we last heard from the client OR sent a keepalive */
 	static time_t last_client_time = 0;
 
+	ptimeout_init(&timeout);
 	/* Allocate and update pselect() masks for channel descriptors. */
 	channel_prepare_select(ssh, readsetp, writesetp, maxfdp,
-	    nallocp, &minwait_secs);
+	    nallocp, &timeout);
 
-	if (options.rekey_interval > 0 &&
-	    !ssh_packet_is_rekeying(ssh))
-		max_time_ms = ssh_packet_get_rekey_timeout(ssh) * 1000;
-	else
-		max_time_ms = 0;
-
-	/* XXX need proper deadline system for rekey/client alive */
-	if (minwait_secs != 0)
-		max_time_ms = MINIMUM(max_time_ms, (u_int)minwait_secs * 1000);
+	if (options.rekey_interval > 0 && !ssh_packet_is_rekeying(ssh))
+		ptimeout_deadline_sec(&timeout,
+		    ssh_packet_get_rekey_timeout(ssh));
 
 	/*
 	 * if using client_alive, set the max timeout accordingly,
@@ -218,15 +211,11 @@ wait_until_can_do_something(struct ssh *ssh,
 	 * analysis more difficult, but we're not doing it yet.
 	 */
 	if (options.client_alive_interval) {
-		uint64_t keepalive_ms =
-		    (uint64_t)options.client_alive_interval * 1000;
-
-		if (max_time_ms == 0 || max_time_ms > keepalive_ms) {
-			max_time_ms = keepalive_ms;
-			client_alive_scheduled = 1;
-		}
 		if (last_client_time == 0)
 			last_client_time = monotime();
+		ptimeout_deadline_sec(&timeout, options.client_alive_interval);
+		/* XXX ? deadline_monotime(last_client_time + alive_interval) */
+		client_alive_scheduled = 1;
 	}
 
 #if 0
@@ -247,19 +236,11 @@ wait_until_can_do_something(struct ssh *ssh,
 	 * from it, then read as much as is available and exit.
 	 */
 	if (child_terminated && ssh_packet_not_very_much_data_to_write(ssh))
-		if (max_time_ms == 0 || client_alive_scheduled)
-			max_time_ms = 100;
-
-	if (max_time_ms == 0)
-		tsp = NULL;
-	else {
-		ts.tv_sec = max_time_ms / 1000;
-		ts.tv_nsec = 1000000 * (max_time_ms % 1000);
-		tsp = &ts;
-	}
+		ptimeout_deadline_ms(&timeout, 100);
 
 	/* Wait for something to happen, or the timeout to expire. */
-	ret = pselect((*maxfdp)+1, *readsetp, *writesetp, NULL, tsp, sigsetp);
+	ret = pselect((*maxfdp)+1, *readsetp, *writesetp, NULL,
+	    ptimeout_get_tsp(&timeout), sigsetp);
 
 	if (ret == -1) {
 		memset(*readsetp, 0, *nallocp);
@@ -273,10 +254,6 @@ wait_until_can_do_something(struct ssh *ssh,
 	if (client_alive_scheduled) {
 		time_t now = monotime();
 
-		/*
-		 * If the pselect timed out, or returned for some other reason
-		 * but we haven't heard from the client in time, send keepalive.
-		 */
 		if (ret == 0 &&
 		    now > last_client_time + options.client_alive_interval) {
 			/* ppoll timed out and we're due to probe */

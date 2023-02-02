@@ -1,4 +1,4 @@
-/* $OpenBSD: channels.c,v 1.426 2023/01/06 02:47:18 djm Exp $ */
+/* $OpenBSD: channels.c,v 1.427 2023/01/18 02:00:10 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -2534,7 +2534,7 @@ channel_mask_io_ready(Channel *c, fd_set *readset, fd_set *writeset)
 }
 
 static void
-channel_handler(struct ssh *ssh, int table, time_t *unpause_secs)
+channel_handler(struct ssh *ssh, int table, struct timespec *timeout)
 {
 	struct ssh_channels *sc = ssh->chanctxt;
 	chan_fn **ftab = table == CHAN_PRE ? sc->channel_pre : sc->channel_post;
@@ -2543,8 +2543,6 @@ channel_handler(struct ssh *ssh, int table, time_t *unpause_secs)
 	time_t now;
 
 	now = monotime();
-	if (unpause_secs != NULL)
-		*unpause_secs = 0;
 	for (i = 0, oalloc = sc->channels_alloc; i < oalloc; i++) {
 		c = sc->channels[i];
 		if (c == NULL)
@@ -2561,24 +2559,17 @@ channel_handler(struct ssh *ssh, int table, time_t *unpause_secs)
 			 */
 			if (c->notbefore <= now)
 				(*ftab[c->type])(ssh, c);
-			else if (unpause_secs != NULL) {
+			else if (timeout != NULL) {
 				/*
-				 * Collect the time that the earliest
-				 * channel comes off pause.
+				 * Arrange for wakeup when channel pause
+				 * timer expires.
 				 */
-				debug3_f("chan %d: skip for %d more "
-				    "seconds", c->self,
-				    (int)(c->notbefore - now));
-				if (*unpause_secs == 0 ||
-				    (c->notbefore - now) < *unpause_secs)
-					*unpause_secs = c->notbefore - now;
+				ptimeout_deadline_monotime(timeout,
+				    c->notbefore);
 			}
 		}
 		channel_garbage_collect(ssh, c);
 	}
-	if (unpause_secs != NULL && *unpause_secs != 0)
-		debug3_f("first channel unpauses in %d seconds",
-		    (int)*unpause_secs);
 }
 
 /*
@@ -2608,7 +2599,7 @@ channel_before_prepare_io(struct ssh *ssh)
  */
 void
 channel_prepare_select(struct ssh *ssh, fd_set **readsetp, fd_set **writesetp,
-    int *maxfdp, u_int *nallocp, time_t *minwait_secs)
+    int *maxfdp, u_int *nallocp, struct timespec *timeout)
 {
 	u_int n, sz, nfdset;
 
@@ -2634,7 +2625,7 @@ channel_prepare_select(struct ssh *ssh, fd_set **readsetp, fd_set **writesetp,
 
 	if (ssh_packet_is_rekeying(ssh)) return;
 
-	channel_handler(ssh, CHAN_PRE, minwait_secs);
+	channel_handler(ssh, CHAN_PRE, timeout);
 
 {	/* convert c->io_want into read/write sets */
 	struct ssh_channels *sc = ssh->chanctxt;

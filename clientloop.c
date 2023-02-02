@@ -532,13 +532,12 @@ client_wait_until_can_do_something(struct ssh *ssh,
     int *maxfdp, u_int *nallocp, int rekeying)
 {
 	struct timespec timeout;
-	time_t minwait_secs = 0;
 	int ret;
 
 	ptimeout_init(&timeout);
 	/* Add any selections by the channel mechanism. */
 	channel_prepare_select(ssh, readsetp, writesetp, maxfdp,
-	    nallocp, &minwait_secs);
+	    nallocp, &timeout);
 
 	/* channel_prepare_select could have closed the last channel */
 	if (session_closed && !channel_still_open(ssh) &&
@@ -568,8 +567,6 @@ client_wait_until_can_do_something(struct ssh *ssh,
 	if (options.rekey_interval > 0 && !rekeying)
 		ptimeout_deadline_sec(&timeout,
 		    ssh_packet_get_rekey_timeout(ssh));
-	if (minwait_secs != 0)
-		ptimeout_deadline_sec(&timeout, (int)minwait_secs);
 
 	ret = pselect((*maxfdp)+1, *readsetp, *writesetp, NULL,
 	    ptimeout_get_tsp(&timeout), NULL);
