@@ -1,4 +1,4 @@
-/* $OpenBSD: servconf.h,v 1.157 2022/09/17 10:34:29 djm Exp $ */
+/* $OpenBSD: servconf.h,v 1.159 2023/01/17 09:44:48 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -268,6 +268,8 @@ typedef struct {
 	int	expose_userauth_info;
 	u_int64_t timing_secret;
 	int	required_rsa_size;	/* minimum size of RSA keys */
+
+	int	unused_connection_timeout;
 }       ServerOptions;
 
 /* Information about the incoming connection as used by Match */

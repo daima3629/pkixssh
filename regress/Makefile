@@ -1,4 +1,4 @@
-#	$OpenBSD: Makefile,v 1.121 2022/12/01 02:22:13 dtucker Exp $
+#	$OpenBSD: Makefile,v 1.122 2023/01/06 08:07:39 djm Exp $
 
 tests: unit file-tests t-exec
 check-core: tests
@@ -95,7 +95,8 @@ LTESTS=		connect \
 		allow-deny-users \
 		authinfo \
 		knownhosts \
-		knownhosts-command
+		knownhosts-command \
+		connection-timeout
 
 # portability:
 #		percent \

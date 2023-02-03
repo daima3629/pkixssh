@@ -1,4 +1,4 @@
-/* $OpenBSD: serverloop.c,v 1.233 2023/01/06 02:38:23 djm Exp $ */
+/* $OpenBSD: serverloop.c,v 1.234 2023/01/17 09:44:48 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -190,17 +190,30 @@ wait_until_can_do_something(struct ssh *ssh,
 	struct timespec timeout;
 	int ret;
 	int client_alive_scheduled = 0;
-	/* time we last heard from the client OR sent a keepalive */
-	static time_t last_client_time = 0;
+	time_t now;
+	static time_t last_client_time = 0, unused_connection_expiry = 0;
 
 	ptimeout_init(&timeout);
 	/* Allocate and update pselect() masks for channel descriptors. */
 	channel_prepare_select(ssh, readsetp, writesetp, maxfdp,
 	    nallocp, &timeout);
+	now = monotime();
 
 	if (options.rekey_interval > 0 && !ssh_packet_is_rekeying(ssh))
 		ptimeout_deadline_sec(&timeout,
 		    ssh_packet_get_rekey_timeout(ssh));
+
+	/*
+	 * If no channels are open and UnusedConnectionTimeout is set, then
+	 * start the clock to terminate the connection.
+	 */
+	if (options.unused_connection_timeout != 0) {
+		if (channel_still_open(ssh) || unused_connection_expiry == 0) {
+			unused_connection_expiry = now +
+			    options.unused_connection_timeout;
+		}
+		ptimeout_deadline_monotime(&timeout, unused_connection_expiry);
+	}
 
 	/*
 	 * if using client_alive, set the max timeout accordingly,
@@ -211,8 +224,9 @@ wait_until_can_do_something(struct ssh *ssh,
 	 * analysis more difficult, but we're not doing it yet.
 	 */
 	if (options.client_alive_interval) {
+		/* Time we last heard from the client OR sent a keepalive */
 		if (last_client_time == 0)
-			last_client_time = monotime();
+			last_client_time = now;
 		ptimeout_deadline_sec(&timeout, options.client_alive_interval);
 		/* XXX ? deadline_monotime(last_client_time + alive_interval) */
 		client_alive_scheduled = 1;
@@ -250,10 +264,9 @@ wait_until_can_do_something(struct ssh *ssh,
 		return;
 	}
 
+	now = monotime(); /* need to reset after pselect() */
 	/* ClientAliveInterval probing */
 	if (client_alive_scheduled) {
-		time_t now = monotime();
-
 		if (ret == 0 &&
 		    now > last_client_time + options.client_alive_interval) {
 			/* ppoll timed out and we're due to probe */
@@ -263,6 +276,15 @@ wait_until_can_do_something(struct ssh *ssh,
 			/* Data from peer; reset probe timer. */
 			last_client_time = now;
 		}
+	}
+
+	/* UnusedConnectionTimeout handling */
+	if (unused_connection_expiry != 0 &&
+	    now > unused_connection_expiry && !channel_still_open(ssh)) {
+		char remote_id[512];
+		sshpkt_fmt_connection_id(ssh, remote_id, sizeof(remote_id));
+		logit("terminating inactive connection from %s", remote_id);
+		cleanup_exit(255);
 	}
 }
 

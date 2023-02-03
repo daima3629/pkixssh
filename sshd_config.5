@@ -42,8 +42,8 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: sshd_config.5,v 1.343 2022/09/17 10:34:29 djm Exp $
-.Dd $Mdocdate: January 13 2023 $
+.\" $OpenBSD: sshd_config.5,v 1.347 2023/01/18 06:55:32 jmc Exp $
+.Dd $Mdocdate: January 18 2023 $
 .Dt SSHD_CONFIG 5
 .Os
 .Sh NAME
@@ -1355,6 +1355,7 @@ Available keywords are
 .Cm StreamLocalBindMask ,
 .Cm StreamLocalBindUnlink ,
 .Cm TrustedUserCAKeys ,
+.Cm UnusedConnectionTimeout ,
 .Cm X11DisplayOffset ,
 .Cm X11Forwarding
 and
@@ -1835,6 +1836,31 @@ for authentication using
 .Cm TrustedUserCAKeys .
 For more details on certificates, see the CERTIFICATES section in
 .Xr ssh-keygen 1 .
+.It Cm UnusedConnectionTimeout
+Specifies whether and how quickly
+.Xr sshd 8
+should close client connections with no open channels.
+Open channels include active shell, command execution or subsystem
+sessions, connected network, socket, agent or X11 forwardings.
+Forwarding listeners, such as those from the
+.Xr ssh 1
+.Fl R
+flag, are not considered as open channels and do not prevent the timeout.
+The timeout value
+is specified in seconds or may use any of the units documented in the
+.Sx TIME FORMATS
+section.
+.Pp
+Note that this timeout starts when the client connection completes
+user authentication but before the client has an opportunity to open any
+channels.
+Caution should be used when using short timeout values, as they may not
+provide sufficient time for the client to request and open its channels
+before terminating the connection.
+.Pp
+The default
+.Cm none
+is to never expire connections for having no open channels.
 .It Cm UseDNS
 Specifies whether
 .Xr sshd 8
