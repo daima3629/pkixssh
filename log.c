@@ -192,6 +192,10 @@ log_verbose_init(char **opts, size_t n) {
 	free(log_verbose);
 
 	nlog_verbose = 0;
+	if (n == 0) {
+		log_verbose = NULL;
+		return;
+	}
 	log_verbose = calloc(n, sizeof(*log_verbose));
 
 	for (k = 0; k < n; k++) {

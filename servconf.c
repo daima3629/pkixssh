@@ -177,6 +177,8 @@ initialize_server_options(ServerOptions *options)
 	options->log_level = SYSLOG_LEVEL_NOT_SET;
 	options->num_log_verbose = 0;
 	options->log_verbose = NULL;
+	options->num_auth_methods = 0;
+	options->auth_methods = NULL;
 	options->hostbased_authentication = -1;
 	options->hostbased_uses_name_from_packet_only = -1;
 	options->hostkeyalgorithms = NULL;
@@ -519,6 +521,16 @@ fill_default_server_options(ServerOptions *options)
 			v = NULL; \
 		} \
 	} while(0)
+#define CLEAR_ON_NONE_ARRAY(v, nv, none) \
+	do { \
+		if (options->nv == 1 && \
+		    strcasecmp(options->v[0], none) == 0) { \
+			free(options->v[0]); \
+			free(options->v); \
+			options->v = NULL; \
+			options->nv = 0; \
+		} \
+	} while (0)
 	CLEAR_ON_NONE(options->pid_file);
 	CLEAR_ON_NONE(options->xauth_location);
 	CLEAR_ON_NONE(options->banner);
@@ -529,19 +541,16 @@ fill_default_server_options(ServerOptions *options)
 	CLEAR_ON_NONE(options->chroot_directory);
 	CLEAR_ON_NONE(options->routing_domain);
 	CLEAR_ON_NONE(options->host_key_agent);
+
 	for (i = 0; i < options->num_host_key_files; i++)
 		CLEAR_ON_NONE(options->host_key_files[i]);
 	for (i = 0; i < options->num_host_cert_files; i++)
 		CLEAR_ON_NONE(options->host_cert_files[i]);
-#undef CLEAR_ON_NONE
 
-	/* Similar handling for AuthenticationMethods=any */
-	if (options->num_auth_methods == 1 &&
-	    strcmp(options->auth_methods[0], "any") == 0) {
-		free(options->auth_methods[0]);
-		options->auth_methods[0] = NULL;
-		options->num_auth_methods = 0;
-	}
+	CLEAR_ON_NONE_ARRAY(log_verbose, num_log_verbose, "none");
+	CLEAR_ON_NONE_ARRAY(auth_methods, num_auth_methods, "any");
+#undef CLEAR_ON_NONE
+#undef CLEAR_ON_NONE_ARRAY
 
 	if (options->hostbased_algorithms != NULL) {
 		if (!sshkey_names_valid2(options->hostbased_algorithms, 1))
