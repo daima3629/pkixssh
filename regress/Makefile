@@ -304,5 +304,5 @@ unit:
 	test "x$$UNITTEST_UTF8" = "xskip" || \
 		if test "x${TEST_SSH_UTF8}" = "xyes"  ; then \
 			$$V ${.OBJDIR}/unittests/utf8/test_utf8 ; \
-		fi \
+		fi ; \
 	fi
