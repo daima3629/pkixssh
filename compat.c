@@ -188,15 +188,19 @@ compat_pkalg_proposal(struct ssh *ssh, char *pkalg_prop)
 char *
 compat_kex_proposal(struct ssh *ssh, char *p)
 {
+	char *cp = NULL;
+
 	if (!ssh_compat_fellows(ssh, (SSH_BUG_CURVE25519PAD|SSH_OLD_DHGEX)))
 		return xstrdup(p);
+
 	debug2_f("original KEX proposal: %s", p);
-	if (ssh_compat_fellows(ssh, SSH_BUG_CURVE25519PAD))
+	if (ssh_compat_fellows(ssh, SSH_BUG_CURVE25519PAD)) {
 		if ((p = match_filter_denylist(p,
 		    "curve25519-sha256@libssh.org")) == NULL)
 			fatal("match_filter_denylist failed");
+		cp = p;
+	}
 	if (ssh_compat_fellows(ssh, SSH_OLD_DHGEX)) {
-		char *cp = p;
 		if ((p = match_filter_denylist(p,
 		    "diffie-hellman-group-exchange-sha256,"
 		    "diffie-hellman-group-exchange-sha1")) == NULL)
