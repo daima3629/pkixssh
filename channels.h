@@ -208,6 +208,9 @@ struct Channel {
 	void			*mux_ctx;
 	int			mux_pause;
 	int			mux_downstream_id;
+
+	/* Last traffic seen for OPEN channels */
+	time_t			lastused;
 };
 
 #define CHAN_EXTENDED_IGNORE		0

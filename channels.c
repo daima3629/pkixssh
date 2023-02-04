@@ -509,6 +509,7 @@ channel_new(struct ssh *ssh, char *ctype, int type, int rfd, int wfd, int efd,
 	c->remote_name = xstrdup(remote_name);
 	c->ctl_chan = -1;
 	c->delayed = 1;		/* prevent call to channel_post handler */
+	c->lastused = 0;
 	TAILQ_INIT(&c->status_confirms);
 	debug("channel %d: new [%s]", found, remote_name);
 	return c;
@@ -1199,6 +1200,7 @@ channel_set_fds(struct ssh *ssh, int id, int rfd, int wfd, int efd,
 
 	channel_register_fds(ssh, c, rfd, wfd, efd, extusage, nonblock, is_tty);
 	c->type = SSH_CHANNEL_OPEN;
+	c->lastused = monotime();
 	c->local_window = c->local_window_max = window_max;
 
 	if ((r = sshpkt_start(ssh, SSH2_MSG_CHANNEL_WINDOW_ADJUST)) != 0 ||
@@ -1358,6 +1360,7 @@ channel_force_close(struct ssh *ssh, Channel *c)
 		    "extended fd %d [i%d o%d]: %.100s", c->self, c->efd,
 		    c->istate, c->ostate, strerror(errno));
 	}
+	c->lastused = 0;
 }
 
 void
@@ -2021,6 +2024,7 @@ channel_post_connecting(struct ssh *ssh, Channel *c)
 		    c->self, c->connect_ctx.host, c->connect_ctx.port);
 		channel_connect_ctx_free(&c->connect_ctx);
 		c->type = SSH_CHANNEL_OPEN;
+		c->lastused = monotime();
 		if (isopen) {
 			/* no message necessary */
 		} else {
@@ -2088,7 +2092,7 @@ channel_handle_rfd(struct ssh *ssh, Channel *c)
 	 * read directly to the channel buffer.
 	 */
 	if (!pty_zeroread && c->input_filter == NULL && !c->datagram) {
-		size_t have, avail, maxlen = CHAN_RBUF;
+		size_t nr = 0, have, avail, maxlen = CHAN_RBUF;
 
 		if ((avail = sshbuf_avail(c->input)) == 0)
 			return 1; /* Shouldn't happen */
@@ -2102,7 +2106,7 @@ channel_handle_rfd(struct ssh *ssh, Channel *c)
 		}
 		if (maxlen > avail)
 			maxlen = avail;
-		if ((r = sshbuf_read(c->rfd, c->input, maxlen, NULL)) != 0) {
+		if ((r = sshbuf_read(c->rfd, c->input, maxlen, &nr)) != 0) {
 			if (r == SSH_ERR_SYSTEM_ERROR) {
 				if (errno == EINTR || (!force &&
 				    (errno == EAGAIN || errno == EWOULDBLOCK)))
@@ -2117,6 +2121,8 @@ channel_handle_rfd(struct ssh *ssh, Channel *c)
 			    c->self, c->rfd, maxlen, ssh_err(r));
 			goto rfail;
 		}
+		if (nr != 0)
+			c->lastused = monotime();
 		return 1;
 	}
 #endif /*def USE_DIRECT_READ*/
@@ -2145,6 +2151,7 @@ channel_handle_rfd(struct ssh *ssh, Channel *c)
 		}
 		return -1;
 	}
+	c->lastused = monotime();
 	if (c->input_filter != NULL) {
 		if (c->input_filter(ssh, c, buf, len) == -1) {
 			debug2("channel %d: filter stops", c->self);
@@ -2223,6 +2230,7 @@ channel_handle_wfd(struct ssh *ssh, Channel *c)
 		}
 		return -1;
 	}
+	c->lastused = monotime();
 #ifndef BROKEN_TCGETATTR_ICANON
 {	struct termios tio;
 
@@ -2274,6 +2282,7 @@ channel_handle_efd_write(struct ssh *ssh, Channel *c)
 		if ((r = sshbuf_consume(c->extended, len)) != 0)
 			fatal_fr(r, "channel %d: consume", c->self);
 		c->local_consumed += len;
+		c->lastused = monotime();
 	}
 	return 1;
 }
@@ -2299,7 +2308,10 @@ channel_handle_efd_read(struct ssh *ssh, Channel *c)
 	if (len <= 0) {
 		debug2("channel %d: closing read-efd %d", c->self, c->efd);
 		channel_close_fd(ssh, c, SSH_CHANNEL_FD_ERROR);
-	} else if (c->extended_usage == CHAN_EXTENDED_IGNORE)
+		return 1;
+	}
+	c->lastused = monotime();
+	if (c->extended_usage == CHAN_EXTENDED_IGNORE)
 		debug3("channel %d: discard efd", c->self);
 	else if ((r = sshbuf_put(c->extended, buf, len)) != 0)
 		fatal_fr(r, "channel %d: append", c->self);
@@ -3376,6 +3388,7 @@ channel_input_open_confirmation(int type, u_int32_t seq, struct ssh *ssh)
 		c->open_confirm(ssh, c->self, 1, c->open_confirm_ctx);
 		debug2_f("channel %d: callback done", c->self);
 	}
+	c->lastused = monotime();
 	debug2("channel %d: open confirm rwindow %u rmax %u", c->self,
 	    c->remote_window, c->remote_maxpacket);
 	return 0;
