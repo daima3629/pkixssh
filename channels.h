@@ -298,6 +298,10 @@ void	 channel_register_status_confirm(struct ssh *, int,
 void	 channel_cancel_cleanup(struct ssh *, int);
 void	 channel_send_window_changes(struct ssh *);
 
+/* channel inactivity timeouts */
+void channel_add_timeout(struct ssh *, const char *, u_int);
+void channel_clear_timeouts(struct ssh *);
+
 /* mux proxy support */
 
 int	 channel_proxy_downstream(struct ssh *, Channel *mc);
