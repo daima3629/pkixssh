@@ -72,7 +72,9 @@ EOF
 
   runSSHdaemon || return $?
   (
-    export SSH_ASKPASS=`pwd`/ssh_askpass-p12
+    SSH_ASKPASS=`pwd`/ssh_askpass-p12
+    SSH_ASKPASS_REQUIRE=force
+    export SSH_ASKPASS SSH_ASKPASS_REQUIRE
 
     for type in $SSH_SIGN_TYPES; do
 
