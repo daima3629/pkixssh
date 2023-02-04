@@ -1068,12 +1068,7 @@ process_escapes(struct ssh *ssh, Channel *c,
 				    efc->escape_char)) != 0)
 					fatal_fr(r, "sshbuf_putf");
 				if (c && c->ctl_chan != -1) {
-					channel_force_close(ssh, c);
-					if (c->detach_user) {
-						c->detach_user(ssh,
-						    c->self, NULL);
-					}
-					c->type = SSH_CHANNEL_ABANDONED;
+					channel_abandon(ssh, c);
 					return 0;
 				} else
 					quit_pending = 1;
@@ -1301,8 +1296,9 @@ client_simple_escape_filter(struct ssh *ssh, Channel *c, char *buf, int len)
 }
 
 static void
-client_channel_closed(struct ssh *ssh, int id, void *arg)
+client_channel_closed(struct ssh *ssh, int id, int force, void *arg)
 {
+	UNUSED(force);
 	UNUSED(arg);
 	channel_cancel_cleanup(ssh, id);
 	session_closed = 1;

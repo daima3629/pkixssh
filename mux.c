@@ -186,10 +186,11 @@ static const struct {
 
 /* Cleanup callback fired on closure of mux client _session_ channel */
 static void
-mux_master_session_cleanup_cb(struct ssh *ssh, int cid, void *arg)
+mux_master_session_cleanup_cb(struct ssh *ssh, int cid, int force, void *arg)
 {
 	Channel *cc, *c = channel_by_id(ssh, cid);
 
+	UNUSED(force);
 	UNUSED(arg);
 	debug3_f("entering for channel %d", cid);
 	if (c == NULL)
@@ -208,10 +209,11 @@ mux_master_session_cleanup_cb(struct ssh *ssh, int cid, void *arg)
 
 /* Cleanup callback fired on closure of mux client _control_ channel */
 static void
-mux_master_control_cleanup_cb(struct ssh *ssh, int cid, void *arg)
+mux_master_control_cleanup_cb(struct ssh *ssh, int cid, int force, void *arg)
 {
 	Channel *sc, *c = channel_by_id(ssh, cid);
 
+	UNUSED(force);
 	UNUSED(arg);
 	debug3_f("entering for channel %d", cid);
 	if (c == NULL)

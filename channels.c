@@ -1302,6 +1302,17 @@ channel_force_close(struct ssh *ssh, Channel *c)
 	}
 }
 
+void
+channel_abandon(struct ssh *ssh, Channel *c) {
+	debug3_f("channel %d", c->self);
+
+	channel_force_close(ssh, c);
+	if (c->detach_user)
+		c->detach_user(ssh, c->self, 1, NULL);
+	c->type = SSH_CHANNEL_ABANDONED;
+}
+
+
 static void
 channel_pre_x11_open(struct ssh *ssh, Channel *c)
 {
@@ -2480,7 +2491,7 @@ channel_garbage_collect(struct ssh *ssh, Channel *c)
 			return;
 
 		debug2("channel %d: gc: notify user", c->self);
-		c->detach_user(ssh, c->self, NULL);
+		c->detach_user(ssh, c->self, 0, NULL);
 		/* if we still have a callback */
 		if (c->detach_user != NULL)
 			return;
