@@ -81,6 +81,7 @@ scp-ssh-wrapper.scp
 sftp-server.log
 sftp-server.sh
 sftp.log
+slow-sftp-server.sh
 ssh-log-wrapper.sh
 ssh.log
 ssh_config

@@ -381,6 +381,7 @@ lookup_timeout(struct ssh *ssh, const char *type)
  * Sets "extended type" of a channel; used by session layer to add additional
  * information about channel types (e.g. shell, login, subsystem) that can then
  * be used to select timeouts.
+ * Will reset c->inactive_deadline as a side-effect.
  */
 void
 channel_set_xtype(struct ssh *ssh, int id, const char *xctype)
@@ -391,7 +392,10 @@ channel_set_xtype(struct ssh *ssh, int id, const char *xctype)
 		fatal_f("missing channel %d", id);
 	free(c->xctype);
 	c->xctype = xstrdup(xctype);
-	debug2_f("labeled channel %d as %s", id, c->xctype);
+	/* Type has changed, so look up inactivity deadline again */
+	c->inactive_deadline = lookup_timeout(ssh, c->xctype);
+	debug2_f("labeled channel %d as %s (inactive timeout %u)", id, c->xctype,
+	    c->inactive_deadline);
 }
 
 /*
@@ -510,8 +514,10 @@ channel_new(struct ssh *ssh, char *ctype, int type, int rfd, int wfd, int efd,
 	c->ctl_chan = -1;
 	c->delayed = 1;		/* prevent call to channel_post handler */
 	c->lastused = 0;
+	c->inactive_deadline = lookup_timeout(ssh, c->ctype);
 	TAILQ_INIT(&c->status_confirms);
-	debug("channel %d: new [%s]", found, remote_name);
+	debug("channel %d: new %s [%s] (inactive timeout: %u)",
+	    found, c->ctype, remote_name, c->inactive_deadline);
 	return c;
 }
 
@@ -1361,6 +1367,8 @@ channel_force_close(struct ssh *ssh, Channel *c)
 		    c->istate, c->ostate, strerror(errno));
 	}
 	c->lastused = 0;
+	/* exempt from inactivity timeouts */
+	c->inactive_deadline = 0;
 }
 
 void
@@ -2635,12 +2643,27 @@ channel_handler(struct ssh *ssh, int table, struct timespec *timeout)
 				continue;
 		}
 		if (ftab[c->type] != NULL) {
-			/*
-			 * Run handlers that are not paused.
-			 */
-			if (c->notbefore <= now)
+			if (table == CHAN_PRE &&
+			    c->type == SSH_CHANNEL_OPEN &&
+			    c->inactive_deadline != 0 && c->lastused != 0 &&
+			    now >= c->lastused + c->inactive_deadline) {
+				/* channel closed for inactivity */
+				verbose("channel %d: closing after %u seconds "
+				    "of inactivity", c->self,
+				    c->inactive_deadline);
+				channel_abandon(ssh, c);
+			} else if (c->notbefore <= now) {
+				/* Run handlers that are not paused. */
 				(*ftab[c->type])(ssh, c);
-			else if (timeout != NULL) {
+				/* inactivity timeouts must interrupt main loop */
+				if (timeout != NULL &&
+				    c->type == SSH_CHANNEL_OPEN &&
+				    c->lastused != 0 &&
+				    c->inactive_deadline != 0) {
+					ptimeout_deadline_monotime(timeout,
+					    c->lastused + c->inactive_deadline);
+				}
+			} else if (timeout != NULL) {
 				/*
 				 * Arrange for wakeup when channel pause
 				 * timer expires.

@@ -211,6 +211,8 @@ struct Channel {
 
 	/* Last traffic seen for OPEN channels */
 	time_t			lastused;
+	/* Inactivity timeout deadline in seconds (0 = no timeout) */
+	u_int			inactive_deadline;
 };
 
 #define CHAN_EXTENDED_IGNORE		0

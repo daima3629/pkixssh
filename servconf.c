@@ -247,6 +247,8 @@ initialize_server_options(ServerOptions *options)
 	options->disable_forwarding = -1;
 	options->expose_userauth_info = -1;
 	options->required_rsa_size = -1;
+	options->channel_timeouts = NULL;
+	options->num_channel_timeouts = 0;
 	options->unused_connection_timeout = -1;
 }
 
@@ -550,6 +552,7 @@ fill_default_server_options(ServerOptions *options)
 	for (i = 0; i < options->num_host_cert_files; i++)
 		CLEAR_ON_NONE(options->host_cert_files[i]);
 
+	CLEAR_ON_NONE_ARRAY(channel_timeouts, num_channel_timeouts, "none");
 	CLEAR_ON_NONE_ARRAY(log_verbose, num_log_verbose, "none");
 	CLEAR_ON_NONE_ARRAY(auth_methods, num_auth_methods, "any");
 #undef CLEAR_ON_NONE
@@ -638,7 +641,7 @@ typedef enum {
 	sStreamLocalBindMask, sStreamLocalBindUnlink,
 	sAllowStreamLocalForwarding, sFingerprintHash, sDisableForwarding,
 	sExposeAuthInfo, sRDomain,
-	sRequiredRSASize, sUnusedConnectionTimeout,
+	sRequiredRSASize, sChannelTimeout, sUnusedConnectionTimeout,
 	sDeprecated, sIgnore, sUnsupported
 } ServerOpCodes;
 
@@ -820,6 +823,7 @@ static struct {
 #endif
 	{ "casignaturealgorithms", sCASignatureAlgorithms, SSHCFG_ALL },
 	{ "requiredrsasize", sRequiredRSASize, SSHCFG_ALL },
+	{ "channeltimeout", sChannelTimeout, SSHCFG_ALL },
 	{ "unusedconnectiontimeout", sUnusedConnectionTimeout, SSHCFG_ALL },
 	{ NULL, sBadOption, 0 }
 };
@@ -1083,6 +1087,58 @@ process_permitopen(struct ssh *ssh, ServerOptions *options)
 	process_permitopen_list(ssh, sPermitListen,
 	    options->permitted_listens,
 	    options->num_permitted_listens);
+}
+
+/* Parse a ChannelTimeout clause "pattern=interval" */
+static int
+parse_timeout(const char *s, char **typep, u_int *secsp)
+{
+	char *cp, *sdup;
+	int secs;
+
+	if (typep != NULL)
+		*typep = NULL;
+	if (secsp != NULL)
+		*secsp = 0;
+	if (s == NULL)
+		return -1;
+	sdup = xstrdup(s);
+
+	if ((cp = strchr(sdup, '=')) == NULL || cp == sdup) {
+		free(sdup);
+		return -1;
+	}
+	*cp++ = '\0';
+	if ((secs = convtime(cp)) < 0) {
+		free(sdup);
+		return -1;
+	}
+	/* success */
+	if (typep != NULL)
+		*typep = xstrdup(sdup);
+	if (secsp != NULL)
+		*secsp = (u_int)secs;
+	free(sdup);
+	return 0;
+}
+
+void
+process_channel_timeouts(struct ssh *ssh, ServerOptions *options)
+{
+	u_int i, secs;
+	char *type;
+
+	debug3_f("setting %u timeouts", options->num_channel_timeouts);
+	channel_clear_timeouts(ssh);
+	for (i = 0; i < options->num_channel_timeouts; i++) {
+		if (parse_timeout(options->channel_timeouts[i],
+		    &type, &secs) != 0) {
+			fatal_f("internal error: bad timeout %s",
+			    options->channel_timeouts[i]);
+		}
+		channel_add_timeout(ssh, type, secs);
+		free(type);
+	}
 }
 
 struct connection_info *
@@ -2748,6 +2804,30 @@ parse_string:
 		intptr = &options->required_rsa_size;
 		goto parse_int;
 
+	case sChannelTimeout:
+		found = options->num_channel_timeouts > 0;
+		i = 0;
+		while ((arg = argv_next(&ac, &av)) != NULL) {
+			/* Allow "none" only in first position */
+			if (strcasecmp(arg, "none") == 0) {
+				if (i > 0 || ac > 0) {
+					error("%s line %d: keyword %s \"none\" "
+					    "argument must appear alone.",
+					    filename, linenum, keyword);
+					goto out;
+				}
+			} else if (parse_timeout(arg, NULL, NULL) != 0) {
+				fatal("%s line %d: invalid channel timeout %s",
+				    filename, linenum, arg);
+			}
+			if (!*activep || found)
+				continue;
+			opt_array_append(filename, linenum, keyword,
+			    &options->channel_timeouts,
+			    &options->num_channel_timeouts, arg);
+		}
+		break;
+
 	case sUnusedConnectionTimeout:
 		intptr = &options->unused_connection_timeout;
 		/* peek at first arg for "none" so we can reuse parse_time */
@@ -3151,6 +3231,8 @@ dump_cfg_strarray_oneline(ServerOpCodes code, u_int count, char **vals)
 		switch(code) {
 		case sAuthenticationMethods:
 			def = " any"; break;
+		case sChannelTimeout:
+			def = " none"; break;
 		case sLogVerbose:
 			def = " none"; break;
 		default:
@@ -3353,6 +3435,8 @@ dump_config(ServerOptions *o)
 	    o->num_auth_methods, o->auth_methods);
 	dump_cfg_strarray_oneline(sLogVerbose,
 	    o->num_log_verbose, o->log_verbose);
+	dump_cfg_strarray_oneline(sChannelTimeout,
+	    o->num_channel_timeouts, o->channel_timeouts);
 
 	/* other arguments */
 	for (i = 0; i < o->num_subsystems; i++)

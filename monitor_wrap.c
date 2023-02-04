@@ -1,4 +1,4 @@
-/* $OpenBSD: monitor_wrap.c,v 1.125 2022/06/15 16:08:25 djm Exp $ */
+/* $OpenBSD: monitor_wrap.c,v 1.126 2023/01/06 02:47:18 djm Exp $ */
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * Copyright 2002 Markus Friedl <markus@openbsd.org>
@@ -354,6 +354,7 @@ out:
 	log_change_level(options.log_level);
 	log_verbose_init(options.log_verbose, options.num_log_verbose);
 	process_permitopen(ssh, &options);
+	process_channel_timeouts(ssh, &options);
 	free(newopts);
 
 	sshbuf_free(m);
