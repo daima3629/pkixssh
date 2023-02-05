@@ -15,6 +15,8 @@ clean: ldap_clean
 	-rm -f ca-3.*.log
 	-rm -f va-*.log
 	-rm -f sshd_x509.log
+	-rm -f ssh_askpass-p12
+
 
 distclean: clean
 	-rm -f Makefile

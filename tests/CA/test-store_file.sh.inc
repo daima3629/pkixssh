@@ -28,6 +28,8 @@
 #
 
 
+SSH_ASKPASS=`pwd`/ssh_askpass-p12
+
 # ===
 #env. vars:
 #  SSH_CLIENTKEY
@@ -72,7 +74,6 @@ EOF
 
   runSSHdaemon || return $?
   (
-    SSH_ASKPASS=`pwd`/ssh_askpass-p12
     SSH_ASKPASS_REQUIRE=force
     export SSH_ASKPASS SSH_ASKPASS_REQUIRE
 
@@ -87,5 +88,6 @@ EOF
     done
   ); retval=$?
   killSSHdaemon
+  rm -f $SSH_ASKPASS
   return $retval
 }
