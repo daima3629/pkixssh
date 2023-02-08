@@ -1,6 +1,6 @@
                                                           Roumen Petrov
                                                         Sofia, Bulgaria
-                                                        Sun Jan 29 2023
+                                                         Wed Feb 8 2023
 
 How to use X.509 certificates with SSH?
 
@@ -22,7 +22,9 @@ with certificates from X.509 store are used to build chain of X.509
 certificates leading to a trusted certificate authority if required by
 public key algorithm format. Those algorithms are defined in RFC6187.
 Supported are x509v3-ecdsa-sha2-*, x509v3-rsa2048-sha256,
-x509v3-ssh-rsa and x509v3-ssh-dss.
+x509v3-ssh-rsa and x509v3-ssh-dss. Algorithm x509v3-ssh-ed25519 uses
+public key format described in RFC6187 signature format described
+in RFC8709.
 
 
 1.) server configuration:
