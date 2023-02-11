@@ -1,4 +1,4 @@
-/* $OpenBSD: hostfile.c,v 1.92 2021/10/02 03:17:01 dtucker Exp $ */
+/* $OpenBSD: hostfile.c,v 1.94 2023/02/09 09:54:11 dtucker Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -14,7 +14,7 @@
  *
  * Copyright (c) 1999, 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 1999 Niels Provos.  All rights reserved.
- * Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2023 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -63,6 +63,11 @@
 #include "digest.h"
 #include "hmac.h"
 #include "ssh-x509.h"
+
+#undef CHPUT
+#undef CHNL
+#define CHPUT(v)	((int)(unsigned char)v)
+#define CHNL		CHPUT('\n')
 
 struct hostkeys {
 	struct hostkey_entry *entries;
@@ -491,7 +496,7 @@ write_host_entry(FILE *f, const char *host, const char *ip,
 		success = 1;
 	else
 		error_fr(r, "sshkey_write");
-	fputc('\n', f);
+	fputc(CHNL, f);
 	/* If hashing is enabled, the IP address needs to go on its own line */
 	if (success && store_hash && ip != NULL)
 		success = write_host_entry(f, ip, NULL, key, 1);
@@ -553,9 +558,17 @@ add_host_to_hostfile(const char *filename, const char *host,
 	if (key == NULL)
 		return 1;	/* XXX ? */
 	hostfile_create_user_ssh_dir(filename, 0);
-	f = fopen(filename, "a");
+	f = fopen(filename, "a+");
 	if (!f)
 		return 0;
+	/* Make sure we have a terminating newline. */
+	if (fseek(f, -1L, SEEK_END) == 0 && fgetc(f) != CHNL)
+		if (fputc(CHNL, f) != CHNL) {
+			error("Failed to add terminating newline to %s: %s",
+			   filename, strerror(errno));
+			fclose(f);
+			return 0;
+		}
 	success = write_host_entry(f, host, NULL, key, store_hash);
 	fclose(f);
 	return success;
