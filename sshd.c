@@ -1713,6 +1713,21 @@ prepare_proctitle(int ac, char **av)
 	return ret;
 }
 
+static void
+print_config(struct ssh *ssh, struct connection_info *connection_info)
+{
+	/*
+	 * If no connection info was provided by -C then use
+	 * use a blank one that will cause no predicate to match.
+	 */
+	if (connection_info == NULL)
+		connection_info = get_connection_info(ssh, 0, 0);
+	connection_info->test = 1;
+	parse_server_match_config(&options, &includes, connection_info);
+	dump_config(&options);
+	exit(0);
+}
+
 /*
  * Main program for the daemon.
  */
@@ -2205,17 +2220,8 @@ main(int ac, char **av)
 			    "world-writable.", _PATH_PRIVSEP_CHROOT_DIR);
 	}
 
-	if (test_flag > 1) {
-		/*
-		 * If no connection info was provided by -C then use
-		 * use a blank one that will cause no predicate to match.
-		 */
-		if (connection_info == NULL)
-			connection_info = get_connection_info(ssh, 0, 0);
-		connection_info->test = 1;
-		parse_server_match_config(&options, &includes, connection_info);
-		dump_config(&options);
-	}
+	if (test_flag > 1)
+		print_config(ssh, connection_info);
 
 	/* Configuration looks good, so exit if in test mode. */
 	if (test_flag)
