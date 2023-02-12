@@ -5013,8 +5013,6 @@ AC_ARG_WITH([kerberos5],
 					 K5LIBS="$K5LIBS -lcom_err -lasn1"
 					 AC_CHECK_LIB([roken], [net_write],
 					   [K5LIBS="$K5LIBS -lroken"])
-					 AC_CHECK_LIB([des], [des_cbc_encrypt],
-					   [K5LIBS="$K5LIBS -ldes"])
 				       ], [ AC_MSG_RESULT([no])
 					 K5LIBS="-lkrb5 -lk5crypto -lcom_err"
 			])
