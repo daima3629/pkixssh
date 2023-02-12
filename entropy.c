@@ -59,37 +59,6 @@ int ssh_compatible_openssl(long headerver, long libver);
  */
 #ifndef OPENSSL_PRNG_ONLY
 extern int seed_from_prngd(unsigned char *, size_t);
-
-void
-rexec_send_rng_seed(struct sshbuf *m)
-{
-	u_char buf[RANDOM_SEED_SIZE];
-	size_t len = sizeof(buf);
-	int r;
-
-	if (RAND_bytes(buf, sizeof(buf)) <= 0) {
-		error("Couldn't obtain random bytes (error %ld)",
-		    ERR_get_error());
-		len = 0;
-	}
-	if ((r = sshbuf_put_string(m, buf, len)) != 0)
-		fatal_fr(r, "buffer error");
-	explicit_bzero(buf, sizeof(buf));
-}
-
-void
-rexec_recv_rng_seed(struct sshbuf *m)
-{
-	const u_char *buf = NULL;
-	size_t len = 0;
-	int r;
-
-	if ((r = sshbuf_get_string_direct(m, &buf, &len)) != 0)
-		fatal_fr(r, "buffer error");
-
-	debug3_f("seeding rng with %zu bytes", len);
-	RAND_add(buf, len, len);
-}
 #endif /* OPENSSL_PRNG_ONLY */
 
 void
