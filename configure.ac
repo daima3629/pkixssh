@@ -5032,21 +5032,6 @@ AC_ARG_WITH([kerberos5],
 						AC_MSG_WARN([Cannot find any suitable gss-api library - build may fail]))
 					])
 				])
-
-			AC_CHECK_HEADER([gssapi.h], ,
-				[ unset ac_cv_header_gssapi_h
-				  CPPFLAGS="$CPPFLAGS -I${KRB5ROOT}/include/gssapi"
-				  AC_CHECK_HEADERS([gssapi.h], ,
-					AC_MSG_WARN([Cannot find any suitable gss-api header - build may fail])
-				  )
-				]
-			)
-
-			oldCPP="$CPPFLAGS"
-			CPPFLAGS="$CPPFLAGS -I${KRB5ROOT}/include/gssapi"
-			AC_CHECK_HEADER([gssapi_krb5.h], ,
-					[ CPPFLAGS="$oldCPP" ])
-
 		fi
 		if test -n "${rpath_opt}" ; then
 			LDFLAGS="$LDFLAGS ${rpath_opt}${KRB5ROOT}/lib"
