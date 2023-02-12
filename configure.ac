@@ -3524,7 +3524,8 @@ AC_CHECK_FUNCS([ \
 
 # Check whether OpenSSL seeds itself
 if test "x$openssl" = "xyes" ; then
-	AC_MSG_CHECKING([whether OpenSSL's PRNG is internally seeded])
+	AC_CACHE_CHECK([whether OpenSSL's PRNG is internally seeded],
+	[ssh_cv_openssl_seeds_itself], [
 	AC_RUN_IFELSE(
 		[AC_LANG_PROGRAM([[
 	#include <openssl/rand.h>
@@ -3546,6 +3547,7 @@ if test "x$openssl" = "xyes" ; then
 			OPENSSL_SEEDS_ITSELF=yes
 		]
 	)
+	])
 fi
 
 # PRNGD TCP socket
