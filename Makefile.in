@@ -198,9 +198,10 @@ configure-check: $(srcdir)/configure
 
 $(srcdir)/configure: \
 	$(srcdir)/m4/android.m4 \
+	$(srcdir)/m4/c.m4 \
 	$(srcdir)/m4/ldap.m4 \
-	$(srcdir)/configure.ac \
-	$(srcdir)/m4/local.m4
+	$(srcdir)/m4/local.m4 \
+	$(srcdir)/configure.ac
 	@(echo; echo " ERROR: $@ is out of date; please re-genenarate (and configure)"; echo) 1>&2
 	@exit 1
 

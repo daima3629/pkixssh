@@ -19,6 +19,17 @@ m4_include([version.m4])
 
 AC_INIT([SSH_PACKAGE], [SSH_VERSION], [SSH_BUGREPORT], [openssh], [SSH_URL])
 AC_CONFIG_SRCDIR([ssh.c])
+
+dnl check for stale configure as early as possible
+for i in $srcdir/version.m4 $srcdir/m4/*.m4 $srcdir/configure.ac ; do
+	AS_IF([test "$i" -nt "$srcdir/configure"], [
+		AC_MSG_ERROR([configure older than $i
+
+*** Please re-genenarate and configure ***
+		])
+	])
+done
+
 m4_include([m4/c.m4])
 m4_include([m4/local.m4])
 m4_include([m4/ldap.m4])
