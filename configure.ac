@@ -609,6 +609,7 @@ AH_TEMPLATE([BROKEN_ONE_BYTE_DIRENT_D_NAME],
 AH_TEMPLATE([BROKEN_GLOB], [Define to 1 if system glob(3) does not do what we expect])
 AH_TEMPLATE([SSHD_ACQUIRES_CTTY],
     [Define to 1 if sshd somehow reacquires a controlling TTY after setsid()])
+AH_TEMPLATE([GSSAPI], [Define this if you want GSSAPI support])
 
 # Messages for features tested for in target-specific section
 SIA_MSG="no"
@@ -4979,9 +4980,7 @@ AC_ARG_WITH([kerberos5],
 			AC_MSG_CHECKING([for gssapi support])
 			if $KRB5CONF | grep gssapi >/dev/null ; then
 				AC_MSG_RESULT([yes])
-				AC_DEFINE([GSSAPI], [1],
-					[Define this if you want GSSAPI
-					support in the version 2 protocol])
+				AC_DEFINE([GSSAPI], [1])
 				GSSCFLAGS="`$KRB5CONF --cflags gssapi`"
 				GSSLIBS="`$KRB5CONF --libs gssapi`"
 				CPPFLAGS="$CPPFLAGS $GSSCFLAGS"
@@ -5015,13 +5014,13 @@ AC_ARG_WITH([kerberos5],
 			AC_SEARCH_LIBS([dn_expand], [resolv])
 
 			AC_CHECK_LIB([gssapi_krb5], [gss_init_sec_context],
-				[ AC_DEFINE([GSSAPI])
+				[ AC_DEFINE([GSSAPI], [1])
 				  GSSLIBS="-lgssapi_krb5" ],
 				[ AC_CHECK_LIB([gssapi], [gss_init_sec_context],
-					[ AC_DEFINE([GSSAPI])
+					[ AC_DEFINE([GSSAPI], [1])
 					  GSSLIBS="-lgssapi" ],
 					[ AC_CHECK_LIB([gss], [gss_init_sec_context],
-						[ AC_DEFINE([GSSAPI])
+						[ AC_DEFINE([GSSAPI], [1])
 						  GSSLIBS="-lgss" ],
 						AC_MSG_WARN([Cannot find any suitable gss-api library - build may fail]))
 					])
