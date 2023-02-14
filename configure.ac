@@ -3533,20 +3533,16 @@ if test "x$openssl" = "xyes" ; then
 		if (RAND_status() != 1)
 			return 1;
 		]])],
-		[
-			OPENSSL_SEEDS_ITSELF=yes
-			AC_MSG_RESULT([yes])
-		],
-		[
-			AC_MSG_RESULT([no])
-		],
-		[
-			AC_MSG_WARN([cross compiling: assuming yes])
-			# This is safe, since we will fatal() at runtime if
-			# OpenSSL is not seeded correctly.
-			OPENSSL_SEEDS_ITSELF=yes
-		]
+		[ssh_cv_openssl_seeds_itself=yes],
+		[ssh_cv_openssl_seeds_itself=no],
+		[ssh_cv_openssl_seeds_itself=cross]
 	)
+	])
+	AS_IF([test "x$ssh_cv_openssl_seeds_itself" = "xcross"], [
+		AC_MSG_WARN([cross compiling: assuming internally seeded])
+		# This is safe, since program call fatal() at runtime if
+		# OpenSSL is not seeded correctly.
+		ssh_cv_openssl_seeds_itself=yes
 	])
 fi
 
@@ -3604,7 +3600,7 @@ AC_ARG_WITH([prngd-socket],
 	],
 	[
 		# Check for existing socket only if we don't have a random device already
-		if test "x$OPENSSL_SEEDS_ITSELF" != "xyes" ; then
+		if test "x$ssh_cv_openssl_seeds_itself" != "xyes" ; then
 			AC_MSG_CHECKING([for PRNGD/EGD socket])
 			# Insert other locations here
 			for sock in /var/run/egd-pool /dev/egd-pool /etc/entropy; do
@@ -3628,7 +3624,7 @@ if test ! -z "$PRNGD_PORT" ; then
 	RAND_MSG="PRNGd port $PRNGD_PORT"
 elif test ! -z "$PRNGD_SOCKET" ; then
 	RAND_MSG="PRNGd socket $PRNGD_SOCKET"
-elif test ! -z "$OPENSSL_SEEDS_ITSELF" ; then
+elif test "x$ssh_cv_openssl_seeds_itself" = "xyes" ; then
 	AC_DEFINE([OPENSSL_PRNG_ONLY], [1],
 		[Define if you want the OpenSSL internally seeded PRNG only])
 	RAND_MSG="OpenSSL internal ONLY"
