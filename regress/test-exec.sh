@@ -106,6 +106,23 @@ SCP_MODES=${SCP_MODES-scp sftp}
 # Set by make_tmpdir() on demand (below).
 SSH_REGRESS_TMP=
 
+# which compatible shell function
+which()
+{
+	saved_IFS="$IFS"
+	IFS=":"
+	for i in $PATH ; do
+		if test -x "$i/$1" ; then
+			IFS="$saved_IFS"
+			echo "$i/$1"
+			return 0
+		fi
+	done
+	IFS="$saved_IFS"
+	echo "which: no $1 in ($PATH)" >&2
+	return 1
+}
+
 # Interop testing
 PLINK=${PLINK-plink}
 PUTTYGEN=${PUTTYGEN-puttygen}
@@ -308,17 +325,7 @@ unset OPENSSL_FIPS || :
 # Portable specific functions
 have_prog()
 {
-	saved_IFS="$IFS"
-	IFS=":"
-	for i in $PATH
-	do
-		if [ -x $i/$1 ]; then
-			IFS="$saved_IFS"
-			return 0
-		fi
-	done
-	IFS="$saved_IFS"
-	return 1
+	which "$1" >/dev/null 2>&1
 }
 
 jot() {
