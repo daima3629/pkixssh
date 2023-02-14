@@ -1,4 +1,4 @@
-/* $OpenBSD: sshd.c,v 1.596 2023/01/18 01:50:21 millert Exp $ */
+/* $OpenBSD: sshd.c,v 1.597 2023/02/10 04:47:19 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -1071,7 +1071,7 @@ usage(void)
 {
 	fprintf(stderr, "%s, %s\n", SSH_RELEASE, ssh_OpenSSL_version_text());
 	fprintf(stderr,
-"usage: sshd [-46DdeiqTtV] [-C connection_spec] [-c host_cert_file]\n"
+"usage: sshd [-46DdeGiqTtV] [-C connection_spec] [-c host_cert_file]\n"
 "            [-E log_file] [-f config_file] [-g login_grace_time]\n"
 "            [-h host_key_file] [-o option] [-p port] [-u len]\n"
 	);
@@ -1730,7 +1730,7 @@ main(int ac, char **av)
 	struct ssh *ssh = NULL;
 	extern char *optarg;
 	extern int optind;
-	int r, opt, on = 1, already_daemon, remote_port;
+	int r, opt, on = 1, do_dump_cfg = 0, already_daemon, remote_port;
 	int sock_in = -1, sock_out = -1, newsock = -1;
 	const char *remote_ip, *rdomain;
 	char *fp, *line, *laddr, *logfile = NULL;
@@ -1807,7 +1807,7 @@ main(int ac, char **av)
 
 	/* Parse command-line arguments. */
 	while ((opt = getopt(ac, av,
-	    "C:E:b:c:f:g:h:k:o:p:u:46DQRTdeiqrtV")) != -1) {
+	    "C:E:b:c:f:g:h:k:o:p:u:46DGQRTdeiqrtV")) != -1) {
 		switch (opt) {
 		case '4':
 			options.address_family = AF_INET;
@@ -1831,6 +1831,9 @@ main(int ac, char **av)
 			break;
 		case 'D':
 			no_daemon_flag = 1;
+			break;
+		case 'G':
+			do_dump_cfg = 1;
 			break;
 		case 'E':
 			logfile = optarg;
@@ -1927,7 +1930,7 @@ main(int ac, char **av)
 	}
 	if (rexeced_flag || inetd_flag)
 		rexec_flag = 0;
-	if (!test_flag && rexec_flag && !path_absolute(av[0]))
+	if (!test_flag && !do_dump_cfg && rexec_flag && !path_absolute(av[0]))
 		fatal("sshd re-exec requires execution with an absolute path");
 	if (rexeced_flag)
 		closefrom(REEXEC_MIN_FREE_FD);
@@ -2034,6 +2037,9 @@ main(int ac, char **av)
 	}
 
 	debug("sshd version %s, %s", SSH_RELEASE, ssh_OpenSSL_version_text());
+
+	if (do_dump_cfg)
+		print_config(ssh, connection_info);
 
 	/* Store privilege separation user for later use if required. */
 	privsep_chroot = use_privsep && (getuid() == 0 || geteuid() == 0);
