@@ -5037,8 +5037,14 @@ AC_ARG_WITH([kerberos5],
 		AC_CHECK_HEADERS([gssapi_krb5.h gssapi/gssapi_krb5.h])
 		AC_CHECK_HEADERS([gssapi_generic.h gssapi/gssapi_generic.h])
 
-		AC_SEARCH_LIBS([k_hasafs], [kafs], [AC_DEFINE([USE_AFS], [1],
-			[Define this if you want to use libkafs' AFS support])])
+		saved_LIBS="$LIBS"
+		LIBS="$LIBS $K5LIBS"
+		AC_CHECK_LIB([kafs], [k_hasafs], [
+			# if -L is from "config" => append library :(
+			K5LIBS="$K5LIBS -lkafs"
+			AC_DEFINE([USE_AFS], [1], [Define this if you want to use libkafs' AFS support])
+		])
+		LIBS="$saved_LIBS"
 
 		AC_CHECK_DECLS([GSS_C_NT_HOSTBASED_SERVICE], [], [], [[
 #ifdef HAVE_GSSAPI_H
