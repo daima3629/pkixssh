@@ -4958,35 +4958,45 @@ AC_SUBST([SSHDLIBS])
 # Check whether user wants Kerberos 5 support
 KRB5_MSG="no"
 AC_ARG_WITH([kerberos5],
-	[  --with-kerberos5=PATH   Enable Kerberos 5 support],
-	[ if test "x$withval" != "xno" ; then
-		if test "x$withval" = "xyes" ; then
+	[AS_HELP_STRING([--with-kerberos5@<:@=PATH@:>@],
+		[Enable Kerberos 5 support])],
+	[AS_IF([test "x$withval" != "xno"], [
+		defect_krb5=config
+		AS_IF([test "x$withval" = "xyes"], [
 			KRB5ROOT="/usr/local"
-		else
+		], [
 			KRB5ROOT=${withval}
-		fi
+		])
 
 		AC_DEFINE([KRB5], [1], [Define if you want Kerberos 5 support])
 		KRB5_MSG="yes"
 
-		AC_PATH_TOOL([KRB5CONF], [krb5-config],
-			     [$KRB5ROOT/bin/krb5-config],
+		AS_IF([test "x$defect_krb5" == "xconfig"], [
+			AC_PATH_TOOL([KRB5CONF], [krb5-config],
+			     [false],
 			     [$KRB5ROOT/bin:$PATH])
-		if test -x $KRB5CONF ; then
+			AS_IF([$KRB5CONF --version > /dev/null 2>&1], [
+			], [
+				defect_krb5=direct
+			])
+		])
+
+		AS_IF([test "x$defect_krb5" == "xconfig"], [
 			K5CFLAGS="`$KRB5CONF --cflags`"
 			K5LIBS="`$KRB5CONF --libs`"
 			CPPFLAGS="$CPPFLAGS $K5CFLAGS"
 
 			AC_MSG_CHECKING([for gssapi support])
-			if $KRB5CONF | grep gssapi >/dev/null ; then
+			AS_IF([$KRB5CONF | grep gssapi >/dev/null], [
 				AC_MSG_RESULT([yes])
 				AC_DEFINE([GSSAPI], [1])
 				GSSCFLAGS="`$KRB5CONF --cflags gssapi`"
 				GSSLIBS="`$KRB5CONF --libs gssapi`"
 				CPPFLAGS="$CPPFLAGS $GSSCFLAGS"
-			else
+			], [
 				AC_MSG_RESULT([no])
-			fi
+			])
+
 			AC_MSG_CHECKING([whether we are using Heimdal])
 			AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[ #include <krb5.h>
 				]], [[ char *tmp = heimdal_version; ]])],
@@ -4996,7 +5006,7 @@ AC_ARG_WITH([kerberos5],
 				version of Kerberos V5]) ],
 				[AC_MSG_RESULT([no])
 			])
-		else
+		], [
 			CPPFLAGS="$CPPFLAGS -I${KRB5ROOT}/include"
 			LDFLAGS="$LDFLAGS -L${KRB5ROOT}/lib"
 			AC_MSG_CHECKING([whether we are using Heimdal])
@@ -5025,13 +5035,14 @@ AC_ARG_WITH([kerberos5],
 						AC_MSG_WARN([Cannot find any suitable gss-api library - build may fail]))
 					])
 				])
-		fi
-		if test -n "${rpath_opt}" ; then
-			LDFLAGS="$LDFLAGS ${rpath_opt}${KRB5ROOT}/lib"
-		fi
-		if test ! -z "$blibpath" ; then
-			blibpath="$blibpath:${KRB5ROOT}/lib"
-		fi
+
+			AS_IF([test -n "$rpath_opt"], [
+				LDFLAGS="$LDFLAGS $rpath_opt$KRB5ROOT/lib"
+			])
+			AS_IF([test ! -z "$blibpath"], [
+				blibpath="$blibpath:$KRB5ROOT/lib"
+			])
+		])
 
 		AC_CHECK_HEADERS([gssapi.h gssapi/gssapi.h])
 		AC_CHECK_HEADERS([gssapi_krb5.h gssapi/gssapi_krb5.h])
@@ -5063,9 +5074,7 @@ AC_ARG_WITH([kerberos5],
 		LIBS="$LIBS $K5LIBS"
 		AC_CHECK_FUNCS([krb5_cc_new_unique krb5_get_error_message krb5_free_error_message])
 		LIBS="$saved_LIBS"
-
-	fi
-	]
+	])]
 )
 AC_SUBST([GSSLIBS])
 AC_SUBST([K5LIBS])
