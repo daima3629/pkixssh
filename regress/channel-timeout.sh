@@ -58,7 +58,7 @@ verbose "sftp no timeout"
  echo "Subsystem sftp $SFTPSUBSYS" ) > $OBJ/sshd_proxy
 
 rm -f ${COPY}
-$SFTP -qS $SSH -F $OBJ/ssh_proxy somehost:$DATA $COPY
+$SFTP -qS $SSH -F $OBJ/ssh_proxy somehost:$DATA $COPY >>$TEST_REGRESS_LOGFILE 2>&1
 r=$?
 if [ $r -ne 0 ]; then
 	fail "sftp failed"
@@ -71,7 +71,7 @@ verbose "sftp timeout"
  echo "Subsystem sftp $SFTPSUBSYS" ) > $OBJ/sshd_proxy
 
 rm -f ${COPY}
-$SFTP -qS $SSH -F $OBJ/ssh_proxy somehost:$DATA $COPY
+$SFTP -qS $SSH -F $OBJ/ssh_proxy somehost:$DATA $COPY >>$TEST_REGRESS_LOGFILE 2>&1
 r=$?
 if [ $r -eq 0 ]; then
 	fail "sftp succeeded unexpectedly"
@@ -84,7 +84,7 @@ verbose "sftp irrelevant timeout"
  echo "Subsystem sftp $SFTPSUBSYS" ) > $OBJ/sshd_proxy
 
 rm -f ${COPY}
-$SFTP -qS $SSH -F $OBJ/ssh_proxy somehost:$DATA $COPY
+$SFTP -qS $SSH -F $OBJ/ssh_proxy somehost:$DATA $COPY >>$TEST_REGRESS_LOGFILE 2>&1
 r=$?
 if [ $r -ne 0 ]; then
 	fail "sftp failed"
