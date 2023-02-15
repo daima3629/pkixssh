@@ -4956,6 +4956,21 @@ AC_ARG_WITH([selinux],
 AC_SUBST([SSHDLIBS])
 
 # Check whether user wants Kerberos 5 support
+AC_DEFUN([SSH_KRB5_IMPLEMENTATION],
+[
+	AC_MSG_CHECKING([whether we are using Heimdal])
+	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+#include <krb5.h>
+	]], [[
+char *tmp = heimdal_version;
+	]])],
+	[ AC_MSG_RESULT([yes])
+	  krb5_implementation=heimdal],
+	[ AC_MSG_RESULT([no])
+	  krb5_implementation=mit
+	])
+])
+
 KRB5_MSG="no"
 AC_ARG_WITH([kerberos5],
 	[AS_HELP_STRING([--with-kerberos5@<:@=PATH@:>@],
@@ -4997,31 +5012,19 @@ AC_ARG_WITH([kerberos5],
 				AC_MSG_RESULT([no])
 			])
 
-			AC_MSG_CHECKING([whether we are using Heimdal])
-			AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[ #include <krb5.h>
-				]], [[ char *tmp = heimdal_version; ]])],
-				[ AC_MSG_RESULT([yes])
-				AC_DEFINE([HEIMDAL], [1],
-				[Define this if you are using the Heimdal
-				version of Kerberos V5]) ],
-				[AC_MSG_RESULT([no])
-			])
+			SSH_KRB5_IMPLEMENTATION
 		], [
 			CPPFLAGS="$CPPFLAGS -I${KRB5ROOT}/include"
 			LDFLAGS="$LDFLAGS -L${KRB5ROOT}/lib"
-			AC_MSG_CHECKING([whether we are using Heimdal])
-			AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[ #include <krb5.h>
-				]], [[ char *tmp = heimdal_version; ]])],
-					[ AC_MSG_RESULT([yes])
-					 AC_DEFINE([HEIMDAL])
-					 K5LIBS="-lkrb5"
-					 K5LIBS="$K5LIBS -lcom_err -lasn1"
-					 AC_CHECK_LIB([roken], [net_write],
-					   [K5LIBS="$K5LIBS -lroken"])
-				       ], [ AC_MSG_RESULT([no])
-					 K5LIBS="-lkrb5 -lk5crypto -lcom_err"
+
+			SSH_KRB5_IMPLEMENTATION
+			AS_IF([test "x$krb5_implementation" = "xheimdal"], [
+				K5LIBS="-lkrb5 -lasn1 -lroken -lcom_err"
+				dnl dn_expand required by roken library
+				AC_SEARCH_LIBS([dn_expand], [resolv])
+			], [
+				K5LIBS="-lkrb5 -lk5crypto -lcom_err"
 			])
-			AC_SEARCH_LIBS([dn_expand], [resolv])
 
 			AC_CHECK_LIB([gssapi_krb5], [gss_init_sec_context],
 				[ AC_DEFINE([GSSAPI], [1])
@@ -5042,6 +5045,11 @@ AC_ARG_WITH([kerberos5],
 			AS_IF([test ! -z "$blibpath"], [
 				blibpath="$blibpath:$KRB5ROOT/lib"
 			])
+		])
+
+		AS_IF([test "x$krb5_implementation" = "xheimdal"], [
+			AC_DEFINE([HEIMDAL], [1],
+			    [Define this if you are using the Heimdal version of Kerberos V5])
 		])
 
 		AC_CHECK_HEADERS([gssapi.h gssapi/gssapi.h])
@@ -5099,26 +5107,36 @@ AS_IF([$ssh_ocsp], [
 AS_IF([$ssh_ocsp], [
 	save_LIBS="$LIBS"
 	AC_MSG_CHECKING([how to link programs using OpenSSL OCSP functions])
-	AS_IF([test -n "$SSL_K5LIBS"], [
-		SSL_K5LIBS=$K5LIBS
+	AS_IF([test -n "$K5LIBS"], [
+		SSL_K5LIBS="$K5LIBS"
+		SSL_K5LIBS_MIT=
+		SSL_K5LIBS_HEIMDAL=
 	], [
-		SSL_K5LIBS="-lkrb5 -lk5crypto -lcom_err"
+		SSL_K5LIBS=
+		SSL_K5LIBS_MIT="-lkrb5 -lk5crypto -lcom_err"
+		SSL_K5LIBS_HEIMDAL="-lkrb5 -lroken -lasn1 -lcom_err"
 	])
 	link_SSL=false
-	for L in "" "$SSL_K5LIBS" ; do
+	# first check is without extra libraries
+	link_SSL_first_pass=false
+	for L in "" "$SSL_K5LIBS" "$SSL_K5LIBS_MIT" "$SSL_K5LIBS_HEIMDAL"; do
+		AS_IF([$link_SSL_first_pass && test -z "$L"], [
+			continue
+		])
 		LIBS="-lssl $L $CRYPTO_LIBS $save_LIBS"
 		AC_LINK_IFELSE([
 			AC_LANG_PROGRAM([[
 #include <openssl/ssl.h>
-]], [[
+			]], [[
 #ifdef HAVE_OPENSSL_INIT_CRYPTO
   OPENSSL_init_ssl(0, NULL);
 #else
   SSL_library_init();
 #endif
-]])],
+			]])],
 			[link_SSL=:]
 		)
+		link_SSL_first_pass=:
 		$link_SSL && break
 	done
 	AS_IF([$link_SSL], [
