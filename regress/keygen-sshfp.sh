@@ -1,9 +1,36 @@
-#	$OpenBSD: keygen-sshfp.sh,v 1.2 2021/07/19 02:29:28 dtucker Exp $
+#	$OpenBSD: keygen-sshfp.sh,v 1.3 2023/02/10 05:06:03 djm Exp $
 #	Placed in the Public Domain.
 
 tid="keygen-sshfp"
 
 trace "keygen fingerprints"
+
+# Expect N lines of output without an explicit algorithm
+if config_defined HAVE_EVP_SHA256 ; then
+	N=2
+else
+	N=1
+fi
+fp=`${SSHKEYGEN} -r test -f ${SRC}/ed25519_openssh.pub | wc -l`
+if test "x$fp" -ne "x$N" ; then
+	fail "incorrect number of SSHFP records $fp (expected 2)"
+fi
+
+# Test explicit algorithm selection
+exp="test IN SSHFP 4 1 8a8647a7567e202ce317e62606c799c53d4c121f"
+fp=`${SSHKEYGEN} -Ohashalg=sha1 -r test -f ${SRC}/ed25519_openssh.pub`
+if test "x$exp" != "x$fp" test ; then
+	fail "incorrect SHA1 SSHFP output"
+fi
+
+if config_defined HAVE_EVP_SHA256 ; then
+exp="test IN SSHFP 4 2 54a506fb849aafb9f229cf78a94436c281efcb4ae67c8a430e8c06afcb5ee18f"
+fp=`${SSHKEYGEN} -Ohashalg=sha256 -r test -f ${SRC}/ed25519_openssh.pub`
+if test "x$exp" != "x$fp" test ; then
+	fail "incorrect SHA256 SSHFP output"
+fi
+fi
+
 for k in $SSH_KEYTYPES ; do
 	case $k in
 	ssh-ed25519)

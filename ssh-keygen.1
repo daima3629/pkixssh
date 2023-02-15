@@ -1,4 +1,4 @@
-.\"	$OpenBSD: ssh-keygen.1,v 1.226 2022/09/10 08:50:53 jsg Exp $
+.\"	$OpenBSD: ssh-keygen.1,v 1.227 2023/02/10 04:56:30 djm Exp $
 .\"
 .\" Author: Tatu Ylonen <ylo@cs.hut.fi>
 .\" Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -44,7 +44,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: December 17 2022 $
+.Dd $Mdocdate: February 10 2023 $
 .Dt SSH-KEYGEN 1
 .Os
 .Sh NAME
@@ -476,6 +476,21 @@ When performing moduli generation or screening, one of the options
 listed in the
 .Sx MODULI GENERATION
 section may be specified.
+.Pp
+When generating SSHFP DNS records from public keys using the
+.Fl r
+flag, the following options are accepted:
+.Bl -tag -width Ds
+.It Cm hashalg Ns = Ns Ar algorithm
+Selects a hash algorithm to use when printing SSHFP records using the
+.Fl D
+flag.
+Valid algorithms are
+.Dq sha1
+and
+.Dq sha256.
+The default is to print both.
+.El
 .Pp
 The
 .Fl O

@@ -1,9 +1,8 @@
-/* $OpenBSD: dns.h,v 1.19 2021/07/19 03:13:28 dtucker Exp $ */
-
+/* $OpenBSD: dns.h,v 1.20 2023/02/10 04:56:30 djm Exp $ */
 /*
  * Copyright (c) 2003 Wesley Griffin. All rights reserved.
  * Copyright (c) 2003 Jakob Schlyter. All rights reserved.
- * Copyright (c) 2005-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2005-2023 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -92,6 +91,6 @@ enum dns_key_algo {
 
 int	verify_host_key_dns(const char *, struct sockaddr *,
     const struct ssh_conn_info *, struct sshkey *, int *);
-int	export_dns_rr(const char *, struct sshkey *, FILE *, int);
+int	export_dns_rr(const char *, struct sshkey *, FILE *, int, int);
 
 #endif /* DNS_H */
