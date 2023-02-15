@@ -548,15 +548,12 @@ channel_close_fd(struct ssh *ssh, Channel *c, int id)
 	switch (id) {
 	case SSH_CHANNEL_FD_INPUT :
 		fdp = &c->rfd;
-		restore_block = ((c->restore_block & CHANNEL_RESTORE_RFD) != 0);
 		break;
 	case SSH_CHANNEL_FD_OUTPUT:
 		fdp = &c->wfd;
-		restore_block = ((c->restore_block & CHANNEL_RESTORE_WFD) != 0);
 		break;
 	case SSH_CHANNEL_FD_ERROR :
 		fdp = &c->efd;
-		restore_block = ((c->restore_block & CHANNEL_RESTORE_EFD) != 0);
 		break;
 	case SSH_CHANNEL_FD_SOCKET:
 		fdp = &c->sock;
@@ -565,6 +562,28 @@ channel_close_fd(struct ssh *ssh, Channel *c, int id)
 	if (fdp == NULL) return 0;
 	fd = *fdp;
 	if (fd == -1) return 0;
+
+	switch (id) {
+	case SSH_CHANNEL_FD_INPUT :
+		c->io_want &= ~SSH_CHAN_IO_RFD;
+		c->io_ready &= ~SSH_CHAN_IO_RFD;
+		restore_block = ((c->restore_block & CHANNEL_RESTORE_RFD) != 0);
+		break;
+	case SSH_CHANNEL_FD_OUTPUT:
+		c->io_want &= ~SSH_CHAN_IO_WFD;
+		c->io_ready &= ~SSH_CHAN_IO_WFD;
+		restore_block = ((c->restore_block & CHANNEL_RESTORE_WFD) != 0);
+		break;
+	case SSH_CHANNEL_FD_ERROR :
+		c->io_want &= ~SSH_CHAN_IO_EFD;
+		c->io_ready &= ~SSH_CHAN_IO_EFD;
+		restore_block = ((c->restore_block & CHANNEL_RESTORE_EFD) != 0);
+		break;
+	case SSH_CHANNEL_FD_SOCKET:
+		c->io_want &= ~SSH_CHAN_IO_SOCK;
+		c->io_ready &= ~SSH_CHAN_IO_SOCK;
+		break;
+	}
 
 	if (restore_block)
 		unset_nonblock(fd);
