@@ -2562,7 +2562,7 @@ usage(void)
 	    "       ssh-keygen -F hostname [-lv] [-f known_hosts_file]\n"
 	    "       ssh-keygen -H [-f known_hosts_file]\n"
 	    "       ssh-keygen -R hostname [-f known_hosts_file]\n"
-	    "       ssh-keygen -r hostname [-g] [-f input_keyfile]\n");
+	    "       ssh-keygen -r hostname [-g] [-f input_keyfile] [-O option]\n");
 #ifdef WITH_OPENSSL
 	fprintf(stderr,
 	    "       ssh-keygen -M generate [-O option] output_file\n"
