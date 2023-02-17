@@ -39,7 +39,7 @@
 /* #define unused		0x00000200 */
 /* #define unused		0x00000400 */
 #define SSH_BUG_SCANNER		0x00000800
-#define SSH_BUG_BIGENDIANAES	0x00001000
+/* #define unused		0x00001000 */
 #define SSH_BUG_RSASIGMD5	0x00002000
 #define SSH_OLD_DHGEX		0x00004000
 #define SSH_BUG_NOREKEY		0x00008000

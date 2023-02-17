@@ -140,8 +140,6 @@ compat_datafellows(const char *version)
 char *
 compat_cipher_proposal(struct ssh *ssh, char *cipher_prop)
 {
-	if (!ssh_compat_fellows(ssh, SSH_BUG_BIGENDIANAES))
-		return xstrdup(cipher_prop);
 	debug2_f("original cipher proposal: %s", cipher_prop);
 	if ((cipher_prop = match_filter_denylist(cipher_prop, "aes*")) == NULL)
 		fatal("match_filter_denylist failed");
