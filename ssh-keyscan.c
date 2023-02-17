@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keyscan.c,v 1.150 2023/02/10 04:56:30 djm Exp $ */
+/* $OpenBSD: ssh-keyscan.c,v 1.151 2023/02/10 06:41:53 jmc Exp $ */
 /*
  * Copyright 1995, 1996 by David Mazieres <dm@lcs.mit.edu>.
  *
@@ -492,7 +492,7 @@ congreet(int s)
 
 	/*
 	 * Read the server banner as per RFC4253 section 4.2.  The "SSH-"
-	 * protocol identification string may be preceeded by an arbitarily
+	 * protocol identification string may be preceeded by an arbitrarily
 	 * large banner which we must read and ignore.  Loop while reading
 	 * newline-terminated lines until we have one starting with "SSH-".
 	 * The ID string cannot be longer than 255 characters although the
@@ -702,8 +702,8 @@ static void
 usage(void)
 {
 	fprintf(stderr,
-	    "usage: %s [-46cDdHv] [-f file] [-p port] [-T timeout] [-t type]\n"
-	    "\t\t   [-O option] [host | addrlist namelist]\n",
+	    "usage: %s [-46cDdHv] [-f file] [-O option] [-p port] [-T timeout]\n"
+	    "\t\t   [-t type] [host | addrlist namelist]\n"
 	    __progname);
 	exit(1);
 }

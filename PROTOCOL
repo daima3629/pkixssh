@@ -462,7 +462,7 @@ This request asks the server to call fsync(2) on an open file handle.
 	string		"fsync@openssh.com"
 	string		handle
 
-One receiving this request, a server will call fsync(handle_fd) and will
+On receiving this request, a server will call fsync(handle_fd) and will
 respond with a SSH_FXP_STATUS message.
 
 This extension is advertised in the SSH_FXP_VERSION hello with version
