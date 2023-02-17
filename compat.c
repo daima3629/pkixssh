@@ -1,4 +1,4 @@
-/* $OpenBSD: compat.c,v 1.120 2022/07/01 03:35:45 dtucker Exp $ */
+/* $OpenBSD: compat.c,v 1.125 2023/02/17 04:22:50 dtucker Exp $ */
 /*
  * Copyright (c) 1999, 2000, 2001, 2002 Markus Friedl.  All rights reserved.
  * Copyright (c) 2017-2021 Roumen Petrov.  All rights reserved.
@@ -76,26 +76,8 @@ compat_datafellows(const char *version)
 		{ "3.0.*",		SSH_BUG_DEBUG },
 		{ "3.0 SecureCRT*",	SSH_OLD_SESSIONID },
 		{ "1.7 SecureFX*",	SSH_OLD_SESSIONID },
-		{ "1.2.18*,"
-		  "1.2.19*,"
-		  "1.2.20*,"
-		  "1.2.21*,"
-		  "1.2.22*",		SSH_BUG_IGNOREMSG },
-		{ "1.3.2*",		/* F-Secure */
-					SSH_BUG_IGNOREMSG },
 		{ "Cisco-1.*",		SSH_BUG_DHGEX_LARGE|
 					SSH_BUG_HOSTKEYS },
-		{ "*SSH Compatible Server*",			/* Netscreen */
-					SSH_BUG_PASSWORDPAD },
-		{ "*OSU_0*,"
-		  "OSU_1.0*,"
-		  "OSU_1.1*,"
-		  "OSU_1.2*,"
-		  "OSU_1.3*,"
-		  "OSU_1.4*,"
-		  "OSU_1.5alpha1*,"
-		  "OSU_1.5alpha2*,"
-		  "OSU_1.5alpha3*",	SSH_BUG_PASSWORDPAD },
 		{ "*SSH_Version_Mapper*",
 					SSH_BUG_SCANNER },
 		{ "PuTTY_Local:*,"	/* dev versions < Sep 2014 */
