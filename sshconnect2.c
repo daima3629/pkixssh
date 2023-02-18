@@ -1,4 +1,4 @@
-/* $OpenBSD: sshconnect2.c,v 1.361 2022/09/17 10:33:18 djm Exp $ */
+/* $OpenBSD: sshconnect2.c,v 1.362 2023/02/17 04:22:50 dtucker Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Damien Miller.  All rights reserved.
@@ -1728,12 +1728,6 @@ x509_cert:
 
 plain:	/* try "plain" key algorithm */
 	kt = sshkey_type_plain(kt);
-	if (kt == KEY_RSA &&
-	    ssh_compat_fellows(ssh, SSH_BUG_RSASIGMD5)) {
-		debug("Skipped %s key %s for RSA/MD5 server",
-		    sshkey_type(key), id->filename);
-		return (0);
-	}
 #ifdef HAVE_EVP_SHA256
 	if (kt == KEY_RSA && (kex->pkalgs != NULL)) {
 		/* server must announce support for following algorithms */

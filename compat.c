@@ -147,15 +147,7 @@ compat_cipher_proposal(struct ssh *ssh, char *cipher_prop)
 char *
 compat_pkalg_proposal(struct ssh *ssh, char *pkalg_prop)
 {
-	if (!ssh_compat_fellows(ssh, SSH_BUG_RSASIGMD5))
-		return xstrdup(pkalg_prop);
-	debug2_f("original public key proposal: %s", pkalg_prop);
-	if ((pkalg_prop = match_filter_denylist(pkalg_prop, "ssh-rsa")) == NULL)
-		fatal("match_filter_denylist failed");
-	debug2_f("compat public key proposal: %s", pkalg_prop);
-	if (*pkalg_prop == '\0')
-		fatal("No supported PK algorithms found");
-	return pkalg_prop;
+	return xstrdup(pkalg_prop);
 }
 
 /* Always returns pointer to allocated memory, caller must free. */
