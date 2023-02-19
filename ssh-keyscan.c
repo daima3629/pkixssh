@@ -703,7 +703,7 @@ usage(void)
 {
 	fprintf(stderr,
 	    "usage: %s [-46cDdHv] [-f file] [-O option] [-p port] [-T timeout]\n"
-	    "\t\t   [-t type] [host | addrlist namelist]\n"
+	    "\t\t   [-t type] [host | addrlist namelist]\n",
 	    __progname);
 	exit(1);
 }
