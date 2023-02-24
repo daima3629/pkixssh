@@ -140,6 +140,7 @@ compat_datafellows(const char *version)
 char *
 compat_cipher_proposal(struct ssh *ssh, char *cipher_prop)
 {
+	UNUSED(ssh);
 	return xstrdup(cipher_prop);
 }
 
@@ -147,6 +148,7 @@ compat_cipher_proposal(struct ssh *ssh, char *cipher_prop)
 char *
 compat_pkalg_proposal(struct ssh *ssh, char *pkalg_prop)
 {
+	UNUSED(ssh);
 	return xstrdup(pkalg_prop);
 }
 
