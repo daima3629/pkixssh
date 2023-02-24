@@ -1,7 +1,7 @@
-/* $OpenBSD: progressmeter.c,v 1.50 2020/01/23 07:10:22 dtucker Exp $ */
+/* $OpenBSD: progressmeter.c,v 1.51 2023/02/22 03:56:43 djm Exp $ */
 /*
  * Copyright (c) 2003 Nils Nordman.  All rights reserved.
- * Copyright (c) 2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2019-2023 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -45,16 +45,25 @@
 
 #define DEFAULT_WINSIZE 80
 #define MAX_WINSIZE 512
-#define PADDING 1		/* padding between the progress indicators */
 #define UPDATE_INTERVAL 1	/* update the progress meter every second */
 #define STALL_TIME 5		/* we're stalled after this many seconds */
 
+/* Progress format: {name+space(1)}[info(34)].
+ * Do not write to last column!
+ *
+ * Progress information part, items separated by space:
+ *  percent  : format "nnn% ", i.e. 4+1 characters
+ *  amount   : format "nnnnuu ", i.e. 6+1 characters
+ *  bandwidth: format "nnn.nuu/s ", i.e. 9+1 characters
+ *  ETA      : various formats, 12 characters
+ * , i.e. 34 ascii characters.
+ *
+ * NOTE: length counts trailing '\0'.
+ */
+#define PROGRESS_INFO_LEN	(34+1)
+
 /* determines whether we can output to the terminal */
 static int can_output(void);
-
-/* formats and inserts the specified size into the given buffer */
-static void format_size(char *, int, off_t);
-static void format_rate(char *, int, off_t);
 
 /* window resizing */
 static void sig_winch(int);
@@ -85,7 +94,7 @@ can_output(void)
 	return (getpgrp() == tcgetpgrp(STDOUT_FILENO));
 }
 
-static void
+static int
 format_rate(char *buf, int size, off_t bytes)
 {
 	int i;
@@ -97,30 +106,28 @@ format_rate(char *buf, int size, off_t bytes)
 		i++;
 		bytes = (bytes + 512) / 1024;
 	}
-	snprintf(buf, size, "%3lld.%1lld%c%s/s ",
+	return snprintf(buf, size, "%3lld.%1lld%c%c/s ",
 	    (long long) (bytes + 5) / 100,
 	    (long long) (bytes + 5) / 10 % 10,
-	    unit[i],
-	    i ? "B" : " ");
+	    unit[i], i > 0 ? 'B' : ' ');
 }
 
-static void
+static int
 format_size(char *buf, int size, off_t bytes)
 {
 	int i;
 
 	for (i = 0; bytes >= 10000 && unit[i] != 'T'; i++)
 		bytes = (bytes + 512) / 1024;
-	snprintf(buf, size, "%4lld%c%s ",
+	return snprintf(buf, size, "%4lld%c%c ",
 	    (long long) bytes,
-	    unit[i],
-	    i ? "B" : " ");
+	    unit[i], i > 0 ? 'B' : ' ');
 }
 
 void
 refresh_progress_meter(int force_update)
 {
-	char buf[MAX_WINSIZE + 1];
+	char buf[4 * MAX_WINSIZE + 1];
 	off_t transferred;
 	double elapsed, now;
 	off_t bytes_left;
@@ -163,36 +170,61 @@ refresh_progress_meter(int force_update)
 	} else
 		bytes_per_second = cur_speed;
 
+	last_update = now;
+
+	/* Skip output if cannot display the completion percentage at least.
+	 * NOTE: win_size counts trailing '\0'!
+	 */
+	if (win_size < 6) return;
+
 	buf[0] = '\r';
 	buf[1] = '\0';
 
 	/* filename */
-	if (win_size > 36) {
-		int file_len = win_size - 36;
+	if (win_size > (PROGRESS_INFO_LEN + 2)) {
+		int file_len = win_size - (PROGRESS_INFO_LEN + 2);
+	#if 0
+		/* TODO: lost space character from format! */
 		snmprintf(buf+1, sizeof(buf)-1, &file_len, "%-*s ",
 		    file_len, file);
+	#else
+		snmprintf(buf+1, sizeof(buf)-1, &file_len, "%-*s",
+		    file_len, file);
+		/* work-around */
+		strlcat(buf+1, " ", sizeof(buf)-1);
+	#endif
 	}
 
-	/* percent of transfer done */
+{	int ilen;
+	char *ibuf;
+
 	len = strlen(buf);
-	if (win_size <= len) goto done;
+	ilen = len > 1 ? PROGRESS_INFO_LEN : (win_size - 1);
+	ibuf = buf + len;
+
+	/* percent of transfer done */
 {	int percent;
 	if (end_pos == 0 || cur_pos == end_pos)
 		percent = 100;
 	else
 		percent = ((float)cur_pos / end_pos) * 100;
-	snprintf(buf + len, win_size - len, "%3d%% ", percent);
+	len = snprintf(ibuf, ilen, "%3d%% ", percent);
+	ilen -= len;
+	if (ilen < 1) goto done;
+	ibuf += len;
 }
 
 	/* amount transferred */
-	len = strlen(buf);
-	if (win_size <= len) goto done;
-	format_size(buf + len, win_size - len, cur_pos);
+	len = format_size(ibuf, ilen, cur_pos);
+	ilen -= len;
+	if (ilen < 1) goto done;
+	ibuf += len;
 
 	/* bandwidth usage */
-	len = strlen(buf);
-	if (win_size <= len) goto done;
-	format_rate(buf + len, win_size - len, (off_t)bytes_per_second);
+	len = format_rate(ibuf, ilen, (off_t)bytes_per_second);
+	ilen -= len;
+	if (ilen < 1) goto done;
+	ibuf += len;
 
 	/* ETA */
 	if (!transferred)
@@ -200,12 +232,11 @@ refresh_progress_meter(int force_update)
 	else
 		stalled = 0;
 
-	len = strlen(buf);
 	if (stalled >= STALL_TIME)
-		strlcat(buf, "- stalled -", win_size);
+		strlcat(ibuf, "- stalled - ", ilen);
 	else if (bytes_per_second == 0 && bytes_left)
-		strlcat(buf, "  --:-- ETA", win_size);
-	else if (win_size > len) {
+		strlcat(ibuf, "  --:-- ETA ", ilen);
+	else {
 		int hours, minutes, seconds;
 
 		if (bytes_left > 0)
@@ -218,26 +249,33 @@ refresh_progress_meter(int force_update)
 		minutes = seconds / 60;
 		seconds -= minutes * 60;
 
+		/* formats:
+		 *  "nn:nn:nn", i.e. 8 charactes
+		 *  "n:nn:nn", i.e. 7 charactes
+		 *  "  nn:nn", i.e. 7 charactes
+		 */
 		if (hours != 0)
-			snprintf(buf + len, win_size - len,
+			len = snprintf(ibuf, ilen,
 			    "%d:%02d:%02d", hours, minutes, seconds);
 		else
-			snprintf(buf + len, win_size - len,
+			len = snprintf(ibuf, ilen,
 			    "  %02d:%02d", minutes, seconds);
+		if (len >= ilen) goto done;
 
+		/* format 4 charactes */
 		if (bytes_left > 0)
-			strlcat(buf, " ETA", win_size);
+			strlcat(ibuf, " ETA", ilen);
 		else
-			strlcat(buf, "    ", win_size);
+			strlcat(ibuf, "    ", ilen);
+
+		/* cleanup last column */
+		if (len < 8)
+			strlcat(ibuf, " ", ilen);
 	}
-
-	/* cleanup last column */
-	strlcat(buf, " ", win_size);
-
+}
 done:
-	len = strnlen(buf, win_size - 1);
+	len = strlen(buf);
 	atomicio(vwrite, STDOUT_FILENO, buf, len);
-	last_update = now;
 }
 
 static void
