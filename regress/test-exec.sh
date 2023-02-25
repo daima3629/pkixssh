@@ -3,6 +3,7 @@
 
 #SUDO=sudo
 
+. ../tests/compat
 . ../tests/CA/shell.rc
 . $OBJ/../tests/env
 TEST_SHELL=${TEST_SHELL-/bin/sh}
@@ -105,23 +106,6 @@ SCP_MODES=${SCP_MODES-scp sftp}
 
 # Set by make_tmpdir() on demand (below).
 SSH_REGRESS_TMP=
-
-# which compatible shell function
-which()
-{
-	saved_IFS="$IFS"
-	IFS=":"
-	for i in $PATH ; do
-		if test -x "$i/$1" ; then
-			IFS="$saved_IFS"
-			echo "$i/$1"
-			return 0
-		fi
-	done
-	IFS="$saved_IFS"
-	echo "which: no $1 in ($PATH)" >&2
-	return 1
-}
 
 # Interop testing
 PLINK=${PLINK-plink}
