@@ -638,6 +638,10 @@ if $REGRESS_INTEROP_CONCH || $REGRESS_INTEROP_PUTTY; then
 	$SSHKEYGEN -p -N '' -m PEM -f $OBJ/ssh-rsa_pem >/dev/null
 fi
 
+if $REGRESS_INTEROP_CONCH ; then
+	$SSHKEYGEN -y -f $OBJ/ssh-rsa_pem > $OBJ/ssh-rsa_pem.pub
+fi
+
 if $REGRESS_INTEROP_PUTTY ; then
 	mkdir -p ${OBJ}/.putty
 

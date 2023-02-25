@@ -72,6 +72,7 @@ ssh-rsa-agent*
 ssh-rsa
 ssh-rsa.pub
 ssh-rsa_pem
+ssh-rsa_pem.pub
 ssh-xmss@openssh.com
 ssh-xmss@openssh.com.pub
 rsa_ssh2_cr.prv
