@@ -3454,10 +3454,19 @@ FIPS_LIBS=
 FIPSHMAC=:
 AS_IF([test "x$OPENSSL_FIPS_MODE" = "xyes"], [
   # some system distribute openssl/fips.h
-  AC_CHECK_HEADERS([openssl/fips.h])
+  AC_CHECK_HEADERS([openssl/fips.h], [], [], [
+/* Header in fips module 2.0* refer to elementary keys like RSA,
+   DSA, EVP* structures, and etc. i.e. unusable without OpenSSL
+   types declarations. Also header uses size_t.
+ */
+#include <sys/types.h>
+#include <openssl/ossl_typ.h>
+  ])
 
   # on some systems FIPS error string are not loaded with other errors!?
   AC_CHECK_DECLS([ERR_load_FIPS_strings], [],[], [
+#include <sys/types.h>
+#include <openssl/ossl_typ.h>
 #ifdef HAVE_OPENSSL_FIPS_H
 # include <openssl/fips.h>
 #endif
