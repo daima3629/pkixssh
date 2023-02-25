@@ -4,6 +4,7 @@
 tid="putty transfer data"
 
 $REGRESS_INTEROP_PUTTY || { RESUILT=1; skip "putty interop tests are not enabled"; }
+echo "PLINK: $PLINK" >&2
 
 if [ "`${SSH} -Q compression`" = "none" ]; then
 	comp="0"

@@ -21,6 +21,7 @@
 # DESCRIPTION: SSH X.509 tests configuration.
 #
 
+. ../compat
 
 # === setup from build environment:
 . ../env
@@ -85,7 +86,7 @@ fi
 # === openssl:
 
 OPENSSL=${OPENSSL-openssl}
-expr $OPENSSL : '*/*' > /dev/null || OPENSSL=`which $OPENSSL 2>/dev/null`
+OPENSSL=`which $OPENSSL 2>/dev/null`
 if test -z "$OPENSSL"; then
   echo "error: cannot find openssl in your path !" >&2
   exit 1

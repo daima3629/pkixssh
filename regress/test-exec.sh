@@ -111,14 +111,14 @@ SSH_REGRESS_TMP=
 PLINK=${PLINK-plink}
 PUTTYGEN=${PUTTYGEN-puttygen}
 CONCH=${CONCH-conch}
-expr $PLINK    : '*/*' > /dev/null || PLINK=`which $PLINK 2>/dev/null`
-expr $PUTTYGEN : '*/*' > /dev/null || PUTTYGEN=`which $PUTTYGEN 2>/dev/null`
-expr $CONCH    : '*/*' > /dev/null || CONCH=`which $CONCH 2>/dev/null`
+PLINK=`which $PLINK 2>/dev/null`
+PUTTYGEN=`which $PUTTYGEN 2>/dev/null`
+CONCH=`which $CONCH 2>/dev/null`
 
 # Tools used by multiple tests
 NC=$OBJ/netcat
 OPENSSL=${OPENSSL-openssl}
-expr $OPENSSL : '*/*' > /dev/null || OPENSSL=`which $OPENSSL 2>/dev/null`
+OPENSSL=`which $OPENSSL 2>/dev/null`
 test -n "$OPENSSL" && export OPENSSL
 
 if [ "x$TEST_SSH_SSH" != "x" ]; then

@@ -4,6 +4,7 @@
 tid="putty KEX"
 
 $REGRESS_INTEROP_PUTTY || { RESUILT=1; skip "putty interop tests are not enabled"; }
+echo "PLINK: $PLINK" >&2
 
 for k in dh-gex-sha1 dh-group1-sha1 dh-group14-sha1 ecdh ; do
 	verbose "$tid: kex $k"
