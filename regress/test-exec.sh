@@ -3,6 +3,27 @@
 
 #SUDO=sudo
 
+# NOTE: OBJ is environment variable as well
+OBJ="$1"
+if test -z "$OBJ" ; then
+	echo 'build directory is not specified'
+	exit 2
+fi
+if test ! -d "$OBJ" ; then
+	echo "not a directory: $OBJ"
+	exit 2
+fi
+SCRIPT="$2"
+if test -z "$SCRIPT" ; then
+	echo 'test script is not specified'
+	exit 2
+fi
+if test ! -f "$SCRIPT" ; then
+	echo "not a file: $SCRIPT"
+	exit 2
+fi
+
+
 . ../tests/compat
 . ../tests/CA/shell.rc
 . $OBJ/../tests/env
@@ -14,24 +35,6 @@ fi
 
 PORT=${TEST_SSH_PORT-4242}
 
-OBJ=$1
-if [ "x$OBJ" = "x" ]; then
-	echo '$OBJ not defined'
-	exit 2
-fi
-if [ ! -d $OBJ ]; then
-	echo "not a directory: $OBJ"
-	exit 2
-fi
-SCRIPT=$2
-if [ "x$SCRIPT" = "x" ]; then
-	echo '$SCRIPT not defined'
-	exit 2
-fi
-if [ ! -f $SCRIPT ]; then
-	echo "not a file: $SCRIPT"
-	exit 2
-fi
 case $TEST_SHELL in
 	*zsh*)	# turn on NULL_GLOB
 		$TEST_SHELL -G -n $SCRIPT;;
