@@ -1,4 +1,4 @@
-# Copyright (c) 2002-2021 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2002-2023 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -21,7 +21,7 @@
 # DESCRIPTION: SSH X.509 tests configuration.
 #
 
-. ../compat
+. ${SCRIPTDIR}../compat
 
 # === setup from build environment:
 . ../env
