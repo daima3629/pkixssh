@@ -1,5 +1,5 @@
 #! /bin/sh
-# Copyright (c) 2002-2022 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2002-2023 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -24,9 +24,8 @@
 
 CWD=`pwd`
 SCRIPTDIR=`echo $0 | sed 's/3-cre_certs.sh$//'`
-. "${SCRIPTDIR}shell.rc"
-. "${SCRIPTDIR}functions"
 . "${SCRIPTDIR}config"
+. "${SCRIPTDIR}functions"
 
 usage () {
   cat <<EOF

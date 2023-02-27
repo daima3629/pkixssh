@@ -25,7 +25,6 @@ fi
 
 
 . ../tests/compat
-. ../tests/CA/shell.rc
 . $OBJ/../tests/env
 TEST_SHELL=${TEST_SHELL-/bin/sh}
 

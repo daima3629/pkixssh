@@ -1,0 +1,3 @@
+# files used by test shell scripts must have unix(LF) end-of-line conversion
+
+/* text eol=lf

@@ -1,0 +1,5 @@
+# files used by test shell scripts must have unix(LF) end-of-line conversion
+
+/config
+/functions
+/*.sh.inc

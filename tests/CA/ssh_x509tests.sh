@@ -1,5 +1,5 @@
 #! /bin/sh
-# Copyright (c) 2002-2022 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2002-2023 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -25,9 +25,8 @@
 
 CWD=`pwd`
 SCRIPTDIR=`echo $0 | sed 's/ssh_x509tests.sh//'`
-. "${SCRIPTDIR}shell.rc"
-. "${SCRIPTDIR}functions"
 . "${SCRIPTDIR}config"
+. "${SCRIPTDIR}functions"
 
 test "x$TEST_SSH_SSH"       = "x" && { echo "${warn}Please define ${attn}TEST_SSH_SSH${norm}" >&2       ; exit 1; }
 test "x$TEST_SSH_SSHD"      = "x" && { echo "${warn}Please define ${attn}TEST_SSH_SSHD${norm}" >&2      ; exit 1; }

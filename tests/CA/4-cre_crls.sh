@@ -1,5 +1,5 @@
 #! /bin/sh
-# Copyright (c) 2002-2018 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2002-2023 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -24,9 +24,8 @@
 
 CWD=`pwd`
 SCRIPTDIR=`echo $0 | sed 's/4-cre_crls.sh$//'`
-. "${SCRIPTDIR}shell.rc"
-. "${SCRIPTDIR}functions"
 . "${SCRIPTDIR}config"
+. "${SCRIPTDIR}functions"
 
 
 CA_LOG="$CWD/ca-4.log"

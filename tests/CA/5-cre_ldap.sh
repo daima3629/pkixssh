@@ -1,5 +1,5 @@
 #! /bin/sh
-# Copyright (c) 2004-2007,2011 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2004-2023 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -24,9 +24,8 @@
 
 CWD=`pwd`
 SCRIPTDIR=`echo $0 | sed 's/5-cre_ldap.sh$//'`
-. "${SCRIPTDIR}shell.rc"
-. "${SCRIPTDIR}functions"
 . "${SCRIPTDIR}config"
+. "${SCRIPTDIR}functions"
 
 
 if test ! -d ldap/data; then
