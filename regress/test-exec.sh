@@ -243,6 +243,26 @@ if [ "x$TEST_REGRESS_LOGFILE" = "x" ]; then
 	TEST_REGRESS_LOGFILE=$OBJ/regress.log
 fi
 
+# If set, keep track of successful tests and skip them them if we've
+# previously completed that test.
+if test "x$TEST_REGRESS_CACHE_DIR" != "x" ; then
+	$SRC/../install-sh -d "$TEST_REGRESS_CACHE_DIR"
+	TEST="${SCRIPT##*/}"
+	TEST="${TEST%.sh}"
+	CACHE="$TEST_REGRESS_CACHE_DIR/$TEST.pass"
+	for i in ${SSH} ${SSHD} ${SSHAGENT} ${SSHADD} ${SSHKEYGEN} ${SCP} \
+	    ${SFTP} ${SFTPSERVER} ${SSHKEYSCAN}; do
+		bin="`which $i`"
+		if test "$bin" -nt "$CACHE" ; then
+			rm -f "$CACHE"
+		fi
+	done
+	if test -f "$CACHE" ; then
+		echo "ok $TEST (cached) - $CACHE" >&2
+		exit 0
+	fi
+fi
+
 # truncate logfiles
 echo "=== $SCRIPT ..." > $TEST_SSH_LOGFILE
 >$TEST_SSHD_LOGFILE
@@ -716,6 +736,9 @@ fi
 
 if [ $RESULT -eq 0 ]; then
 	verbose ok $tid
+	if test "x$CACHE" != "x" ; then
+		touch "$CACHE"
+	fi
 else
 	echo failed $tid
 fi
