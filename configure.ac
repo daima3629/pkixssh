@@ -3938,6 +3938,15 @@ AC_CHECK_SIZEOF([short int])
 AC_CHECK_SIZEOF([int])
 AC_CHECK_SIZEOF([long int])
 AC_CHECK_SIZEOF([long long int])
+dnl Note AC_HEADER_TIME - outdated
+AC_CHECK_SIZEOF([time_t], [], [[
+#ifdef HAVE_SYS_TIME_H
+# include <sys/time.h>
+#endif
+#ifdef HAVE_TIME_H
+# include <time.h>
+#endif
+]])
 
 # Sanity check long long for some platforms (AIX)
 if test "x$ac_cv_sizeof_long_long_int" = "x4" ; then
