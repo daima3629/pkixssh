@@ -1,4 +1,4 @@
-/* $OpenBSD: moduli.c,v 1.38 2022/05/01 23:20:30 djm Exp $ */
+/* $OpenBSD: moduli.c,v 1.39 2023/03/02 06:41:56 dtucker Exp $ */
 /*
  * Copyright 1994 Phil Karn <karn@qualcomm.com>
  * Copyright 1996-1998, 2003 William Allen Simpson <wsimpson@greendragon.com>
@@ -483,13 +483,17 @@ write_checkpoint(char *cpfile, u_int32_t lineno)
 		close(r);
 		return;
 	}
-	if (fprintf(fp, "%lu\n", (unsigned long)lineno) > 0 && fclose(fp) == 0
-	    && rename(tmp, cpfile) != -1)
+	/* use r as flag */
+	r = (fprintf(fp, "%lu\n", (unsigned long)lineno) > 0);
+	r = (fclose(fp) == 0) && r;
+	if (r && (rename(tmp, cpfile) != -1)) {
 		debug3("wrote checkpoint line %lu to '%s'",
 		    (unsigned long)lineno, cpfile);
-	else
+	} else {
 		logit("failed to write to checkpoint file '%s': %s", cpfile,
 		    strerror(errno));
+		(void)unlink(tmp);
+	}
 }
 
 static unsigned long
