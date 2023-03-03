@@ -80,12 +80,6 @@
 #include "ssherr.h"
 #include "platform.h"
 
-#ifdef __ANDROID__
-# define SECURE_MASK_DIR 002
-#else
-# define SECURE_MASK_DIR 022
-#endif
-
 /* Operations on timespecs. */
 #ifndef timespecclear
 #define	timespecclear(tsp)		(tsp)->tv_sec = (tsp)->tv_nsec = 0
@@ -2296,14 +2290,26 @@ xrename(const char *oldpath, const char *newpath) {
 }
 
 static inline int
-check_file_mode(struct stat *st, uid_t uid, const char *filename,
-    char *err, size_t errlen) {
-	if ((!platform_sys_dir_uid(st->st_uid) && st->st_uid != uid) ||
-	    (st->st_mode & 022) != 0) {
-		snprintf(err, errlen, "bad ownership or modes for file %s",
-		    filename);
+check_mode(struct stat *st, uid_t uid, int is_dir, const char *name,
+    char *err, size_t errlen
+) {
+	const char *type = is_dir ? "directory" : "file";
+
+	if (!platform_sys_dir_uid(st->st_uid) && st->st_uid != uid) {
+		snprintf(err, errlen, "bad ownership for %s %s", type, name);
 		return -1;
 	}
+
+{	int mask = 022;
+#ifdef __ANDROID__
+	/* application is installed uid == gid */
+	if (is_dir) mask = 002;
+#endif
+	if ((st->st_mode & mask) != 0) {
+		snprintf(err, errlen, "bad modes for %s %s", type, name);
+		return -1;
+	}
+}
 	return 0;
 }
 
@@ -2341,7 +2347,7 @@ safe_path(const char *name, struct stat *stp, const char *pw_dir,
 		snprintf(err, errlen, "%s is not a regular file", buf);
 		return -1;
 	}
-	if (check_file_mode(stp, uid, buf, err, errlen) == -1)
+	if (check_mode(stp, uid, 0, buf, err, errlen) == -1)
 		return -1;
 
 	/* for each component of the canonical path, walking upwards */
@@ -2353,12 +2359,8 @@ safe_path(const char *name, struct stat *stp, const char *pw_dir,
 		strlcpy(buf, cp, sizeof(buf));
 
 		if (stat(buf, &st) == -1 ||
-		    (!platform_sys_dir_uid(st.st_uid) && st.st_uid != uid) ||
-		    (st.st_mode & SECURE_MASK_DIR) != 0) {
-			snprintf(err, errlen,
-			    "bad ownership or modes for directory %s", buf);
+		    check_mode(&st, uid, 1, buf, err, errlen) == -1)
 			return -1;
-		}
 
 		/* If are past the homedir then we can stop */
 		if (comparehome && strcmp(homedir, buf) == 0)
@@ -2407,7 +2409,7 @@ safe_usr_fileno(int fd, const char *filename, char *err, size_t errlen) {
 		    filename, strerror(errno));
 		return -1;
 	}
-	return check_file_mode(&st, getuid(), filename, err, errlen);
+	return check_mode(&st, getuid(), 0, filename, err, errlen);
 }
 
 /*
