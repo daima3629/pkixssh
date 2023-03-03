@@ -55,13 +55,13 @@ int
 auth_shadow_acctexpired(struct spwd *spw)
 {
 	time_t today;
-	int daysleft;
+	long long daysleft;
 	int r;
 
 	today = time(NULL) / DAY;
 	daysleft = spw->sp_expire - today;
-	debug3_f("today %d sp_expire %d days left %d", (int)today,
-	    (int)spw->sp_expire, daysleft);
+	debug3_f("today %lld sp_expire %lld days left %lld",
+	    (long long)today, (long long)spw->sp_expire, daysleft);
 
 	if (spw->sp_expire == -1) {
 		debug3("account expiration disabled");
@@ -69,9 +69,9 @@ auth_shadow_acctexpired(struct spwd *spw)
 		logit("Account %.100s has expired", spw->sp_namp);
 		return 1;
 	} else if (daysleft <= spw->sp_warn) {
-		debug3("account will expire in %d days", daysleft);
+		debug3("account will expire in %lld days", daysleft);
 		if ((r = sshbuf_putf(loginmsg,
-		    "Your account will expire in %d day%s.\n", daysleft,
+		    "Your account will expire in %lld day%s.\n", daysleft,
 		    daysleft == 1 ? "" : "s")) != 0)
 			fatal_fr(r, "buffer error");
 	}
@@ -89,7 +89,8 @@ auth_shadow_pwexpired(Authctxt *ctxt)
 	struct spwd *spw = NULL;
 	const char *user = ctxt->pw->pw_name;
 	time_t today;
-	int r, daysleft, disabled = 0;
+	long long daysleft;
+	int r, disabled = 0;
 
 	if ((spw = getspnam((char *)user)) == NULL) {
 		error("Could not get shadow information for %.100s", user);
@@ -97,8 +98,8 @@ auth_shadow_pwexpired(Authctxt *ctxt)
 	}
 
 	today = time(NULL) / DAY;
-	debug3_f("today %d sp_lstchg %d sp_max %d", (int)today,
-	    (int)spw->sp_lstchg, (int)spw->sp_max);
+	debug3_f("today %lld sp_lstchg %lld sp_max %lld", (long long)today,
+	    (long long)spw->sp_lstchg, (long long)spw->sp_max);
 
 #if defined(__hpux) && !defined(HAVE_SECUREWARE)
 	if (iscomsec()) {
@@ -128,9 +129,9 @@ auth_shadow_pwexpired(Authctxt *ctxt)
 		logit("User %.100s password has expired (password aged)", user);
 		return 1;
 	} else if (daysleft <= spw->sp_warn) {
-		debug3("password will expire in %d days", daysleft);
+		debug3("password will expire in %lld days", daysleft);
 		if ((r = sshbuf_putf(loginmsg,
-		    "Your password will expire in %d day%s.\n", daysleft,
+		    "Your password will expire in %lld day%s.\n", daysleft,
 		    daysleft == 1 ? "" : "s")) != 0)
 			fatal_fr(r, "buffer error");
 	}
