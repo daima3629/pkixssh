@@ -2,7 +2,7 @@
 /*
  * Copyright (c) 2010 Markus Friedl.  All rights reserved.
  * Copyright (c) 2011 Kenneth Robinette.  All rights reserved.
- * Copyright (c) 2016-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2016-2023 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -22,7 +22,7 @@
 #endif
 
 #ifndef USE_OPENSSL_PROVIDER
-/* TODO implement OpenSSL 3.1 API */
+/* TODO: implement OpenSSL 4.0 API, as OpenSSL 3.* is quite nonfunctional */
 # define OPENSSL_SUPPRESS_DEPRECATED
 #endif
 

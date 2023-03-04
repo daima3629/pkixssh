@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2022 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2023 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -27,7 +27,7 @@
 #endif
 
 #ifndef USE_OPENSSL_PROVIDER
-/* TODO implement OpenSSL 3.1 API */
+/* TODO: implement OpenSSL 4.0 API, as OpenSSL 3.* is quite nonfunctional */
 # define OPENSSL_SUPPRESS_DEPRECATED
 #endif
 

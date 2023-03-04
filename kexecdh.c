@@ -2,7 +2,7 @@
 /*
  * Copyright (c) 2010 Damien Miller.  All rights reserved.
  * Copyright (c) 2019 Markus Friedl.  All rights reserved.
- * Copyright (c) 2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2021-2023 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -30,7 +30,7 @@
 #endif
 
 #ifndef USE_OPENSSL_PROVIDER
-/* TODO implement OpenSSL 3.1 API */
+/* TODO: implement OpenSSL 4.0 API, as OpenSSL 3.* is quite nonfunctional */
 # define OPENSSL_SUPPRESS_DEPRECATED
 #endif
 

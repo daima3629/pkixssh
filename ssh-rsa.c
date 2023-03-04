@@ -2,7 +2,7 @@
 /*
  * Copyright (c) 2000, 2003 Markus Friedl <markus@openbsd.org>
  * Copyright (c) 2011 Dr. Stephen Henson.  All rights reserved.
- * Copyright (c) 2011-2022 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2023 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -22,7 +22,7 @@
 #endif
 
 #ifndef USE_OPENSSL_PROVIDER
-/* TODO implement OpenSSL 3.1 API */
+/* TODO: implement OpenSSL 4.0 API, as OpenSSL 3.* is quite nonfunctional */
 # define OPENSSL_SUPPRESS_DEPRECATED
 #endif
 
@@ -94,9 +94,9 @@ sshrsa_verify_length(int bits) {
 }
 
 
-#ifdef WITH_OPENSSL_3_1_API
-/* TODO: new methods compatible with OpenSSL 3.1 API.
- * Remark: OpenSSL 3.0* is too buggy - almost each release fail
+#ifdef WITH_OPENSSL_4_0_API
+/* TODO: new methods compatible with OpenSSL 4.0 API.
+ * Remark: OpenSSL 3* is too buggy - almost each release fail
  * or crash in regression tests.
  */
 #else

@@ -1,9 +1,9 @@
-/* $OpenBSD: ssh-pkcs11.c,v 1.54 2021/08/11 05:20:17 djm Exp $ */
+/* $OpenBSD: ssh-pkcs11.c,v 1.55 2021/11/18 21:11:01 djm Exp $ */
 /*
  * Copyright (c) 2010 Markus Friedl.  All rights reserved.
  * Copyright (c) 2011 Kenneth Robinette.  All rights reserved.
  * Copyright (c) 2013 Andrew Cooke.  All rights reserved.
- * Copyright (c) 2016-2022 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2016-2023 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -23,7 +23,7 @@
 #endif
 
 #ifndef USE_OPENSSL_PROVIDER
-/* TODO implement OpenSSL 3.1 API */
+/* TODO: implement OpenSSL 4.0 API, as OpenSSL 3.* is quite nonfunctional */
 # define OPENSSL_SUPPRESS_DEPRECATED
 #endif
 

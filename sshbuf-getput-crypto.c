@@ -1,7 +1,7 @@
-/*	$OpenBSD: sshbuf-getput-crypto.c,v 1.8 2019/11/15 06:00:20 djm Exp $	*/
+/*	$OpenBSD: sshbuf-getput-crypto.c,v 1.10 2022/05/25 06:03:44 djm Exp $	*/
 /*
  * Copyright (c) 2011 Damien Miller
- * Copyright (c) 2020-2022 Roumen Petrov
+ * Copyright (c) 2020-2023 Roumen Petrov
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -21,7 +21,7 @@
 #endif
 
 #ifndef USE_OPENSSL_PROVIDER
-/* TODO implement OpenSSL 3.1 API */
+/* TODO: implement OpenSSL 4.0 API, as OpenSSL 3.* is quite nonfunctional */
 # define OPENSSL_SUPPRESS_DEPRECATED
 #endif
 
