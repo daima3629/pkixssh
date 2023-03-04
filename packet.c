@@ -1,4 +1,4 @@
-/* $OpenBSD: packet.c,v 1.308 2022/08/31 02:56:40 djm Exp $ */
+/* $OpenBSD: packet.c,v 1.309 2023/03/03 10:23:42 dtucker Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -1340,10 +1340,10 @@ int
 ssh_packet_read_seqnr(struct ssh *ssh, u_char *typep, u_int32_t *seqnr_p)
 {
 	struct session_state *state = ssh->state;
-	int len, r, ms_remain;
+	int r, ms_remain;
 	char buf[8192];
 	struct timeval start;
-	struct timespec timeout, *timeoutp = NULL;
+	struct timespec timeout, *timeoutp;
 
 	DBG(debug("packet_read()"));
 
@@ -1354,8 +1354,17 @@ ssh_packet_read_seqnr(struct ssh *ssh, u_char *typep, u_int32_t *seqnr_p)
 	if ((r = ssh_packet_write_wait(ssh)) != 0)
 		goto out;
 
+	if (state->packet_timeout_ms > 0) {
+		ms_remain = state->packet_timeout_ms;
+		timeoutp = &timeout;
+	} else {
+		ms_remain = 0; /* set to avoid uninitialised warning */
+		timeoutp = NULL;
+	}
+
 	/* Stay in the loop until we have received a complete packet. */
 	for (;;) {
+		int ret;
 		struct pollfd pfd;
 
 		/* Try to read a packet from the buffer. */
@@ -1372,17 +1381,13 @@ ssh_packet_read_seqnr(struct ssh *ssh, u_char *typep, u_int32_t *seqnr_p)
 		pfd.fd = state->connection_in;
 		pfd.events = POLLIN;
 
-		if (state->packet_timeout_ms > 0) {
-			ms_remain = state->packet_timeout_ms;
-			timeoutp = &timeout;
-		}
 		/* Wait for some data to arrive. */
 		for (;;) {
 			if (state->packet_timeout_ms > 0) {
 				ms_to_timespec(&timeout, ms_remain);
 				monotime_tv(&start);
 			}
-			if ((r = ppoll(&pfd, 1, timeoutp, NULL)) != -1)
+			if ((ret = ppoll(&pfd, 1, timeoutp, NULL)) != -1)
 				break;
 			if (errno != EAGAIN && errno != EINTR &&
 			    errno != EWOULDBLOCK) {
@@ -1393,14 +1398,15 @@ ssh_packet_read_seqnr(struct ssh *ssh, u_char *typep, u_int32_t *seqnr_p)
 				continue;
 			ms_subtract_diff(&start, &ms_remain);
 			if (ms_remain <= 0) {
-				r = 0;
+				ret = 0;
 				break;
 			}
 		}
-		if (r == 0) {
+		if (ret == 0) {
 			r = SSH_ERR_CONN_TIMEOUT;
 			goto out;
 		}
+	{	ssize_t len;
 		/* Read data from the socket. */
 		len = read(state->connection_in, buf, sizeof(buf));
 		if (len == 0) {
@@ -1415,6 +1421,7 @@ ssh_packet_read_seqnr(struct ssh *ssh, u_char *typep, u_int32_t *seqnr_p)
 		/* Append it to the buffer. */
 		if ((r = ssh_packet_process_incoming(ssh, buf, len)) != 0)
 			goto out;
+	}
 	}
  out:
 	return r;
@@ -2014,23 +2021,29 @@ ssh_packet_write_poll(struct ssh *ssh)
 int
 ssh_packet_write_wait(struct ssh *ssh)
 {
-	int ret, r, ms_remain = 0;
+	int r, ms_remain;
 	struct timeval start;
-	struct timespec timeout, *timeoutp = NULL;
+	struct timespec timeout, *timeoutp;
 	struct session_state *state = ssh->state;
 
 	if ((r = ssh_packet_write_poll(ssh)) != 0)
 		return r;
+
+	if (state->packet_timeout_ms > 0) {
+		ms_remain = state->packet_timeout_ms;
+		timeoutp = &timeout;
+	} else {
+		ms_remain = 0; /* set to avoid uninitialised warning */
+		timeoutp = NULL;
+	}
+
 	while (ssh_packet_have_data_to_write(ssh)) {
+		int ret;
 		struct pollfd pfd;
 
 		pfd.fd = state->connection_out;
 		pfd.events = POLLOUT;
 
-		if (state->packet_timeout_ms > 0) {
-			ms_remain = state->packet_timeout_ms;
-			timeoutp = &timeout;
-		}
 		for (;;) {
 			if (state->packet_timeout_ms > 0) {
 				ms_to_timespec(&timeout, ms_remain);
