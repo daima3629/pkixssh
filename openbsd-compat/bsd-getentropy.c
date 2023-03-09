@@ -48,7 +48,7 @@ _ssh_compat_getentropy(void *s, size_t len)
 	size_t o = 0;
 
 #ifdef HAVE_GETENTROPY
-	if (r = getentropy(s, len) == 0)
+	if ((r = getentropy(s, len)) == 0)
 		return 0;
 	if (errno != ENOSYS)
 		return -1;
