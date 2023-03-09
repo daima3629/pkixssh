@@ -71,7 +71,6 @@
 #include "cipher.h"
 #include "digest.h"
 #include "kex.h"
-#include "compat.h"
 #include "myproposal.h"
 #include "packet.h"
 #include "dispatch.h"

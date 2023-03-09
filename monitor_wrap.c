@@ -64,7 +64,6 @@
 #include "ssh-gss.h"
 #endif
 #include "monitor_wrap.h"
-#include "compat.h"
 #include "atomicio.h"
 #include "monitor_fdpass.h"
 #include "misc.h"

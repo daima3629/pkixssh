@@ -1,4 +1,4 @@
-/* $OpenBSD: session.c,v 1.333 2023/01/06 02:42:34 djm Exp $ */
+/* $OpenBSD: session.c,v 1.335 2023/03/07 06:09:14 dtucker Exp $ */
 /*
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
@@ -71,7 +71,6 @@
 #include "sshbuf.h"
 #include "match.h"
 #include "uidswap.h"
-#include "compat.h"
 #include "channels.h"
 #include "cipher.h"
 #ifdef GSSAPI

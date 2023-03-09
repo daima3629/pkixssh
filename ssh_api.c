@@ -25,7 +25,6 @@
 
 #include "ssh_api.h"
 #include "evp-compat.h"
-#include "compat.h"
 #include "log.h"
 #include "authfile.h"
 #include "sshxkey.h"
