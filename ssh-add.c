@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-add.c,v 1.166 2022/06/18 02:17:16 dtucker Exp $ */
+/* $OpenBSD: ssh-add.c,v 1.167 2023/03/08 00:05:58 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -489,6 +489,10 @@ test_key(int agent_fd, const char *filename)
 	arc4random_buf(data, sizeof(data));
 
 	alg = sshkey_ssh_name(key);
+#ifdef HAVE_EVP_SHA256
+	if (sshkey_type_plain(key->type) == KEY_RSA)
+		alg = "rsa-sha2-256";
+#endif
 
 {	ssh_sign_ctx ctx = { alg, key, &ctx_compat, NULL, NULL };
 

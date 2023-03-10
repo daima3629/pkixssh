@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keygen.c,v 1.464 2023/03/05 08:18:58 dtucker Exp $ */
+/* $OpenBSD: ssh-keygen.c,v 1.466 2023/03/08 00:05:37 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1994 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -479,6 +479,7 @@ static struct sshkey *
 do_convert_private_ssh2(struct sshbuf *b)
 {
 	struct sshkey *key = NULL;
+	const char *alg = NULL;
 	u_char *sig = NULL, data[] = "abcde12345";
 	int r, rlen, ktype;
 	u_int32_t magic;
@@ -536,6 +537,9 @@ do_convert_private_ssh2(struct sshbuf *b)
 		r = sshbuf_read_custom_rsa(b, key);
 		if (r != 0)
 			fatal_fr(r, "custom rsa failed");
+	#ifdef HAVE_EVP_SHA256
+		alg = "rsa-sha2-256";
+	#endif
 		break;
 	}
 	rlen = sshbuf_len(b);
@@ -544,8 +548,8 @@ do_convert_private_ssh2(struct sshbuf *b)
 
 	/* try the key */
 {	ssh_compat ctx_compat = { 0, 0 };
-	ssh_sign_ctx sctx = { NULL, key, &ctx_compat, NULL, NULL };
-	ssh_verify_ctx vctx = { NULL, key, &ctx_compat };
+	ssh_sign_ctx sctx = { alg, key, &ctx_compat, NULL, NULL };
+	ssh_verify_ctx vctx = { alg, key, &ctx_compat };
 
 	if ((r = sshkey_sign(&sctx, &sig, &slen, data, sizeof(data))) != 0)
 		error_fr(r, "signing with converted key failed");
