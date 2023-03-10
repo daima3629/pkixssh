@@ -1,4 +1,4 @@
-/* $OpenBSD: sshd.c,v 1.597 2023/02/10 04:47:19 djm Exp $ */
+/* $OpenBSD: sshd.c,v 1.600 2023/03/08 04:43:12 guenther Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -2637,6 +2637,10 @@ do_ssh2_kex(struct ssh *ssh)
 	char *prop_kex = NULL, *prop_enc = NULL, *prop_hostkey = NULL;
 	int r;
 
+	if (options.rekey_limit || options.rekey_interval)
+		ssh_packet_set_rekey_limits(ssh, options.rekey_limit,
+		    options.rekey_interval);
+
 	myproposal[PROPOSAL_KEX_ALGS] = prop_kex =
 	    compat_kex_proposal(ssh, options.kex_algorithms);
 	myproposal[PROPOSAL_ENC_ALGS_CTOS] =
@@ -2649,10 +2653,6 @@ do_ssh2_kex(struct ssh *ssh)
 		myproposal[PROPOSAL_COMP_ALGS_CTOS] =
 		    myproposal[PROPOSAL_COMP_ALGS_STOC] = "none";
 	}
-
-	if (options.rekey_limit || options.rekey_interval)
-		ssh_packet_set_rekey_limits(ssh, options.rekey_limit,
-		    options.rekey_interval);
 
 	myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS] = prop_hostkey =
 	    compat_pkalg_proposal(ssh, list_hostkey_types());
