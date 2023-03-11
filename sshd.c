@@ -2364,8 +2364,8 @@ main(int ac, char **av)
 	}
 
 	/* Executed child processes don't need these. */
-	fcntl(sock_out, F_SETFD, FD_CLOEXEC);
-	fcntl(sock_in, F_SETFD, FD_CLOEXEC);
+	(void)fcntl(sock_out, F_SETFD, FD_CLOEXEC);
+	(void)fcntl(sock_in, F_SETFD, FD_CLOEXEC);
 
 	/* We will not restart on SIGHUP since it no longer makes sense. */
 	ssh_signal(SIGALRM, SIG_DFL);
