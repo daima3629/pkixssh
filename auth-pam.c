@@ -332,7 +332,8 @@ static void
 import_environments(struct sshbuf *b)
 {
 	char *env;
-	u_int32_t n, i, num_env;
+	u_int num_env;
+	u_int32_t n, i;
 	int r;
 
 	debug3_f("PAM entering");
@@ -344,18 +345,20 @@ import_environments(struct sshbuf *b)
 	if (n > INT32_MAX)
 		fatal_f("invalid PAM account status %u", (unsigned)n);
 	sshpam_account_status = (int)n;
+
 	if ((r = sshbuf_get_u32(b, &n)) != 0)
 		fatal_fr(r, "buffer error");
 	sshpam_password_change_required(n != 0);
 
 	/* Import environment from subprocess */
-	if ((r = sshbuf_get_u32(b, &num_env)) != 0)
+	if ((r = sshbuf_get_u32(b, &n)) != 0)
 		fatal_fr(r, "buffer error");
+	num_env = n;
 	if (num_env > 1024)
 		fatal_f("received %u environment variables, expected <= 1024",
-		    (unsigned)num_env);
+		    num_env);
 	sshpam_env = xcalloc(num_env + 1, sizeof(*sshpam_env));
-	debug3("PAM: num env strings %d", num_env);
+	debug3("PAM: num env strings %u", num_env);
 	for(i = 0; i < num_env; i++) {
 		if ((r = sshbuf_get_cstring(b, &(sshpam_env[i]), NULL)) != 0)
 			fatal_fr(r, "buffer error");
@@ -363,9 +366,14 @@ import_environments(struct sshbuf *b)
 	sshpam_env[num_env] = NULL;
 
 	/* Import PAM environment from subprocess */
-	if ((r = sshbuf_get_u32(b, &num_env)) != 0)
+	if ((r = sshbuf_get_u32(b, &n)) != 0)
 		fatal_fr(r, "buffer error");
-	debug("PAM: num PAM env strings %d", (int)num_env);
+	num_env = n;
+	if (num_env > 1024) {
+		fatal_f("received %u PAM env variables, expected <= 1024",
+		    num_env);
+	}
+	debug("PAM: num PAM env strings %u", num_env);
 	for (i = 0; i < num_env; i++) {
 		if ((r = sshbuf_get_cstring(b, &env, NULL)) != 0)
 			fatal_fr(r, "buffer error");
