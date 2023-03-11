@@ -1075,7 +1075,8 @@ int
 mm_answer_pam_respond(struct ssh *ssh, int sock, struct sshbuf *m)
 {
 	char **resp;
-	u_int32_t i, num;
+	u_int num;
+	u_int32_t i, val;
 	int r, ret;
 
 	UNUSED(ssh);
@@ -1083,8 +1084,12 @@ mm_answer_pam_respond(struct ssh *ssh, int sock, struct sshbuf *m)
 	if (sshpam_ctxt == NULL)
 		fatal_f("no context");
 	sshpam_authok = NULL;
-	if ((r = sshbuf_get_u32(m, &num)) != 0)
+	if ((r = sshbuf_get_u32(m, &val)) != 0) /*num*/
 		fatal_fr(r, "parse");
+	num = val;
+	if (num > PAM_MAX_NUM_MSG)
+		fatal_f("Too many PAM messages, got %u, expected <= %u",
+		    num, (unsigned)PAM_MAX_NUM_MSG);
 	if (num > 0) {
 		resp = xcalloc(num, sizeof(char *));
 		for (i = 0; i < num; ++i) {
