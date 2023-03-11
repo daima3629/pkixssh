@@ -203,7 +203,7 @@ ssh_kex2(struct ssh *ssh, char *host, struct sockaddr *hostaddr, u_short port,
 	    compat_kex_proposal(ssh, s);
 	myproposal[PROPOSAL_ENC_ALGS_CTOS] =
 	myproposal[PROPOSAL_ENC_ALGS_STOC] = prop_enc =
-	    compat_cipher_proposal(ssh, options.ciphers);
+	    xstrdup(options.ciphers);
 	myproposal[PROPOSAL_COMP_ALGS_CTOS] =
 	myproposal[PROPOSAL_COMP_ALGS_STOC] =
 	    (char *)compression_alg_list(options.compression);
@@ -232,12 +232,11 @@ ssh_kex2(struct ssh *ssh, char *host, struct sockaddr *hostaddr, u_short port,
 	}
 	if (user_prefered)
 		myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS] = prop_hostkey =
-		    compat_pkalg_proposal(ssh, options.hostkeyalgorithms);
+		    xstrdup(options.hostkeyalgorithms);
 	else
 		/* Prefer algorithms that we already have keys for */
 		myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS] = prop_hostkey =
-		    compat_pkalg_proposal(ssh,
-		    order_hostkeyalgs(host, hostaddr, port, cinfo));
+		    order_hostkeyalgs(host, hostaddr, port, cinfo);
 }
 
 	/* start key exchange */

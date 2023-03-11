@@ -1,4 +1,4 @@
-/* $OpenBSD: compat.c,v 1.125 2023/02/17 04:22:50 dtucker Exp $ */
+/* $OpenBSD: compat.c,v 1.126 2023/03/06 12:14:48 dtucker Exp $ */
 /*
  * Copyright (c) 1999, 2000, 2001, 2002 Markus Friedl.  All rights reserved.
  * Copyright (c) 2017-2021 Roumen Petrov.  All rights reserved.
@@ -37,7 +37,7 @@
 #include "compat.h"
 #include "log.h"
 #include "match.h"
-#include "kex.h"
+#include "sshbuf.h"
 
 /* datafellows bug compatibility */
 static u_int
@@ -134,22 +134,6 @@ compat_datafellows(const char *version)
 	}
 	debug("no match: %s", version);
 	return 0;
-}
-
-/* Always returns pointer to allocated memory, caller must free. */
-char *
-compat_cipher_proposal(struct ssh *ssh, char *cipher_prop)
-{
-	UNUSED(ssh);
-	return xstrdup(cipher_prop);
-}
-
-/* Always returns pointer to allocated memory, caller must free. */
-char *
-compat_pkalg_proposal(struct ssh *ssh, char *pkalg_prop)
-{
-	UNUSED(ssh);
-	return xstrdup(pkalg_prop);
 }
 
 /* Always returns pointer to allocated memory, caller must free. */

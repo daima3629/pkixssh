@@ -2645,7 +2645,7 @@ do_ssh2_kex(struct ssh *ssh)
 	    compat_kex_proposal(ssh, options.kex_algorithms);
 	myproposal[PROPOSAL_ENC_ALGS_CTOS] =
 	myproposal[PROPOSAL_ENC_ALGS_STOC] = prop_enc =
-	    compat_cipher_proposal(ssh, options.ciphers);
+	    xstrdup(options.ciphers);
 	myproposal[PROPOSAL_MAC_ALGS_CTOS] =
 	myproposal[PROPOSAL_MAC_ALGS_STOC] = options.macs;
 
@@ -2655,7 +2655,7 @@ do_ssh2_kex(struct ssh *ssh)
 	}
 
 	myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS] = prop_hostkey =
-	    compat_pkalg_proposal(ssh, list_hostkey_types());
+	    xstrdup(list_hostkey_types());
 
 	/* start key exchange */
 	if ((r = kex_setup(ssh, myproposal)) != 0)
