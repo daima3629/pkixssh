@@ -20,7 +20,7 @@
  *
  * Copyright (c) 2000, 2001, 2002 Markus Friedl.  All rights reserved.
  * Copyright (c) 2002 Niels Provos.  All rights reserved.
- * Copyright (c) 2002-2022 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2023 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -2332,17 +2332,21 @@ main(int ac, char **av)
 	if (rexec_flag) {
 		debug("rexec start in %d out %d newsock %d pipe %d sock %d",
 		    sock_in, sock_out, newsock, startup_pipe, config_s[0]);
-		dup2(newsock, STDIN_FILENO);
-		dup2(STDIN_FILENO, STDOUT_FILENO);
+		if (dup2(newsock, STDIN_FILENO) == -1)
+			error("dup2 reexec stdin: %s", strerror(errno));
+		if (dup2(STDIN_FILENO, STDOUT_FILENO) == -1)
+			error("dup2 reexec, stdout: %s", strerror(errno));
 		if (startup_pipe == -1)
 			close(REEXEC_STARTUP_PIPE_FD);
 		else if (startup_pipe != REEXEC_STARTUP_PIPE_FD) {
-			dup2(startup_pipe, REEXEC_STARTUP_PIPE_FD);
+			if (dup2(startup_pipe, REEXEC_STARTUP_PIPE_FD) == -1)
+				error("dup2 reexec startup: %s", strerror(errno));
 			close(startup_pipe);
 			startup_pipe = REEXEC_STARTUP_PIPE_FD;
 		}
 
-		dup2(config_s[1], REEXEC_CONFIG_PASS_FD);
+		if (dup2(config_s[1], REEXEC_CONFIG_PASS_FD) == -1)
+			error("dup2 reexec config: %s", strerror(errno));
 		close(config_s[1]);
 
 		ssh_signal(SIGHUP, SIG_IGN); /* avoid reset to SIG_DFL */
