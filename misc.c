@@ -2433,7 +2433,9 @@ child_set_env(char ***envp, u_int *envsizep, const char *name,
 	 * If we're passed an uninitialized list, allocate a single null
 	 * entry before continuing.
 	 */
-	if (*envp == NULL && *envsizep == 0) {
+	if (*envp == NULL) {
+		if (*envsizep != 0)
+			fatal_f("environment size mismatch");
 		*envp = xmalloc(sizeof(char *));
 		*envp[0] = NULL;
 		*envsizep = 1;
