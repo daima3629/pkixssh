@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keyscan.c,v 1.151 2023/02/10 06:41:53 jmc Exp $ */
+/* $OpenBSD: ssh-keyscan.c,v 1.152 2023/03/31 04:21:56 djm Exp $ */
 /*
  * Copyright 1995, 1996 by David Mazieres <dm@lcs.mit.edu>.
  *
@@ -317,14 +317,20 @@ keyprint_one(const char *host, con *c, struct sshkey *key)
 	if (hash_hosts && (hashed = host_hash(hostport, NULL, 0)) == NULL)
 		fatal("host_hash failed");
 	known_host = hash_hosts ? hashed : hostport;
-	fprintf(stdout, "%s ", known_host);
+
+	if (fprintf(stdout, "%s ", known_host) < 0)
+		goto out;
+	/* sshkey_write prints X.509 certificate in blob format :-( */
 	if (sshkey_is_x509(key)) {
-		/* key_write prints x509 certificate in blob format :-( */
-		Xkey_write_subject(c->c_keyname, key, stdout);
+		if (!Xkey_write_subject(c->c_keyname, key, stdout))
+			goto out;
 	} else {
-	sshkey_write(key, stdout);
+		if (sshkey_write(key, stdout) != 0)
+			goto out;
 	}
-	fputs("\n", stdout);
+	(void)fputs("\n", stdout);
+
+out:
 	free(hashed);
 	free(hostport);
 }
