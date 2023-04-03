@@ -1,4 +1,4 @@
-/* $OpenBSD: sftp.c,v 1.231 2023/03/29 00:59:08 dtucker Exp $ */
+/* $OpenBSD: sftp.c,v 1.232 2023/03/31 04:45:08 dtucker Exp $ */
 /*
  * Copyright (c) 2001-2004 Damien Miller <djm@openbsd.org>
  * Copyright (c) 2013-2021 Roumen Petrov.  All rights reserved.
@@ -226,7 +226,7 @@ killchild(int signo)
 		/* may receive SIGCHLD signal here，i.e. sshpid = -1,
 		   so use cached value */
 		kill(pid, SIGTERM);
-		waitpid(pid, NULL, 0);
+		(void)waitpid(pid, NULL, 0);
 	}
 
 	_exit(1);
