@@ -1,4 +1,4 @@
-/* $OpenBSD: auth2-gss.c,v 1.32 2021/01/27 10:15:08 djm Exp $ */
+/* $OpenBSD: auth2-gss.c,v 1.34 2023/03/31 04:22:27 djm Exp $ */
 /*
  * Copyright (c) 2001-2003 Simon Wilkinson. All rights reserved.
  *
@@ -46,6 +46,8 @@
 #include "ssh-gss.h"
 #include "monitor_wrap.h"
 
+#define SSH_GSSAPI_MAX_MECHS	2048
+
 extern ServerOptions options;
 
 static int input_gssapi_token(int type, u_int32_t plen, struct ssh *ssh);
@@ -73,7 +75,11 @@ userauth_gssapi(struct ssh *ssh)
 		fatal_fr(r, "parse packet");
 
 	if (mechs == 0) {
-		debug("Mechanism negotiation is not supported");
+		logit("Mechanism negotiation is not supported");
+		return (0);
+	} else if (mechs > SSH_GSSAPI_MAX_MECHS) {
+		logit("Too many mechanisms requested %u > %u", mechs,
+		    SSH_GSSAPI_MAX_MECHS);
 		return (0);
 	}
 
