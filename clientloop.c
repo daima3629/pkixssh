@@ -1,4 +1,4 @@
-/* $OpenBSD: clientloop.c,v 1.388 2023/03/03 02:37:58 dtucker Exp $ */
+/* $OpenBSD: clientloop.c,v 1.392 2023/04/03 08:10:54 dtucker Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -1042,14 +1042,12 @@ process_escapes(struct ssh *ssh, Channel *c,
 	u_int i;
 	u_char ch;
 	char *s;
-	struct escape_filter_ctx *efc = c->filter_ctx == NULL ?
-	    NULL : (struct escape_filter_ctx *)c->filter_ctx;
+	struct escape_filter_ctx *efc;
 
-	if (c->filter_ctx == NULL)
+	if (c->filter_ctx == NULL || len <= 0)
 		return 0;
 
-	if (len <= 0)
-		return (0);
+	efc = (struct escape_filter_ctx *)c->filter_ctx;
 
 	for (i = 0; i < (u_int)len; i++) {
 		/* Get one character at a time. */
@@ -1067,7 +1065,7 @@ process_escapes(struct ssh *ssh, Channel *c,
 				if ((r = sshbuf_putf(berr, "%c.\r\n",
 				    efc->escape_char)) != 0)
 					fatal_fr(r, "sshbuf_putf");
-				if (c && c->ctl_chan != -1) {
+				if (c->ctl_chan != -1) {
 					channel_abandon(ssh, c);
 					return 0;
 				} else
@@ -1076,7 +1074,7 @@ process_escapes(struct ssh *ssh, Channel *c,
 
 			case 'Z' - 64:
 				/* XXX support this for mux clients */
-				if (c && c->ctl_chan != -1) {
+				if (c->ctl_chan != -1) {
 					char b[16];
  noescape:
 					if (ch == 'Z' - 64)
@@ -1123,7 +1121,7 @@ process_escapes(struct ssh *ssh, Channel *c,
 			case 'V':
 				/* FALLTHROUGH */
 			case 'v':
-				if (c && c->ctl_chan != -1)
+				if (c->ctl_chan != -1)
 					goto noescape;
 				if (!log_is_on_stderr()) {
 					if ((r = sshbuf_putf(berr,
@@ -1146,7 +1144,7 @@ process_escapes(struct ssh *ssh, Channel *c,
 				continue;
 
 			case '&':
-				if (c && c->ctl_chan != -1)
+				if (c->ctl_chan != -1)
 					goto noescape;
 				/*
 				 * Detach the program (continue to serve
@@ -1181,7 +1179,7 @@ process_escapes(struct ssh *ssh, Channel *c,
 				return -1;
 			case '?':
 				print_escape_help(berr, efc->escape_char,
-				    (c && c->ctl_chan != -1),
+				    (c->ctl_chan != -1),
 				    log_is_on_stderr());
 				continue;
 
@@ -1196,7 +1194,7 @@ process_escapes(struct ssh *ssh, Channel *c,
 				continue;
 
 			case 'C':
-				if (c && c->ctl_chan != -1)
+				if (c->ctl_chan != -1)
 					goto noescape;
 				if (options.enable_escape_commandline == 0) {
 					if ((r = sshbuf_putf(berr,
