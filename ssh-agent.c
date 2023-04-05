@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-agent.c,v 1.279 2021/11/18 03:31:44 djm Exp $ */
+/* $OpenBSD: ssh-agent.c,v 1.298 2023/03/31 04:45:08 dtucker Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -1268,8 +1268,8 @@ main(int ac, char **av)
 	sanitise_stdfd();
 
 	/* drop */
-	setegid(getgid());
-	setgid(getgid());
+	(void)setegid(getgid());
+	(void)setgid(getgid());
 
 	platform_disable_tracing(0);	/* strict=no */
 
