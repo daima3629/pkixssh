@@ -1528,6 +1528,14 @@ main(int ac, char **av)
 		free(cp);
 	}
 
+	if (options.revoked_host_keys != NULL) {
+		cp = tilde_expand_filename(options.revoked_host_keys, getuid());
+		free(options.revoked_host_keys);
+		options.revoked_host_keys =
+		    default_client_percent_dollar_expand(cp, cinfo);
+		free(cp);
+	}
+
 	if (options.forward_agent &&
 	    options.forward_agent_sock_path != NULL) {
 		cp = tilde_expand_filename(options.forward_agent_sock_path,
