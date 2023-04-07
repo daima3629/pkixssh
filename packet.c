@@ -1892,7 +1892,7 @@ sshpkt_vfatal(struct ssh *ssh, int r, const char *fmt, va_list ap)
 
 	sshpkt_fmt_connection_id(ssh, remote_id, sizeof(remote_id));
 
-	ssh_packet_close_internal(ssh, 0);
+	ssh_packet_clear_keys(ssh);
 
 	switch (r) {
 	case SSH_ERR_CONN_CLOSED:
