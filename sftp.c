@@ -1,4 +1,4 @@
-/* $OpenBSD: sftp.c,v 1.232 2023/03/31 04:45:08 dtucker Exp $ */
+/* $OpenBSD: sftp.c,v 1.234 2023/04/12 08:53:54 jsg Exp $ */
 /*
  * Copyright (c) 2001-2004 Damien Miller <djm@openbsd.org>
  * Copyright (c) 2013-2021 Roumen Petrov.  All rights reserved.
@@ -620,7 +620,7 @@ escape_glob(const char *s)
 
 /*
  * Arg p must be dynamically allocated.  make_absolute will either return it
- * or free it and and allocate a new one.  Caller must free returned string.
+ * or free it and allocate a new one.  Caller must free returned string.
  */
 static char *
 make_absolute_pwd_glob(char *p, const char *pwd)

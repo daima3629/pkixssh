@@ -1,4 +1,4 @@
-/* $OpenBSD: sftp-server.c,v 1.145 2022/11/09 09:04:12 dtucker Exp $ */
+/* $OpenBSD: sftp-server.c,v 1.147 2023/04/12 08:53:54 jsg Exp $ */
 /*
  * Copyright (c) 2000-2004 Markus Friedl.  All rights reserved.
  * Copyright (c) 2021 Roumen Petrov.  All rights reserved.
@@ -629,7 +629,7 @@ send_handle(u_int32_t id, int handle)
 	int hlen;
 
 	handle_to_string(handle, &string, &hlen);
-	debug("request %u: sent handle handle %d", id, handle);
+	debug("request %u: sent handle %d", id, handle);
 	send_data_or_handle(SSH2_FXP_HANDLE, id, string, hlen);
 	free(string);
 }
