@@ -1,6 +1,6 @@
 #ifdef __ANDROID__
 /*
- * Copyright (c) 2016-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2016-2023 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -185,11 +185,11 @@ relocate_etcdir(const char *pathname, char *pathbuf, size_t pathlen) {
 	if (pathlen <= len) return 0;
 	if (strncmp(pathname, SSHDIR, len) != 0) return 0;
 
-{	const char *appdir = get_app_etcdir();
+{	const char *appdir = NULL;
+	if (appdir == NULL) appdir = get_app_etcdir();
 	if (appdir == NULL) return 0;
 
 	len = snprintf(pathbuf, pathlen, "%s%s", appdir, pathname + len);
-	free((void*)appdir);
 }
 
 	return len <= pathlen;
@@ -202,7 +202,8 @@ relocate_bindir(const char *pathname, char *pathbuf, size_t pathlen) {
 	if (pathlen <= len) return 0;
 	if (strncmp(pathname, SSHBINDIR, len) != 0) return 0;
 
-{	const char *appdir = get_app_bindir();
+{	static const char *appdir = NULL;
+	if (appdir == NULL) appdir = get_app_bindir();
 	if (appdir == NULL) return 0;
 
 	/* in release build package manager extract only lib*.so
@@ -211,7 +212,6 @@ relocate_bindir(const char *pathname, char *pathbuf, size_t pathlen) {
 	 */
 	len = snprintf(pathbuf, pathlen, "%s/libcmd-%s.so",
 	    appdir, pathname + len + 1/*exclude separator*/);
-	free((void*)appdir);
 }
 
 	return len <= pathlen;
@@ -224,13 +224,13 @@ relocate_libexecdir(const char *pathname, char *pathbuf, size_t pathlen) {
 	if (pathlen <= len) return 0;
 	if (strncmp(pathname, SSHLIBEXECDIR, len) != 0) return 0;
 
-{	const char *appdir = get_app_libexecdir();
+{	static const char *appdir = NULL;
+	if (appdir == NULL) appdir = get_app_libexecdir();
 	if (appdir == NULL) return 0;
 
 	/* same as bindir */
 	len = snprintf(pathbuf, pathlen, "%s/libcmd-%s.so",
 	    appdir, pathname + len + 1/*exclude separator*/);
-	free((void*)appdir);
 }
 
 	return len <= pathlen;
