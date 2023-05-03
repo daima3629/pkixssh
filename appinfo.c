@@ -1,6 +1,6 @@
 #ifdef __ANDROID__
 /*
- * Copyright (c) 2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2019-2023 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,14 +29,11 @@
 char *get_app_etcdir(void);
 char *get_app_bindir(void);
 char *get_app_libexecdir(void);
-/* failback path */
-char *get_app_datadir(void);
 
 /*stubs*/
 char* get_app_etcdir()     { return NULL; }
 char* get_app_bindir()     { return NULL; }
 char* get_app_libexecdir() { return NULL; }
-char* get_app_datadir()    { return NULL; }
 
 #else
 

@@ -32,55 +32,49 @@
 #include <string.h>
 
 #include "pathnames.h"
+extern char *__progname;
 
 /* paths to application specific directories: */
 extern char *get_app_etcdir(void);
 extern char *get_app_bindir(void);
 extern char *get_app_libexecdir(void);
-extern char *get_app_datadir(void);
 
 
-/* path to current program.
- * Obsolete package rule:
+/* Obsolete package rule:
  * Note it is expected binaries to be installed in $(prefix)/xbin.
  * In $(prefix)/bin is installed wrapper script that set custom configuration
  * like library patch and etc. and then execute real binary.
  *
- * API 29requirement: untrusted application could execute binary
+ * API 29 requirement: untrusted application could execute binary
  * located only in write protected path (SELinux rule). Only
  * application library directory is write protected, so executable
- * has to be packages in this directory.
- * Also we will rename to libcmd-{name}.so for various reasons.
+ * could be installed only into this directory.
+ * Also it must be renamed to libcmd-{name}.so for various reasons.
  */
-static char *android_progpath = NULL;
 
-/* Note Android executable have __progname but unlike other
- * implemenations it is absolute path, not just "filename".
- */
 char*
 ssh_get_progname(char *argv0) {
 	char *p, *q;
-	extern char *__progname;
 
 	UNUSED(argv0);
 
-	android_progpath = strdup(__progname);
-	p = strrchr(android_progpath, '/');
+	q = strdup(__progname);
+	p = strrchr(q, '/');
 	if (p != NULL) /*just in case*/
 		*p++ = '\0';
 	else
-		p = __progname;
+		p = q;
 
 	/* strip prefix */
 	if (strncmp(p, "libcmd-", 7) == 0)
 		p += 7;
 
-	q = strdup(p);
-	if (q == NULL) {
+	p = strdup(p);
+	if (p == NULL) {
 		perror("strdup");
 		exit(1);
 	}
-	p = q;
+	free(q);
 
 {	/* strip suffix */
 	size_t len = strlen(p);
@@ -238,7 +232,6 @@ relocate_libexecdir(const char *pathname, char *pathbuf, size_t pathlen) {
 
 const char*
 relocate_path(const char *pathname, char *pathbuf, size_t pathlen) {
-	size_t len = strlen(_PATH_PREFIX);
 
 	if (relocate_etcdir(pathname, pathbuf, pathlen) ||
 	    relocate_bindir(pathname, pathbuf, pathlen) ||
@@ -246,20 +239,7 @@ relocate_path(const char *pathname, char *pathbuf, size_t pathlen) {
 		return pathbuf;
 	}
 
-	if (pathlen <= len) return pathname;
-	if (strncmp(pathname, _PATH_PREFIX, len) != 0) return pathname;
-
-{	const char *datadir = get_app_datadir();
-	if (datadir != NULL) {
-		/*relative to application directory*/
-		len = snprintf(pathbuf, pathlen, "%s%s", datadir, pathname + len);
-		free((void*)datadir);
-	} else {
-		/*as failback relative to program parent directory*/
-		len = snprintf(pathbuf, pathlen, "%s/..%s", android_progpath, pathname + len);
-	}
-}
-	return (len <= pathlen) ? pathbuf: pathname;
+	return pathname;
 }
 
 
