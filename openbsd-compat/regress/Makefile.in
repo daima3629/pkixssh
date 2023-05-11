@@ -19,7 +19,7 @@ TESTPROGS=closefromtest$(EXEEXT) snprintftest$(EXEEXT) strduptest$(EXEEXT) \
 all:	t-exec ${OTHERTESTS}
 
 %$(EXEEXT):	%.c $(LIBCOMPAT)
-	$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) -o $@ $< $(LIBCOMPAT) $(LIBS)
+	$(CC) -o $@ $(CFLAGS) $(CPPFLAGS) $< $(LDFLAGS) $(LIBS)
 
 t-exec:	$(TESTPROGS)
 	@echo running compat regress tests
