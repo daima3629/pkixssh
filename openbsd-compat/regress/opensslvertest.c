@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2014 Darren Tucker
- * Copyright (c) 2018 Roumen Petrov
+ * Copyright (c) 2018-2023 Roumen Petrov
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -19,6 +19,27 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include "log.h"
+
+/* ssh_FIPS_mode() dependency */
+void
+sshlog_cryptoerr_all(const char *file, const char *func, int line,
+    LogLevel level
+) {
+	UNUSED(file); UNUSED(func); UNUSED(line);
+	UNUSED(level);
+}
+
+void
+sshfatal(const char *file, const char *func, int line,
+    const char *fmt, ...
+) {
+	UNUSED(file); UNUSED(func); UNUSED(line);
+	UNUSED(fmt);
+	_exit(255);
+}
+
 
 #ifdef HAVE_OPENSSL_VERSION_MAJOR
 int
