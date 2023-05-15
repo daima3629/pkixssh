@@ -26,14 +26,25 @@
 #include "includes.h"
 
 /* Android application must provide own implementation: */
+/* version 1*/
 char *get_app_etcdir(void);
 char *get_app_bindir(void);
 char *get_app_libexecdir(void);
+/* version 2*/
+char *get2_app_etcdir(const char *cmd);
+char *get2_app_bindir(const char *cmd);
+char *get2_app_libexecdir(const char *cmd);
+
 
 /*stubs*/
+/* version 1*/
 char* get_app_etcdir()     { return NULL; }
 char* get_app_bindir()     { return NULL; }
 char* get_app_libexecdir() { return NULL; }
+/* version 2*/
+char *get2_app_etcdir(const char *cmd)     { UNUSED(cmd); return NULL; }
+char *get2_app_bindir(const char *cmd)     { UNUSED(cmd); return NULL; }
+char *get2_app_libexecdir(const char *cmd) { UNUSED(cmd); return NULL; }
 
 #else
 
