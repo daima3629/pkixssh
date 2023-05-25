@@ -2,7 +2,7 @@
 
 # Copyright (c) 1999-2023 Philip Hands <phil@hands.com>
 #               2020 Matthias Blümel <blaimi@blaimi.de>
-#               2019-2020 Roumen Petrov, Sofia, Bulgaria
+#               2019-2023 Roumen Petrov, Sofia, Bulgaria
 #               2017 Sebastien Boyron <seb@boyron.eu>
 #               2013 Martin Kletzander <mkletzan@redhat.com>
 #               2010 Adeodato =?iso-8859-1?Q?Sim=F3?= <asp16@alu.ua.es>
@@ -245,7 +245,6 @@ populate_new_ids() {
 #    optionally takes an alternative path for authorized_keys
 installkeys_sh() {
   AUTH_KEY_FILE=${1:-.ssh/authorized_keys}
-  AUTH_KEY_DIR=`dirname "$AUTH_KEY_FILE"`
 
   # In the command:
   #    cd to be at $HOME, just in case;
@@ -259,12 +258,14 @@ installkeys_sh() {
 cat <<EOF
 	cd;
 	umask 077;
-	mkdir -p "$AUTH_KEY_DIR" &&
-		{ test -z \`tail -1c "$AUTH_KEY_FILE" 2>/dev/null\` ||
-		echo >> "$AUTH_KEY_FILE" || exit 1; } &&
-		cat >> "$AUTH_KEY_FILE" || exit 1;
+	AUTH_KEY_FILE="$AUTH_KEY_FILE";
+	AUTH_KEY_DIR=\`dirname "\$AUTH_KEY_FILE"\`;
+	mkdir -p "\$AUTH_KEY_DIR" &&
+		{ test -z \`tail -1c "\$AUTH_KEY_FILE" 2>/dev/null\` ||
+		echo >> "\$AUTH_KEY_FILE" || exit 1; } &&
+		cat >> "\$AUTH_KEY_FILE" || exit 1;
 	if type restorecon >/dev/null 2>&1; then
-		restorecon -F "$AUTH_KEY_DIR" "$AUTH_KEY_FILE";
+		restorecon -F "\$AUTH_KEY_DIR" "\$AUTH_KEY_FILE";
 	fi
 EOF
 )
