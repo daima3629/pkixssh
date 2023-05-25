@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# Copyright (c) 1999-2020 Philip Hands <phil@hands.com>
+# Copyright (c) 1999-2023 Philip Hands <phil@hands.com>
 #               2020 Matthias Blümel <blaimi@blaimi.de>
 #               2019-2020 Roumen Petrov, Sofia, Bulgaria
 #               2017 Sebastien Boyron <seb@boyron.eu>
@@ -65,10 +65,11 @@ SFTP=
 umask 0177
 
 usage () {
-  printf 'Usage: %s [-h|-?|-f|-n|-s] [-i [identity_file]] [-p port] [-F alternative ssh_config file] [[-o <ssh -o options>] ...] [user@]hostname\n' "$0" >&2
+  printf 'Usage: %s [-h|-?|-f|-n|-s|-x] [-i [identity_file]] [-p port] [-F alternative ssh_config file] [[-o <ssh -o options>] ...] [user@]hostname\n' "$0" >&2
   printf '\t-f: force mode -- copy keys without trying to check if they are already installed\n' >&2
   printf '\t-n: dry run    -- no keys are actually copied\n' >&2
   printf '\t-s: use sftp   -- use sftp instead of executing remote-commands. Can be useful if the remote only allows sftp\n' >&2
+  printf '\t-x: debug      -- enables -x in this shell, for debugging\n' >&2
   printf '\t-h|-?: print this help\n' >&2
   exit 1
 }
@@ -114,7 +115,7 @@ fi
 SEEN_OPT_I=false
 FORCED=false
 DRY_RUN=false
-while getopts "i:o:p:F:fnsh?" OPT
+while getopts "i:o:p:F:fnsxh?" OPT
 do
   case "$OPT" in
     i)
@@ -136,6 +137,9 @@ do
       ;;
     s)
       SFTP=sftp
+      ;;
+    x)
+      set -x
       ;;
     h|\?)
       usage
