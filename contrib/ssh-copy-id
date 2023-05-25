@@ -249,6 +249,7 @@ installkeys_sh() {
 
   # In the command:
   #    cd to be at $HOME, just in case;
+  #    OpenWrt has a special case for root only
   #    the -z "`tail ...`" checks for a trailing newline. The echo adds one if was missing
   #    the cat adds the keys we're getting via STDIN
   #    and if available restorecon is used to restore the SELinux context
@@ -260,6 +261,8 @@ cat <<EOF
 	cd;
 	umask 077;
 	AUTH_KEY_FILE="$AUTH_KEY_FILE";
+	test -f /etc/openwrt_release -a "\$LOGNAME" = "root" &&
+		AUTH_KEY_FILE=/etc/dropbear/authorized_keys;
 	AUTH_KEY_DIR=\`dirname "\$AUTH_KEY_FILE"\`;
 	mkdir -p "\$AUTH_KEY_DIR" &&
 		{ test -z "\`tail -1c "\$AUTH_KEY_FILE" 2>/dev/null\`" ||
@@ -337,15 +340,6 @@ case "$REMOTE_VERSION" in
     if test -z "$ADDED" ; then
       exit 1
     fi
-    ;;
-  dropbear*)
-    populate_new_ids 0
-    if ! $DRY_RUN ; then
-      printf '%s\n' "$NEW_IDS" | \
-      $SSH "$@" "$(installkeys_sh /etc/dropbear/authorized_keys)" \
-      || exit 1
-    fi
-    ADDED=$(printf '%s\n' "$NEW_IDS" | wc -l)
     ;;
   *)
     # Assuming that the remote host treats ~/.ssh/authorized_keys as one might expect
