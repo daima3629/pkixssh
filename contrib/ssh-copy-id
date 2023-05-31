@@ -63,10 +63,11 @@ fi
 DEFAULT_PUB_ID_FILE=$(ls -t "${HOME}"/.ssh/id*.pub 2>/dev/null | grep -v -- '-cert.pub$' | head -n 1)
 SSH="ssh -a -x"
 SFTP=
+TARGET_PATH=.ssh/authorized_keys
 umask 0177
 
 usage () {
-  printf 'Usage: %s [-h|-?|-f|-n|-s|-x] [-i [identity_file]] [-p port] [-F alternative ssh_config file] [[-o <ssh -o options>] ...] [user@]hostname\n' "$0" >&2
+  printf 'Usage: %s [-h|-?|-f|-n|-s|-x] [-i [identity_file]] [-p port] [-F alternative ssh_config file] [-t target_path] [[-o <ssh -o options>] ...] [user@]hostname\n' "$0" >&2
   printf '\t-f: force mode -- copy keys without trying to check if they are already installed\n' >&2
   printf '\t-n: dry run    -- no keys are actually copied\n' >&2
   printf '\t-s: use sftp   -- use sftp instead of executing remote-commands. Can be useful if the remote only allows sftp\n' >&2
@@ -118,7 +119,7 @@ FORCED=false
 DRY_RUN=false
 OPTS_oF=
 SSH_PORT=
-while getopts "i:o:p:F:fnsxh?" OPT
+while getopts "i:o:p:F:t:fnsxh?" OPT
 do
   case "$OPT" in
     i)
@@ -144,7 +145,11 @@ do
     s)
       SFTP=sftp
       ;;
+    t)
+      TARGET_PATH="$OPTARG"
+      ;;
     x)
+      SET_X="set -x;"
       set -x
       ;;
     h|\?)
@@ -242,11 +247,8 @@ populate_new_ids() {
 }
 
 # installkey_sh [target_path]
-#    produce a one-liner to add the keys to remote authorized_keys file
-#    optionally takes an alternative path for authorized_keys
+#    produce a one-liner to add the keys to remote $TARGET_PATH
 installkeys_sh() {
-  AUTH_KEY_FILE=${1:-.ssh/authorized_keys}
-
   # In the command:
   #    cd to be at $HOME, just in case;
   #    OpenWrt has a special case for root only
@@ -258,9 +260,10 @@ installkeys_sh() {
   #      (hence the excessive use of semi-colons (;) )
   INSTALLKEYS_SH=$(
 cat <<EOF
+	$SET_X
 	cd;
 	umask 077;
-	AUTH_KEY_FILE="$AUTH_KEY_FILE";
+	AUTH_KEY_FILE="$TARGET_PATH";
 	test -f /etc/openwrt_release -a "\$LOGNAME" = "root" &&
 		AUTH_KEY_FILE=/etc/dropbear/authorized_keys;
 	AUTH_KEY_DIR=\`dirname "\$AUTH_KEY_FILE"\`;
@@ -280,6 +283,8 @@ EOF
 }
 
 installkeys_via_sftp() {
+  AUTH_KEY_FILE="$TARGET_PATH"
+  AUTH_KEY_DIR=$(dirname "$AUTH_KEY_FILE")
 
   # repopulate "$@" inside this function
   eval set -- "$SSH_OPTS"
@@ -290,17 +295,17 @@ installkeys_via_sftp() {
   L_CLEANUP="$SSH -S $L_SHARED_CON -O exit 'ignored' >/dev/null 2>&1 ; $SCRATCH_CLEANUP"
   trap "$L_CLEANUP" EXIT TERM INT QUIT
   sftp -b - -o "ControlPath=$L_SHARED_CON" "ignored" <<-EOF || return 1
-	-get .ssh/authorized_keys $L_KEYS
+	-get "$AUTH_KEY_FILE" "$L_KEYS"
 	EOF
   # add a newline or create file if it's missing, same like above
   test -z "$(tail -1c "$L_KEYS" 2>/dev/null)" || echo >> "$L_KEYS"
   # append the keys being piped in here
   cat >> "$L_KEYS"
   sftp -b - -o "ControlPath=$L_SHARED_CON" "ignored" <<-EOF || return 1
-	-mkdir .ssh
-	chmod 700 .ssh
-	put $L_KEYS .ssh/authorized_keys
-	chmod 600 .ssh/authorized_keys
+	-mkdir "$AUTH_KEY_DIR"
+	chmod 700 "$AUTH_KEY_DIR"
+	put $L_KEYS "$AUTH_KEY_FILE"
+	chmod 600 "$AUTH_KEY_FILE"
 	EOF
   eval "$L_CLEANUP" && trap "$SCRATCH_CLEANUP" EXIT TERM INT QUIT
 }
@@ -342,7 +347,7 @@ case "$REMOTE_VERSION" in
     fi
     ;;
   *)
-    # Assuming that the remote host treats ~/.ssh/authorized_keys as one might expect
+    # Assuming that the remote host treats $TARGET_PATH as one might expect
     populate_new_ids 0
     if ! $DRY_RUN ; then
       printf '%s\n' "$NEW_IDS" | \
