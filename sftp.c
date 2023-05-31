@@ -2009,7 +2009,7 @@ complete_match(EditLine *el, struct sftp_conn *conn, char *remote_path,
 		tmp = make_absolute_pwd_glob(tmp, remote_path);
 		remote_glob(conn, tmp, GLOB_DOOFFS|GLOB_MARK, NULL, &g);
 	} else
-		glob(tmp, GLOB_DOOFFS|GLOB_MARK, NULL, &g);
+		(void)glob(tmp, GLOB_DOOFFS|GLOB_MARK, NULL, &g);
 
 	/* Determine length of pwd so we can trim completion display */
 	for (hadglob = tmplen = pwdlen = 0; tmp[tmplen] != 0; tmplen++) {
