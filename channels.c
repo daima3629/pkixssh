@@ -1,4 +1,4 @@
-/* $OpenBSD: channels.c,v 1.430 2023/03/10 03:01:51 dtucker Exp $ */
+/* $OpenBSD: channels.c,v 1.431 2023/06/05 13:24:36 millert Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -171,7 +171,7 @@ struct permission_set {
 /* Used to record timeouts per channel type */
 struct ssh_channel_timeout {
 	char *type_pattern;
-	u_int timeout_secs;
+	long timeout_secs;
 };
 
 /* Master structure for channels state */
@@ -335,11 +335,11 @@ channel_lookup(struct ssh *ssh, int id)
  */
 void
 channel_add_timeout(struct ssh *ssh, const char *type_pattern,
-    u_int timeout_secs)
+    long timeout_secs)
 {
 	struct ssh_channels *sc = ssh->chanctxt;
 
-	debug2_f("channel type \"%s\" timeout %u seconds",
+	debug2_f("channel type \"%s\" timeout %ld seconds",
 	    type_pattern, timeout_secs);
 	sc->timeouts = xrecallocarray(sc->timeouts, sc->ntimeouts,
 	    sc->ntimeouts + 1, sizeof(*sc->timeouts));
@@ -363,7 +363,7 @@ channel_clear_timeouts(struct ssh *ssh)
 	sc->ntimeouts = 0;
 }
 
-static u_int
+static long
 lookup_timeout(struct ssh *ssh, const char *type)
 {
 	struct ssh_channels *sc = ssh->chanctxt;
@@ -394,7 +394,7 @@ channel_set_xtype(struct ssh *ssh, int id, const char *xctype)
 	c->xctype = xstrdup(xctype);
 	/* Type has changed, so look up inactivity deadline again */
 	c->inactive_deadline = lookup_timeout(ssh, c->xctype);
-	debug2_f("labeled channel %d as %s (inactive timeout %u)", id, c->xctype,
+	debug2_f("labeled channel %d as %s (inactive timeout %ld)", id, c->xctype,
 	    c->inactive_deadline);
 }
 
@@ -516,7 +516,7 @@ channel_new(struct ssh *ssh, char *ctype, int type, int rfd, int wfd, int efd,
 	c->lastused = 0;
 	c->inactive_deadline = lookup_timeout(ssh, c->ctype);
 	TAILQ_INIT(&c->status_confirms);
-	debug("channel %d: new %s [%s] (inactive timeout: %u)",
+	debug("channel %d: new %s [%s] (inactive timeout: %ld)",
 	    found, c->ctype, remote_name, c->inactive_deadline);
 	return c;
 }
@@ -2662,12 +2662,15 @@ channel_handler(struct ssh *ssh, int table, struct timespec *timeout)
 				continue;
 		}
 		if (ftab[c->type] != NULL) {
+			time_t deadline = (time_t)(c->lastused + c->inactive_deadline);
+			if (deadline < c->lastused)
+				deadline = 0; /*overflow*/
 			if (table == CHAN_PRE &&
 			    c->type == SSH_CHANNEL_OPEN &&
 			    c->inactive_deadline != 0 && c->lastused != 0 &&
-			    now >= c->lastused + c->inactive_deadline) {
+			    now >= deadline) {
 				/* channel closed for inactivity */
-				verbose("channel %d: closing after %u seconds "
+				verbose("channel %d: closing after %ld seconds "
 				    "of inactivity", c->self,
 				    c->inactive_deadline);
 				channel_abandon(ssh, c);
@@ -2680,7 +2683,7 @@ channel_handler(struct ssh *ssh, int table, struct timespec *timeout)
 				    c->lastused != 0 &&
 				    c->inactive_deadline != 0) {
 					ptimeout_deadline_monotime(timeout,
-					    c->lastused + c->inactive_deadline);
+					    deadline);
 				}
 			} else if (timeout != NULL) {
 				/*

@@ -1,4 +1,4 @@
-/* $OpenBSD: servconf.c,v 1.392 2023/03/05 05:34:09 dtucker Exp $ */
+/* $OpenBSD: servconf.c,v 1.394 2023/06/05 13:24:36 millert Exp $ */
 /*
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
@@ -9,7 +9,7 @@
  * incompatible with the protocol description in the RFC file, it must be
  * called by a name other than "ssh" or "Secure Shell".
  *
- * Copyright (c) 2002-2022 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2023 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -1090,10 +1090,10 @@ process_permitopen(struct ssh *ssh, ServerOptions *options)
 
 /* Parse a ChannelTimeout clause "pattern=interval" */
 static int
-parse_timeout(const char *s, char **typep, u_int *secsp)
+parse_timeout(const char *s, char **typep, long *secsp)
 {
 	char *cp, *sdup;
-	int secs;
+	long secs;
 
 	if (typep != NULL)
 		*typep = NULL;
@@ -1116,7 +1116,7 @@ parse_timeout(const char *s, char **typep, u_int *secsp)
 	if (typep != NULL)
 		*typep = xstrdup(sdup);
 	if (secsp != NULL)
-		*secsp = (u_int)secs;
+		*secsp = secs;
 	free(sdup);
 	return 0;
 }
@@ -1124,12 +1124,13 @@ parse_timeout(const char *s, char **typep, u_int *secsp)
 void
 process_channel_timeouts(struct ssh *ssh, ServerOptions *options)
 {
-	u_int i, secs;
-	char *type;
+	u_int i;
 
 	debug3_f("setting %u timeouts", options->num_channel_timeouts);
 	channel_clear_timeouts(ssh);
 	for (i = 0; i < options->num_channel_timeouts; i++) {
+		char *type;
+		long secs;
 		if (parse_timeout(options->channel_timeouts[i],
 		    &type, &secs) != 0) {
 			fatal_f("internal error: bad timeout %s",
