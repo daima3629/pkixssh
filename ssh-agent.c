@@ -1387,7 +1387,9 @@ main(int ac, char **av)
 	 * a few spare for libc / stack protectors / sanitisers, etc.
 	 */
 #define SSH_AGENT_MIN_FDS (3+1+1+1+4)
+{
 #if defined(HAVE_GETRLIMIT) && defined(RLIMIT_NOFILE)
+	rlim_t lim;
 {	struct rlimit rlim;
 
 	if (getrlimit(RLIMIT_NOFILE, &rlim) == -1)
@@ -1395,11 +1397,18 @@ main(int ac, char **av)
 	if (rlim.rlim_cur < SSH_AGENT_MIN_FDS)
 		fatal("%s: file descriptor rlimit %lld too low (minimum %u)",
 		    __progname, (long long)rlim.rlim_cur, SSH_AGENT_MIN_FDS);
-	maxfds = rlim.rlim_cur - SSH_AGENT_MIN_FDS;
+	lim = rlim.rlim_cur;
+	if (lim == RLIM_INFINITY)
+		lim = SSH_SYSFDMAX;
 }
 #else
-	maxfds = SSH_SYSFDMAX - SSH_AGENT_MIN_FDS;
+	long lim = SSH_SYSFDMAX;
+	if (lim < SSH_AGENT_MIN_FDS)
+		fatal("%s: file descriptor limit %ld too low (minimum %u)",
+		    __progname, lim, SSH_AGENT_MIN_FDS);
 #endif
+	maxfds = MINIMUM(lim, UINT_MAX) - SSH_AGENT_MIN_FDS;
+}
 
 	parent_pid = getpid();
 
