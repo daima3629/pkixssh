@@ -396,6 +396,9 @@ sshbuf_write_pub_ecdsa(struct sshbuf *buf, const struct sshkey *key) {
 	int r;
 	EC_KEY *ec;
 
+	if (key->pk == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+
 	ec = EVP_PKEY_get1_EC_KEY(key->pk);
 	if (ec == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;

@@ -368,6 +368,9 @@ sshbuf_write_pub_rsa(struct sshbuf *buf, const struct sshkey *key) {
 	int r;
 	const BIGNUM *n = NULL, *e = NULL;
 
+	if (key->pk == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+
 {	RSA *rsa = EVP_PKEY_get1_RSA(key->pk);
 	if (rsa == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;

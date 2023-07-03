@@ -338,6 +338,9 @@ sshbuf_write_pub_dsa(struct sshbuf *buf, const struct sshkey *key) {
 	const BIGNUM *p = NULL, *q = NULL, *g = NULL;
 	const BIGNUM *pub_key = NULL;
 
+	if (key->pk == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+
 {	DSA *dsa = EVP_PKEY_get1_DSA(key->pk);
 	if (dsa == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;
