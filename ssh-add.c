@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-add.c,v 1.167 2023/03/08 00:05:58 djm Exp $ */
+/* $OpenBSD: ssh-add.c,v 1.168 2023/07/06 22:17:59 dtucker Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -13,7 +13,7 @@
  *
  * SSH2 implementation,
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2023 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -112,9 +112,13 @@ set_lifetime(const char *val)
 /* User has to confirm key use */
 static int confirm = 0;
 
+#ifdef WITH_XMSS
 /* Maximum number of signatures (XMSS) */
 static u_int maxsign = 0;
 static u_int minleft = 0;
+#else
+# define maxsign	0
+#endif
 
 /* we keep a cache of one passphrase */
 static char *pass = NULL;
@@ -252,10 +256,7 @@ add_file(int agent_fd, const char *filename, int key_only, int qflag,
 	char *comment = NULL;
 	char msg[1024], *certpath = NULL;
 	int r, fd, ret = -1;
-	size_t i;
-	u_int32_t left;
 	struct sshbuf *keyblob;
-	struct ssh_identitylist *idlist;
 
 	if (strcmp(filename, "-") == 0) {
 		fd = STDIN_FILENO;
@@ -337,31 +338,39 @@ add_file(int agent_fd, const char *filename, int key_only, int qflag,
 		    filename, comment);
 		goto out;
 	}
+#ifdef WITH_XMSS
+{
+	struct ssh_identitylist *idlist;
+
 	if (maxsign && minleft &&
 	    (r = ssh_fetch_identitylist(agent_fd, &idlist)) == 0) {
+		size_t i;
 		for (i = 0; i < idlist->nkeys; i++) {
+			u_int left;
 			if (!sshkey_equal_public(idlist->keys[i], private))
 				continue;
 			left = sshkey_signatures_left(idlist->keys[i]);
 			if (left < minleft) {
 				fprintf(stderr,
-				    "Only %d signatures left.\n", left);
+				    "Only %u signatures left.\n", left);
 				break;
 			}
 			fprintf(stderr, "Skipping update: ");
 			if (left == minleft) {
 				fprintf(stderr,
-				    "required signatures left (%d).\n", left);
+				    "required signatures left (%u).\n", left);
 			} else {
 				fprintf(stderr,
-				    "more signatures left (%d) than"
-				    " required (%d).\n", left, minleft);
+				    "more signatures left (%u) than"
+				    " required (%u).\n", left, minleft);
 			}
 			ssh_free_identitylist(idlist);
 			goto out;
 		}
 		ssh_free_identitylist(idlist);
 	}
+}
+#endif /*def WITH_XMSS*/
 
 	if ((r = ssh_add_identity_constrained(agent_fd, private, comment,
 	    lifetime, confirm, maxsign, skprovider)) == 0) {
@@ -704,8 +713,9 @@ main(int argc, char **argv)
 		case 'c':
 			confirm = 1;
 			break;
+	#ifdef WITH_XMSS
 		case 'm':
-			minleft = (int)strtonum(optarg, 1, UINT_MAX, NULL);
+			minleft = (u_int)strtonum(optarg, 1, UINT_MAX, NULL);
 			if (minleft == 0) {
 				usage();
 				ret = 1;
@@ -713,13 +723,14 @@ main(int argc, char **argv)
 			}
 			break;
 		case 'M':
-			maxsign = (int)strtonum(optarg, 1, UINT_MAX, NULL);
+			maxsign = (u_int)strtonum(optarg, 1, UINT_MAX, NULL);
 			if (maxsign == 0) {
 				usage();
 				ret = 1;
 				goto done;
 			}
 			break;
+	#endif /*def WITH_XMSS*/
 		case 'd':
 			deleting = 1;
 			break;
