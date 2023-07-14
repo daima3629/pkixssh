@@ -2165,6 +2165,10 @@ update_krl_from_file(const struct passwd *pw, const char *file, int wild_ca,
 	if (!quiet)
 		printf("Revoking from %s\n", path);
 	while (getline(&line, &linesize, krl_spec) != -1) {
+		if (linesize >= INT_MAX) {
+			fatal_f("%s contains unparsable line, len=%zu",
+			    path, linesize);
+		}
 		lnum++;
 		was_explicit_key = was_sha1 = was_sha256 = was_hash = 0;
 		cp = line + strspn(line, " \t");
