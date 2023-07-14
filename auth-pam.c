@@ -852,7 +852,7 @@ sshpam_query(void *ctx, char **name, char **info,
 	size_t plen;
 	u_char type;
 	char *msg;
-	size_t len, mlen;
+	size_t len, mlen, nmsg = 0;
 	int r;
 
 	debug3_f("PAM entering");
@@ -865,6 +865,8 @@ sshpam_query(void *ctx, char **name, char **info,
 	plen = 0;
 	*echo_on = xmalloc(sizeof(u_int));
 	while (ssh_msg_recv(ctxt->pam_psock, buffer) == 0) {
+		if (++nmsg > PAM_MAX_NUM_MSG)
+			fatal_f("too many query messages");
 		if ((r = sshbuf_get_u8(buffer, &type)) != 0 ||
 		    (r = sshbuf_get_cstring(buffer, &msg, &mlen)) != 0)
 			fatal_fr(r, "buffer error");
