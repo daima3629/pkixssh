@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keygen.c,v 1.468 2023/06/20 00:05:09 djm Exp $ */
+/* $OpenBSD: ssh-keygen.c,v 1.469 2023/07/14 05:31:44 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1994 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -11,7 +11,7 @@
  * incompatible with the protocol description in the RFC file, it must be
  * called by a name other than "ssh" or "Secure Shell".
  *
- * Copyright (c) 2005-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2005-2023 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -2122,6 +2122,8 @@ hash_to_blob(const char *cp, u_char **blobp, size_t *lenp,
 	 * characters; put them back for decode.
 	 */
 	tlen = strlen(cp);
+	if (tlen >= SIZE_MAX - 4)
+		fatal_f("hash too long: %zu bytes", tlen);
 	tmp = xmalloc(tlen + 4 + 1);
 	strlcpy(tmp, cp, tlen + 1);
 	while ((tlen % 4) != 0) {

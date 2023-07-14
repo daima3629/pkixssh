@@ -1,8 +1,8 @@
-/* $OpenBSD: misc.c,v 1.180 2023/01/06 02:37:04 djm Exp $ */
+/* $OpenBSD: misc.c,v 1.182 2023/07/14 05:31:44 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2005,2006 Damien Miller.  All rights reserved.
- * Copyright (c) 2012-2022 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2012-2023 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -964,7 +964,11 @@ urldecode(const char *src)
 	char *ret, *dst;
 	int ch;
 
-	ret = xmalloc(strlen(src) + 1);
+{	size_t srclen = strlen(src);
+	if (srclen >= SIZE_MAX)
+		fatal_f("input too large");
+	ret = xmalloc(srclen + 1);
+}
 	for (dst = ret; *src != '\0'; src++) {
 		switch (*src) {
 #if 0 /* NOTE: '+' is not delimiter in ssh uri! */
