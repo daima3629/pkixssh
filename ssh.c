@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh.c,v 1.588 2023/04/26 01:36:03 djm Exp $ */
+/* $OpenBSD: ssh.c,v 1.591 2023/07/17 04:08:31 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -765,7 +765,7 @@ main(int ac, char **av)
 #endif
 
 	while ((opt = getopt(ac, av, "1246ab:c:de:fgi:kl:m:no:p:qstvx"
-	    "AB:CD:E:F:" ENGCONFIG "I:J:KL:MNO:PQ:R:S:TVw:W:XYy")) != -1) {
+	    "AB:CD:E:F:" ENGCONFIG "I:J:KL:MNO:P:Q:R:S:TVw:W:XYy")) != -1) {
 		switch (opt) {
 		case '1':
 			fatal("SSH protocol v.1 is no longer supported");
@@ -829,7 +829,9 @@ main(int ac, char **av)
 			else
 				fatal("Invalid multiplex command.");
 			break;
-		case 'P':	/* deprecated */
+		case 'P':
+			if (options.tag == NULL)
+				options.tag = xstrdup(optarg);
 			break;
 		case 'Q':
 			cp = NULL;
