@@ -11,7 +11,7 @@
  * incompatible with the protocol description in the RFC file, it must be
  * called by a name other than "ssh" or "Secure Shell".
  *
- * Copyright (c) 2002-2022 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2023 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -631,11 +631,9 @@ match_cfg_line(Options *options, char **condition, struct passwd *pw,
     const char *host_arg, const char *original_host, int final_pass,
     int *want_final_pass, const char *filename, int linenum)
 {
-	char *arg, *oattrib, *attrib, *cmd, *cp = *condition, *host, *criteria;
+	char *arg, *oattrib, *attrib, *cp = *condition, *host;
 	const char *ruser;
-	int r, port, this_result, result = 1, attributes = 0, negate;
-	char thishost[NI_MAXHOST], shorthost[NI_MAXHOST], portstr[NI_MAXSERV];
-	char uidstr[32];
+	int r, port, result = 1, attributes = 0;
 
 	/*
 	 * Configuration is likely to be incomplete at this point so we
@@ -656,9 +654,10 @@ match_cfg_line(Options *options, char **condition, struct passwd *pw,
 	debug2("checking match for '%s' host %s originally %s",
 	    cp, host, original_host);
 	while ((oattrib = attrib = strdelim(&cp)) && *attrib != '\0') {
-		criteria = NULL;
-		this_result = 1;
-		negate = attrib[0] == '!';
+		char *criteria = NULL;
+		int this_result = 1;
+		int negate = attrib[0] == '!';
+
 		if (negate)
 			attrib++;
 		/* Criterion "all" has no argument and must appear alone */
@@ -722,7 +721,9 @@ match_cfg_line(Options *options, char **condition, struct passwd *pw,
 			if (r == (negate ? 1 : 0))
 				this_result = result = 0;
 		} else if (strcasecmp(attrib, "exec") == 0) {
-			char *conn_hash_hex, *keyalias;
+			char thishost[NI_MAXHOST], shorthost[NI_MAXHOST];
+			char portstr[NI_MAXSERV], uidstr[32];
+			char *cmd, *conn_hash_hex, *keyalias;
 
 			if (gethostname(thishost, sizeof(thishost)) == -1)
 				fatal("gethostname: %s", strerror(errno));
@@ -775,9 +776,11 @@ match_cfg_line(Options *options, char **condition, struct passwd *pw,
 			result = -1;
 			goto out;
 		}
-		debug3("%.200s line %d: %smatched '%s \"%.100s\"' ",
-		    filename, linenum, this_result ? "": "not ",
-		    oattrib, criteria);
+		debug3("%.200s line %d: %smatched '%s%s%.100s%s'",
+		    filename, linenum, this_result ? "": "not ", oattrib,
+		    criteria == NULL ? "" : " \"",
+		    criteria == NULL ? "" : criteria,
+		    criteria == NULL ? "" : "\"");
 		free(criteria);
 	}
 	if (attributes == 0) {
