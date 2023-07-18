@@ -146,6 +146,9 @@ This section may appear multiple times.
 
 5. KRL signature sections
 
+Note: KRL signatures are not supported by OpenSSH. OpenSSH >= 9.4 will
+refuse to load KRLs that contain signatures.
+
 The KRL_SECTION_SIGNATURE section serves a different purpose to the
 preceding ones: to provide cryptographic authentication of a KRL that
 is retrieved over a channel that does not provide integrity protection.
