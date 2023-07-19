@@ -209,7 +209,7 @@ USAGE_OPENSSL_ENGINE
 "           [-I pkcs11]\n"
 "           [-i identity_file]\n"
 "           [-J destination] [-L address] [-l login_name] [-m mac_spec]\n"
-"           [-O ctl_cmd] [-o option] [-p port] [-Q query_option]\n"
+"           [-O ctl_cmd] [-o option] [-P tag] [-p port] [-Q query_option]\n"
 "           [-R address] [-S ctl_path] [-W host:port] [-w local_tun[:remote_tun]]\n"
 "           destination [command [argument ...]]\n"
 	);
