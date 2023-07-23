@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-agent.c,v 1.298 2023/03/31 04:45:08 dtucker Exp $ */
+/* $OpenBSD: ssh-agent.c,v 1.299 2023/07/10 04:51:26 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -12,7 +12,7 @@
  * called by a name other than "ssh" or "Secure Shell".
  *
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2023 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -95,7 +95,7 @@
 #include "ssh-pkcs11.h"
 
 #ifndef DEFAULT_ALLOWED_PROVIDERS
-# define DEFAULT_ALLOWED_PROVIDERS "/usr/lib*/*,/usr/local/lib*/*"
+# define DEFAULT_ALLOWED_PROVIDERS "!*"
 #endif
 
 /* Maximum accepted message length */
@@ -151,7 +151,7 @@ char socket_name[PATH_MAX];
 char socket_dir[PATH_MAX];
 
 /* Pattern-list of allowed PKCS#11 paths */
-static char *allowed_providers;
+static char *allowed_providers = NULL;
 
 /* locking */
 #define LOCK_SIZE	32

@@ -1,4 +1,4 @@
-.\" $OpenBSD: ssh-agent.1,v 1.73 2022/03/31 17:27:27 naddy Exp $
+.\" $OpenBSD: ssh-agent.1,v 1.75 2022/10/07 06:00:58 jmc Exp $
 .\"
 .\" Author: Tatu Ylonen <ylo@cs.hut.fi>
 .\" Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -13,7 +13,7 @@
 .\" Copyright (c) 1999,2000 Markus Friedl.  All rights reserved.
 .\" Copyright (c) 1999 Aaron Campbell.  All rights reserved.
 .\" Copyright (c) 1999 Theo de Raadt.  All rights reserved.
-.\" Copyright (c) 2002-2020 Roumen Petrov.  All rights reserved.
+.\" Copyright (c) 2002-2023 Roumen Petrov.  All rights reserved.
 .\"
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions
@@ -43,7 +43,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: March 31 2022 $
+.Dd $Mdocdate: Jul 23 2023 $
 .Dt SSH-AGENT 1
 .Os
 .Sh NAME
@@ -125,8 +125,12 @@ Libraries that do not match the pattern list will be refused.
 See PATTERNS in
 .Xr ssh_config 5
 for a description of pattern-list syntax.
-The default list is
-.Dq /usr/lib/*,/usr/local/lib/* .
+For security reasons the default pattern is
+.Dq !*
+, i.e. does not allow any PKCS#11 provider.
+.Pp
+Note the pattern-list could be redefined at build time.
+It is strongly recommended pattern to match only trusted PKCS#11 provider libraries.
 .It Fl s
 Generate Bourne shell commands on
 .Dv stdout .
