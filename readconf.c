@@ -1047,7 +1047,7 @@ process_config_line_depth(Options *options, struct passwd *pw, const char *host,
 	char **cpptr, ***cppptr, fwdarg[256];
 	u_int i, *uintptr, max_entries = 0;
 	int r, oactive, negated, opcode, *intptr, value, value2, cmdline = 0, found;
-	int remotefwd, dynamicfwd;
+	int remotefwd, dynamicfwd, ca_only;
 	LogLevel *log_level_ptr;
 	SyslogFacility *log_facility_ptr;
 	long long val64;
@@ -1103,6 +1103,7 @@ process_config_line_depth(Options *options, struct passwd *pw, const char *host,
 	}
 	ac = oac;
 	av = oav;
+	ca_only = 0;
 
 	switch (opcode) {
 	case oBadOption:
@@ -1702,21 +1703,23 @@ parse_key_algorithms:
 			    filename, linenum, keyword);
 			goto out;
 		}
-#if 0		/* cannot validate here - depend from X509KeyAlgorithm */
+		/* cannot validate here - depend from X509KeyAlgorithm */
+	if (ca_only) {
 		if (*arg != '-' &&
 		    !sshkey_names_valid2(*arg == '+' || *arg == '^' ?
-		    arg + 1 : arg, 1)) {
+		    arg + 1 : arg, 1, ca_only)) {
 			error("%s line %d: Bad key types '%s'.",
 			    filename, linenum, arg ? arg : "<NONE>");
 			goto out;
 		}
-#endif
+	}
 		if (*activep && *charptr == NULL)
 			*charptr = xstrdup(arg);
 		break;
 
 	case oCASignatureAlgorithms:
 		charptr = &options->ca_sign_algorithms;
+		ca_only = 1;
 		goto parse_key_algorithms;
 
 	case oLogLevel:
@@ -3020,7 +3023,7 @@ fill_default_options(Options * options)
 		char *arg = options->hostkeyalgorithms;
 		if (*arg != '-' &&
 		    !sshkey_names_valid2(*arg == '+' || *arg == '^' ?
-		    arg + 1 : arg, 1)) {
+		    arg + 1 : arg, 1, 0)) {
 			error("Bad protocol 2 hostkey algorithms '%s'.",
 			    options->hostkeyalgorithms);
 			return -1;
@@ -3028,7 +3031,7 @@ fill_default_options(Options * options)
 	}
 
 	if (options->hostbased_algorithms != NULL) {
-		if (!sshkey_names_valid2(options->hostbased_algorithms, 1)) {
+		if (!sshkey_names_valid2(options->hostbased_algorithms, 1, 0)) {
 			error("Bad protocol 2 hostbased key algorithms '%s'.",
 			    options->hostbased_algorithms);
 			return -1;
@@ -3037,7 +3040,7 @@ fill_default_options(Options * options)
 		options->hostbased_algorithms = xstrdup("*");
 
 	if (options->pubkey_algorithms != NULL) {
-		if (!sshkey_names_valid2(options->pubkey_algorithms, 1)) {
+		if (!sshkey_names_valid2(options->pubkey_algorithms, 1, 0)) {
 			error("Bad protocol 2 public key algorithms '%s'.",
 			    options->pubkey_algorithms);
 			return -1;

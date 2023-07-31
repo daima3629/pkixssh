@@ -1,4 +1,4 @@
-/* $OpenBSD: servconf.c,v 1.394 2023/06/05 13:24:36 millert Exp $ */
+/* $OpenBSD: servconf.c,v 1.396 2023/07/17 05:26:38 djm Exp $ */
 /*
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
@@ -558,28 +558,28 @@ fill_default_server_options(ServerOptions *options)
 #undef CLEAR_ON_NONE_ARRAY
 
 	if (options->hostbased_algorithms != NULL) {
-		if (!sshkey_names_valid2(options->hostbased_algorithms, 1))
+		if (!sshkey_names_valid2(options->hostbased_algorithms, 1, 0))
 			fatal("Bad protocol 2 hostbased algorithms '%s'.",
 			    options->hostbased_algorithms);
 	} else
 		options->hostbased_algorithms = xstrdup("*");
 
 	if (options->pubkey_algorithms != NULL) {
-		if (!sshkey_names_valid2(options->pubkey_algorithms, 1))
+		if (!sshkey_names_valid2(options->pubkey_algorithms, 1, 0))
 			fatal("Bad protocol 2 public key algorithms '%s'.",
 			    options->pubkey_algorithms);
 	} else
 		options->pubkey_algorithms = xstrdup("*");
 
 	if (options->hostkeyalgorithms != NULL) {
-		if (!sshkey_names_valid2(options->hostkeyalgorithms, 1))
+		if (!sshkey_names_valid2(options->hostkeyalgorithms, 1, 0))
 			fatal("Bad protocol 2 host key algorithms '%s'.",
 			    options->hostkeyalgorithms);
 	} else
 		options->hostkeyalgorithms = xstrdup("*");
 
 	if (options->accepted_algorithms != NULL) {
-		if (!sshkey_names_valid2(options->accepted_algorithms, 1))
+		if (!sshkey_names_valid2(options->accepted_algorithms, 1, 0))
 			fatal("Bad protocol 2 key algorithms '%s'.",
 			    options->accepted_algorithms);
 	} else
@@ -1493,6 +1493,7 @@ process_server_config_line_depth(ServerOptions *options, char *line,
 	char **oav = NULL, **av;
 	int oac = 0, ac;
 	int cmdline = 0, *intptr, value, value2, n, port, oactive, r, found;
+	int ca_only;
 	SyslogFacility *log_facility_ptr;
 	LogLevel *log_level_ptr;
 	ServerOpCodes opcode;
@@ -1542,6 +1543,7 @@ process_server_config_line_depth(ServerOptions *options, char *line,
 	}
 	ac = oac;
 	av = oav;
+	ca_only = 0;
 
 	if (activep == NULL) { /* We are processing a command line directive */
 		cmdline = 1;
@@ -1898,19 +1900,21 @@ parse_string:
 		if (arg == NULL || *arg == '\0')
 			fatal("%s line %d: %s missing argument.",
 			    filename, linenum, keyword);
-#if 0		/* cannot validate here - depend from X509KeyAlgorithm */
+		/* cannot validate here - depend from X509KeyAlgorithm */
+	if (ca_only) {
 		if (*arg != '-' &&
 		    !sshkey_names_valid2(*arg == '+' || *arg == '^' ?
-		    arg + 1 : arg, 1))
+		    arg + 1 : arg, 1, ca_only))
 			fatal("%s line %d: bad key types '%s'.",
 			    filename, linenum, arg ? arg : "<NONE>");
-#endif
+	}
 		if (*activep && *charptr == NULL)
 			*charptr = xstrdup(arg);
 		break;
 
 	case sCASignatureAlgorithms:
 		charptr = &options->ca_sign_algorithms;
+		ca_only = 1;
 		goto parse_key_algorithms;
 
 	case sPubkeyAuthentication:

@@ -1,4 +1,4 @@
-/* $OpenBSD: sshkey.c,v 1.135 2023/03/31 03:22:49 djm Exp $ */
+/* $OpenBSD: sshkey.c,v 1.136 2023/06/21 05:10:26 djm Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Alexander von Gernler.  All rights reserved.
@@ -393,7 +393,7 @@ sshkey_algind(const char **name, u_int filter, int loc) {
 }
 
 int
-sshkey_names_valid2(const char *names, int allow_wildcard)
+sshkey_names_valid2(const char *names, int allow_wildcard, int plain_only)
 {
 	char *s, *cp, *p;
 	int type;
@@ -441,6 +441,9 @@ sshkey_names_valid2(const char *names, int allow_wildcard)
 					continue;
 			}
 			}
+			free(s);
+			return 0;
+		} else if (plain_only && sshkey_type_is_cert(type)) {
 			free(s);
 			return 0;
 		}

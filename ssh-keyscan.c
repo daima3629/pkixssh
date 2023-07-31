@@ -799,7 +799,7 @@ main(int argc, char **argv)
 			break;
 		case 't':
 			keynames_filter = xstrdup(optarg);
-			if (!sshkey_names_valid2(keynames_filter, 1)) {
+			if (!sshkey_names_valid2(keynames_filter, 1, 0)) {
 				fatal("Bad hostkey key algorithms '%s'",
 					keynames_filter);
 			}
