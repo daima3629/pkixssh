@@ -1,4 +1,4 @@
-/* $OpenBSD: readconf.c,v 1.379 2023/07/17 04:08:31 djm Exp $ */
+/* $OpenBSD: readconf.c,v 1.380 2023/07/17 06:16:33 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -42,6 +42,7 @@
 #include <sys/wait.h>
 #include <sys/un.h>
 
+#include <net/if.h>
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
 #include <netinet/ip.h>
@@ -50,6 +51,9 @@
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
+#ifdef HAVE_IFADDRS_H
+# include <ifaddrs.h>
+#endif
 #include <limits.h>
 #include <netdb.h>
 #ifdef HAVE_PATHS_H
@@ -625,6 +629,67 @@ execute_in_shell(const char *cmd)
 }
 
 /*
+ * Check whether a local network interface address appears in CIDR pattern-
+ * list 'addrlist'. Returns 1 if matched or 0 otherwise.
+ */
+static int
+check_match_ifaddrs(const char *addrlist)
+{
+#ifdef HAVE_IFADDRS_H
+	struct ifaddrs *ifa, *ifaddrs = NULL;
+	int r, found = 0;
+	char addr[NI_MAXHOST];
+	socklen_t salen;
+
+	if (getifaddrs(&ifaddrs) != 0) {
+		error("match localnetwork: getifaddrs failed: %s",
+		    strerror(errno));
+		return 0;
+	}
+	for (ifa = ifaddrs; ifa != NULL; ifa = ifa->ifa_next) {
+		if (ifa->ifa_addr == NULL || ifa->ifa_name == NULL ||
+		    (ifa->ifa_flags & IFF_UP) == 0)
+			continue;
+		switch (ifa->ifa_addr->sa_family) {
+		case AF_INET:
+			salen = sizeof(struct sockaddr_in);
+			break;
+		case AF_INET6:
+			salen = sizeof(struct sockaddr_in6);
+			break;
+#ifdef AF_LINK
+		case AF_LINK:
+			/* ignore */
+			continue;
+#endif /* AF_LINK */
+		default:
+			debug2_f("interface %s: unsupported address family %d",
+			    ifa->ifa_name, ifa->ifa_addr->sa_family);
+			continue;
+		}
+		if ((r = getnameinfo(ifa->ifa_addr, salen, addr, sizeof(addr),
+		    NULL, 0, NI_NUMERICHOST)) != 0) {
+			debug2_f("interface %s getnameinfo failed: %s",
+			    ifa->ifa_name, gai_strerror(r));
+			continue;
+		}
+		debug3_f("interface %s addr %s", ifa->ifa_name, addr);
+		if (addr_match_cidr_list(addr, addrlist) == 1) {
+			debug3_f("matched interface %s: address %s in %s",
+			    ifa->ifa_name, addr, addrlist);
+			found = 1;
+			break;
+		}
+	}
+	freeifaddrs(ifaddrs);
+	return found;
+#else /* HAVE_IFADDRS_H */
+	error("match localnetwork: not supported on this platform");
+	return 0;
+#endif /* HAVE_IFADDRS_H */
+}
+
+/*
  * Parse and execute a Match directive.
  */
 static int
@@ -719,6 +784,15 @@ match_cfg_line(Options *options, char **condition, struct passwd *pw,
 		} else if (strcasecmp(attrib, "localuser") == 0) {
 			criteria = xstrdup(pw->pw_name);
 			r = match_pattern_list(pw->pw_name, arg, 0) == 1;
+			if (r == (negate ? 1 : 0))
+				this_result = result = 0;
+		} else if (strcasecmp(attrib, "localnetwork") == 0) {
+			if (addr_match_cidr_list(NULL, arg) == -1) {
+				/* Error already printed */
+				result = -1;
+				goto out;
+			}
+			r = check_match_ifaddrs(arg) == 1;
 			if (r == (negate ? 1 : 0))
 				this_result = result = 0;
 		} else if (strcasecmp(attrib, "tagged") == 0) {
