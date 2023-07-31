@@ -852,6 +852,12 @@ main(int ac, char **av)
 				cp = sshkey_alg_list(1, 0, 0, '\n');
 			else if (strcmp(optarg, "key-plain") == 0)
 				cp = sshkey_alg_list(0, 1, 0, '\n');
+			else if (strcmp(optarg, "key-ca-sign") == 0)
+		#if 0 /* Duplicate, see "sig"! */
+				cp = sshkey_alg_list(0, 1, 1, '\n');
+		#else
+				cp = xstrdup("");
+		#endif
 			else if (strcmp(optarg, "sig") == 0)
 		#if 0 /* Useless and faulty!
 		Algorithm determine key type, how to encode key material
