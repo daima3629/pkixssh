@@ -833,6 +833,7 @@ cert_extension_subsection(struct sshbuf *subsect, struct ssh_krl *krl)
 	struct sshbuf *value = NULL;
 	char *name = NULL;
 
+	UNUSED(krl);
 	if ((r = sshbuf_get_cstring(subsect, &name, NULL)) != 0 ||
 	    (r = sshbuf_get_u8(subsect, &critical)) != 0 ||
 	    (r = sshbuf_froms(subsect, &value)) != 0) {
@@ -1012,6 +1013,7 @@ extension_section(struct sshbuf *sect, struct ssh_krl *krl)
 	struct sshbuf *value = NULL;
 	char *name = NULL;
 
+	UNUSED(krl);
 	if ((r = sshbuf_get_cstring(sect, &name, NULL)) != 0 ||
 	    (r = sshbuf_get_u8(sect, &critical)) != 0 ||
 	    (r = sshbuf_froms(sect, &value)) != 0) {
