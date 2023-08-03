@@ -1,4 +1,4 @@
-#	$OpenBSD: Makefile,v 1.122 2023/01/06 08:07:39 djm Exp $
+#	$OpenBSD: Makefile,v 1.125 2023/05/17 05:52:01 djm Exp $
 
 tests: unit file-tests t-exec
 check-core: tests
@@ -239,7 +239,12 @@ t12: $(OBJ)/t12.out
 
 t-exec:	${LTESTS:=.sh}
 	@if [ "x$?" = "x" ]; then exit 0; fi; \
+	start_from=false; test -n "$$LTESTS_FROM" && start_from=:; \
 	for TEST in ""$?; do \
+		if $$start_from ; then \
+			test "x$$TEST" != "x$$LTESTS_FROM.sh" && continue; \
+			start_from=false; \
+		fi ; \
 		do_test=:; \
 		for t in ""$$SKIP_LTESTS; do \
 			if test "$$t.sh" = "$$TEST" ; then do_test=false; break; fi; \
