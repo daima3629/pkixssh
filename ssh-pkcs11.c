@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-pkcs11.c,v 1.55 2021/11/18 21:11:01 djm Exp $ */
+/* $OpenBSD: ssh-pkcs11.c,v 1.59 2023/07/27 22:26:49 djm Exp $ */
 /*
  * Copyright (c) 2010 Markus Friedl.  All rights reserved.
  * Copyright (c) 2011 Kenneth Robinette.  All rights reserved.
@@ -815,19 +815,22 @@ pkcs11_wrap_ec(struct pkcs11_provider *provider, CK_ULONG slotidx,
 
 
 /* remove trailing spaces */
-static void
+static char *
 rmspace(u_char *buf, size_t len)
 {
 	size_t i;
 
-	if (!len)
-		return;
-	for (i = len - 1;  i > 0; i--)
-		if (i == len - 1 || buf[i] == ' ')
+	if (len == 0)
+		return buf;
+	for (i = len - 1; i > 0; i--)
+		if (buf[i] == ' ')
 			buf[i] = '\0';
 		else
 			break;
+	return buf;
 }
+/* Used to printf fixed-width, space-padded, unterminated strings using %.*s */
+#define RMSPACE(s) (int)sizeof(s), rmspace(s, sizeof(s))
 
 /*
  * open a pkcs11 session and login if required.
@@ -1574,15 +1577,13 @@ pkcs11_register_provider(char *provider_id, char *pin,
 		    provider_id, rv);
 		goto fail;
 	}
-	rmspace(p->info.manufacturerID, sizeof(p->info.manufacturerID));
-	rmspace(p->info.libraryDescription, sizeof(p->info.libraryDescription));
-	debug("provider %s: manufacturerID <%s> cryptokiVersion %d.%d"
-	    " libraryDescription <%s> libraryVersion %d.%d",
+	debug("provider %s: manufacturerID <%.*s> cryptokiVersion %d.%d"
+	    " libraryDescription <%.*s> libraryVersion %d.%d",
 	    provider_id,
-	    p->info.manufacturerID,
+	    RMSPACE(p->info.manufacturerID),
 	    p->info.cryptokiVersion.major,
 	    p->info.cryptokiVersion.minor,
-	    p->info.libraryDescription,
+	    RMSPACE(p->info.libraryDescription),
 	    p->info.libraryVersion.major,
 	    p->info.libraryVersion.minor);
 	if ((rv = f->C_GetSlotList(CK_TRUE, NULL, &p->nslots)) != CKR_OK) {
@@ -1619,15 +1620,13 @@ pkcs11_register_provider(char *provider_id, char *pin,
 			    "provider %s slot %lu", provider_id, (unsigned long)i);
 			continue;
 		}
-		rmspace(token->label, sizeof(token->label));
-		rmspace(token->manufacturerID, sizeof(token->manufacturerID));
-		rmspace(token->model, sizeof(token->model));
-		rmspace(token->serialNumber, sizeof(token->serialNumber));
-		debug("provider %s slot %lu: label <%s> manufacturerID <%s> "
-		    "model <%s> serial <%s> flags 0x%lx",
+		debug("provider %s slot %lu: label <%.*s> "
+		    "manufacturerID <%.*s> model <%.*s> serial <%.*s> "
+		    "flags 0x%lx",
 		    provider_id, (unsigned long)i,
-		    token->label, token->manufacturerID, token->model,
-		    token->serialNumber, token->flags);
+		    RMSPACE(token->label), RMSPACE(token->manufacturerID),
+		    RMSPACE(token->model), RMSPACE(token->serialNumber),
+		    token->flags);
 		/*
 		 * open session, login with pin if required and
 		 * retrieve public keys
