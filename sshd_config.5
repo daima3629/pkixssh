@@ -2277,6 +2277,10 @@ which are expanded at runtime:
 .It %%
 A literal
 .Sq % .
+.It \&%C
+Identifies the connection endpoints, containing
+four space-separated values: client address, client port number,
+server address, and server port number.
 .It \&%D
 The routing domain in which the incoming connection was received (OS specific).
 .It %F
@@ -2304,13 +2308,13 @@ The username.
 .El
 .Pp
 .Cm AuthorizedKeysCommand
-accepts the tokens %%, %D, %f, %h, %k, %t, %U, and %u.
+accepts the tokens %%, %C, %D, %f, %h, %k, %t, %U, and %u.
 .Pp
 .Cm AuthorizedKeysFile
 accepts the tokens %%, %h, %U, and %u.
 .Pp
 .Cm AuthorizedPrincipalsCommand
-accepts the tokens %%, %D, %F, %f, %h, %i, %K, %k, %s, %T, %t, %U, and %u.
+accepts the tokens %%, %C, %D, %F, %f, %h, %i, %K, %k, %s, %T, %t, %U, and %u.
 .Pp
 .Cm AuthorizedPrincipalsFile
 accepts the tokens %%, %h, %U, and %u.
