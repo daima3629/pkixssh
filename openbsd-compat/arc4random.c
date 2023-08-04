@@ -4,7 +4,7 @@
  * Copyright (c) 2008, Damien Miller <djm@openbsd.org>
  * Copyright (c) 2013, Markus Friedl <markus@openbsd.org>
  * Copyright (c) 2014, Theo de Raadt <deraadt@openbsd.org>
- * Copyright (c) 2014-2022, Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2014-2023, Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -31,14 +31,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#ifdef OPENSSL_FIPS
-#include <log.h>
-#include <openssl/err.h>
-#endif
+#include "log.h"
 
-#ifndef WITH_OPENSSL
 extern int _ssh_compat_getentropy(void *, size_t);
-#endif
 
 #ifdef OPENSSL_FIPS
 /* for FIPS build always use functions from "compat" library */
@@ -50,12 +45,9 @@ extern int _ssh_compat_getentropy(void *, size_t);
 
 #if !defined(HAVE_ARC4RANDOM) || !defined(HAVE_ARC4RANDOM_STIR)
 
-#ifdef WITH_OPENSSL
-#include <openssl/rand.h>
-#include <openssl/err.h>
-#endif
-
 #ifdef OPENSSL_FIPS
+# include <openssl/rand.h>
+# include <openssl/err.h>
 # ifdef HAVE_OPENSSL_FIPS_H
 #  include <openssl/fips.h> /* for FIPS_mode() */
 # endif
@@ -220,15 +212,8 @@ _rs_stir(void)
 	u_char rnd[KEYSZ + IVSZ];
 	uint32_t rekey_fuzz = 0;
 
-#ifdef WITH_OPENSSL
-	/* Always prefer OpenSSL random functionality */
-	if (RAND_bytes(rnd, sizeof(rnd)) <= 0)
-		fatal("Couldn't obtain random bytes (error 0x%lx)",
-		    (unsigned long)ERR_get_error());
-#else
 	if (_ssh_compat_getentropy(rnd, sizeof rnd) == -1)
 		fatal("getentropy failed");
-#endif
 
 	if (rs == NULL)
 		_rs_init(rnd, sizeof(rnd));

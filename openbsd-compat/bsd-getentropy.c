@@ -2,7 +2,7 @@
  * Copyright (c) 1996, David Mazieres <dm@uun.org>
  * Copyright (c) 2008, Damien Miller <djm@openbsd.org>
  * Copyright (c) 2013, Markus Friedl <markus@openbsd.org>
- * Copyright (c) 2014-2022, Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2014-2023, Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -19,8 +19,6 @@
 
 #include "includes.h"
 
-#ifndef WITH_OPENSSL
-
 #ifndef SSH_RANDOM_DEV
 # define SSH_RANDOM_DEV "/dev/urandom"
 #endif /* SSH_RANDOM_DEV */
@@ -35,18 +33,34 @@
 #include <string.h>
 #include <unistd.h>
 
+#ifdef WITH_OPENSSL
+#include <openssl/rand.h>
+#include <openssl/err.h>
+#endif
+
 #include "log.h"
 
 extern int seed_from_prngd(unsigned char *, size_t);
 
+int _ssh_compat_getentropy(void *, size_t);
 
 int
 _ssh_compat_getentropy(void *s, size_t len)
 {
+#if defined(WITH_OPENSSL) && defined(OPENSSL_PRNG_ONLY)
+	if (RAND_bytes(s, len) <= 0)
+		fatal("Couldn't obtain random bytes (error 0x%lx)",
+		    (unsigned long)ERR_get_error());
+#else
 	int fd;
 	ssize_t r;
 	size_t o = 0;
 
+    /* Prefer OpenSSL random functionality */
+#ifdef WITH_OPENSSL
+	if (RAND_bytes(s, len) == 1)
+		return 0;
+#endif
 #ifdef HAVE_GETENTROPY
 	if ((r = getentropy(s, len)) == 0)
 		return 0;
@@ -79,10 +93,6 @@ _ssh_compat_getentropy(void *s, size_t len)
 		o += r;
 	}
 	close(fd);
+#endif
 	return 0;
 }
-#else
-
-typedef int bsd_getentropy_empty_translation_unit;
-
-#endif /* ndef WITH_OPENSSL */
