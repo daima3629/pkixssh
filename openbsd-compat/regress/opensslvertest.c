@@ -41,13 +41,6 @@ sshfatal(const char *file, const char *func, int line,
 }
 
 
-#ifdef HAVE_OPENSSL_VERSION_MAJOR
-int
-main(void) {
-	fprintf(stderr, "'opensslvertest' is not applicable with modern OpenSSL version scheme\n");
-	exit(0);
-}
-#else
 int ssh_compatible_openssl(long, long);
 
 struct version_test {
@@ -73,6 +66,26 @@ struct version_test {
 	{ 0x1000101fL, 0x1010101fL, 0},	/* newer library minor version: NO */
 	{ 0x1000101fL, 0x0000101fL, 0},	/* older library major version: NO */
 	{ 0x1000101fL, 0x2000101fL, 0},	/* newer library major version: NO */
+
+	/* built with 1.1.1b release headers */
+	{ 0x1010101fL, 0x1010101fL, 1},/* exact match */
+	{ 0x1010101fL, 0x1010102fL, 1},	/* newer library patch version: ok */
+	{ 0x1010101fL, 0x1010100fL, 1},	/* older library patch version: ok */
+	{ 0x1010101fL, 0x1010201fL, 1},	/* newer library fix version: ok */
+	{ 0x1010101fL, 0x1010001fL, 0},	/* older library fix version: NO */
+	{ 0x1010101fL, 0x1020001fL, 0},	/* newer library minor version: NO */
+	{ 0x1010101fL, 0x0010101fL, 0},	/* older library major version: NO */
+	{ 0x1010101fL, 0x2010101fL, 0},	/* newer library major version: NO */
+
+	/* built with 3.0.1 release headers */
+	{ 0x3010101fL, 0x3010101fL, 1},/* exact match */
+	{ 0x3010101fL, 0x3010102fL, 1},	/* newer library patch version: ok */
+	{ 0x3010101fL, 0x3010100fL, 1},	/* older library patch version: ok */
+	{ 0x3010101fL, 0x3010201fL, 1},	/* newer library fix version: ok */
+	{ 0x3010101fL, 0x3010001fL, 1},	/* older library fix version: ok */
+	{ 0x3010101fL, 0x3020001fL, 1},	/* newer library minor version: ok */
+	{ 0x3010101fL, 0x1010101fL, 0},	/* older library major version: NO */
+	{ 0x3010101fL, 0x4010101fL, 0},	/* newer library major version: NO */
 };
 
 static void
@@ -100,4 +113,3 @@ main(void)
 #endif
 	exit(0);
 }
-#endif /*def HAVE_OPENSSL_VERSION_MAJOR*/

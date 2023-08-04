@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2001 Damien Miller.  All rights reserved.
+ * Copyright (c) 2018-2023 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -47,9 +48,7 @@
 #include "log.h"
 #include "sshbuf.h"
 
-#ifndef HAVE_OPENSSL_VERSION_MAJOR
-int ssh_compatible_openssl(long headerver, long libver);
-#endif
+extern int ssh_compatible_openssl(long headerver, long libver);
 
 /*
  * Portable OpenSSH PRNG seeding:
@@ -65,9 +64,7 @@ void
 seed_rng(void)
 {
 	unsigned char buf[RANDOM_SEED_SIZE];
-#ifdef HAVE_OPENSSL_VERSION_MAJOR
-	/* Obsolete by new OpenSSL version scheme */
-#else
+
 {
 #ifndef HAVE_OPENSSL_INIT_CRYPTO	/* OpenSSL < 1.1 */
 # define OpenSSL_version_num SSLeay
@@ -78,7 +75,6 @@ seed_rng(void)
 		fatal("OpenSSL version mismatch. Built against %lx, you "
 		    "have %lx", (u_long)OPENSSL_VERSION_NUMBER, ver_num);
 }
-#endif
 
 #ifndef OPENSSL_PRNG_ONLY
 	if (RAND_status() == 1)
