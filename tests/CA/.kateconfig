@@ -1,0 +1,2 @@
+kate-wildcard(*.sh): replace-tabs on;
+kate-wildcard(*.inc): replace-tabs on; mode Bash; syntax Bash;
