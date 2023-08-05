@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh.c,v 1.592 2023/07/17 05:41:53 jmc Exp $ */
+/* $OpenBSD: ssh.c,v 1.593 2023/07/26 23:06:00 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -19,7 +19,7 @@
  * Modified to work with SSLeay by Niels Provos <provos@citi.umich.edu>
  * in Canada (German citizen).
  *
- * Copyright (c) 2002-2022 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2023 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -150,6 +150,7 @@ static int need_controlpersist_detach = 0;
 
 /* Copies of flags for ControlPersist foreground mux-client */
 static int ostdin_null_flag, osession_type, otty_flag, orequest_tty;
+static int ofork_after_authentication;
 
 /*
  * General data structure for command line options and options configurable
@@ -1879,6 +1880,7 @@ control_persist_detach(void)
 		options.stdin_null = ostdin_null_flag;
 		options.request_tty = orequest_tty;
 		tty_flag = otty_flag;
+		options.fork_after_authentication = ofork_after_authentication;
 		options.session_type = osession_type;
 		close(muxserver_sock);
 		muxserver_sock = -1;
@@ -2308,15 +2310,17 @@ ssh_session2(struct ssh *ssh, const struct ssh_conn_info *cinfo)
 	 * async rfwd replies have been received for ExitOnForwardFailure).
 	 */
 	if (options.control_persist && muxserver_sock != -1) {
+		if ((options.session_type != SESSION_TYPE_NONE ||
+		    options.stdio_forward_host != NULL))
+			need_controlpersist_detach = 1;
 		ostdin_null_flag = options.stdin_null;
 		osession_type = options.session_type;
 		orequest_tty = options.request_tty;
 		otty_flag = tty_flag;
+		ofork_after_authentication = options.fork_after_authentication;
 		options.stdin_null = 1;
 		options.session_type = SESSION_TYPE_NONE;
 		tty_flag = 0;
-		if (!options.fork_after_authentication)
-			need_controlpersist_detach = 1;
 		options.fork_after_authentication = 1;
 	}
 	/*

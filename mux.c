@@ -1,7 +1,7 @@
 /* $OpenBSD: mux.c,v 1.99 2023/08/04 06:32:40 dtucker Exp $ */
 /*
  * Copyright (c) 2002-2008 Damien Miller <djm@openbsd.org>
- * Copyright (c) 2018-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2018-2023 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -2009,8 +2009,15 @@ mux_client_request_session(int fd)
 	ssh_signal(SIGTERM, control_client_sighandler);
 	ssh_signal(SIGWINCH, control_client_sigrelay);
 
-	rawmode = tty_flag;
-	if (tty_flag)
+	if (options.fork_after_authentication) {
+		if (daemon(1, 1) == -1) {
+			error_f("daemon() failed: %.200s", strerror(errno));
+			rawmode = tty_flag;
+		} else
+			rawmode = 0;
+	} else
+		rawmode = tty_flag;
+	if (rawmode)
 		enter_raw_mode(options.request_tty == REQUEST_TTY_FORCE);
 
 	/*
