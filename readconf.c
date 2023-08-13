@@ -635,7 +635,7 @@ execute_in_shell(const char *cmd)
 static int
 check_match_ifaddrs(const char *addrlist)
 {
-#ifdef HAVE_IFADDRS_H
+#ifdef HAVE_GETIFADDRS
 	struct ifaddrs *ifa, *ifaddrs = NULL;
 	int r, found = 0;
 	char addr[NI_MAXHOST];
@@ -683,10 +683,11 @@ check_match_ifaddrs(const char *addrlist)
 	}
 	freeifaddrs(ifaddrs);
 	return found;
-#else /* HAVE_IFADDRS_H */
+#else /* HAVE_GETIFADDRS */
+	UNUSED(addrlist);
 	error("match localnetwork: not supported on this platform");
 	return 0;
-#endif /* HAVE_IFADDRS_H */
+#endif /* HAVE_GETIFADDRS */
 }
 
 /*
