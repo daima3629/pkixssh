@@ -12,6 +12,7 @@ else
 	N=1
 fi
 fp=`${SSHKEYGEN} -r test -f ${SRC}/ed25519_openssh.pub | wc -l`
+fp=`echo $fp` # avoid wc indentation
 if test "x$fp" != "x$N" ; then
 	fail "incorrect number of SSHFP records $fp (expected 2)"
 fi
