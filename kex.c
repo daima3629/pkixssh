@@ -1,4 +1,4 @@
-/* $OpenBSD: kex.c,v 1.179 2023/08/18 01:37:41 djm Exp $ */
+/* $OpenBSD: kex.c,v 1.180 2023/08/21 21:16:18 tobhe Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2014-2021 Roumen Petrov.  All rights reserved.
@@ -1368,7 +1368,7 @@ kex_exchange_identification(struct ssh *ssh, int timeout_ms)
 			len = atomicio(read, ssh_packet_get_connection_in(ssh),
 			    &c, 1);
 			if (len != 1 && errno == EPIPE) {
-				error_f("connection closed by remote host");
+				debug_f("connection closed by remote host");
 				r = SSH_ERR_CONN_CLOSED;
 				goto out;
 			} else if (len != 1) {
@@ -1389,7 +1389,7 @@ kex_exchange_identification(struct ssh *ssh, int timeout_ms)
 				break;
 			}
 			if (c == '\0' || expect_nl) {
-				error_f("banner line contains invalid "
+				debug_f("banner line contains invalid "
 				    "characters");
 				goto invalid;
 			}
@@ -1399,7 +1399,7 @@ kex_exchange_identification(struct ssh *ssh, int timeout_ms)
 				goto out;
 			}
 			if (sshbuf_len(peer_version) > SSH_MAX_BANNER_LEN) {
-				error_f("banner line too long");
+				debug_f("banner line too long");
 				goto invalid;
 			}
 		}
@@ -1415,7 +1415,7 @@ kex_exchange_identification(struct ssh *ssh, int timeout_ms)
 		}
 		/* Do not accept lines before the SSH ident from a client */
 		if (is_server) {
-			error_f("client sent invalid protocol identifier "
+			debug_f("client sent invalid protocol identifier "
 			    "\"%.256s\"", cp);
 			free(cp);
 			goto invalid;
