@@ -2894,18 +2894,6 @@ remote_is_dir(struct sftp_conn *conn, const char *path)
 	return(S_ISDIR(a->perm));
 }
 
-int
-local_is_dir(const char *path)
-{
-	struct stat sb;
-
-	/* XXX: report errors? */
-	if (stat(path, &sb) == -1)
-		return(0);
-
-	return(S_ISDIR(sb.st_mode));
-}
-
 /* Check whether path returned from glob(..., GLOB_MARK, ...) is a directory */
 int
 globpath_is_dir(const char *pathname)

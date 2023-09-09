@@ -374,6 +374,18 @@ local_do_ls(const char *args)
 	}
 }
 
+static int
+local_is_dir(const char *path)
+{
+	struct stat sb;
+
+	/* XXX: report errors? */
+	if (stat(path, &sb) == -1)
+		return 0;
+
+	return S_ISDIR(sb.st_mode);
+}
+
 /* Strip one path (usually the pwd) from the start of another */
 static char *
 path_strip(const char *path, const char *strip)
