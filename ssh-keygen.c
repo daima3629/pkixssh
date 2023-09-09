@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keygen.c,v 1.470 2023/07/17 04:01:10 djm Exp $ */
+/* $OpenBSD: ssh-keygen.c,v 1.471 2023/09/04 10:29:58 job Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1994 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -93,11 +93,7 @@
 #include "authfd.h"
 #include "cipher.h"
 
-#ifdef WITH_OPENSSL
-# define DEFAULT_KEY_TYPE_NAME "rsa"
-#else
-# define DEFAULT_KEY_TYPE_NAME "ed25519"
-#endif
+#define DEFAULT_KEY_TYPE_NAME "ed25519"
 
 /*
  * Default number of bits in the RSA, DSA and ECDSA keys.  These value can be
@@ -309,7 +305,7 @@ ask_filename(const struct passwd *pw, const char *prompt)
 	char *name = NULL;
 
 	if (key_type_name == NULL)
-		name = _PATH_SSH_CLIENT_ID_RSA;
+		name = _PATH_SSH_CLIENT_ID_ED25519;
 	else {
 		switch (sshkey_type_from_name(key_type_name)) {
 		case KEY_DSA_CERT:

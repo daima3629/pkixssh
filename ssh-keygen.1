@@ -1,4 +1,4 @@
-.\"	$OpenBSD: ssh-keygen.1,v 1.228 2023/02/10 06:40:48 jmc Exp $
+.\"	$OpenBSD: ssh-keygen.1,v 1.230 2023/09/04 10:29:58 job Exp $
 .\"
 .\" Author: Tatu Ylonen <ylo@cs.hut.fi>
 .\" Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -44,7 +44,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: February 10 2023 $
+.Dd $Mdocdate: September 4 2023 $
 .Dt SSH-KEYGEN 1
 .Os
 .Sh NAME
@@ -162,7 +162,7 @@ The type of key to be generated is specified with the
 option.
 If invoked without any arguments,
 .Nm
-will generate an RSA key.
+will generate an Ed25519 key.
 .Pp
 By default key is stored in PKCS#8 PEM format.
 For compatibility with earlier versions programs
