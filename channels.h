@@ -1,4 +1,4 @@
-/* $OpenBSD: channels.h,v 1.151 2023/07/04 03:59:21 dlg Exp $ */
+/* $OpenBSD: channels.h,v 1.152 2023/09/04 00:01:46 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -330,7 +330,7 @@ struct timespec;
 void	 channel_prepare_select(struct ssh *, fd_set **, fd_set **, int *,
 	    u_int*, struct timespec*);
 void     channel_after_select(struct ssh *, fd_set *, fd_set *);
-void     channel_output_poll(struct ssh *);
+int	 channel_output_poll(struct ssh *);
 
 int      channel_not_very_much_buffered_data(struct ssh *);
 void     channel_close_all(struct ssh *);
