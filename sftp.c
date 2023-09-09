@@ -1563,7 +1563,7 @@ parse_dispatch_command(struct sftp_conn *conn, const char *cmd, char **pwd,
 	int lflag = 0, pflag = 0, rflag = 0, sflag = 0;
 	int cmdnum, i;
 	unsigned long n_arg = 0;
-	Attrib a, *aa;
+	Attrib a, aa;
 	char path_buf[PATH_MAX];
 	int err = 0;
 	glob_t g;
@@ -1647,18 +1647,18 @@ parse_dispatch_command(struct sftp_conn *conn, const char *cmd, char **pwd,
 			err = 1;
 			break;
 		}
-		if ((aa = do_stat(conn, tmp, 0)) == NULL) {
+		if (sftp_stat(conn, tmp, 0, &aa) != 0) {
 			free(tmp);
 			err = 1;
 			break;
 		}
-		if (!(aa->flags & SSH2_FILEXFER_ATTR_PERMISSIONS)) {
+		if (!(aa.flags & SSH2_FILEXFER_ATTR_PERMISSIONS)) {
 			error("Can't change directory: Can't check target");
 			free(tmp);
 			err = 1;
 			break;
 		}
-		if (!S_ISDIR(aa->perm)) {
+		if (!S_ISDIR(aa.perm)) {
 			error("Can't change directory: \"%s\" is not "
 			    "a directory", tmp);
 			free(tmp);
@@ -1739,15 +1739,15 @@ parse_dispatch_command(struct sftp_conn *conn, const char *cmd, char **pwd,
 		path1 = make_absolute_pwd_glob(path1, *pwd);
 		remote_glob(conn, path1, GLOB_NOCHECK, NULL, &g);
 		for (i = 0; g.gl_pathv[i] && !interrupted; i++) {
-			if (!(aa = (hflag ? do_lstat : do_stat)(conn,
-			    g.gl_pathv[i], 0))) {
+			if ((hflag ? sftp_lstat : sftp_stat)(conn,
+			    g.gl_pathv[i], 0, &aa) != 0) {
 				if (err_abort) {
 					err = -1;
 					break;
 				} else
 					continue;
 			}
-			if (!(aa->flags & SSH2_FILEXFER_ATTR_UIDGID)) {
+			if (!(aa.flags & SSH2_FILEXFER_ATTR_UIDGID)) {
 				error("Can't get current ownership of "
 				    "remote file \"%s\"", g.gl_pathv[i]);
 				if (err_abort) {
@@ -1756,20 +1756,20 @@ parse_dispatch_command(struct sftp_conn *conn, const char *cmd, char **pwd,
 				} else
 					continue;
 			}
-			aa->flags &= SSH2_FILEXFER_ATTR_UIDGID;
+			aa.flags &= SSH2_FILEXFER_ATTR_UIDGID;
 			if (cmdnum == I_CHOWN) {
 				if (!quiet)
 					mprintf("Changing owner on %s\n",
 					    g.gl_pathv[i]);
-				aa->uid = n_arg;
+				aa.uid = n_arg;
 			} else {
 				if (!quiet)
 					mprintf("Changing group on %s\n",
 					    g.gl_pathv[i]);
-				aa->gid = n_arg;
+				aa.gid = n_arg;
 			}
 			err = (hflag ? do_lsetstat : do_setstat)(conn,
-			    g.gl_pathv[i], aa);
+			    g.gl_pathv[i], &aa);
 			if (err != 0 && err_abort)
 				break;
 		}

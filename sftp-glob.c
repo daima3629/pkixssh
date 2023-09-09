@@ -110,27 +110,27 @@ fudge_closedir(struct SFTP_OPENDIR *od)
 static int
 fudge_lstat(const char *path, struct stat *st)
 {
-	Attrib *a;
+	Attrib a;
 
-	if (!(a = do_lstat(cur.conn, path, 1)))
-		return(-1);
+	if (sftp_lstat(cur.conn, path, 1, &a) != 0)
+		return -1;
 
-	attrib_to_stat(a, st);
+	attrib_to_stat(&a, st);
 
-	return(0);
+	return 0;
 }
 
 static int
 fudge_stat(const char *path, struct stat *st)
 {
-	Attrib *a;
+	Attrib a;
 
-	if (!(a = do_stat(cur.conn, path, 1)))
-		return(-1);
+	if (sftp_stat(cur.conn, path, 1, &a) != 0)
+		return -1;
 
-	attrib_to_stat(a, st);
+	attrib_to_stat(&a, st);
 
-	return(0);
+	return 0;
 }
 
 int

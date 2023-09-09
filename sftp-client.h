@@ -84,10 +84,10 @@ int do_mkdir(struct sftp_conn *, const char *, Attrib *, int);
 int do_rmdir(struct sftp_conn *, const char *);
 
 /* Get file attributes of 'path' (follows symlinks) */
-Attrib *do_stat(struct sftp_conn *, const char *, int);
+int sftp_stat(struct sftp_conn *, const char *, int, Attrib *);
 
 /* Get file attributes of 'path' (does not follow symlinks) */
-Attrib *do_lstat(struct sftp_conn *, const char *, int);
+int sftp_lstat(struct sftp_conn *, const char *, int, Attrib *);
 
 /* Set file attributes of 'path' */
 int do_setstat(struct sftp_conn *, const char *, Attrib *);

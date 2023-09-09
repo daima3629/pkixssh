@@ -1638,7 +1638,7 @@ sink_sftp(int argc, char *dst, const char *src, struct sftp_conn *conn)
 		 * a GLOB_NOCHECK result. Check whether the unglobbed path
 		 * exists so we can give a nice error message early.
 		 */
-		if (do_stat(conn, g.gl_pathv[0], 1) == NULL) {
+		if (sftp_stat(conn, g.gl_pathv[0], 1, NULL) != 0) {
 			error("%s: %s", src, strerror(ENOENT));
 			err = -1;
 			goto out;
@@ -2084,7 +2084,7 @@ throughlocal_sftp(struct sftp_conn *from, struct sftp_conn *to,
 		 * a GLOB_NOCHECK result. Check whether the unglobbed path
 		 * exists so we can give a nice error message early.
 		 */
-		if (do_stat(from, g.gl_pathv[0], 1) == NULL) {
+		if (sftp_stat(from, g.gl_pathv[0], 1, NULL) != 0) {
 			error("%s: %s", src, strerror(ENOENT));
 			err = -1;
 			goto out;
