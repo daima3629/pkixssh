@@ -973,10 +973,8 @@ sftp_lstat(struct sftp_conn *conn, const char *path, int quiet, Attrib *a)
 	u_int id;
 
 	if (conn->version == 0) {
-		if (quiet)
-			debug("Server version does not support lstat operation");
-		else
-			logit("Server version does not support lstat operation");
+		do_log2(quiet ? SYSLOG_LEVEL_DEBUG1 : SYSLOG_LEVEL_INFO,
+		    "Server version does not support lstat operation");
 		return sftp_stat(conn, path, quiet, a);
 	}
 
