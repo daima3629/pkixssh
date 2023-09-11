@@ -192,7 +192,13 @@ if test "$GCC" = "yes" || test "$GCC" = "egcs"; then
 	AC_MSG_RESULT([$GCC_VER])
 
 	AC_MSG_CHECKING([clang version])
-	CLANG_VER=`$CC -v 2>&1 | $AWK '/clang version /{print $3}'`
+	ver="`$CC -v 2>&1`"
+	if echo "$ver" | grep "Apple" >/dev/null; then
+		CLANG_VER="apple-`echo "$ver" | \
+		    $AWK '/Apple LLVM/ {print $4"-"$5}'`"
+	else
+		CLANG_VER=`echo "$ver" | $AWK '/clang version /{print $3}'`
+	fi
 	AC_MSG_RESULT([$CLANG_VER])
 
 	OSSH_CHECK_CFLAG_COMPILE([-pipe])
@@ -234,7 +240,7 @@ if test "$GCC" = "yes" || test "$GCC" = "egcs"; then
 	# clang 15 seems to have a bug in -fzero-call-used-regs=all.  See
 	# https://github.com/llvm/llvm-project/issues/59242
 	#case "$CLANG_VER" in
-	#15.*) OSSH_CHECK_CFLAG_COMPILE([-fzero-call-used-regs=used]) ;;
+	#15.*|apple*) OSSH_CHECK_CFLAG_COMPILE([-fzero-call-used-regs=used]) ;;
 	#*)    OSSH_CHECK_CFLAG_COMPILE([-fzero-call-used-regs=all]) ;;
 	#esac
 
