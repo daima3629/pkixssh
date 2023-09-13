@@ -399,15 +399,25 @@ wrap_key(struct sshkey *key) {
 	return -1;
 }
 
+static void
+exec_helper(void)
+{
+	char *helper = getenv("SSH_PKCS11_HELPER"), *verbosity = NULL;
+
+	if (helper == NULL || strlen(helper) == 0)
+		helper = _PATH_SSH_PKCS11_HELPER;
+	if (get_log_level() >= SYSLOG_LEVEL_DEBUG1)
+		verbosity = "-vvv";
+	debug_f("starting %s %s", helper,
+	    verbosity == NULL ? "" : verbosity);
+	execlp(helper, helper, verbosity, (char *)NULL);
+	fprintf(stderr, "exec: %s: %s\n", helper, strerror(errno));
+}
 
 static int
 pkcs11_start_helper(void)
 {
 	int pair[2];
-	char *helper, *verbosity = NULL;
-
-	if (get_log_level() >= SYSLOG_LEVEL_DEBUG1)
-		verbosity = "-vvv";
 
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, pair) == -1) {
 		error("socketpair: %s", strerror(errno));
@@ -424,13 +434,7 @@ pkcs11_start_helper(void)
 		}
 		close(pair[0]);
 		close(pair[1]);
-		helper = getenv("SSH_PKCS11_HELPER");
-		if (helper == NULL || strlen(helper) == 0)
-			helper = _PATH_SSH_PKCS11_HELPER;
-		debug_f("starting %s %s", helper,
-		    verbosity == NULL ? "" : verbosity);
-		execlp(helper, helper, verbosity, (char *)NULL);
-		fprintf(stderr, "exec: %s: %s\n", helper, strerror(errno));
+		exec_helper();
 		_exit(1);
 	}
 	close(pair[1]);
