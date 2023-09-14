@@ -61,8 +61,87 @@
 
 /* borrows code from sftp-server and ssh-agent */
 
-static int fd = -1;
-static pid_t pid = -1;
+struct helper {
+	pid_t pid;
+	int fd;
+};
+static struct helper **helpers = NULL;
+static size_t nhelpers = 0;
+
+static struct helper *
+helper_by_provider(const char *path)
+{
+	/* reserved for future use */
+	UNUSED(path);
+	if (nhelpers > 0)
+		return helpers[0];
+	return NULL;
+}
+
+static struct helper *
+helper_by_rsa(const RSA *rsa)
+{
+	/* reserved for future use */
+	UNUSED(rsa);
+	if (nhelpers > 0)
+		return helpers[0];
+	return NULL;
+}
+
+#ifdef OPENSSL_HAS_ECC
+static struct helper *
+helper_by_ec(const EC_KEY *ec)
+{
+	/* reserved for future use */
+	UNUSED(ec);
+	if (nhelpers > 0)
+		return helpers[0];
+	return NULL;
+}
+#endif /*def OPENSSL_HAS_ECC*/
+
+static void
+helper_free(struct helper *helper)
+{
+	size_t i;
+	int found = 0;
+
+	if (helper == NULL)
+		return;
+	for (i = 0; i < nhelpers; i++) {
+		if (helpers[i] == helper) {
+			if (found)
+				fatal_f("helper recorded more than once");
+			found = 1;
+			continue;
+		}
+		if (found)
+			helpers[i - 1] = helpers[i];
+	}
+	if (found) {
+		helpers = xrecallocarray(helpers, nhelpers,
+		    nhelpers - 1, sizeof(*helpers));
+		nhelpers--;
+	}
+	free(helper);
+}
+
+static void
+helper_terminate(struct helper *helper)
+{
+	if (helper == NULL)
+		return;
+	if (helper->fd == -1) {
+		debug3_f("already terminated");
+	} else {
+		debug3_f("terminating helper");
+		close(helper->fd);
+		/* XXX waitpid() */
+		helper->fd = -1;
+		helper->pid = -1;
+	}
+	helper_free(helper);
+}
 
 static int
 helper_msg_sign_request(
@@ -95,12 +174,14 @@ done:
 }
 
 static void
-send_msg(struct sshbuf *m)
+send_msg(int fd, struct sshbuf *m)
 {
 	u_char buf[4];
 	size_t mlen = sshbuf_len(m);
 	int r;
 
+	if (fd == -1)
+		return;
 	POKE_U32(buf, mlen);
 	if (atomicio(vwrite, fd, buf, 4) != 4 ||
 	    atomicio(vwrite, fd, sshbuf_mutable_ptr(m),
@@ -111,12 +192,15 @@ send_msg(struct sshbuf *m)
 }
 
 static int
-recv_msg(struct sshbuf *m)
+recv_msg(int fd, struct sshbuf *m)
 {
 	u_int l, len;
 	u_char c, buf[1024];
 	int r;
 
+	sshbuf_reset(m);
+	if (fd == -1)
+		return 0; /* XXX */
 	if ((len = atomicio(read, fd, buf, 4)) != 4) {
 		error("read from helper failed: %u", len);
 		return (0); /* XXX */
@@ -125,7 +209,6 @@ recv_msg(struct sshbuf *m)
 	if (len > 256 * 1024)
 		fatal("response too long: %u", len);
 	/* read len bytes into m */
-	sshbuf_reset(m);
 	while (len > 0) {
 		l = len;
 		if (l > sizeof(buf))
@@ -146,15 +229,18 @@ recv_msg(struct sshbuf *m)
 int
 pkcs11_init(int interactive)
 {
-	(void)interactive;
-	return (0);
+	UNUSED(interactive);
+	return 0;
 }
 
 void
 pkcs11_terminate(void)
 {
-	if (fd >= 0)
-		close(fd);
+	size_t i;
+
+	debug3_f("terminating %zu helpers", nhelpers);
+	for (i = 0; i < nhelpers; i++)
+		helper_terminate(helpers[i]);
 }
 
 static int
@@ -167,8 +253,15 @@ pkcs11_rsa_private_encrypt(int flen, const u_char *from, u_char *to, RSA *rsa,
 	size_t slen = 0;
 	int r;
 	int ret = -1;
+	struct helper *helper;
 
 	if (padding != RSA_PKCS1_PADDING) return -1;
+
+	helper = helper_by_rsa(rsa);
+	if (helper == NULL || helper->fd == -1) {
+		error_f("no helper for PKCS11 RSA key");
+		return -1;
+	}
 
 	key = sshkey_new(KEY_UNSPEC);
 	if (key == NULL) {
@@ -186,10 +279,10 @@ pkcs11_rsa_private_encrypt(int flen, const u_char *from, u_char *to, RSA *rsa,
 		fatal_f("sshbuf_new failed");
 	if (helper_msg_sign_request(msg, key, from, flen) != 0)
 		goto done;
-	send_msg(msg);
+	send_msg(helper->fd, msg);
 	sshbuf_reset(msg);
 
-	if (recv_msg(msg) == SSH2_AGENT_SIGN_RESPONSE) {
+	if (recv_msg(helper->fd, msg) == SSH2_AGENT_SIGN_RESPONSE) {
 		if ((r = sshbuf_get_string(msg, &signature, &slen)) != 0)
 			goto done;
 		if (slen <= (size_t)RSA_size(rsa)) {
@@ -221,9 +314,16 @@ pkcs11_ecdsa_do_sign(
 	size_t slen = 0;
 	int r;
 	ECDSA_SIG *ret = NULL;
+	struct helper *helper;
 
 	UNUSED(inv);
 	UNUSED(rp);
+
+	helper = helper_by_ec(ec);
+	if (helper == NULL || helper->fd == -1) {
+		error_f("no helper for PKCS11 EC key");
+		return NULL;
+	}
 
 	key = sshkey_new(KEY_UNSPEC);
 	if (key == NULL) {
@@ -246,10 +346,10 @@ pkcs11_ecdsa_do_sign(
 		fatal_f("sshbuf_new failed");
 	if (helper_msg_sign_request(msg, key, dgst, dlen) != 0)
 		goto done;
-	send_msg(msg);
+	send_msg(helper->fd, msg);
 	sshbuf_reset(msg);
 
-	if (recv_msg(msg) == SSH2_AGENT_SIGN_RESPONSE) {
+	if (recv_msg(helper->fd, msg) == SSH2_AGENT_SIGN_RESPONSE) {
 		if ((r = sshbuf_get_string(msg, &signature, &slen)) != 0)
 			goto done;
 
@@ -414,18 +514,20 @@ exec_helper(void)
 	fprintf(stderr, "exec: %s: %s\n", helper, strerror(errno));
 }
 
-static int
+static struct helper *
 pkcs11_start_helper(void)
 {
+	struct helper *helper;
+	pid_t pid;
 	int pair[2];
 
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, pair) == -1) {
 		error("socketpair: %s", strerror(errno));
-		return (-1);
+		return NULL;
 	}
 	if ((pid = fork()) == -1) {
 		error("fork: %s", strerror(errno));
-		return (-1);
+		return NULL;
 	} else if (pid == 0) {
 		if ((dup2(pair[1], STDIN_FILENO) == -1) ||
 		    (dup2(pair[1], STDOUT_FILENO) == -1)) {
@@ -438,8 +540,14 @@ pkcs11_start_helper(void)
 		_exit(1);
 	}
 	close(pair[1]);
-	fd = pair[0];
-	return (0);
+
+	helper = xcalloc(1, sizeof(*helper));
+	helper->fd = pair[0];
+	helper->pid = pid;
+	helpers = xrecallocarray(helpers, nhelpers,
+	    nhelpers + 1, sizeof(*helpers));
+	helpers[nhelpers++] = helper;
+	return helper;
 }
 
 int
@@ -449,11 +557,23 @@ pkcs11_add_provider(char *name, char *pin,
 	int ret = -1, r, type;
 	u_int32_t nkeys, i;
 	struct sshbuf *msg;
+	struct helper *helper;
 
-	if (fd < 0 && pkcs11_start_helper() < 0)
-		return (-1);
 	if (keysp == NULL)
 		return -1;
+
+	helper = helper_by_provider(name);
+	if (helper != NULL) {
+		if (helper->fd == -1) {
+			helper_free(helper);
+			helper = NULL;
+		}
+	}
+	if (helper == NULL) {
+		helper = pkcs11_start_helper();
+		if (helper == NULL)
+			return -1;
+	}
 
 	*keysp = NULL;
 	if (labelsp != NULL)
@@ -465,10 +585,10 @@ pkcs11_add_provider(char *name, char *pin,
 	    (r = sshbuf_put_cstring(msg, name)) != 0 ||
 	    (r = sshbuf_put_cstring(msg, pin)) != 0)
 		fatal_fr(r, "compose");
-	send_msg(msg);
+	send_msg(helper->fd, msg);
 	sshbuf_reset(msg);
 
-	type = recv_msg(msg);
+	type = recv_msg(helper->fd, msg);
 	switch (type) {
 	case SSH2_AGENT_IDENTITIES_ANSWER: {
 		if ((r = sshbuf_get_u32(msg, &nkeys)) != 0) {
@@ -535,6 +655,17 @@ pkcs11_del_provider(char *name)
 {
 	int r, ret = -1;
 	struct sshbuf *msg;
+	struct helper *helper;
+
+	/*
+	 * ssh-agent deletes keys before calling this.
+	 */
+	debug3_f("delete %s", name);
+	helper = helper_by_provider(name);
+	if (helper == NULL)
+		return -1;
+	if (helper->fd < 0)
+		return -1;
 
 	if ((msg = sshbuf_new()) == NULL)
 		fatal_f("sshbuf_new failed");
@@ -542,10 +673,10 @@ pkcs11_del_provider(char *name)
 	    (r = sshbuf_put_cstring(msg, name)) != 0 ||
 	    (r = sshbuf_put_cstring(msg, "")) != 0)
 		fatal_fr(r, "compose");
-	send_msg(msg);
+	send_msg(helper->fd, msg);
 	sshbuf_reset(msg);
 
-	if (recv_msg(msg) == SSH_AGENT_SUCCESS)
+	if (recv_msg(helper->fd, msg) == SSH_AGENT_SUCCESS)
 		ret = 0;
 	sshbuf_free(msg);
 	return (ret);
