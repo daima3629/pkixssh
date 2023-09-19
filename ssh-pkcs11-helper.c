@@ -351,7 +351,7 @@ process(void)
 int
 main(int argc, char **argv)
 {
-	int r, ch, in, out, log_stderr = 0;
+	int r, ch, in, out;
 	ssize_t len;
 	SyslogFacility log_facility = SYSLOG_FACILITY_AUTH;
 	LogLevel log_level = SYSLOG_LEVEL_ERROR;
@@ -365,12 +365,11 @@ main(int argc, char **argv)
 	seed_rng();
 	TAILQ_INIT(&pkcs11_keylist);
 
-	log_init(__progname, log_level, log_facility, log_stderr);
+	log_init(__progname, log_level, log_facility, 0);
 
 	while ((ch = getopt(argc, argv, "v")) != -1) {
 		switch (ch) {
 		case 'v':
-			log_stderr = 1;
 			if (log_level < SYSLOG_LEVEL_DEBUG1)
 				log_level = SYSLOG_LEVEL_DEBUG1;
 			else if (log_level < SYSLOG_LEVEL_DEBUG3)
@@ -384,7 +383,7 @@ main(int argc, char **argv)
 
 	ERR_load_PKCS11_strings();
 
-	log_init(__progname, log_level, log_facility, log_stderr);
+	log_init(__progname, log_level, log_facility, 0);
 
 	pkcs11_init(0);
 
