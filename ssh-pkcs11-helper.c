@@ -164,7 +164,7 @@ process_add(void)
 			free(blob);
 			add_key(keys[i], labels[i], name);
 		}
-	} else if ((r = sshbuf_put_u8(msg, SSH_AGENT_FAILURE)) != 0 ||
+	} else if ((r = sshbuf_put_u8(msg, SSH2_AGENT_FAILURE)) != 0 ||
 	    (r = sshbuf_put_u32(msg, -nkeys)) != 0)
 		fatal_fr(r, "compose");
 	/* keys and lebels themselves are transferred to pkcs11_keylist */
