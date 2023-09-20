@@ -40,6 +40,7 @@
 # include <sys/time.h>
 #endif
 #include <sys/socket.h>
+#include <sys/wait.h>
 
 #include <stdarg.h>
 #include <string.h>
@@ -134,11 +135,14 @@ helper_terminate(struct helper *helper)
 	if (helper->fd == -1) {
 		debug3_f("already terminated");
 	} else {
-		debug3_f("terminating helper");
+		pid_t pid = helper->pid;
+
+		debug3_f("terminating helper pid %ld fd %d",
+		    (long)helper->pid, helper->fd);
 		close(helper->fd);
-		/* XXX waitpid() */
 		helper->fd = -1;
 		helper->pid = -1;
+		(void)waitpid(pid, NULL, 0);
 	}
 	helper_free(helper);
 }
@@ -544,6 +548,8 @@ pkcs11_start_helper(void)
 	helper = xcalloc(1, sizeof(*helper));
 	helper->fd = pair[0];
 	helper->pid = pid;
+	debug3_f("helper pid %ld fd %d",
+	    (long)helper->pid, helper->fd);
 	helpers = xrecallocarray(helpers, nhelpers,
 	    nhelpers + 1, sizeof(*helpers));
 	helpers[nhelpers++] = helper;
