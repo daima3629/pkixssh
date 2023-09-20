@@ -60,6 +60,71 @@
 #include "atomicio.h"
 #include "ssh-pkcs11.h"
 
+
+/* Constants used when creating the client context extra data */
+static int ssh_pkcs11_client_rsa_ctx_index = -1;
+#ifdef OPENSSL_HAS_ECC
+static int ssh_pkcs11_client_ec_ctx_index = -1;
+#endif /*def OPENSSL_HAS_ECC*/
+
+struct pkcs11_client {
+	const char *provider;
+};
+
+static struct pkcs11_client *
+pkcs11_client_create(const char *provider) {
+	struct pkcs11_client *client;
+
+	client = xcalloc(1, sizeof(*client)); /*fatal on error*/
+	client->provider = xstrdup(provider); /*fatal on error*/
+
+	return client;
+}
+
+static void
+pkcs11_client_free(struct pkcs11_client *client) {
+	if (client == NULL) return;
+
+	if (client->provider != NULL) {
+		free((void*)client->provider);
+	}
+	free(client);
+}
+
+static void
+CRYPTO_EX_pkcs11_client_key_free(
+    void *parent, void *ptr, CRYPTO_EX_DATA *ad, long argl, void *argp
+) {
+	(void)parent;
+	pkcs11_client_free(ptr);
+	(void)ad;
+	(void)argl;
+	(void)argp;
+}
+
+static void
+CRYPTO_EX_pkcs11_client_rsa_free(
+    void *parent, void *ptr, CRYPTO_EX_DATA *ad,
+    int idx, long argl, void *argp
+) {
+	if (idx != ssh_pkcs11_client_rsa_ctx_index) return;
+
+	CRYPTO_EX_pkcs11_client_key_free(parent, ptr, ad, argl, argp);
+}
+
+#ifdef OPENSSL_HAS_ECC
+static void
+CRYPTO_EX_pkcs11_client_ec_free(
+    void *parent, void *ptr, CRYPTO_EX_DATA *ad,
+    int idx, long argl, void *argp
+) {
+	if (idx != ssh_pkcs11_client_ec_ctx_index) return;
+
+	CRYPTO_EX_pkcs11_client_key_free(parent, ptr, ad, argl, argp);
+}
+#endif /*def OPENSSL_HAS_ECC*/
+
+
 /* borrows code from sftp-server and ssh-agent */
 
 struct helper {
@@ -82,22 +147,24 @@ helper_by_provider(const char *path)
 static struct helper *
 helper_by_rsa(const RSA *rsa)
 {
-	/* reserved for future use */
-	UNUSED(rsa);
-	if (nhelpers > 0)
-		return helpers[0];
-	return NULL;
+	struct pkcs11_client *client;
+
+	client = RSA_get_ex_data(rsa, ssh_pkcs11_client_rsa_ctx_index);
+	if (client == NULL) return NULL;
+
+	return helper_by_provider(client->provider);
 }
 
 #ifdef OPENSSL_HAS_ECC
 static struct helper *
 helper_by_ec(const EC_KEY *ec)
 {
-	/* reserved for future use */
-	UNUSED(ec);
-	if (nhelpers > 0)
-		return helpers[0];
-	return NULL;
+	struct pkcs11_client *client;
+
+	client = EC_KEY_get_ex_data(ec, ssh_pkcs11_client_ec_ctx_index);
+	if (client == NULL) return NULL;
+
+	return helper_by_provider(client->provider);
 }
 #endif /*def OPENSSL_HAS_ECC*/
 
@@ -415,6 +482,13 @@ ssh_pkcs11helper_rsa_method(void) {
 	)
 		goto err;
 
+	/* ensure client RSA context index */
+	if (ssh_pkcs11_client_rsa_ctx_index < 0)
+		ssh_pkcs11_client_rsa_ctx_index = RSA_get_ex_new_index(0,
+		    NULL, NULL, NULL, CRYPTO_EX_pkcs11_client_rsa_free);
+	if (ssh_pkcs11_client_rsa_ctx_index < 0)
+		goto err;
+
 	return meth;
 
 err:
@@ -443,13 +517,25 @@ ssh_pkcs11helper_ec_method(void) {
 	    pkcs11_ecdsa_do_sign);
 #endif
 
+	/* ensure client EC context index */
+	if (ssh_pkcs11_client_ec_ctx_index < 0)
+		ssh_pkcs11_client_ec_ctx_index = EC_KEY_get_ex_new_index(0,
+		    NULL, NULL, NULL, CRYPTO_EX_pkcs11_client_ec_free);
+	if (ssh_pkcs11_client_ec_ctx_index < 0)
+		goto err;
+
 	return meth;
+
+err:
+	EC_KEY_METHOD_free(meth);
+	meth = NULL;
+	return NULL;
 }
 #endif /*def OPENSSL_HAS_ECC*/
 
 
 static inline int
-wrap_key_rsa(struct sshkey *key)
+wrap_key_rsa(const char *provider, struct sshkey *key)
 {
 	int ret;
 
@@ -464,6 +550,11 @@ wrap_key_rsa(struct sshkey *key)
 	 */
 	EVP_PKEY_set1_RSA(key->pk, rsa);
 #endif
+{	struct pkcs11_client *client;
+		/* fatal on error */
+	client = pkcs11_client_create(provider);
+	RSA_set_ex_data(rsa, ssh_pkcs11_client_rsa_ctx_index, client);
+}
 	RSA_free(rsa);
 }
 	return ret;
@@ -471,7 +562,7 @@ wrap_key_rsa(struct sshkey *key)
 
 #ifdef OPENSSL_HAS_ECC
 static inline int
-wrap_key_ecdsa(struct sshkey *key)
+wrap_key_ecdsa(const char *provider, struct sshkey *key)
 {
 	int ret;
 
@@ -486,6 +577,11 @@ wrap_key_ecdsa(struct sshkey *key)
 	 */
 	EVP_PKEY_set1_EC_KEY(key->pk, ec);
 #endif
+{	struct pkcs11_client *client;
+		/* fatal on error */
+	client = pkcs11_client_create(provider);
+	EC_KEY_set_ex_data(ec, ssh_pkcs11_client_ec_ctx_index, client);
+}
 	EC_KEY_free(ec);
 }
 	return ret;
@@ -493,11 +589,11 @@ wrap_key_ecdsa(struct sshkey *key)
 #endif /*def OPENSSL_HAS_ECC*/
 
 static inline int
-wrap_key(struct sshkey *key) {
+wrap_key(const char *provider, struct sshkey *key) {
 	switch(key->type) {
-	case KEY_RSA: return wrap_key_rsa(key);
+	case KEY_RSA: return wrap_key_rsa(provider, key);
 #ifdef OPENSSL_HAS_ECC
-	case KEY_ECDSA: return wrap_key_ecdsa(key);
+	case KEY_ECDSA: return wrap_key_ecdsa(provider, key);
 #endif
 	}
 	return -1;
@@ -621,7 +717,7 @@ pkcs11_add_provider(char *name, char *pin,
 				k = NULL;
 				goto set_key;
 			}
-			if (wrap_key(k) != 0) {
+			if (wrap_key(name, k) != 0) {
 				sshkey_free(k);
 				k = NULL;
 			}
