@@ -344,7 +344,7 @@ pkcs11_reauthenticate(
 	if (si->token.flags & CKF_PROTECTED_AUTHENTICATION_PATH)
 		verbose("Deferring context PIN entry to reader keypad.");
 	else {
-		char prompt[1024];
+		char prompt[1024+/*avoid truncation warning*/26];
 
 		snprintf(prompt, sizeof(prompt),
 		    "Enter context PIN for '%s': ", obj_label);
@@ -1521,7 +1521,7 @@ pkcs11_register_provider(char *provider_id, char *pin,
     struct pkcs11_provider **providerp, CK_ULONG user)
 {
 	int nkeys, need_finalize = 0;
-	int ret = SSH_PKCS11_ERR_GENERIC;
+	int ret = 0;
 	struct pkcs11_provider *p = NULL;
 	void *handle = NULL;
 	CK_RV (*getfunctionlist)(CK_FUNCTION_LIST **);
@@ -1633,8 +1633,9 @@ pkcs11_register_provider(char *provider_id, char *pin,
 		 */
 	{	int r = pkcs11_open_session(p, i, pin, user);
 		if (r != 0) {
-			error_r(r, "pkcs11_open_session for provider %s slot %lu "
-			    "failed", provider_id, (unsigned long)i);
+			error("pkcs11_open_session for provider %s slot %lu "
+			    "failed: %d", provider_id, (unsigned long)i, r);
+			ret = r; /* store last open error */
 			continue;
 		}
 	}
@@ -1657,6 +1658,7 @@ pkcs11_register_provider(char *provider_id, char *pin,
 		pkcs11_fetch_certs(p, i, keyp, labelsp, &nkeys);
 		pkcs11_fetch_keys(p, i, keyp, labelsp, &nkeys);
 	}
+	if (nkeys == 0 && ret != 0) goto fail;
 
 	/* now owned by caller */
 	*providerp = p;
