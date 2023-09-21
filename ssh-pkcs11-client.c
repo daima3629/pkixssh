@@ -197,8 +197,6 @@ helper_free(struct helper *helper)
 static void
 helper_terminate(struct helper *helper)
 {
-	if (helper == NULL)
-		return;
 	if (helper->fd == -1) {
 		debug3_f("already terminated");
 	} else {
@@ -307,11 +305,9 @@ pkcs11_init(int interactive)
 void
 pkcs11_terminate(void)
 {
-	size_t i;
-
 	debug3_f("terminating %zu helpers", nhelpers);
-	for (i = 0; i < nhelpers; i++)
-		helper_terminate(helpers[i]);
+	while (nhelpers > 0)
+		helper_terminate(helpers[0]);
 }
 
 static int
