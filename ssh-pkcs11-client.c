@@ -60,6 +60,8 @@
 #include "atomicio.h"
 #include "ssh-pkcs11.h"
 
+void helper_unref_by_key(struct sshkey *key);
+
 
 /* Constants used when creating the client context extra data */
 static int ssh_pkcs11_client_rsa_ctx_index = -1;
@@ -130,6 +132,7 @@ CRYPTO_EX_pkcs11_client_ec_free(
 struct helper {
 	pid_t pid;
 	int fd;
+	size_t nkeys;
 };
 static struct helper **helpers = NULL;
 static size_t nhelpers = 0;
@@ -210,6 +213,41 @@ helper_terminate(struct helper *helper)
 		(void)waitpid(pid, NULL, 0);
 	}
 	helper_free(helper);
+}
+
+static void
+helper_unref(struct helper *helper)
+{
+	if (helper == NULL)
+		return;
+	if (helper->nkeys == 0) {
+		debug3_f("already un-referenced");
+		return;
+	}
+
+	helper->nkeys--;
+	/* do not terminate helper until is explicitly requested! */
+}
+
+void
+helper_unref_by_key(struct sshkey *key) {
+	struct helper *helper = NULL;
+
+	switch(key->type) {
+	case KEY_RSA:
+	{	RSA *rsa = EVP_PKEY_get1_RSA(key->pk);
+		helper = helper_by_rsa(rsa);
+		RSA_free(rsa);
+	}	break;
+#ifdef OPENSSL_HAS_ECC
+	case KEY_ECDSA:
+	{	EC_KEY *ec = EVP_PKEY_get1_EC_KEY(key->pk);
+		helper = helper_by_ec(ec);
+		EC_KEY_free(ec);
+	}	break;
+#endif
+	}
+	helper_unref(helper);
 }
 
 static int
@@ -640,6 +678,7 @@ pkcs11_start_helper(void)
 	helper = xcalloc(1, sizeof(*helper));
 	helper->fd = pair[0];
 	helper->pid = pid;
+	helper->nkeys = 0;
 	debug3_f("helper pid %ld fd %d",
 	    (long)helper->pid, helper->fd);
 	helpers = xrecallocarray(helpers, nhelpers,
@@ -717,6 +756,8 @@ pkcs11_add_provider(char *name, char *pin,
 				sshkey_free(k);
 				k = NULL;
 			}
+			if (k != NULL)
+				helper->nkeys++;
 set_key:
 			if (label && (*label == '\0')) {
 				free(label);
