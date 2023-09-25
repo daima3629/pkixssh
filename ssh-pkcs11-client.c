@@ -60,7 +60,7 @@
 #include "atomicio.h"
 #include "ssh-pkcs11.h"
 
-void helper_unref_by_key(struct sshkey *key);
+static void helper_unref_by_name(const char *provider);
 
 
 /* Constants used when creating the client context extra data */
@@ -88,6 +88,7 @@ pkcs11_client_free(struct pkcs11_client *client) {
 	if (client == NULL) return;
 
 	if (client->provider != NULL) {
+		helper_unref_by_name(client->provider);
 		free((void*)client->provider);
 	}
 	free(client);
@@ -229,24 +230,10 @@ helper_unref(struct helper *helper)
 	/* do not terminate helper until is explicitly requested! */
 }
 
-void
-helper_unref_by_key(struct sshkey *key) {
-	struct helper *helper = NULL;
-
-	switch(key->type) {
-	case KEY_RSA:
-	{	RSA *rsa = EVP_PKEY_get1_RSA(key->pk);
-		helper = helper_by_rsa(rsa);
-		RSA_free(rsa);
-	}	break;
-#ifdef OPENSSL_HAS_ECC
-	case KEY_ECDSA:
-	{	EC_KEY *ec = EVP_PKEY_get1_EC_KEY(key->pk);
-		helper = helper_by_ec(ec);
-		EC_KEY_free(ec);
-	}	break;
-#endif
-	}
+static void
+helper_unref_by_name(const char *provider)
+{
+	struct helper *helper = helper_by_provider(provider);
 	helper_unref(helper);
 }
 

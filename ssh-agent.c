@@ -94,9 +94,6 @@
 #include "match.h"
 #include "ssh-pkcs11.h"
 
-/* ssh-pkcs11-client.c */
-extern void helper_unref_by_key(struct sshkey *key);
-
 #ifndef DEFAULT_ALLOWED_PROVIDERS
 # define DEFAULT_ALLOWED_PROVIDERS "!*"
 #endif
@@ -212,7 +209,6 @@ idtab_init(void)
 static void
 free_identity(Identity *id)
 {
-	helper_unref_by_key(id->key);
 	sshkey_free(id->key);
 	free(id->provider);
 	free(id->comment);
