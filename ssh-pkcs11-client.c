@@ -638,16 +638,18 @@ exec_helper(void)
 static struct helper *
 pkcs11_start_helper(void)
 {
+	int pair[2];
 	struct helper *helper;
 	pid_t pid;
-	int pair[2];
 
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, pair) == -1) {
-		error("socketpair: %s", strerror(errno));
+		error_f("socketpair: %s", strerror(errno));
 		return NULL;
 	}
 	if ((pid = fork()) == -1) {
-		error("fork: %s", strerror(errno));
+		error_f("fork: %s", strerror(errno));
+		close(pair[0]);
+		close(pair[1]);
 		return NULL;
 	} else if (pid == 0) {
 		if ((dup2(pair[1], STDIN_FILENO) == -1) ||
