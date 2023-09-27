@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-pkcs11-client.c,v 1.17 2020/10/18 11:32:02 djm Exp $ */
+/* $OpenBSD: ssh-pkcs11-client.c,v 1.18 2023/07/19 14:03:45 djm Exp $ */
 /*
  * Copyright (c) 2010 Markus Friedl.  All rights reserved.
  * Copyright (c) 2016-2023 Roumen Petrov.  All rights reserved.
@@ -46,8 +46,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+#include <limits.h>
 
-#include <openssl/rsa.h>
 #include "evp-compat.h"
 
 #include "pathnames.h"
@@ -130,7 +130,12 @@ CRYPTO_EX_pkcs11_client_ec_free(
 
 /* borrows code from sftp-server and ssh-agent */
 
+/*
+ * Maintain a list of ssh-pkcs11-helper subprocesses. These may be looked up
+ * by provider path.
+ */
 struct helper {
+	const char *path;
 	pid_t pid;
 	int fd;
 	size_t nkeys;
@@ -141,10 +146,14 @@ static size_t nhelpers = 0;
 static struct helper *
 helper_by_provider(const char *path)
 {
-	/* reserved for future use */
-	UNUSED(path);
-	if (nhelpers > 0)
-		return helpers[0];
+	size_t i;
+
+	for (i = 0; i < nhelpers; i++) {
+		if (helpers[i] == NULL || helpers[i]->path == NULL)
+			continue;
+		if (strcmp(helpers[i]->path, path) == 0)
+			return helpers[i];
+	}
 	return NULL;
 }
 
@@ -195,6 +204,7 @@ helper_free(struct helper *helper)
 		    nhelpers - 1, sizeof(*helpers));
 		nhelpers--;
 	}
+	free((void*)helper->path);
 	free(helper);
 }
 
@@ -206,8 +216,8 @@ helper_terminate(struct helper *helper)
 	} else {
 		pid_t pid = helper->pid;
 
-		debug3_f("terminating helper pid %ld fd %d",
-		    (long)helper->pid, helper->fd);
+		debug3_f("terminating helper pid %ld fd %d for '%s'",
+		    (long)helper->pid, helper->fd, helper->path);
 		close(helper->fd);
 		helper->fd = -1;
 		helper->pid = -1;
@@ -636,12 +646,15 @@ exec_helper(void)
 }
 
 static struct helper *
-pkcs11_start_helper(void)
+pkcs11_start_helper(const char *path)
 {
 	int pair[2];
 	struct helper *helper;
 	pid_t pid;
 
+	if (nhelpers >= INT_MAX)
+		fatal_f("too many helpers");
+	debug3_f("start helper for %s", path);
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, pair) == -1) {
 		error_f("socketpair: %s", strerror(errno));
 		return NULL;
@@ -666,10 +679,11 @@ pkcs11_start_helper(void)
 
 	helper = xcalloc(1, sizeof(*helper));
 	helper->fd = pair[0];
+	helper->path = xstrdup(path);
 	helper->pid = pid;
 	helper->nkeys = 0;
-	debug3_f("helper pid %ld fd %d",
-	    (long)helper->pid, helper->fd);
+	debug3_f("helper %zu pid %ld fd %d for '%s'", nhelpers,
+	    (long)helper->pid, helper->fd, helper->path);
 	helpers = xrecallocarray(helpers, nhelpers,
 	    nhelpers + 1, sizeof(*helpers));
 	helpers[nhelpers++] = helper;
@@ -696,7 +710,7 @@ pkcs11_add_provider(char *name, char *pin,
 		}
 	}
 	if (helper == NULL) {
-		helper = pkcs11_start_helper();
+		helper = pkcs11_start_helper(name);
 		if (helper == NULL)
 			return -1;
 	}
@@ -807,7 +821,8 @@ pkcs11_del_provider(char *name)
 	if (recv_msg(helper->fd, msg) == SSH_AGENT_SUCCESS)
 		ret = 0;
 	sshbuf_free(msg);
-	return (ret);
+	helper_terminate(helper);
+	return ret;
 }
 
 #endif /* ENABLE_PKCS11 */
