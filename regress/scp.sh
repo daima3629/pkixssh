@@ -25,6 +25,13 @@ scpclean() {
 	chmod 755 ${DIR} ${DIR2} ${DIR3}
 }
 
+# Create directory structure for recursive copy tests.
+forest() {
+	scpclean
+	rm -rf ${DIR2}
+	cp ${DATA} ${DIR}/copy
+}
+
 for mode in $SCP_MODES ; do
 	tag="$tid: $mode mode"
 	scpopts="-q"
@@ -91,23 +98,17 @@ for mode in $SCP_MODES ; do
 	cmp ${COPY} ${DIR}/copy || fail "corrupted copy"
 
 	verbose "$tag: recursive local dir to remote dir"
-	scpclean
-	rm -rf ${DIR2}
-	cp ${DATA} ${DIR}/copy
+	forest
 	$SCP $scpopts -r ${DIR} somehost:${DIR2} || fail "copy failed"
 	diff ${DIFFOPT} ${DIR} ${DIR2} || fail "corrupted copy"
 
 	verbose "$tag: recursive local dir to local dir"
-	scpclean
-	rm -rf ${DIR2}
-	cp ${DATA} ${DIR}/copy
+	forest
 	$SCP $scpopts -r ${DIR} ${DIR2} || fail "copy failed"
 	diff ${DIFFOPT} ${DIR} ${DIR2} || fail "corrupted copy"
 
 	verbose "$tag: recursive remote dir to local dir"
-	scpclean
-	rm -rf ${DIR2}
-	cp ${DATA} ${DIR}/copy
+	forest
 	$SCP $scpopts -r somehost:${DIR} ${DIR2} || fail "copy failed"
 	diff ${DIFFOPT} ${DIR} ${DIR2} || fail "corrupted copy"
 
