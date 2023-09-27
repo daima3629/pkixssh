@@ -3,8 +3,6 @@
 
 tid="sftp-uri"
 
-#set -x
-
 DIR=${COPY}.dd
 DIR2=${COPY}.dd2
 SRC=`dirname ${SCRIPT}`

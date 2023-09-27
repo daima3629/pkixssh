@@ -3,8 +3,6 @@
 
 tid="scp3"
 
-#set -x
-
 COPY2=${OBJ}/copy2
 DIR=${COPY}.dd
 DIR2=${COPY}.dd2

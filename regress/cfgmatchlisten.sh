@@ -73,8 +73,6 @@ echo "PermitListen 127.0.0.1:2 127.0.0.1:3 $fwdspec" >>$OBJ/sshd_proxy
 
 start_sshd
 
-#set -x
-
 # Test Match + PermitListen in sshd_config.  This should be permitted
 trace "match permitlisten localhost"
 expect_client_ok -F $OBJ/ssh_config
