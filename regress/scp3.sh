@@ -1,4 +1,4 @@
-#	$OpenBSD: scp3.sh,v 1.3 2021/08/10 03:35:45 djm Exp $
+#	$OpenBSD: scp3.sh,v 1.5 2023/09/08 06:10:57 djm Exp $
 #	Placed in the Public Domain.
 
 tid="scp3"
@@ -20,6 +20,10 @@ forest() {
 	scpclean
 	rm -rf ${DIR2}
 	cp ${DATA} ${DIR}/copy
+	ln -s ${DIR}/copy ${DIR}/copy-sym
+	mkdir ${DIR}/subdir
+	cp ${DATA} ${DIR}/subdir/copy
+	ln -s ${DIR}/subdir ${DIR}/subdir-sym
 }
 
 for mode in $SCP_MODES ; do

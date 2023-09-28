@@ -1,4 +1,4 @@
-/* $OpenBSD: sftp-client.c,v 1.171 2023/04/30 22:54:22 djm Exp $ */
+/* $OpenBSD: sftp-client.c,v 1.174 2023/09/08 06:10:02 djm Exp $ */
 /*
  * Copyright (c) 2001-2004 Damien Miller <djm@openbsd.org>
  * Copyright (c) 2018-2022 Roumen Petrov.  All rights reserved.
@@ -1872,6 +1872,7 @@ download_dir_internal(struct sftp_conn *conn, const char *src, const char *dst,
 	}
 
 	for (i = 0; dir_entries[i] != NULL && !interrupted; i++) {
+		Attrib *a, lsym;
 		free(new_dst);
 		free(new_src);
 
@@ -1879,25 +1880,33 @@ download_dir_internal(struct sftp_conn *conn, const char *src, const char *dst,
 		new_dst = sftp_path_append(dst, filename);
 		new_src = sftp_path_append(src, filename);
 
-		if (S_ISDIR(dir_entries[i]->a.perm)) {
+		a = &dir_entries[i]->a;
+		if (S_ISLNK(a->perm)) {
+			if (!follow_link_flag) {
+				logit("download \"%s\": not a regular file",
+				    new_src);
+				continue;
+			}
+			/* Replace the stat contents with the symlink target */
+			if (sftp_stat(conn, new_src, 1, &lsym) != 0) {
+				logit("remote stat \"%s\" failed", new_src);
+				ret = -1;
+				continue;
+			}
+			a = &lsym;
+		}
+
+		if (S_ISDIR(a->perm)) {
 			if (strcmp(filename, ".") == 0 ||
 			    strcmp(filename, "..") == 0)
 				continue;
 			if (download_dir_internal(conn, new_src, new_dst,
-			    depth + 1, &(dir_entries[i]->a), preserve_flag,
+			    depth + 1, a, preserve_flag,
 			    print_flag, resume_flag,
 			    fsync_flag, follow_link_flag, inplace_flag) == -1)
 				ret = -1;
-		} else if (S_ISREG(dir_entries[i]->a.perm) ||
-		    (follow_link_flag && S_ISLNK(dir_entries[i]->a.perm))) {
-			/*
-			 * If this is a symlink then don't send the link's
-			 * Attrib. sftp_download() will do a FXP_STAT operation
-			 * and get the link target's attributes.
-			 */
-			if (sftp_download(conn, new_src, new_dst,
-			    S_ISLNK(dir_entries[i]->a.perm) ? NULL :
-			    &(dir_entries[i]->a),
+		} else if (S_ISREG(a->perm)) {
+			if (sftp_download(conn, new_src, new_dst, a,
 			    preserve_flag, resume_flag, fsync_flag,
 			    inplace_flag) == -1) {
 				error("Download of file %s to %s failed",
@@ -2246,21 +2255,33 @@ upload_dir_internal(struct sftp_conn *conn, const char *src, const char *dst,
 		new_dst = sftp_path_append(dst, filename);
 		new_src = sftp_path_append(src, filename);
 
+		if (strcmp(filename, ".") == 0 || strcmp(filename, "..") == 0)
+			continue;
 		if (lstat(new_src, &sb) == -1) {
 			logit("local lstat \"%s\": %s", filename,
 			    strerror(errno));
 			ret = -1;
-		} else if (S_ISDIR(sb.st_mode)) {
-			if (strcmp(filename, ".") == 0 ||
-			    strcmp(filename, "..") == 0)
+			continue;
+		}
+		if (S_ISLNK(sb.st_mode)) {
+			if (!follow_link_flag) {
+				logit("%s: not a regular file", filename);
 				continue;
-
+			}
+			/* Replace the stat contents with the symlink target */
+			if (stat(new_src, &sb) == -1) {
+				logit("local stat \"%s\": %s", filename,
+				    strerror(errno));
+				ret = -1;
+				continue;
+			}
+		}
+		if (S_ISDIR(sb.st_mode)) {
 			if (upload_dir_internal(conn, new_src, new_dst,
 			    depth + 1, preserve_flag, print_flag, resume,
 			    fsync_flag, follow_link_flag, inplace_flag) == -1)
 				ret = -1;
-		} else if (S_ISREG(sb.st_mode) ||
-		    (follow_link_flag && S_ISLNK(sb.st_mode))) {
+		} else if (S_ISREG(sb.st_mode)) {
 			if (sftp_upload(conn, new_src, new_dst,
 			    preserve_flag, resume, fsync_flag,
 			    inplace_flag) == -1) {
@@ -2684,6 +2705,8 @@ crossload_dir_internal(struct sftp_conn *from, struct sftp_conn *to,
 	}
 
 	for (i = 0; dir_entries[i] != NULL && !interrupted; i++) {
+		Attrib *a, lsym;
+
 		free(new_from_path);
 		free(new_to_path);
 
@@ -2691,25 +2714,33 @@ crossload_dir_internal(struct sftp_conn *from, struct sftp_conn *to,
 		new_from_path = sftp_path_append(from_path, filename);
 		new_to_path = sftp_path_append(to_path, filename);
 
-		if (S_ISDIR(dir_entries[i]->a.perm)) {
+		a = &dir_entries[i]->a;
+		if (S_ISLNK(a->perm)) {
+			if (!follow_link_flag) {
+				logit("%s: not a regular file", filename);
+				continue;
+			}
+			/* Replace the stat contents with the symlink target */
+			if (sftp_stat(from, new_from_path, 1, &lsym) != 0) {
+				logit("remote stat \"%s\" failed",
+				    new_from_path);
+				ret = -1;
+				continue;
+			}
+			a = &lsym;
+		}
+		if (S_ISDIR(a->perm)) {
 			if (strcmp(filename, ".") == 0 ||
 			    strcmp(filename, "..") == 0)
 				continue;
 			if (crossload_dir_internal(from, to,
 			    new_from_path, new_to_path,
-			    depth + 1, &(dir_entries[i]->a), preserve_flag,
+			    depth + 1, a, preserve_flag,
 			    print_flag, follow_link_flag) == -1)
 				ret = -1;
-		} else if (S_ISREG(dir_entries[i]->a.perm) ||
-		    (follow_link_flag && S_ISLNK(dir_entries[i]->a.perm))) {
-			/*
-			 * If this is a symlink then don't send the link's
-			 * Attrib. sftp_download() will do a FXP_STAT operation
-			 * and get the link target's attributes.
-			 */
-			if (sftp_crossload(from, to, new_from_path, new_to_path,
-			    S_ISLNK(dir_entries[i]->a.perm) ? NULL :
-			    &(dir_entries[i]->a), preserve_flag) == -1) {
+		} else if (S_ISREG(a->perm)) {
+			if (sftp_crossload(from, to, new_from_path,
+			    new_to_path, a, preserve_flag) == -1) {
 				error("crossload \"%s\" to \"%s\" failed",
 				    new_from_path, new_to_path);
 				ret = -1;
