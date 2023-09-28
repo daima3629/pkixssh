@@ -2269,20 +2269,13 @@ parse_string:
 			fatal("%s line %d: %s missing command.",
 			    filename, linenum, keyword);
 		options->subsystem_command[options->num_subsystems] = xstrdup(arg);
-
 		/* Collect arguments (separate to executable) */
-		p = xstrdup(arg);
-		len = strlen(p) + 1;
-		while ((arg = argv_next(&ac, &av)) != NULL) {
-			if (*arg == '\0')
-				fatal("%s line %d: empty %s pattern",
-				    filename, linenum, keyword);
-			len += 1 + strlen(arg);
-			p = xreallocarray(p, 1, len);
-			strlcat(p, " ", len);
-			strlcat(p, arg, len);
-		}
-		options->subsystem_args[options->num_subsystems] = p;
+		arg = argv_assemble(1, &arg); /* quote command correctly */
+		arg2 = argv_assemble(ac, av); /* rest of command */
+		xasprintf(&options->subsystem_args[options->num_subsystems],
+		    "%s %s", arg, arg2);
+		free(arg2);
+		argv_consume(&ac);
 		options->num_subsystems++;
 		break;
 
