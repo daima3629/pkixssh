@@ -1,4 +1,4 @@
-/* $OpenBSD: servconf.h,v 1.159 2023/01/17 09:44:48 djm Exp $ */
+/* $OpenBSD: servconf.h,v 1.160 2023/09/06 23:35:35 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -328,6 +328,9 @@ TAILQ_HEAD(include_list, include_item);
 		M_CP_STRARRAYOPT(permitted_listens, num_permitted_listens); \
 		M_CP_STRARRAYOPT(channel_timeouts, num_channel_timeouts); \
 		M_CP_STRARRAYOPT(log_verbose, num_log_verbose); \
+		M_CP_STRARRAYOPT(subsystem_name, num_subsystems); \
+		M_CP_STRARRAYOPT(subsystem_command, num_subsystems); \
+		M_CP_STRARRAYOPT(subsystem_args, num_subsystems); \
 	} while (0)
 
 struct connection_info *get_connection_info(struct ssh *, int, int);

@@ -1,4 +1,4 @@
-#	$OpenBSD: Makefile,v 1.125 2023/05/17 05:52:01 djm Exp $
+#	$OpenBSD: Makefile,v 1.126 2023/09/06 23:36:09 djm Exp $
 
 tests: unit file-tests t-exec
 check-core: tests
@@ -97,7 +97,8 @@ LTESTS=		connect \
 		knownhosts \
 		knownhosts-command \
 		channel-timeout \
-		connection-timeout
+		connection-timeout \
+		match-subsystem
 
 # portability:
 #		percent \
