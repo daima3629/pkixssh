@@ -447,7 +447,7 @@ sshkey_xmss_get_state(const struct sshkey *k, int printerror)
 	u_int32_t idx = 0;
 	char *filename = NULL;
 	char *statefile = NULL, *ostatefile = NULL, *lockfile = NULL;
-	int lockfd = -1, have_state = 0, have_ostate, tries = 0;
+	int lockfd = -1, have_state = 0, have_ostate = 0, tries = 0;
 	int ret = SSH_ERR_INVALID_ARGUMENT, r;
 
 	if (state == NULL)
