@@ -1,4 +1,4 @@
-/* $OpenBSD: sshconnect2.c,v 1.366 2023/03/09 07:11:05 dtucker Exp $ */
+/* $OpenBSD: sshconnect2.c,v 1.368 2023/10/12 02:15:53 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Damien Miller.  All rights reserved.
@@ -448,6 +448,12 @@ ssh_userauth2(struct ssh *ssh, const char *local_user,
 	ssh_dispatch_set(ssh, SSH2_MSG_SERVICE_ACCEPT, &input_userauth_service_accept);
 	ssh_dispatch_run_fatal(ssh, DISPATCH_BLOCK, &authctxt.success);	/* loop until success */
 	pubkey_cleanup(ssh);
+#ifdef GSSAPI
+	if (authctxt.gss_supported_mechs != NULL) {
+		gss_release_oid_set(&authctxt->gss_minor_status, &authctxt.gss_supported_mechs);
+		authctxt.gss_supported_mechs = NULL;
+	}
+#endif
 	ssh->authctxt = NULL;
 
 	ssh_dispatch_range(ssh, SSH2_MSG_USERAUTH_MIN, SSH2_MSG_USERAUTH_MAX, NULL);
@@ -780,9 +786,6 @@ static void
 userauth_gssapi_cleanup(struct ssh *ssh)
 {
 	Authctxt *authctxt = (Authctxt *)ssh->authctxt;
-
-	gss_release_oid_set(&authctxt->gss_minor_status, &authctxt->gss_supported_mechs);
-	authctxt->gss_supported_mechs = NULL;
 
 {
 	Gssctxt *gssctxt = (Gssctxt *)authctxt->methoddata;
