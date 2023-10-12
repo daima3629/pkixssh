@@ -1,4 +1,4 @@
-/* $OpenBSD: misc.c,v 1.186 2023/08/18 01:37:41 djm Exp $ */
+/* $OpenBSD: misc.c,v 1.189 2023/10/12 03:36:32 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2005,2006 Damien Miller.  All rights reserved.
@@ -1278,7 +1278,7 @@ static char *
 vdollar_percent_expand(int *parseerror, int dollar, int percent,
     const char *string, va_list ap)
 {
-#define EXPAND_MAX_KEYS	16
+#define EXPAND_MAX_KEYS	64
 	u_int num_keys = 0, i;
 	struct {
 		const char *key;
