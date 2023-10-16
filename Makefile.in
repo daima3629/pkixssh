@@ -667,7 +667,7 @@ check:
 # for compatibility
 tests: check
 
-check-core unit file-tests t-exec f-exec interop-tests: regress-binaries $(TARGETS)
+check-core unit file-tests t-exec f-exec interop-tests extra-tests: regress-binaries $(TARGETS)
 	TEST_SSH_SCP="$${TEST_SSH_SCP-$(BUILDDIR)/scp}"; \
 	TEST_SSH_SSH="$${TEST_SSH_SSH-$(BUILDDIR)/ssh}"; \
 	TEST_SSH_SSHD="$${TEST_SSH_SSHD-$(BUILDDIR)/sshd}"; \

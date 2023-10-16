@@ -11,6 +11,8 @@ file-tests: $(REGRESS_TARGETS)
 # Interop tests are not run by default
 interop interop-tests: t-exec-interop
 
+extra extra-tests: t-extra
+
 clean:
 	for F in $(CLEANFILES); do rm -f $(OBJ)$$F; done
 	rm -rf $(OBJ)copy.dd $(OBJ)copy.dd2 $(OBJ)copy.dd.glob[456]
@@ -112,7 +114,8 @@ FIPS_LTESTS=\
 INTEROP_TESTS=	putty-transfer putty-ciphers putty-kex conch-ciphers
 #INTEROP_TESTS+=ssh-com ssh-com-client ssh-com-keygen ssh-com-sftp
 
-EXTRA_TESTS=	agent-pkcs11
+EXTRA_TESTS=
+#EXTRA_TESTS+=	agent-pkcs11
 #EXTRA_TESTS+=	cipher-speed
 
 CLEAN_KEYGEN_CONVERT=	*-key *-key.only-pub *-key-nocomment.pub \
