@@ -3,7 +3,7 @@
 
 tid="putty ciphers"
 
-$REGRESS_INTEROP_PUTTY || { RESUILT=1; skip "putty interop tests are not enabled"; }
+$REGRESS_INTEROP_PUTTY || { RESULT=1; skip "putty interop tests are not enabled"; }
 echo "PLINK: $PLINK" >&2
 
 for c in aes 3des aes128-ctr aes192-ctr aes256-ctr chacha20 ; do
