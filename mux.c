@@ -1,4 +1,4 @@
-/* $OpenBSD: mux.c,v 1.100 2023/08/18 01:37:41 djm Exp $ */
+/* $OpenBSD: mux.c,v 1.101 2023/11/23 03:37:05 dtucker Exp $ */
 /*
  * Copyright (c) 2002-2008 Damien Miller <djm@openbsd.org>
  * Copyright (c) 2018-2023 Roumen Petrov.  All rights reserved.
@@ -2292,7 +2292,7 @@ muxclient(const char *path)
 	switch (options.control_master) {
 	case SSHCTL_MASTER_AUTO:
 	case SSHCTL_MASTER_AUTO_ASK:
-		debug("auto-mux: Trying existing master");
+		debug("auto-mux: trying existing master at '%s'", path);
 		/* FALLTHROUGH */
 	case SSHCTL_MASTER_NO:
 		break;
