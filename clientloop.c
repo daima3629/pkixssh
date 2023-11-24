@@ -1,4 +1,4 @@
-/* $OpenBSD: clientloop.c,v 1.392 2023/04/03 08:10:54 dtucker Exp $ */
+/* $OpenBSD: clientloop.c,v 1.402 2023/11/24 00:31:30 dtucker Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -720,6 +720,8 @@ client_status_confirm(struct ssh *ssh, int type, Channel *c, void *ctx)
 		 * their stderr.
 		 */
 		if (tochan) {
+			debug3_f("channel %d: mux request: %s", c->self,
+			    cr->request_type);
 			if ((r = sshbuf_put(c->extended, errmsg,
 			    strlen(errmsg))) != 0)
 				fatal_fr(r, "sshbuf_put");
