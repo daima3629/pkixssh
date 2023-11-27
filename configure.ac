@@ -3478,15 +3478,22 @@ AS_IF([test "x$OPENSSL_FIPS_MODE" = "xyes"], [
 #include <sys/types.h>
 #include <openssl/ossl_typ.h>
   ])
+])
 
-  # on some systems FIPS error string are not loaded with other errors!?
-  AC_CHECK_DECLS([ERR_load_FIPS_strings], [],[], [
+# on some systems FIPS error string are not loaded with other errors!?
+# perform test unconditionally to simplify preprocessor code
+AS_IF([test "x$OPENSSL_FIPS_MODE" != "xyes"], [], [
+  ac_cv_have_decl_ERR_load_FIPS_strings=ignore
+])
+AC_CHECK_DECLS([ERR_load_FIPS_strings], [], [], [
 #include <sys/types.h>
 #include <openssl/ossl_typ.h>
 #ifdef HAVE_OPENSSL_FIPS_H
 # include <openssl/fips.h>
 #endif
-  ])
+])
+
+AS_IF([test "x$OPENSSL_FIPS_MODE" = "xyes"], [
   AC_CHECK_FUNCS([ \
     ERR_load_FIPS_strings \
   ])
