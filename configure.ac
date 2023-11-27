@@ -217,6 +217,10 @@ if test "$GCC" = "yes" || test "$GCC" = "egcs"; then
 	OSSH_CHECK_CFLAG_COMPILE([-Wunused-result], [-Wno-unused-result])
 	#ignore bogus warnings on some compilers...
 	#OSSH_CHECK_CFLAG_COMPILE([-Wimplicit-fallthrough])
+	#-Wmisleading-indentation enabled by -Wall, see above
+	#OSSH_CHECK_CFLAG_COMPILE([-Wmisleading-indentation])
+	#bitwise logic must be marked explicitly
+	#OSSH_CHECK_CFLAG_COMPILE([-Wbitwise-instead-of-logical])
 	OSSH_CHECK_CFLAG_COMPILE([-fno-strict-aliasing])
     if $use_toolchain_hardening ; then
 	OSSH_CHECK_CFLAG_COMPILE([-mretpoline]) # clang
@@ -235,12 +239,19 @@ if test "$GCC" = "yes" || test "$GCC" = "egcs"; then
 	# all platforms. Use -fsanitize=... instead.
 	#-#OSSH_CHECK_CFLAG_LINK([-ftrapv])
 
-	# TODO: wipe used registers
+	# NOTE: "wipe used registers" is problematic
+	# argument =used is less problematic then =all
+	# even gcc has problems on some platforms
+	# test has to be heavy hardened to catch all failed cases
 	# clang 15 seems to have a bug in -fzero-call-used-regs=all.  See
+	# https://bugzilla.mindrot.org/show_bug.cgi?id=3475 and
 	# https://github.com/llvm/llvm-project/issues/59242
+	# clang 17 has a different bug that causes an ICE when using this
+	# flag at all (https://bugzilla.mindrot.org/show_bug.cgi?id=3629)
 	#case "$CLANG_VER" in
-	#15.*|apple*) OSSH_CHECK_CFLAG_COMPILE([-fzero-call-used-regs=used]) ;;
-	#*)    OSSH_CHECK_CFLAG_COMPILE([-fzero-call-used-regs=all]) ;;
+	#apple-15*) OSSH_CHECK_CFLAG_COMPILE([-fzero-call-used-regs=used]) ;;
+	#17*)	;;
+	#*)	OSSH_CHECK_CFLAG_COMPILE([-fzero-call-used-regs=used]) ;;
 	#esac
 
 	# TODO: stack variables auto-initialization
