@@ -107,6 +107,15 @@ printf "OpenSSL command: ${attn}%s${norm}\n" "$OPENSSL"
 openssl_version=`$OPENSSL version` || exit $?
 test -z "$openssl_version" && { echo "error: cannot determine OpenSSL version" >&2; exit 1; }
 printf "        version: ${attn}%s${norm}\n" "$openssl_version"
+# OpenSSL 3.2.0 pkcs#12 utility fail is default configuration is not found.
+# This requires package to be ether installed or configuration to be specified.
+openssl_conf='(default)'
+if test -n "$OPENSSL_CONF" ; then
+  openssl_conf="$OPENSSL_CONF"
+else
+  openssl_conf='(default)'
+fi
+printf "        config : ${attn}%s${norm}\n" "$openssl_conf"
 
 
 openssl_nopkcs8_keys=false
