@@ -252,10 +252,15 @@ OPENSSL_NAMEOPT="-nameopt utf8,sep_comma_plus" #ok
 # Set the default base port if is not set by environment.
 SSH_VA_BASEPORT=${SSH_VA_BASEPORT-20080}
 
-# OpenSSL OCSP responder don't use SO_REUSEADDR :-(, so ocsp tests
-# must wait socket to close.
+# OpenSSL OCSP responder before 1.1.0 do not set SO_REUSEADDR :-(,
+# so ocsp tests must wait socket to close.
+case $openssl_version in
+*"OpenSSL 0.9"*|\
+*"OpenSSL 1.0"*)
 # Set the default timeout if is not set by environment.
-SSH_OPENSSL_OCSP_TMOUT=${SSH_OPENSSL_OCSP_TMOUT-60}
+  SSH_OPENSSL_OCSP_TMOUT=${SSH_OPENSSL_OCSP_TMOUT-60}
+  ;;
+esac
 
 # === LDAP:
 # "mdb" backend since openldap 2.4+
