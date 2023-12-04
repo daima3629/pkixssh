@@ -22,7 +22,7 @@ trap "${SUDO} rm -f ${KEY_COMMAND}" 0
 cat << _EOF | $SUDO sh -c "rm -f '$KEY_COMMAND' ; cat > '$KEY_COMMAND'"
 #! $TEST_SHELL
 echo args: \${1+"\$@"} >> $OBJ/keys-command-args
-echo "$PATH" | grep -q mekmitasdigoat && exit 7
+echo "$PATH" | grep mekmitasdigoat > /dev/null && exit 7
 test "x\$1" != "x${LOGNAME}" && exit 1
 if test $# -eq 6 ; then
 	test "x\$2" != "xblah" && exit 2
