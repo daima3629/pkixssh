@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005-2022 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2005-2023 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -121,6 +121,9 @@ logit("TRACE_XKALG add_default_xkalg:");
 
 #ifdef OPENSSL_HAS_ED25519
 	/* NOTE: OPENSSL_HAS_ED25519 implies HAVE_EVP_DIGESTSIGN */
+#ifdef OPENSSL_FIPS
+	if (!FIPS_mode())
+#endif
 	if (ssh_add_x509key_alg("x509v3-ssh-ed25519,none,ssh-ed25519") < 0)
 		fatal_f("oops");
 #endif
@@ -285,6 +288,9 @@ ssh_add_x509key_alg(const char *data) {
 
 #ifdef OPENSSL_FIPS
 	if (FIPS_mode()) {
+		/* NOTE some vendor OpenSSL 1.1.1 releases crash in EVP_MD_flags()
+		 * when FIPS mode is activated and digest is none.
+		 */
 		if ((EVP_MD_flags(p->dgst->md()) & EVP_MD_FLAG_FIPS) == 0) {
 			error_f("%s in not enabled in FIPS mode ", mdname);
 			goto err;
