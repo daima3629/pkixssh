@@ -14,7 +14,7 @@
 .\" Copyright (c) 1999,2000 Markus Friedl.  All rights reserved.
 .\" Copyright (c) 1999 Aaron Campbell.  All rights reserved.
 .\" Copyright (c) 1999 Theo de Raadt.  All rights reserved.
-.\" Copyright (c) 2002-2022 Roumen Petrov.  All rights reserved.
+.\" Copyright (c) 2002-2023 Roumen Petrov.  All rights reserved.
 .\"
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions
@@ -44,7 +44,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: September 4 2023 $
+.Dd $Mdocdate: December 4 2023 $
 .Dt SSH-KEYGEN 1
 .Os
 .Sh NAME
@@ -162,7 +162,8 @@ The type of key to be generated is specified with the
 option.
 If invoked without any arguments,
 .Nm
-will generate an Ed25519 key.
+will generate an Ed25519 key unless is run FIPS mode.
+In FIPS mode the default is RSA key.
 .Pp
 By default key is stored in PKCS#8 PEM format.
 For compatibility with earlier versions programs

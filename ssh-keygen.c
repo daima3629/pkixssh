@@ -93,7 +93,15 @@
 #include "authfd.h"
 #include "cipher.h"
 
-#define DEFAULT_KEY_TYPE_NAME "ed25519"
+static char*
+default_key_type_name(void) {
+#ifdef OPENSSL_FIPS
+	if (FIPS_mode())
+		return "rsa";
+#endif
+
+	return "ed25519";
+}
 
 /*
  * Default number of bits in the RSA, DSA and ECDSA keys.  These value can be
@@ -305,8 +313,10 @@ ask_filename(const struct passwd *pw, const char *prompt)
 	char *name = NULL;
 
 	if (key_type_name == NULL)
-		name = _PATH_SSH_CLIENT_ID_ED25519;
-	else {
+		key_type_name = default_key_type_name();
+
+	/* NOTE: keep block to minimise code differences */
+	{
 		switch (sshkey_type_from_name(key_type_name)) {
 		case KEY_DSA_CERT:
 		case KEY_DSA:
@@ -2991,7 +3001,7 @@ main(int argc, char **argv)
 	}
 
 	if (key_type_name == NULL)
-		key_type_name = DEFAULT_KEY_TYPE_NAME;
+		key_type_name = default_key_type_name();
 
 	type = sshkey_type_from_name(key_type_name);
 	type_bits_valid(type, key_type_name, &bits);
