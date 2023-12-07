@@ -38,7 +38,7 @@
 #X509KeyAlgorithm x509v3-sign-dss,dss-raw
 
 # algorithms for X.509 certificates with Ed25519 key
-X509KeyAlgorithm x509v3-ssh-ed25519,none,ssh-ed25519
+#X509KeyAlgorithm x509v3-ssh-ed25519,none,ssh-ed25519
 
 # The intended use for the X509 client certificate. Without this option
 # no chain verification will be done. Currently accepted uses are case
