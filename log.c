@@ -1,4 +1,4 @@
-/* $OpenBSD: log.c,v 1.60 2021/09/16 15:11:19 djm Exp $ */
+/* $OpenBSD: log.c,v 1.61 2023/12/06 21:06:48 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -12,7 +12,7 @@
  */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
- * Copyright (c) 2004-2022 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2004-2023 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -368,6 +368,8 @@ forced_logging(const char *file, const char *func, int line)
 
 	if (nlog_verbose == 0) return 0;
 
+	if (line <= 0) return 0 /* not applicable */;
+
 {	const char *s = strrchr(file, '/');
 	if (s != NULL ) file = s + 1;
 	snprintf(tag, sizeof(tag), "%.48s:%.48s():%d", file, func, line);
@@ -390,7 +392,7 @@ sshlogv(const char *file, const char *func, int line,
 	int saved_errno = errno;
 	const char *progname = (argv0 != NULL) ? argv0 : __progname;
 
-	if ((line > 0) && (level > log_level)) {
+	if (level > log_level) {
 		if (!forced_logging(file, func, line))
 			return;
 	}
@@ -522,6 +524,15 @@ sshlogv_f(const char *file, const char *func, int line,
     LogLevel level, const char *fmt, va_list args)
 {
 	char msgbuf[MSGBUFSIZ];
+
+	if (level > log_level) {
+		if (nlog_verbose == 0)
+			return;
+		/*
+		else
+			pass to forced logging checks
+		*/
+	}
 
 	vsnprintf(msgbuf, sizeof(msgbuf), fmt, args);
 	sshlog(file, func, line, level, "%s: %s", func, msgbuf);
