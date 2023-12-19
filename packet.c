@@ -1,4 +1,4 @@
-/* $OpenBSD: packet.c,v 1.310 2023/04/06 03:21:31 djm Exp $ */
+/* $OpenBSD: packet.c,v 1.313 2023/12/18 14:45:17 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -1436,29 +1436,6 @@ ssh_packet_read(struct ssh *ssh)
 	if ((r = ssh_packet_read_seqnr(ssh, &type, NULL)) != 0)
 		fatal_fr(r, "read");
 	return type;
-}
-
-/*
- * Waits until a packet has been received, verifies that its type matches
- * that given, and gives a fatal error and exits if there is a mismatch.
- */
-
-int
-ssh_packet_read_expect(struct ssh *ssh, u_int expected_type)
-{
-	int r;
-	u_char type;
-
-	if ((r = ssh_packet_read_seqnr(ssh, &type, NULL)) != 0)
-		return r;
-	if (type != expected_type) {
-		if ((r = sshpkt_disconnect(ssh,
-		    "Protocol error: expected packet type %d, got %d",
-		    expected_type, type)) != 0)
-			return r;
-		return SSH_ERR_PROTOCOL_ERROR;
-	}
-	return 0;
 }
 
 static int
