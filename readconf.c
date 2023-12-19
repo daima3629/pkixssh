@@ -2974,6 +2974,16 @@ fill_default_options(Options * options)
 			v = NULL; \
 		} \
 	} while(0)
+#define CLEAR_ON_NONE_ARRAY(v, nv, none) \
+	do { \
+		if (options->nv == 1 && \
+		    strcasecmp(options->v[0], none) == 0) { \
+			free(options->v[0]); \
+			free(options->v); \
+			options->v = NULL; \
+			options->nv = 0; \
+		} \
+	} while (0)
 	CLEAR_ON_NONE(options->local_command);
 	CLEAR_ON_NONE(options->remote_command);
 	CLEAR_ON_NONE(options->proxy_command);
@@ -2982,6 +2992,15 @@ fill_default_options(Options * options)
 	CLEAR_ON_NONE(options->pkcs11_provider);
 	CLEAR_ON_NONE(options->sk_provider);
 	CLEAR_ON_NONE(options->known_hosts_command);
+
+	CLEAR_ON_NONE_ARRAY(log_verbose, num_log_verbose, "none");
+#undef CLEAR_ON_NONE
+#undef CLEAR_ON_NONE_ARRAY
+	if (options->num_canonical_domains == 1 &&
+	    strcmp(options->canonical_domains[0], "none") == 0) {
+		free(options->canonical_domains[0]);
+		options->num_canonical_domains = 0;
+	}
 	if (options->jump_host != NULL &&
 	    strcmp(options->jump_host, "none") == 0 &&
 	    options->jump_port == 0 && options->jump_user == NULL) {
