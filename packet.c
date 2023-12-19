@@ -1739,10 +1739,29 @@ ssh_packet_read_poll_seqnr(struct ssh *ssh, u_char *typep, u_int32_t *seqnr_p)
 		r = ssh_packet_read_poll2(ssh, typep, seqnr_p);
 		if (r != 0)
 			return r;
-		if (*typep) {
-			state->keep_alive_timeouts = 0;
-			DBG(debug("received packet type %d", *typep));
+		if (*typep == 0) {
+			/* no message ready */
+			return 0;
 		}
+		state->keep_alive_timeouts = 0;
+		DBG(debug("received packet type %d", *typep));
+
+		/* Always process disconnect messages */
+		if (*typep == SSH2_MSG_DISCONNECT) {
+			if ((r = sshpkt_get_u32(ssh, &reason)) != 0 ||
+			    (r = sshpkt_get_string(ssh, &msg, NULL)) != 0)
+				return r;
+			/* Ignore normal client exit notifications */
+			do_log2(ssh->state->server_side &&
+			    reason == SSH2_DISCONNECT_BY_APPLICATION ?
+			    SYSLOG_LEVEL_INFO : SYSLOG_LEVEL_ERROR,
+			    "Received disconnect from %s port %d:"
+			    " reason %u: %.400s", ssh_remote_ipaddr(ssh),
+			    ssh_remote_port(ssh), reason, msg);
+			free(msg);
+			return SSH_ERR_DISCONNECTED;
+		}
+
 		switch (*typep) {
 		case SSH2_MSG_IGNORE:
 			debug3("Received SSH2_MSG_IGNORE");
@@ -1757,19 +1776,6 @@ ssh_packet_read_poll_seqnr(struct ssh *ssh, u_char *typep, u_int32_t *seqnr_p)
 			debug("Remote: %.900s", msg);
 			free(msg);
 			break;
-		case SSH2_MSG_DISCONNECT:
-			if ((r = sshpkt_get_u32(ssh, &reason)) != 0 ||
-			    (r = sshpkt_get_string(ssh, &msg, NULL)) != 0)
-				return r;
-			/* Ignore normal client exit notifications */
-			do_log2(ssh->state->server_side &&
-			    reason == SSH2_DISCONNECT_BY_APPLICATION ?
-			    SYSLOG_LEVEL_INFO : SYSLOG_LEVEL_ERROR,
-			    "Received disconnect from %s port %d:"
-			    " reason %u - %.400s", ssh_remote_ipaddr(ssh),
-			    ssh_remote_port(ssh), reason, msg);
-			free(msg);
-			return SSH_ERR_DISCONNECTED;
 		case SSH2_MSG_UNIMPLEMENTED:
 			if ((r = sshpkt_get_u32(ssh, &seqnr)) != 0)
 				return r;
