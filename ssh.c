@@ -1716,7 +1716,7 @@ main(int ac, char **av)
 
 	/* Apply channels timeouts, if set */
 	channel_clear_timeouts(ssh);
-	for (i = 0; i < options.num_channel_timeouts; i++) {
+	for (i = 0; (u_int)i < options.num_channel_timeouts; i++) {
 		long secs;
 		debug3("applying channel timeout %s",
 		    options.channel_timeouts[i]);
