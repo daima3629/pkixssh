@@ -1,4 +1,4 @@
-/* $OpenBSD: kex.c,v 1.180 2023/08/21 21:16:18 tobhe Exp $ */
+/* $OpenBSD: kex.c,v 1.183 2023/12/18 14:45:17 djm Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2014-2021 Roumen Petrov.  All rights reserved.
@@ -64,7 +64,7 @@ const char *srv_extinfo_pkalgs = "publickey-algorithms@roumenpetrov.info";
 char *server_pkalgs = NULL;
 
 /* prototype */
-static int kex_choose_conf(struct ssh *);
+static int kex_choose_conf(struct ssh *, uint32_t seq);
 static int kex_input_newkeys(int, u_int32_t, struct ssh *);
 
 static const char * const proposal_names[PROPOSAL_MAX] = {
@@ -429,7 +429,12 @@ kex_protocol_error(int type, u_int32_t seq, struct ssh *ssh)
 {
 	int r;
 
-	error("kex protocol error: type %d seq %u", type, seq);
+	/* If in strict mode, any unexpected message is an error */
+	if ((ssh->kex->flags & KEX_INITIAL) && ssh->kex->kex_strict) {
+		ssh_packet_disconnect(ssh, "strict KEX violation: "
+		    "unexpected packet type %u (seqnr %u)", type, seq);
+	}
+	error_f("type %u seq %u", type, seq);
 	if ((r = sshpkt_start(ssh, SSH2_MSG_UNIMPLEMENTED)) != 0 ||
 	    (r = sshpkt_put_u32(ssh, seq)) != 0 ||
 	    (r = sshpkt_send(ssh)) != 0)
@@ -548,7 +553,7 @@ kex_input_ext_info(int type, u_int32_t seq, struct ssh *ssh)
 	if (ninfo >= 1024) {
 		error("SSH2_MSG_EXT_INFO with too many entries, expected "
 		    "<=1024, received %u", ninfo);
-		return SSH_ERR_INVALID_FORMAT;
+		return dispatch_protocol_error(type, seq, ssh);
 	}
 	for (i = 0; i < ninfo; i++) {
 		if ((r = sshpkt_get_cstring(ssh, &name, NULL)) != 0)
@@ -688,7 +693,7 @@ kex_input_kexinit(int type, u_int32_t seq, struct ssh *ssh)
 		error_f("no kex");
 		return SSH_ERR_INTERNAL_ERROR;
 	}
-	ssh_dispatch_set(ssh, SSH2_MSG_KEXINIT, NULL);
+	ssh_dispatch_set(ssh, SSH2_MSG_KEXINIT, &kex_protocol_error);
 
 	ptr = sshpkt_ptr(ssh, &dlen);
 	if ((r = sshbuf_put(kex->peer, ptr, dlen)) != 0)
@@ -725,7 +730,7 @@ kex_input_kexinit(int type, u_int32_t seq, struct ssh *ssh)
 	if (!(kex->flags & KEX_INIT_SENT))
 		if ((r = kex_send_kexinit(ssh)) != 0)
 			return r;
-	if ((r = kex_choose_conf(ssh)) != 0)
+	if ((r = kex_choose_conf(ssh, seq)) != 0)
 		return r;
 
 	if (kex->kex_type < KEX_MAX && kex->kex[kex->kex_type] != NULL)
@@ -989,7 +994,7 @@ kexalgs_contains(char **peer, const char *ext)
 }
 
 static int
-kex_choose_conf(struct ssh *ssh)
+kex_choose_conf(struct ssh *ssh, uint32_t seq)
 {
 	struct kex *kex = ssh->kex;
 	struct newkeys *newkeys;
@@ -1014,9 +1019,25 @@ kex_choose_conf(struct ssh *ssh)
 		sprop=peer;
 	}
 
-	/* Check whether client supports ext_info_c */
-	if (kex->server && (kex->flags & KEX_INITIAL)) {
-		kex->ext_info_c = kexalgs_contains(peer, "ext-info-c");
+	/* Check whether peer supports ext_info/kex_strict */
+	if ((kex->flags & KEX_INITIAL) != 0) {
+		if (kex->server) {
+			kex->ext_info_c = kexalgs_contains(peer, "ext-info-c");
+			kex->kex_strict = kexalgs_contains(peer,
+			    "kex-strict-c-v00@openssh.com");
+		} else {
+			kex->kex_strict = kexalgs_contains(peer,
+			    "kex-strict-s-v00@openssh.com");
+		}
+		if (kex->kex_strict) {
+			debug3_f("will use strict KEX ordering");
+			if (seq != 0)
+				ssh_packet_disconnect(ssh,
+				    "strict KEX violation: "
+				    "KEXINIT was not the first packet");
+		}
+		else
+			debug3_f("will use usual KEX ordering");
 	}
 
 	/* Check whether client supports rsa-sha2 algorithms */

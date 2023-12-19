@@ -196,8 +196,9 @@ ssh_kex2(struct ssh *ssh, char *host, struct sockaddr *hostaddr, u_short port,
 		ssh_packet_set_rekey_limits(ssh, options.rekey_limit,
 		    options.rekey_interval);
 
-	if ((s = kex_names_cat(options.kex_algorithms, "ext-info-c")) == NULL)
-		fatal_f("kex_names_cat");
+	s = kex_names_cat(options.kex_algorithms,
+	    "ext-info-c,kex-strict-c-v00@openssh.com");
+	if (s == NULL) fatal_f("kex_names_cat");
 
 	myproposal[PROPOSAL_KEX_ALGS] = prop_kex =
 	    compat_kex_proposal(ssh, s);
@@ -586,6 +587,7 @@ input_userauth_success(int type, u_int32_t seq, struct ssh *ssh)
 	free(authctxt->methoddata);
 	authctxt->methoddata = NULL;
 	authctxt->success = 1;			/* break out */
+	ssh_dispatch_set(ssh, SSH2_MSG_EXT_INFO, dispatch_protocol_error);
 	return 0;
 }
 

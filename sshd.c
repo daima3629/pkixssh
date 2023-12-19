@@ -2638,15 +2638,19 @@ do_ssh2_kex(struct ssh *ssh)
 {
 	char *myproposal[PROPOSAL_MAX] = { KEX_SERVER };
 	struct kex *kex;
-	char *prop_kex = NULL, *prop_enc = NULL, *prop_hostkey = NULL;
+	char *s, *prop_kex = NULL, *prop_enc = NULL, *prop_hostkey = NULL;
 	int r;
 
 	if (options.rekey_limit || options.rekey_interval)
 		ssh_packet_set_rekey_limits(ssh, options.rekey_limit,
 		    options.rekey_interval);
 
+	s = kex_names_cat(options.kex_algorithms,
+	    "kex-strict-s-v00@openssh.com");
+	if (s == NULL) fatal_f("kex_names_cat");
+
 	myproposal[PROPOSAL_KEX_ALGS] = prop_kex =
-	    compat_kex_proposal(ssh, options.kex_algorithms);
+	    compat_kex_proposal(ssh, s);
 	myproposal[PROPOSAL_ENC_ALGS_CTOS] =
 	myproposal[PROPOSAL_ENC_ALGS_STOC] = prop_enc =
 	    xstrdup(options.ciphers);
@@ -2681,6 +2685,7 @@ do_ssh2_kex(struct ssh *ssh)
 	    (r = ssh_packet_write_wait(ssh)) != 0)
 		fatal_fr(r, "kex 1st message");
 #endif
+	free(s);
 	free(prop_kex);
 	free(prop_enc);
 	free(prop_hostkey);

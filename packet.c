@@ -1221,14 +1221,24 @@ ssh_packet_send2_wrapped(struct ssh *ssh)
 	sshbuf_dump(state->output, stderr);
 #endif
 	/* increment sequence number for outgoing packets */
-	if (++state->p_send.seqnr == 0)
+	if (++state->p_send.seqnr == 0) {
+		if ((ssh->kex->flags & KEX_INITIAL) != 0) {
+			ssh_packet_disconnect(ssh, "outgoing sequence number "
+			    "wrapped during initial key exchange");
+		}
 		logit("outgoing seqnr wraps around");
+	}
 	if (++state->p_send.packets == 0)
 		if (!ssh_compat_fellows(ssh, SSH_BUG_NOREKEY))
 			return SSH_ERR_NEED_REKEY;
 	state->p_send.blocks += len / block_size;
 	state->p_send.bytes += len;
 	sshbuf_reset(state->outgoing_packet);
+
+	if (type == SSH2_MSG_NEWKEYS && ssh->kex->kex_strict) {
+		debug_f("resetting send seqnr %u", state->p_send.seqnr);
+		state->p_send.seqnr = 0;
+	}
 
 	if (type == SSH2_MSG_NEWKEYS)
 		r = ssh_set_newkeys(ssh, MODE_OUT);
@@ -1627,10 +1637,16 @@ ssh_packet_read_poll2(struct ssh *ssh, u_char *typep, u_int32_t *seqnr_p)
 		if ((r = sshbuf_consume(state->input, mac->mac_len)) != 0)
 			goto out;
 	}
+
 	if (seqnr_p != NULL)
 		*seqnr_p = state->p_read.seqnr;
-	if (++state->p_read.seqnr == 0)
+	if (++state->p_read.seqnr == 0) {
+		if ((ssh->kex->flags & KEX_INITIAL) != 0) {
+			ssh_packet_disconnect(ssh, "incoming sequence number "
+			    "wrapped during initial key exchange");
+		}
 		logit("incoming seqnr wraps around");
+	}
 	if (++state->p_read.packets == 0)
 		if (!ssh_compat_fellows(ssh, SSH_BUG_NOREKEY))
 			return SSH_ERR_NEED_REKEY;
@@ -1696,6 +1712,10 @@ ssh_packet_read_poll2(struct ssh *ssh, u_char *typep, u_int32_t *seqnr_p)
 #endif
 	/* reset for next packet */
 	state->packlen = 0;
+	if (*typep == SSH2_MSG_NEWKEYS && ssh->kex->kex_strict) {
+		debug_f("resetting read seqnr %u", state->p_read.seqnr);
+		state->p_read.seqnr = 0;
+	}
 
 	if (r == 0)
 		r = ssh_packet_check_rekey(ssh);
@@ -1739,6 +1759,16 @@ ssh_packet_read_poll_seqnr(struct ssh *ssh, u_char *typep, u_int32_t *seqnr_p)
 			return SSH_ERR_DISCONNECTED;
 		}
 
+		/*
+		 * Do not implicitly handle any messages here during initial
+		 * KEX when in strict mode. They will be need to be allowed
+		 * explicitly by the KEX dispatch table or they will generate
+		 * protocol errors.
+		 */
+		if (ssh->kex != NULL &&
+		    (ssh->kex->flags & KEX_INITIAL) && ssh->kex->kex_strict)
+			return 0;
+		/* Implicitly handle transport-level messages */
 		switch (*typep) {
 		case SSH2_MSG_IGNORE:
 			debug3("Received SSH2_MSG_IGNORE");
@@ -2218,6 +2248,7 @@ kex_to_blob(struct sshbuf *m, struct kex *kex)
 	    /* TODO why to send hostkey_foo as is not set? */
 	    (r = sshbuf_put_cstring(m, kex->hostkey_alg)) != 0 ||
 	    (r = sshbuf_put_u32(m, kex->kex_type)) != 0 ||
+	    (r = sshbuf_put_u32(m, kex->kex_strict)) != 0 ||
 	    (r = sshbuf_put_stringb(m, kex->my)) != 0 ||
 	    (r = sshbuf_put_stringb(m, kex->peer)) != 0 ||
 	    (r = sshbuf_put_stringb(m, kex->client_version)) != 0 ||
@@ -2380,6 +2411,7 @@ kex_from_blob(struct sshbuf *m, struct kex **kexp)
 	if ((r = sshbuf_get_u32(m, &kex->we_need)) != 0 ||
 	    (r = sshbuf_get_cstring(m, &kex->hostkey_alg, NULL)) != 0 ||
 	    (r = sshbuf_get_u32(m, &kex->kex_type)) != 0 ||
+	    (r = sshbuf_get_u32(m, &kex->kex_strict)) != 0 ||
 	    (r = sshbuf_get_stringb(m, kex->my)) != 0 ||
 	    (r = sshbuf_get_stringb(m, kex->peer)) != 0 ||
 	    (r = sshbuf_get_stringb(m, kex->client_version)) != 0 ||
@@ -2722,6 +2754,7 @@ sshpkt_disconnect(struct ssh *ssh, const char *fmt,...)
 	vsnprintf(buf, sizeof(buf), fmt, args);
 	va_end(args);
 
+	debug2_f("sending SSH2_MSG_DISCONNECT: %s", buf);
 	if ((r = sshpkt_start(ssh, SSH2_MSG_DISCONNECT)) != 0 ||
 	    (r = sshpkt_put_u32(ssh, SSH2_DISCONNECT_PROTOCOL_ERROR)) != 0 ||
 	    (r = sshpkt_put_cstring(ssh, buf)) != 0 ||
