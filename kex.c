@@ -510,7 +510,7 @@ preset_pkalgs(struct kex *kex, char *pkalgs) {
 		int type = sshkey_type_from_name(alg);
 
 		if (type == KEY_UNSPEC) {
-			debug3_f("unsupported public-key algorithm");
+			debug3_f("unsupported public-key algorithm: %.100s", alg);
 			continue;
 		}
 
