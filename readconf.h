@@ -1,4 +1,4 @@
-/* $OpenBSD: readconf.h,v 1.151 2023/07/17 04:08:31 djm Exp $ */
+/* $OpenBSD: readconf.h,v 1.154 2023/10/12 02:18:18 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -262,7 +262,7 @@ typedef struct {
 #define SSH_STRICT_HOSTKEY_ASK	3
 
 char	*ssh_connection_hash(const char *thishost, const char *host,
-    const char *portstr, const char *user);
+    const char *portstr, const char *user, const char *jump_host);
 void	 initialize_options(Options *);
 void	 cleanup_options(Options *);
 int	 fill_default_options(Options *);

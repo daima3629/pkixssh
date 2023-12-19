@@ -650,6 +650,7 @@ ssh_conn_info_free(struct ssh_conn_info *cinfo)
 	free(cinfo->remuser);
 	free(cinfo->homedir);
 	free(cinfo->locuser);
+	free(cinfo->jmphost);
 	free(cinfo);
 }
 
@@ -1543,8 +1544,10 @@ main(int ac, char **av)
 	cinfo->remuser = xstrdup(options.user);
 	cinfo->homedir = xstrdup(pw->pw_dir);
 	cinfo->locuser = xstrdup(pw->pw_name);
+	cinfo->jmphost = xstrdup(option_clear_or_none(options.jump_host) ?
+	    "" : options.jump_host);
 	cinfo->conn_hash_hex = ssh_connection_hash(cinfo->thishost,
-	    cinfo->remhost, cinfo->portstr, cinfo->remuser);
+	    cinfo->remhost, cinfo->portstr, cinfo->remuser, cinfo->jmphost);
 
 	/*
 	 * Expand tokens in arguments. NB. LocalCommand is expanded later,

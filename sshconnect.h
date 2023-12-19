@@ -1,5 +1,4 @@
-/* $OpenBSD: sshconnect.h,v 1.46 2020/12/22 00:15:23 djm Exp $ */
-
+/* $OpenBSD: sshconnect.h,v 1.47 2023/10/12 02:18:18 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  *
@@ -42,6 +41,7 @@ struct ssh_conn_info {
 	char *remuser;
 	char *homedir;
 	char *locuser;
+	char *jmphost;
 };
 
 /* default argument for client percent expansions */
@@ -57,7 +57,8 @@ struct ssh_conn_info {
 	"h", conn_info->remhost, \
 	"r", conn_info->remuser, \
 	"d", conn_info->homedir, \
-	"u", conn_info->locuser
+	"u", conn_info->locuser, \
+	"j", conn_info->jmphost
 
 
 struct addrinfo;
