@@ -2648,6 +2648,43 @@ format_absolute_time(uint64_t t, char *buf, size_t len)
 	strftime(buf, len, "%Y-%m-%dT%H:%M:%S", &tm);
 }
 
+/*
+ * Parse a "pattern=interval" clause (e.g. a ChannelTimeout).
+ * Returns 0 on success or non-zero on failure.
+ * Caller must free *typep.
+ */
+int
+parse_pattern_interval(const char *s, char **typep, long *secsp)
+{
+	char *cp, *sdup;
+	long secs;
+
+	if (typep != NULL)
+		*typep = NULL;
+	if (secsp != NULL)
+		*secsp = 0;
+	if (s == NULL)
+		return -1;
+	sdup = xstrdup(s);
+
+	if ((cp = strchr(sdup, '=')) == NULL || cp == sdup) {
+		free(sdup);
+		return -1;
+	}
+	*cp++ = '\0';
+	if ((secs = convtime(cp)) < 0) {
+		free(sdup);
+		return -1;
+	}
+	/* success */
+	if (typep != NULL)
+		*typep = xstrdup(sdup);
+	if (secsp != NULL)
+		*secsp = secs;
+	free(sdup);
+	return 0;
+}
+
 /* check if path is absolute */
 int
 path_absolute(const char *path)

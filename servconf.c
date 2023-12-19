@@ -1,4 +1,4 @@
-/* $OpenBSD: servconf.c,v 1.402 2023/09/08 06:34:24 djm Exp $ */
+/* $OpenBSD: servconf.c,v 1.403 2023/10/11 22:42:26 djm Exp $ */
 /*
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
@@ -1088,39 +1088,6 @@ process_permitopen(struct ssh *ssh, ServerOptions *options)
 	    options->num_permitted_listens);
 }
 
-/* Parse a ChannelTimeout clause "pattern=interval" */
-static int
-parse_timeout(const char *s, char **typep, long *secsp)
-{
-	char *cp, *sdup;
-	long secs;
-
-	if (typep != NULL)
-		*typep = NULL;
-	if (secsp != NULL)
-		*secsp = 0;
-	if (s == NULL)
-		return -1;
-	sdup = xstrdup(s);
-
-	if ((cp = strchr(sdup, '=')) == NULL || cp == sdup) {
-		free(sdup);
-		return -1;
-	}
-	*cp++ = '\0';
-	if ((secs = convtime(cp)) < 0) {
-		free(sdup);
-		return -1;
-	}
-	/* success */
-	if (typep != NULL)
-		*typep = xstrdup(sdup);
-	if (secsp != NULL)
-		*secsp = secs;
-	free(sdup);
-	return 0;
-}
-
 void
 process_channel_timeouts(struct ssh *ssh, ServerOptions *options)
 {
@@ -1131,7 +1098,7 @@ process_channel_timeouts(struct ssh *ssh, ServerOptions *options)
 	for (i = 0; i < options->num_channel_timeouts; i++) {
 		char *type;
 		long secs;
-		if (parse_timeout(options->channel_timeouts[i],
+		if (parse_pattern_interval(options->channel_timeouts[i],
 		    &type, &secs) != 0) {
 			fatal_f("internal error: bad timeout %s",
 			    options->channel_timeouts[i]);
@@ -2830,7 +2797,7 @@ parse_string:
 					    filename, linenum, keyword);
 					goto out;
 				}
-			} else if (parse_timeout(arg, NULL, NULL) != 0) {
+			} else if (parse_pattern_interval(arg, NULL, NULL) != 0) {
 				fatal("%s line %d: invalid channel timeout %s",
 				    filename, linenum, arg);
 			}
