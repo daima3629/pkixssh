@@ -4,11 +4,22 @@ dnl
 AC_DEFUN([SSH_LANG_PROGRAM_CHECK_FLAGS], [
 AC_LANG_SOURCE([[
 #include <stdlib.h>
+#include <stdarg.h>
 #include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 /* Trivial function to help test for flags like -fzero-call-used-regs.
 Note compiler does not inform whether this option is supported unless it
 runs into the situation where it would need to emit corresponding code.*/
 static int f(int n) {return n;}
+static char *f2(char *s, ...) {
+	char ret[64];
+	va_list args;
+	va_start(args, s);
+	vsnprintf(ret, sizeof(ret), s, args);
+	va_end(args);
+	return strdup(ret);
+}
 int main(int argc, char *argv[]) {
 	/* Some math to catch -ftrapv problems in the toolchain */
 	int i = 123 * argc, j = 456 + argc, k = 789 - argc;
@@ -16,8 +27,15 @@ int main(int argc, char *argv[]) {
 	double m = l / 0.5;
 	long long int n = argc * 12345LL, o = 12345LL * (long long int)argc;
 	long long int p = n * o;
-	printf("%d %d %d %f %f %lld %lld %lld %d\n", i, j, k, l, m, n, o, p, f(0));
 	(void)argv;
+{	char b[256];
+	snprintf(b, sizeof b, "%d %d %d %f %f %lld %lld %lld %d\n", i, j, k, l, m, n, o, p, f(0));
+	if (write(1, b, 0) == -1) return 0;
+}
+{	char *cp;
+	cp = f2("%d %d %d %f %f %lld %lld\n", i,j,k,l,m,n,o);
+	free(cp);
+}
 	return 0;
 }
 ]])])
