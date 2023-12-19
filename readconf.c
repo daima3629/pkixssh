@@ -217,7 +217,7 @@ typedef enum {
 	oFingerprintHash, oUpdateHostkeys, oHostbasedAcceptedAlgorithms,
 	oPubkeyAcceptedAlgorithms, oCASignatureAlgorithms, oProxyJump,
 	oSecurityKeyProvider, oKnownHostsCommand, oRequiredRSASize,
-	oEnableEscapeCommandline,
+	oEnableEscapeCommandline, oChannelTimeout,
 	oIgnore, oIgnoredUnknownOption, oDeprecated, oUnsupported
 } OpCodes;
 
@@ -389,6 +389,7 @@ static struct {
 	{ "knownhostscommand", oKnownHostsCommand },
 	{ "requiredrsasize", oRequiredRSASize },
 	{ "enableescapecommandline", oEnableEscapeCommandline },
+	{ "channeltimeout", oChannelTimeout },
 
 	{ NULL, oBadOption }
 };
@@ -2451,6 +2452,37 @@ parse_key_algorithms:
 		intptr = &options->required_rsa_size;
 		goto parse_int;
 
+	case oChannelTimeout:
+		found = options->num_channel_timeouts > 0;
+		i = 0;
+		while ((arg = argv_next(&ac, &av)) != NULL) {
+			if (*arg == '\0') {
+				error("%s line %d: keyword %s empty argument",
+				    filename, linenum, keyword);
+				goto out;
+			}
+			/* Allow "none" only in first position */
+			if (strcasecmp(arg, "none") == 0) {
+				if (i > 0 || ac > 0) {
+					error("%s line %d: keyword %s \"none\" "
+					    "argument must appear alone.",
+					    filename, linenum, keyword);
+					goto out;
+				}
+			} else if (parse_pattern_interval(arg,
+			    NULL, NULL) != 0) {
+				fatal("%s line %d: invalid channel timeout %s",
+				    filename, linenum, arg);
+			}
+			i++;
+			if (!*activep || found)
+				continue;
+			opt_array_append(filename, linenum, keyword,
+			    &options->channel_timeouts,
+			    &options->num_channel_timeouts, arg);
+		}
+		break;
+
 	case oDeprecated:
 		debug("%s line %d: Deprecated option \"%s\"",
 		    filename, linenum, keyword);
@@ -2732,6 +2764,8 @@ initialize_options(Options * options)
 	options->required_rsa_size = -1;
 	options->enable_escape_commandline = -1;
 	options->tag = NULL;
+	options->channel_timeouts = NULL;
+	options->num_channel_timeouts = 0;
 }
 
 void
@@ -2994,6 +3028,7 @@ fill_default_options(Options * options)
 	CLEAR_ON_NONE(options->known_hosts_command);
 
 	CLEAR_ON_NONE_ARRAY(log_verbose, num_log_verbose, "none");
+	CLEAR_ON_NONE_ARRAY(channel_timeouts, num_channel_timeouts, "none");
 #undef CLEAR_ON_NONE
 #undef CLEAR_ON_NONE_ARRAY
 	if (options->num_canonical_domains == 1 &&
@@ -3659,6 +3694,8 @@ dump_client_config(Options *o, const char *host)
 	dump_cfg_strarray(oSetEnv, o->num_setenv, o->setenv);
 	dump_cfg_strarray_oneline(oLogVerbose,
 	    o->num_log_verbose, o->log_verbose);
+	dump_cfg_strarray_oneline(oChannelTimeout,
+	    o->num_channel_timeouts, o->channel_timeouts);
 
 	/* Special cases */
 

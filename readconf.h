@@ -225,6 +225,9 @@ typedef struct {
 	int	required_rsa_size;	/* minimum size of RSA keys */
 	int	enable_escape_commandline;	/* ~C commandline */
 
+	char	**channel_timeouts;	/* inactivity timeout by channel type */
+	u_int	num_channel_timeouts;
+
 	char	*ignored_unknown; /* Pattern list of unknown tokens to ignore */
 }       Options;
 

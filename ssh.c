@@ -1714,6 +1714,21 @@ main(int ac, char **av)
 	else
 		timeout_ms = options.connection_timeout * 1000;
 
+	/* Apply channels timeouts, if set */
+	channel_clear_timeouts(ssh);
+	for (i = 0; i < options.num_channel_timeouts; i++) {
+		long secs;
+		debug3("applying channel timeout %s",
+		    options.channel_timeouts[i]);
+		if (parse_pattern_interval(options.channel_timeouts[i],
+		    &cp, &secs) != 0) {
+			fatal_f("internal error: bad timeout %s",
+			    options.channel_timeouts[i]);
+		}
+		channel_add_timeout(ssh, cp, secs);
+		free(cp);
+	}
+
 	/* Open a connection to the remote host. */
 	if (ssh_connect(ssh, host, options.host_arg, addrs, &hostaddr,
 	    options.port, options.connection_attempts,

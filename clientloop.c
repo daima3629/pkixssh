@@ -1681,7 +1681,7 @@ client_request_x11(struct ssh *ssh, const char *request_type, int rchan)
 	sock = x11_connect_display(ssh);
 	if (sock < 0)
 		return NULL;
-	c = channel_new(ssh, "x11",
+	c = channel_new(ssh, "x11-connection",
 	    SSH_CHANNEL_X11_OPEN, sock, sock, -1,
 	    CHAN_TCP_WINDOW_DEFAULT, CHAN_X11_PACKET_DEFAULT, 0, "x11",
 	    CHANNEL_NONBLOCK_SET);
@@ -1713,7 +1713,7 @@ client_request_agent(struct ssh *ssh, const char *request_type, int rchan)
 			error_fr(r, "ssh_get_authentication_socket");
 		return NULL;
 	}
-	c = channel_new(ssh, "authentication agent connection",
+	c = channel_new(ssh, "agent-connection",
 	    SSH_CHANNEL_OPEN, sock, sock, -1,
 	    CHAN_X11_WINDOW_DEFAULT, CHAN_TCP_PACKET_DEFAULT, 0,
 	    "authentication agent connection", CHANNEL_NONBLOCK_SET);
@@ -1741,7 +1741,7 @@ client_request_tun_fwd(struct ssh *ssh, int tun_mode,
 	}
 	debug("Tunnel forwarding using interface %s", ifname);
 
-	c = channel_new(ssh, "tun", SSH_CHANNEL_OPENING, fd, fd, -1,
+	c = channel_new(ssh, "tun-connection", SSH_CHANNEL_OPENING, fd, fd, -1,
 	    CHAN_TCP_WINDOW_DEFAULT, CHAN_TCP_PACKET_DEFAULT, 0, "tun",
 	    CHANNEL_NONBLOCK_SET);
 	c->datagram = 1;
