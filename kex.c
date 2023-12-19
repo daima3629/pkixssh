@@ -187,6 +187,16 @@ kex_names_valid(const char *names)
 	return 1;
 }
 
+/* returns non-zero if proposal contains any algorithm from algs */
+static inline int
+has_any_alg(const char *proposal, const char *algs)
+{
+	char *cp = match_list(proposal, algs, NULL);
+	if (cp == NULL) return 0;
+	free(cp);
+	return 1;
+}
+
 /*
  * Concatenate algorithm names, avoiding duplicates in the process.
  * Caller must free returned string.
@@ -194,7 +204,7 @@ kex_names_valid(const char *names)
 char *
 kex_names_cat(const char *a, const char *b)
 {
-	char *ret = NULL, *tmp = NULL, *cp, *p, *m;
+	char *ret = NULL, *tmp = NULL, *cp, *p;
 	size_t len;
 
 	if (a == NULL || *a == '\0')
@@ -211,10 +221,8 @@ kex_names_cat(const char *a, const char *b)
 	}
 	strlcpy(ret, a, len);
 	for ((p = strsep(&cp, ",")); p && *p != '\0'; (p = strsep(&cp, ","))) {
-		if ((m = match_list(ret, p, NULL)) != NULL) {
-			free(m);
+		if (has_any_alg(ret, p))
 			continue; /* Algorithm already present */
-		}
 		if (strlcat(ret, ",", len) >= len ||
 		    strlcat(ret, p, len) >= len) {
 			free(tmp);
@@ -974,14 +982,10 @@ proposals_match(char *my[PROPOSAL_MAX], char *peer[PROPOSAL_MAX])
 	return (1);
 }
 
-/* returns non-zero if proposal contains any algorithm from algs */
 static inline int
-has_any_alg(const char *proposal, const char *algs)
+kexalgs_contains(char **peer, const char *ext)
 {
-	char *cp = match_list(proposal, algs, NULL);
-	if (cp == NULL) return 0;
-	free(cp);
-	return 1;
+	return has_any_alg(peer[PROPOSAL_KEX_ALGS], ext);
 }
 
 static int
@@ -1012,11 +1016,7 @@ kex_choose_conf(struct ssh *ssh)
 
 	/* Check whether client supports ext_info_c */
 	if (kex->server && (kex->flags & KEX_INITIAL)) {
-		char *ext;
-
-		ext = match_list("ext-info-c", peer[PROPOSAL_KEX_ALGS], NULL);
-		kex->ext_info_c = (ext != NULL);
-		free(ext);
+		kex->ext_info_c = kexalgs_contains(peer, "ext-info-c");
 	}
 
 	/* Check whether client supports rsa-sha2 algorithms */
