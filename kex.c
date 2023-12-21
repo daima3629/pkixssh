@@ -1,7 +1,7 @@
 /* $OpenBSD: kex.c,v 1.183 2023/12/18 14:45:17 djm Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2014-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2014-2023 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -450,20 +450,80 @@ kex_reset_dispatch(struct ssh *ssh)
 }
 
 static int
-kex_send_ext_info(struct ssh *ssh)
-{
+kex_compose_ext_info_pkalgs(struct ssh *ssh, struct sshbuf *m, int *count) {
+	struct sshbuf *tmp = NULL;
 	int r;
 
-	debug("Sending SSH2_MSG_EXT_INFO");
+	UNUSED(ssh);
+	*count = 0;
 	if (server_pkalgs == NULL) return 0;
+
+	if ((tmp = sshbuf_new()) == NULL)
+		fatal_f("sshbuf_new failed");
+
+	if (
+	    (r = sshbuf_put_cstring(tmp, srv_extinfo_pkalgs)) != 0 ||
+	    (r = sshbuf_put_cstring(tmp, server_pkalgs)) != 0 ||
+	    (r = sshbuf_put_cstring(tmp, "server-sig-algs")) != 0 ||
+	    (r = sshbuf_put_cstring(tmp, server_pkalgs)) != 0) {
+		error_fr(r, "compose");
+		goto out;
+	}
+
+	r = sshbuf_putb(m, tmp);
+	if (r == 0) *count = 2;
+
+out:
+	sshbuf_free(tmp);
+	return r;
+}
+
+static int
+kex_compose_ext_info_server(struct ssh *ssh, struct sshbuf *m, int *count)
+{
+	int r, k;
+
+	k = 0;
+	r = kex_compose_ext_info_pkalgs(ssh, m, &k);
+	if (r != 0) {
+		error_fr(r, "kex_compose_ext_info_pkalgs failed");
+		goto out;
+	}
+	*count += k;
+
+	/* TODO: other extensions ? */
+
+out:
+	return r;
+}
+
+static int
+kex_maybe_send_ext_info(struct ssh *ssh)
+{
+	int r, count = 0;
+	struct sshbuf *m = NULL;
+
+	if ((ssh->kex->flags & KEX_INITIAL) == 0)
+		return 0;
+	/* TODO: server extensions ? */
+	if (!ssh->kex->ext_info_c)
+		return 0;
+
+	if ((m = sshbuf_new()) == NULL)
+		fatal_f("sshbuf_new failed");
+
+	if (ssh->kex->ext_info_c) {
+		r = kex_compose_ext_info_server(ssh, m, &count);
+		if (r != 0) goto out;
+	}
+
+	debug("sending(?) SSH2_MSG_EXT_INFO items: %d", count);
+	if (count <= 0) goto out;
 
 	if (
 	    (r = sshpkt_start(ssh, SSH2_MSG_EXT_INFO)) != 0 ||
-	    (r = sshpkt_put_u32(ssh, 2)) != 0 ||
-	    (r = sshpkt_put_cstring(ssh, srv_extinfo_pkalgs)) != 0 ||
-	    (r = sshpkt_put_cstring(ssh, server_pkalgs)) != 0 ||
-	    (r = sshpkt_put_cstring(ssh, "server-sig-algs")) != 0 ||
-	    (r = sshpkt_put_cstring(ssh, server_pkalgs)) != 0) {
+	    (r = sshpkt_put_u32(ssh, count)) != 0 ||
+	    (r = sshpkt_putb(ssh, m)) != 0) {
 		error_fr(r, "compose");
 		goto out;
 	}
@@ -471,6 +531,7 @@ kex_send_ext_info(struct ssh *ssh)
 	r = sshpkt_send(ssh);
 
 out:
+	sshbuf_free(m);
 	return r;
 }
 
@@ -484,13 +545,12 @@ kex_send_newkeys(struct ssh *ssh)
 	    (r = sshpkt_send(ssh)) != 0)
 		return r;
 	debug("SSH2_MSG_NEWKEYS sent");
-
-	debug("expecting SSH2_MSG_NEWKEYS");
 	ssh_dispatch_set(ssh, SSH2_MSG_NEWKEYS, &kex_input_newkeys);
 
-	if (ssh->kex->ext_info_c && (ssh->kex->flags & KEX_INITIAL) != 0)
-		return kex_send_ext_info(ssh);
+	if ((r = kex_maybe_send_ext_info(ssh)) != 0)
+		return r;
 
+	debug("expecting SSH2_MSG_NEWKEYS");
 	return 0;
 }
 
