@@ -264,6 +264,8 @@ SSH_VA_BASEPORT=${SSH_VA_BASEPORT-20080}
 # OpenSSL OCSP responder before 1.1.0 do not set SO_REUSEADDR :-(,
 # so ocsp tests must wait socket to close.
 case $openssl_version in
+*"LibreSSL 2."*|\
+*"LibreSSL 3."[0-2]*|\
 *"OpenSSL 0.9"*|\
 *"OpenSSL 1.0"*)
 # Set the default timeout if is not set by environment.
