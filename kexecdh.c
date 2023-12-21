@@ -96,6 +96,7 @@ kex_ecdh_keypair(struct kex *kex)
 		r = SSH_ERR_LIBCRYPTO_ERROR;
 		goto out;
 	}
+	EC_KEY_free(client_key);
 	client_key = NULL;	/* owned by the kex */
 	kex->pk = pk;
 }

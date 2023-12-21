@@ -304,6 +304,7 @@ kex_key_init_dh(struct kex *kex) {
 		EVP_PKEY_free(pk);
 		return SSH_ERR_ALLOC_FAIL;
 	}
+	DH_free(dh);
 	kex->pk = pk;
 }
 
