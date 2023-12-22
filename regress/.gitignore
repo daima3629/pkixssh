@@ -134,6 +134,7 @@ mkdtemp
 modpipe
 netcat
 setuid-allowed
+ssh_askpass-pkcs11
 
 # TODO
 authkeys_orig

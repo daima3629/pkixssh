@@ -3,7 +3,8 @@
 
 tid="pkcs11 agent test"
 
-TEST_SSH_PIN=""
+. ../tests/pkcs11-env
+
 TEST_SSH_PKCS11=/usr/local/lib/soft-pkcs11.so.0.0
 
 test -f "$TEST_SSH_PKCS11" || fatal "$TEST_SSH_PKCS11 does not exist"
@@ -11,16 +12,6 @@ test -f "$TEST_SSH_PKCS11" || fatal "$TEST_SSH_PKCS11 does not exist"
 # setup environment for soft-pkcs11 token
 SOFTPKCS11RC=$OBJ/pkcs11.info
 export SOFTPKCS11RC
-# prevent ssh-agent from calling ssh-askpass
-SSH_ASKPASS=/usr/bin/true
-export SSH_ASKPASS
-unset DISPLAY
-
-# start command w/o tty, so ssh-add accepts pin from stdin
-notty() {
-	perl -e 'use POSIX; POSIX::setsid(); 
-	    if (fork) { wait; exit($? >> 8); } else { exec(@ARGV) }' ${1+"$@"}
-}
 
 trace "start agent"
 eval `${SSHAGENT} ${EXTRA_AGENT_ARGS} -s` > /dev/null
@@ -39,7 +30,7 @@ else
 	${SSHKEYGEN} -y -f $OBJ/pkcs11.key > $OBJ/authorized_keys_$USER
 
 	trace "add pkcs11 key to agent"
-	echo ${TEST_SSH_PIN} | notty ${SSHADD} -s ${TEST_SSH_PKCS11} > /dev/null 2>&1
+	p11_ssh_add -s ${TEST_SSH_PKCS11} > /dev/null 2>&1
 	r=$?
 	if [ $r -ne 0 ]; then
 		fail "ssh-add -s failed: exit code $r"
@@ -60,7 +51,7 @@ else
 	fi
 
 	trace "remove pkcs11 keys"
-	echo ${TEST_SSH_PIN} | notty ${SSHADD} -e ${TEST_SSH_PKCS11} > /dev/null 2>&1
+	p11_ssh_add -e ${TEST_SSH_PKCS11} > /dev/null 2>&1
 	r=$?
 	if [ $r -ne 0 ]; then
 		fail "ssh-add -e failed: exit code $r"

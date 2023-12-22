@@ -148,6 +148,7 @@ CLEANFILES=	*.core actual agent-ca agent-ca.pub agent-key.* authkeys_orig \
 		scp-ssh-wrapper.scp sftp-server.log \
 		sftp-server.sh sftp.log ssh-log-wrapper.sh ssh.log \
 		ssh-agent.log ssh-add.log slow-sftp-server.sh \
+		ssh_askpass-pkcs11 \
 		ssh-rsa_oldfmt knownhosts_command \
 		ssh_config ssh_config.* ssh_proxy ssh_proxy.orig ssh_proxy_* \
 		sshd.log sshd_config sshd_config_minimal \
