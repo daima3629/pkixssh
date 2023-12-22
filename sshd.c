@@ -2638,32 +2638,31 @@ do_ssh2_kex(struct ssh *ssh)
 {
 	char *myproposal[PROPOSAL_MAX] = { KEX_SERVER };
 	struct kex *kex;
-	char *s, *prop_kex = NULL, *prop_enc = NULL, *prop_hostkey = NULL;
 	int r;
 
 	if (options.rekey_limit || options.rekey_interval)
 		ssh_packet_set_rekey_limits(ssh, options.rekey_limit,
 		    options.rekey_interval);
 
+{	/* prepare proposal */
+	char *s, *hkalgs = NULL;
+	const char *compression = NULL;
+
 	s = kex_names_cat(options.kex_algorithms,
 	    "kex-strict-s-v00@openssh.com");
 	if (s == NULL) fatal_f("kex_names_cat");
 
-	myproposal[PROPOSAL_KEX_ALGS] = prop_kex =
-	    compat_kex_proposal(ssh, s);
-	myproposal[PROPOSAL_ENC_ALGS_CTOS] =
-	myproposal[PROPOSAL_ENC_ALGS_STOC] = prop_enc =
-	    xstrdup(options.ciphers);
-	myproposal[PROPOSAL_MAC_ALGS_CTOS] =
-	myproposal[PROPOSAL_MAC_ALGS_STOC] = options.macs;
+	if (options.compression == COMP_NONE)
+		compression = "none";
 
-	if (options.compression == COMP_NONE) {
-		myproposal[PROPOSAL_COMP_ALGS_CTOS] =
-		    myproposal[PROPOSAL_COMP_ALGS_STOC] = "none";
-	}
+	hkalgs = list_hostkey_types();
 
-	myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS] = prop_hostkey =
-	    xstrdup(list_hostkey_types());
+	kex_proposal_populate_entries(ssh, myproposal, s, options.ciphers,
+	    options.macs, compression, hkalgs);
+
+	free(hkalgs);
+	free(s);
+}
 
 	/* start key exchange */
 	if ((r = kex_setup(ssh, myproposal)) != 0)
@@ -2685,10 +2684,7 @@ do_ssh2_kex(struct ssh *ssh)
 	    (r = ssh_packet_write_wait(ssh)) != 0)
 		fatal_fr(r, "kex 1st message");
 #endif
-	free(s);
-	free(prop_kex);
-	free(prop_enc);
-	free(prop_hostkey);
+	kex_proposal_free_entries(myproposal);
 	debug("KEX done");
 }
 

@@ -148,6 +148,9 @@ int	 kex_names_valid(const char *);
 char	*kex_alg_list(char);
 char	*kex_names_cat(const char *, const char *);
 int	 kex_assemble_names(char **, const char *, const char *);
+void	 kex_proposal_populate_entries(struct ssh *, char *prop[PROPOSAL_MAX],
+    char *, const char *, const char *, const char *, const char *);
+void	 kex_proposal_free_entries(char *prop[PROPOSAL_MAX]);
 
 int	 kex_exchange_identification(struct ssh *, int);
 

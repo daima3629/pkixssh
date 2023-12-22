@@ -184,7 +184,6 @@ ssh_kex2(struct ssh *ssh, char *host, struct sockaddr *hostaddr, u_short port,
     const struct ssh_conn_info *cinfo)
 {
 	char *myproposal[PROPOSAL_MAX] = { KEX_CLIENT };
-	char *s, *prop_kex = NULL, *prop_enc = NULL, *prop_hostkey = NULL;
 	struct kex *kex;
 	int r;
 
@@ -196,20 +195,12 @@ ssh_kex2(struct ssh *ssh, char *host, struct sockaddr *hostaddr, u_short port,
 		ssh_packet_set_rekey_limits(ssh, options.rekey_limit,
 		    options.rekey_interval);
 
+{	/* prepare proposal */
+	char *s, *hkalgs = NULL;
+
 	s = kex_names_cat(options.kex_algorithms,
 	    "ext-info-c,kex-strict-c-v00@openssh.com");
 	if (s == NULL) fatal_f("kex_names_cat");
-
-	myproposal[PROPOSAL_KEX_ALGS] = prop_kex =
-	    compat_kex_proposal(ssh, s);
-	myproposal[PROPOSAL_ENC_ALGS_CTOS] =
-	myproposal[PROPOSAL_ENC_ALGS_STOC] = prop_enc =
-	    xstrdup(options.ciphers);
-	myproposal[PROPOSAL_COMP_ALGS_CTOS] =
-	myproposal[PROPOSAL_COMP_ALGS_STOC] =
-	    (char *)compression_alg_list(options.compression);
-	myproposal[PROPOSAL_MAC_ALGS_CTOS] =
-	myproposal[PROPOSAL_MAC_ALGS_STOC] = options.macs;
 
 {	/* finalize set of client option HostKeyAlgorithms */
 	int user_prefered;
@@ -231,13 +222,17 @@ ssh_kex2(struct ssh *ssh, char *host, struct sockaddr *hostaddr, u_short port,
 		/* Enforce default */
 		options.hostkeyalgorithms = defalgs;
 	}
-	if (user_prefered)
-		myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS] = prop_hostkey =
-		    xstrdup(options.hostkeyalgorithms);
-	else
+
+	if (!user_prefered)
 		/* Prefer algorithms that we already have keys for */
-		myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS] = prop_hostkey =
-		    order_hostkeyalgs(host, hostaddr, port, cinfo);
+		hkalgs = order_hostkeyalgs(host, hostaddr, port, cinfo);
+}
+	kex_proposal_populate_entries(ssh, myproposal, s, options.ciphers,
+	    options.macs, compression_alg_list(options.compression),
+	    hkalgs != NULL ? hkalgs: options.hostkeyalgorithms);
+
+	free(hkalgs);
+	free(s);
 }
 
 	/* start key exchange */
@@ -250,6 +245,7 @@ ssh_kex2(struct ssh *ssh, char *host, struct sockaddr *hostaddr, u_short port,
 	ssh_dispatch_run_fatal(ssh, DISPATCH_BLOCK, &kex->done);
 
 	/* remove ext-info from the KEX proposals for rekeying */
+	free(myproposal[PROPOSAL_KEX_ALGS]);
 	myproposal[PROPOSAL_KEX_ALGS] =
 	    compat_kex_proposal(ssh, options.kex_algorithms);
 	if ((r = kex_prop2buf(kex->my, myproposal)) != 0)
@@ -263,11 +259,7 @@ ssh_kex2(struct ssh *ssh, char *host, struct sockaddr *hostaddr, u_short port,
 	    (r = ssh_packet_write_wait(ssh)) != 0)
 		fatal_fr(r, "send packet");
 #endif
-	/* Free only parts of proposal that were dynamically allocated here. */
-	free(s);
-	free(prop_kex);
-	free(prop_enc);
-	free(prop_hostkey);
+	kex_proposal_free_entries(myproposal);
 }
 
 /*

@@ -1,4 +1,4 @@
-/* 	$OpenBSD: test_proposal.c,v 1.1 2023/02/02 12:12:52 djm Exp $ */
+/* 	$OpenBSD: test_proposal.c,v 1.2 2023/03/06 12:15:47 dtucker Exp $ */
 /*
  * Regress test KEX
  *
@@ -11,14 +11,17 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cipher.h"
 #include "compat.h"
 #include "ssherr.h"
 #include "sshbuf.h"
 #include "kex.h"
+#include "myproposal.h"
 #include "packet.h"
 #include "xmalloc.h"
 
-void kex_proposal(void);
+void kex_proposal_tests(void);
+void kex_proposal_populate_tests(void);
 
 #define CURVE25519 "curve25519-sha256@libssh.org"
 #define DHGEX1 "diffie-hellman-group-exchange-sha1"
@@ -26,7 +29,7 @@ void kex_proposal(void);
 #define KEXALGOS CURVE25519","DHGEX256","DHGEX1
 
 void
-kex_proposal(void)
+kex_proposal_tests(void)
 {
 	size_t i;
 	struct ssh ssh;
@@ -79,4 +82,48 @@ kex_proposal(void)
 		free(result); free(in); free(out);
 	}
 	TEST_DONE();
+}
+
+void
+kex_proposal_populate_tests(void)
+{
+	char *kexalgs, *ciphers, *macs, *hkalgs;
+	const char *comp = compression_alg_list(0);
+	int i;
+	struct ssh ssh;
+	struct kex kex;
+
+	kexalgs = kex_alg_list(',');
+	ciphers = cipher_alg_list(',', 0);
+	macs = mac_alg_list(',');
+	hkalgs = kex_alg_list(',');
+
+	ssh.kex = &kex;
+	ssh.compat.extra = 0;
+	TEST_START("compat_kex_proposal_populate");
+	for (i = 0; i <= 1; i++) {
+		kex.server = i;
+		for (ssh.compat.datafellows = 0; ssh.compat.datafellows < 0x40000000; ) {
+		{	char *prop[PROPOSAL_MAX] = { KEX_CLIENT };
+			kex_proposal_populate_entries(&ssh, prop, KEX_DEFAULT_PK_ALG, NULL,
+			    NULL, NULL, NULL);
+			kex_proposal_free_entries(prop);
+		}
+		{	char *prop[PROPOSAL_MAX] = { KEX_CLIENT };
+			kex_proposal_populate_entries(&ssh, prop, kexalgs,
+			    ciphers, macs, hkalgs, comp);
+			kex_proposal_free_entries(prop);
+		}
+			if (ssh.compat.datafellows == 0)
+				ssh.compat.datafellows = 1;
+			else
+				ssh.compat.datafellows <<= 1;
+		}
+	}
+	TEST_DONE();
+
+	free(kexalgs);
+	free(ciphers);
+	free(macs);
+	free(hkalgs);
 }

@@ -59,6 +59,7 @@
 #include "ssherr.h"
 #include "sshbuf.h"
 #include "digest.h"
+#include "xmalloc.h"
 
 const char *srv_extinfo_pkalgs = "publickey-algorithms@roumenpetrov.info";
 char *server_pkalgs = NULL;
@@ -335,6 +336,57 @@ kex_assemble_names(char **listp, const char *def, const char *all)
 	free(list);
 	free(ret);
 	return r;
+}
+
+/*
+ * Fill out a proposal array with dynamically allocated values, which may
+ * be modified as required for compatibility reasons.
+ * Any of the options may be NULL, in which case the default is used.
+ * Array contents must be freed by calling kex_proposal_free_entries.
+ */
+void
+kex_proposal_populate_entries(struct ssh *ssh, char *prop[PROPOSAL_MAX],
+    char *kexalgos, const char *ciphers, const char *macs,
+    const char *comp, const char *hkalgs)
+{
+	u_int i;
+
+	if (prop == NULL)
+		fatal_f("proposal missing");
+
+	for (i = 0; i < PROPOSAL_MAX; i++) {
+		switch(i) {
+		case PROPOSAL_KEX_ALGS:
+			prop[i] = compat_kex_proposal(ssh, kexalgos);
+			break;
+		case PROPOSAL_ENC_ALGS_CTOS:
+		case PROPOSAL_ENC_ALGS_STOC:
+			prop[i] = xstrdup(ciphers != NULL ? ciphers : prop[i]);
+			break;
+		case PROPOSAL_MAC_ALGS_CTOS:
+		case PROPOSAL_MAC_ALGS_STOC:
+			prop[i]  = xstrdup(macs != NULL ? macs : prop[i]);
+			break;
+		case PROPOSAL_COMP_ALGS_CTOS:
+		case PROPOSAL_COMP_ALGS_STOC:
+			prop[i] = xstrdup(comp != NULL ? comp : prop[i]);
+			break;
+		case PROPOSAL_SERVER_HOST_KEY_ALGS:
+			prop[i] = xstrdup(hkalgs != NULL ? hkalgs : prop[i]);
+			break;
+		default:
+			prop[i] = xstrdup(prop[i]);
+		}
+	}
+}
+
+void
+kex_proposal_free_entries(char *prop[PROPOSAL_MAX])
+{
+	u_int i;
+
+	for (i = 0; i < PROPOSAL_MAX; i++)
+		free(prop[i]);
 }
 
 /* put algorithm proposal into buffer */
