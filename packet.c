@@ -582,8 +582,30 @@ ssh_packet_rdomain_in(struct ssh *ssh)
 	return ssh->rdomain_in;
 }
 
-/* Closes the connection and clears and frees internal data structures. */
+void
+ssh_packet_close_connection(struct ssh *ssh)
+{
+	struct session_state *state = ssh->state;
 
+	if (state->connection_in == state->connection_out) {
+		if (state->connection_out >= 0) {
+			close(state->connection_out);
+			state->connection_out = -1;
+			state->connection_in = -1;
+		}
+	} else {
+		if (state->connection_in >= 0) {
+			close(state->connection_in);
+			state->connection_in = -1;
+		}
+		if (state->connection_out >= 0) {
+			state->connection_out = -1;
+			close(state->connection_out);
+		}
+	}
+}
+
+/* Closes the connection and clears and frees internal data structures. */
 static void
 ssh_packet_close_internal(struct ssh *ssh, int do_close)
 {
@@ -593,14 +615,8 @@ ssh_packet_close_internal(struct ssh *ssh, int do_close)
 	if (!state->initialized)
 		return;
 	state->initialized = 0;
-	if (do_close) {
-		if (state->connection_in == state->connection_out) {
-			close(state->connection_out);
-		} else {
-			close(state->connection_in);
-			close(state->connection_out);
-		}
-	}
+	if (do_close)
+		ssh_packet_close_connection(ssh);
 	sshbuf_free(state->input);
 	sshbuf_free(state->output);
 	sshbuf_free(state->outgoing_packet);

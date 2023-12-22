@@ -11,7 +11,7 @@
  *
  * SSH2 support by Markus Friedl.
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2012-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2012-2023 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -1525,13 +1525,8 @@ child_close_fds(struct ssh *ssh)
 		auth_sock = -1;
 	}
 
-	if (ssh_packet_get_connection_in(ssh) ==
-	    ssh_packet_get_connection_out(ssh))
-		close(ssh_packet_get_connection_in(ssh));
-	else {
-		close(ssh_packet_get_connection_in(ssh));
-		close(ssh_packet_get_connection_out(ssh));
-	}
+	ssh_packet_close_connection(ssh);
+
 	/*
 	 * Close all descriptors related to channels.  They will still remain
 	 * open in the parent.

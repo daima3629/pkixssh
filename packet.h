@@ -99,6 +99,7 @@ int	 ssh_packet_connection_af(struct ssh *);
 void     ssh_packet_set_nonblocking(struct ssh *);
 int      ssh_packet_get_connection_in(struct ssh *);
 int      ssh_packet_get_connection_out(struct ssh *);
+void     ssh_packet_close_connection(struct ssh *);
 void     ssh_packet_close(struct ssh *);
 void	 ssh_packet_set_input_hook(struct ssh *, ssh_packet_hook_fn *, void *);
 void	 ssh_packet_clear_keys(struct ssh *);
