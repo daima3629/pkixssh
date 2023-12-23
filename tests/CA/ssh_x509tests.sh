@@ -338,8 +338,12 @@ runTest () {
 
   msg="A X.509 CertIficaTe TeSt-${1}"
 
-  sshopts=""
-  #sshopts="${sshopts} -v -v -v"
+  sshopts=
+  #sshopts='-o LogLevel=VERBOSE'
+  #sshopts='-o LogLevel=DEBUG1'
+  #sshopts='-o LogLevel=DEBUG2'
+  #sshopts='-o LogLevel=DEBUG3'
+
   test -n "$2" && sshopts="${sshopts} -i $2"
   #assignment to variable "identity_file" crash ksh :-(
   #identity_file="value_without_significance"
