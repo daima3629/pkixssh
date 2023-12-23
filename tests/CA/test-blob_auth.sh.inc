@@ -63,7 +63,7 @@ testPUBKEYautorization () {
     error_file_not_readable "$identity_file"; return $?
   fi
 
-  echo "  using $base_identity_file to autorize X.509/$type"
+  echo "  using $base_identity_file to authorize X.509/$type"
 
   "$TEST_SSH_SSHKEYGEN" -f "$base_identity_file" -y 2>/dev/null > "$AUTHORIZEDKEYSFILE" || return $?
   runTest "$type" "$identity_file"\
