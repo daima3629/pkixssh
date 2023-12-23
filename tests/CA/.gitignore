@@ -5,5 +5,7 @@ testid_*
 testhostkey_*
 testocsp_*
 selfid_*
+ssh*_config-certTests
 *.log
+*.pid
 ssh_askpass-p12

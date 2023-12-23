@@ -6,15 +6,11 @@ all:
 
 
 clean: ldap_clean
-	-rm -f testhostkey_*
-	-rm -f testid_*
-	-rm -f selfid_*
-	-rm -f testocsp_*
 	-rm -fr ca-test/
-	-rm -f ca-?.log
-	-rm -f ca-3.*.log
-	-rm -f va-*.log
-	-rm -f sshd_x509.log
+	-rm -f testhostkey_* testid_* selfid_* testocsp_*
+	-rm -f ca-?.log ca-3.*.log va-*.log sshd_x509.log
+	-rm -f sshd_x509.log .sshd_x509.pid sshd_config-certTests
+	-rm -f ssh_config-certTests .ssh_x509.err.log .ssh_x509.reply
 	-rm -f ssh_askpass-p12
 
 
