@@ -1,6 +1,6 @@
                                                           Roumen Petrov
                                                         Sofia, Bulgaria
-                                                         Wed Feb 8 2023
+                                                        Sat Dec 23 2023
 
 How to use X.509 certificates with SSH?
 
@@ -10,10 +10,10 @@ certificate that match it. Note that key and X.509 certificate has to
 be in PEM format. To use X.509 certificate as identity or hostkey user
 should convert certificate in PEM format and append to file. After this
 with "ssh-keygen -y ..." user must update "pub" file.
-File (identity or hostkey) with X.509 certificate (RSA key):
------BEGIN RSA PRIVATE KEY-----
+File (identity or hostkey) with X.509 certificate (PKCS#8 key format):
+-----BEGIN PRIVATE KEY-----
 .....
------END RSA PRIVATE KEY-----
+-----END PRIVATE KEY-----
 -----BEGIN CERTIFICATE-----
 .....
 -----END CERTIFICATE-----
@@ -72,7 +72,7 @@ $ openssl crl -in crl_file_name -noout -hash
 both in PEM format.
 
 1.1.4.) X509KeyAlgorithm
-  The option list multiple "X509 Key Algorithms Formats"
+  The option list multiple "X.509 Key Algorithms Formats"
   supported by server.
   The format and algorithm precedence are described in sshd_config(5).
   Note first listed format for RSA or DSA key-type is used as default in
@@ -311,6 +311,7 @@ Testing client and server with X.509 certificates finished.
     to close. After this test script continue with next step.
     This is work around for missing SO_REUSEADDR socket option in
     OpenSSL OCSP responder.
+    Remark: set only on ancient OpenSSL releases (< 1.1).
 
 3.1.2.5.) LDAP:
   In use only when SSH is build with LDAP support!
@@ -432,12 +433,12 @@ remove all client/server and CA files.
 config:
   Configuration file.
 
+compat:
+  Shell settings and command compatibility.
+
 env.in:
   Template file.
-  Currently contain variables related to LDAP directories.
-
-shell.rc:
-  Shell settings.
+  Contain variables extracted from build configuration.
 
 1-cre_cadb.sh:
   Create "Test CA" directories and files.
@@ -477,6 +478,7 @@ functions:
 ssh_tests.sh:
   Main test script - call other testscripts.
 
+  Test shell scripts listed in execution order:
 test-blob_auth.sh.inc,
 test-dn_auth_file.sh.inc,
 test-dn_auth_path.sh.inc,
@@ -487,10 +489,11 @@ test-alg.sh.inc,
 test-hostalg.sh.inc,
 test-algfmt.sh.inc,
 test-store_file.sh.inc,
-test-ocsp.sh.inc,
-test-by_ldap.sh.inc:
-  Test shell scripts listed in execution order.
+test-ocsp.sh.inc.
   See DESCRIPTION in each file.
+
+  Optional test scripts:
+test-by_ldap.sh.inc.
 
 Note that hostbased authentication we cannot test without to install.
 Generated testhostkey_* certificates are with sslserver and sslclient
