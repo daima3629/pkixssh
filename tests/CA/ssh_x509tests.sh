@@ -211,8 +211,10 @@ runSSHdaemon() {
     -o LogLevel="${SSHSERVER_LOGLEVEL}" \
   >> "${SSHD_LOG}" 2>&1
 
-  sleep 3
-  if test ! -f "${SSHD_PID}"; then
+  sleep 1
+  test -f "$SSHD_PID" || sleep 1
+  test -f "$SSHD_PID" || sleep 1
+  if test ! -f "$SSHD_PID" ; then
     printf "${warn}cannot start sshd:${norm} " >&2
     error_file_not_readable "${SSHD_PID}"
     return 33
