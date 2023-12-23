@@ -12,6 +12,8 @@ clean: ldap_clean
 	-rm -f sshd_x509.log .sshd_x509.pid sshd_config-certTests
 	-rm -f ssh_config-certTests .ssh_x509.err.log .ssh_x509.reply
 	-rm -f ssh_askpass-p12
+	-rm -f pkcs11_tool-*-*.der ssh_askpass-pkcs11 .ssh-module.log
+	-rm -rf softhsm
 
 
 distclean: clean

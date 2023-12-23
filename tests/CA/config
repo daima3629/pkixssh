@@ -77,6 +77,9 @@ SSH_X509TESTS="\
  store_file
  ocsp
 "
+# uncomment next line if your system provides PKCS#11 module
+# and utilities
+#SSH_X509TESTS="$SSH_X509TESTS test-pkcs11"
 # uncomment next line if your system provides OpenLDAP server
 # (requires LDAP enabled build)
 #SSH_X509TESTS="$SSH_X509TESTS by_ldap"

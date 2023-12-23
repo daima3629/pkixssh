@@ -24,9 +24,81 @@
 TEST_SSH_PIN=${TEST_SSH_PIN-1234}
 TEST_SSH_SOPIN=${TEST_SSH_SOPIN-12345678}
 
+CWD=${CWD-$OBJ}
+
+
+# find a PKCS#11 module
+p11_find_module() {
+  if test -z "$TEST_SSH_PKCS11" ; then
+    for D in \
+      /usr/lib64/pkcs11 \
+      /usr/lib64/softhsm \
+      /usr/lib/x86_64-linux-gnu/softhsm \
+      /usr/local/lib/softhsm \
+      /opt/local/lib/softhsm \
+      /usr/lib/softhsm \
+      /usr/lib \
+    ; do
+      test -d "$D" || continue
+
+      if test -f "$D"/libsofthsm2.so ; then
+        TEST_SSH_PKCS11="$D"/libsofthsm2.so
+        break
+      fi
+    done
+    test -n "$TEST_SSH_PKCS11"
+  else
+    test -f "$TEST_SSH_PKCS11"
+  fi
+}
+
+
+# find a SoftHSM2 utility
+p11_find_SOFTHSM2_TOOL() {
+  if test -z "$SOFTHSM2_TOOL" ; then
+    for D in \
+      /usr/bin \
+      /usr/local/bin \
+      /opt/local/bin \
+    ; do
+      test -d "$D" || continue
+
+      if test -x "$D/softhsm2-util" ; then
+        SOFTHSM2_TOOL="$D/softhsm2-util"
+        break
+      fi
+    done
+    test -n "$SOFTHSM2_TOOL"
+  else
+    test -x "$SOFTHSM2_TOOL"
+  fi
+}
+
+
+# find a SoftHSM2 utility
+p11_find_PKCS11_TOOL() {
+  if test -z "$PKCS11_TOOL" ; then
+    for D in \
+      /usr/bin \
+      /usr/local/bin \
+      /opt/local/bin \
+    ; do
+      test -d "$D" || continue
+
+      if test -x "$D/pkcs11-tool" ; then
+        PKCS11_TOOL="$D/pkcs11-tool"
+        break
+      fi
+    done
+    test -n "$PKCS11_TOOL"
+  else
+    test -x "$PKCS11_TOOL"
+  fi
+}
+
 
 # prepare PKCS#11 askpass helper utility
-P11_ASKPASS=`pwd`/ssh_askpass-pkcs11
+P11_ASKPASS=$CWD/ssh_askpass-pkcs11
 cre_ssh_p11_askpass() {
 if test -x "$P11_ASKPASS" ; then :
 else
@@ -46,4 +118,33 @@ p11_ssh_add() {
   SSHADD=${SSHADD-$TEST_SSH_SSHADD}
   env SSH_ASKPASS="$P11_ASKPASS" SSH_ASKPASS_REQUIRE=force \
   $SSHADD ${1+"$@"}
+}
+
+
+# prepares a softhsm2 token configuration
+p11_setup() {
+	EXTRA_AGENT_ARGS="$EXTRA_AGENT_ARGS -P$TEST_SSH_PKCS11"
+
+	# setup environment for softhsm2 token
+	SSH_SOFTHSM_DIR=$CWD/softhsm
+	export SSH_SOFTHSM_DIR
+	rm -rf $SSH_SOFTHSM_DIR
+
+	TOKEN=$SSH_SOFTHSM_DIR/tokens
+	$srcdir/../install-sh -d $TOKEN
+
+	SOFTHSM2_CONF=$SSH_SOFTHSM_DIR/softhsm2.conf
+	export SOFTHSM2_CONF
+	cat > $SOFTHSM2_CONF << EOF
+# PKIX-SSH test - SoftHSM v2 configuration file
+directories.tokendir = $TOKEN
+objectstore.backend = file
+
+slots.removable = false
+slots.mechanisms = ALL
+
+# ERROR, WARNING, INFO, DEBUG
+log.level = ERROR
+#log.level = DEBUG
+EOF
 }

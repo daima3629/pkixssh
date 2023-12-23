@@ -392,6 +392,16 @@ $ ssh -E ssh_engine \
   Then return to top build directory and run the tests again.
   OPENSSL_FIPS=1 make check-certs ....
 
+3.1.2.8.) Key&Certificate from "PKCS#11 token":
+  Version 7.1 add support for certificate and key obtained from
+  pkcs11 module. Only RSA algorithm was supported. Release 8.8
+  add support for EC based certificates and keys. To test
+  functionality PKCS#11 module(1) has to be present. Initialisation
+  of module requestes respective utily(2). The certificates and keys
+  are loaded by PKCS#11 tool(3). The test script search for
+  libsofthsm2.so(1), softhsm2-util(2), and pkcs11-tool(3) in
+  some well known paths. They could be set by relevant environment
+  variables TEST_SSH_PKCS11(1), SOFTHSM2_TOOL(2), and PKCS11_TOOL(3).
 
 3.1.3.) Sample commands to run tests:
 $ OPENSSL=/usr/local/ssl/bin/openssl make check-certs
@@ -439,6 +449,9 @@ compat:
 env.in:
   Template file.
   Contain variables extracted from build configuration.
+
+pkcs11-env:
+  File with functions used to tests PKCS#11 tokens.
 
 1-cre_cadb.sh:
   Create "Test CA" directories and files.
@@ -493,6 +506,7 @@ test-ocsp.sh.inc.
   See DESCRIPTION in each file.
 
   Optional test scripts:
+test-pkcs11.sh.inc,
 test-by_ldap.sh.inc.
 
 Note that hostbased authentication we cannot test without to install.

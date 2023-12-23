@@ -9,3 +9,6 @@ ssh*_config-certTests
 *.log
 *.pid
 ssh_askpass-p12
+pkcs11_tool-*-*.der
+ssh_askpass-pkcs11
+softhsm/
