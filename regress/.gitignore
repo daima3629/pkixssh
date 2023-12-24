@@ -83,6 +83,7 @@ sftp-server.log
 sftp-server.sh
 sftp.log
 slow-sftp-server.sh
+softhsm/
 ssh-log-wrapper.sh
 ssh.log
 ssh_config
