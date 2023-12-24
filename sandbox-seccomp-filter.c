@@ -247,7 +247,23 @@ static const struct sock_filter preauth_insns[] = {
 	SC_ALLOW(__NR_getuid32),
 #endif
 #ifdef __NR_madvise
-	SC_ALLOW(__NR_madvise),
+	SC_ALLOW_ARG(__NR_madvise, 2, MADV_NORMAL),
+# ifdef MADV_FREE
+	SC_ALLOW_ARG(__NR_madvise, 2, MADV_FREE),
+# endif
+# ifdef MADV_DONTNEED
+	SC_ALLOW_ARG(__NR_madvise, 2, MADV_DONTNEED),
+# endif
+# ifdef MADV_DONTFORK
+	SC_ALLOW_ARG(__NR_madvise, 2, MADV_DONTFORK),
+# endif
+# ifdef MADV_DONTDUMP
+	SC_ALLOW_ARG(__NR_madvise, 2, MADV_DONTDUMP),
+# endif
+# ifdef MADV_WIPEONFORK
+	SC_ALLOW_ARG(__NR_madvise, 2, MADV_WIPEONFORK),
+# endif
+	SC_DENY(__NR_madvise, EINVAL),
 #endif
 #ifdef __NR_mmap
 	SC_ALLOW_ARG_MASK(__NR_mmap, 2, PROT_READ|PROT_WRITE|PROT_NONE),
