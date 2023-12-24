@@ -1,7 +1,7 @@
 /* $OpenBSD: ssh_api.c,v 1.27 2021/04/03 06:18:41 djm Exp $ */
 /*
  * Copyright (c) 2012 Markus Friedl.  All rights reserved.
- * Copyright (c) 2014-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2014-2023 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -81,7 +81,7 @@ _ssh_host_key_sign(
 static int crypto_status = 0;
 
 void
-ssh_crypto_init() {
+ssh_crypto_init(void) {
 	if (!crypto_status) {
 #ifdef WITH_OPENSSL
 		ssh_OpenSSL_startup();
@@ -91,7 +91,7 @@ ssh_crypto_init() {
 }
 
 void
-ssh_crypto_fini() {
+ssh_crypto_fini(void) {
 	if (crypto_status) {
 #ifdef WITH_OPENSSL
 		ssh_OpenSSL_shuthdown();

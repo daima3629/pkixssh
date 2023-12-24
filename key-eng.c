@@ -183,7 +183,7 @@ static void destroy_ssh_ui_method(void);
 
 
 static int/*bool*/
-setup_ssh_ui_method() {
+setup_ssh_ui_method(void) {
 	ssh_ui_method = UI_create_method("PKIX-SSH application user interface");
 
 	if (ssh_ui_method == NULL) return(0);
@@ -200,7 +200,7 @@ setup_ssh_ui_method() {
 
 
 static void
-destroy_ssh_ui_method() {
+destroy_ssh_ui_method(void) {
 	if (ssh_ui_method == NULL) return;
 
 	UI_destroy_method(ssh_ui_method);
@@ -901,7 +901,7 @@ done:
 
 
 void
-ssh_engines_startup() {
+ssh_engines_startup(void) {
 #ifdef USE_OPENSSL_ENGINE
 	eng_list = sshbuf_new();
 	if (eng_list == NULL)
@@ -912,7 +912,7 @@ ssh_engines_startup() {
 
 
 void
-ssh_engines_shutdown() {
+ssh_engines_shutdown(void) {
 #ifdef USE_OPENSSL_ENGINE
 	free(eng_name);
 	eng_name = NULL;

@@ -177,7 +177,7 @@ ssh_OpenSSL_load_error_strings(void) {
 
 
 void
-ssh_OpenSSL_startup()
+ssh_OpenSSL_startup(void)
 {
 #ifdef HAVE_OPENSSL_INIT_CRYPTO
 	OPENSSL_init_crypto(
@@ -239,7 +239,7 @@ ssh_OpenSSL_startup()
 
 
 void
-ssh_OpenSSL_shuthdown() {
+ssh_OpenSSL_shuthdown(void) {
 #ifdef HAVE_OPENSSL_CLEANUP
 	OPENSSL_cleanup();
 #else

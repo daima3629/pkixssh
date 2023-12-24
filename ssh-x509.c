@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2022 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2023 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -80,7 +80,7 @@ struct ssh_x509_st {
 
 
 SSH_X509*
-SSH_X509_new() {
+SSH_X509_new(void) {
 	SSH_X509 *xd;
 
 	xd = xmalloc(sizeof(SSH_X509)); /*fatal on error*/
