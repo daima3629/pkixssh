@@ -1,5 +1,4 @@
-/* $OpenBSD: myproposal.h,v 1.68 2020/10/03 04:15:06 djm Exp $ */
-
+/* $OpenBSD: myproposal.h,v 1.71 2022/03/30 21:13:23 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  *
@@ -30,6 +29,12 @@
 # define KEX_SNTRUP761X25519	"sntrup761x25519-sha512@openssh.com,"
 #else
 # define KEX_SNTRUP761X25519
+#endif
+#if 0
+/* OpenSSH EtM modes are subject of prefix truncation i.e.,
+ * "Terrapin Attack: Breaking SSH Channel Integrity By Sequence Number Manipulation".
+ */
+# define WITHOUT_ETM_FUNCTIONALITY
 #endif
 
 #define KEX_SERVER_KEX \
@@ -63,24 +68,40 @@
 	"rsa-sha2-512," \
 	"ssh-rsa"
 
+
+#ifdef WITHOUT_ETM_FUNCTIONALITY
+# define KEX_CHACHA20_POLY1305
+#else
+# define KEX_CHACHA20_POLY1305 \
+	",chacha20-poly1305@openssh.com"
+#endif
+
 #define	KEX_SERVER_ENCRYPT \
-	"chacha20-poly1305@openssh.com," \
 	"aes128-ctr,aes192-ctr,aes256-ctr," \
-	"aes128-gcm@openssh.com,aes256-gcm@openssh.com"
+	"aes128-gcm@openssh.com,aes256-gcm@openssh.com" \
+	KEX_CHACHA20_POLY1305
 
 #define KEX_CLIENT_ENCRYPT KEX_SERVER_ENCRYPT
 
+
+#ifdef WITHOUT_ETM_FUNCTIONALITY
+# define KEX_ETM
+#else
+# define KEX_ETM \
+	",umac-64-etm@openssh.com" \
+	",umac-128-etm@openssh.com" \
+	",hmac-sha2-256-etm@openssh.com" \
+	",hmac-sha2-512-etm@openssh.com" \
+	",hmac-sha1-etm@openssh.com"
+#endif
+
 #define	KEX_SERVER_MAC \
-	"umac-64-etm@openssh.com," \
-	"umac-128-etm@openssh.com," \
-	"hmac-sha2-256-etm@openssh.com," \
-	"hmac-sha2-512-etm@openssh.com," \
-	"hmac-sha1-etm@openssh.com," \
 	"umac-64@openssh.com," \
 	"umac-128@openssh.com," \
 	"hmac-sha2-256," \
 	"hmac-sha2-512," \
-	"hmac-sha1"
+	"hmac-sha1" \
+	KEX_ETM
 
 #define KEX_CLIENT_MAC KEX_SERVER_MAC
 

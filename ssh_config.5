@@ -20,7 +20,7 @@
 .\" Copyright (c) 1999,2000 Markus Friedl.  All rights reserved.
 .\" Copyright (c) 1999 Aaron Campbell.  All rights reserved.
 .\" Copyright (c) 1999 Theo de Raadt.  All rights reserved.
-.\" Copyright (c) 2002-2022 Roumen Petrov.  All rights reserved.
+.\" Copyright (c) 2002-2023 Roumen Petrov.  All rights reserved.
 .\"
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions
@@ -43,7 +43,7 @@
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
 .\" $OpenBSD: ssh_config.5,v 1.391 2023/10/12 02:18:18 djm Exp $
-.Dd $Mdocdate: October 12 2023 $
+.Dd $Mdocdate: Dec 24 2023 $
 .Dt SSH_CONFIG 5
 .Os
 .Sh NAME
@@ -645,9 +645,9 @@ chacha20-poly1305@openssh.com
 .Pp
 The default is:
 .Bd -literal -offset indent
-chacha20-poly1305@openssh.com,
 aes128-ctr,aes192-ctr,aes256-ctr,
-aes128-gcm@openssh.com,aes256-gcm@openssh.com
+aes128-gcm@openssh.com,aes256-gcm@openssh.com,
+chacha20-poly1305@openssh.com
 .Ed
 .Pp
 The list of available ciphers may also be obtained using
