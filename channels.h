@@ -152,10 +152,10 @@ struct Channel {
 	int	client_tty;	/* (client) TTY has been requested */
 	int     force_drain;	/* force close on iEOF */
 	time_t	notbefore;	/* Pause IO until deadline (time_t) */
-	int     delayed;	/* post-select handlers for newly created
+	int     delayed;	/* post-IO handlers for newly created
 				 * channels are delayed until the first call
-				 * to a matching pre-select handler.
-				 * this way post-select handlers are not
+				 * to a matching pre-IO handler.
+				 * this way post-IO handlers are not
 				 * accidentally called if a FD gets reused */
 	int	restore_block;	/* fd mask to restore blocking status */
 	struct sshbuf *input;	/* data read from socket, to be sent over

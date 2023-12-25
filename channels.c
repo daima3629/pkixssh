@@ -119,7 +119,7 @@ orig:	0.184	0.523	0.330	0.162	0.046
 /* Maximum number of fake X11 displays to try. */
 #define MAX_DISPLAYS  1000
 
-/* Per-channel callback for pre/post select() actions */
+/* Per-channel callback for pre/post IO actions */
 typedef void chan_fn(struct ssh *, Channel *c);
 
 extern int channel_close_fd(struct ssh *, Channel *, int);
@@ -195,11 +195,11 @@ struct ssh_channels {
 	int channel_max_fd;
 
 	/*
-	 * 'channel_pre*' are called just before select() to add any bits
-	 * relevant to channels in the select bitmasks.
+	 * 'channel_pre*' are called just before IO to add any bits
+	 * relevant to channels in the c->io_want bitmasks.
 	 *
 	 * 'channel_post*': perform any appropriate operations for
-	 * channels which have events pending.
+	 * channels which have c->io_ready events pending.
 	 */
 	chan_fn **channel_pre;
 	chan_fn **channel_post;
@@ -2700,9 +2700,10 @@ channel_handler(struct ssh *ssh, int table, struct timespec *timeout)
 }
 
 /*
- * Create sockets before allocating the select bitmasks.
+ * Create sockets before preparing IO.
  * This is necessary for things that need to happen after reading
- * the network-input but before channel_prepare_select().
+ * the network-input but need to be completed before IO event setup, e.g.
+ * because they may create new channels.
  */
 static void
 channel_before_prepare_io(struct ssh *ssh)
