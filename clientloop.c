@@ -529,10 +529,13 @@ server_alive_check(struct ssh *ssh)
 static void
 client_wait_until_can_do_something(struct ssh *ssh,
     fd_set **readsetp, fd_set **writesetp,
-    int *maxfdp, u_int *nallocp, int rekeying)
+    int *maxfdp, u_int *nallocp, int rekeying,
+    int *conn_in_readyp, int *conn_out_readyp)
 {
 	struct timespec timeout;
 	int ret;
+
+	*conn_in_readyp = *conn_out_readyp = 0;
 
 	ptimeout_init(&timeout);
 	/* Add any selections by the channel mechanism. */
@@ -570,6 +573,7 @@ client_wait_until_can_do_something(struct ssh *ssh,
 
 	ret = pselect((*maxfdp)+1, *readsetp, *writesetp, NULL,
 	    ptimeout_get_tsp(&timeout), NULL);
+
 	if (ret == -1) {
 		/*
 		 * We have to clear the select masks, because we return.
@@ -582,8 +586,13 @@ client_wait_until_can_do_something(struct ssh *ssh,
 			return;
 		/* Note: we might still have data in the buffers. */
 		quit_message("select: %s", strerror(errno));
-	} else if (options.server_alive_interval > 0 &&
-	    !FD_ISSET(connection_in, *readsetp) &&
+		return;
+	}
+
+	*conn_in_readyp = FD_ISSET(connection_in, *readsetp);
+	*conn_out_readyp = FD_ISSET(connection_out, *writesetp);
+
+	if (options.server_alive_interval > 0 && !*conn_in_readyp &&
 	    monotime() >= server_alive_time)
 		/*
 		 * ServerAlive check is needed. We can't rely on the select
@@ -1447,9 +1456,8 @@ client_loop(struct ssh *ssh, int have_pty, int escape_char_arg,
 		 */
 		max_fd2 = max_fd;
 		client_wait_until_can_do_something(ssh, &readset, &writeset,
-		    &max_fd2, &nalloc, ssh_packet_is_rekeying(ssh));
-		conn_in_ready = FD_ISSET(connection_in, readset);
-		conn_out_ready = FD_ISSET(connection_out, writeset);
+		    &max_fd2, &nalloc, ssh_packet_is_rekeying(ssh),
+		    &conn_in_ready, &conn_out_ready);
 
 		if (quit_pending)
 			break;

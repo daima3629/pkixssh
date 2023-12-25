@@ -183,7 +183,8 @@ client_alive_check(struct ssh *ssh)
 static void
 wait_until_can_do_something(struct ssh *ssh,
     fd_set **readsetp, fd_set **writesetp, int *maxfdp,
-    u_int *nallocp, sigset_t *sigsetp)
+    u_int *nallocp, sigset_t *sigsetp,
+    int *conn_in_readyp, int *conn_out_readyp)
 {
 	int connection_in, connection_out;
 	struct timespec timeout;
@@ -191,6 +192,8 @@ wait_until_can_do_something(struct ssh *ssh,
 	int client_alive_scheduled = 0;
 	time_t now;
 	static time_t last_client_time = 0, unused_connection_expiry = 0;
+
+	*conn_in_readyp = *conn_out_readyp = 0;
 
 	ptimeout_init(&timeout);
 	/* Allocate and update pselect() masks for channel descriptors. */
@@ -266,6 +269,9 @@ wait_until_can_do_something(struct ssh *ssh,
 		return;
 	}
 
+	*conn_in_readyp = FD_ISSET(connection_in, *readsetp);
+	*conn_out_readyp = FD_ISSET(connection_out, *writesetp);
+
 	now = monotime(); /* need to reset after pselect() */
 	/* ClientAliveInterval probing */
 	if (client_alive_scheduled) {
@@ -274,7 +280,7 @@ wait_until_can_do_something(struct ssh *ssh,
 			/* ppoll timed out and we're due to probe */
 			client_alive_check(ssh);
 			last_client_time = now;
-		} else if (ret != 0 && FD_ISSET(connection_in, *readsetp)) {
+		} else if (ret != 0 && *conn_in_readyp) {
 			/* Data from peer; reset probe timer. */
 			last_client_time = now;
 		}
@@ -432,9 +438,8 @@ server_loop2(struct ssh *ssh, Authctxt *authctxt)
 		collect_children(ssh);
 		wait_until_can_do_something(ssh,
 		    &readset, &writeset, &max_fd, &nalloc,
-		    &osigset);
-		conn_in_ready = FD_ISSET(connection_in, readset);
-		conn_out_ready = FD_ISSET(connection_out, writeset);
+		    &osigset,
+		    &conn_in_ready, &conn_out_ready);
 		if (sigprocmask(SIG_SETMASK, &osigset, NULL) == -1)
 			error_f("osigset sigprocmask: %s", strerror(errno));
 
