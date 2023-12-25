@@ -182,10 +182,10 @@ client_alive_check(struct ssh *ssh)
  */
 static void
 wait_until_can_do_something(struct ssh *ssh,
-    int connection_in, int connection_out,
     fd_set **readsetp, fd_set **writesetp, int *maxfdp,
     u_int *nallocp, sigset_t *sigsetp)
 {
+	int connection_in, connection_out;
 	struct timespec timeout;
 	int ret;
 	int client_alive_scheduled = 0;
@@ -230,6 +230,9 @@ wait_until_can_do_something(struct ssh *ssh,
 		/* XXX ? deadline_monotime(last_client_time + alive_interval) */
 		client_alive_scheduled = 1;
 	}
+
+	connection_in = ssh_packet_get_connection_in(ssh);
+	connection_out = ssh_packet_get_connection_out(ssh);
 
 #if 0
 	/* wrong: bad condition XXX */
@@ -292,12 +295,15 @@ wait_until_can_do_something(struct ssh *ssh,
  * in buffers and processed later.
  */
 static int
-process_input(struct ssh *ssh, int connection_in)
+process_input(struct ssh *ssh)
 {
+	int r, connection_in;
 #ifndef USE_DIRECT_READ
 	/* read into memory buffer */
-	int r, len;
+	ssize_t len;
 	char buf[SSHD_IOBUFSZ];
+
+	connection_in = ssh_packet_get_connection_in(ssh);
 
 	/* Read and buffer any input data from the client. */
 	len = read(connection_in, buf, sizeof(buf));
@@ -320,7 +326,7 @@ process_input(struct ssh *ssh, int connection_in)
 	return 0;
 #else
 	/* direct read into input buffer */
-	int r;
+	connection_in = ssh_packet_get_connection_in(ssh);
 
 	r = ssh_packet_process_read(ssh, connection_in, SSHD_IOBUFSZ);
 	if (r == 0) return r; /* success */
@@ -394,8 +400,6 @@ server_loop2(struct ssh *ssh, Authctxt *authctxt)
 		error_f("bsigset setup: %s", strerror(errno));
 	ssh_signal(SIGCHLD, sigchld_handler);
 	child_terminated = 0;
-	connection_in = ssh_packet_get_connection_in(ssh);
-	connection_out = ssh_packet_get_connection_out(ssh);
 
 	if (!use_privsep) {
 		ssh_signal(SIGTERM, sigterm_handler);
@@ -403,6 +407,8 @@ server_loop2(struct ssh *ssh, Authctxt *authctxt)
 		ssh_signal(SIGQUIT, sigterm_handler);
 	}
 
+	connection_in = ssh_packet_get_connection_in(ssh);
+	connection_out = ssh_packet_get_connection_out(ssh);
 	max_fd = MAXIMUM(connection_in, connection_out);
 
 	server_init_dispatch(ssh);
@@ -424,7 +430,7 @@ server_loop2(struct ssh *ssh, Authctxt *authctxt)
 		if (sigprocmask(SIG_BLOCK, &bsigset, &osigset) == -1)
 			error_f("bsigset sigprocmask: %s", strerror(errno));
 		collect_children(ssh);
-		wait_until_can_do_something(ssh, connection_in, connection_out,
+		wait_until_can_do_something(ssh,
 		    &readset, &writeset, &max_fd, &nalloc,
 		    &osigset);
 		conn_in_ready = FD_ISSET(connection_in, readset);
@@ -440,7 +446,7 @@ server_loop2(struct ssh *ssh, Authctxt *authctxt)
 
 		channel_after_select(ssh, readset, writeset);
 		if (conn_in_ready &&
-		    process_input(ssh, connection_in) < 0)
+		    process_input(ssh) < 0)
 			break;
 	{	/* A timeout may have triggered rekeying */
 		int r = ssh_packet_check_rekey(ssh);
