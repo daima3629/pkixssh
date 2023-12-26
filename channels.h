@@ -144,6 +144,7 @@ struct Channel {
 	int     sock;		/* sock fd */
 	u_int	io_want;	/* bitmask of SSH_CHAN_IO_* */
 	u_int	io_ready;	/* bitmask of SSH_CHAN_IO_* */
+	int	pfds[4];	/* pollfd entries for rfd/wfd/efd/sock */
 	int     ctl_chan;	/* control channel (multiplexed connections) */
 	int     isatty;		/* rfd is a tty */
 #ifdef _AIX
@@ -325,8 +326,12 @@ int	 channel_input_window_adjust(int, u_int32_t, struct ssh *);
 int	 channel_input_status_confirm(int, u_int32_t, struct ssh *);
 
 /* file descriptor handling (read/write) */
+struct pollfd;
 struct timespec;
 
+void	 channel_prepare_poll(struct ssh *, struct pollfd **,
+	    u_int *, u_int *, u_int, struct timespec *);
+void	 channel_after_poll(struct ssh *, struct pollfd *, u_int);
 void	 channel_prepare_select(struct ssh *, fd_set **, fd_set **, int *,
 	    u_int*, struct timespec*);
 void     channel_after_select(struct ssh *, fd_set *, fd_set *);

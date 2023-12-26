@@ -58,6 +58,13 @@
 #include <fcntl.h>
 #include <limits.h>
 #include <netdb.h>
+#ifdef HAVE_POLL_H
+# include <poll.h>
+#else
+# ifdef HAVE_SYS_POLL_H
+#  include <sys/poll.h>
+# endif
+#endif
 #include <stdarg.h>
 #ifdef HAVE_STDINT_H
 # include <stdint.h>
@@ -83,6 +90,10 @@
 #include "authfd.h"
 #include "pathnames.h"
 #include "match.h"
+
+#if 0
+#  define DEBUG_CHANNEL_POLL 1
+#endif
 
 /* read buffer size */
 /* NOTE keep synchronised with port-net.c */
@@ -543,7 +554,7 @@ int
 channel_close_fd(struct ssh *ssh, Channel *c, int id)
 {
 	struct ssh_channels *sc = ssh->chanctxt;
-	int fd, *fdp = NULL, restore_block = 0;
+	int fd, pfds_idx, *fdp = NULL, restore_block = 0;
 
 	switch (id) {
 	case SSH_CHANNEL_FD_INPUT :
@@ -568,28 +579,34 @@ channel_close_fd(struct ssh *ssh, Channel *c, int id)
 		c->io_want &= ~SSH_CHAN_IO_RFD;
 		c->io_ready &= ~SSH_CHAN_IO_RFD;
 		restore_block = ((c->restore_block & CHANNEL_RESTORE_RFD) != 0);
+		pfds_idx = 0;
 		break;
 	case SSH_CHANNEL_FD_OUTPUT:
 		c->io_want &= ~SSH_CHAN_IO_WFD;
 		c->io_ready &= ~SSH_CHAN_IO_WFD;
 		restore_block = ((c->restore_block & CHANNEL_RESTORE_WFD) != 0);
+		pfds_idx = 1;
 		break;
 	case SSH_CHANNEL_FD_ERROR :
 		c->io_want &= ~SSH_CHAN_IO_EFD;
 		c->io_ready &= ~SSH_CHAN_IO_EFD;
 		restore_block = ((c->restore_block & CHANNEL_RESTORE_EFD) != 0);
+		pfds_idx = 2;
 		break;
 	case SSH_CHANNEL_FD_SOCKET:
 		c->io_want &= ~SSH_CHAN_IO_SOCK;
 		c->io_ready &= ~SSH_CHAN_IO_SOCK;
+		pfds_idx = 3;
 		break;
 	}
 
 	if (restore_block)
 		unset_nonblock(fd);
+
 	if (close(fd) == -1) return -1;
 
-	*fdp = -1;
+	c->pfds[pfds_idx] = *fdp = -1;
+
 	if (fd == sc->channel_max_fd)
 		channel_find_maxfd(sc);
 	return 0;
@@ -2790,6 +2807,284 @@ channel_after_select(struct ssh *ssh, fd_set *readset, fd_set *writeset)
 		channel_mask_io_ready(c, readset, writeset);
 	}
 }
+	channel_handler(ssh, CHAN_POST, NULL);
+}
+
+static inline void
+dump_channel_poll(const char *func, const char *what, Channel *c,
+    u_int pollfd_offset, struct pollfd *pfd)
+{
+#ifdef DEBUG_CHANNEL_POLL
+	debug3("%s: channel %d: %s r%d w%d e%d s%d c->pfds [ %d %d %d %d ] "
+	    "io_want 0x%02x io_ready 0x%02x pfd[%u].fd=%d "
+	    "pfd.ev 0x%02x pfd.rev 0x%02x", func, c->self, what,
+	    c->rfd, c->wfd, c->efd, c->sock,
+	    c->pfds[0], c->pfds[1], c->pfds[2], c->pfds[3],
+	    c->io_want, c->io_ready,
+	    pollfd_offset, pfd->fd, pfd->events, pfd->revents);
+#else
+	UNUSED(func); UNUSED(what);
+	UNUSED(c);
+	UNUSED(pollfd_offset);
+	UNUSED(pfd);
+#endif
+}
+
+/* Prepare pollfd entries for a single channel */
+static void
+channel_prepare_pollfd(Channel *c, u_int *next_pollfd,
+    struct pollfd *pfd, u_int npfd)
+{
+	u_int ev, p = *next_pollfd;
+
+	if (c == NULL)
+		return;
+	if (p + 4 > npfd) {
+		/* Shouldn't happen */
+		fatal_f("channel %d: bad pfd offset %u (max %u)",
+		    c->self, p, npfd);
+	}
+	c->pfds[0] = c->pfds[1] = c->pfds[2] = c->pfds[3] = -1;
+	/*
+	 * prepare c->rfd
+	 *
+	 * This is a special case, since c->rfd might be the same as
+	 * c->wfd, c->efd and/or c->sock. Handle those here if they want
+	 * IO too.
+	 */
+	if (c->rfd != -1) {
+		ev = 0;
+		if ((c->io_want & SSH_CHAN_IO_RFD) != 0)
+			ev |= POLLIN;
+		/* rfd == wfd */
+		if (c->wfd == c->rfd) {
+			if ((c->io_want & SSH_CHAN_IO_WFD) != 0)
+				ev |= POLLOUT;
+		}
+		/* rfd == efd */
+		if (c->efd == c->rfd) {
+			if ((c->io_want & SSH_CHAN_IO_EFD_R) != 0)
+				ev |= POLLIN;
+			if ((c->io_want & SSH_CHAN_IO_EFD_W) != 0)
+				ev |= POLLOUT;
+		}
+		/* rfd == sock */
+		if (c->sock == c->rfd) {
+			if ((c->io_want & SSH_CHAN_IO_SOCK_R) != 0)
+				ev |= POLLIN;
+			if ((c->io_want & SSH_CHAN_IO_SOCK_W) != 0)
+				ev |= POLLOUT;
+		}
+		/* Pack a pfd entry if any event armed for this fd */
+		if (ev != 0) {
+			c->pfds[0] = p;
+			pfd[p].fd = c->rfd;
+			pfd[p].events = ev;
+			dump_channel_poll(__func__, "rfd", c, p, &pfd[p]);
+			p++;
+		}
+	}
+	/* prepare c->wfd if wanting IO and not already handled above */
+	if (c->wfd != -1 && c->rfd != c->wfd) {
+		ev = 0;
+		if ((c->io_want & SSH_CHAN_IO_WFD))
+			ev |= POLLOUT;
+		/* Pack a pfd entry if any event armed for this fd */
+		if (ev != 0) {
+			c->pfds[1] = p;
+			pfd[p].fd = c->wfd;
+			pfd[p].events = ev;
+			dump_channel_poll(__func__, "wfd", c, p, &pfd[p]);
+			p++;
+		}
+	}
+	/* prepare c->efd if wanting IO and not already handled above */
+	if (c->efd != -1 && c->rfd != c->efd) {
+		ev = 0;
+		if ((c->io_want & SSH_CHAN_IO_EFD_R) != 0)
+			ev |= POLLIN;
+		if ((c->io_want & SSH_CHAN_IO_EFD_W) != 0)
+			ev |= POLLOUT;
+		/* Pack a pfd entry if any event armed for this fd */
+		if (ev != 0) {
+			c->pfds[2] = p;
+			pfd[p].fd = c->efd;
+			pfd[p].events = ev;
+			dump_channel_poll(__func__, "efd", c, p, &pfd[p]);
+			p++;
+		}
+	}
+	/* prepare c->sock if wanting IO and not already handled above */
+	if (c->sock != -1 && c->rfd != c->sock) {
+		ev = 0;
+		if ((c->io_want & SSH_CHAN_IO_SOCK_R) != 0)
+			ev |= POLLIN;
+		if ((c->io_want & SSH_CHAN_IO_SOCK_W) != 0)
+			ev |= POLLOUT;
+		/* Pack a pfd entry if any event armed for this fd */
+		if (ev != 0) {
+			c->pfds[3] = p;
+			pfd[p].fd = c->sock;
+			pfd[p].events = 0;
+			dump_channel_poll(__func__, "sock", c, p, &pfd[p]);
+			p++;
+		}
+	}
+	*next_pollfd = p;
+}
+
+/* Allocate/prepare poll structure */
+void
+channel_prepare_poll(struct ssh *ssh, struct pollfd **pfdp, u_int *npfd_allocp,
+    u_int *npfd_activep, u_int npfd_reserved, struct timespec *timeout)
+{
+	struct ssh_channels *sc = ssh->chanctxt;
+	u_int i, npfd;
+
+	channel_before_prepare_io(ssh); /* might create a new channel */
+	/* clear out I/O flags from last poll */
+	for (i = 0; i < sc->channels_alloc; i++) {
+		if (sc->channels[i] == NULL)
+			continue;
+		sc->channels[i]->io_want = sc->channels[i]->io_ready = 0;
+	}
+	/* Allocate 4x pollfd for each channel (rfd, wfd, efd, sock) */
+	if (sc->channels_alloc >= (INT_MAX / 4) - npfd_reserved)
+		fatal_f("too many channels"); /* shouldn't happen */
+
+	npfd = npfd_reserved + sc->channels_alloc * 4;
+	if (npfd > *npfd_allocp) {
+		*pfdp = xrecallocarray(*pfdp, *npfd_allocp,
+		    npfd, sizeof(**pfdp));
+		*npfd_allocp = npfd;
+	}
+
+{	u_int oalloc = sc->channels_alloc;
+	channel_handler(ssh, CHAN_PRE, timeout);
+	if (oalloc != sc->channels_alloc) {
+		/* shouldn't happen */
+		fatal_f("channels_alloc changed during CHAN_PRE "
+		    "(was %u, now %u)", oalloc, sc->channels_alloc);
+	}
+}
+
+	/* Prepare pollfd */
+{	u_int p = npfd_reserved;
+	for (i = 0; i < sc->channels_alloc; i++)
+		channel_prepare_pollfd(sc->channels[i], &p, *pfdp, npfd);
+	*npfd_activep = p;
+}
+}
+
+static void
+fd_ready(Channel *c, int p, struct pollfd *pfds, u_int npfd, int fd,
+    const char *what, u_int revents_mask, u_int ready)
+{
+	struct pollfd *pfd = &pfds[p];
+
+	if (fd == -1)
+		return;
+	if (p == -1 || (u_int)p >= npfd)
+		fatal_f("channel %d: bad pfd %d (max %u)", c->self, p, npfd);
+	dump_channel_poll(__func__, what, c, p, pfd);
+	if (pfd->fd != fd) {
+		fatal("channel %d: inconsistent %s fd=%d pollfd[%u].fd %d "
+		    "r%d w%d e%d s%d", c->self, what, fd, p, pfd->fd,
+		    c->rfd, c->wfd, c->efd, c->sock);
+	}
+	if ((pfd->revents & POLLNVAL) != 0) {
+		fatal("channel %d: invalid %s pollfd[%u].fd %d r%d w%d e%d s%d",
+		    c->self, what, p, pfd->fd, c->rfd, c->wfd, c->efd, c->sock);
+	}
+	if ((pfd->revents & (revents_mask|POLLHUP|POLLERR)) != 0)
+		c->io_ready |= ready & c->io_want;
+}
+
+/*
+ * After poll, perform any appropriate operations for channels which have
+ * events pending.
+ */
+void
+channel_after_poll(struct ssh *ssh, struct pollfd *pfd, u_int npfd)
+{
+	struct ssh_channels *sc = ssh->chanctxt;
+	u_int i;
+
+#ifdef DEBUG_CHANNEL_POLL
+{	int p;
+	for (p = 0; p < (int)npfd; p++) {
+		if (pfd[p].revents == 0)
+			continue;
+		debug_f("pfd[%u].fd %d rev 0x%04x",
+		    p, pfd[p].fd, pfd[p].revents);
+	}
+}
+#endif
+
+	/* Convert pollfd into c->io_ready */
+	for (i = 0; i < sc->channels_alloc; i++) {
+		Channel *c = sc->channels[i];
+		if (c == NULL) continue;
+
+		/* if rfd is shared with efd/sock then wfd should be too */
+		if (c->rfd != -1 && c->wfd != -1 && c->rfd != c->wfd &&
+		    (c->rfd == c->efd || c->rfd == c->sock)) {
+			/* Shouldn't happen */
+			fatal_f("channel %d: unexpected fds r%d w%d e%d s%d",
+			    c->self, c->rfd, c->wfd, c->efd, c->sock);
+		}
+		c->io_ready = 0;
+
+	{	int p;
+		/* rfd, potentially shared with wfd, efd and sock */
+		if (c->rfd != -1 && (p = c->pfds[0]) != -1) {
+			fd_ready(c, p, pfd, npfd, c->rfd,
+			    "rfd", POLLIN, SSH_CHAN_IO_RFD);
+			if (c->rfd == c->wfd) {
+				fd_ready(c, p, pfd, npfd, c->wfd,
+				    "wfd/r", POLLOUT, SSH_CHAN_IO_WFD);
+			}
+			if (c->rfd == c->efd) {
+				fd_ready(c, p, pfd, npfd, c->efd,
+				    "efdr/r", POLLIN, SSH_CHAN_IO_EFD_R);
+				fd_ready(c, p, pfd, npfd, c->efd,
+				    "efdw/r", POLLOUT, SSH_CHAN_IO_EFD_W);
+			}
+			if (c->rfd == c->sock) {
+				fd_ready(c, p, pfd, npfd, c->sock,
+				    "sockr/r", POLLIN, SSH_CHAN_IO_SOCK_R);
+				fd_ready(c, p, pfd, npfd, c->sock,
+				    "sockw/r", POLLOUT, SSH_CHAN_IO_SOCK_W);
+			}
+			dump_channel_poll(__func__, "rfd", c, p, pfd);
+		}
+		/* wfd */
+		if (c->wfd != -1 && c->wfd != c->rfd &&
+		    (p = c->pfds[1]) != -1) {
+			fd_ready(c, p, pfd, npfd, c->wfd,
+			    "wfd", POLLOUT, SSH_CHAN_IO_WFD);
+			dump_channel_poll(__func__, "wfd", c, p, pfd);
+		}
+		/* efd */
+		if (c->efd != -1 && c->efd != c->rfd &&
+		    (p = c->pfds[2]) != -1) {
+			fd_ready(c, p, pfd, npfd, c->efd,
+			    "efdr", POLLIN, SSH_CHAN_IO_EFD_R);
+			fd_ready(c, p, pfd, npfd, c->efd,
+			    "efdw", POLLOUT, SSH_CHAN_IO_EFD_W);
+			dump_channel_poll(__func__, "efd", c, p, pfd);
+		}
+		/* sock */
+		if (c->sock != -1 && c->sock != c->rfd &&
+		    (p = c->pfds[3]) != -1) {
+			fd_ready(c, p, pfd, npfd, c->sock,
+			    "sockr", POLLIN, SSH_CHAN_IO_SOCK_R);
+			fd_ready(c, p, pfd, npfd, c->sock,
+			    "sockw", POLLOUT, SSH_CHAN_IO_SOCK_W);
+			dump_channel_poll(__func__, "sock", c, p, pfd);
+		}
+	}
+	}
 	channel_handler(ssh, CHAN_POST, NULL);
 }
 

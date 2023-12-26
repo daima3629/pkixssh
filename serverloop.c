@@ -51,6 +51,9 @@
 #include <fcntl.h>
 #include <pwd.h>
 #include <limits.h>
+#ifdef HAVE_POLL_H
+#include <poll.h>
+#endif
 #include <signal.h>
 #include <string.h>
 #include <termios.h>
@@ -175,18 +178,16 @@ client_alive_check(struct ssh *ssh)
 }
 
 /*
- * Sleep in pselect() until we can do something.  This will initialize the
- * pselect masks.  Upon return, the masks will indicate which descriptors
- * have data or can accept data.  Optionally, a maximum time can be specified
- * for the duration of the wait (0 = infinite).
+ * Sleep in ppoll() until we can do something.
+ * Optionally, a maximum time can be specified for the duration of
+ * the wait (0 = infinite).
  */
 static void
 wait_until_can_do_something(struct ssh *ssh,
-    fd_set **readsetp, fd_set **writesetp, int *maxfdp,
-    u_int *nallocp, sigset_t *sigsetp,
+    struct pollfd **pfdp,
+    u_int *npfd_allocp, u_int *npfd_activep, sigset_t *sigsetp,
     int *conn_in_readyp, int *conn_out_readyp)
 {
-	int connection_in, connection_out;
 	struct timespec timeout;
 	int ret;
 	int client_alive_scheduled = 0;
@@ -195,12 +196,13 @@ wait_until_can_do_something(struct ssh *ssh,
 
 	*conn_in_readyp = *conn_out_readyp = 0;
 
+	/* Prepare channel poll. First two pollfd entries are reserved */
 	ptimeout_init(&timeout);
-	/* Allocate and update pselect() masks for channel descriptors. */
-	channel_prepare_select(ssh, readsetp, writesetp, maxfdp,
-	    nallocp, &timeout);
+	channel_prepare_poll(ssh, pfdp, npfd_allocp, npfd_activep, 2, &timeout);
 	now = monotime();
 
+	if (*npfd_activep < 2)
+		fatal_f("bad npfd %u", *npfd_activep); /* shouldn't happen */
 	if (options.rekey_interval > 0 && !ssh_packet_is_rekeying(ssh))
 		ptimeout_deadline_sec(&timeout,
 		    ssh_packet_get_rekey_timeout(ssh));
@@ -234,21 +236,15 @@ wait_until_can_do_something(struct ssh *ssh,
 		client_alive_scheduled = 1;
 	}
 
-	connection_in = ssh_packet_get_connection_in(ssh);
-	connection_out = ssh_packet_get_connection_out(ssh);
-
 #if 0
 	/* wrong: bad condition XXX */
 	if (channel_not_very_much_buffered_data())
 #endif
-	FD_SET(connection_in, *readsetp);
-
-	/*
-	 * If we have buffered packet data going to the client, mark that
-	 * descriptor.
-	 */
-	if (ssh_packet_have_data_to_write(ssh))
-		FD_SET(connection_out, *writesetp);
+	/* Monitor client connection on reserved pollfd entries */
+	(*pfdp)[0].fd = ssh_packet_get_connection_in(ssh);
+	(*pfdp)[0].events = POLLIN;
+	(*pfdp)[1].fd = ssh_packet_get_connection_out(ssh);
+	(*pfdp)[1].events = ssh_packet_have_data_to_write(ssh) ? POLLOUT : 0;
 
 	/*
 	 * If child has terminated and there is enough buffer space to read
@@ -258,21 +254,21 @@ wait_until_can_do_something(struct ssh *ssh,
 		ptimeout_deadline_ms(&timeout, 100);
 
 	/* Wait for something to happen, or the timeout to expire. */
-	ret = pselect((*maxfdp)+1, *readsetp, *writesetp, NULL,
-	    ptimeout_get_tsp(&timeout), sigsetp);
+	ret = ppoll(*pfdp, *npfd_activep, ptimeout_get_tsp(&timeout), sigsetp);
 
 	if (ret == -1) {
-		memset(*readsetp, 0, *nallocp);
-		memset(*writesetp, 0, *nallocp);
+		u_int p;
+		for (p = 0; p < *npfd_activep; p++)
+			(*pfdp)[p].revents = 0;
 		if (errno != EINTR)
-			error("pselect: %.100s", strerror(errno));
+			fatal_f("ppoll: %.100s", strerror(errno));
 		return;
 	}
 
-	*conn_in_readyp = FD_ISSET(connection_in, *readsetp);
-	*conn_out_readyp = FD_ISSET(connection_out, *writesetp);
+	*conn_in_readyp = (*pfdp)[0].revents != 0;
+	*conn_out_readyp = (*pfdp)[1].revents != 0;
 
-	now = monotime(); /* need to reset after pselect() */
+	now = monotime(); /* need to reset after ppoll() */
 	/* ClientAliveInterval probing */
 	if (client_alive_scheduled) {
 		if (ret == 0 &&
@@ -394,9 +390,8 @@ collect_children(struct ssh *ssh)
 void
 server_loop2(struct ssh *ssh, Authctxt *authctxt)
 {
-	fd_set *readset = NULL, *writeset = NULL;
-	int max_fd;
-	u_int nalloc = 0, connection_in, connection_out;
+	struct pollfd *pfd = NULL;
+	u_int npfd_alloc = 0, npfd_active = 0;
 	sigset_t bsigset, osigset;
 
 	UNUSED(authctxt);
@@ -413,10 +408,6 @@ server_loop2(struct ssh *ssh, Authctxt *authctxt)
 		ssh_signal(SIGQUIT, sigterm_handler);
 	}
 
-	connection_in = ssh_packet_get_connection_in(ssh);
-	connection_out = ssh_packet_get_connection_out(ssh);
-	max_fd = MAXIMUM(connection_in, connection_out);
-
 	server_init_dispatch(ssh);
 
 	for (;;) {
@@ -430,15 +421,14 @@ server_loop2(struct ssh *ssh, Authctxt *authctxt)
 
 		/*
 		 * Block SIGCHLD while we check for dead children, then pass
-		 * the old signal mask through to pselect() so that it'll wake
+		 * the old signal mask through to ppoll() so that it'll wake
 		 * up immediately if a child exits after we've called waitpid().
 		 */
 		if (sigprocmask(SIG_BLOCK, &bsigset, &osigset) == -1)
 			error_f("bsigset sigprocmask: %s", strerror(errno));
 		collect_children(ssh);
 		wait_until_can_do_something(ssh,
-		    &readset, &writeset, &max_fd, &nalloc,
-		    &osigset,
+		    &pfd, &npfd_alloc, &npfd_active, &osigset,
 		    &conn_in_ready, &conn_out_ready);
 		if (sigprocmask(SIG_SETMASK, &osigset, NULL) == -1)
 			error_f("osigset sigprocmask: %s", strerror(errno));
@@ -449,7 +439,7 @@ server_loop2(struct ssh *ssh, Authctxt *authctxt)
 			cleanup_exit(255);
 		}
 
-		channel_after_select(ssh, readset, writeset);
+		channel_after_poll(ssh, pfd, npfd_active);
 		if (conn_in_ready &&
 		    process_input(ssh) < 0)
 			break;
@@ -462,9 +452,7 @@ server_loop2(struct ssh *ssh, Authctxt *authctxt)
 			process_output(ssh);
 	}
 	collect_children(ssh);
-
-	free(readset);
-	free(writeset);
+	free(pfd);
 
 	/* free all channels, no more reads and writes */
 	channel_free_all(ssh);
