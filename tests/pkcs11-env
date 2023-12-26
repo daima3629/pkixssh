@@ -131,7 +131,7 @@ p11_setup() {
 	rm -rf $SSH_SOFTHSM_DIR
 
 	TOKEN=$SSH_SOFTHSM_DIR/tokens
-	$srcdir/../install-sh -d $TOKEN
+	$abs_top_srcdir/install-sh -d $TOKEN
 
 	SOFTHSM2_CONF=$SSH_SOFTHSM_DIR/softhsm2.conf
 	export SOFTHSM2_CONF
