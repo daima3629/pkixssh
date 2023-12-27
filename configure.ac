@@ -5043,8 +5043,7 @@ AC_ARG_WITH([kerberos5],
 			AC_PATH_TOOL([KRB5CONF], [krb5-config],
 			     [false],
 			     [$KRB5ROOT/bin:$PATH])
-			AS_IF([$KRB5CONF --version > /dev/null 2>&1], [
-			], [
+			AS_IF([$KRB5CONF --version > /dev/null 2>&1], [], [
 				defect_krb5=direct
 			])
 		])
