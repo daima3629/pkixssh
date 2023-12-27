@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2005 Daniel Walsh <dwalsh@redhat.com>
  * Copyright (c) 2006 Damien Miller <djm@openbsd.org>
+ * Copyright (c) 2023 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -34,7 +35,9 @@
 
 #ifdef WITH_SELINUX
 #include <selinux/selinux.h>
-#include <selinux/label.h>
+#ifdef HAVE_SELINUX_LABEL_H
+# include <selinux/label.h>
+#endif
 #include <selinux/get_context_list.h>
 
 #ifndef SSH_SELINUX_UNCONFINED_TYPE
@@ -218,7 +221,6 @@ void
 ssh_selinux_setfscreatecon(const char *path)
 {
 	char *context;
-	struct selabel_handle *shandle = NULL;
 
 	if (!ssh_selinux_enabled())
 		return;
@@ -226,6 +228,8 @@ ssh_selinux_setfscreatecon(const char *path)
 		setfscreatecon(NULL);
 		return;
 	}
+#ifdef HAVE_SELABEL_OPEN
+{	struct selabel_handle *shandle = NULL;
 	if ((shandle = selabel_open(SELABEL_CTX_FILE, NULL, 0)) == NULL) {
 		debug_f("selabel_open failed");
 		return;
@@ -233,6 +237,11 @@ ssh_selinux_setfscreatecon(const char *path)
 	if (selabel_lookup(shandle, &context, path, 0700) == 0)
 		setfscreatecon(context);
 	selabel_close(shandle);
+}
+#else
+	if (matchpathcon(path, 0700, &context) == 0)
+		setfscreatecon(context);
+#endif
 }
 
 #endif /* WITH_SELINUX */

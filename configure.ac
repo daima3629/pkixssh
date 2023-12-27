@@ -4990,7 +4990,14 @@ AC_ARG_WITH([selinux],
 			  LIBS="$LIBS -lselinux"
 			],
 			AC_MSG_ERROR([SELinux support requires libselinux library]))
-		AC_CHECK_FUNCS([getseuserbyname get_default_context_with_level])
+		AC_CHECK_HEADERS([ \
+			selinux/label.h \
+		])
+		AC_CHECK_FUNCS([ \
+			getseuserbyname \
+			get_default_context_with_level \
+			selabel_open \
+		])
 		LIBS="$save_LIBS $LIBSELINUX"
 	fi ]
 )
