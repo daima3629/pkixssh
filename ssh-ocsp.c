@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2004-2023 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -344,12 +344,12 @@ ssh_ocspreq_addcert(
 		error_f("OCSP_request_add0_id fail");
 		return(0);
 	}
-	if (!sk_OCSP_CERTID_push(ids, id)) {
+	if (sk_OCSP_CERTID_push(ids, id) <= 0) {
 		error_f("sk_OCSP_CERTID_push fail");
 		return(0);
 	}
 	subj = ssh_X509_NAME_oneline(X509_get_subject_name(cert)); /*fatal on error*/
-	if (!sk_OPENSSL_STRING_push(subjs, subj)) {
+	if (sk_OPENSSL_STRING_push(subjs, subj) <= 0) {
 		error_f("sk_push(..., subj) fail");
 		return(0);
 	}
