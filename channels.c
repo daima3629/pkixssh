@@ -2060,11 +2060,14 @@ channel_post_connecting(struct ssh *ssh, Channel *c)
 		fatal_f("channel %d: no remote id", c->self);
 	/* for rdynamic the OPEN_CONFIRMATION has been sent already */
 	isopen = (c->type == SSH_CHANNEL_RDYNAMIC_FINISH);
+
 	if (getsockopt(c->sock, SOL_SOCKET, SO_ERROR, &err, &sz) == -1) {
 		err = errno;
 		error("getsockopt SO_ERROR failed");
 	}
+
 	if (err == 0) {
+		/* Non-blocking connection completed */
 		debug("channel %d: connected to %s port %d",
 		    c->self, c->connect_ctx.host, c->connect_ctx.port);
 		channel_connect_ctx_free(&c->connect_ctx);
@@ -2082,17 +2085,21 @@ channel_post_connecting(struct ssh *ssh, Channel *c)
 			    (r = sshpkt_send(ssh)) != 0)
 				fatal_fr(r, "channel %d: open confirm", c->self);
 		}
-	} else {
-		debug("channel %d: connection failed: %s",
-		    c->self, strerror(err));
-		/* Try next address, if any */
-		if ((sock = connect_next(&c->connect_ctx)) > 0) {
-			close(c->sock);
-			c->sock = c->rfd = c->wfd = sock;
-			channel_find_maxfd(ssh->chanctxt);
-			return;
-		}
-		/* Exhausted all addresses */
+		return;
+	}
+	if (err == EINTR || err == EAGAIN || err == EINPROGRESS
+#if defined(EWOULDBLOCK) && (EWOULDBLOCK != EAGAIN)
+	    || err == EWOULDBLOCK
+#endif
+	)
+		return;
+
+	/* Non-blocking connection failed */
+	debug("channel %d: connection failed: %s", c->self, strerror(err));
+
+	/* Try next address, if any */
+	if ((sock = connect_next(&c->connect_ctx)) == -1) {
+		/* Exhausted all addresses for this destination */
 		error("connect_to %.100s port %d: failed.",
 		    c->connect_ctx.host, c->connect_ctx.port);
 		channel_connect_ctx_free(&c->connect_ctx);
@@ -2110,7 +2117,13 @@ channel_post_connecting(struct ssh *ssh, Channel *c)
 				fatal_fr(r, "channel %d: open failure", c->self);
 			chan_mark_dead(ssh, c);
 		}
+		return;
 	}
+
+	/* New non-blocking connection in progress */
+	close(c->sock);
+	c->sock = c->rfd = c->wfd = sock;
+	channel_find_maxfd(ssh->chanctxt);
 }
 
 static int
