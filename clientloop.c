@@ -529,7 +529,7 @@ server_alive_check(struct ssh *ssh)
 static void
 client_wait_until_can_do_something(struct ssh *ssh,
     fd_set **readsetp, fd_set **writesetp,
-    int *maxfdp, u_int *nallocp, int rekeying,
+    int *maxfdp, u_int *nallocp,
     int *conn_in_readyp, int *conn_out_readyp)
 {
 	struct timespec timeout;
@@ -567,7 +567,7 @@ client_wait_until_can_do_something(struct ssh *ssh,
 		ptimeout_deadline_monotime(&timeout, control_persist_exit_time);
 	if (options.server_alive_interval > 0)
 		ptimeout_deadline_monotime(&timeout, server_alive_time);
-	if (options.rekey_interval > 0 && !rekeying)
+	if (options.rekey_interval > 0 && !ssh_packet_is_rekeying(ssh))
 		ptimeout_deadline_sec(&timeout,
 		    ssh_packet_get_rekey_timeout(ssh));
 
@@ -1456,7 +1456,7 @@ client_loop(struct ssh *ssh, int have_pty, int escape_char_arg,
 		 */
 		max_fd2 = max_fd;
 		client_wait_until_can_do_something(ssh, &readset, &writeset,
-		    &max_fd2, &nalloc, ssh_packet_is_rekeying(ssh),
+		    &max_fd2, &nalloc,
 		    &conn_in_ready, &conn_out_ready);
 
 		if (quit_pending)
