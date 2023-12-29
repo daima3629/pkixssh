@@ -1730,6 +1730,11 @@ channel_connect_stdio_fwd(struct ssh *ssh,
 	return c;
 }
 
+/* "IO want" flags works fine with socket R/W and R/W if client loop uses "select"
+ * based multiplexing. Unfortunatelly socket R/W is not usable is client loop uses
+ * poll based multiplexing due to "file descriptor packing".
+ */
+#define DYNAMIC_USE_IO_FD
 /* dynamic port forwarding */
 static void
 channel_pre_dynamic(struct ssh *ssh, Channel *c)
@@ -1745,7 +1750,11 @@ channel_pre_dynamic(struct ssh *ssh, Channel *c)
 	/* check if the fixed size part of the packet is in buffer. */
 	if (have < 3) {
 		/* need more */
+	#ifdef DYNAMIC_USE_IO_FD
+		c->io_want |= SSH_CHAN_IO_RFD;
+	#else
 		c->io_want |= SSH_CHAN_IO_SOCK_R;
+	#endif
 		return;
 	}
 	/* try to guess the protocol */
@@ -1767,10 +1776,19 @@ channel_pre_dynamic(struct ssh *ssh, Channel *c)
 	} else if (ret == 0) {
 		debug2("channel %d: pre_dynamic: need more", c->self);
 		/* need more */
+	#ifdef DYNAMIC_USE_IO_FD
+		c->io_want |= SSH_CHAN_IO_RFD;
+	#else
 		c->io_want |= SSH_CHAN_IO_SOCK_R;
+	#endif
 		if (sshbuf_len(c->output))
+		#ifdef DYNAMIC_USE_IO_FD
+			c->io_want |= SSH_CHAN_IO_WFD;
+		#else
 			c->io_want |= SSH_CHAN_IO_SOCK_W;
+		#endif
 	} else {
+		debug2("channel %d: pre_dynamic: the next state", c->self);
 		/* switch to the next state */
 		c->type = SSH_CHANNEL_OPENING;
 		port_open_helper(ssh, c, "direct-tcpip");
