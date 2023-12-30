@@ -629,6 +629,13 @@ case "$SCRIPT" in
 	;;
 esac
 
+if $REGRESS_INTEROP_CONCH ; then
+	# ensure that ssh key is PEM format
+	cp $OBJ/ssh-rsa $OBJ/ssh-rsa_pem
+	$SSHKEYGEN -p -N '' -m PEM -f $OBJ/ssh-rsa_pem >/dev/null
+	$SSHKEYGEN -y -f $OBJ/ssh-rsa_pem > $OBJ/ssh-rsa_pem.pub
+fi
+
 if $REGRESS_INTEROP_PUTTY ; then
 	rm -f ${OBJ}/putty.rsa2
 	if ! $PUTTYGEN -t rsa -o ${OBJ}/putty.rsa2 \
@@ -637,18 +644,11 @@ if $REGRESS_INTEROP_PUTTY ; then
 		echo "Your installed version of PuTTY is too old to support --new-passphrase, skipping test" >&2
 		exit 1
 	fi
-fi
 
-if $REGRESS_INTEROP_CONCH || $REGRESS_INTEROP_PUTTY; then
+	# ensure that ssh key is PEM format
 	cp $OBJ/ssh-rsa $OBJ/ssh-rsa_pem
 	$SSHKEYGEN -p -N '' -m PEM -f $OBJ/ssh-rsa_pem >/dev/null
-fi
 
-if $REGRESS_INTEROP_CONCH ; then
-	$SSHKEYGEN -y -f $OBJ/ssh-rsa_pem > $OBJ/ssh-rsa_pem.pub
-fi
-
-if $REGRESS_INTEROP_PUTTY ; then
 	mkdir -p ${OBJ}/.putty
 
 	# Add a PuTTY key to authorized_keys
