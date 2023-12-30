@@ -77,6 +77,13 @@
 #ifdef HAVE_PATHS_H
 #include <paths.h>
 #endif
+#ifdef HAVE_POLL_H
+# include <poll.h>
+#else
+# ifdef HAVE_SYS_POLL_H
+#  include <sys/poll.h>
+# endif
+#endif
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -527,39 +534,40 @@ server_alive_check(struct ssh *ssh)
  * one of the file descriptors).
  */
 static void
-client_wait_until_can_do_something(struct ssh *ssh,
-    fd_set **readsetp, fd_set **writesetp,
-    int *maxfdp, u_int *nallocp,
-    int *conn_in_readyp, int *conn_out_readyp)
+client_wait_until_can_do_something(struct ssh *ssh, struct pollfd **pfdp,
+    u_int *npfd_allocp, u_int *npfd_activep,
+    sigset_t *sigsetp, int *conn_in_readyp, int *conn_out_readyp)
 {
 	struct timespec timeout;
 	int ret;
+	u_int p;
 
 	*conn_in_readyp = *conn_out_readyp = 0;
 
+	/* Prepare channel poll. First two pollfd entries are reserved */
 	ptimeout_init(&timeout);
-	/* Add any selections by the channel mechanism. */
-	channel_prepare_select(ssh, readsetp, writesetp, maxfdp,
-	    nallocp, &timeout);
+	channel_prepare_poll(ssh, pfdp, npfd_allocp, npfd_activep, 2, &timeout);
+	if (*npfd_activep < 2)
+		fatal_f("bad npfd %u", *npfd_activep); /* shouldn't happen */
 
-	/* channel_prepare_select could have closed the last channel */
+	/* channel_prepare_poll could have closed the last channel */
 	if (session_closed && !channel_still_open(ssh) &&
 	    !ssh_packet_have_data_to_write(ssh)) {
-		/* clear mask since we did not call select() */
-		memset(*readsetp, 0, *nallocp);
-		memset(*writesetp, 0, *nallocp);
+		/* clear events since we did not call poll() */
+		for (p = 0; p < *npfd_activep; p++)
+			(*pfdp)[p].revents = 0;
 		return;
 	}
 
-	FD_SET(connection_in, *readsetp);
-
-	/* Select server connection if have data to write to the server. */
-	if (ssh_packet_have_data_to_write(ssh))
-		FD_SET(connection_out, *writesetp);
+	/* Monitor server connection on reserved pollfd entries */
+	(*pfdp)[0].fd = connection_in;
+	(*pfdp)[0].events = POLLIN;
+	(*pfdp)[1].fd = connection_out;
+	(*pfdp)[1].events = (ssh_packet_have_data_to_write(ssh)) ? POLLOUT : 0;
 
 	/*
 	 * Wait for something to happen.  This will suspend the process until
-	 * some selected descriptor can be read, written, or has some other
+	 * some polled descriptor can be read, written, or has some other
 	 * event pending, or a timeout expires.
 	 */
 	set_control_persist_exit_time(ssh);
@@ -571,35 +579,35 @@ client_wait_until_can_do_something(struct ssh *ssh,
 		ptimeout_deadline_sec(&timeout,
 		    ssh_packet_get_rekey_timeout(ssh));
 
-	ret = pselect((*maxfdp)+1, *readsetp, *writesetp, NULL,
-	    ptimeout_get_tsp(&timeout), NULL);
+	ret = ppoll(*pfdp, *npfd_activep, ptimeout_get_tsp(&timeout), sigsetp);
 
 	if (ret == -1) {
 		/*
-		 * We have to clear the select masks, because we return.
+		 * We have to clear the events because we return.
 		 * We have to return, because the mainloop checks for the flags
 		 * set by the signal handlers.
 		 */
-		memset(*readsetp, 0, *nallocp);
-		memset(*writesetp, 0, *nallocp);
+		for (p = 0; p < *npfd_activep; p++)
+			(*pfdp)[p].revents = 0;
 		if (errno == EINTR)
 			return;
 		/* Note: we might still have data in the buffers. */
-		quit_message("select: %s", strerror(errno));
+		quit_message("ppoll: %s", strerror(errno));
 		return;
 	}
 
-	*conn_in_readyp = FD_ISSET(connection_in, *readsetp);
-	*conn_out_readyp = FD_ISSET(connection_out, *writesetp);
+	*conn_in_readyp = (*pfdp)[0].revents != 0;
+	*conn_out_readyp = (*pfdp)[1].revents != 0;
 
 	if (options.server_alive_interval > 0 && !*conn_in_readyp &&
-	    monotime() >= server_alive_time)
+	    monotime() >= server_alive_time) {
 		/*
-		 * ServerAlive check is needed. We can't rely on the select
+		 * ServerAlive check is needed. We can't rely on the poll
 		 * timing out since traffic on the client side such as port
 		 * forwards can keep waking it up.
 		 */
 		server_alive_check(ssh);
+	}
 }
 
 static void
@@ -1324,11 +1332,12 @@ int
 client_loop(struct ssh *ssh, int have_pty, int escape_char_arg,
     int ssh2_chan_id)
 {
-	fd_set *readset = NULL, *writeset = NULL;
+	struct pollfd *pfd = NULL;
+	u_int npfd_alloc = 0, npfd_active = 0;
 	double start_time, total_time;
-	int r, max_fd = 0, max_fd2 = 0, len;
+	int r, len;
 	u_int64_t ibytes, obytes;
-	u_int nalloc = 0;
+	sigset_t bsigset, osigset;
 
 	debug("Entering interactive session.");
 	session_ident = ssh2_chan_id;
@@ -1374,7 +1383,6 @@ client_loop(struct ssh *ssh, int have_pty, int escape_char_arg,
 	exit_status = -1;
 	connection_in = ssh_packet_get_connection_in(ssh);
 	connection_out = ssh_packet_get_connection_out(ssh);
-	max_fd = MAXIMUM(connection_in, connection_out);
 
 	quit_pending = 0;
 
@@ -1415,6 +1423,13 @@ client_loop(struct ssh *ssh, int have_pty, int escape_char_arg,
 
 	schedule_server_alive_check();
 
+	if (sigemptyset(&bsigset) == -1 ||
+	    sigaddset(&bsigset, SIGHUP) == -1 ||
+	    sigaddset(&bsigset, SIGINT) == -1 ||
+	    sigaddset(&bsigset, SIGQUIT) == -1 ||
+	    sigaddset(&bsigset, SIGTERM) == -1)
+		error_f("bsigset setup: %s", strerror(errno));
+
 	/* Main loop of the client for the interactive session mode. */
 	while (!quit_pending) {
 		int conn_in_ready, conn_out_ready;
@@ -1446,24 +1461,26 @@ client_loop(struct ssh *ssh, int have_pty, int escape_char_arg,
 			 * message about it to the server if so.
 			 */
 			client_check_window_change(ssh);
-
-			if (quit_pending)
-				break;
 		}
 		/*
 		 * Wait until we have something to do (something becomes
 		 * available on one of the descriptors).
 		 */
-		max_fd2 = max_fd;
-		client_wait_until_can_do_something(ssh, &readset, &writeset,
-		    &max_fd2, &nalloc,
+		if (sigprocmask(SIG_BLOCK, &bsigset, &osigset) == -1)
+			error_f("bsigset sigprocmask: %s", strerror(errno));
+		if (quit_pending)
+			break;
+		client_wait_until_can_do_something(ssh, &pfd, &npfd_alloc,
+		    &npfd_active, &osigset,
 		    &conn_in_ready, &conn_out_ready);
+		if (sigprocmask(SIG_SETMASK, &osigset, NULL) == -1)
+			error_f("osigset sigprocmask: %s", strerror(errno));
 
 		if (quit_pending)
 			break;
 
 		/* Do channel operations. */
-		channel_after_select(ssh, readset, writeset);
+		channel_after_poll(ssh, pfd, npfd_active);
 
 		/* Buffer input from the connection.  */
 		if (conn_in_ready) {
@@ -1501,8 +1518,7 @@ client_loop(struct ssh *ssh, int have_pty, int escape_char_arg,
 			}
 		}
 	}
-	free(readset);
-	free(writeset);
+	free(pfd);
 
 	/* Terminate the session. */
 
