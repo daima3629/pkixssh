@@ -199,7 +199,11 @@ ssh_kex2(struct ssh *ssh, char *host, struct sockaddr *hostaddr, u_short port,
 	char *s, *hkalgs = NULL;
 
 	s = kex_names_cat(options.kex_algorithms,
-	    "ext-info-c,kex-strict-c-v00@openssh.com");
+	    "ext-info-c"
+#ifndef WITHOUT_ETM_FUNCTIONALITY
+	    ",kex-strict-c-v00@openssh.com"
+#endif
+	);
 	if (s == NULL) fatal_f("kex_names_cat");
 
 {	/* finalize set of client option HostKeyAlgorithms */

@@ -2649,7 +2649,12 @@ do_ssh2_kex(struct ssh *ssh)
 	const char *compression = NULL;
 
 	s = kex_names_cat(options.kex_algorithms,
-	    "kex-strict-s-v00@openssh.com");
+#ifndef WITHOUT_ETM_FUNCTIONALITY
+	    "kex-strict-s-v00@openssh.com"
+#else
+	    ""
+#endif
+	);
 	if (s == NULL) fatal_f("kex_names_cat");
 
 	if (options.compression == COMP_NONE)

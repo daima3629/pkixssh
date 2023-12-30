@@ -1130,14 +1130,17 @@ kex_choose_conf(struct ssh *ssh, uint32_t seq)
 
 	/* Check whether peer supports ext_info/kex_strict */
 	if ((kex->flags & KEX_INITIAL) != 0) {
-		if (kex->server) {
-			kex->ext_info_c = kexalgs_contains(peer, "ext-info-c");
-			kex->kex_strict = kexalgs_contains(peer,
-			    "kex-strict-c-v00@openssh.com");
-		} else {
-			kex->kex_strict = kexalgs_contains(peer,
-			    "kex-strict-s-v00@openssh.com");
-		}
+		kex->ext_info_c = kex->server
+		    ? kexalgs_contains(peer, "ext-info-c")
+		    : 0;
+	#ifndef WITHOUT_ETM_FUNCTIONALITY
+		kex->kex_strict = kexalgs_contains(peer,
+		    kex->server
+			? "kex-strict-c-v00@openssh.com"
+			: "kex-strict-s-v00@openssh.com");
+	#else
+		kex->kex_strict = 0;
+	#endif
 		if (kex->kex_strict) {
 			debug3_f("will use strict KEX ordering");
 			if (seq != 0)
