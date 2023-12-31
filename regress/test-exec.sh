@@ -630,10 +630,20 @@ case "$SCRIPT" in
 esac
 
 if $REGRESS_INTEROP_CONCH ; then
+	SSH_ID_CONCH_RSA=false
+	if $SSH_ID_CONCH_RSA ; then
 	# ensure that ssh key is PEM format
 	cp $OBJ/ssh-rsa $OBJ/ssh-rsa_pem
 	$SSHKEYGEN -p -N '' -m PEM -f $OBJ/ssh-rsa_pem >/dev/null
 	$SSHKEYGEN -y -f $OBJ/ssh-rsa_pem > $OBJ/ssh-rsa_pem.pub
+	else
+	# ensure that ssh ed25519 key is in custom format
+	# NOTE conch does not work with ed25519 in PKCS#8 format!
+	SSH_ID_CONCH=$OBJ/ssh-ed25519-conch
+	cp $OBJ/ssh-ed25519 $SSH_ID_CONCH
+	$SSHKEYGEN -p -N '' -m OpenSSH -f $SSH_ID_CONCH >/dev/null
+	$SSHKEYGEN -y -f $SSH_ID_CONCH > $SSH_ID_CONCH.pub
+	fi
 fi
 
 if $REGRESS_INTEROP_PUTTY ; then

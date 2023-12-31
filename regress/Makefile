@@ -129,7 +129,7 @@ CLEANFILES=	*.core actual agent-ca agent-ca.pub agent-key.* authkeys_orig \
 		banner.in banner.out cert_host_key* cert_user_key* \
 		batch copy2 data \
 		ssh-dss-agent* ssh-dss ssh-dss.pub \
-		ssh-ed25519-agent* ssh-ed25519 ssh-ed25519.pub empty.in \
+		ssh-ed25519-agent* ssh-ed25519-conch* ssh-ed25519 ssh-ed25519.pub empty.in \
 		ecdsa-sha2-nistp256-agent* ecdsa-sha2-nistp256 ecdsa-sha2-nistp256.pub \
 		ecdsa-sha2-nistp384-agent* ecdsa-sha2-nistp384 ecdsa-sha2-nistp384.pub \
 		ecdsa-sha2-nistp521-agent* ecdsa-sha2-nistp521 ecdsa-sha2-nistp521.pub \
