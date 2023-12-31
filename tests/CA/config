@@ -159,12 +159,19 @@ esac
 # This is reason md2 to be removed from list starting with
 # "X.509 certificate support version 6.3".
 
-# With support for EC certificates we will limit RSA
-# tests to sha1 only. Comment next line to restore.
-RSA_DIGEST_LIST=${RSA_DIGEST_LIST-sha1}
+# With support for EC certificates RSA tests are limited only to
+# "default digest". Remarks:
+# - sha256 requires OpenSSL 0.9.8;
+# - sha256 is preferred on OpenSSL 1.1+ along with pkey utility.
+if $openssl_use_pkey ; then
+  DEFAULT_DIGEST=sha256
+else
+  DEFAULT_DIGEST=sha1
+fi
+RSA_DIGEST_LIST=${RSA_DIGEST_LIST-$DEFAULT_DIGEST}
 
 if test -z "$RSA_DIGEST_LIST"; then
-  for DIGEST in sha1 md5 mdc2 md4 rmd160; do
+  for DIGEST in sha256 sha1 md5 mdc2 md4 rmd160; do
     if "$OPENSSL" dgst -$DIGEST "$OPENSSL" >/dev/null 2>&1; then
       RSA_DIGEST_LIST="$RSA_DIGEST_LIST $DIGEST"
     fi

@@ -129,9 +129,7 @@ cat << EOF > "$1"
 dir = $SSH_CAROOT
 
 [ ca ]
-#md5 is not allowed in FIPSmode
-#default_ca              = ca_test_rsa_md5
-default_ca              = ca_test_rsa_sha1
+default_ca              = ca_test_rsa_$DEFAULT_DIGEST
 
 
 # For the CA policy
@@ -372,7 +370,7 @@ EOF
 fi
 
 
-echo_CA_section root ca_policy_match sha1 root0 root0 >> "$1"
+echo_CA_section root ca_policy_match $DEFAULT_DIGEST root0 root0 >> "$1"
 
 for DIGEST in $RSA_DIGEST_LIST ; do
   echo_CA_section rsa_$DIGEST policy_match $DIGEST rsa rsa_$DIGEST >> "$1"

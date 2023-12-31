@@ -175,7 +175,6 @@ cre_root () {
     -new -x509 \
     -days $SSH_CACERTDAYS \
     -key "$TMPDIR/$CAKEY_PREFIX-root0.key" -passin pass:$KEY_PASS \
-    -sha1 \
     -out "$TMPDIR/$CAKEY_PREFIX-root0.crt" \
     -extensions ca_root_cert \
     2>> "$CA_LOG" \

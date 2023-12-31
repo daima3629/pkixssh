@@ -209,7 +209,7 @@ testocsp_ed25519:
 # ===
 crl_files: ca-test/catest-bundle.crl
 
-ca-test/catest-bundle.crl: testid_rsa-rsa_sha1 testid_dsa-rsa_sha1
+ca-test/catest-bundle.crl:
 	@echo
 	$(SHELL) $(srcdir)/4-cre_crls.sh
 
