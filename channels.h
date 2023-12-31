@@ -333,9 +333,6 @@ struct timespec;
 void	 channel_prepare_poll(struct ssh *, struct pollfd **,
 	    u_int *, u_int *, u_int, struct timespec *);
 void	 channel_after_poll(struct ssh *, struct pollfd *, u_int);
-void	 channel_prepare_select(struct ssh *, fd_set **, fd_set **, int *,
-	    u_int*, struct timespec*);
-void     channel_after_select(struct ssh *, fd_set *, fd_set *);
 int	 channel_output_poll(struct ssh *);
 
 int      channel_not_very_much_buffered_data(struct ssh *);

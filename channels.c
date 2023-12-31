@@ -200,12 +200,6 @@ struct ssh_channels {
 	u_int channels_alloc;
 
 	/*
-	 * Maximum file descriptor value used in any of the channels.  This is
-	 * updated in channel_new.
-	 */
-	int channel_max_fd;
-
-	/*
 	 * 'channel_pre*' are called just before IO to add any bits
 	 * relevant to channels in the c->io_want bitmasks.
 	 *
@@ -417,12 +411,7 @@ static void
 channel_register_fds(struct ssh *ssh, Channel *c, int rfd, int wfd, int efd,
     int extusage, int nonblock, int is_tty)
 {
-	struct ssh_channels *sc = ssh->chanctxt;
-
-	/* Update the maximum file descriptor value. */
-	sc->channel_max_fd = MAXIMUM(sc->channel_max_fd, rfd);
-	sc->channel_max_fd = MAXIMUM(sc->channel_max_fd, wfd);
-	sc->channel_max_fd = MAXIMUM(sc->channel_max_fd, efd);
+	UNUSED(ssh);
 
 	if (rfd != -1)
 		(void)fcntl(rfd, F_SETFD, FD_CLOEXEC);
@@ -532,29 +521,12 @@ channel_new(struct ssh *ssh, char *ctype, int type, int rfd, int wfd, int efd,
 	return c;
 }
 
-static void
-channel_find_maxfd(struct ssh_channels *sc)
-{
-	u_int i;
-	int max = 0;
-	Channel *c;
-
-	for (i = 0; i < sc->channels_alloc; i++) {
-		c = sc->channels[i];
-		if (c != NULL) {
-			max = MAXIMUM(max, c->rfd);
-			max = MAXIMUM(max, c->wfd);
-			max = MAXIMUM(max, c->efd);
-		}
-	}
-	sc->channel_max_fd = max;
-}
-
 int
 channel_close_fd(struct ssh *ssh, Channel *c, int id)
 {
-	struct ssh_channels *sc = ssh->chanctxt;
 	int fd, pfds_idx, *fdp = NULL, restore_block = 0;
+
+	UNUSED(ssh);
 
 	switch (id) {
 	case SSH_CHANNEL_FD_INPUT :
@@ -607,8 +579,6 @@ channel_close_fd(struct ssh *ssh, Channel *c, int id)
 
 	c->pfds[pfds_idx] = *fdp = -1;
 
-	if (fd == sc->channel_max_fd)
-		channel_find_maxfd(sc);
 	return 0;
 }
 
@@ -833,7 +803,6 @@ channel_free_all(struct ssh *ssh)
 	free(sc->channels);
 	sc->channels = NULL;
 	sc->channels_alloc = 0;
-	sc->channel_max_fd = 0;
 
 	free(sc->x11_saved_display);
 	sc->x11_saved_display = NULL;
@@ -2141,7 +2110,6 @@ channel_post_connecting(struct ssh *ssh, Channel *c)
 	/* New non-blocking connection in progress */
 	close(c->sock);
 	c->sock = c->rfd = c->wfd = sock;
-	channel_find_maxfd(ssh->chanctxt);
 }
 
 static int
@@ -2651,45 +2619,6 @@ channel_garbage_collect(struct ssh *ssh, Channel *c)
 
 enum channel_table { CHAN_PRE, CHAN_POST };
 
-/* populate collect wanted io-events by channel pre-callback */
-static void
-channel_mask_io_want(Channel *c, fd_set *readset, fd_set *writeset)
-{
-	u_int event = c->io_want;
-
-#define EVENT_SET(fd, set, flag) \
-	if ((event & flag) != 0) FD_SET(fd, set)
-
-	EVENT_SET(c->rfd , readset , SSH_CHAN_IO_RFD   );
-	EVENT_SET(c->wfd , writeset, SSH_CHAN_IO_WFD   );
-	EVENT_SET(c->efd , readset , SSH_CHAN_IO_EFD_R );
-	EVENT_SET(c->efd , writeset, SSH_CHAN_IO_EFD_W );
-	EVENT_SET(c->sock, readset , SSH_CHAN_IO_SOCK_R);
-	EVENT_SET(c->sock, writeset, SSH_CHAN_IO_SOCK_W);
-
-#undef EVENT_SET
-}
-
-/* set events ready for processing by channel post-callback */
-static void
-channel_mask_io_ready(Channel *c, fd_set *readset, fd_set *writeset)
-{
-	u_int event = 0;
-
-#define EVENT_ISSET(fd, set, flag) \
-	if (fd >= 0 && FD_ISSET(fd, set)) event |= (u_int)flag
-
-	EVENT_ISSET(c->rfd , readset , SSH_CHAN_IO_RFD   );
-	EVENT_ISSET(c->wfd , writeset, SSH_CHAN_IO_WFD   );
-	EVENT_ISSET(c->efd , readset , SSH_CHAN_IO_EFD_R );
-	EVENT_ISSET(c->efd , writeset, SSH_CHAN_IO_EFD_W );
-	EVENT_ISSET(c->sock, readset , SSH_CHAN_IO_SOCK_R);
-	EVENT_ISSET(c->sock, writeset, SSH_CHAN_IO_SOCK_W);
-
-#undef EVENT_ISSET
-	c->io_ready = event;
-}
-
 static void
 channel_handler(struct ssh *ssh, int table, struct timespec *timeout)
 {
@@ -2767,78 +2696,6 @@ channel_before_prepare_io(struct ssh *ssh)
 		if (c->type == SSH_CHANNEL_RDYNAMIC_OPEN)
 			channel_before_prepare_io_rdynamic(ssh, c);
 	}
-}
-
-/*
- * Allocate/update select bitmasks and add any bits relevant to channels in
- * select bitmasks.
- */
-void
-channel_prepare_select(struct ssh *ssh, fd_set **readsetp, fd_set **writesetp,
-    int *maxfdp, u_int *nallocp, struct timespec *timeout)
-{
-	u_int n, sz, nfdset;
-
-	channel_before_prepare_io(ssh); /* might create a new channel */
-
-	n = MAXIMUM(*maxfdp, ssh->chanctxt->channel_max_fd);
-
-	nfdset = howmany(n+1, NFDBITS);
-	/* Explicitly test here, because xreallocarray isn't always called */
-	if (nfdset && SIZE_MAX / nfdset < sizeof(fd_mask))
-		fatal("channel_prepare_select: max_fd (%d) is too large", n);
-	sz = nfdset * sizeof(fd_mask);
-
-	/* perhaps check sz < nalloc/2 and shrink? */
-	if (*readsetp == NULL || sz > *nallocp) {
-		*readsetp = xreallocarray(*readsetp, nfdset, sizeof(fd_mask));
-		*writesetp = xreallocarray(*writesetp, nfdset, sizeof(fd_mask));
-		*nallocp = sz;
-	}
-	*maxfdp = n;
-	memset(*readsetp, 0, sz);
-	memset(*writesetp, 0, sz);
-
-	if (ssh_packet_is_rekeying(ssh)) return;
-
-	channel_handler(ssh, CHAN_PRE, timeout);
-
-{	/* convert c->io_want into read/write sets */
-	struct ssh_channels *sc = ssh->chanctxt;
-	u_int i;
-	Channel *c;
-
-	for (i = 0; i < sc->channels_alloc; i++) {
-		c = sc->channels[i];
-		if (c == NULL)
-			continue;
-		channel_mask_io_want(c, *readsetp, *writesetp);
-	}
-}
-}
-
-/*
- * After select, perform any appropriate operations for channels which have
- * events pending.
- */
-void
-channel_after_select(struct ssh *ssh, fd_set *readset, fd_set *writeset)
-{
-	if (ssh_packet_is_rekeying(ssh)) return;
-
-{	/* convert read/write sets into c->io_ready */
-	struct ssh_channels *sc = ssh->chanctxt;
-	u_int i;
-	Channel *c;
-
-	for (i = 0; i < sc->channels_alloc; i++) {
-		c = sc->channels[i];
-		if (c == NULL)
-			continue;
-		channel_mask_io_ready(c, readset, writeset);
-	}
-}
-	channel_handler(ssh, CHAN_POST, NULL);
 }
 
 static inline void
