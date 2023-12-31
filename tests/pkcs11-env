@@ -148,3 +148,45 @@ log.level = ERROR
 #log.level = DEBUG
 EOF
 }
+
+
+# find a PKCS#11 engine
+p11_find_engine() {
+  if test -z "$TEST_SSH_PKCS11_ENGINE" ; then
+
+    # use command and try to extract path
+    enginedir=`$OPENSSL version -e 2>/dev/null`
+    if test -n "$enginedir" ; then
+      enginedir=`set -- $enginedir; test "x$1" = "xENGINESDIR:" && echo $2`
+    fi
+
+    # failback to defaults
+    if test -n "$enginedir" ; then
+      case $openssl_version in
+      *"OpenSSL 3."*)  enginedir=engines-3;;   #why command fail?
+      *"OpenSSL 1.1"*) enginedir=engines-1.1;; #why command fail?
+      *"OpenSSL 1."*)  enginedir=engines;;
+      esac
+    fi
+
+    test -n "$enginedir" &&
+    for D in \
+      /usr/lib64/$enginedir \
+      /usr/lib/$enginedir \
+    ; do
+      test -d "$D" || continue
+
+      if test -f "$D"/pkcs11.so ; then
+        TEST_SSH_PKCS11_ENGINE="$D"/pkcs11.so
+        break
+      fi
+      if test -f "$D"/libpkcs11.so ; then
+        TEST_SSH_PKCS11_ENGINE="$D"/libpkcs11.so
+        break
+      fi
+    done
+    test -n "$TEST_SSH_PKCS11_ENGINE"
+  else
+    test -f "$TEST_SSH_PKCS11_ENGINE"
+  fi
+}

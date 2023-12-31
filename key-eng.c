@@ -326,6 +326,52 @@ done:
 }
 
 
+/* libp11 pkcs#11 engine bugs:
+ * - sets ec private key component i.e. zero!
+ */
+static int
+pkcs11_engine_load_private_fixes(EVP_PKEY *pk) {
+	int r = 0;
+	int evp_id = EVP_PKEY_base_id(pk);
+
+	switch (evp_id) {
+#ifdef OPENSSL_HAS_ECC
+	case EVP_PKEY_EC: {
+		EC_KEY *ec = EVP_PKEY_get1_EC_KEY(pk);
+		if (ec == NULL)
+			return SSH_ERR_LIBCRYPTO_ERROR;
+
+	{	const BIGNUM *exponent = EC_KEY_get0_private_key(ec);
+		/* "p11_ec.c needs a BIGNUM" set private as work-around for
+		 * OpenSSL bug "When running under OpeSSL 1.1.1 there must
+		 * be a BIGNUM for the private even if is empty.".
+		 * NOTE: OMG!!!!
+		 */
+		if (exponent == NULL) goto done_ec;
+		debug3_f("EC private key is not null!");
+	}
+
+		/* NOTE: OpenSSL issue #18744 */
+		EC_KEY_set_private_key(ec, NULL);
+
+	{	const BIGNUM *exponent = EC_KEY_get0_private_key(ec);
+		if (exponent == NULL) goto done_ec;
+		if (!BN_is_zero(exponent)) goto done_ec;
+
+		error("Cannot clean empty EC private key!");
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+	}
+
+done_ec:
+		EC_KEY_free(ec);
+	} break;
+#endif /*def OPENSSL_HAS_ECC*/
+	}
+
+	return r;
+}
+
+
 int
 engine_load_private(const char *name, const char *passphrase,
 	struct sshkey **keyp, char **commentp
@@ -353,6 +399,10 @@ engine_load_private(const char *name, const char *passphrase,
 		error_crypto_fmt("ENGINE_load_private_key", "engine %s", e_id);
 		ret = SSH_ERR_KEY_NOT_FOUND;
 		goto done;
+	}
+	if (strcmp(e_id, "pkcs11") == 0) {
+		ret = pkcs11_engine_load_private_fixes(pk);
+		if (ret != 0) goto done;
 	}
 
 	ret = sshkey_from_pkey(pk, &prv);

@@ -13,6 +13,7 @@ clean: ldap_clean
 	-rm -f ssh_config-certTests .ssh_x509.err.log .ssh_x509.reply
 	-rm -f ssh_askpass-p12
 	-rm -f pkcs11_tool-*-*.der ssh_askpass-pkcs11 .ssh-module.log
+	-rm -f ssh_engine openssl_engine.cnf
 	-rm -rf softhsm
 
 
