@@ -616,6 +616,7 @@ identifiers:
 The server will reply with a SSH_FXP_EXTENDED_REPLY:
 
 	byte		SSH_FXP_EXTENDED_REPLY
+	uint32		id
 	string		usernames
 	string		groupnames
 
@@ -668,4 +669,4 @@ OpenSSH's connection multiplexing uses messages as described in
 PROTOCOL.mux over a Unix domain socket for communications between a
 master instance and later clients.
 
-$OpenBSD: PROTOCOL,v 1.50 2023/12/18 14:45:17 djm Exp $
+$OpenBSD: PROTOCOL,v 1.55 2024/01/08 05:05:15 djm Exp $
