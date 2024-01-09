@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-add.c,v 1.168 2023/07/06 22:17:59 dtucker Exp $ */
+/* $OpenBSD: ssh-add.c,v 1.171 2024/01/08 00:30:39 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -13,7 +13,7 @@
  *
  * SSH2 implementation,
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2002-2023 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -635,9 +635,9 @@ usage(void)
 #endif
 	fprintf(stderr,
 "               [file ...]\n"
-"       ssh-add -s pkcs11\n"
-"       ssh-add -e pkcs11\n"
-"       ssh-add -T pubkey ...\n"
+"       ssh-add -s pkcs11 -v\n"
+"       ssh-add -e pkcs11 -v\n"
+"       ssh-add -Tv pubkey ...\n"
 	);
 }
 

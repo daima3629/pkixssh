@@ -1,4 +1,4 @@
-.\"	$OpenBSD: ssh-add.1,v 1.84 2022/02/04 02:49:17 dtucker Exp $
+.\"	$OpenBSD: ssh-add.1,v 1.86 2023/12/19 06:57:34 jmc Exp $
 .\"
 .\" Author: Tatu Ylonen <ylo@cs.hut.fi>
 .\" Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -14,7 +14,7 @@
 .\" Copyright (c) 1999,2000 Markus Friedl.  All rights reserved.
 .\" Copyright (c) 1999 Aaron Campbell.  All rights reserved.
 .\" Copyright (c) 1999 Theo de Raadt.  All rights reserved.
-.\" Copyright (c) 2002-2022 Roumen Petrov.  All rights reserved.
+.\" Copyright (c) 2002-2024 Roumen Petrov.  All rights reserved.
 .\"
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions
@@ -44,7 +44,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: December 17 2022 $
+.Dd $Mdocdate: January 9 2024 $
 .Dt SSH-ADD 1
 .Os
 .Sh NAME
@@ -57,11 +57,11 @@
 .Op Fl t Ar life
 .Op Ar
 .Nm ssh-add
-.Fl s Ar pkcs11
+.Fl s Ar pkcs11 v
 .Nm ssh-add
-.Fl e Ar pkcs11
+.Fl e Ar pkcs11 v
 .Nm ssh-add
-.Fl T
+.Fl Tv
 .Ar pubkey ...
 .Sh DESCRIPTION
 .Nm
