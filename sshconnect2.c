@@ -446,7 +446,7 @@ ssh_userauth2(struct ssh *ssh, const char *local_user,
 	pubkey_cleanup(ssh);
 #ifdef GSSAPI
 	if (authctxt.gss_supported_mechs != NULL) {
-		gss_release_oid_set(&authctxt->gss_minor_status, &authctxt.gss_supported_mechs);
+		gss_release_oid_set(&authctxt.gss_minor_status, &authctxt.gss_supported_mechs);
 		authctxt.gss_supported_mechs = NULL;
 	}
 #endif
