@@ -2,7 +2,7 @@
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2005,2006 Damien Miller.  All rights reserved.
- * Copyright (c) 2012-2023 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2012-2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -512,15 +512,18 @@ pwcopy(const struct passwd *pw)
 
 	copy->pw_name = xstrdup(pw->pw_name);
 #if defined(__ANDROID__)
-	/* FIXME: password is NULL on Android */
+	/* NOTE: password is NULL on Android */
 	copy->pw_passwd = xstrdup(pw->pw_passwd ? pw->pw_passwd :
 	/* fake password from auth.c */
-	"$2a$06$r3.juUaHZDlIbQaO2dS9FuYxL1W9M81R1Tc92PoSNmzvpEqLkLGrK");
+	"$2a$10$xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
 #else
 	copy->pw_passwd = xstrdup(pw->pw_passwd);
 #endif
 #ifdef HAVE_STRUCT_PASSWD_PW_GECOS
-	copy->pw_gecos = xstrdup(pw->pw_gecos);
+	/* NOTE: gecos is NULL on Android */
+	copy->pw_gecos = xstrdup(pw->pw_gecos ? pw->pw_gecos :
+	/* fake user information from auth.c */
+	"NOUSER");
 #endif
 	copy->pw_uid = pw->pw_uid;
 	copy->pw_gid = pw->pw_gid;
