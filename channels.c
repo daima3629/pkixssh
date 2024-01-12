@@ -404,6 +404,16 @@ channel_set_xtype(struct ssh *ssh, int id, const char *xctype)
 }
 
 /*
+ * update "last used" time on a channel.
+ */
+static inline void
+channel_set_used_time(struct ssh *ssh, Channel *c)
+{
+	UNUSED(ssh);
+	c->lastused = monotime();
+}
+
+/*
  * Register filedescriptors for a channel, used when allocating a channel or
  * when the channel consumer/producer is ready, e.g. shell exec'd
  */
@@ -1211,7 +1221,7 @@ channel_set_fds(struct ssh *ssh, int id, int rfd, int wfd, int efd,
 
 	channel_register_fds(ssh, c, rfd, wfd, efd, extusage, nonblock, is_tty);
 	c->type = SSH_CHANNEL_OPEN;
-	c->lastused = monotime();
+	channel_set_used_time(ssh, c);
 	c->local_window = c->local_window_max = window_max;
 
 	if ((r = sshpkt_start(ssh, SSH2_MSG_CHANNEL_WINDOW_ADJUST)) != 0 ||
@@ -2059,7 +2069,7 @@ channel_post_connecting(struct ssh *ssh, Channel *c)
 		    c->self, c->connect_ctx.host, c->connect_ctx.port);
 		channel_connect_ctx_free(&c->connect_ctx);
 		c->type = SSH_CHANNEL_OPEN;
-		c->lastused = monotime();
+		channel_set_used_time(ssh, c);
 		if (isopen) {
 			/* no message necessary */
 		} else {
@@ -2166,7 +2176,7 @@ channel_handle_rfd(struct ssh *ssh, Channel *c)
 			goto rfail;
 		}
 		if (nr != 0)
-			c->lastused = monotime();
+			channel_set_used_time(ssh, c);
 		return 1;
 	}
 #endif /*def USE_DIRECT_READ*/
@@ -2195,7 +2205,7 @@ channel_handle_rfd(struct ssh *ssh, Channel *c)
 		}
 		return -1;
 	}
-	c->lastused = monotime();
+	channel_set_used_time(ssh, c);
 	if (c->input_filter != NULL) {
 		if (c->input_filter(ssh, c, buf, len) == -1) {
 			debug2("channel %d: filter stops", c->self);
@@ -2274,7 +2284,7 @@ channel_handle_wfd(struct ssh *ssh, Channel *c)
 		}
 		return -1;
 	}
-	c->lastused = monotime();
+	channel_set_used_time(ssh, c);
 #ifndef BROKEN_TCGETATTR_ICANON
 {	struct termios tio;
 
@@ -2326,7 +2336,7 @@ channel_handle_efd_write(struct ssh *ssh, Channel *c)
 		if ((r = sshbuf_consume(c->extended, len)) != 0)
 			fatal_fr(r, "channel %d: consume", c->self);
 		c->local_consumed += len;
-		c->lastused = monotime();
+		channel_set_used_time(ssh, c);
 	}
 	return 1;
 }
@@ -2354,7 +2364,7 @@ channel_handle_efd_read(struct ssh *ssh, Channel *c)
 		channel_close_fd(ssh, c, SSH_CHANNEL_FD_ERROR);
 		return 1;
 	}
-	c->lastused = monotime();
+	channel_set_used_time(ssh, c);
 	if (c->extended_usage == CHAN_EXTENDED_IGNORE)
 		debug3("channel %d: discard efd", c->self);
 	else if ((r = sshbuf_put(c->extended, buf, len)) != 0)
@@ -3637,7 +3647,7 @@ channel_input_open_confirmation(int type, u_int32_t seq, struct ssh *ssh)
 		c->open_confirm(ssh, c->self, 1, c->open_confirm_ctx);
 		debug2_f("channel %d: callback done", c->self);
 	}
-	c->lastused = monotime();
+	channel_set_used_time(ssh, c);
 	debug2("channel %d: open confirm rwindow %u rmax %u", c->self,
 	    c->remote_window, c->remote_maxpacket);
 	return 0;
