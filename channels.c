@@ -17,7 +17,7 @@
  * Copyright (c) 1999, 2000, 2001, 2002 Markus Friedl.  All rights reserved.
  * Copyright (c) 1999 Dug Song.  All rights reserved.
  * Copyright (c) 1999 Theo de Raadt.  All rights reserved.
- * Copyright (c) 2015-2023 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2015-2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -411,6 +411,27 @@ channel_set_used_time(struct ssh *ssh, Channel *c)
 {
 	UNUSED(ssh);
 	c->lastused = monotime();
+}
+
+/*
+ * Get the time at which a channel is due to time out for inactivity.
+ * Returns 0 if the channel is not due to time out ever.
+ */
+static int/*boolean*/
+channel_get_expiry(struct ssh *ssh, Channel *c, time_t *expiry)
+{
+	int ret = 0;
+
+	UNUSED(ssh);
+	if (c->lastused != 0 && c->inactive_deadline != 0) {
+		time_t deadline = (time_t)(c->lastused + c->inactive_deadline);
+		if (deadline < c->lastused)
+			deadline = 0; /*overflow*/
+		*expiry = deadline;
+		ret = 1;
+	}
+
+	return ret;
 }
 
 /*
@@ -2650,12 +2671,9 @@ channel_handler(struct ssh *ssh, int table, struct timespec *timeout)
 				continue;
 		}
 		if (ftab[c->type] != NULL) {
-			time_t deadline = (time_t)(c->lastused + c->inactive_deadline);
-			if (deadline < c->lastused)
-				deadline = 0; /*overflow*/
-			if (table == CHAN_PRE &&
-			    c->type == SSH_CHANNEL_OPEN &&
-			    c->inactive_deadline != 0 && c->lastused != 0 &&
+			time_t deadline;
+			if (table == CHAN_PRE && c->type == SSH_CHANNEL_OPEN &&
+			    channel_get_expiry(ssh, c, &deadline) &&
 			    now >= deadline) {
 				/* channel closed for inactivity */
 				verbose("channel %d: closing after %ld seconds "
@@ -2668,8 +2686,7 @@ channel_handler(struct ssh *ssh, int table, struct timespec *timeout)
 				/* inactivity timeouts must interrupt main loop */
 				if (timeout != NULL &&
 				    c->type == SSH_CHANNEL_OPEN &&
-				    c->lastused != 0 &&
-				    c->inactive_deadline != 0) {
+				    channel_get_expiry(ssh, c, &deadline)) {
 					ptimeout_deadline_monotime(timeout,
 					    deadline);
 				}
