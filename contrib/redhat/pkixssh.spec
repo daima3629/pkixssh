@@ -4,7 +4,7 @@
 # This is free software; see Copyright file in the source
 # distribution for precise wording.
 #
-# Copyright (c) 2019-2022 Roumen Petrov
+# Copyright (c) 2019-2024 Roumen Petrov
 #
 
 # Do we want to enable building with ldap? (1=yes 0=no)
@@ -24,6 +24,9 @@
 
 # Do we want to use Linux auditing? (1=yes 0=no)
 %global enable_audit_module 1
+
+# Do we want to enable Kerberos 5 support? (1=yes 0=no)
+%global enable_kerberos5 1
 
 # TODO: do not produce debug package(temporary)
 %global debug_package %{nil}
@@ -102,6 +105,10 @@ BuildRequires:	groff-base
 BuildRequires:	audit-libs-devel
 Requires:	audit-libs
 %endif
+%if %{enable_kerberos5}
+BuildRequires:	krb5-devel
+Requires:	krb5
+%endif
 # Next is not part of preinstalled packages on some build configurations
 # (RHEL5?)
 BuildRequires:	which
@@ -153,6 +160,11 @@ two untrusted hosts over an insecure network.
 %endif
 %if %{enable_audit_module}
   --with-audit=linux \
+%endif
+%if %{enable_kerberos5}
+  --with-kerberos5 \
+%else
+  --without-kerberos5 \
 %endif
   --with-pie \
   --with-pam \
