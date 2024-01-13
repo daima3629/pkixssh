@@ -79,10 +79,10 @@ SSH_X509TESTS="\
 "
 # uncomment next line if your system provides PKCS#11 module
 # and utilities
-#SSH_X509TESTS="$SSH_X509TESTS test-pkcs11"
+#SSH_X509TESTS="$SSH_X509TESTS pkcs11"
 # uncomment next line if your system provides PKCS#11 engine,
 # module and utilities
-#SSH_X509TESTS="$SSH_X509TESTS test-pkcs11_eng"
+#SSH_X509TESTS="$SSH_X509TESTS pkcs11_eng"
 # uncomment next line if your system provides OpenLDAP server
 # (requires LDAP enabled build)
 #SSH_X509TESTS="$SSH_X509TESTS by_ldap"
