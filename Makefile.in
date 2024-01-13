@@ -225,11 +225,11 @@ DEPLIBS = $(LIBCOMPAT) libssh.a $(XDEPLIBS)
 
 
 ssh$(EXEEXT): $(DEPLIBS) $(SSHOBJS)
-	$(LD) -o $@ $(SSHOBJS) $(LDFLAGS) -lssh -lopenbsd-compat $(LIBLDAP) $(LIBOCSP) $(FIPS_LIBS) $(LIBS) $(GSSLIBS)
+	$(LD) -o $@ $(SSHOBJS) $(LDFLAGS) -lssh -lopenbsd-compat $(LIBLDAP) $(LIBOCSP) $(FIPS_LIBS) $(GSSLIBS) $(K5LIBS) $(LIBS)
 	@@FIPSHMAC@ $@
 
 sshd$(EXEEXT): $(DEPLIBS) $(SSHDOBJS)
-	$(LD) -o $@ $(SSHDOBJS) $(LDFLAGS) -lssh -lopenbsd-compat $(LIBLDAP) $(LIBOCSP) $(SSHDLIBS) $(FIPS_LIBS) $(LIBS) $(GSSLIBS) $(K5LIBS)
+	$(LD) -o $@ $(SSHDOBJS) $(LDFLAGS) -lssh -lopenbsd-compat $(LIBLDAP) $(LIBOCSP) $(FIPS_LIBS) $(GSSLIBS) $(K5LIBS) $(SSHDLIBS) $(LIBS)
 	@@FIPSHMAC@ $@
 
 scp$(EXEEXT): $(DEPLIBS) $(SCP_OBJS)
