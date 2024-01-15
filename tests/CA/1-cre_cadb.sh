@@ -1,5 +1,5 @@
 #! /bin/sh
-# Copyright (c) 2002-2023 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2002-2024 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -104,18 +104,14 @@ EOF
       printf ",OCSP;URI:http://$SSHD_LISTENADDRESS:$port"
     fi
   done
-  if expr "$SSH_CAKEY_TYPES" : .*dsa > /dev/null ; then
-    port=`expr $port + 1`
-    printf ",OCSP;URI:http://$SSHD_LISTENADDRESS:$port"
-  fi
-  if expr "$SSH_CAKEY_TYPES" : .*ed25519 > /dev/null ; then
-    port=`expr $port + 1`
-    printf ",OCSP;URI:http://$SSHD_LISTENADDRESS:$port"
-  fi
-  if expr "$SSH_CAKEY_TYPES" : .*ed448 > /dev/null ; then
-    port=`expr $port + 1`
-    printf ",OCSP;URI:http://$SSHD_LISTENADDRESS:$port"
-  fi
+  for type in $SSH_CAKEY_TYPES ; do
+    case $type in
+    dsa|ed25519|ed448)
+      port=`expr $port + 1`
+      printf ",OCSP;URI:http://$SSHD_LISTENADDRESS:$port"
+      ;;
+    esac
+  done
 )
   printf "\n"
 fi
@@ -375,18 +371,15 @@ echo_CA_section root ca_policy_match $DEFAULT_DIGEST root0 root0 >> "$1"
 for DIGEST in $RSA_DIGEST_LIST ; do
   echo_CA_section rsa_$DIGEST policy_match $DIGEST rsa rsa_$DIGEST >> "$1"
 done
-
-if expr "$SSH_CAKEY_TYPES" : .*dsa > /dev/null ; then
-  echo_CA_section dsa policy_match sha1 dsa dsa >> "$1"
-fi
-
-if expr "$SSH_CAKEY_TYPES" : .*ed25519 > /dev/null ; then
-  echo_CA_section ed25519 policy_match null ed25519 ed25519 >> "$1"
-fi
-
-if expr "$SSH_CAKEY_TYPES" : .*ed448 > /dev/null ; then
-  echo_CA_section ed448 policy_match null ed448 ed448 >> "$1"
-fi
+for type in $SSH_CAKEY_TYPES ; do
+  case $type in
+  dsa)
+    DIGEST=sha1;;
+  ed25519|ed448)
+    DIGEST=null;;
+  esac
+  echo_CA_section $type policy_match $DIGEST $type $type >> "$1"
+done
 }
 
 

@@ -1,5 +1,5 @@
 #! /bin/sh
-# Copyright (c) 2002-2023 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2002-2024 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -190,6 +190,17 @@ cre_root () {
 
 
 # ===
+check_cakey_type () {
+  for type in $SSH_CAKEY_TYPES ; do
+    if test "x$type" = "x$1" ; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+
+# ===
 gen_rsa () {
   gen_rsa_key "$TMPDIR/$CAKEY_PREFIX"-rsa.key \
   ; show_status $? "generating ${extd}TEST CA${norm} ${attn}rsa${norm} private key"
@@ -249,6 +260,7 @@ gen_dsa_key () {
 
 # ===
 gen_dsa () {
+  check_cakey_type dsa || return 0
   get_dsa_prm \
     "$TMPDIR/$CAKEY_PREFIX-dsa.prm" \
   ; show_status $? "generating ${extd}DSA parameter file${norm}"
@@ -262,14 +274,15 @@ gen_dsa () {
 
 # ===
 gen_ed25519 () {
-  expr "$SSH_CAKEY_TYPES" : .*ed25519 > /dev/null || return 0
+  check_cakey_type ed25519 || return 0
   gen_pkey "$TMPDIR/$CAKEY_PREFIX"-ed25519.key ED25519 \
   ; show_status $? "generating ${extd}TEST CA${norm} ${attn}ed25519${norm} private key"
 }
 
 
+# ===
 gen_ed448() {
-  expr "$SSH_CAKEY_TYPES" : .*ed448 > /dev/null || return 0
+  check_cakey_type ed448 || return 0
   gen_pkey "$TMPDIR/$CAKEY_PREFIX"-ed448.key ED448 \
   ; show_status $? "generating ${extd}TEST CA${norm} ${attn}ed448${norm} private key"
 }
@@ -284,11 +297,11 @@ for type in $SSH_SIGN_TYPES; do
   rm -f "$TMP_CRT_FILE" 2>/dev/null
 
   case $type in
-      *rsa*) keyfile="$TMPDIR/$CAKEY_PREFIX"-rsa.key;;
-      *dsa*) keyfile="$TMPDIR/$CAKEY_PREFIX"-dsa.key;;
-      *ed25519*) keyfile="$TMPDIR/$CAKEY_PREFIX"-ed25519.key;;
-      *ed448*) keyfile="$TMPDIR/$CAKEY_PREFIX"-ed448.key;;
-      *) return 99;;
+  rsa*)
+    keyfile="$TMPDIR/$CAKEY_PREFIX"-rsa.key;;
+  dsa|ed25519|ed448)
+    keyfile="$TMPDIR/$CAKEY_PREFIX"-$type.key;;
+  *) return 99;;
   esac
 
   echo_SSH_CA_DN "$type" |
@@ -356,9 +369,11 @@ cre_dirs () {
 
 install () {
 (
-  update_file "$TMPDIR/${CAKEY_PREFIX}-dsa.prm" "$SSH_CAROOT/${CAKEY_PREFIX}-dsa.prm" || exit $?
-
   for type in $SSH_CAKEY_TYPES; do
+    case $type in
+    dsa)
+      update_file "$TMPDIR/$CAKEY_PREFIX-$type.prm" "$SSH_CAROOT/$CAKEY_PREFIX-$type.prm" || exit $?
+    esac
     F="$CAKEY_PREFIX-$type.key"
     update_file "$TMPDIR/$F" "$SSH_CAROOT/keys/$F" || exit $?
   done

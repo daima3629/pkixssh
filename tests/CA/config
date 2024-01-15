@@ -1,4 +1,4 @@
-# Copyright (c) 2002-2023 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2002-2024 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -236,15 +236,13 @@ SSH_SIGN_TYPES=
 for DIGEST in $RSA_DIGEST_LIST ; do
   SSH_SIGN_TYPES="$SSH_SIGN_TYPES rsa_${DIGEST}"
 done
-if expr "$SSH_CAKEY_TYPES" : .*dsa > /dev/null ; then
-  SSH_SIGN_TYPES="$SSH_SIGN_TYPES dsa"
-fi
-if expr "$SSH_CAKEY_TYPES" : .*ed25519 > /dev/null ; then
-  SSH_SIGN_TYPES="$SSH_SIGN_TYPES ed25519"
-fi
-if expr "$SSH_CAKEY_TYPES" : .*ed448 > /dev/null ; then
-  SSH_SIGN_TYPES="$SSH_SIGN_TYPES ed448"
-fi
+for type in $SSH_CAKEY_TYPES ; do
+  case $type in
+  dsa|ed25519|ed448)
+    SSH_SIGN_TYPES="$SSH_SIGN_TYPES $type"
+    ;;
+  esac
+done
 
 SSH_CACERTDAYS=60
 SSH_CACRLDAYS=60
