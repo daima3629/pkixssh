@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2012-2022 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2012-2024 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -73,7 +73,7 @@ fi
 if test -n "$SSH_ALGS_X509_DSA" ; then
 (
   echo "# x509v3-*-dss (legacy or RFC6187)"
-  echo "HostKey \"$CWD/testhostkey_dsa-dsa\""
+  echo "HostKey \"$CWD/testhostkey_dsa-$RSA_DGST\""
 ) >> "$SSHD_CFG"
 fi
 if test -n "$SSH_ALGS_X509_EC" ; then
@@ -83,8 +83,8 @@ if test -n "$SSH_ALGS_X509_EC" ; then
     case $alg in
     x509v3-ecdsa-sha2-*)
       curve=`echo $alg | sed 's/^.*ecdsa-sha2-//'`
-      hostkey=ecc$curve-$RSA_DGST
-      echo "HostKey \"$CWD/testhostkey_$hostkey\""
+      hostkey=ecc$curve
+      echo "HostKey \"$CWD/testhostkey_$hostkey-$RSA_DGST\""
       ;;
     esac
   done
@@ -127,6 +127,7 @@ fi
         echo "${warn}unsupported public key algorithm : $alg${norm}" >&2
         exit 1;;
       esac
+      hostkey=$hostkey-$RSA_DGST
 
       TEST_CLIENT_CFG="\
 HostKeyAlgorithms $alg
@@ -141,12 +142,6 @@ HostKeyAlgorithms $alg
 [$SSHD_LISTENADDRESS]:$SSHD_PORT `cat "$CWD"/testhostkey_$hostkey.pub`
 EOF
       runTest "$typemsg" "$identity_file" "$infomsg" $mustfail "$errmsg" || exit $?
-
-      case $alg in
-      x509v3-*-dss|\
-      ssh-dss) hostkey=$hostkey-dsa;;
-      *)       hostkey=$hostkey-$RSA_DGST;;
-      esac
 
       infomsg=".../testhostkey_$hostkey.pub ${extd}X.509${norm}"
       cat > $USERKNOWNHOSTSFILE <<EOF
