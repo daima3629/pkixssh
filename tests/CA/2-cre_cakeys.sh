@@ -32,6 +32,14 @@ CA_LOG="$CWD/ca-2.log"
 create_empty_file .delmy &&
 update_file .delmy "$CA_LOG" > /dev/null || exit $?
 
+if $openssl_use_pkey ; then
+  cipher=aes-128-cbc
+else
+  cipher=des3
+fi
+pkcs5v1=PBE-SHA1-3DES
+pkcs5v2=aes256
+
 
 # ===
 top_srcdir=`cd $SCRIPTDIR/../..; pwd`
@@ -120,12 +128,12 @@ gen_pkey () {
     rm -f "$1"-trad 2>/dev/null
     $OPENSSL genpkey -algorithm $2 \
       -out "$1"-trad &&
-    $OPENSSL pkcs8 -topk8 -v2 aes256 -in "$1"-trad \
+    $OPENSSL pkcs8 -topk8 -v2 $pkcs5v2 -in "$1"-trad \
       -out "$1" -passout pass:$KEY_PASS &&
     rm "$1"-trad
   else
     $OPENSSL genpkey -algorithm $2 \
-      -out "$1" -pass pass:$KEY_PASS -aes-128-cbc
+      -out "$1" -pass pass:$KEY_PASS -$cipher
   fi
 ) 2>> "$CA_LOG"
 }
@@ -141,7 +149,7 @@ gen_rsa_key () {
 
   if $openssl_use_pkey ; then
     $OPENSSL genpkey -algorithm RSA \
-	  -out "$1" -pass pass:$KEY_PASS -aes-128-cbc \
+	  -out "$1" -pass pass:$KEY_PASS -$cipher \
 	  -pkeyopt rsa_keygen_bits:1024
     return $?
   fi
@@ -153,10 +161,10 @@ gen_rsa_key () {
     $OPENSSL pkcs8 -topk8 \
       -in "$1"-trad \
       -out "$1" -passout pass:$KEY_PASS \
-      -v1 PBE-SHA1-3DES &&
+      -v1 $pkcs5v1 &&
     rm "$1"-trad
   else
-    $OPENSSL genrsa -des3 \
+    $OPENSSL genrsa -$cipher \
       -passout pass:$KEY_PASS \
       -out "$1" 1024
   fi
@@ -236,7 +244,7 @@ gen_dsa_key () {
 
   if $openssl_use_pkey ; then
     $OPENSSL genpkey -paramfile "$2" \
-	  -out "$1" -pass pass:$KEY_PASS -aes-128-cbc
+	  -out "$1" -pass pass:$KEY_PASS -$cipher
     return $?
   fi
 
@@ -247,10 +255,10 @@ gen_dsa_key () {
     $OPENSSL pkcs8 -topk8 \
       -in "$1"-trad \
       -out "$1" -passout pass:$KEY_PASS \
-      -v1 PBE-SHA1-3DES &&
+      -v1 $pkcs5v1 &&
     rm "$1"-trad
   else
-    $OPENSSL gendsa -des3 \
+    $OPENSSL gendsa -$cipher \
       -passout pass:$KEY_PASS \
       -out "$1" "$2"
   fi
