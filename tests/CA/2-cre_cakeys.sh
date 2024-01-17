@@ -173,49 +173,6 @@ gen_rsa_key () {
 
 
 # ===
-cre_root () {
-  gen_rsa_key "$TMPDIR/$CAKEY_PREFIX"-root0.key \
-  ; show_status $? "generating ${extd}TEST ROOT CA${norm} ${attn}rsa${norm} private key" \
-  || return $?
-
-  echo_SSH_CAROOT_DN "0" | \
-  $OPENSSL req -config "$SSH_CACFGFILE" \
-    -new -x509 \
-    -days $SSH_CACERTDAYS \
-    -key "$TMPDIR/$CAKEY_PREFIX-root0.key" -passin pass:$KEY_PASS \
-    -out "$TMPDIR/$CAKEY_PREFIX-root0.crt" \
-    -extensions ca_root_cert \
-    2>> "$CA_LOG" \
-  ; show_status $? "generating ${extd}TEST CA${norm} ${attn}root${norm} certificate" \
-  || return $?
-
-  F="$CAKEY_PREFIX"-root0.key
-  update_file "$TMPDIR/$F" "$SSH_CAROOT/keys/$F"
-
-  F="$CAKEY_PREFIX"-root0.crt
-  move_as_trusted_x509 "$TMPDIR/$F" "$SSH_CAROOT/crt/$F.pem"
-}
-
-
-# ===
-check_cakey_type () {
-  for type in $SSH_CAKEY_TYPES ; do
-    if test "x$type" = "x$1" ; then
-      return 0
-    fi
-  done
-  return 1
-}
-
-
-# ===
-gen_rsa () {
-  gen_rsa_key "$TMPDIR/$CAKEY_PREFIX"-rsa.key \
-  ; show_status $? "generating ${extd}TEST CA${norm} ${attn}rsa${norm} private key"
-}
-
-
-# ===
 #args:
 #  $1 - dsa parameter file
 get_dsa_prm () {
@@ -267,6 +224,45 @@ gen_dsa_key () {
 
 
 # ===
+cre_root () {
+  gen_rsa_key "$TMPDIR/$CAKEY_PREFIX"-root0.key \
+  ; show_status $? "generating ${extd}TEST ROOT CA${norm} ${attn}rsa${norm} private key" \
+  || return $?
+
+  echo_SSH_CAROOT_DN "0" | \
+  $OPENSSL req -config "$SSH_CACFGFILE" \
+    -new -x509 \
+    -days $SSH_CACERTDAYS \
+    -key "$TMPDIR/$CAKEY_PREFIX-root0.key" -passin pass:$KEY_PASS \
+    -out "$TMPDIR/$CAKEY_PREFIX-root0.crt" \
+    -extensions ca_root_cert \
+    2>> "$CA_LOG" \
+  ; show_status $? "generating ${extd}TEST CA${norm} ${attn}root${norm} certificate" \
+  || return $?
+
+  F="$CAKEY_PREFIX"-root0.key
+  update_file "$TMPDIR/$F" "$SSH_CAROOT/keys/$F"
+
+  F="$CAKEY_PREFIX"-root0.crt
+  move_as_trusted_x509 "$TMPDIR/$F" "$SSH_CAROOT/crt/$F.pem"
+}
+
+
+# ===
+check_cakey_type () {
+  for type in $SSH_CAKEY_TYPES ; do
+    if test "x$type" = "x$1" ; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+gen_rsa () {
+  gen_rsa_key "$TMPDIR/$CAKEY_PREFIX"-rsa.key \
+  ; show_status $? "generating ${extd}TEST CA${norm} ${attn}rsa${norm} private key"
+}
+
 gen_dsa () {
   check_cakey_type dsa || return 0
   get_dsa_prm \
@@ -279,16 +275,12 @@ gen_dsa () {
   ; show_status $? "generating ${extd}TEST CA${norm} ${attn}dsa${norm} private key"
 }
 
-
-# ===
 gen_ed25519 () {
   check_cakey_type ed25519 || return 0
   gen_pkey "$TMPDIR/$CAKEY_PREFIX"-ed25519.key ED25519 \
   ; show_status $? "generating ${extd}TEST CA${norm} ${attn}ed25519${norm} private key"
 }
 
-
-# ===
 gen_ed448() {
   check_cakey_type ed448 || return 0
   gen_pkey "$TMPDIR/$CAKEY_PREFIX"-ed448.key ED448 \
