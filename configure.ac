@@ -5603,7 +5603,7 @@ otherwise scp will not work.])
 	)
 # make sure $bindir is in USER_PATH so scp will work
 		t_bindir="${bindir}"
-		while echo "${t_bindir}" | egrep '\$\{|NONE/' >/dev/null 2>&1; do
+		while echo "${t_bindir}" | $EGREP '\$\{|NONE/' >/dev/null 2>&1; do
 			t_bindir=`eval echo ${t_bindir}`
 			case $t_bindir in
 				NONE/*) t_bindir=`echo $t_bindir | sed "s~NONE~$prefix~"` ;;
