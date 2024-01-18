@@ -32,6 +32,9 @@ CA_LOG="$CWD/ca-2.log"
 create_empty_file .delmy &&
 update_file .delmy "$CA_LOG" > /dev/null || exit $?
 
+rsa_bits=2048
+dsa_bits=1024   # match secsh algorithm specification
+
 if $openssl_use_pkey ; then
   cipher=aes-128-cbc
 else
@@ -149,15 +152,15 @@ gen_rsa_key () {
 
   if $openssl_use_pkey ; then
     $OPENSSL genpkey -algorithm RSA \
-	  -out "$1" -pass pass:$KEY_PASS -$cipher \
-	  -pkeyopt rsa_keygen_bits:1024
+      -out "$1" -pass pass:$KEY_PASS -$cipher \
+      -pkeyopt rsa_keygen_bits:$rsa_bits
     return $?
   fi
 
   if $openssl_nopkcs8_keys ; then
     rm -f "$1"-trad 2>/dev/null
     $OPENSSL genrsa \
-      -out "$1"-trad 1024 &&
+      -out "$1"-trad $rsa_bits &&
     $OPENSSL pkcs8 -topk8 \
       -in "$1"-trad \
       -out "$1" -passout pass:$KEY_PASS \
@@ -166,7 +169,7 @@ gen_rsa_key () {
   else
     $OPENSSL genrsa -$cipher \
       -passout pass:$KEY_PASS \
-      -out "$1" 1024
+      -out "$1" $rsa_bits
   fi
 ) 2>> "$CA_LOG"
 }
@@ -182,10 +185,10 @@ get_dsa_prm () {
 
   if $openssl_use_pkey ; then
     $OPENSSL genpkey -genparam -algorithm DSA \
-	  -out "$1" -pkeyopt dsa_paramgen_bits:1024
+      -out "$1" -pkeyopt dsa_paramgen_bits:$dsa_bits
   else
     $OPENSSL dsaparam $DSA_OPT \
-      -out "$1" 1024
+      -out "$1" $dsa_bits
   fi
 ) 2>> "$CA_LOG"
 }
@@ -201,7 +204,7 @@ gen_dsa_key () {
 
   if $openssl_use_pkey ; then
     $OPENSSL genpkey -paramfile "$2" \
-	  -out "$1" -pass pass:$KEY_PASS -$cipher
+      -out "$1" -pass pass:$KEY_PASS -$cipher
     return $?
   fi
 
