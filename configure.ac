@@ -1,6 +1,6 @@
 #
 # Copyright (c) 1999-2004 Damien Miller
-# Copyright (c) 2002-2023 Roumen Petrov
+# Copyright (c) 2002-2024 Roumen Petrov
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -50,6 +50,7 @@ AC_PROG_CPP
 AC_PROG_RANLIB
 AC_PROG_INSTALL
 AC_PROG_EGREP
+AC_PROG_FGREP
 AC_CHECK_TOOLS([AR], [ar])
 AC_PATH_PROG([CAT], [cat])
 AC_PATH_PROG([KILL], [kill])

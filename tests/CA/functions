@@ -1,4 +1,4 @@
-# Copyright (c) 2002-2021 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2002-2024 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -347,6 +347,12 @@ cre_crl_hash_link () {
     echo "creating link ${attn}$hash_link${norm} to ${attn}$1${norm} ..."
   fi
   cre_link "$1" "$hash_link"
+}
+
+
+# ===
+fgrep() {
+  $FGREP ${1+"$@"}
 }
 
 

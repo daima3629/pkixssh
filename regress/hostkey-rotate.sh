@@ -9,13 +9,13 @@ tid="hostkey rotate"
 # versions, use awk instead.
 # See # https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=258616
 #
-case `grep --version 2>&1 | awk '/GNU grep/{print $4}'` in
-2.19)			fgrep=good ;;
-1.*|2.?|2.?.?|2.1?)	fgrep=bad ;;	# stock GNU grep
-2.5.1*)			fgrep=bad ;;	# FreeBSD and NetBSD
-*)			fgrep=good ;;
+case `$FGREP --version 2>&1 | awk '/GNU grep/{print $4}'` in
+2.19)			fgrep_ver=good ;;
+1.*|2.?|2.?.?|2.1?)	fgrep_ver=bad ;;	# stock GNU grep
+2.5.1*)			fgrep_ver=bad ;;	# FreeBSD and NetBSD
+*)			fgrep_ver=good ;;
 esac
-if test "x$fgrep" = "xbad"; then
+if test "x$fgrep_ver" = "xbad"; then
 	fgrep()
 {
 	awk 'BEGIN{e=1} {if (index($0,"'$1'")>0){e=0;print}} END{exit e}' $2
