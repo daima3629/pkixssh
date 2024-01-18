@@ -34,6 +34,7 @@ update_file .delmy "$CA_LOG" > /dev/null || exit $?
 
 rsa_bits=2048
 dsa_bits=1024   # match secsh algorithm specification
+ec_curve=prime256v1
 
 if $openssl_use_pkey ; then
   cipher=aes-128-cbc
@@ -227,6 +228,63 @@ gen_dsa_key () {
 
 
 # ===
+#args:
+#  $1 - ec parameter file
+get_ec_prm () {
+( umask 077
+
+  rm -f "$1" 2>/dev/null
+
+  if $openssl_use_pkey ; then
+    $OPENSSL genpkey -genparam -algorithm EC \
+      -out "$1" -pkeyopt ec_paramgen_curve:$ec_curve
+  else
+    $OPENSSL ecparam \
+      -out "$1" -name $ec_curve
+  fi
+) 2>> "$CA_LOG"
+}
+
+# ===
+#args:
+#  $1 - ec keyfile
+#  $2 - ec parameter file
+gen_ec_key () {
+( umask 077
+
+  rm -f "$1" 2>/dev/null
+
+  if $openssl_use_pkey ; then
+    $OPENSSL genpkey -paramfile "$2" \
+      -out "$1" -pass pass:$KEY_PASS -$cipher
+    return $?
+  fi
+
+  if $openssl_nopkcs8_keys ; then
+    rm -f "$1"-trad 2>/dev/null
+    $OPENSSL ecparam \
+      -genkey -in "$2" \
+      -out "$1"-trad &&
+    $OPENSSL pkcs8 -topk8 \
+      -in "$1"-trad \
+      -out "$1" -passout pass:$KEY_PASS \
+      -v1 $pkcs5v1 &&
+    rm "$1"-trad
+  else
+    $OPENSSL ecparam \
+      -genkey -in "$2" \
+      -out "$1"-tmp &&
+    $OPENSSL ec -$cipher \
+      -in "$1"-tmp \
+      -passout pass:$KEY_PASS \
+      -out "$1" &&
+    rm "$1"-tmp
+  fi
+) 2>> "$CA_LOG"
+}
+
+
+# ===
 cre_root () {
   gen_rsa_key "$TMPDIR/$CAKEY_PREFIX"-root0.key \
   ; show_status $? "generating ${extd}TEST ROOT CA${norm} ${attn}rsa${norm} private key" \
@@ -278,6 +336,18 @@ gen_dsa () {
   ; show_status $? "generating ${extd}TEST CA${norm} ${attn}dsa${norm} private key"
 }
 
+gen_ec256 () {
+  check_cakey_type ec256 || return 0
+  get_ec_prm \
+    "$TMPDIR/$CAKEY_PREFIX-ec256.prm" \
+  ; show_status $? "generating ${extd}EC (nistp256) parameter file${norm}"
+
+  gen_ec_key \
+    "$TMPDIR/$CAKEY_PREFIX"-ec256.key \
+    "$TMPDIR/$CAKEY_PREFIX"-ec256.prm \
+  ; show_status $? "generating ${extd}TEST CA${norm} ${attn}ec(nistp256)${norm} private key"
+}
+
 gen_ed25519 () {
   check_cakey_type ed25519 || return 0
   gen_pkey "$TMPDIR/$CAKEY_PREFIX"-ed25519.key ED25519 \
@@ -302,7 +372,7 @@ for type in $SSH_SIGN_TYPES; do
   case $type in
   rsa*)
     keyfile="$TMPDIR/$CAKEY_PREFIX"-rsa.key;;
-  dsa|ed25519|ed448)
+  dsa|ec256|ed25519|ed448)
     keyfile="$TMPDIR/$CAKEY_PREFIX"-$type.key;;
   *) return 99;;
   esac
@@ -374,7 +444,7 @@ install () {
 (
   for type in $SSH_CAKEY_TYPES; do
     case $type in
-    dsa)
+    dsa|ec256)
       update_file "$TMPDIR/$CAKEY_PREFIX-$type.prm" "$SSH_CAROOT/$CAKEY_PREFIX-$type.prm" || exit $?
     esac
     F="$CAKEY_PREFIX-$type.key"
@@ -433,6 +503,7 @@ cre_dirs &&
 cre_root &&
 gen_rsa &&
 gen_dsa &&
+gen_ec256 &&
 gen_ed25519 &&
 gen_ed448 &&
 cre_crt &&

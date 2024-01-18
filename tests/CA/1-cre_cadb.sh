@@ -106,7 +106,7 @@ EOF
   done
   for type in $SSH_CAKEY_TYPES ; do
     case $type in
-    dsa|ed25519|ed448)
+    dsa|ec256|ed25519|ed448)
       port=`expr $port + 1`
       printf ",OCSP;URI:http://$SSHD_LISTENADDRESS:$port"
       ;;
@@ -375,6 +375,8 @@ for type in $SSH_CAKEY_TYPES ; do
   case $type in
   dsa)
     DIGEST=sha1;;
+  ec256)
+    DIGEST=sha256;;
   ed25519|ed448)
     DIGEST=null;;
   esac
