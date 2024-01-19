@@ -15,6 +15,16 @@
 #include "authfile.h"
 #include "hostfile.h"
 
+#define SKIP_KEY	(KEY_UNSPEC+1)
+#ifndef WITH_OPENSSL
+# define KEY_DSA	SKIP_KEY
+# define KEY_RSA	SKIP_KEY
+# define KEY_ECDSA	SKIP_KEY
+#endif
+#ifndef OPENSSL_HAS_ECC
+# define KEY_ECDSA	SKIP_KEY
+#endif
+
 struct expected {
 	const char *key_file;		/* Path for key, NULL for none */
 	int no_parse_status;		/* Expected status w/o key parsing */
@@ -83,25 +93,14 @@ check(struct hostkey_foreach_line *l, void *_ctx)
 	expected_keytype = (parse_key || expected->no_parse_keytype < 0) ?
 	    expected->l.keytype : expected->no_parse_keytype;
 
-#ifndef OPENSSL_HAS_ECC
-	if (expected->l.keytype == KEY_ECDSA ||
-	    expected->no_parse_keytype == KEY_ECDSA)
+	if (expected->l.keytype == SKIP_KEY ||
+	    expected->no_parse_keytype == SKIP_KEY)
 		skip = 1;
-#endif /* OPENSSL_HAS_ECC */
 #ifndef OPENSSL_HAS_NISTP521
 	if (expected->l.keytype == KEY_ECDSA &&
 	    expected->l.linenum == 9)
 		skip = 1;
 #endif
-#ifndef WITH_OPENSSL
-	if (expected->l.keytype == KEY_DSA ||
-	    expected->no_parse_keytype == KEY_DSA ||
-	    expected->l.keytype == KEY_RSA ||
-	    expected->no_parse_keytype == KEY_RSA ||
-	    expected->l.keytype == KEY_ECDSA ||
-	    expected->no_parse_keytype == KEY_ECDSA)
-		skip = 1;
-#endif /* WITH_OPENSSL */
 	if (skip) {
 		expected_status = HKF_STATUS_INVALID;
 		expected_keytype = KEY_UNSPEC;
@@ -150,23 +149,13 @@ prepare_expected(struct expected *expected, size_t n)
 	for (i = 0; i < n; i++) {
 		if (expected[i].key_file == NULL)
 			continue;
-#ifndef OPENSSL_HAS_ECC
-		if (expected[i].l.keytype == KEY_ECDSA)
+		if (expected[i].l.keytype == SKIP_KEY)
 			continue;
-#endif /* OPENSSL_HAS_ECC */
 #ifndef OPENSSL_HAS_NISTP521
 		if (expected[i].l.keytype == KEY_ECDSA &&
 		    expected[i].l.linenum == 9)
 			continue;
 #endif
-#ifndef WITH_OPENSSL
-		switch (expected[i].l.keytype) {
-		case KEY_RSA:
-		case KEY_DSA:
-		case KEY_ECDSA:
-			continue;
-		}
-#endif /* WITH_OPENSSL */
 		ASSERT_INT_EQ(sshkey_load_public(
 		    test_data_file(expected[i].key_file), &expected[i].l.key,
 		    NULL), 0);
