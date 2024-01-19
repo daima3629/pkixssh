@@ -1,4 +1,4 @@
-#	$OpenBSD: Makefile,v 1.126 2023/09/06 23:36:09 djm Exp $
+#	$OpenBSD: Makefile,v 1.131 2023/12/18 14:50:08 djm Exp $
 
 tests: unit file-tests t-exec
 check-core: tests
@@ -214,15 +214,15 @@ t8: $(OBJ)/t8.out
 	${TEST_SSH_SSHKEYGEN} -Bf $(OBJ)/t8.out > /dev/null
 
 $(OBJ)/t9.out:
-	(! ${TEST_SSH_SSH} -Q key-plain | grep ecdsa >/dev/null) || \
-	${TEST_SSH_SSHKEYGEN} -q -t ecdsa -N '' -f $@
+	if ${TEST_SSH_SSH} -Q key-alg | grep ^ecdsa-sha2- >/dev/null ; then \
+	${TEST_SSH_SSHKEYGEN} -q -t ecdsa -N '' -f $@ ; \
+	fi
 
 t9: $(OBJ)/t9.out
-	(! ${TEST_SSH_SSH} -Q key-plain | grep ecdsa >/dev/null) || \
-	${TEST_SSH_SSHKEYGEN} -lf $(OBJ)/t9.out > /dev/null
-	(! ${TEST_SSH_SSH} -Q key-plain | grep ecdsa >/dev/null) || \
-	${TEST_SSH_SSHKEYGEN} -Bf $(OBJ)/t9.out > /dev/null
-
+	if ${TEST_SSH_SSH} -Q key-alg | grep ^ecdsa-sha2- >/dev/null ; then set -e; \
+	${TEST_SSH_SSHKEYGEN} -lf $(OBJ)/t9.out > /dev/null ; \
+	${TEST_SSH_SSHKEYGEN} -Bf $(OBJ)/t9.out > /dev/null ; \
+	else echo "*** skipped $@ ***" ; fi
 
 $(OBJ)/t10.out:
 	${TEST_SSH_SSHKEYGEN} -q -t ed25519 -N '' -f $@
@@ -232,10 +232,10 @@ t10: $(OBJ)/t10.out
 	${TEST_SSH_SSHKEYGEN} -Bf $(OBJ)/t10.out > /dev/null
 
 t11:
-	if egrep "^#define.*HAVE_EVP_SHA256" ${BUILDDIR}/config.h >/dev/null 2>&1 ; then \
+	if ${TEST_SSH_SSH} -Q key-alg | grep ^rsa-sha2- >/dev/null ; then \
 	${TEST_SSH_SSHKEYGEN} -E sha256 -lf ${.CURDIR}/rsa_openssh.pub |\
-		awk '{print $$2}' | diff - ${.CURDIR}/t11.ok \
-	; fi
+		awk '{print $$2}' | diff - ${.CURDIR}/t11.ok ; \
+	else echo "*** skipped $@ ***" ; fi
 
 $(OBJ)/t12.out:
 	${TEST_SSH_SSHKEYGEN} -q -t ed25519 -N '' -C 'test-comment-1234' -f $@
