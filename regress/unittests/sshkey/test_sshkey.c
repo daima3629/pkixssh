@@ -213,14 +213,17 @@ get_private(const char *n)
 void
 sshkey_tests(void)
 {
-	struct sshkey *k1, *k2, *k3, *kf;
+	struct sshkey *k1, *k2, *kf = NULL;
 #ifdef WITH_OPENSSL
-	struct sshkey *k4, *kr, *kd;
-#ifdef OPENSSL_HAS_ECC
-	struct sshkey *ke;
-#endif /* OPENSSL_HAS_ECC */
+	struct sshkey *kr = NULL, *kd = NULL, *ke= NULL;
 #endif /* WITH_OPENSSL */
 	struct sshbuf *b;
+
+#ifdef WITH_OPENSSL
+# ifndef OPENSSL_HAS_ECC
+	UNUSED(ke);
+# endif
+#endif /* WITH_OPENSSL */
 
 	TEST_START("new invalid");
 	k1 = sshkey_new(-42);
@@ -468,12 +471,11 @@ sshkey_tests(void)
 
 #ifdef WITH_OPENSSL
 	TEST_START("equal mismatched key types");
+	/* NOTE: function returns false on NULL argument */
 	ASSERT_INT_EQ(sshkey_equal(kd, kr), 0);
-#ifdef OPENSSL_HAS_ECC
 	ASSERT_INT_EQ(sshkey_equal(kd, ke), 0);
 	ASSERT_INT_EQ(sshkey_equal(kr, ke), 0);
 	ASSERT_INT_EQ(sshkey_equal(ke, kf), 0);
-#endif /* OPENSSL_HAS_ECC */
 	ASSERT_INT_EQ(sshkey_equal(kd, kf), 0);
 	TEST_DONE();
 #endif /* WITH_OPENSSL */
@@ -500,9 +502,7 @@ sshkey_tests(void)
 #ifdef WITH_OPENSSL
 	sshkey_free(kr);
 	sshkey_free(kd);
-#ifdef OPENSSL_HAS_ECC
 	sshkey_free(ke);
-#endif /* OPENSSL_HAS_ECC */
 #endif /* WITH_OPENSSL */
 	sshkey_free(kf);
 
@@ -544,11 +544,13 @@ sshkey_tests(void)
 	b = sshbuf_new();
 	ASSERT_PTR_NE(b, NULL);
 	ASSERT_INT_EQ(sshkey_putb(k1, b), 0);
+{	struct sshkey *k3;
 	ASSERT_INT_EQ(sshkey_from_blob(sshbuf_ptr(b), sshbuf_len(b), &k3), 0);
+	sshkey_free(k3);
+}
 
 	sshkey_free(k1);
 	sshkey_free(k2);
-	sshkey_free(k3);
 	sshbuf_reset(b);
 	TEST_DONE();
 
@@ -620,14 +622,19 @@ sshkey_tests(void)
 	ASSERT_INT_EQ(sshkey_load_cert(test_data_file("rsa_1"), &k1), 0);
 	ASSERT_INT_EQ(sshkey_load_public(test_data_file("rsa_1.pub"), &k2,
 	    NULL), 0);
-	k3 = get_private("rsa_1");
+{	struct sshkey *k3 = get_private("rsa_1");
 	build_cert(b, k2, "ssh-rsa-cert-v01@openssh.com", k3, k1, NULL);
+	sshkey_free(k3);
+}
+{	struct sshkey *k4;
 	ASSERT_INT_EQ(sshkey_from_blob(sshbuf_ptr(b), sshbuf_len(b), &k4),
 	    SSH_ERR_KEY_CERT_INVALID_SIGN_KEY);
 	ASSERT_PTR_EQ(k4, NULL);
+	sshkey_free(k4);
+}
+
 	sshkey_free(k1);
 	sshkey_free(k2);
-	sshkey_free(k3);
 	sshbuf_free(b);
 	TEST_DONE();
 #endif /* WITH_OPENSSL */
