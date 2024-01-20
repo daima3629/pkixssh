@@ -217,7 +217,7 @@ sshkey_tests(void)
 #ifdef WITH_OPENSSL
 	struct sshkey *kr = NULL, *kd = NULL, *ke= NULL;
 #endif /* WITH_OPENSSL */
-	struct sshbuf *b;
+	struct sshbuf *b = NULL;
 
 #ifdef WITH_OPENSSL
 # ifndef OPENSSL_HAS_ECC
@@ -635,7 +635,8 @@ sshkey_tests(void)
 
 	sshkey_free(k1);
 	sshkey_free(k2);
-	sshbuf_free(b);
 	TEST_DONE();
 #endif /* WITH_OPENSSL */
+
+	sshbuf_free(b);
 }
