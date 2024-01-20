@@ -563,7 +563,7 @@ AC_LINK_IFELSE(
 	[[caph_cache_tzdata();]])],
     [ AC_MSG_RESULT([yes])
       AC_DEFINE([HAVE_CAPH_CACHE_TZDATA], [1],
-	[Define to 1 if you have the `caph_cache_tzdata' function.])
+	[Define to 1 if you have the 'caph_cache_tzdata' function.])
     ],
     [ AC_MSG_RESULT([no]) ]
 )
@@ -4307,7 +4307,7 @@ m4_define(statfs_includes,[[
 AC_CHECK_MEMBER([struct statfs.f_files], [], [], [statfs_includes])
 if test "x$ac_cv_member_struct_statfs_f_files" = "xyes" ; then
   AC_DEFINE([USE_STRUCT_STATFS], [1],
-    [Define to 1 if you have the `statfs' structure])
+    [Define to 1 if you have the 'statfs' structure])
 fi
 AC_CHECK_MEMBERS([struct statfs.f_flags], [], [], [statfs_includes])
 
