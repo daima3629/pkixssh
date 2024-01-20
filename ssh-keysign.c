@@ -276,6 +276,9 @@ main(int argc, char **argv)
 }
 	pssh_x509store_build_certchain = ssh_x509store_build_certchain;
 
+	for (i = 0; i < NUM_KEYTYPES; i++)
+		key_fd[i] = -1;
+
 	i = 0;
 	/* XXX This really needs to read sshd_config for the paths */
 	key_fd[i++] = open(_PATH_HOST_ED25519_KEY_FILE, O_RDONLY);
@@ -286,8 +289,6 @@ main(int argc, char **argv)
 	key_fd[i++] = open(_PATH_HOST_DSA_KEY_FILE, O_RDONLY);
 #ifdef WITH_XMSS
 	key_fd[i++] = open(_PATH_HOST_XMSS_KEY_FILE, O_RDONLY);
-#else
-	key_fd[i++] = -1;
 #endif
 
 	if ((pw = getpwuid(getuid())) == NULL)
