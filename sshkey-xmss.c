@@ -1,7 +1,7 @@
 /* $OpenBSD: sshkey-xmss.c,v 1.12 2022/10/28 00:39:29 djm Exp $ */
 /*
  * Copyright (c) 2017 Markus Friedl.  All rights reserved.
- * Copyright (c) 2022 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2022-2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -1109,4 +1109,8 @@ sshkey_xmss_enable_maxsign(struct sshkey *k, u_int32_t maxsign)
 	state->maxidx = state->idx + maxsign;
 	return 0;
 }
+#else
+
+typedef int sshkey_xmss_empty_translation_unit;
+
 #endif /* WITH_XMSS */

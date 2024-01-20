@@ -1,7 +1,7 @@
 /* $OpenBSD: sshkey.h,v 1.62 2023/06/21 05:10:26 djm Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2002-2022 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -48,8 +48,10 @@ enum sshkey_types {
 	KEY_DSA_CERT,
 	KEY_ECDSA_CERT,
 	KEY_ED25519_CERT,
+#ifdef WITH_XMSS
 	KEY_XMSS,
 	KEY_XMSS_CERT,
+#endif
 	KEY_UNSPEC
 };
 

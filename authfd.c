@@ -1,4 +1,4 @@
-/* $OpenBSD: authfd.c,v 1.130 2022/04/27 11:08:55 dtucker Exp $ */
+/* $OpenBSD: authfd.c,v 1.133 2023/03/09 21:06:24 jcs Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -13,7 +13,7 @@
  *
  * SSH2 implementation,
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
- * Copyright (c) 2002-2019 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -491,8 +491,10 @@ ssh_add_identity_constrained(int sock, struct sshkey *key,
 #endif
 	case KEY_ED25519:
 	case KEY_ED25519_CERT:
+#ifdef WITH_XMSS
 	case KEY_XMSS:
 	case KEY_XMSS_CERT:
+#endif
 		type = constrained ?
 		    SSH2_AGENTC_ADD_ID_CONSTRAINED :
 		    SSH2_AGENTC_ADD_IDENTITY;

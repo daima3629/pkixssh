@@ -11,7 +11,7 @@
  * incompatible with the protocol description in the RFC file, it must be
  * called by a name other than "ssh" or "Secure Shell".
  *
- * Copyright (c) 2005-2023 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2005-2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -1470,7 +1470,10 @@ do_change_comment(const struct passwd *pw, const char *identity_comment)
 		}
 	}
 
-	if (private->type != KEY_ED25519 && private->type != KEY_XMSS &&
+	if (private->type != KEY_ED25519 &&
+#ifdef WITH_XMSS
+	    private->type != KEY_XMSS &&
+#endif
 	    private_key_format != SSHKEY_PRIVATE_OPENSSH) {
 		error("Comments are only supported for keys stored in "
 		    "the OpenSSH proprietary format.");

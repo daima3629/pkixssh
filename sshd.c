@@ -20,7 +20,7 @@
  *
  * Copyright (c) 2000, 2001, 2002 Markus Friedl.  All rights reserved.
  * Copyright (c) 2002 Niels Provos.  All rights reserved.
- * Copyright (c) 2002-2023 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -756,7 +756,9 @@ list_hostkey_types(void)
 		case KEY_DSA_CERT:
 		case KEY_ECDSA_CERT:
 		case KEY_ED25519_CERT:
+	#ifdef WITH_XMSS
 		case KEY_XMSS_CERT:
+	#endif
 			append_hostkey_type(b, sshkey_ssh_name(key));
 			break;
 		}
@@ -781,7 +783,9 @@ get_hostkey_by_type(int type, int subtype, int need_private, struct ssh *ssh)
 		case KEY_DSA_CERT:
 		case KEY_ECDSA_CERT:
 		case KEY_ED25519_CERT:
+	#ifdef WITH_XMSS
 		case KEY_XMSS_CERT:
+	#endif
 			key = sensitive_data.host_certificates[i];
 			break;
 		default:
@@ -2139,7 +2143,9 @@ main(int ac, char **av)
 		case KEY_DSA:
 		case KEY_ECDSA:
 		case KEY_ED25519:
+	#ifdef WITH_XMSS
 		case KEY_XMSS:
+	#endif
 			if (have_agent || key != NULL)
 				sensitive_data.have_ssh2_key = 1;
 			break;

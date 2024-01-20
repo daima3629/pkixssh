@@ -498,8 +498,10 @@ sshkey_type_plain(int type)
 		return KEY_ECDSA;
 	case KEY_ED25519_CERT:
 		return KEY_ED25519;
+#ifdef WITH_XMSS
 	case KEY_XMSS_CERT:
 		return KEY_XMSS;
+#endif /* WITH_XMSS */
 	default:
 		return type;
 	}
