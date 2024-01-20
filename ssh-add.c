@@ -56,6 +56,9 @@
 #include "log.h"
 #include "ssh-x509.h"
 #include "ssh-xkalg.h"
+#ifdef WITH_XMSS
+# include "sshkey-xmss.h"
+#endif
 #include "compat.h"
 #include "sshbuf.h"
 #include "authfd.h"
@@ -117,8 +120,21 @@ static int confirm = 0;
 static u_int maxsign = 0;
 static u_int minleft = 0;
 #else
+
 # define maxsign	0
 #endif
+
+static inline u_int32_t
+sshkey_signatures_left(const struct sshkey *k)
+{
+#ifdef WITH_XMSS
+	if (sshkey_type_plain(k->type) == KEY_XMSS)
+		return sshkey_xmss_signatures_left(k);
+#else
+	UNUSED(k);
+#endif
+	return 0;
+}
 
 /* we keep a cache of one passphrase */
 static char *pass = NULL;

@@ -53,6 +53,9 @@
 #include "xmalloc.h"
 #include "ssh.h"
 #include "sshxkey.h"
+#ifdef WITH_XMSS
+# include "sshkey-xmss.h"
+#endif
 #include "authfd.h"
 #include "cipher.h"
 #include "compat.h"
@@ -81,6 +84,45 @@ decode_reply(u_char type)
 	else
 		return SSH_ERR_INVALID_FORMAT;
 }
+
+#ifdef WITH_XMSS
+/*
+ * serialize the key with the current state and forward the state
+ * maxsign times.
+ */
+static int
+sshkey_private_serialize_maxsign(struct sshkey *k, struct sshbuf *b,
+    u_int32_t maxsign, int printerror)
+{
+	int r, rupdate;
+
+	if (maxsign == 0 ||
+	    sshkey_type_plain(k->type) != KEY_XMSS)
+		return sshkey_private_serialize_opt(k, b,
+		    SSHKEY_SERIALIZE_DEFAULT);
+	if ((r = sshkey_xmss_get_state(k, printerror)) != 0 ||
+	    (r = sshkey_private_serialize_opt(k, b,
+	    SSHKEY_SERIALIZE_STATE)) != 0 ||
+	    (r = sshkey_xmss_forward_state(k, maxsign)) != 0)
+		goto out;
+	r = 0;
+out:
+	if ((rupdate = sshkey_xmss_update_state(k, printerror)) != 0) {
+		if (r == 0)
+			r = rupdate;
+	}
+	return r;
+}
+#else /*ndef WITH_XMSS*/
+static inline int
+sshkey_private_serialize_maxsign(struct sshkey *k, struct sshbuf *b,
+    u_int32_t maxsign, int printerror)
+{
+	UNUSED(maxsign);
+	UNUSED(printerror);
+	return sshkey_private_serialize_opt(k, b, SSHKEY_SERIALIZE_DEFAULT);
+}
+#endif /*ndef WITH_XMSS*/
 
 /*
  * Opens an authentication socket at the provided path and stores the file

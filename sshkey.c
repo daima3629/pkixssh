@@ -3,7 +3,7 @@
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Alexander von Gernler.  All rights reserved.
  * Copyright (c) 2010,2011 Damien Miller.  All rights reserved.
- * Copyright (c) 2002-2022 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -65,11 +65,6 @@
 #include "compat.h"
 #include "match.h"
 #include "log.h"
-
-#ifdef WITH_XMSS
-#include "sshkey-xmss.h"
-#include "xmss_fast.h"
-#endif
 
 /* openssh private key file format */
 #define MARK_BEGIN		"-----BEGIN OPENSSH PRIVATE KEY-----\n"
@@ -3261,95 +3256,20 @@ sshkey_parse_pubkey_from_private_fileblob(struct sshbuf *blob,
 	return sshkey_parse_private2_pubkey(blob, pubkeyp);
 }
 
-#ifdef WITH_XMSS
-/*
- * serialize the key with the current state and forward the state
- * maxsign times.
- */
-int
-sshkey_private_serialize_maxsign(struct sshkey *k, struct sshbuf *b,
-    u_int32_t maxsign, int printerror)
-{
-	int r, rupdate;
-
-	if (maxsign == 0 ||
-	    sshkey_type_plain(k->type) != KEY_XMSS)
-		return sshkey_private_serialize_opt(k, b,
-		    SSHKEY_SERIALIZE_DEFAULT);
-	if ((r = sshkey_xmss_get_state(k, printerror)) != 0 ||
-	    (r = sshkey_private_serialize_opt(k, b,
-	    SSHKEY_SERIALIZE_STATE)) != 0 ||
-	    (r = sshkey_xmss_forward_state(k, maxsign)) != 0)
-		goto out;
-	r = 0;
-out:
-	if ((rupdate = sshkey_xmss_update_state(k, printerror)) != 0) {
-		if (r == 0)
-			r = rupdate;
-	}
-	return r;
-}
-
-u_int32_t
-sshkey_signatures_left(const struct sshkey *k)
-{
-	if (sshkey_type_plain(k->type) == KEY_XMSS)
-		return sshkey_xmss_signatures_left(k);
-	return 0;
-}
-
-int
-sshkey_enable_maxsign(struct sshkey *k, u_int32_t maxsign)
-{
-	if (sshkey_type_plain(k->type) != KEY_XMSS)
-		return SSH_ERR_INVALID_ARGUMENT;
-	return sshkey_xmss_enable_maxsign(k, maxsign);
-}
-
 int
 sshkey_set_filename(struct sshkey *k, const char *filename)
 {
 	if (k == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;
+#ifdef WITH_XMSS
 	if (sshkey_type_plain(k->type) != KEY_XMSS)
 		return 0;
 	if (filename == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;
 	if ((k->xmss_filename = strdup(filename)) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
-	return 0;
-}
 #else
-int
-sshkey_private_serialize_maxsign(struct sshkey *k, struct sshbuf *b,
-    u_int32_t maxsign, int printerror)
-{
-	UNUSED(maxsign);
-	UNUSED(printerror);
-	return sshkey_private_serialize_opt(k, b, SSHKEY_SERIALIZE_DEFAULT);
-}
-
-u_int32_t
-sshkey_signatures_left(const struct sshkey *k)
-{
-	UNUSED(k);
-	return 0;
-}
-
-int
-sshkey_enable_maxsign(struct sshkey *k, u_int32_t maxsign)
-{
-	UNUSED(k);
-	UNUSED(maxsign);
-	return SSH_ERR_INVALID_ARGUMENT;
-}
-
-int
-sshkey_set_filename(struct sshkey *k, const char *filename)
-{
 	UNUSED(filename);
-	if (k == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
+#endif
 	return 0;
 }
-#endif /* WITH_XMSS */

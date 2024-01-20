@@ -319,13 +319,8 @@ int	sshdsa_verify_length(int bits);
 
 int	sshkey_check_length(const struct sshkey *);
 
-/* stateful keys (e.g. XMSS) */
-int	 sshkey_set_filename(struct sshkey *, const char *);
-int	 sshkey_enable_maxsign(struct sshkey *, u_int32_t);
-u_int32_t sshkey_signatures_left(const struct sshkey *);
-int	 sshkey_forward_state(const struct sshkey *, u_int32_t, int);
-int	 sshkey_private_serialize_maxsign(struct sshkey *key,
-    struct sshbuf *buf, u_int32_t maxsign, int);
+/* For XMSS */
+int	sshkey_set_filename(struct sshkey *, const char *);
 
 int	 ssh_encode_signature(u_char **, size_t *, const u_char *,
     const u_char *, size_t);

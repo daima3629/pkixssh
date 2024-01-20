@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-agent.c,v 1.299 2023/07/10 04:51:26 djm Exp $ */
+/* $OpenBSD: ssh-agent.c,v 1.304 2023/12/18 15:58:56 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -12,7 +12,7 @@
  * called by a name other than "ssh" or "Secure Shell".
  *
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2002-2023 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -85,6 +85,9 @@
 #include "sshbuf.h"
 #include "ssh-x509.h"
 #include "ssh-xkalg.h"
+#ifdef WITH_XMSS
+# include "sshkey-xmss.h"
+#endif
 #include "authfd.h"
 #include "compat.h"
 #include "log.h"
@@ -185,6 +188,19 @@ set_lifetime(const char *val)
 }
 
 static int fingerprint_hash = SSH_FP_HASH_DEFAULT;
+
+static inline int
+sshkey_enable_maxsign(struct sshkey *k, u_int32_t maxsign)
+{
+#ifdef WITH_XMSS
+	if (sshkey_type_plain(k->type) == KEY_XMSS)
+		return sshkey_xmss_enable_maxsign(k, maxsign);
+#else
+	UNUSED(k);
+	UNUSED(maxsign);
+#endif
+	return SSH_ERR_INVALID_ARGUMENT;
+}
 
 static void
 close_socket(SocketEntry *e)
