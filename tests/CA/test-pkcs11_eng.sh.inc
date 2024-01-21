@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2023 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2023-2024 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -43,7 +43,7 @@ OPENSSL_CONF="$CWD/openssl_engine.cnf"
 # ===
 #env. vars:
 #  TEST_SSH_PKCS11 - pkcs#11 module
-#  $1 - userpin
+#  userpin
 pkcs11_module_write() {
   OPENSC_DEBUG=1 \
   $PKCS11_TOOL --module $TEST_SSH_PKCS11 --verbose \
@@ -54,7 +54,7 @@ pkcs11_module_write() {
 
 
 # ===
-#env. vars:
+#args:
 #  $1 - userpin
 #  $2 - key_file
 #  $3 - key_id
@@ -107,6 +107,16 @@ fi
 #  SSH_CLIENTKEY
 #  type
 testPUBKEYautorization () {
+  case "$SSH_CLIENTKEY" in
+  *rsa*)         key_id='0001';;
+  *eccnistp256*) key_id='0002';;
+  *eccnistp384*) key_id='0003';;
+  *eccnistp521*) key_id='0004';;
+  *)
+    echo "error: unknown key $SSH_CLIENTKEY" >&2
+    exit 33;;
+  esac
+
   base_identity_file="$SSH_CLIENTKEY"
   if test ! -r "$base_identity_file" ; then
     error_file_not_readable "$base_identity_file"; return $?
@@ -118,15 +128,9 @@ testPUBKEYautorization () {
 
   "$TEST_SSH_SSHKEYGEN" -f "$base_identity_file" -y 2>/dev/null > "$AUTHORIZEDKEYSFILE" || return $?
 
-  case "$SSH_CLIENTKEY" in
-  *rsa*)         key_id='0001';;
-  *eccnistp256*) key_id='0002';;
-  *eccnistp384*) key_id='0003';;
-  *eccnistp521*) key_id='0004';;
-  *)
-    echo "error: unknown key $SSH_CLIENTKEY" >&2
-    exit 33;;
-  esac
+  typemsg="$base_identity_file"
+  must_fail=
+
   SSH_EXTRA_OPTIONS="-G $SSH_ENGINE -o IdentityFile=engine:pkcs11:$key_id"
 
 if $load_cert ; then
@@ -142,7 +146,7 @@ if $load_cert ; then
 (
   SSH_EXTRA_OPTIONS="$SSH_EXTRA_OPTIONS -o PubkeyAlgorithms=$PubkeyAlgorithms"
 
-  runTest $base_identity_file "" "X.509"
+  runTest "$typemsg" "" "X.509" "$must_fail"
 ) || return $?
 fi
 
@@ -158,7 +162,7 @@ fi
 (
   SSH_EXTRA_OPTIONS="$SSH_EXTRA_OPTIONS -o PubkeyAlgorithms=$PubkeyAlgorithms"
 
-  runTest $base_identity_file "" "plain"
+  runTest "$typemsg" "" "plain" "$must_fail"
 )
 }
 
