@@ -1,4 +1,4 @@
-#	$OpenBSD: Makefile,v 1.131 2023/12/18 14:50:08 djm Exp $
+#	$OpenBSD: Makefile,v 1.133 2024/01/11 04:50:28 djm Exp $
 
 tests: unit file-tests t-exec
 check-core: tests
@@ -194,10 +194,12 @@ t5:
 		awk '{print $$2}' | diff - ${.CURDIR}/t5.ok
 
 t6:
-	${TEST_SSH_SSHKEYGEN} -if ${.CURDIR}/dsa_ssh2.prv > $(OBJ)/t6.out1
-	${TEST_SSH_SSHKEYGEN} -if ${.CURDIR}/dsa_ssh2.pub > $(OBJ)/t6.out2
-	chmod 600 $(OBJ)/t6.out1
-	${TEST_SSH_SSHKEYGEN} -yf $(OBJ)/t6.out1 | diff - $(OBJ)/t6.out2
+	if ${TEST_SSH_SSH} -Q key-alg | grep ^ssh-dss >/dev/null ; then set -e; \
+	${TEST_SSH_SSHKEYGEN} -if ${.CURDIR}/dsa_ssh2.prv > $(OBJ)/t6.out1 ; \
+	${TEST_SSH_SSHKEYGEN} -if ${.CURDIR}/dsa_ssh2.pub > $(OBJ)/t6.out2 ; \
+	chmod 600 $(OBJ)/t6.out1 ; \
+	${TEST_SSH_SSHKEYGEN} -yf $(OBJ)/t6.out1 | diff - $(OBJ)/t6.out2 ; \
+	else echo "*** skipped $@ ***" ; fi
 
 $(OBJ)/t7.out:
 	${TEST_SSH_SSHKEYGEN} -q -t rsa -N '' -f $@
@@ -207,11 +209,15 @@ t7: $(OBJ)/t7.out
 	${TEST_SSH_SSHKEYGEN} -Bf $(OBJ)/t7.out > /dev/null
 
 $(OBJ)/t8.out:
-	${TEST_SSH_SSHKEYGEN} -q -t dsa -N '' -f $@
+	if ${TEST_SSH_SSH} -Q key-alg | grep ^ssh-dss >/dev/null ; then \
+	${TEST_SSH_SSHKEYGEN} -q -t dsa -N '' -f $@ ; \
+	fi
 
 t8: $(OBJ)/t8.out
-	${TEST_SSH_SSHKEYGEN} -lf $(OBJ)/t8.out > /dev/null
-	${TEST_SSH_SSHKEYGEN} -Bf $(OBJ)/t8.out > /dev/null
+	if ${TEST_SSH_SSH} -Q key-alg | grep ^ssh-dss >/dev/null ; then set -e; \
+	${TEST_SSH_SSHKEYGEN} -lf $(OBJ)/t8.out > /dev/null ; \
+	${TEST_SSH_SSHKEYGEN} -Bf $(OBJ)/t8.out > /dev/null ; \
+	else echo "*** skipped $@ ***" ; fi
 
 $(OBJ)/t9.out:
 	if ${TEST_SSH_SSH} -Q key-alg | grep ^ecdsa-sha2- >/dev/null ; then \

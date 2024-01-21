@@ -1,4 +1,4 @@
-/* $OpenBSD: readconf.c,v 1.383 2023/10/12 02:18:18 djm Exp $ */
+/* $OpenBSD: readconf.c,v 1.384 2024/01/11 01:45:36 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -2871,7 +2871,9 @@ fill_default_options(Options * options)
 #endif
 		add_identity_file(options, "~/",
 		    _PATH_SSH_CLIENT_ID_ED25519, 0);
+#ifdef WITH_DSA
 		add_identity_file(options, "~/", _PATH_SSH_CLIENT_ID_DSA, 0);
+#endif
 #ifdef WITH_XMSS
 		add_identity_file(options, "~/", _PATH_SSH_CLIENT_ID_XMSS, 0);
 #endif

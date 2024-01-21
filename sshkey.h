@@ -41,13 +41,15 @@ struct sshbuf;
 /* Key types */
 enum sshkey_types {
 	KEY_RSA,
-	KEY_DSA,
 	KEY_ECDSA,
 	KEY_ED25519,
 	KEY_RSA_CERT,
-	KEY_DSA_CERT,
 	KEY_ECDSA_CERT,
 	KEY_ED25519_CERT,
+#ifdef WITH_DSA
+	KEY_DSA,
+	KEY_DSA_CERT,
+#endif
 #ifdef WITH_XMSS
 	KEY_XMSS,
 	KEY_XMSS_CERT,

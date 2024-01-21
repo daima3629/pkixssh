@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2020-2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -132,12 +132,14 @@ ssh_EVP_PKEY_print_fp(FILE *fp, const EVP_PKEY *pkey) {
 		EC_KEY_free(ec);
 		} break;
 #endif /* OPENSSL_HAS_ECC */
+#ifdef WITH_DSA
 	case EVP_PKEY_DSA: {
 		DSA *dsa = EVP_PKEY_get1_DSA(pkey);
 		DSA_print_fp(fp, dsa, 0);
 		DSA_free(dsa);
 		} break;
 	}
+#endif
 }
 #endif /*ndef HAVE_EVP_PKEY_PRINT_PARAMS*/
 }
@@ -291,6 +293,7 @@ sshkey_from_pkey_rsa(EVP_PKEY *pk, struct sshkey **keyp) {
 	return 0;
 }
 
+#ifdef WITH_DSA
 extern int
 ssh_EVP_PKEY_complete_pub_dsa(EVP_PKEY *pk);
 
@@ -314,6 +317,7 @@ sshkey_from_pkey_dsa(EVP_PKEY *pk, struct sshkey **keyp) {
 	*keyp = key;
 	return 0;
 }
+#endif /*def WITH_DSA*/
 
 #ifdef OPENSSL_HAS_ECC
 extern int
@@ -439,9 +443,11 @@ sshkey_from_pkey(EVP_PKEY *pk, struct sshkey **keyp) {
 	case EVP_PKEY_RSA:
 		r = sshkey_from_pkey_rsa(pk, keyp);
 		break;
+#ifdef WITH_DSA
 	case EVP_PKEY_DSA:
 		r = sshkey_from_pkey_dsa(pk, keyp);
 		break;
+#endif
 #ifdef OPENSSL_HAS_ECC
 	case EVP_PKEY_EC:
 		r = sshkey_from_pkey_ecdsa(pk, keyp);
@@ -483,7 +489,9 @@ sshkey_validate_public(const struct sshkey *key) {
 
 	switch (evp_id) {
 	case EVP_PKEY_RSA:	return sshkey_validate_public_rsa(key);
+#ifdef WITH_DSA
 	case EVP_PKEY_DSA:	return sshkey_validate_public_dsa(key);
+#endif
 #ifdef OPENSSL_HAS_ECC
 	case EVP_PKEY_EC:	return sshkey_validate_public_ecdsa(key);
 #endif
@@ -570,12 +578,14 @@ sshkey_private_to_bio(struct sshkey *key, BIO *bio,
 			EC_KEY_free(ec);
 			} break;
 #endif
+#ifdef WITH_DSA
 		case KEY_DSA: {
 			DSA *dsa = EVP_PKEY_get1_DSA(key->pk);
 			res = PEM_write_bio_DSAPrivateKey(bio, dsa,
 			    cipher, _passphrase, len, NULL, NULL);
 			DSA_free(dsa);
 			} break;
+#endif
 		default:
 			return SSH_ERR_INVALID_ARGUMENT;
 		}

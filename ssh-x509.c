@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2023 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -181,7 +181,10 @@ ssh_x509_support_plain_type(int k_type) {
 #ifdef OPENSSL_HAS_ED25519
 	    (k_type == KEY_ED25519) ||
 #endif
-	    (k_type == KEY_DSA)
+#ifdef WITH_DSA
+	    (k_type == KEY_DSA) ||
+#endif
+	    0
 	) ? 1 : 0;
 }
 

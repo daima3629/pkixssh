@@ -1,7 +1,7 @@
-/* $OpenBSD: ssh-keysign.c,v 1.70 2022/01/06 22:00:18 djm Exp $ */
+/* $OpenBSD: ssh-keysign.c,v 1.73 2024/01/11 01:51:16 djm Exp $ */
 /*
  * Copyright (c) 2002 Markus Friedl.  All rights reserved.
- * Copyright (c) 2011-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -286,7 +286,9 @@ main(int argc, char **argv)
 	key_fd[i++] = open(_PATH_HOST_ECDSA_KEY_FILE, O_RDONLY);
 #endif
 	key_fd[i++] = open(_PATH_HOST_RSA_KEY_FILE, O_RDONLY);
+#ifdef WITH_DSA
 	key_fd[i++] = open(_PATH_HOST_DSA_KEY_FILE, O_RDONLY);
+#endif
 #ifdef WITH_XMSS
 	key_fd[i++] = open(_PATH_HOST_XMSS_KEY_FILE, O_RDONLY);
 #endif

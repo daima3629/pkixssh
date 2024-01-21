@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005-2023 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2005-2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -104,6 +104,7 @@ logit("TRACE_XKALG add_default_xkalg:");
 	if (ssh_add_x509key_alg("x509v3-sign-rsa,rsa-md5") < 0)
 		fatal_f("oops");
 
+#ifdef WITH_DSA
 	/* DSA public key algorithm: */
 	/* - RFC6187 */
 	if (ssh_add_x509key_alg("x509v3-ssh-dss,dss-raw,ssh-dss") < 0)
@@ -118,6 +119,7 @@ logit("TRACE_XKALG add_default_xkalg:");
 	 */
 	if (ssh_add_x509key_alg("x509v3-sign-dss,dss-raw") < 0)
 		fatal_f("oops");
+#endif /*WITH_DSA*/
 
 #ifdef OPENSSL_HAS_ED25519
 	/* NOTE: OPENSSL_HAS_ED25519 implies HAVE_EVP_DIGESTSIGN */
@@ -262,6 +264,7 @@ ssh_add_x509key_alg(const char *data) {
 		p->basetype = KEY_RSA;
 		p->chain = 0;
 	} else
+#ifdef WITH_DSA
 	if (strncmp(name, "x509v3-ssh-dss", 14) == 0) {
 		p->basetype = KEY_DSA;
 		p->chain = 1;
@@ -270,6 +273,7 @@ ssh_add_x509key_alg(const char *data) {
 		p->basetype = KEY_DSA;
 		p->chain = 0;
 	} else
+#endif
 #ifdef OPENSSL_HAS_ED25519
 	if (strncmp(name, "x509v3-ssh-ed25519", 18) == 0) {
 		p->basetype = KEY_ED25519;
@@ -489,7 +493,9 @@ void
 ssh_xkalg_listall(struct sshbuf *b, const char *sep) {
 	ssh_xkalg_list(KEY_ECDSA, b, sep);
 	ssh_xkalg_list(KEY_RSA, b, sep);
+#ifdef WITH_DSA
 	ssh_xkalg_list(KEY_DSA, b, sep);
+#endif
 #ifdef OPENSSL_HAS_ED25519
 	ssh_xkalg_list(KEY_ED25519, b, sep);
 #endif

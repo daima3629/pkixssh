@@ -1,4 +1,4 @@
-/* $OpenBSD: sshkey.c,v 1.138 2023/08/21 04:36:46 djm Exp $ */
+/* $OpenBSD: sshkey.c,v 1.142 2024/01/11 01:45:36 djm Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Alexander von Gernler.  All rights reserved.
@@ -117,8 +117,10 @@ extern const struct sshkey_impl sshkey_rsa_sha256_cert_impl;
 extern const struct sshkey_impl sshkey_rsa_sha512_impl;
 extern const struct sshkey_impl sshkey_rsa_sha512_cert_impl;
 #endif /*def HAVE_EVP_SHA256*/
+# ifdef WITH_DSA
 extern const struct sshkey_impl sshkey_dss_impl;
 extern const struct sshkey_impl sshkey_dsa_cert_impl;
+# endif
 #endif /* WITH_OPENSSL */
 #ifdef WITH_XMSS
 extern const struct sshkey_impl sshkey_xmss_impl;
@@ -147,8 +149,10 @@ static const struct sshkey_impl * const keyimpls[] = {
 	&sshkey_rsa_sha512_impl,
 	&sshkey_rsa_sha512_cert_impl,
 #endif /*def HAVE_EVP_SHA256*/
+#ifdef WITH_DSA
 	&sshkey_dss_impl,
 	&sshkey_dsa_cert_impl,
+#endif
 #endif /* WITH_OPENSSL */
 #ifdef WITH_XMSS
 	&sshkey_xmss_impl,
@@ -200,8 +204,10 @@ sshkey_type(const struct sshkey *k)
 			return k->pk ? "RSA+cert" : "X509(rsa)";
 		case KEY_ECDSA:
 			return k->pk ? "ECDSA+cert" : "X509(ecdsa)";
+	#ifdef WITH_DSA
 		case KEY_DSA:
 			return k->pk ? "DSA+cert" : "X509(dsa)";
+	#endif
 		case KEY_ED25519:
 			return k->pk ? "ED25519+cert" : "X509(ed25519)";
 		default:
@@ -487,8 +493,10 @@ sshkey_type_plain(int type)
 	switch (type) {
 	case KEY_RSA_CERT:
 		return KEY_RSA;
+#ifdef WITH_DSA
 	case KEY_DSA_CERT:
 		return KEY_DSA;
+#endif
 	case KEY_ECDSA_CERT:
 		return KEY_ECDSA;
 	case KEY_ED25519_CERT:
@@ -510,8 +518,10 @@ sshkey_type_certified(int type)
 #ifdef WITH_OPENSSL
 	case KEY_RSA:
 		return KEY_RSA_CERT;
+#ifdef WITH_DSA
 	case KEY_DSA:
 		return KEY_DSA_CERT;
+#endif
 # ifdef OPENSSL_HAS_ECC
 	case KEY_ECDSA:
 		return KEY_ECDSA_CERT;
@@ -1251,13 +1261,15 @@ sshkey_read_pkalg(struct sshkey *ret, char **cpp, char **pkalg)
 	switch (ret->type) {
 	case KEY_UNSPEC:
 	case KEY_RSA:
-	case KEY_DSA:
 	case KEY_ECDSA:
 	case KEY_ED25519:
-	case KEY_DSA_CERT:
 	case KEY_ECDSA_CERT:
 	case KEY_RSA_CERT:
 	case KEY_ED25519_CERT:
+#ifdef WITH_DSA
+	case KEY_DSA:
+	case KEY_DSA_CERT:
+#endif
 #ifdef WITH_XMSS
 	case KEY_XMSS:
 	case KEY_XMSS_CERT:
@@ -1948,8 +1960,10 @@ sshkey_check_length(const struct sshkey *k)
 	switch(sshkey_type_plain(k->type)) {
 	case KEY_RSA:
 		return sshkey_validate_public_rsa(k);
+#ifdef WITH_DSA
 	case KEY_DSA:
 		return sshkey_validate_public_dsa(k);
+#endif
 	}
 #else
 	UNUSED(k);
@@ -3148,7 +3162,9 @@ sshkey_private_to_fileblob(struct sshkey *key, struct sshbuf *blob,
 	case KEY_ED25519:
 #endif /*def OPENSSL_HAS_ED25519*/
 #ifdef WITH_OPENSSL
+#ifdef WITH_DSA
 	case KEY_DSA:
+#endif
 	case KEY_ECDSA:
 	case KEY_RSA:
 		if (format != SSHKEY_PRIVATE_OPENSSH)

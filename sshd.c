@@ -753,7 +753,9 @@ list_hostkey_types(void)
 			append_hostkey_type(b,
 			    "rsa-sha2-512-cert-v01@openssh.com");
 			/* FALLTHROUGH */
+	#ifdef WITH_DSA
 		case KEY_DSA_CERT:
+	#endif
 		case KEY_ECDSA_CERT:
 		case KEY_ED25519_CERT:
 	#ifdef WITH_XMSS
@@ -780,7 +782,9 @@ get_hostkey_by_type(int type, int subtype, int need_private, struct ssh *ssh)
 	for (i = 0; i < options.num_host_key_files; i++) {
 		switch (type) {
 		case KEY_RSA_CERT:
+	#ifdef WITH_DSA
 		case KEY_DSA_CERT:
+	#endif
 		case KEY_ECDSA_CERT:
 		case KEY_ED25519_CERT:
 	#ifdef WITH_XMSS
@@ -2140,7 +2144,9 @@ main(int ac, char **av)
 
 		switch (keytype) {
 		case KEY_RSA:
+	#ifdef WITH_DSA
 		case KEY_DSA:
+	#endif
 		case KEY_ECDSA:
 		case KEY_ED25519:
 	#ifdef WITH_XMSS

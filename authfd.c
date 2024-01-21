@@ -526,8 +526,10 @@ ssh_add_identity_constrained(int sock, struct sshkey *key,
 #ifdef WITH_OPENSSL
 	case KEY_RSA:
 	case KEY_RSA_CERT:
+#ifdef WITH_DSA
 	case KEY_DSA:
 	case KEY_DSA_CERT:
+#endif
 	case KEY_ECDSA:
 	case KEY_ECDSA_CERT:
 #endif

@@ -2,7 +2,7 @@
 /*
  * Copyright (c) 2003 Wesley Griffin. All rights reserved.
  * Copyright (c) 2003 Jakob Schlyter. All rights reserved.
- * Copyright (c) 2005-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2005-2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -102,9 +102,11 @@ dns_read_key(u_int8_t *algorithm, u_int8_t *digest_type,
 	case KEY_RSA:
 		*algorithm = SSHFP_KEY_RSA;
 		break;
+#ifdef WITH_DSA
 	case KEY_DSA:
 		*algorithm = SSHFP_KEY_DSA;
 		break;
+#endif
 #ifdef OPENSSL_HAS_ECC
 	case KEY_ECDSA:
 		*algorithm = SSHFP_KEY_ECDSA;

@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keygen.c,v 1.471 2023/09/04 10:29:58 job Exp $ */
+/* $OpenBSD: ssh-keygen.c,v 1.472 2024/01/11 01:45:36 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1994 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -238,9 +238,11 @@ type_bits_valid(int type, const char *name, u_int32_t *bitsp)
 		int nid;
 
 		switch(type) {
+	#ifdef WITH_DSA
 		case KEY_DSA:
 			*bitsp = DEFAULT_BITS_DSA;
 			break;
+	#endif
 		case KEY_ECDSA:
 			if (name != NULL &&
 			    (nid = sshkey_ecdsa_nid_from_name(name)) > 0)
@@ -256,10 +258,12 @@ type_bits_valid(int type, const char *name, u_int32_t *bitsp)
 	}
 #ifdef WITH_OPENSSL
 	switch (type) {
+#ifdef WITH_DSA
 	case KEY_DSA:
 		if (*bitsp != SSH_DSA_BITS)
 			fatal("Invalid DSA key length: must be %d bits", SSH_DSA_BITS);
 		break;
+#endif
 	case KEY_RSA:
 		if (*bitsp < SSH_RSA_MINIMUM_MODULUS_SIZE)
 			fatal("Invalid RSA key length: minimum is %d bits",
@@ -318,10 +322,12 @@ ask_filename(const struct passwd *pw, const char *prompt)
 	/* NOTE: keep block to minimise code differences */
 	{
 		switch (sshkey_type_from_name(key_type_name)) {
+#ifdef WITH_DSA
 		case KEY_DSA_CERT:
 		case KEY_DSA:
 			name = _PATH_SSH_CLIENT_ID_DSA;
 			break;
+#endif
 #ifdef OPENSSL_HAS_ECC
 		case KEY_ECDSA_CERT:
 		case KEY_ECDSA:
@@ -519,10 +525,12 @@ do_convert_private_ssh2(struct sshbuf *b)
 	}
 	free(cipher);
 
-	if (strstr(type, "dsa")) {
-		ktype = KEY_DSA;
-	} else if (strstr(type, "rsa")) {
+	if (strstr(type, "rsa")) {
 		ktype = KEY_RSA;
+#ifdef WITH_DSA
+	} else if (strstr(type, "dsa")) {
+		ktype = KEY_DSA;
+#endif
 	} else {
 		free(type);
 		return NULL;
@@ -534,11 +542,13 @@ do_convert_private_ssh2(struct sshbuf *b)
 	if (key == NULL)
 		fatal("sshkey_new failed");
 	switch (ktype) {
+#ifdef WITH_DSA
 	case KEY_DSA:
 		r = sshbuf_read_custom_dsa(b, key);
 		if (r != 0)
 			fatal_fr(r, "custom dsa failed");
 		break;
+#endif
 	case KEY_RSA:
 		r = sshbuf_read_custom_rsa(b, key);
 		if (r != 0)
@@ -2964,14 +2974,16 @@ main(int argc, char **argv)
 			    _PATH_HOST_RSA_KEY_FILE, rr_hostname,
 			    print_generic, opts, nopts);
 			n += do_print_resource_record(
-			    _PATH_HOST_DSA_KEY_FILE, rr_hostname,
-			    print_generic, opts, nopts);
-			n += do_print_resource_record(
 			    _PATH_HOST_ECDSA_KEY_FILE, rr_hostname,
 			    print_generic, opts, nopts);
 			n += do_print_resource_record(
 			    _PATH_HOST_ED25519_KEY_FILE, rr_hostname,
 			    print_generic, opts, nopts);
+#ifdef WITH_DSA
+			n += do_print_resource_record(
+			    _PATH_HOST_DSA_KEY_FILE, rr_hostname,
+			    print_generic, opts, nopts);
+#endif
 #ifdef WITH_XMSS
 			n += do_print_resource_record(
 			    _PATH_HOST_XMSS_KEY_FILE, rr_hostname,

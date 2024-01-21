@@ -1,8 +1,8 @@
-/* $OpenBSD: ssh-dss.c,v 1.49 2023/03/05 05:34:09 dtucker Exp $ */
+/* $OpenBSD: ssh-dss.c,v 1.50 2024/01/11 01:45:36 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2011 Dr. Stephen Henson.  All rights reserved.
- * Copyright (c) 2011-2023 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -36,7 +36,14 @@
 
 #include "includes.h"
 
-#ifdef WITH_OPENSSL
+#ifdef WITH_DSA
+/* NOTE: just in case as build with OpenSSL is required */
+# ifndef WITH_OPENSSL
+#  error "need WITH_OPENSSL"
+# endif
+#endif
+
+#ifdef WITH_DSA
 
 #include <sys/types.h>
 
@@ -719,4 +726,4 @@ const struct sshkey_impl sshkey_dsa_cert_impl = {
 
 typedef int ssh_dss_empty_translation_unit;
 
-#endif /* WITH_OPENSSL */
+#endif /* WITH_DSA */

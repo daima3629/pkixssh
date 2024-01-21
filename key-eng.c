@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2023 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -255,7 +255,11 @@ eng_try_load_cert(ENGINE *e, const char *keyid, EVP_PKEY *pk, struct sshkey *k) 
 #ifdef OPENSSL_HAS_ECC
 	    (k->type != KEY_ECDSA) &&
 #endif
-	    (k->type != KEY_DSA))
+#ifdef WITH_DSA
+	    (k->type != KEY_DSA) &&
+#endif
+	    1
+	)
 		return;
 
 	/* try to load certificate with LOAD_CERT_EVP command */
