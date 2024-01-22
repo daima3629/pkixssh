@@ -223,10 +223,13 @@ SSH_CACFGFILE="${SSH_CAROOT}/${CACONFIG}"
 
 # always use intermediate CA with rsa key
 SSH_CAKEY_TYPES=rsa
-# comment next to skip intermediate CA with dsa key
-SSH_CAKEY_TYPES="$SSH_CAKEY_TYPES dsa"
-# uncomment next to allow intermediate CA with ec key (nistp256 curve)
-#SSH_CAKEY_TYPES="$SSH_CAKEY_TYPES ec256"
+if $openssl_use_pkey ; then :
+  # comment next to skip intermediate CA with ec key (nistp256 curve)
+  SSH_CAKEY_TYPES="$SSH_CAKEY_TYPES ec256"
+else :
+  # comment next to skip intermediate CA with dsa key
+  SSH_CAKEY_TYPES="$SSH_CAKEY_TYPES dsa"
+fi
 # uncomment next to allow intermediate CA with ed25519 key
 # (requires OpenSSL >= 1.1.1)
 #SSH_CAKEY_TYPES="$SSH_CAKEY_TYPES ed25519"
