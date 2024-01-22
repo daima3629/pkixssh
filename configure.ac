@@ -2755,9 +2755,19 @@ AC_ARG_WITH([sshca-dir],
 AC_DEFINE_UNQUOTED([SSHCADIR], ["$sshcadir"], [Specify location of ssh CA root])
 AC_SUBST([sshcadir])
 
-# reserved for future removal
-COMMENT_OUT_DSA=
+# enable DSA keys
+ssh_dsa=false
+AC_ARG_ENABLE([dsa],
+	[AS_HELP_STRING([--enable-dsa], [Enable algorithms with DSA keys])],
+	[AS_IF([test "x$enableval" = "xyes"], [ssh_dsa=:])])
+
+COMMENT_OUT_DSA="#no dsa#"
 AC_SUBST([COMMENT_OUT_DSA])
+AS_IF([$ssh_dsa], [
+	AC_DEFINE([WITH_DSA], [1],
+		[Define if you want to enable algorithms with DSA keys])
+	COMMENT_OUT_DSA=
+])
 
 COMMENT_OUT_ECC="#no ecc#"
 COMMENT_OUT_ECC256="#no ecc256#"
