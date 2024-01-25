@@ -1,6 +1,6 @@
                                                           Roumen Petrov
                                                         Sofia, Bulgaria
-                                                        Sat Dec 31 2023
+                                                        Sat Jan 25 2024
 
 How to use X.509 certificates with SSH?
 
@@ -268,9 +268,12 @@ Testing client and server with X.509 certificates finished.
     `which openssl`.
   - RSA_DIGEST_LIST
     (environment or config)
-    list with RSA digests in support of openssl. The default value is
-    build at run time from following digest list "sha1 md5 mdc2 md4
-    rmd160" and contain only supported by openssl.
+    list with RSA digests used for intermediate CA with RSA key.
+    The default value is set to DEFAULT_DIGEST. Value of DEFAULT_DIGEST
+    is sha256 for openssl >= 1.1 and sha1 otherwise. If DEFAULT_DIGEST
+    is not set or is empty value RSA_DIGEST_LIST is also empty value.
+    In such case list is build at run time from following "sha256 sha1
+    md5 mdc2 md4 rmd160" and contain only supported by openssl.
 
 3.1.2.3.) server section:
   Read sshd_config.5 manual page for valid values.
