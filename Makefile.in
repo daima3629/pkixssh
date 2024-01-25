@@ -685,6 +685,7 @@ check-core unit file-tests t-exec f-exec interop-tests extra-tests: regress-bina
 		.OBJDIR="$(BUILDDIR)/regress" \
 		BUILDDIR="$(BUILDDIR)" \
 		OBJ="$(BUILDDIR)/regress" \
+		OPENSSL_ENABLE_SHA1_SIGNATURES=y \
 		TEST_ENV=MALLOC_OPTIONS="@TEST_MALLOC_OPTIONS@" \
 		TEST_MALLOC_OPTIONS="@TEST_MALLOC_OPTIONS@" \
 		TEST_SSH_SCP="$${TEST_SSH_SCP}" \
@@ -713,6 +714,7 @@ check-certs: $(TARGETS)
 	$(CHECKCERTSENV); \
 	cd tests/CA || exit $$?; \
 	$(MAKE) \
+		OPENSSL_ENABLE_SHA1_SIGNATURES=y \
 		$(CHECKCERTSENV) \
 		$@; \
 	fi
