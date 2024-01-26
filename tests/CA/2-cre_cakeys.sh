@@ -328,7 +328,8 @@ gen_dsa () {
   check_cakey_type dsa || return 0
   get_dsa_prm \
     "$TMPDIR/$CAKEY_PREFIX-dsa.prm" \
-  ; show_status $? "generating ${extd}DSA parameter file${norm}"
+  ; show_status $? "generating ${extd}DSA parameter file${norm}" \
+  || return $?
 
   gen_dsa_key \
     "$TMPDIR/$CAKEY_PREFIX"-dsa.key \
@@ -340,7 +341,8 @@ gen_ec256 () {
   check_cakey_type ec256 || return 0
   get_ec_prm \
     "$TMPDIR/$CAKEY_PREFIX-ec256.prm" \
-  ; show_status $? "generating ${extd}EC (nistp256) parameter file${norm}"
+  ; show_status $? "generating ${extd}EC (nistp256) parameter file${norm}" \
+  || return $?
 
   gen_ec_key \
     "$TMPDIR/$CAKEY_PREFIX"-ec256.key \
