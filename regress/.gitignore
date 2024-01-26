@@ -138,6 +138,9 @@ netcat
 setuid-allowed
 ssh_askpass-pkcs11
 
+# interoperability tests
+.dropbear
+
 # TODO
 authkeys_orig
 copy

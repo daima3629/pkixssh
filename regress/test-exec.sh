@@ -1,4 +1,4 @@
-#	$OpenBSD: test-exec.sh,v 1.89 2022/01/06 22:14:25 dtucker Exp $
+#	$OpenBSD: test-exec.sh,v 1.105 2023/10/31 04:15:40 dtucker Exp $
 #	Placed in the Public Domain.
 
 #SUDO=sudo
@@ -117,9 +117,17 @@ SSH_REGRESS_TMP=
 PLINK=${PLINK-plink}
 PUTTYGEN=${PUTTYGEN-puttygen}
 CONCH=${CONCH-conch}
+DROPBEAR=${DROPBEAR-dropbear}
+DBCLIENT=${DBCLIENT-dbclient}
+DROPBEARKEY=${DROPBEARKEY-dropbearkey}
+DROPBEARCONVERT=${DROPBEARCONVERT-dropbearconvert}
 PLINK=`which $PLINK 2>/dev/null`
 PUTTYGEN=`which $PUTTYGEN 2>/dev/null`
 CONCH=`which $CONCH 2>/dev/null`
+DROPBEAR=`which $DROPBEAR 2>/dev/null`
+DBCLIENT=`which $DBCLIENT 2>/dev/null`
+DROPBEARKEY=`which $DROPBEARKEY 2>/dev/null`
+DROPBEARCONVERT=`which $DROPBEARCONVERT 2>/dev/null`
 
 # Tools used by multiple tests
 NC=$OBJ/netcat
@@ -620,6 +628,9 @@ REGRESS_INTEROP_CONCH=false
 # configuration
 REGRESS_INTEROP_PUTTY=false
 
+# Activate Dropbear tests if the binary is present
+REGRESS_INTEROP_DROPBEAR=false
+
 case "$SCRIPT" in
 *conch-*)
 	if test -x "$CONCH" ; then
@@ -629,6 +640,11 @@ case "$SCRIPT" in
 *putty-*)
 	if test -x "$PUTTYGEN" -a -x "$PLINK" ; then
 		REGRESS_INTEROP_PUTTY=:
+	fi
+	;;
+*dropbear*)
+	if test -x "$DROPBEARKEY" -a -x "$DBCLIENT" -a -x "$DROPBEARCONVERT"; then
+		REGRESS_INTEROP_DROPBEAR=:
 	fi
 	;;
 esac
@@ -688,6 +704,33 @@ if $REGRESS_INTEROP_PUTTY ; then
 	export PUTTYDIR
 fi
 
+if $REGRESS_INTEROP_DROPBEAR ; then
+	trace Create dropbear keys and add to authorized_keys
+	mkdir -p $OBJ/.dropbear
+	for t in $SSH_KEYTYPES ; do
+		case $t in
+		ssh-rsa) i=rsa;;
+		ecdsa-sha2-nistp256) i=ecdsa;;
+		ssh-ed25519) i=ed25519;;
+		ssh-dss) i=dss;;
+		*) continue;;
+		esac
+		# Note dropbear fail to convert from PKIX-SSH key formats.
+		# As work-around let create dropbear keys and convert them.
+		if test ! -f "$OBJ/.dropbear/id_$i" ; then
+			(
+			$DROPBEARKEY -t $i -f $OBJ/.dropbear/id_$i
+			$DROPBEARCONVERT dropbear openssh \
+			    $OBJ/.dropbear/id_$i \
+			    $OBJ/.dropbear/ossh.id_$i
+			) > /dev/null 2>&1
+		fi
+		printf "%s dropbear_$i\n" \
+		    "`$SSHKEYGEN -y -f $OBJ/.dropbear/ossh.id_$i`" \
+		    >>$OBJ/authorized_keys_$USER
+	done
+fi
+
 # create a proxy version of the client config
 (
 	cat $OBJ/ssh_config
@@ -700,6 +743,20 @@ fi
 
 # check proxy config
 ${SSHD} -t -f $OBJ/sshd_proxy	|| fatal "sshd_proxy broken"
+
+# extract proxycommand into separate shell script for use by Dropbear.
+if $REGRESS_INTEROP_DROPBEAR ; then
+	(
+	echo "#! $TEST_SHELL"
+	awk '/^proxycommand/' $OBJ/ssh_proxy | sed 's/^proxycommand//'
+	) > $OBJ/ssh_proxy_dropbear
+	chmod a+x $OBJ/ssh_proxy_dropbear
+fi
+
+dbclient() {
+  env HOME=$OBJ \
+  $DBCLIENT -y -J "$OBJ/ssh_proxy_dropbear" ${1+"$@"}
+}
 
 start_sshd ()
 {

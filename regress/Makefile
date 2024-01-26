@@ -18,6 +18,7 @@ clean:
 	rm -rf $(OBJ)copy.dd $(OBJ)copy.dd2 $(OBJ)copy.dd.glob[456]
 	rm -rf $(OBJ)softhsm
 	rm -rf $(OBJ).putty
+	rm -rf $(OBJ).dropbear
 
 distclean:	clean
 
@@ -113,6 +114,7 @@ FIPS_LTESTS=\
 	fips-try-ciphers
 
 INTEROP_TESTS=	putty-transfer putty-ciphers putty-kex conch-ciphers
+INTEROP_TESTS+=	dropbear-ciphers dropbear-kex
 #INTEROP_TESTS+=ssh-com ssh-com-client ssh-com-keygen ssh-com-sftp
 
 EXTRA_TESTS=
