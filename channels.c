@@ -555,7 +555,7 @@ channel_new(struct ssh *ssh, char *ctype, int type, int rfd, int wfd, int efd,
 int
 channel_close_fd(struct ssh *ssh, Channel *c, int id)
 {
-	int fd, pfds_idx, *fdp = NULL, restore_block = 0;
+	int fd, pfds_idx = -1, *fdp = NULL, restore_block = 0;
 
 	UNUSED(ssh);
 
@@ -608,7 +608,12 @@ channel_close_fd(struct ssh *ssh, Channel *c, int id)
 
 	if (close(fd) == -1) return -1;
 
-	c->pfds[pfds_idx] = *fdp = -1;
+	*fdp = -1;
+	/* initialise pfds_idx declaration to avoid warning:
+	"'pfds_idx' may be used uninitialized in this function"
+	*/
+	if (pfds_idx >= 0) /* complier work-around */
+		c->pfds[pfds_idx] = -1;
 
 	return 0;
 }
