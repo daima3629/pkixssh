@@ -28,6 +28,13 @@
 # Do we want to enable Kerberos 5 support? (1=yes 0=no)
 %global enable_kerberos5 1
 
+# Do we want to enable DSA publickey algorithms? (1=yes 0=no)
+%global enable_dsa 0
+
+# Do we want to enable Intermediate CA with DSA key? (1=yes 0=no)
+# Note applicable if OpenSSL < 1.1
+%global enable_dsa_ca 1
+
 
 # Disable non-working configurations
 %if !%{enable_openssl_fips}
@@ -48,6 +55,28 @@
 %if !%{enable_openssl_fips}
 %undefine use_fipscheck
 %global use_fipscheck 0
+%endif
+
+# NOTE: On SUSE Linux Enterprise Server 11 SP4 test keygen-convert.sh
+# crash when imports PKCS#8 DSA keys. It pass on SLE 11 SP3.
+# The difference:
+#   SLE 11 SP4: libopenssl0_9_8-0.9.8j-0.70.1
+#   SLE 11 SP3: libopenssl0_9_8-0.9.8j-0.50.1
+
+# In addition creation of X.509 certificate for DSA Intermediate CA
+# fails on SLE 11 SP4 with message:
+#   "Signature did not match the certificate request".
+# Remark: OpenSSL ca utility exits with success!
+# Exclude DSA CA on both as cannot distinguish OS releases.
+%if 0%{?sles_version} == 11
+%undefine enable_dsa_ca
+%global enable_dsa_ca 0
+%endif
+# Exclude DSA CA on openSUSE 11.* as is expected to fail on some releases.
+# Remark: openSUSE 11.1 is basis for SLE 11.
+%if 0%{?suse_version} >= 1100 && 0%{?suse_version} < 1200
+%undefine enable_dsa_ca
+%global enable_dsa_ca 0
 %endif
 
 
@@ -178,6 +207,11 @@ two untrusted hosts over an insecure network.
 %else
   --without-kerberos5 \
 %endif
+%if %{enable_dsa}
+  --enable-dsa \
+%else
+  --disable-dsa \
+%endif
   --with-pie \
   --with-pam \
   --with-privsep-path=%{ssh_privsep_path}
@@ -185,6 +219,9 @@ make
 
 
 %check
+%if !0%{enable_dsa_ca}
+SSH_CAKEY_TYPE_DSA= \
+%endif
 TERM=dumb \
 make check
 
@@ -193,6 +230,9 @@ make check
 SSH_LDAP_DB=hdb \
 %endif
 LDAP_MODULEDIR=%{ldap_moduledir} \
+%if !0%{enable_dsa_ca}
+SSH_CAKEY_TYPE_DSA= \
+%endif
 TERM=dumb \
 SSH_X509TESTS="by_ldap" \
 make check-certs

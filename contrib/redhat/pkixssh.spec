@@ -28,6 +28,9 @@
 # Do we want to enable Kerberos 5 support? (1=yes 0=no)
 %global enable_kerberos5 1
 
+# Do we want to enable DSA publickey algorithms? (1=yes 0=no)
+%global enable_dsa 0
+
 # TODO: do not produce debug package(temporary)
 %global debug_package %{nil}
 
@@ -165,6 +168,11 @@ two untrusted hosts over an insecure network.
   --with-kerberos5 \
 %else
   --without-kerberos5 \
+%endif
+%if %{enable_dsa}
+  --enable-dsa \
+%else
+  --disable-dsa \
 %endif
   --with-pie \
   --with-pam \

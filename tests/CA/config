@@ -226,9 +226,10 @@ SSH_CAKEY_TYPES=rsa
 if $openssl_use_pkey ; then :
   # comment next to skip intermediate CA with ec key (nistp256 curve)
   SSH_CAKEY_TYPES="$SSH_CAKEY_TYPES ec256"
-else :
-  # comment next to skip intermediate CA with dsa key
-  SSH_CAKEY_TYPES="$SSH_CAKEY_TYPES dsa"
+else
+  # to skip intermediate CA with dsa key set SSH_CAKEY_TYPE_DSA to empty value
+  SSH_CAKEY_TYPE_DSA="${SSH_CAKEY_TYPE_DSA-dsa}"
+  SSH_CAKEY_TYPES="$SSH_CAKEY_TYPES $SSH_CAKEY_TYPE_DSA"
 fi
 # uncomment next to allow intermediate CA with ed25519 key
 # (requires OpenSSL >= 1.1.1)
