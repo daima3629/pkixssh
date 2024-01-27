@@ -51,7 +51,7 @@ struct sshbuf {
 	struct sshbuf *parent;	/* If child, pointer to parent */
 };
 
-static inline int
+static int
 sshbuf_check_sanity(const struct sshbuf *buf)
 {
 	SSHBUF_TELL("sanity");
