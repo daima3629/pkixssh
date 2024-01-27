@@ -278,7 +278,7 @@ set_ldap_version(const char *ver) {
 }
 
 int
-ssh_ldap_version() {
+ssh_ldap_version(void) {
 	return ldap_version;
 }
 #endif /*def LDAP_ENABLED*/
