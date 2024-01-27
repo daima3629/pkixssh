@@ -450,11 +450,12 @@ sshlogv(const char *file, const char *func, int line,
 		tmp_handler(level, fmtbuf, log_handler_ctx);
 		log_handler = tmp_handler;
 	} else if (log_on_stderr) {
-		snprintf(msgbuf, sizeof msgbuf, "%s%s%.*s\r\n",
+		snprintf(msgbuf, sizeof msgbuf, "%s%s%.*s",
 		    (log_on_stderr > 1) ? progname : "",
 		    (log_on_stderr > 1) ? ": " : "",
 		    (int)sizeof msgbuf - 3, fmtbuf);
 		(void)write(log_stderr_fd, msgbuf, strlen(msgbuf));
+		(void)write(log_stderr_fd, "\r\n", 2);
 	} else {
 #if defined(HAVE_OPENLOG_R) && defined(SYSLOG_DATA_INIT)
 		struct syslog_data sdata = SYSLOG_DATA_INIT;
