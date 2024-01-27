@@ -47,8 +47,13 @@
 if test -z "$LINES" -o -z "$COLUMNS" ; then
   eval `stty size 2>/dev/null | (read L C; echo LINES=$L COLUMNS=$C)`
 fi
-test -z "$LINES"  && LINES=`tput lines`
-test -z "$COLUMNS"&& COLUMNS=`tput cols`
+# try curses
+test -z "$LINES"  && LINES=`tput lines 2>/dev/null `
+test -z "$COLUMNS"&& COLUMNS=`tput cols 2>/dev/null `
+# try X window
+if test -z "$LINES" ; then
+  eval `resize 2>/dev/null`
+fi
 # set defaults
 test -z "$LINES"  && LINES=24
 test -z "$COLUMNS"&& COLUMNS=80
