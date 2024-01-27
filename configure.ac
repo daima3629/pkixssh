@@ -203,6 +203,8 @@ if test "$GCC" = "yes" || test "$GCC" = "egcs"; then
 
 	OSSH_CHECK_CFLAG_COMPILE([-pipe])
 	OSSH_CHECK_CFLAG_COMPILE([-Wunknown-warning-option])
+	#NOTE: Options Werror and -Wno-error are GCC specific
+	test -n "$CLANG_VER" || \
 	OSSH_CHECK_CFLAG_COMPILE([-Wno-error=format-truncation])
 	OSSH_CHECK_CFLAG_COMPILE([-Wall])
 	OSSH_CHECK_CFLAG_COMPILE([-Wextra])
