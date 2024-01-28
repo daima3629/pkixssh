@@ -541,6 +541,23 @@ pwcopy(const struct passwd *pw)
 	return copy;
 }
 
+void
+pwfree(struct passwd *pw)
+{
+	free(pw->pw_name);
+	free(pw->pw_passwd);
+#ifdef HAVE_STRUCT_PASSWD_PW_GECOS
+	free(pw->pw_gecos);
+#endif
+#ifdef HAVE_STRUCT_PASSWD_PW_CLASS
+	free(pw->pw_class);
+#endif
+	free(pw->pw_dir);
+	free(pw->pw_shell);
+
+	free(pw);
+}
+
 /*
  * Convert ASCII string to TCP/IP port number.
  * Port must be >=0 and <=65535.

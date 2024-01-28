@@ -102,6 +102,8 @@ int	 stdfd_devnull(int, int, int);
 void	 sock_set_v6only(int);
 
 struct passwd *pwcopy(const struct passwd *);
+void pwfree(struct passwd *);
+
 const char *ssh_gai_strerror(int);
 
 typedef void privdrop_fn(struct passwd *);

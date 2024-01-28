@@ -1917,6 +1917,9 @@ main(int ac, char **av)
 	ssh_engines_shutdown();
 	ssh_OpenSSL_shuthdown();
 
+	/* extra clean-up to find easily significant memory leaks */
+	pwfree(pw);
+
 	return exit_status;
 }
 
