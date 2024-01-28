@@ -129,7 +129,7 @@ extern struct sshkey *previous_host_key; /* sshconnect.c */
 
 /* Saves a copy of argv for setproctitle emulation */
 #ifndef HAVE_SETPROCTITLE
-static char **saved_av;
+static char **saved_av = NULL;
 #endif
 
 /* used in ssh-x509.c */
@@ -166,7 +166,7 @@ char *config = NULL;
  * command line, or the Hostname specified for the user-supplied name in a
  * configuration file.
  */
-char *host;
+char *host = NULL;
 
 /*
  * A config can specify a path to forward, overriding SSH_AUTH_SOCK. If this is
@@ -181,7 +181,7 @@ struct sockaddr_storage hostaddr;
 static Sensitive sensitive_data;
 
 /* command to be executed */
-struct sshbuf *command;
+struct sshbuf *command = NULL;
 
 /* # of replies received for global requests */
 static int forward_confirms_pending = -1;
@@ -1919,6 +1919,26 @@ main(int ac, char **av)
 
 	/* extra clean-up to find easily significant memory leaks */
 	pwfree(pw);
+	sshbuf_free(command);
+#ifndef HAVE_SETPROCTITLE
+{	/* clean saved arguments */
+	char **s;
+	for (s = saved_av; *s != NULL; s++)
+		free(*s);
+	free(saved_av);
+}
+#endif
+{	/* clean paths expanded due to "home"(~) prefix */
+	u_int k;
+	char **paths;
+	for (k = 0, paths =  options.system_hostfiles; k < options.num_system_hostfiles; k++)
+		free(paths[k]);
+	for (k = 0, paths =  options.user_hostfiles; k < options.num_user_hostfiles; k++)
+		free(paths[k]);
+}
+	/* cleanup host name */
+	free(host);
+	free(options.hostname);
 
 	return exit_status;
 }
