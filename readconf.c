@@ -11,7 +11,7 @@
  * incompatible with the protocol description in the RFC file, it must be
  * called by a name other than "ssh" or "Secure Shell".
  *
- * Copyright (c) 2002-2023 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -2773,6 +2773,13 @@ cleanup_options(Options *options) {
 	ssh_x509store_cleanup();
 	X509StoreOptions_cleanup(&options->userca);
 	X509StoreOptions_cleanup(&options->ca);
+	ssh_xkalg_cleanup();
+
+#define FREENULL(p)	{ free((p)); (p) = NULL; }
+	/* default algorithms */
+	FREENULL(options->hostkeyalgorithms);
+	FREENULL(options->hostbased_algorithms);
+	FREENULL(options->pubkey_algorithms);
 }
 
 /*

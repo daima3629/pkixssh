@@ -63,6 +63,21 @@ logit("TRACE_XKALG initialize_xkalg:");
 }
 
 
+void
+ssh_xkalg_cleanup() {
+	SSHX509KeyAlgs *p = x509keyalgs;
+	int k;
+
+	if (!x509keyalgs_initialized) return;
+
+	k = sizeof(x509keyalgs) / sizeof(x509keyalgs[0]);
+	for (; k > 0; k--, p++) {
+		free((void*)p->name);
+		p->name = NULL;
+	}
+}
+
+
 static void
 add_default_xkalg(void) {
 #ifdef TRACE_XKALG
@@ -527,11 +542,14 @@ default_hostkey_algorithms(void) {
 	p = match_filter_allowlist(KEX_DEFAULT_PK_ALG",ssh-dss", allalgs);
 	free(allalgs);
 }
+	if (p == NULL)
+		fatal_f("oops");
 
 	if ((r = sshbuf_put(b, ",", 1)) != 0 ||
 	    (r = sshbuf_put(b, p, strlen(p))) != 0)
 		fatal_fr(r, "buffer error");
 
+	free(p);
 	p = xstrdup(sshbuf_ptr(b));
 
 	sshbuf_free(b);
