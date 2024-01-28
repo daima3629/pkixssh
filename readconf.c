@@ -2780,6 +2780,12 @@ cleanup_options(Options *options) {
 	FREENULL(options->hostkeyalgorithms);
 	FREENULL(options->hostbased_algorithms);
 	FREENULL(options->pubkey_algorithms);
+
+	/* assembled names */
+	FREENULL(options->ciphers);
+	FREENULL(options->macs);
+	FREENULL(options->kex_algorithms);
+	FREENULL(options->ca_sign_algorithms);
 }
 
 /*
