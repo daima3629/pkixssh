@@ -1063,6 +1063,7 @@ case "$host" in
 	fi
 	;;
 *-*-minix)
+	AC_DEFINE([DISABLE_FD_PASSING])
 	AC_DEFINE([SETEUID_BREAKS_SETUID])
 	# poll(2) seems to choke on /dev/null; "Bad file descriptor"
 	AC_DEFINE([BROKEN_POLL], [1])
