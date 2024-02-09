@@ -505,7 +505,9 @@ sshkey_validate_public(const struct sshkey *key) {
 
 #ifndef HAVE_EVP_PKEY_CMP	/* OpenSSL < 0.9.8 */
 extern int ssh_EVP_PKEY_cmp_rsa(const EVP_PKEY *a, const EVP_PKEY *b);
+#ifdef WITH_DSA
 extern int ssh_EVP_PKEY_cmp_dsa(const EVP_PKEY *a, const EVP_PKEY *b);
+#endif
 
 static int
 EVP_PKEY_cmp(const EVP_PKEY *a, const EVP_PKEY *b) {
@@ -513,7 +515,9 @@ EVP_PKEY_cmp(const EVP_PKEY *a, const EVP_PKEY *b) {
 
 	switch (evp_id) {
 	case EVP_PKEY_RSA:	return ssh_EVP_PKEY_cmp_rsa(a, b);
+#ifdef WITH_DSA
 	case EVP_PKEY_DSA:	return ssh_EVP_PKEY_cmp_dsa(a, b);
+#endif
 	}
 	return -2;
 }
@@ -821,13 +825,14 @@ buf_EVP_DigestSignFinal(EVP_MD_CTX *ctx,
 
 #define SHARAW_DIGEST_LENGTH (2*SHA_DIGEST_LENGTH)
 
+#ifdef WITH_DSA
 static int
 DSS1RAW_SignFinal(
 #ifdef HAVE_EVP_DIGESTSIGNINIT
 	EVP_MD_CTX *ctx, unsigned char *sigret, size_t *siglen
 #else
 	EVP_MD_CTX *ctx, unsigned char *sigret, size_t *siglen, EVP_PKEY *pkey
-#endif	
+#endif
 ) {
 	DSA_SIG *sig;
 	size_t len;
@@ -887,8 +892,10 @@ parse_err:
 	return -1;
 }
 }
+#endif /*ifdef WITH_DSA*/
 
 
+#ifdef WITH_DSA
 static int
 DSS1RAW_VerifyFinal(
 #ifdef HAVE_EVP_DIGESTSIGNINIT
@@ -954,6 +961,7 @@ process:
 	return ret;
 }
 }
+#endif /*def WITH_DSA*/
 
 
 #ifdef OPENSSL_HAS_ECC
@@ -1132,8 +1140,10 @@ static ssh_evp_md dgsts[] = {
 	{ SSH_MD_RSA_SHA1, EVP_sha1, SSH_SignFinal, SSH_VerifyFinal },
 	{ SSH_MD_RSA_MD5, EVP_md5, SSH_SignFinal, SSH_VerifyFinal },
 
+#ifdef WITH_DSA
 	{ SSH_MD_DSA_SHA1, EVP_dss1, SSH_SignFinal, SSH_VerifyFinal },
 	{ SSH_MD_DSA_RAW, EVP_dss1, DSS1RAW_SignFinal, DSS1RAW_VerifyFinal },
+#endif
 
 	/* PKIX-SSH pre 10.0 does not implement properly rfc6187 */
 #ifdef OPENSSL_HAS_NISTP256
