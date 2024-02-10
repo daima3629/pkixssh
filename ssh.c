@@ -1422,6 +1422,8 @@ main(int ac, char **av)
 		 * Try to use SSH executable indicated by argv[0], but fall
 		 * back to "ssh" if it is not executable.
 		 */
+		if (*sshbin == '-') /* login account */
+			sshbin++;
 		if (strchr(sshbin, '/') != NULL && access(sshbin, X_OK) != 0)
 			sshbin = "ssh";
 
