@@ -68,6 +68,12 @@ if test "${TERM}" != "dumb" ; then
         norm=`printf '%s\017' "${esc}[m"`
         stat=`printf '\015%s' "${esc}[${COLUMNS}C${esc}[10D"`
 
+      case `uname -s 2>/dev/null` in
+      CYGWIN*)
+        norm="${esc}[m"
+        ;;
+      esac
+
      msg_done="${stat}${done}done${norm}"
    msg_failed="${stat}${warn}failed${norm}"
 
