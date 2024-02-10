@@ -78,14 +78,23 @@ sleep 8
 check_ssh && fail "ssh unexpectedly present"
 stop_ssh
 
-verbose "session inhibits timeout"
-rm -f $OBJ/copy2
+if config_defined DISABLE_FD_PASSING ; then
+	verbose "skip: session inhibits timeout (fd passing not supported on this platform)"
+else
+	verbose "session inhibits timeout"
+fi
+# session used in next test
 start_ssh
-${REAL_SSH} -qoControlPath=$CTL -oControlMaster=no -Fnone somehost \
-	"sleep 8; touch $OBJ/copy2" &
 check_ssh || fail "ssh unexpectedly missing"
-wait
-test -f $OBJ/copy2 || fail "missing result file"
+if config_defined DISABLE_FD_PASSING ; then
+    sleep 1
+else
+    rm -f $OBJ/copy2
+    $REAL_SSH -qoControlPath=$CTL -oControlMaster=no -Fnone somehost \
+	    "sleep 8; touch $OBJ/copy2" &
+    wait
+    test -f $OBJ/copy2 || fail "missing result file"
+fi
 
 verbose "timeout after session"
 # Session should still be running from previous
