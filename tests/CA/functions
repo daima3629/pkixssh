@@ -59,6 +59,10 @@ test -z "$LINES"  && LINES=24
 test -z "$COLUMNS"&& COLUMNS=80
 export LINES COLUMNS
 
+
+BUILD_SYSTEM=`uname -s 2>/dev/null` || BUILD_SYSTEM=undefined
+
+
 if test "${TERM}" != "dumb" ; then
          esc=`printf '\033'`
         extd="${esc}[1m"
@@ -68,7 +72,7 @@ if test "${TERM}" != "dumb" ; then
         norm=`printf '%s\017' "${esc}[m"`
         stat=`printf '\015%s' "${esc}[${COLUMNS}C${esc}[10D"`
 
-      case `uname -s 2>/dev/null` in
+      case "$BUILD_SYSTEM" in
       CYGWIN*)
         norm="${esc}[m"
         ;;
@@ -313,7 +317,7 @@ cre_hash_link () {
   fi
 
   HASH=`$OPENSSL x509 -hash -in "$1" -noout` || return $?
-  case `uname -s 2>/dev/null` in
+  case "$BUILD_SYSTEM" in
   CYGWIN*)
     # On cygwin OpenSSL 1.1* output erroneously ends with <CR><LF>
     HASH=`echo $HASH | tr -d '\r'`
@@ -342,7 +346,7 @@ cre_crl_hash_link () {
   fi
 
   HASH=`$OPENSSL crl -hash -in "$1" -out /dev/null` || return $?
-  case `uname -s 2>/dev/null` in
+  case "$BUILD_SYSTEM" in
   CYGWIN*)
     # On cygwin OpenSSL 1.1* output erroneously ends with <CR><LF>
     HASH=`echo $HASH | tr -d '\r'`
