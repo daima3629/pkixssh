@@ -117,7 +117,7 @@ if they are present in subsequent SSH2_MSG_KEXINIT packets.
 
 When an endpoint that supports this extension observes this algorithm
 name in a peer's KEXINIT packet, it MUST make the following changes to
-the the protocol:
+the protocol:
 
 a) During initial KEX, terminate the connection if out-of-sequence
    packet or any message that is not strictly required by KEX is

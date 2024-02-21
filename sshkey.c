@@ -2006,7 +2006,7 @@ sshkey_from_blob_internal(struct sshbuf *b, struct sshkey **keyp,
 		ret = SSH_ERR_ALLOC_FAIL;
 		goto out;
 	}
-	/* skip nonce that preceeds all custom certificates */
+	/* skip nonce that precedes all custom certificates */
 	if (sshkey_type_is_cert(type)) {
 		if (sshbuf_get_string_direct(b, NULL, NULL) != 0) {
 			ret = SSH_ERR_INVALID_FORMAT;

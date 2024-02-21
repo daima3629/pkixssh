@@ -90,7 +90,7 @@
 # define SSHD_IOBUFSZ	(64*1024)
 #endif
 #ifndef SSHD_IOBUFSZ
-# define SSHD_IOBUFSZ 	(4*1024)
+# define SSHD_IOBUFSZ	(4*1024)
 #endif
 /*	32k	16k	8k	4k
 memory:	1.345	1(*)	0.920	0.867
