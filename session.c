@@ -1210,6 +1210,15 @@ do_setup_env(struct ssh *ssh, Session *s, const char *shell)
 	COPY_ANDROID_ENV("DEX2OATBOOTCLASSPATH");
 	COPY_ANDROID_ENV("SYSTEMSERVERCLASSPATH");
 
+	/* ZygoteInit.java */
+	COPY_ANDROID_ENV("STANDALONE_SYSTEMSERVER_JARS");
+	/* TODO ANDROID_SOCKET_PREFIX = "ANDROID_SOCKET_"; */
+	/* zygote socket name is command line parameter, try defaults */
+	COPY_ANDROID_ENV("ANDROID_SOCKET_zygote");
+	COPY_ANDROID_ENV("ANDROID_SOCKET_zygote_secondary");
+	COPY_ANDROID_ENV("ANDROID_SOCKET_usap_pool_primary");
+	COPY_ANDROID_ENV("ANDROID_SOCKET_usap_pool_secondary");
+
 	/* on Android Q(10.0, API level 29) "am" requires ANDROID_RUNTIME_ROOT to run */
 	COPY_ANDROID_ENV("ANDROID_RUNTIME_ROOT");
 
