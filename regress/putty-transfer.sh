@@ -14,9 +14,9 @@ fi
 for c in $comp; do
 	verbose "$tid: compression $c"
 	rm -f ${COPY}
-	cp ${OBJ}/.putty/sessions/localhost_proxy \
-	    ${OBJ}/.putty/sessions/compression_$c
-	echo "Compression=$c" >> ${OBJ}/.putty/sessions/kex_$k
+	cp $PUTTYDIR/sessions/localhost_proxy \
+	    $PUTTYDIR/sessions/compression_$c
+	echo "Compression=$c" >> $PUTTYDIR/sessions/kex_$k
 	env HOME=$PWD ${PLINK} -load compression_$c -batch \
 	    -i ${OBJ}/putty.rsa2 cat ${DATA} > ${COPY}
 	if [ $? -ne 0 ]; then

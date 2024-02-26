@@ -673,6 +673,10 @@ puttysetup() {
 	fi
 	echo "PLINK: $PLINK" >&2
 
+	PUTTYDIR=$OBJ/.putty
+	mkdir -p $PUTTYDIR
+	export PUTTYDIR
+
 	rm -f ${OBJ}/putty.rsa2
 	if ! $PUTTYGEN -t rsa -o ${OBJ}/putty.rsa2 \
 	    --random-device=/dev/urandom \
@@ -685,29 +689,25 @@ puttysetup() {
 	cp $OBJ/ssh-rsa $OBJ/ssh-rsa_pem
 	$SSHKEYGEN -p -N '' -m PEM -f $OBJ/ssh-rsa_pem >/dev/null
 
-	mkdir -p ${OBJ}/.putty
-
 	# Add a PuTTY key to authorized_keys
 	$PUTTYGEN -O public-openssh ${OBJ}/putty.rsa2 \
 	    >> $OBJ/authorized_keys_$USER
 
 	${SRC}/ssh2putty.sh 127.0.0.1 $PORT $OBJ/ssh-rsa_pem > \
-	    ${OBJ}/.putty/sshhostkeys
+	    $PUTTYDIR/sshhostkeys
 	${SRC}/ssh2putty.sh 127.0.0.1 22 $OBJ/ssh-rsa_pem >> \
-	    ${OBJ}/.putty/sshhostkeys
+	    $PUTTYDIR/sshhostkeys
 
 	# Setup proxied session
-	mkdir -p ${OBJ}/.putty/sessions
-	rm -f ${OBJ}/.putty/sessions/localhost_proxy
-	echo "Protocol=ssh" >> ${OBJ}/.putty/sessions/localhost_proxy
-	echo "HostName=127.0.0.1" >> ${OBJ}/.putty/sessions/localhost_proxy
-	echo "PortNumber=$PORT" >> ${OBJ}/.putty/sessions/localhost_proxy
-	echo "ProxyMethod=5" >> ${OBJ}/.putty/sessions/localhost_proxy
-	echo "ProxyTelnetCommand=sh ${SRC}/sshd-log-wrapper.sh ${TEST_SSHD_LOGFILE} ${SSHD} -i -f $OBJ/sshd_proxy" >> ${OBJ}/.putty/sessions/localhost_proxy
-	echo "ProxyLocalhost=1" >> ${OBJ}/.putty/sessions/localhost_proxy
-
-	PUTTYDIR=${OBJ}/.putty
-	export PUTTYDIR
+	mkdir -p $PUTTYDIR/sessions
+	cat > $PUTTYDIR/sessions/localhost_proxy <<EOF
+Protocol=ssh
+HostName=127.0.0.1
+PortNumber=$PORT
+ProxyMethod=5
+ProxyTelnetCommand=$TEST_SHELL $SRC/sshd-log-wrapper.sh $TEST_SSHD_LOGFILE $SSHD -i -f $OBJ/sshd_proxy
+ProxyLocalhost=1
+EOF
 }
 
 if $REGRESS_INTEROP_DROPBEAR ; then

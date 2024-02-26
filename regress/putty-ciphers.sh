@@ -7,9 +7,9 @@ puttysetup
 
 for c in aes 3des aes128-ctr aes192-ctr aes256-ctr chacha20 ; do
 	verbose "$tid: cipher $c"
-	cp ${OBJ}/.putty/sessions/localhost_proxy \
-	    ${OBJ}/.putty/sessions/cipher_$c
-	echo "Cipher=$c" >> ${OBJ}/.putty/sessions/cipher_$c
+	cp $PUTTYDIR/sessions/localhost_proxy \
+	    $PUTTYDIR/sessions/cipher_$c
+	echo "Cipher=$c" >> $PUTTYDIR/sessions/cipher_$c
 
 	rm -f ${COPY}
 	env HOME=$PWD ${PLINK} -load cipher_$c -batch -i ${OBJ}/putty.rsa2 \
