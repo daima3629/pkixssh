@@ -1,10 +1,9 @@
-#	$OpenBSD: putty-transfer.sh,v 1.11 2021/09/01 03:16:06 dtucker Exp $
+#	$OpenBSD: putty-transfer.sh,v 1.12 2024/02/09 08:47:42 dtucker Exp $
 #	Placed in the Public Domain.
 
 tid="putty transfer data"
 
-$REGRESS_INTEROP_PUTTY || { RESULT=1; skip "putty interop tests are not enabled"; }
-echo "PLINK: $PLINK" >&2
+puttysetup
 
 if [ "`${SSH} -Q compression`" = "none" ]; then
 	comp="0"
@@ -39,4 +38,3 @@ for c in $comp; do
 	done
 done
 rm -f ${COPY}
-

@@ -1,4 +1,4 @@
-#	$OpenBSD: test-exec.sh,v 1.105 2023/10/31 04:15:40 dtucker Exp $
+#	$OpenBSD: test-exec.sh,v 1.107 2024/02/19 09:25:52 dtucker Exp $
 #	Placed in the Public Domain.
 
 #SUDO=sudo
@@ -666,7 +666,13 @@ if $REGRESS_INTEROP_CONCH ; then
 	fi
 fi
 
-if $REGRESS_INTEROP_PUTTY ; then
+puttysetup() {
+	if ! $REGRESS_INTEROP_PUTTY ; then
+		RESULT=1
+		skip "putty interop tests are not enabled"
+	fi
+	echo "PLINK: $PLINK" >&2
+
 	rm -f ${OBJ}/putty.rsa2
 	if ! $PUTTYGEN -t rsa -o ${OBJ}/putty.rsa2 \
 	    --random-device=/dev/urandom \
@@ -702,7 +708,7 @@ if $REGRESS_INTEROP_PUTTY ; then
 
 	PUTTYDIR=${OBJ}/.putty
 	export PUTTYDIR
-fi
+}
 
 if $REGRESS_INTEROP_DROPBEAR ; then
 	trace Create dropbear keys and add to authorized_keys

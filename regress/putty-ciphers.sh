@@ -1,10 +1,9 @@
-#	$OpenBSD: putty-ciphers.sh,v 1.11 2021/09/01 03:16:06 dtucker Exp $
+#	$OpenBSD: putty-ciphers.sh,v 1.13 2024/02/09 08:56:59 dtucker Exp $
 #	Placed in the Public Domain.
 
 tid="putty ciphers"
 
-$REGRESS_INTEROP_PUTTY || { RESULT=1; skip "putty interop tests are not enabled"; }
-echo "PLINK: $PLINK" >&2
+puttysetup
 
 for c in aes 3des aes128-ctr aes192-ctr aes256-ctr chacha20 ; do
 	verbose "$tid: cipher $c"
@@ -21,4 +20,3 @@ for c in aes 3des aes128-ctr aes192-ctr aes256-ctr chacha20 ; do
 	cmp ${DATA} ${COPY}		|| fail "corrupted copy"
 done
 rm -f ${COPY}
-

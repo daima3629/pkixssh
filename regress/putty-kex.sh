@@ -1,10 +1,9 @@
-#	$OpenBSD: putty-kex.sh,v 1.9 2021/09/01 03:16:06 dtucker Exp $
+#	$OpenBSD: putty-kex.sh,v 1.11 2024/02/09 08:56:59 dtucker Exp $
 #	Placed in the Public Domain.
 
 tid="putty KEX"
 
-$REGRESS_INTEROP_PUTTY || { RESULT=1; skip "putty interop tests are not enabled"; }
-echo "PLINK: $PLINK" >&2
+puttysetup
 
 for k in dh-gex-sha1 dh-group1-sha1 dh-group14-sha1 ecdh ; do
 	verbose "$tid: kex $k"
@@ -17,4 +16,3 @@ for k in dh-gex-sha1 dh-group1-sha1 dh-group14-sha1 ecdh ; do
 		fail "KEX $k failed"
 	fi
 done
-
