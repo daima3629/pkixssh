@@ -95,8 +95,10 @@ ECDSA_SIG_set0(ECDSA_SIG *sig, BIGNUM *r, BIGNUM *s) {
 #endif /*def OPENSSL_HAS_ECC*/
 
 #ifndef HAVE_EVP_DSS1
+# ifdef WITH_DSA
 /* removed in OpenSSL 1.1 */
 static inline const EVP_MD* EVP_dss1(void) { return EVP_sha1(); }
+# endif
 #endif
 
 
