@@ -64,7 +64,7 @@ logit("TRACE_XKALG initialize_xkalg:");
 
 
 void
-ssh_xkalg_cleanup() {
+ssh_xkalg_cleanup(void) {
 	SSHX509KeyAlgs *p = x509keyalgs;
 	int k;
 
