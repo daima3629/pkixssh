@@ -2869,8 +2869,8 @@ if test "x$openssl" = "xyes" ; then
 			AC_MSG_RESULT([$ssl_header_ver])
 		],
 		[
-			AC_MSG_RESULT([not found])
-			AC_MSG_ERROR([OpenSSL version header not found.])
+			AC_MSG_RESULT([failed])
+			AC_MSG_ERROR([OpenSSL version test program failed.])
 		],
 		[
 			AC_MSG_WARN([cross compiling: not checking])
@@ -2989,7 +2989,7 @@ if test "x$openssl" = "xyes" ; then
 	fi
 
 	# Check for OpenSSL without EVP_aes_{192,256}_cbc
-	AC_MSG_CHECKING([whether OpenSSL has crippled AES support])
+	AC_MSG_CHECKING([whether OpenSSL lacks support for AES 192/256])
 	AC_LINK_IFELSE(
 		[AC_LANG_PROGRAM([[
 	#include <openssl/evp.h>
