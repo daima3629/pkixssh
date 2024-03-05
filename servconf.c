@@ -2243,7 +2243,7 @@ parse_string:
 		arg = argv_assemble(1, &arg); /* quote command correctly */
 		arg2 = argv_assemble(ac, av); /* rest of command */
 		xasprintf(&options->subsystem_args[options->num_subsystems],
-		    "%s %s", arg, arg2);
+		    "%s%s%s", arg, *arg2 == '\0' ? "" : " ", arg2);
 		free(arg2);
 		argv_consume(&ac);
 		options->num_subsystems++;
