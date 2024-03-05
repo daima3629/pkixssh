@@ -1,4 +1,4 @@
-/* $OpenBSD: readconf.c,v 1.384 2024/01/11 01:45:36 djm Exp $ */
+/* $OpenBSD: readconf.c,v 1.386 2024/03/04 04:13:18 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -1064,6 +1064,8 @@ process_config_line_depth(Options *options, struct passwd *pw, const char *host,
 	glob_t gl;
 	const char *errstr;
 	int ret = -1;
+	char **strs = NULL; /* string array arguments; freed implicitly */
+	u_int nstrs = 0;
 
 	if (activep == NULL) { /* We are processing a command line directive */
 		cmdline = 1;
@@ -1756,7 +1758,6 @@ parse_key_algorithms:
 
 	case oLogVerbose:
 		found = options->num_log_verbose > 0;
-		i = 0;
 		while ((arg = argv_next(&ac, &av)) != NULL) {
 			if (*arg == '\0') {
 				error("%s line %d: keyword %s empty argument",
@@ -1765,19 +1766,22 @@ parse_key_algorithms:
 			}
 			/* Allow "none" only in first position */
 			if (strcasecmp(arg, "none") == 0) {
-				if (i > 0 || ac > 0) {
+				if (nstrs > 0 || ac > 0) {
 					error("%s line %d: keyword %s \"none\" "
 					    "argument must appear alone.",
 					    filename, linenum, keyword);
 					goto out;
 				}
 			}
-			i++;
-			if (!*activep || found)
-				continue;
 			opt_array_append(filename, linenum,
 			    lookup_opcode_name(opcode),
-			    &options->log_verbose, &options->num_log_verbose, arg);
+			    &strs, &nstrs, arg);
+		}
+		if (*activep && !found) {
+			options->log_verbose = strs;
+			options->num_log_verbose = nstrs;
+			strs = NULL; /* transferred */
+			nstrs = 0;
 		}
 		break;
 
@@ -1841,7 +1845,6 @@ parse_key_algorithms:
 		uintptr = &options->num_permitted_remote_opens;
 		cppptr = &options->permitted_remote_opens;
 		found = *uintptr > 0;
-		i = 0;
 		while ((arg = argv_next(&ac, &av)) != NULL) {
 			if (*arg == '\0') {
 				error("%s line %d: keyword %s empty argument",
@@ -1851,7 +1854,7 @@ parse_key_algorithms:
 			arg2 = xstrdup(arg);
 			/* Allow any/none only in first position */
 			if (strcmp(arg, "any") == 0 || strcmp(arg, "none") == 0) {
-				if (i > 0 || ac > 0) {
+				if (nstrs > 0 || ac > 0) {
 					error("%s line %d: keyword %s \"%s\" "
 					    "argument must appear alone.",
 					    filename, linenum, keyword, arg);
@@ -1882,13 +1885,16 @@ parse_key_algorithms:
 					goto out;
 				}
 			}
-			i++;
-			if (*activep && !found) {
-				opt_array_append(filename, linenum,
-				    lookup_opcode_name(opcode),
-				    cppptr, uintptr, arg2);
-			}
+			opt_array_append(filename, linenum,
+			    lookup_opcode_name(opcode),
+			    &strs, &nstrs, arg2);
 			free(arg2);
+		}
+		if (*activep && !found) {
+			*cppptr = strs;
+			*uintptr = nstrs;
+			strs = NULL; /* transferred */
+			nstrs = 0;
 		}
 		} break;
 
@@ -2454,7 +2460,6 @@ parse_key_algorithms:
 
 	case oChannelTimeout:
 		found = options->num_channel_timeouts > 0;
-		i = 0;
 		while ((arg = argv_next(&ac, &av)) != NULL) {
 			if (*arg == '\0') {
 				error("%s line %d: keyword %s empty argument",
@@ -2463,7 +2468,7 @@ parse_key_algorithms:
 			}
 			/* Allow "none" only in first position */
 			if (strcasecmp(arg, "none") == 0) {
-				if (i > 0 || ac > 0) {
+				if (nstrs > 0 || ac > 0) {
 					error("%s line %d: keyword %s \"none\" "
 					    "argument must appear alone.",
 					    filename, linenum, keyword);
@@ -2474,12 +2479,14 @@ parse_key_algorithms:
 				fatal("%s line %d: invalid channel timeout %s",
 				    filename, linenum, arg);
 			}
-			i++;
-			if (!*activep || found)
-				continue;
 			opt_array_append(filename, linenum, keyword,
-			    &options->channel_timeouts,
-			    &options->num_channel_timeouts, arg);
+			    &strs, &nstrs, arg);
+		}
+		if (*activep && !found) {
+			options->channel_timeouts = strs;
+			options->num_channel_timeouts = nstrs;
+			strs = NULL; /* transferred */
+			nstrs = 0;
 		}
 		break;
 
@@ -2526,6 +2533,7 @@ parse_key_algorithms:
 	/* success */
 	ret = 0;
  out:
+	opt_array_free2(strs, NULL, nstrs);
 	argv_free(oav, oac);
 	return ret;
 }

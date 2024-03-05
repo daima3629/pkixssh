@@ -1,4 +1,4 @@
-/* $OpenBSD: servconf.c,v 1.403 2023/10/11 22:42:26 djm Exp $ */
+/* $OpenBSD: servconf.c,v 1.405 2024/03/04 02:16:11 djm Exp $ */
 /*
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
@@ -9,7 +9,7 @@
  * incompatible with the protocol description in the RFC file, it must be
  * called by a name other than "ssh" or "Secure Shell".
  *
- * Copyright (c) 2002-2023 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -1472,6 +1472,8 @@ process_server_config_line_depth(ServerOptions *options, char *line,
 	struct include_item *item;
 	glob_t gbuf;
 	int ret = -1;
+	char **strs = NULL; /* string array arguments; freed implicitly */
+	u_int nstrs = 0;
 
 	/* Strip trailing whitespace. Allow \f (form feed) at EOL only */
 	if ((len = strlen(line)) == 0)
@@ -2067,26 +2069,27 @@ parse_string:
 
 	case sLogVerbose:
 		found = options->num_log_verbose > 0;
-		i = 0;
 		while ((arg = argv_next(&ac, &av)) != NULL) {
 			if (*arg == '\0')
 				fatal("%s line %d: empty %s pattern",
 				    filename, linenum, keyword);
 			/* Allow "none" only in first position */
 			if (strcasecmp(arg, "none") == 0) {
-				if (i > 0 || ac > 0) {
+				if (nstrs > 0 || ac > 0) {
 					error("%s line %d: keyword %s \"none\" "
 					    "argument must appear alone.",
 					    filename, linenum, keyword);
 					goto out;
 				}
 			}
-			i++;
-			if (!*activep || found)
-				continue;
 			opt_array_append(filename, linenum, keyword,
-			    &options->log_verbose, &options->num_log_verbose,
-			    arg);
+			    &strs, &nstrs, arg);
+		}
+		if (*activep && !found) {
+			options->log_verbose = strs;
+			options->num_log_verbose = nstrs;
+			strs = NULL; /* transferred */
+			nstrs = 0;
 		}
 		break;
 
@@ -2337,12 +2340,15 @@ parse_string:
 				fatal("%s line %d: empty %s pattern",
 				    filename, linenum, keyword);
 			arg2 = tilde_expand_filename(arg, getuid());
-			if (*activep && !found) {
-				opt_array_append(filename, linenum, keyword,
-				    &options->authorized_keys_files,
-				    &options->num_authkeys_files, arg2);
-			}
+			opt_array_append(filename, linenum, keyword,
+			    &strs, &nstrs, arg2);
 			free(arg2);
+		}
+		if (*activep && !found) {
+			options->authorized_keys_files = strs;
+			options->num_authkeys_files = nstrs;
+			strs = NULL; /* transferred */
+			nstrs = 0;
 		}
 		break;
 
@@ -2597,11 +2603,15 @@ parse_string:
 				fatal("%s line %d: %s bad port number",
 				    filename, linenum, keyword);
 			}
-			if (*activep && !found) {
-				opt_array_append(filename, linenum, keyword,
-				    chararrayptr, uintptr, arg2);
-			}
+			opt_array_append(filename, linenum, keyword,
+			    &strs, &nstrs, arg2);
 			free(arg2);
+		}
+		if (*activep && !found) {
+			*chararrayptr = strs;
+			*uintptr = nstrs;
+			strs = NULL; /* transferred */
+			nstrs = 0;
 		}
 		break;
 
@@ -2699,13 +2709,12 @@ parse_string:
 	case sAuthenticationMethods:
 		found = options->num_auth_methods > 0;
 		value = 0; /* seen "any" pseudo-method */
-		value2 = 0; /* successfully parsed any method */
 		while ((arg = argv_next(&ac, &av)) != NULL) {
 			if (*arg == '\0')
 				fatal("%s line %d: empty %s pattern",
 				    filename, linenum, keyword);
 			if (strcmp(arg, "any") == 0) {
-				if (options->num_auth_methods > 0) {
+				if (nstrs > 0) {
 					fatal("%s line %d: \"any\" must "
 					    "appear alone in %s",
 					    filename, linenum, keyword);
@@ -2718,16 +2727,14 @@ parse_string:
 				fatal("%s line %d: Invalid %s spec.",
 				    filename, linenum, keyword);
 			}
-			value2 = 1;
-			if (!*activep || found)
-				continue;
 			opt_array_append(filename, linenum, keyword,
-			    &options->auth_methods,
-			    &options->num_auth_methods, arg);
+			    &strs, &nstrs, arg);
 		}
-		if (value2 == 0) {
-			fatal("%s line %d: no %s specified",
-			    filename, linenum, keyword);
+		if (*activep && !found) {
+			options->auth_methods = strs;
+			options->num_auth_methods = nstrs;
+			strs = NULL; /* transferred */
+			nstrs = 0;
 		}
 		break;
 
@@ -2787,11 +2794,10 @@ parse_string:
 
 	case sChannelTimeout:
 		found = options->num_channel_timeouts > 0;
-		i = 0;
 		while ((arg = argv_next(&ac, &av)) != NULL) {
 			/* Allow "none" only in first position */
 			if (strcasecmp(arg, "none") == 0) {
-				if (i > 0 || ac > 0) {
+				if (nstrs > 0 || ac > 0) {
 					error("%s line %d: keyword %s \"none\" "
 					    "argument must appear alone.",
 					    filename, linenum, keyword);
@@ -2801,11 +2807,14 @@ parse_string:
 				fatal("%s line %d: invalid channel timeout %s",
 				    filename, linenum, arg);
 			}
-			if (!*activep || found)
-				continue;
 			opt_array_append(filename, linenum, keyword,
-			    &options->channel_timeouts,
-			    &options->num_channel_timeouts, arg);
+			    &strs, &nstrs, arg);
+		}
+		if (*activep && !found) {
+			options->channel_timeouts = strs;
+			options->num_channel_timeouts = nstrs;
+			strs = NULL; /* transferred */
+			nstrs = 0;
 		}
 		break;
 
@@ -2857,6 +2866,7 @@ parse_string:
 	/* success */
 	ret = 0;
  out:
+	opt_array_free2(strs, NULL, nstrs);
 	argv_free(oav, oac);
 	return ret;
 }
