@@ -242,6 +242,9 @@ struct ssh_channels {
 	/* Channel timeouts by type */
 	struct ssh_channel_timeout *timeouts;
 	size_t ntimeouts;
+	/* Global timeout for all OPEN channels */
+	long global_deadline;
+	time_t lastused;
 };
 
 /* helper */
@@ -344,6 +347,11 @@ channel_add_timeout(struct ssh *ssh, const char *type_pattern,
 {
 	struct ssh_channels *sc = ssh->chanctxt;
 
+	if (strcmp(type_pattern, "global") == 0) {
+		debug2_f("global channel timeout %ld seconds", timeout_secs);
+		sc->global_deadline = timeout_secs;
+		return;
+	}
 	debug2_f("channel type \"%s\" timeout %ld seconds",
 	    type_pattern, timeout_secs);
 	sc->timeouts = xrecallocarray(sc->timeouts, sc->ntimeouts,
@@ -405,12 +413,14 @@ channel_set_xtype(struct ssh *ssh, int id, const char *xctype)
 
 /*
  * update "last used" time on a channel.
+ * NB. nothing else should update lastused except to clear it.
  */
 static inline void
 channel_set_used_time(struct ssh *ssh, Channel *c)
 {
-	UNUSED(ssh);
-	c->lastused = monotime();
+	ssh->chanctxt->lastused = monotime();
+	if (c != NULL)
+		c->lastused = ssh->chanctxt->lastused;
 }
 
 /*
@@ -420,15 +430,24 @@ channel_set_used_time(struct ssh *ssh, Channel *c)
 static int/*boolean*/
 channel_get_expiry(struct ssh *ssh, Channel *c, time_t *expiry)
 {
+	struct ssh_channels *sc = ssh->chanctxt;
 	int ret = 0;
 
-	UNUSED(ssh);
-	if (c->lastused != 0 && c->inactive_deadline != 0) {
-		time_t deadline = (time_t)(c->lastused + c->inactive_deadline);
+	if (sc->lastused != 0 && sc->global_deadline != 0) {
+		time_t deadline = (time_t)(sc->lastused + sc->global_deadline);
 		if (deadline < c->lastused)
 			deadline = 0; /*overflow*/
 		*expiry = deadline;
 		ret = 1;
+	}
+	if (c->lastused != 0 && c->inactive_deadline != 0) {
+		time_t deadline = (time_t)(c->lastused + c->inactive_deadline);
+		if (deadline < c->lastused)
+			deadline = 0; /*overflow*/
+		if (ret == 0 || deadline < *expiry) {
+			*expiry = deadline;
+			ret = 1;
+		}
 	}
 
 	return ret;
@@ -487,6 +506,8 @@ channel_register_fds(struct ssh *ssh, Channel *c, int rfd, int wfd, int efd,
 		if (efd != -1)
 			set_nonblock(efd);
 	}
+	/* channel might be entering a larval state, so reset global timeout */
+	channel_set_used_time(ssh, NULL);
 }
 
 /*
@@ -1432,6 +1453,7 @@ channel_pre_x11_open(struct ssh *ssh, Channel *c)
 
 	if (ret == 1) {
 		c->type = SSH_CHANNEL_OPEN;
+		channel_set_used_time(ssh, c);
 		channel_pre_open(ssh, c);
 	} else if (ret == -1) {
 		logit("X11 connection rejected because of wrong authentication.");
