@@ -147,6 +147,7 @@ AC_DEFINE_UNQUOTED([WITH_OPENSSL], [1], [use libcrypto for cryptography])
 
 use_stack_protector=:
 use_toolchain_hardening=:
+use_retpoline=:
 AC_ARG_WITH([stackprotect],
 	[AS_HELP_STRING([--without-stackprotect],
 		[Don't use compiler's stack protection])],
@@ -162,6 +163,15 @@ AC_ARG_WITH([hardening],
 	[
 		if test "x$withval" = "xno"; then
 			use_toolchain_hardening=false
+		fi
+	]
+)
+AC_ARG_WITH([retpoline],
+	[AS_HELP_STRING([--without-retpoline],
+		[Don't use retpoline spectre mitigation])],
+	[
+		if test "x$withval" = "xno"; then
+			use_retpoline=false
 		fi
 	]
 )
@@ -226,8 +236,6 @@ if test "$GCC" = "yes" || test "$GCC" = "egcs"; then
 	#OSSH_CHECK_CFLAG_COMPILE([-Wbitwise-instead-of-logical])
 	OSSH_CHECK_CFLAG_COMPILE([-fno-strict-aliasing])
     if $use_toolchain_hardening ; then
-	OSSH_CHECK_CFLAG_COMPILE([-mretpoline]) # clang
-	OSSH_CHECK_LDFLAG_LINK([-Wl,-z,retpolineplt])
 	OSSH_CHECK_CFLAG_COMPILE([-D_FORTIFY_SOURCE=2])
 	OSSH_CHECK_LDFLAG_LINK([-Wl,-z,relro])
 	OSSH_CHECK_LDFLAG_LINK([-Wl,-z,now])
@@ -260,6 +268,10 @@ if test "$GCC" = "yes" || test "$GCC" = "egcs"; then
 	# TODO: stack variables auto-initialization
 	# (see -Wuninitialized)
 	#-#OSSH_CHECK_CFLAG_COMPILE([-ftrivial-auto-var-init=zero])
+    fi
+    if $use_retpoline ; then
+	OSSH_CHECK_CFLAG_COMPILE([-mretpoline]) # clang
+	OSSH_CHECK_LDFLAG_LINK([-Wl,-z,retpolineplt])
     fi
 
 	AC_MSG_CHECKING([if $CC accepts -fno-builtin-memset])
