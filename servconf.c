@@ -2564,24 +2564,22 @@ parse_string:
 			uintptr = &options->num_permitted_opens;
 			chararrayptr = &options->permitted_opens;
 		}
-		arg = argv_next(&ac, &av);
-		if (arg == NULL || *arg == '\0')
-			fatal("%s line %d: %s missing argument.",
-			    filename, linenum, keyword);
 		found = *uintptr > 0;
-		if (strcmp(arg, "any") == 0 || strcmp(arg, "none") == 0) {
-			if (*activep && !found) {
-				*uintptr = 1;
-				*chararrayptr = xcalloc(1,
-				    sizeof(**chararrayptr));
-				(*chararrayptr)[0] = xstrdup(arg);
-			}
-			break;
-		}
-		for (; arg != NULL; arg = argv_next(&ac, &av)) {
-			if (*arg == '\0')
+		while ((arg = argv_next(&ac, &av)) != NULL) {
+			if (arg == NULL || *arg == '\0')
 				fatal("%s line %d: empty %s pattern",
 				    filename, linenum, keyword);
+			if (strcmp(arg, "any") == 0 ||
+			    strcmp(arg, "none") == 0) {
+				if (nstrs > 0) {
+					fatal("%s line %d: keyword %s \"%s\" "
+					    "argument must appear alone.",
+					    filename, linenum, keyword, arg);
+				}
+				opt_array_append(filename, linenum, keyword,
+				    &strs, &nstrs, arg);
+				continue;
+			}
 			if (opcode == sPermitListen &&
 			    strchr(arg, ':') == NULL) {
 				/*
@@ -2598,8 +2596,7 @@ parse_string:
 				}
 				p = cleanhostname(p);
 			}
-			if (arg == NULL ||
-			    ((port = permitopen_port(arg)) < 0)) {
+			if (((port = permitopen_port(arg)) < 0)) {
 				fatal("%s line %d: %s bad port number",
 				    filename, linenum, keyword);
 			}
