@@ -921,6 +921,20 @@ parse_time(const char *arg, const char *filename, int linenum)
 	return (int)t;  /*safe cast*/
 }
 
+static void
+free_canon_cnames(struct allowed_cname *cnames, u_int n)
+{
+	u_int i;
+
+	if (cnames == NULL || n == 0)
+		return;
+	for (i = 0; i < n; i++) {
+		free(cnames[i].source_list);
+		free(cnames[i].target_list);
+	}
+	free(cnames);
+}
+
 /* Multistate option parsing */
 struct multistate {
 	const char *key;
@@ -1060,10 +1074,11 @@ process_config_line_depth(Options *options, struct passwd *pw, const char *host,
 	size_t len;
 	struct Forward fwd;
 	const struct multistate *multistate_ptr;
-	struct allowed_cname *cname;
 	glob_t gl;
 	const char *errstr;
 	int ret = -1;
+	struct allowed_cname *cnames = NULL;
+	u_int ncnames = 0;
 	char **strs = NULL; /* string array arguments; freed implicitly */
 	u_int nstrs = 0;
 
@@ -2290,7 +2305,6 @@ parse_key_algorithms:
 
 	case oCanonicalizePermittedCNAMEs:
 		found = options->num_permitted_cnames > 0;
-		i = 0;
 		while ((arg = argv_next(&ac, &av)) != NULL) {
 			if (*arg == '\0') {
 				error("%s line %d: keyword %s empty argument",
@@ -2302,7 +2316,7 @@ parse_key_algorithms:
 			 * everything or 'list:list'
 			 */
 			if (strcasecmp(arg, "none") == 0) {
-				if (i > 0 || ac > 0) {
+				if (ncnames > 0 || ac > 0) {
 					error("%s line %d: keyword %s \"none\" "
 					    "argument must appear alone.",
 					    filename, linenum, keyword);
@@ -2323,20 +2337,19 @@ parse_key_algorithms:
 				*arg2 = '\0';
 				arg2++;
 			}
-			i++;
-			if (!*activep || found)
-				continue;
-			if (options->num_permitted_cnames >=
-			    MAX_CANON_DOMAINS) {
-				error("%s line %d: too many permitted CNAMEs.",
-				    filename, linenum);
-				goto out;
-			}
-			cname = options->permitted_cnames +
-			    options->num_permitted_cnames++;
-			cname->source_list = xstrdup(arg);
-			cname->target_list = xstrdup(arg2);
+			cnames = xrecallocarray(cnames, ncnames, ncnames + 1,
+			    sizeof(*cnames));
+			cnames[ncnames].source_list = xstrdup(arg);
+			cnames[ncnames].target_list = xstrdup(arg2);
+			ncnames++;
 		}
+		if (*activep && !found) {
+			options->permitted_cnames = cnames;
+			options->num_permitted_cnames = ncnames;
+			cnames = NULL; /* transferred */
+			ncnames = 0;
+		}
+		/* un-transferred cnames is cleaned up before exit */
 		break;
 
 	case oCanonicalizeHostname:
@@ -2533,6 +2546,7 @@ parse_key_algorithms:
 	/* success */
 	ret = 0;
  out:
+	free_canon_cnames(cnames, ncnames);
 	opt_array_free2(strs, NULL, nstrs);
 	argv_free(oav, oac);
 	return ret;
