@@ -2268,7 +2268,6 @@ parse_key_algorithms:
 
 	case oCanonicalDomains:
 		found = options->num_canonical_domains > 0;
-		i = 0;
 		while ((arg = argv_next(&ac, &av)) != NULL) {
 			if (*arg == '\0') {
 				error("%s line %d: keyword %s empty argument",
@@ -2277,29 +2276,26 @@ parse_key_algorithms:
 			}
 			/* Allow "none" only in first position */
 			if (strcasecmp(arg, "none") == 0) {
-				if (i > 0 || ac > 0) {
+				if (nstrs > 0 || ac > 0) {
 					error("%s line %d: keyword %s \"none\" "
 					    "argument must appear alone.",
 					    filename, linenum, keyword);
 					goto out;
 				}
 			}
-			i++;
 			if (!valid_domain(arg, 1, &errstr)) {
 				error("%s line %d: %s", filename, linenum,
 				    errstr);
 				goto out;
 			}
-			if (!*activep || found)
-				continue;
-			if (options->num_canonical_domains >=
-			    MAX_CANON_DOMAINS) {
-				error("%s line %d: too many hostname suffixes.",
-				    filename, linenum);
-				goto out;
-			}
-			options->canonical_domains[
-			    options->num_canonical_domains++] = xstrdup(arg);
+			opt_array_append(filename, linenum, keyword,
+			    &strs, &nstrs, arg);
+		}
+		if (*activep && !found) {
+			options->canonical_domains = strs;
+			options->num_canonical_domains = nstrs;
+			strs = NULL; /* transferred */
+			nstrs = 0;
 		}
 		break;
 

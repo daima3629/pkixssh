@@ -41,7 +41,6 @@
 /* Data structure for representing option data. */
 
 #define SSH_MAX_HOSTS_FILES	32
-#define MAX_CANON_DOMAINS	32
 #define PATH_MAX_SUN		(sizeof((struct sockaddr_un *)0)->sun_path)
 
 struct allowed_cname {
@@ -202,7 +201,7 @@ typedef struct {
 	int	proxy_use_fdpass;
 
 	int	num_canonical_domains;
-	char	*canonical_domains[MAX_CANON_DOMAINS];
+	char	**canonical_domains;
 	int	canonicalize_hostname;
 	int	canonicalize_max_dots;
 	int	canonicalize_fallback_local;
