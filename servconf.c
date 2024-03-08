@@ -2566,7 +2566,7 @@ parse_string:
 		}
 		found = *uintptr > 0;
 		while ((arg = argv_next(&ac, &av)) != NULL) {
-			if (arg == NULL || *arg == '\0')
+			if (*arg == '\0')
 				fatal("%s line %d: empty %s pattern",
 				    filename, linenum, keyword);
 			if (strcmp(arg, "any") == 0 ||
