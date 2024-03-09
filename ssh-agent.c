@@ -1123,7 +1123,7 @@ after_poll(struct pollfd *pfd, size_t npfd, u_int maxfds)
 }
 
 static int
-prepare_poll(struct pollfd **pfdp, size_t *npfdp, int *timeoutp, u_int maxfds)
+prepare_ppoll(struct pollfd **pfdp, size_t *npfdp, struct timespec *timeoutp, u_int maxfds)
 {
 	struct pollfd *pfd = *pfdp;
 	size_t i, j, npfd = 0;
@@ -1189,15 +1189,9 @@ prepare_poll(struct pollfd **pfdp, size_t *npfdp, int *timeoutp, u_int maxfds)
 	if (parent_alive_interval != 0)
 		deadline = (deadline == 0) ? parent_alive_interval :
 		    MINIMUM(deadline, parent_alive_interval);
-	if (deadline == 0) {
-		*timeoutp = -1; /* INFTIM */
-	} else {
-		if (deadline > INT_MAX / 1000)
-			*timeoutp = INT_MAX / 1000;
-		else
-			*timeoutp = deadline * 1000;
-	}
-	return (1);
+	if (deadline != 0)
+		ptimeout_deadline_sec(timeoutp, deadline);
+	return 1;
 }
 
 static void
@@ -1271,7 +1265,6 @@ main(int ac, char **av)
 	char pidstrbuf[1 + 3 * sizeof pid];
 	size_t len;
 	mode_t prev_mask;
-	int timeout = -1; /* INFTIM */
 	struct pollfd *pfd = NULL;
 	size_t npfd = 0;
 	u_int maxfds;
@@ -1550,8 +1543,11 @@ skip:
 	platform_pledge_agent();
 
 	while (1) {
-		prepare_poll(&pfd, &npfd, &timeout, maxfds);
-		result = poll(pfd, npfd, timeout);
+		struct timespec timeout;
+
+		ptimeout_init(&timeout);
+		prepare_ppoll(&pfd, &npfd, &timeout, maxfds);
+		result = ppoll(pfd, npfd, ptimeout_get_tsp(&timeout), NULL);
 		saved_errno = errno;
 		if (parent_alive_interval != 0)
 			check_parent_exists();
@@ -1559,7 +1555,7 @@ skip:
 		if (result == -1) {
 			if (saved_errno == EINTR)
 				continue;
-			fatal("poll: %s", strerror(saved_errno));
+			fatal("ppoll: %s", strerror(saved_errno));
 		} else if (result > 0)
 			after_poll(pfd, npfd, maxfds);
 	}
