@@ -1220,11 +1220,7 @@ static void
 cleanup_handler(int sig)
 {
 	UNUSED(sig);
-	cleanup_socket();
-#ifdef ENABLE_PKCS11
-	pkcs11_terminate();
-#endif
-	_exit(2);
+	cleanup_exit(2);
 }
 
 static void
@@ -1236,8 +1232,7 @@ check_parent_exists(void)
 	 */
 	if (parent_pid != -1 && getppid() != parent_pid) {
 		/* printf("Parent has died - Authentication agent exiting.\n"); */
-		cleanup_socket();
-		_exit(2);
+		cleanup_exit(2);
 	}
 }
 
