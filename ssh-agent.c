@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-agent.c,v 1.304 2023/12/18 15:58:56 djm Exp $ */
+/* $OpenBSD: ssh-agent.c,v 1.306 2024/03/09 05:12:13 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -145,6 +145,8 @@ int max_fd = 0;
 /* pid of shell == parent of agent */
 pid_t parent_pid = -1;
 time_t parent_alive_interval = 0;
+
+static volatile sig_atomic_t signalled = 0;
 
 /* pid of process for which cleanup_socket is applicable */
 pid_t cleanup_pid = 0;
@@ -1219,8 +1221,7 @@ cleanup_exit(int i)
 static void
 cleanup_handler(int sig)
 {
-	UNUSED(sig);
-	cleanup_exit(2);
+	signalled = sig;
 }
 
 static void
@@ -1263,6 +1264,7 @@ main(int ac, char **av)
 	struct pollfd *pfd = NULL;
 	size_t npfd = 0;
 	u_int maxfds;
+	sigset_t nsigset;
 
 	socket_name[0] = '\0';
 	socket_dir[0] = '\0';
@@ -1533,17 +1535,28 @@ skip:
 	ssh_signal(SIGHUP, cleanup_handler);
 	ssh_signal(SIGTERM, cleanup_handler);
 
+	sigemptyset(&nsigset);
+	sigaddset(&nsigset, SIGINT);
+	sigaddset(&nsigset, SIGHUP);
+	sigaddset(&nsigset, SIGTERM);
+
 	if (pledge("stdio rpath cpath unix id proc exec", NULL) == -1)
 		fatal("%s: pledge: %s", __progname, strerror(errno));
 	platform_pledge_agent();
 
-	while (1) {
+	while (signalled == 0) {
 		struct timespec timeout;
 
 		ptimeout_init(&timeout);
 		prepare_ppoll(&pfd, &npfd, &timeout, maxfds);
-		result = ppoll(pfd, npfd, ptimeout_get_tsp(&timeout), NULL);
+	{	sigset_t osigset;
+		sigprocmask(SIG_BLOCK, &nsigset, &osigset);
+		result = ppoll(pfd, npfd, ptimeout_get_tsp(&timeout), &osigset);
 		saved_errno = errno;
+		sigprocmask(SIG_SETMASK, &osigset, NULL);
+	}
+		if (signalled != 0)
+			break;
 		if (parent_alive_interval != 0)
 			check_parent_exists();
 		(void) reaper();	/* remove expired keys */
@@ -1554,5 +1567,6 @@ skip:
 		} else if (result > 0)
 			after_poll(pfd, npfd, maxfds);
 	}
-	/* NOTREACHED */
+	logit("exiting on signal %d", (int)signalled);
+	cleanup_exit(2);
 }
