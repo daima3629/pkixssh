@@ -168,6 +168,8 @@ TEST_SSH_SSHKEYGEN?=ssh-keygen
 TEST_SHELL?=sh
 SHELL=$(TEST_SHELL)
 
+DEF_CHECK_ALG?=	check_alg() { $(TEST_SSH_SSH) -Q key-alg | grep "^$$1" >/dev/null; }
+
 CPPFLAGS=-I..
 
 t1:
@@ -196,7 +198,7 @@ t5:
 		awk '{print $$2}' | diff - ${.CURDIR}/t5.ok
 
 t6:
-	if ${TEST_SSH_SSH} -Q key-alg | grep ^ssh-dss >/dev/null ; then set -e; \
+	$(DEF_CHECK_ALG); if check_alg ssh-dss ; then set -e; \
 	${TEST_SSH_SSHKEYGEN} -if ${.CURDIR}/dsa_ssh2.prv > $(OBJ)/t6.out1 ; \
 	${TEST_SSH_SSHKEYGEN} -if ${.CURDIR}/dsa_ssh2.pub > $(OBJ)/t6.out2 ; \
 	chmod 600 $(OBJ)/t6.out1 ; \
@@ -211,23 +213,23 @@ t7: $(OBJ)/t7.out
 	${TEST_SSH_SSHKEYGEN} -Bf $(OBJ)/t7.out > /dev/null
 
 $(OBJ)/t8.out:
-	if ${TEST_SSH_SSH} -Q key-alg | grep ^ssh-dss >/dev/null ; then \
+	$(DEF_CHECK_ALG); if check_alg ssh-dss ; then \
 	${TEST_SSH_SSHKEYGEN} -q -t dsa -N '' -f $@ ; \
 	fi
 
 t8: $(OBJ)/t8.out
-	if ${TEST_SSH_SSH} -Q key-alg | grep ^ssh-dss >/dev/null ; then set -e; \
+	$(DEF_CHECK_ALG); if check_alg ssh-dss ; then set -e; \
 	${TEST_SSH_SSHKEYGEN} -lf $(OBJ)/t8.out > /dev/null ; \
 	${TEST_SSH_SSHKEYGEN} -Bf $(OBJ)/t8.out > /dev/null ; \
 	else echo "*** skipped $@ ***" ; fi
 
 $(OBJ)/t9.out:
-	if ${TEST_SSH_SSH} -Q key-alg | grep ^ecdsa-sha2- >/dev/null ; then \
+	$(DEF_CHECK_ALG); if check_alg ecdsa-sha2- ; then \
 	${TEST_SSH_SSHKEYGEN} -q -t ecdsa -N '' -f $@ ; \
 	fi
 
 t9: $(OBJ)/t9.out
-	if ${TEST_SSH_SSH} -Q key-alg | grep ^ecdsa-sha2- >/dev/null ; then set -e; \
+	$(DEF_CHECK_ALG); if check_alg ecdsa-sha2- ; then set -e; \
 	${TEST_SSH_SSHKEYGEN} -lf $(OBJ)/t9.out > /dev/null ; \
 	${TEST_SSH_SSHKEYGEN} -Bf $(OBJ)/t9.out > /dev/null ; \
 	else echo "*** skipped $@ ***" ; fi
@@ -240,7 +242,7 @@ t10: $(OBJ)/t10.out
 	${TEST_SSH_SSHKEYGEN} -Bf $(OBJ)/t10.out > /dev/null
 
 t11:
-	if ${TEST_SSH_SSH} -Q key-alg | grep ^rsa-sha2- >/dev/null ; then \
+	$(DEF_CHECK_ALG); if check_alg rsa-sha2- ; then \
 	${TEST_SSH_SSHKEYGEN} -E sha256 -lf ${.CURDIR}/rsa_openssh.pub |\
 		awk '{print $$2}' | diff - ${.CURDIR}/t11.ok ; \
 	else echo "*** skipped $@ ***" ; fi
