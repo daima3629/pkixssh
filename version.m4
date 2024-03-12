@@ -2,6 +2,6 @@
 # in version.h and in contrib/*/pkixssh.spec
 
 m4_define([SSH_PACKAGE], [PKIX-SSH])
-m4_define([SSH_VERSION], [14.4])
+m4_define([SSH_VERSION], [15.0])
 m4_define([SSH_BUGREPORT], [ssh_x509@roumenpetrov.info])
 m4_define([SSH_URL], [https://roumenpetrov.info/secsh])

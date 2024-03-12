@@ -82,7 +82,7 @@ Url:		https://roumenpetrov.info/secsh/
 
 Name:		pkixssh
 Summary:	PKIX-SSH, Advanced secure shell implementation
-Version:	14.4
+Version:	15.0
 Release:	1
 License:	BSD
 Group:		Productivity/Networking/SSH
