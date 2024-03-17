@@ -1168,7 +1168,7 @@ mm_answer_keyallowed(struct ssh *ssh, int sock, struct sshbuf *m)
 
 {	ssh_verify_ctx ctx = { pkalg, key, &ssh->compat };
 
-	if (key != NULL && authctxt->valid) {
+	if (authctxt->valid) {
 		switch (type) {
 		case MM_USERKEY:
 			auth_method = "publickey";
@@ -1205,11 +1205,12 @@ mm_answer_keyallowed(struct ssh *ssh, int sock, struct sshbuf *m)
 
 	debug3_f("%s authentication%s: %s key is %s", auth_method,
 	    pubkey_auth_attempt ? "" : " test",
-	    (key == NULL || !authctxt->valid) ? "invalid" : sshkey_type(key),
+	    !authctxt->valid ? "invalid" : sshkey_type(key),
 	    allowed ? "allowed" : "not allowed");
 
 	auth2_record_key(authctxt, 0, key);
 	sshkey_free(key);
+	free(pkalg);
 
 	/* clear temporarily storage (used by verify) */
 	monitor_reset_key_state();
@@ -1229,7 +1230,6 @@ mm_answer_keyallowed(struct ssh *ssh, int sock, struct sshbuf *m)
 		free(cuser);
 		free(chost);
 	}
-	free(pkalg);
 
 	sshbuf_reset(m);
 	if ((r = sshbuf_put_u32(m, allowed)) != 0)
