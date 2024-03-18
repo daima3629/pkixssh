@@ -2447,7 +2447,7 @@ usage(void)
 int
 main(int argc, char **argv)
 {
-	int r, in, out, ch, err, tmp, port = -1, noisy = 0;
+	int r, in, out, ch, err, port = -1, noisy = 0;
 	char *host = NULL, *user, *file2 = NULL;
 	int debug_level = 0;
 	char *file1 = NULL, *sftp_server = NULL;
@@ -2628,13 +2628,11 @@ parse_num_requests:
 			usage();
 		argv += optind;
 
-		switch (parse_uri("sftp", *argv, &user, &host, &tmp, &file1)) {
+		switch (parse_uri("sftp", *argv, &user, &host, &port, &file1)) {
 		case -1:
 			usage();
 			break;
 		case 0:
-			if (tmp != -1)
-				port = tmp;
 			break;
 		default:
 			/* Try with user, host and path. */
@@ -2676,6 +2674,7 @@ parse_num_requests:
 		connect_to_server(ssh_program, args.list, &in, &out);
 	} else {
 		char **cpp;
+		int tmp;
 		if ((r = argv_split(sftp_direct, &tmp, &cpp, 1)) != 0)
 			fatal_r(r, "Parse -D arguments");
 		if (cpp[0] == 0)
