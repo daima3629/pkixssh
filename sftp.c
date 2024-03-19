@@ -2448,7 +2448,7 @@ int
 main(int argc, char **argv)
 {
 	int r, in, out, ch, err, port = -1, noisy = 0;
-	char *host = NULL, *user, *file2 = NULL;
+	char *host = NULL, *user = NULL, *file2 = NULL;
 	int debug_level = 0;
 	char *file1 = NULL, *sftp_server = NULL;
 	const char *ssh_program = _PATH_SSH_PROGRAM, *sftp_direct = NULL;
@@ -2690,7 +2690,10 @@ parse_num_requests:
 
 	if (!quiet) {
 		if (sftp_direct == NULL)
-			fprintf(stderr, "Connected to %s.\n", host);
+			if (user != NULL)
+				fprintf(stderr, "Connected to %s@%s.\n", user, host);
+			else
+				fprintf(stderr, "Connected to %s.\n", host);
 		else
 			fprintf(stderr, "Attached to %s.\n", sftp_direct);
 	}
