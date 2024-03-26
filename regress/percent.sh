@@ -3,12 +3,6 @@
 
 tid="percent expansions"
 
-if [ -x "/usr/xpg4/bin/id" ]; then
-	PATH=/usr/xpg4/bin:$PATH
-	export PATH
-fi
-
-USER=`id -u -n`
 USERID=`id -u`
 HOSTNAME=`hostname`
 test -z "$HOSTNAME" && HOSTNAME=`uname -n`

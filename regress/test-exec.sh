@@ -51,7 +51,13 @@ unset SSH_AUTH_SOCK || :
 
 # Platform-specific settings.
 
-if [ -x /usr/ucb/whoami ]; then
+if test -x "/usr/xpg4/bin/id" ; then
+id() {
+  /usr/xpg4/bin/id ${1+"$@"}
+}
+fi
+
+if test -x /usr/ucb/whoami ; then
 	USER=`/usr/ucb/whoami`
 elif whoami >/dev/null 2>&1; then
 	USER=`whoami`
