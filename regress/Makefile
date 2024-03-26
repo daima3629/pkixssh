@@ -168,7 +168,7 @@ TEST_SSH_SSHKEYGEN?=ssh-keygen
 TEST_SHELL?=sh
 SHELL=$(TEST_SHELL)
 
-DEF_CHECK_ALG?=	check_alg() { $(TEST_SSH_SSH) -Q key-alg | grep "^$$1" >/dev/null; }
+DEF_CHECK_ALG=check_alg() { $(TEST_SSH_SSH) -Q key-alg | grep "^$$1" >/dev/null; }
 
 CPPFLAGS=-I..
 
