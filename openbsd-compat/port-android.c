@@ -34,40 +34,25 @@
 #include "pathnames.h"
 extern char *__progname;
 
-#undef APP_DIR_VERSION
-#if 1
-# define APP_DIR_VERSION 2
-#else
-# define APP_DIR_VERSION 1
-#endif
-
 /* paths to application specific directories: */
-#if APP_DIR_VERSION == 1
-extern char *get_app_etcdir(void);
-extern char *get_app_bindir(void);
-extern char *get_app_libexecdir(void);
-#endif
-
-#if APP_DIR_VERSION == 2
 extern char *get2_app_etcdir(const char *cmd);
 extern char *get2_app_bindir(const char *cmd);
 extern char *get2_app_libexecdir(const char *cmd);
 
 static inline char*
-get_app_etcdir() {
+get_app_etcdir(void) {
 	return get2_app_etcdir(__progname);
 }
 
 static inline char*
-get_app_bindir() {
+get_app_bindir(void) {
 	return get2_app_bindir(__progname);
 }
 
 static inline char*
-get_app_libexecdir() {
+get_app_libexecdir(void) {
 	return get2_app_libexecdir(__progname);
 }
-#endif
 
 /* Obsolete package rule:
  * Note it is expected binaries to be installed in $(prefix)/xbin.
