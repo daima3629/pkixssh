@@ -1379,6 +1379,8 @@ sshpam_auth_passwd(Authctxt *authctxt, const char *password)
 		fatal_f("PAM: failed to set PAM_CONV: %s",
 		    pam_strerror(sshpam_handle, sshpam_err));
 
+	export_authinfo();
+
 	sshpam_err = pam_authenticate(sshpam_handle, flags);
 	sshpam_password = NULL;
 	free(fake);
