@@ -1053,7 +1053,7 @@ utmpx_perform_login(struct logininfo *li)
 		return (0);
 	}
 # else
-	if (!utmpx_write_direct(li, &ut)) {
+	if (!utmpx_write_direct(li, &utx)) {
 		error_f("utmp_write_direct() failed");
 		return (0);
 	}
