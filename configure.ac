@@ -3492,7 +3492,7 @@ error OPENSSL_FIPS is not defined
 ])
 AC_SUBST([OPENSSL_FIPS_MODE])
 
-FIPS_LIBS=
+FIPSLIBS=
 FIPSHMAC=:
 AS_IF([test "x$OPENSSL_FIPS_MODE" = "xyes"], [
   # some system distribute openssl/fips.h
@@ -3527,12 +3527,12 @@ AS_IF([test "x$OPENSSL_FIPS_MODE" = "xyes"], [
   # check for Red Hat specific fips library
   AC_CHECK_LIB([fipscheck], [FIPSCHECK_verify],
   [
-    FIPS_LIBS="-lfipscheck"
+    FIPSLIBS="-lfipscheck"
     AC_CHECK_HEADERS([fipscheck.h])
     FIPSHMAC=fipshmac
   ])
 ])
-AC_SUBST([FIPS_LIBS])
+AC_SUBST([FIPSLIBS])
 AC_SUBST([FIPSHMAC])
 
 
@@ -6176,7 +6176,7 @@ echo ""
 fi
 
 AS_IF([test "x$OPENSSL_FIPS_MODE" = "xyes"], [
-echo "    FIPS libraries: $FIPS_LIBS"
+echo "    FIPS libraries: $FIPSLIBS"
 echo ""
 ])
 
