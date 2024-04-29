@@ -1,7 +1,7 @@
-/* $OpenBSD: readpass.c,v 1.69 2021/07/23 05:56:47 djm Exp $ */
+/* $OpenBSD: readpass.c,v 1.71 2024/03/30 04:27:44 djm Exp $ */
 /*
  * Copyright (c) 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2019-2020 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2019-2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -112,6 +112,17 @@ ssh_askpass(const char *askpass, const char *msg, const char *env_hint)
 
 /* private/internal read_passphrase flags */
 #define RP_ASK_PERMISSION	0x8000 /* pass hint to askpass for confirm UI */
+static inline int/*boolean*/
+has_x11_display() {
+#ifdef __ANDROID__
+	return 1;
+#else
+	const char *s;
+	return
+	    ((s = getenv("DISPLAY")) != NULL && *s != '\0') ||
+	    ((s = getenv("WAYLAND_DISPLAY")) != NULL && *s != '\0');
+#endif
+}
 
 /*
  * Reads a passphrase from /dev/tty with echo turned off/on.  Returns the
@@ -126,12 +137,8 @@ read_passphrase(const char *prompt, int flags)
 	int rppflags, use_askpass = 0, allow_askpass;
 	const char *s;
 
-#ifdef __ANDROID__
-	allow_askpass = 1;
-#else
-	s = getenv("DISPLAY");
-	allow_askpass = (s != NULL) && (*s != '\0');
-#endif
+	allow_askpass = has_x11_display();
+
 	s = getenv(SSH_ASKPASS_REQUIRE_ENV);
 	if (s != NULL) {
 		if (strcasecmp(s, "force") == 0) {
