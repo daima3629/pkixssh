@@ -1,0 +1,45 @@
+#! /bin/sh
+#
+# Copyright (c) 2024 Roumen Petrov.  All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+# IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+# OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+# IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+# NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+# THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+width="--width 400"
+
+if test "x$SSH_ASKPASS_PROMPT" = "xconfirm" ;  then
+  prompt="${1-Unknown confirmation request}"
+  exec \
+  zenity --question --title "Confirmation - Secure SHELL" $width --text "$prompt"
+fi
+if test "x$SSH_ASKPASS_PROMPT" = "xnone" ;  then
+  prompt="${1-Unknown notification}"
+  exec \
+  zenity --info --title "Notification - Secure SHELL" $width --text "$prompt"
+fi
+
+prompt="${1-Enter your passphrase:}"
+#FIXME:
+# How to show prompt as text message? Note prompt could be quite long.
+# Note --width does not work.
+#exec \
+#zenity --password --title "Passphrase - Secure SHELL" $width
+exec \
+zenity --password --title "$prompt"
