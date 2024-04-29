@@ -136,6 +136,7 @@ CLEANFILES=	*.core actual agent-ca agent-ca.pub agent-key.* authkeys_orig \
 		ecdsa-sha2-nistp384-agent* ecdsa-sha2-nistp384 ecdsa-sha2-nistp384.pub \
 		ecdsa-sha2-nistp521-agent* ecdsa-sha2-nistp521 ecdsa-sha2-nistp521.pub \
 		expect failed-regress.log failed-ssh.log failed-sshd.log \
+		finished.* \
 		hkr.* host.ecdsa-sha2-nistp256 host.ecdsa-sha2-nistp384 \
 		host.ecdsa-sha2-nistp521 host.ssh-dss host.ssh-ed25519 \
 		host.ssh-rsa host.ssh-xmss@openssh.com \

@@ -35,6 +35,7 @@ expect
 failed-regress.log
 failed-ssh.log
 failed-sshd.log
+finished.*
 hkr.*
 host.ecdsa-sha2-nistp256
 host.ecdsa-sha2-nistp384

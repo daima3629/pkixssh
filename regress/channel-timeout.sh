@@ -181,3 +181,4 @@ fi
 cmp $DATA $COPY || fail "corrupted copy"
 
 rm -f "$SFTPSUBSYS"
+rm -f $OBJ/finished.*
