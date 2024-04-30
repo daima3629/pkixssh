@@ -410,7 +410,7 @@ install-files:
 	$(INSTALL) -m 644 ssh-keysign.8.out $(DESTDIR)$(mandir)/$(mansubdir)8/ssh-keysign.8
 	$(INSTALL) -m 644 ssh-pkcs11-helper.8.out $(DESTDIR)$(mandir)/$(mansubdir)8/ssh-pkcs11-helper.8
 
-install-sysconf:
+install-sysconf: $(CONFIGFILES)
 	$(MKDIR_P) $(DESTDIR)$(sysconfdir)
 	@if [ ! -f $(DESTDIR)$(sysconfdir)/ssh_config ]; then \
 		$(INSTALL) -m 644 ssh_config.out $(DESTDIR)$(sysconfdir)/ssh_config; \
