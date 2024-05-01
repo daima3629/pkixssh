@@ -291,7 +291,7 @@ moduli:
 
 localclean:
 	rm -f *.o *.a $(TARGETS) logintest config.cache config.log
-	rm -f *.out core survey
+	rm -f *.out .ssh*.hmac core survey
 	rm -f regress/check-perm$(EXEEXT) regress/check-perm.o
 	rm -f regress/mkdtemp$(EXEEXT) regress/mkdtemp.o
 	rm -f regress/modpipe$(EXEEXT) regress/modpipe.o
