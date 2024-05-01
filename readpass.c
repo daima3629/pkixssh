@@ -113,7 +113,7 @@ ssh_askpass(const char *askpass, const char *msg, const char *env_hint)
 /* private/internal read_passphrase flags */
 #define RP_ASK_PERMISSION	0x8000 /* pass hint to askpass for confirm UI */
 static inline int/*boolean*/
-has_x11_display() {
+has_x11_display(void) {
 #ifdef __ANDROID__
 	return 1;
 #else
