@@ -1,4 +1,4 @@
-/* $OpenBSD: clientloop.c,v 1.402 2023/11/24 00:31:30 dtucker Exp $ */
+/* $OpenBSD: clientloop.c,v 1.406 2024/05/09 09:46:47 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -173,7 +173,6 @@ static time_t control_persist_exit_time = 0;
 volatile sig_atomic_t quit_pending; /* Set non-zero to quit the loop. */
 static int last_was_cr;		/* Last character was a newline. */
 static int exit_status;		/* Used to store the command exit status. */
-static struct sshbuf *stderr_buffer;	/* Used for final exit message. */
 static int connection_in;	/* Connection to server (input). */
 static int connection_out;	/* Connection to server (output). */
 static int need_rekeying;	/* Set to non-zero if rekeying is requested. */
@@ -219,17 +218,19 @@ static void
 quit_message(const char *fmt, ...)
 {
 	char *msg;
-	int r;
 
 {	va_list args;
 	va_start(args, fmt);
 	xvasprintf(&msg, fmt, args);
 	va_end(args);
 }
-	if ((r = sshbuf_putf(stderr_buffer, "%s\r\n", msg)) != 0)
-		fatal_fr(r, "sshbuf_putf");
-	quit_pending = 1;
+
+	(void)atomicio(vwrite, STDERR_FILENO, msg, strlen(msg));
+	(void)atomicio(vwrite, STDERR_FILENO, "\r\n", 2);
+
 	free(msg);
+
+	quit_pending = 1;
 }
 
 /*
@@ -1335,7 +1336,7 @@ client_loop(struct ssh *ssh, int have_pty, int escape_char_arg,
 	struct pollfd *pfd = NULL;
 	u_int npfd_alloc = 0, npfd_active = 0;
 	double start_time, total_time;
-	int r, len;
+	int r;
 	u_int64_t ibytes, obytes;
 	sigset_t bsigset, osigset;
 
@@ -1385,10 +1386,6 @@ client_loop(struct ssh *ssh, int have_pty, int escape_char_arg,
 	connection_out = ssh_packet_get_connection_out(ssh);
 
 	quit_pending = 0;
-
-	/* Initialize buffer. */
-	if ((stderr_buffer = sshbuf_new()) == NULL)
-		fatal_f("sshbuf_new failed");
 
 	client_init_dispatch(ssh);
 
@@ -1522,6 +1519,14 @@ client_loop(struct ssh *ssh, int have_pty, int escape_char_arg,
 
 	/* Terminate the session. */
 
+	/*
+	 * In interactive mode (with pseudo tty) display a message indicating
+	 * that the connection has been closed.
+	 */
+	if (have_pty && options.log_level >= SYSLOG_LEVEL_INFO)
+		quit_message("Connection to %s closed.", host);
+
+
 	/* Stop watching for window change. */
 	ssh_signal(SIGWINCH, SIG_DFL);
 
@@ -1552,27 +1557,6 @@ client_loop(struct ssh *ssh, int have_pty, int escape_char_arg,
 		verbose("Killed by signal %d.", (int) received_signal);
 		cleanup_exit(128 + received_signal); /*shell style*/
 	}
-
-	/*
-	 * In interactive mode (with pseudo tty) display a message indicating
-	 * that the connection has been closed.
-	 */
-	if (have_pty && options.log_level >= SYSLOG_LEVEL_INFO)
-		quit_message("Connection to %s closed.", host);
-
-	/* Output any buffered data for stderr. */
-	if (sshbuf_len(stderr_buffer) > 0) {
-		len = atomicio(vwrite, fileno(stderr),
-		    sshbuf_mutable_ptr(stderr_buffer),
-		    sshbuf_len(stderr_buffer));
-		if (len < 0 || (u_int)len != sshbuf_len(stderr_buffer))
-			error("Write failed flushing stderr buffer.");
-		else if ((r = sshbuf_consume(stderr_buffer, len)) != 0)
-			fatal_fr(r, "sshbuf_consume");
-	}
-
-	/* Clear and free any buffers. */
-	sshbuf_free(stderr_buffer);
 
 	/* Report bytes transferred, and transfer rates. */
 	total_time = monotime_double() - start_time;
