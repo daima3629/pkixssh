@@ -118,7 +118,7 @@ SSHOBJS= ssh.o readconf.o clientloop.o sshtty.o \
 	sshconnect.o sshconnect2.o mux.o
 
 SSHDOBJS=sshd.o auth-rhosts.o auth-passwd.o \
-	audit.o audit-bsm.o audit-linux.o platform.o \
+	audit.o audit-bsm.o audit-linux.o platform.o platform-listen.o \
 	sshpty.o sshlogin.o servconf.o serverloop.o ssh-pselect.o \
 	$(X509STORE_OBJS) $(OCSP_OBJS) \
 	auth.o auth2.o auth2-methods.o auth-options.o session.o \
