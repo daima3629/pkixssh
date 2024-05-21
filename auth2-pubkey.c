@@ -1,7 +1,7 @@
-/* $OpenBSD: auth2-pubkey.c,v 1.119 2023/07/27 22:25:17 djm Exp $ */
+/* $OpenBSD: auth2-pubkey.c,v 1.120 2024/05/17 00:30:23 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
- * Copyright (c) 2003-2022 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2003-2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -71,6 +71,7 @@
 
 /* import */
 extern ServerOptions options;
+extern struct authmethod_cfg methodcfg_pubkey;
 
 /* return 1 if given publickey algorithm is allowed */
 static int
@@ -763,7 +764,6 @@ user_xkey_allowed(struct ssh *ssh, struct passwd *pw, ssh_verify_ctx *ctx,
 }
 
 Authmethod method_pubkey = {
-	"publickey",
-	userauth_pubkey,
-	&options.pubkey_authentication
+	&methodcfg_pubkey,
+	userauth_pubkey
 };

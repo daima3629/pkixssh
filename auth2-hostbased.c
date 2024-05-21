@@ -1,7 +1,7 @@
-/* $OpenBSD: auth2-hostbased.c,v 1.52 2023/03/05 05:34:09 dtucker Exp $ */
+/* $OpenBSD: auth2-hostbased.c,v 1.53 2024/05/17 00:30:23 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
- * Copyright (c) 2004-2022 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2004-2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -55,6 +55,7 @@
 
 /* import */
 extern ServerOptions options;
+extern struct authmethod_cfg methodcfg_hostbased;
 
 /* return 1 if given hostbased algorithm is allowed */
 static int
@@ -277,7 +278,6 @@ hostbased_xkey_allowed(struct ssh *ssh, struct passwd *pw,
 }
 
 Authmethod method_hostbased = {
-	"hostbased",
-	userauth_hostbased,
-	&options.hostbased_authentication
+	&methodcfg_hostbased,
+	userauth_hostbased
 };

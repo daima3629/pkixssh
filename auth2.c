@@ -1,6 +1,7 @@
-/* $OpenBSD: auth2.c,v 1.167 2023/08/28 09:48:11 djm Exp $ */
+/* $OpenBSD: auth2.c,v 1.169 2024/05/17 00:30:23 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
+ * Copyright (c) 2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -493,16 +494,16 @@ authmethods_get(Authctxt *authctxt)
 	if ((b = sshbuf_new()) == NULL)
 		fatal_f("sshbuf_new failed");
 	for (i = 0; authmethods[i] != NULL; i++) {
-		if (strcmp(authmethods[i]->name, "none") == 0)
+		struct authmethod_cfg *cfg = authmethods[i]->cfg;
+
+		if (strcmp(cfg->name, "none") == 0)
 			continue;
-		if (authmethods[i]->enabled == NULL ||
-		    *(authmethods[i]->enabled) == 0)
+		if (cfg->enabled == NULL || *(cfg->enabled) == 0)
 			continue;
-		if (!auth2_method_allowed(authctxt, authmethods[i]->name,
-		    NULL))
+		if (!auth2_method_allowed(authctxt, cfg->name, NULL))
 			continue;
 		if ((r = sshbuf_putf(b, "%s%s", sshbuf_len(b) ? "," : "",
-		    authmethods[i]->name)) != 0)
+		    cfg->name)) != 0)
 			fatal_fr(r, "buffer error");
 	}
 	if ((list = sshbuf_dup_string(b)) == NULL)
@@ -517,63 +518,18 @@ authmethod_lookup(Authctxt *authctxt, const char *name)
 	int i;
 
 	if (name != NULL)
-		for (i = 0; authmethods[i] != NULL; i++)
-			if (authmethods[i]->enabled != NULL &&
-			    *(authmethods[i]->enabled) != 0 &&
-			    strcmp(name, authmethods[i]->name) == 0 &&
+		for (i = 0; authmethods[i] != NULL; i++) {
+			struct authmethod_cfg *cfg = authmethods[i]->cfg;
+			if (cfg->enabled != NULL &&
+			    *(cfg->enabled) != 0 &&
+			    strcmp(name, cfg->name) == 0 &&
 			    auth2_method_allowed(authctxt,
-			    authmethods[i]->name, NULL))
+			    cfg->name, NULL))
 				return authmethods[i];
+		}
 	debug2("Unrecognized authentication method name: %s",
 	    name ? name : "NULL");
 	return NULL;
-}
-
-/*
- * Check a comma-separated list of methods for validity. Is need_enable is
- * non-zero, then also require that the methods are enabled.
- * Returns 0 on success or -1 if the methods list is invalid.
- */
-int
-auth2_methods_valid(const char *_methods, int need_enable)
-{
-	char *methods, *omethods, *method, *p;
-	u_int i, found;
-	int ret = -1;
-
-	if (*_methods == '\0') {
-		error("empty authentication method list");
-		return -1;
-	}
-	omethods = methods = xstrdup(_methods);
-	while ((method = strsep(&methods, ",")) != NULL) {
-		for (found = i = 0; !found && authmethods[i] != NULL; i++) {
-			if ((p = strchr(method, ':')) != NULL)
-				*p = '\0';
-			if (strcmp(method, authmethods[i]->name) != 0)
-				continue;
-			if (need_enable) {
-				if (authmethods[i]->enabled == NULL ||
-				    *(authmethods[i]->enabled) == 0) {
-					error("Disabled method \"%s\" in "
-					    "AuthenticationMethods list \"%s\"",
-					    method, _methods);
-					goto out;
-				}
-			}
-			found = 1;
-			break;
-		}
-		if (!found) {
-			error("Unknown authentication method \"%s\" in list",
-			    method);
-			goto out;
-		}
-	}
-	ret = 0;
- out:
-	free(omethods);
-	return ret;
 }
 
 /*

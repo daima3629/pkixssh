@@ -1,6 +1,7 @@
-/* $OpenBSD: auth2-gss.c,v 1.34 2023/03/31 04:22:27 djm Exp $ */
+/* $OpenBSD: auth2-gss.c,v 1.36 2024/05/17 04:42:13 djm Exp $ */
 /*
  * Copyright (c) 2001-2003 Simon Wilkinson. All rights reserved.
+ * Copyright (c) 2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -48,7 +49,7 @@
 
 #define SSH_GSSAPI_MAX_MECHS	2048
 
-extern ServerOptions options;
+extern struct authmethod_cfg methodcfg_gssapi;
 
 static int input_gssapi_token(int type, u_int32_t plen, struct ssh *ssh);
 static int input_gssapi_mic(int type, u_int32_t plen, struct ssh *ssh);
@@ -340,9 +341,8 @@ input_gssapi_mic(int type, u_int32_t plen, struct ssh *ssh)
 }
 
 Authmethod method_gssapi = {
-	"gssapi-with-mic",
-	userauth_gssapi,
-	&options.gss_authentication
+	&methodcfg_gssapi,
+	userauth_gssapi
 };
 
 #endif /* GSSAPI */

@@ -1,6 +1,7 @@
-/* $OpenBSD: auth2-passwd.c,v 1.21 2022/05/27 04:29:40 dtucker Exp $ */
+/* $OpenBSD: auth2-passwd.c,v 1.22 2024/05/17 00:30:23 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
+ * Copyright (c) 2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -44,7 +45,7 @@
 #include "servconf.h"
 
 /* import */
-extern ServerOptions options;
+extern struct authmethod_cfg methodcfg_passwd;
 
 static int
 userauth_passwd(struct ssh *ssh)
@@ -71,7 +72,6 @@ userauth_passwd(struct ssh *ssh)
 }
 
 Authmethod method_passwd = {
-	"password",
-	userauth_passwd,
-	&options.password_authentication
+	&methodcfg_passwd,
+	userauth_passwd
 };
