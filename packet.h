@@ -1,4 +1,4 @@
-/* $OpenBSD: packet.h,v 1.96 2023/12/18 14:45:17 djm Exp $ */
+/* $OpenBSD: packet.h,v 1.97 2024/05/17 00:30:24 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -161,6 +161,7 @@ int	 ssh_packet_get_state(struct ssh *, struct sshbuf *);
 int	 ssh_packet_set_state(struct ssh *, struct sshbuf *);
 
 const char *ssh_remote_ipaddr(struct ssh *);
+const char *ssh_remote_hostname(struct ssh *);
 int	 ssh_remote_port(struct ssh *);
 const char *ssh_local_ipaddr(struct ssh *);
 int	 ssh_local_port(struct ssh *);
