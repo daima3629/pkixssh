@@ -1108,29 +1108,6 @@ process_channel_timeouts(struct ssh *ssh, ServerOptions *options)
 	}
 }
 
-struct connection_info *
-get_connection_info(struct ssh *ssh, int populate, int use_dns)
-{
-	static struct connection_info ci = {
-		NULL	/* user */,
-		NULL	/* host */,
-		NULL	/* address */,
-		NULL	/* laddress */,
-		-1	/* lport */,
-		NULL	/* rdomain */,
-		0	/* test */
-	};
-
-	if (ssh == NULL || !populate)
-		return &ci;
-	ci.host = auth_get_canonical_hostname(ssh, use_dns);
-	ci.address = ssh_remote_ipaddr(ssh);
-	ci.laddress = ssh_local_ipaddr(ssh);
-	ci.lport = ssh_local_port(ssh);
-	ci.rdomain = ssh_packet_rdomain_in(ssh);
-	return &ci;
-}
-
 /*
  * The strategy for the Match blocks is that the config file is parsed twice.
  *

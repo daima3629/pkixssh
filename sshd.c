@@ -1722,7 +1722,7 @@ print_config(struct ssh *ssh, struct connection_info *connection_info)
 	 * use a blank one that will cause no predicate to match.
 	 */
 	if (connection_info == NULL)
-		connection_info = get_connection_info(ssh, 0, 0);
+		connection_info = server_get_connection_info(ssh, 0, 0);
 	connection_info->test = 1;
 	parse_server_match_config(&options, &includes, connection_info);
 	dump_config(&options);
@@ -1908,7 +1908,7 @@ main(int ac, char **av)
 			test_flag = 2;
 			break;
 		case 'C':
-			connection_info = get_connection_info(ssh, 0, 0);
+			connection_info = server_get_connection_info(ssh, 0, 0);
 			if (parse_server_match_testspec(connection_info,
 			    optarg) == -1)
 				exit(1);
