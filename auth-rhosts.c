@@ -1,4 +1,4 @@
-/* $OpenBSD: auth-rhosts.c,v 1.56 2022/02/23 21:21:49 djm Exp $ */
+/* $OpenBSD: auth-rhosts.c,v 1.58 2024/05/17 00:30:23 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -43,7 +43,6 @@
 
 /* import */
 extern ServerOptions options;
-extern int use_privsep;
 
 /*
  * This function processes an rhosts-style file (.rhosts, .shosts,
