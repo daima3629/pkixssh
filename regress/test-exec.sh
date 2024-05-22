@@ -1,4 +1,4 @@
-#	$OpenBSD: test-exec.sh,v 1.107 2024/02/19 09:25:52 dtucker Exp $
+#	$OpenBSD: test-exec.sh,v 1.110 2024/04/03 06:01:11 anton Exp $
 #	Placed in the Public Domain.
 
 #SUDO=sudo
@@ -323,7 +323,7 @@ fi
 # [kbytes] to ensure the file is at least that large.
 DATANAME=data
 DATA=$OBJ/${DATANAME}
-cat ${SSHAGENT_BIN} >${DATA}
+cat ${SSH_BIN} >${DATA}
 chmod u+w ${DATA}
 COPY=$OBJ/copy
 rm -f ${COPY}
@@ -331,7 +331,7 @@ rm -f ${COPY}
 increase_datafile_size()
 {
 	while [ `du -k ${DATA} | cut -f1` -lt $1 ]; do
-		cat ${SSHAGENT_BIN} >>${DATA}
+		cat ${SSH_BIN} >>${DATA}
 	done
 }
 
