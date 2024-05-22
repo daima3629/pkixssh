@@ -101,6 +101,8 @@ void mm_send_keystate(struct ssh *, struct monitor*);
 int mm_bsdauth_query(void *, char **, char **, u_int *, char ***, u_int **);
 int mm_bsdauth_respond(void *, u_int, char **);
 
+void server_process_channel_timeouts(struct ssh *);
+
 struct connection_info *
     server_get_connection_info(struct ssh *, int, int);
 

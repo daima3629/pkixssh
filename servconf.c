@@ -1088,26 +1088,6 @@ process_permitopen(struct ssh *ssh, ServerOptions *options)
 	    options->num_permitted_listens);
 }
 
-void
-process_channel_timeouts(struct ssh *ssh, ServerOptions *options)
-{
-	u_int i;
-
-	debug3_f("setting %u timeouts", options->num_channel_timeouts);
-	channel_clear_timeouts(ssh);
-	for (i = 0; i < options->num_channel_timeouts; i++) {
-		char *type;
-		long secs;
-		if (parse_pattern_interval(options->channel_timeouts[i],
-		    &type, &secs) != 0) {
-			fatal_f("internal error: bad timeout %s",
-			    options->channel_timeouts[i]);
-		}
-		channel_add_timeout(ssh, type, secs);
-		free(type);
-	}
-}
-
 /*
  * The strategy for the Match blocks is that the config file is parsed twice.
  *

@@ -366,7 +366,7 @@ out:
 	mm_decode_activate_server_options(ssh, m);
 
 	process_permitopen(ssh, &options);
-	process_channel_timeouts(ssh, &options);
+	server_process_channel_timeouts(ssh);
 
 	sshbuf_free(m);
 
@@ -1066,6 +1066,26 @@ mm_ssh_gssapi_userok(char *user)
 	return (authenticated);
 }
 #endif /* GSSAPI */
+
+void
+server_process_channel_timeouts(struct ssh *ssh)
+{
+	u_int i;
+
+	debug3_f("setting %u timeouts", options.num_channel_timeouts);
+	channel_clear_timeouts(ssh);
+	for (i = 0; i < options.num_channel_timeouts; i++) {
+		char *type;
+		long secs;
+		if (parse_pattern_interval(options.channel_timeouts[i],
+		    &type, &secs) != 0) {
+			fatal_f("internal error: bad timeout %s",
+			    options.channel_timeouts[i]);
+		}
+		channel_add_timeout(ssh, type, secs);
+		free(type);
+	}
+}
 
 struct connection_info *
 server_get_connection_info(struct ssh *ssh, int populate, int use_dns)
