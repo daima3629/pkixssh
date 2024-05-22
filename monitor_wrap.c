@@ -1,10 +1,10 @@
-/* $OpenBSD: monitor_wrap.c,v 1.128 2023/03/31 00:44:29 dtucker Exp $ */
+/* $OpenBSD: monitor_wrap.c,v 1.130 2024/05/17 00:30:24 djm Exp $ */
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * Copyright 2002 Markus Friedl <markus@openbsd.org>
  * All rights reserved.
  *
- * Copyright (c) 2007-2022 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2007-2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -243,8 +243,69 @@ mm_Xkey_sign(struct ssh *ssh, ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 	return (0);
 }
 
+static void
+mm_decode_activate_server_options(struct ssh *ssh, struct sshbuf *m)
+{
+	const u_char *p;
+	size_t len;
+	u_int i;
+	ServerOptions *newopts;
+	int r;
+
+	UNUSED(ssh);
+
+	if ((r = sshbuf_get_string_direct(m, &p, &len)) != 0)
+		fatal_fr(r, "parse opts");
+	if (len != sizeof(*newopts))
+		fatal_f("option block size mismatch");
+	newopts = xcalloc(sizeof(*newopts), 1);
+	memcpy(newopts, p, sizeof(*newopts));
+
+	r = sshbuf_get_cstring(m, &newopts->hostbased_algorithms, NULL);
+	if (r != 0)
+		fatal_fr(r, "parse hostbased_algorithms");
+	if (*newopts->hostbased_algorithms == '\0') {
+		free(newopts->hostbased_algorithms);
+		newopts->hostbased_algorithms = xstrdup("*");
+	}
+
+	r = sshbuf_get_cstring(m, &newopts->pubkey_algorithms, NULL);
+	if (r != 0)
+		fatal_fr(r, "parse pubkey_algorithms");
+	if (*newopts->pubkey_algorithms == '\0') {
+		free(newopts->pubkey_algorithms);
+		newopts->pubkey_algorithms = xstrdup("*");
+	}
+
+#define M_CP_STROPT(x) do { \
+		if (newopts->x != NULL && \
+		    (r = sshbuf_get_cstring(m, &newopts->x, NULL)) != 0) \
+			fatal_fr(r, "parse %s", #x); \
+	} while (0)
+#define M_CP_STRARRAYOPT(x, nx) do { \
+		newopts->x = newopts->nx == 0 ? \
+		    NULL : xcalloc(newopts->nx, sizeof(*newopts->x)); \
+		for (i = 0; i < newopts->nx; i++) { \
+			if ((r = sshbuf_get_cstring(m, \
+			    &newopts->x[i], NULL)) != 0) \
+				fatal_fr(r, "parse %s", #x); \
+		} \
+	} while (0)
+	/* See comment in servconf.h */
+	COPY_MATCH_STRING_OPTS();
+#undef M_CP_STROPT
+#undef M_CP_STRARRAYOPT
+
+	copy_set_server_options(&options, newopts, 1);
+	log_change_level(options.log_level);
+	log_verbose_init(options.log_verbose, options.num_log_verbose);
+	free(newopts);
+}
+
 #define GETPW(b, id) \
 	do { \
+		size_t len; \
+		const u_char *p; \
 		if ((r = sshbuf_get_string_direct(b, &p, &len)) != 0) \
 			fatal_fr(r, "parse pw %s", #id); \
 		if (len != sizeof(pw->id)) \
@@ -257,12 +318,8 @@ mm_getpwnamallow(struct ssh *ssh, const char *username)
 {
 	struct sshbuf *m;
 	struct passwd *pw;
-	size_t len;
-	u_int i;
-	ServerOptions *newopts;
 	int r;
 	u_char ok;
-	const u_char *p;
 
 	debug3_f("entering");
 
@@ -306,55 +363,10 @@ mm_getpwnamallow(struct ssh *ssh, const char *username)
 
 out:
 	/* copy options block as a Match directive may have changed some */
-	if ((r = sshbuf_get_string_direct(m, &p, &len)) != 0)
-		fatal_fr(r, "parse opts");
-	if (len != sizeof(*newopts))
-		fatal_f("option block size mismatch");
-	newopts = xcalloc(sizeof(*newopts), 1);
-	memcpy(newopts, p, sizeof(*newopts));
+	mm_decode_activate_server_options(ssh, m);
 
-	r = sshbuf_get_cstring(m, &newopts->hostbased_algorithms, NULL);
-	if (r != 0)
-		fatal_fr(r, "parse hostbased_algorithms");
-	if (*newopts->hostbased_algorithms == '\0') {
-		free(newopts->hostbased_algorithms);
-		newopts->hostbased_algorithms = xstrdup("*");
-	}
-
-	r = sshbuf_get_cstring(m, &newopts->pubkey_algorithms, NULL);
-	if (r != 0)
-		fatal_fr(r, "parse pubkey_algorithms");
-	if (*newopts->pubkey_algorithms == '\0') {
-		free(newopts->pubkey_algorithms);
-		newopts->pubkey_algorithms = xstrdup("*");
-	}
-
-#define M_CP_STROPT(x) do { \
-		if (newopts->x != NULL && \
-		    (r = sshbuf_get_cstring(m, &newopts->x, NULL)) != 0) \
-			fatal_fr(r, "parse %s", #x); \
-	} while (0)
-#define M_CP_STRARRAYOPT(x, nx) do { \
-		newopts->x = newopts->nx == 0 ? \
-		    NULL : xcalloc(newopts->nx, sizeof(*newopts->x)); \
-		for (i = 0; i < newopts->nx; i++) { \
-			if ((r = sshbuf_get_cstring(m, \
-			    &newopts->x[i], NULL)) != 0) \
-				fatal_fr(r, "parse %s", #x); \
-		} \
-	} while (0)
-	/* See comment in servconf.h */
-	COPY_MATCH_STRING_OPTS();
-
-#undef M_CP_STROPT
-#undef M_CP_STRARRAYOPT
-
-	copy_set_server_options(&options, newopts, 1);
-	log_change_level(options.log_level);
-	log_verbose_init(options.log_verbose, options.num_log_verbose);
 	process_permitopen(ssh, &options);
 	process_channel_timeouts(ssh, &options);
-	free(newopts);
 
 	sshbuf_free(m);
 

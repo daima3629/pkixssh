@@ -1,10 +1,10 @@
-/* $OpenBSD: monitor.c,v 1.237 2023/08/16 16:14:11 djm Exp $ */
+/* $OpenBSD: monitor.c,v 1.238 2024/05/17 00:30:24 djm Exp $ */
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * Copyright 2002 Markus Friedl <markus@openbsd.org>
  * All rights reserved.
  *
- * Copyright (c) 2014-2022 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2014-2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -702,6 +702,40 @@ mm_answer_sign(struct ssh *ssh, int sock, struct sshbuf *m)
 	return (0);
 }
 
+static void
+mm_encode_server_options(struct sshbuf *m)
+{
+	int r;
+	u_int i;
+
+	if ((r = sshbuf_put_string(m, &options, sizeof(options))) != 0)
+		fatal_fr(r, "assemble options");
+
+{	/* for string options that are not set we must send empty string! */
+	const char *s1 = options.hostbased_algorithms ? options.hostbased_algorithms : "";
+	const char *s2 = options.pubkey_algorithms    ? options.pubkey_algorithms    : "";
+	if ((r = sshbuf_put_cstring(m, s1)) != 0 ||
+	    (r = sshbuf_put_cstring(m, s2)) != 0)
+		fatal_fr(r, "assemble algorithms");
+}
+
+#define M_CP_STROPT(x) do { \
+		if (options.x != NULL && \
+		    (r = sshbuf_put_cstring(m, options.x)) != 0) \
+			fatal_fr(r, "assemble %s", #x); \
+	} while (0)
+#define M_CP_STRARRAYOPT(x, nx) do { \
+		for (i = 0; i < options.nx; i++) { \
+			if ((r = sshbuf_put_cstring(m, options.x[i])) != 0) \
+				fatal_fr(r, "assemble %s", #x); \
+		} \
+	} while (0)
+	/* See comment in servconf.h */
+	COPY_MATCH_STRING_OPTS();
+#undef M_CP_STROPT
+#undef M_CP_STRARRAYOPT
+}
+
 #define PUTPW(b, id) \
 	do { \
 		if ((r = sshbuf_put_string(b, \
@@ -715,7 +749,6 @@ mm_answer_pwnamallow(struct ssh *ssh, int sock, struct sshbuf *m)
 {
 	struct passwd *pwent;
 	int r, allowed = 0;
-	u_int i;
 
 	debug3_f("entering");
 
@@ -768,32 +801,9 @@ mm_answer_pwnamallow(struct ssh *ssh, int sock, struct sshbuf *m)
  out:
 	ssh_packet_set_log_preamble(ssh, "%suser %s",
 	    authctxt->valid ? "authenticating" : "invalid ", authctxt->user);
-	if ((r = sshbuf_put_string(m, &options, sizeof(options))) != 0)
-		fatal_fr(r, "assemble options");
 
-{	/* for string options that are not set we must send empty string! */
-	const char *s1 = options.hostbased_algorithms ? options.hostbased_algorithms : "";
-	const char *s2 = options.pubkey_algorithms    ? options.pubkey_algorithms    : "";
-	if ((r = sshbuf_put_cstring(m, s1)) != 0 ||
-	    (r = sshbuf_put_cstring(m, s2)) != 0)
-		fatal_fr(r, "assemble algorithms");
-}
-
-#define M_CP_STROPT(x) do { \
-		if (options.x != NULL && \
-		    (r = sshbuf_put_cstring(m, options.x)) != 0) \
-			fatal_fr(r, "assemble %s", #x); \
-	} while (0)
-#define M_CP_STRARRAYOPT(x, nx) do { \
-		for (i = 0; i < options.nx; i++) { \
-			if ((r = sshbuf_put_cstring(m, options.x[i])) != 0) \
-				fatal_fr(r, "assemble %s", #x); \
-		} \
-	} while (0)
-	/* See comment in servconf.h */
-	COPY_MATCH_STRING_OPTS();
-#undef M_CP_STROPT
-#undef M_CP_STRARRAYOPT
+	/* Send active options to unprivileged process */
+	mm_encode_server_options(m);
 
 	/* Create valid auth method lists */
 	if (auth2_setup_methods_lists(authctxt) != 0) {
