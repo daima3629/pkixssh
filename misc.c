@@ -1,4 +1,4 @@
-/* $OpenBSD: misc.c,v 1.190 2024/03/04 02:16:11 djm Exp $ */
+/* $OpenBSD: misc.c,v 1.194 2024/05/17 00:30:23 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2005,2006 Damien Miller.  All rights reserved.
@@ -2050,6 +2050,19 @@ forward_equals(const struct Forward *a, const struct Forward *b)
 		return 0;
 	/* allocated_port and handle are not checked */
 	return 1;
+}
+
+/* returns port number, FWD_PERMIT_ANY_PORT or -1 on error */
+int
+permitopen_port(const char *p)
+{
+	int port;
+
+	if (strcmp(p, "*") == 0)
+		return FWD_PERMIT_ANY_PORT;
+	if ((port = a2port(p)) > 0)
+		return port;
+	return -1;
 }
 
 #ifdef __ANDROID__

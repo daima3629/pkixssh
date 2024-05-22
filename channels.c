@@ -1,4 +1,4 @@
-/* $OpenBSD: channels.c,v 1.437 2024/03/06 02:59:59 djm Exp $ */
+/* $OpenBSD: channels.c,v 1.438 2024/05/17 00:30:23 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -118,13 +118,6 @@ orig:	0.184	0.523	0.330	0.162	0.046
 
 /* -- agent forwarding */
 #define	NUM_SOCKS	10
-
-/* -- tcp forwarding */
-/* special-case port number meaning allow any port */
-#define FWD_PERMIT_ANY_PORT	0
-
-/* special-case wildcard meaning allow any host */
-#define FWD_PERMIT_ANY_HOST	"*"
 
 /* -- X11 forwarding */
 /* Maximum number of fake X11 displays to try. */
@@ -4670,19 +4663,6 @@ channel_update_permission(struct ssh *ssh, int idx, int newport)
 		pset->permitted_user[idx].listen_port =
 		    ssh_compat_fellows(ssh, SSH_BUG_DYNAMIC_RPORT) ? 0 : newport;
 	}
-}
-
-/* returns port number, FWD_PERMIT_ANY_PORT or -1 on error */
-int
-permitopen_port(const char *p)
-{
-	int port;
-
-	if (strcmp(p, "*") == 0)
-		return FWD_PERMIT_ANY_PORT;
-	if ((port = a2port(p)) > 0)
-		return port;
-	return -1;
 }
 
 /* Try to start non-blocking connect to next host in cctx list */

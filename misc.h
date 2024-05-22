@@ -1,4 +1,4 @@
-/* $OpenBSD: misc.h,v 1.107 2024/03/04 02:16:11 djm Exp $ */
+/* $OpenBSD: misc.h,v 1.108 2024/05/17 00:30:24 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -23,6 +23,13 @@
 #include <stdio.h>
 #include <signal.h>
 
+/* -- tcp forwarding */
+/* special-case port number meaning allow any port */
+#define FWD_PERMIT_ANY_PORT	0
+
+/* special-case wildcard meaning allow any host */
+#define FWD_PERMIT_ANY_HOST	"*"
+
 /* Data structure for representing a forwarding request. */
 struct Forward {
 	char	 *listen_host;		/* Host (address) to listen on. */
@@ -36,6 +43,8 @@ struct Forward {
 };
 
 int forward_equals(const struct Forward *, const struct Forward *);
+int permitopen_port(const char *);
+
 int daemonized(void);
 
 /* Common server and client forwarding options. */
