@@ -1035,60 +1035,6 @@ process_queued_listen_addrs(ServerOptions *options)
 }
 
 /*
- * Inform channels layer of permitopen options for a single forwarding
- * direction (local/remote).
- */
-static void
-process_permitopen_list(struct ssh *ssh, ServerOpCodes opcode,
-    char **opens, u_int num_opens)
-{
-	u_int i;
-	int port;
-	char *host, *arg, *oarg;
-	int where = opcode == sPermitOpen ? FORWARD_LOCAL : FORWARD_REMOTE;
-	const char *what = lookup_opcode_name(opcode);
-
-	channel_clear_permission(ssh, FORWARD_ADM, where);
-	if (num_opens == 0)
-		return; /* permit any */
-
-	/* handle keywords: "any" / "none" */
-	if (num_opens == 1 && strcmp(opens[0], "any") == 0)
-		return;
-	if (num_opens == 1 && strcmp(opens[0], "none") == 0) {
-		channel_disable_admin(ssh, where);
-		return;
-	}
-	/* Otherwise treat it as a list of permitted host:port */
-	for (i = 0; i < num_opens; i++) {
-		oarg = arg = xstrdup(opens[i]);
-		host = hpdelim(&arg);
-		if (host == NULL)
-			fatal_f("missing host in %s", what);
-		host = cleanhostname(host);
-		if (arg == NULL || ((port = permitopen_port(arg)) < 0))
-			fatal_f("bad port number in %s", what);
-		/* Send it to channels layer */
-		channel_add_permission(ssh, FORWARD_ADM,
-		    where, host, port);
-		free(oarg);
-	}
-}
-
-/*
- * Inform channels layer of permitopen options from configuration.
- */
-void
-process_permitopen(struct ssh *ssh, ServerOptions *options)
-{
-	process_permitopen_list(ssh, sPermitOpen,
-	    options->permitted_opens, options->num_permitted_opens);
-	process_permitopen_list(ssh, sPermitListen,
-	    options->permitted_listens,
-	    options->num_permitted_listens);
-}
-
-/*
  * The strategy for the Match blocks is that the config file is parsed twice.
  *
  * The first time is at startup.  activep is initialized to 1 and the

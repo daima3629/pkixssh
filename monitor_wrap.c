@@ -365,7 +365,7 @@ out:
 	/* copy options block as a Match directive may have changed some */
 	mm_decode_activate_server_options(ssh, m);
 
-	process_permitopen(ssh, &options);
+	server_process_permitopen(ssh);
 	server_process_channel_timeouts(ssh);
 
 	sshbuf_free(m);
@@ -1066,6 +1066,59 @@ mm_ssh_gssapi_userok(char *user)
 	return (authenticated);
 }
 #endif /* GSSAPI */
+
+/*
+ * Inform channels layer of permitopen options for a single forwarding
+ * direction (local/remote).
+ */
+static void
+server_process_permitopen_list(struct ssh *ssh, int listen,
+    char **opens, u_int num_opens)
+{
+	u_int i;
+	int port;
+	char *host, *arg, *oarg;
+	int where = listen ? FORWARD_REMOTE : FORWARD_LOCAL;
+	const char *what = listen ? "permitlisten" : "permitopen";
+
+	channel_clear_permission(ssh, FORWARD_ADM, where);
+	if (num_opens == 0)
+		return; /* permit any */
+
+	/* handle keywords: "any" / "none" */
+	if (num_opens == 1 && strcmp(opens[0], "any") == 0)
+		return;
+	if (num_opens == 1 && strcmp(opens[0], "none") == 0) {
+		channel_disable_admin(ssh, where);
+		return;
+	}
+	/* Otherwise treat it as a list of permitted host:port */
+	for (i = 0; i < num_opens; i++) {
+		oarg = arg = xstrdup(opens[i]);
+		host = hpdelim(&arg);
+		if (host == NULL)
+			fatal_f("missing host in %s", what);
+		host = cleanhostname(host);
+		if (arg == NULL || ((port = permitopen_port(arg)) < 0))
+			fatal_f("bad port number in %s", what);
+		/* Send it to channels layer */
+		channel_add_permission(ssh, FORWARD_ADM,
+		    where, host, port);
+		free(oarg);
+	}
+}
+
+/*
+ * Inform channels layer of permitopen options from configuration.
+ */
+void
+server_process_permitopen(struct ssh *ssh)
+{
+	server_process_permitopen_list(ssh, 0,
+	    options.permitted_opens, options.num_permitted_opens);
+	server_process_permitopen_list(ssh, 1,
+	    options.permitted_listens, options.num_permitted_listens);
+}
 
 void
 server_process_channel_timeouts(struct ssh *ssh)

@@ -494,7 +494,7 @@ getpwnamallow(struct ssh *ssh, const char *user)
 	parse_server_match_config(&options, &includes, ci);
 	log_change_level(options.log_level);
 	log_verbose_init(options.log_verbose, options.num_log_verbose);
-	process_permitopen(ssh, &options);
+	server_process_permitopen(ssh);
 
 #if defined(_AIX) && defined(HAVE_SETAUTHDB)
 	aix_setauthdb(user);

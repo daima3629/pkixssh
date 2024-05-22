@@ -2404,7 +2404,7 @@ main(int ac, char **av)
 	/* Prepare the channels layer */
 	channel_init_channels(ssh);
 	channel_set_af(ssh, options.address_family);
-	process_permitopen(ssh, &options);
+	server_process_permitopen(ssh);
 	server_process_channel_timeouts(ssh);
 
 	/* Set SO_KEEPALIVE if requested. */
