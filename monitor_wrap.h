@@ -1,6 +1,6 @@
 #ifndef _MM_WRAP_H_
 #define _MM_WRAP_H_
-/* $OpenBSD: monitor_wrap.h,v 1.49 2022/06/15 16:08:25 djm Exp $ */
+/* $OpenBSD: monitor_wrap.h,v 1.51 2024/05/17 06:42:04 jsg Exp $ */
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * All rights reserved.
@@ -90,10 +90,6 @@ struct Session;
 void mm_terminate(void);
 int mm_pty_allocate(int *, int *, char *, size_t);
 void mm_session_pty_cleanup2(struct Session *);
-
-/* Key export functions */
-struct newkeys *mm_newkeys_from_blob(u_char *, int);
-int mm_newkeys_to_blob(int, u_char **, u_int *);
 
 void mm_send_keystate(struct ssh *, struct monitor*);
 

@@ -1,4 +1,4 @@
-/* $OpenBSD: auth.h,v 1.107 2024/05/17 00:30:23 djm Exp $ */
+/* $OpenBSD: auth.h,v 1.108 2024/05/17 06:42:04 jsg Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  *
@@ -156,8 +156,6 @@ void	 auth2_record_info(Authctxt *authctxt, const char *, ...)
 void	 auth2_update_session_info(Authctxt *, const char *, const char *);
 
 #ifdef KRB5
-int	auth_krb5(Authctxt *authctxt, krb5_data *auth, char **client, krb5_data *);
-int	auth_krb5_tgt(Authctxt *authctxt, krb5_data *tgt);
 int	auth_krb5_password(Authctxt *authctxt, const char *password);
 void	krb5_cleanup_proc(Authctxt *authctxt);
 #endif /* KRB5 */
@@ -217,7 +215,6 @@ int	Xsshd_hostkey_sign(struct ssh *ssh, ssh_sign_ctx *ctx, struct sshkey *pubkey
 	    u_char **signature, size_t *slen, const u_char *data, size_t dlen);
 
 /* Key / cert options linkage to auth layer */
-const struct sshauthopt *auth_options(struct ssh *);
 int	 auth_activate_options(struct ssh *, struct sshauthopt *);
 void	 auth_restrict_session(struct ssh *);
 void	 auth_log_authopts(const char *, const struct sshauthopt *, int);
