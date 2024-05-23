@@ -66,7 +66,7 @@
 #define SIGBLOB_LEN	(2*INTBLOB_LEN)
 
 
-int
+static inline int
 sshdsa_verify_length(int bits) {
 	return bits != SSH_DSA_BITS
 	    ? SSH_ERR_KEY_LENGTH : 0;

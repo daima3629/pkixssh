@@ -316,9 +316,6 @@ int	sshkey_parse_pubkey_from_private_fileblob(struct sshbuf *blob,
 int	sshkey_private_to_bio(struct sshkey *key, BIO *bio,
     const char *passphrase, int format);
 
-int	sshrsa_verify_length(int bits);
-int	sshdsa_verify_length(int bits);
-
 int	sshkey_check_length(const struct sshkey *);
 
 /* For XMSS */

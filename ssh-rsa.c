@@ -2,7 +2,7 @@
 /*
  * Copyright (c) 2000, 2003 Markus Friedl <markus@openbsd.org>
  * Copyright (c) 2011 Dr. Stephen Henson.  All rights reserved.
- * Copyright (c) 2011-2023 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2024 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -86,7 +86,7 @@ ssh_rsa_alg_info(const char *alg) {
 /* global option overridable by configuration */
 int required_rsa_size = SSH_RSA_MINIMUM_MODULUS_SIZE;
 
-int
+static inline int
 sshrsa_verify_length(int bits) {
 	return bits < required_rsa_size
 	    ? SSH_ERR_KEY_LENGTH : 0;
