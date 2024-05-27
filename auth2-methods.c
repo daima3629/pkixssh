@@ -17,6 +17,9 @@
 
 #include "includes.h"
 
+#include <sys/types.h>
+
+#include <stdlib.h>
 #include <string.h>
 
 #include "hostfile.h" /*required by "auth.h"*/
