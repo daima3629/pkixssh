@@ -1,4 +1,4 @@
-/* $OpenBSD: servconf.h,v 1.160 2023/09/06 23:35:35 djm Exp $ */
+/* $OpenBSD: servconf.h,v 1.163 2024/05/23 23:47:16 jsg Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -70,7 +70,6 @@
 #define INTERNAL_SFTP_NAME	"internal-sftp"
 
 struct ssh;
-struct fwd_perm_list;
 
 /*
  * Used to store addresses from ListenAddr directives. These may be
