@@ -20,7 +20,7 @@
 .\" Copyright (c) 1999,2000 Markus Friedl.  All rights reserved.
 .\" Copyright (c) 1999 Aaron Campbell.  All rights reserved.
 .\" Copyright (c) 1999 Theo de Raadt.  All rights reserved.
-.\" Copyright (c) 2002-2022 Roumen Petrov.  All rights reserved.
+.\" Copyright (c) 2002-2024 Roumen Petrov.  All rights reserved.
 .\"
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions
@@ -42,8 +42,8 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: ssh.1,v 1.439 2024/03/14 06:23:14 job Exp $
-.Dd $Mdocdate: March 14 2024 $
+.\" $OpenBSD: ssh.1,v 1.440 2024/05/26 20:35:12 naddy Exp $
+.Dd $Mdocdate: May 26 2024 $
 .Dt SSH 1
 .Os
 .Sh NAME
@@ -1655,14 +1655,12 @@ Systemwide configuration file.
 The file format and configuration options are described in
 .Xr ssh_config 5 .
 .Pp
-.It Pa /etc/ssh/ssh_host_key
-.It Pa /etc/ssh/ssh_host_dsa_key
 .It Pa /etc/ssh/ssh_host_ecdsa_key
 .It Pa /etc/ssh/ssh_host_ed25519_key
 .It Pa /etc/ssh/ssh_host_rsa_key
 These files contain the private parts of the host keys
 and are used for host-based authentication.
-For RSA, ECDSA, Ed25519 or DSA keys files may contain X.509 certificate that
+For RSA, ECDSA, or Ed25519 keys files may contain X.509 certificate that
 match it.
 In addition file may contain extra X.509 certificates.
 Extra certificates along with certificates from X.509 store are used
