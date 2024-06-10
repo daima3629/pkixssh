@@ -257,25 +257,53 @@ relocate_path(const char *pathname, char *pathbuf, size_t pathlen) {
 }
 
 
+extern int appcmd_open(const char *path, int flags, mode_t mode);
 extern int __real_open(const char *path, int flags, mode_t mode);
 
 int
 __wrap_open(const char *path, int flags, mode_t mode) {
+#ifndef USE_LIBAPPWRAP
 	char r_path[PATH_MAX];
 
 	path = relocate_path(path, r_path, sizeof(r_path));
 	return __real_open(path, flags, mode);
+#else
+	int ret;
+	int oerrno;
+
+	oerrno = errno;
+	ret = appcmd_open(path, flags, mode);
+	if ((ret == -1) && (errno == ENOSYS)) {
+		errno = oerrno;
+		ret = __real_open(path, flags, mode);
+	}
+	return ret;
+#endif
 }
 
 
+extern FILE *appcmd_fopen(const char *path, const char *mode);
 extern FILE* __real_fopen(const char *path, const char *mode);
 
 FILE*
 __wrap_fopen(const char *path, const char *mode) {
+#ifndef USE_LIBAPPWRAP
 	char r_path[PATH_MAX];
 
 	path = relocate_path(path, r_path, sizeof(r_path));
 	return  __real_fopen(path, mode);
+#else
+	FILE* ret;
+	int oerrno;
+
+	oerrno = errno;
+	ret = appcmd_fopen(path, mode);
+	if ((ret == NULL) && (errno == ENOSYS)) {
+		errno = oerrno;
+		ret = __real_fopen(path, mode);
+	}
+	return ret;
+#endif
 }
 
 

@@ -1,6 +1,6 @@
 #ifdef __ANDROID__
 /*
- * Copyright (c) 2019-2023 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -25,21 +25,29 @@
 
 #include "includes.h"
 
-/* Android application must provide own implementation: */
-/* version 2*/
-char *get2_app_etcdir(const char *cmd);
-char *get2_app_bindir(const char *cmd);
-char *get2_app_libexecdir(const char *cmd);
+extern int appcmd_open(const char *path, int flags, mode_t mode);
+extern FILE *appcmd_fopen(const char *path, const char *mode);
 
 
-/*stubs*/
-/* version 2*/
-char *get2_app_etcdir(const char *cmd)     { UNUSED(cmd); return NULL; }
-char *get2_app_bindir(const char *cmd)     { UNUSED(cmd); return NULL; }
-char *get2_app_libexecdir(const char *cmd) { UNUSED(cmd); return NULL; }
+int
+appcmd_open(const char *path, int flags, mode_t mode) {
+    (void) path;
+    (void) flags;
+    (void) mode;
+    errno = ENOSYS;
+    return -1;
+}
+
+FILE*
+appcmd_fopen(const char *path, const char *mode) {
+    (void) path;
+    (void) mode;
+    errno = ENOSYS;
+    return NULL;
+}
 
 #else
 
-typedef int ssh_appinfo_empty_translation_unit;
+typedef int ssh_appwrap_empty_translation_unit;
 
 #endif /*def __ANDROID__*/

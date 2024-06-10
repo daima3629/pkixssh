@@ -219,6 +219,9 @@ libssh.a: $(LIBSSH_OBJS)
 libappinfo.so: appinfo.o
 	$(LD) -shared -o $@ appinfo.o
 
+libappwrap.so: appwrap.o
+	$(LD) -shared -o $@ appwrap.o
+
 XDEPLIBS = @XDEPLIBS@
 DEPLIBS = $(LIBCOMPAT) libssh.a $(XDEPLIBS)
 
