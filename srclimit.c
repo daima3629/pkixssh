@@ -38,7 +38,7 @@ static int max_persource = -1, max_children, ipv4_masklen, ipv6_masklen;
 static struct child_info {
 	int id;
 	struct xaddr addr;
-} *child;
+} *children;
 
 void
 srclimit_init(int max, int persource, int ipv4len, int ipv6len)
@@ -55,9 +55,9 @@ srclimit_init(int max, int persource, int ipv4len, int ipv6len)
 	    max, persource, ipv4len, ipv6len);
 	if (max <= 0)
 		fatal_f("invalid number of sockets: %d", max);
-	child = xcalloc(max_children, sizeof(*child));
+	children = xcalloc(max_children, sizeof(*children));
 	for (i = 0; i < max_children; i++)
-		child[i].id = -1;
+		children[i].id = -1;
 }
 
 /* returns 1 if connection allowed, 0 if not allowed. */
@@ -93,13 +93,13 @@ srclimit_check_allow(int sock, int id)
 	count = 0;
 	/* Count matching entries and find first unused one. */
 	for (i = 0; i < max_children; i++) {
-		if (child[i].id == -1) {
+		if (children[i].id == -1) {
 			if (i < first_unused) {
 				first_unused = i;
 				break;
 			}
 		} else
-			if (addr_cmp(&child[i].addr, &xb) == 0)
+			if (addr_cmp(&children[i].addr, &xb) == 0)
 				count++;
 	}
 	if (first_unused == max_children) { /* no free slot found */
@@ -121,8 +121,8 @@ srclimit_check_allow(int sock, int id)
 		return 0;
 
 	/* Connection allowed, store masked address. */
-	child[first_unused].id = id;
-	memcpy(&child[first_unused].addr, &xb, sizeof(xb));
+	children[first_unused].id = id;
+	memcpy(&children[first_unused].addr, &xb, sizeof(xb));
 	return 1;
 }
 
@@ -136,8 +136,8 @@ srclimit_done(int id)
 	debug_f("id %d", id);
 	/* Clear corresponding state entry. */
 	for (i = 0; i < max_children; i++) {
-		if (child[i].id == id) {
-			child[i].id = -1;
+		if (children[i].id == id) {
+			children[i].id = -1;
 			return;
 		}
 	}
