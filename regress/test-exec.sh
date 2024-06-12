@@ -1,4 +1,4 @@
-#	$OpenBSD: test-exec.sh,v 1.114 2024/06/06 19:48:40 djm Exp $
+#	$OpenBSD: test-exec.sh,v 1.115 2024/06/11 01:58:27 djm Exp $
 #	Placed in the Public Domain.
 
 #SUDO=sudo
@@ -428,7 +428,6 @@ stop_sshd ()
 		fi
 		exit 1
 	fi
-	PIDFILE=
 }
 
 # helper
