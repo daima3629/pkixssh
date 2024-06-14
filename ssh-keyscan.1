@@ -1,4 +1,4 @@
-.\"	$OpenBSD: ssh-keyscan.1,v 1.49 2023/02/10 06:41:53 jmc Exp $
+.\"	$OpenBSD: ssh-keyscan.1,v 1.50 2024/06/14 05:00:42 djm Exp $
 .\"
 .\" Copyright 1995, 1996 by David Mazieres <dm@lcs.mit.edu>.
 .\"
@@ -36,7 +36,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: February 10 2023 $
+.Dd $Mdocdate: June 14 2024 $
 .Dt SSH-KEYSCAN 1
 .Os
 .Sh NAME
@@ -44,7 +44,7 @@
 .Nd Gather secure shell public keys from servers
 .Sh SYNOPSIS
 .Nm ssh-keyscan
-.Op Fl 46DdHv
+.Op Fl 46DdHqv
 .Op Fl f Ar file
 .Op Fl O Ar option
 .Op Fl p Ar port
@@ -191,6 +191,9 @@ Note that host-key algorithms
 and
 .Dq ssh-rsa
 share one and the same format of host-key.
+.It Fl q
+Quiet mode:
+do not print server host name and banners in comments.
 .It Fl v
 Verbose mode:
 print debugging messages about progress.

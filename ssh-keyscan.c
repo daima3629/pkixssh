@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keyscan.c,v 1.157 2024/05/06 19:26:17 tobias Exp $ */
+/* $OpenBSD: ssh-keyscan.c,v 1.158 2024/06/14 00:25:25 djm Exp $ */
 /*
  * Copyright 1995, 1996 by David Mazieres <dm@lcs.mit.edu>.
  *
@@ -126,6 +126,8 @@ static int print_generic = 0;	/* Use generic format for DNS RR records */
 int found_one = 0;		/* Successfully found a key */
 
 static int hashalg = -1;	/* Hash for SSHFP records or -1 for all */
+
+static int quiet = 0;		/* Don't print key comment lines */
 
 #define MAXMAXFD 256
 
@@ -540,8 +542,9 @@ congreet(int s)
 		confree(s);
 		return;
 	}
-	fprintf(stderr, "%c %s:%d (%s) %s\n", print_dns_rr ? ';' : '#',
-	    c->c_name, ssh_port, fdcon[s].c_keyname, chop(buf));
+	if (!quiet)
+		fprintf(stderr, "%c %s:%d (%s) %s\n", print_dns_rr ? ';' : '#',
+		    c->c_name, ssh_port, fdcon[s].c_keyname, chop(buf));
 	keygrab_ssh2(c);
 	confree(s);
 }
@@ -667,7 +670,7 @@ static void
 usage(void)
 {
 	fprintf(stderr,
-	    "usage: %s [-46cDdHv] [-f file] [-O option] [-p port] [-T timeout]\n"
+	    "usage: %s [-46cDdHqv] [-f file] [-O option] [-p port] [-T timeout]\n"
 	    "\t\t   [-t type] [host | addrlist namelist]\n",
 	    __progname);
 	exit(1);
@@ -696,7 +699,7 @@ main(int argc, char **argv)
 	if (argc <= 1)
 		usage();
 
-	while ((opt = getopt(argc, argv, "DdHv46O:p:T:t:f:")) != -1) {
+	while ((opt = getopt(argc, argv, "DdHqv46O:p:T:t:f:")) != -1) {
 		switch (opt) {
 		case 'H':
 			hash_hosts = 1;
@@ -730,6 +733,9 @@ main(int argc, char **argv)
 		#endif
 			timeout = (int)t; /*safe cast*/
 		}	break;
+		case 'q':
+			quiet = 1;
+			break;
 		case 'v':
 			if (!debug_flag) {
 				debug_flag = 1;
