@@ -1,4 +1,4 @@
-/* $OpenBSD: servconf.c,v 1.405 2024/03/04 02:16:11 djm Exp $ */
+/* $OpenBSD: servconf.c,v 1.411 2024/06/12 22:36:00 djm Exp $ */
 /*
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
@@ -96,6 +96,10 @@
 #include "myproposal.h"
 #include "digest.h"
 
+#if !defined(SSHD_PAM_SERVICE)
+# define SSHD_PAM_SERVICE		"sshd"
+#endif
+
 static void add_listen_addr(ServerOptions *, const char *,
     const char *, int);
 static void add_one_listen_addr(ServerOptions *, const char *,
@@ -123,6 +127,7 @@ initialize_server_options(ServerOptions *options)
 
 	/* Portable-specific options */
 	options->use_pam = -1;
+	options->pam_service_name = NULL;
 
 	/* X.509 Standard Options */
 	options->hostbased_algorithms = NULL;
@@ -320,6 +325,8 @@ fill_default_server_options(ServerOptions *options)
 	/* Portable-specific options */
 	if (options->use_pam == -1)
 		options->use_pam = 0;
+	if (options->pam_service_name == NULL)
+		options->pam_service_name = xstrdup(SSHD_PAM_SERVICE);
 
 	/* X.509 Standard Options */
 	/* options->hostbased_algorithms */
@@ -593,7 +600,7 @@ fill_default_server_options(ServerOptions *options)
 typedef enum {
 	sBadOption,		/* == unknown option */
 	/* Portable-specific options */
-	sUsePAM,
+	sUsePAM, sPAMServiceName,
 	/* X.509 Standard Options */
 	sHostbasedAlgorithms,
 	sPubkeyAlgorithms,
@@ -659,8 +666,10 @@ static struct {
 	/* Portable-specific options */
 #ifdef USE_PAM
 	{ "usepam", sUsePAM, SSHCFG_GLOBAL },
+	{ "pamservicename", sPAMServiceName, SSHCFG_ALL },
 #else
 	{ "usepam", sUnsupported, SSHCFG_GLOBAL },
+	{ "pamservicename", sUnsupported, SSHCFG_ALL },
 #endif
 	{ "pamauthenticationviakbdint", sDeprecated, SSHCFG_GLOBAL },
 	/* X.509 Standard Options */
@@ -1438,6 +1447,15 @@ process_server_config_line_depth(ServerOptions *options, char *line,
 	case sUsePAM:
 		intptr = &options->use_pam;
 		goto parse_flag;
+	case sPAMServiceName:
+		arg = argv_next(&ac, &av);
+		if (arg == NULL || *arg == '\0') {
+			fatal("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
+		}
+		if (*activep && options->pam_service_name == NULL)
+			options->pam_service_name = xstrdup(arg);
+		break;
 
 	/* X.509 Standard Options */
 	case sHostbasedAcceptedAlgorithms:	/* compatibility ;) */
@@ -3240,6 +3258,7 @@ dump_config(ServerOptions *o)
 	/* integer arguments */
 #ifdef USE_PAM
 	dump_cfg_fmtint(sUsePAM, o->use_pam);
+	dump_cfg_string(sPAMServiceName, o->pam_service_name);
 #endif
 	/* X.509 Standard Options */
 	dump_cfg_string(sHostbasedAlgorithms, o->hostbased_algorithms);
