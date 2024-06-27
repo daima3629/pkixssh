@@ -13,7 +13,7 @@ cp $OBJ/sshd_proxy $OBJ/sshd_proxy_bak
 # and test with recent PuTTY releases.
 kex='dh-gex-sha1 dh-group1-sha1'
 kex="$kex dh-group14-sha1 dh-group14-sha256"
-kex="$kex dh-group16 dh-group18"
+kex="$kex dh-group16 dh-group18" # requires PuTTY 0.78
 kex="$kex ecdh ecdh-256 ecdh-384 ecdh-521"
 
 for k in $kex ; do

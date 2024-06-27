@@ -11,7 +11,8 @@ cp $OBJ/sshd_proxy $OBJ/sshd_proxy_bak
 # Test uses predefined list of macs.
 # The list requires build with more recent OpenSSL library
 # and test with recent PuTTY releases.
-macs='hmac-sha1 hmac-sha1-96 hmac-sha2-256 hmac-sha2-512'
+macs='hmac-sha1 hmac-sha1-96 hmac-sha2-256'
+macs="$macs hmac-sha2-512" # requires PuTTY 0.79
 
 # Test uses predefined list of ciphers.
 # The list requires build with more recent OpenSSL library
