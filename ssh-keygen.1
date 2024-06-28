@@ -14,7 +14,7 @@
 .\" Copyright (c) 1999,2000 Markus Friedl.  All rights reserved.
 .\" Copyright (c) 1999 Aaron Campbell.  All rights reserved.
 .\" Copyright (c) 1999 Theo de Raadt.  All rights reserved.
-.\" Copyright (c) 2002-2023 Roumen Petrov.  All rights reserved.
+.\" Copyright (c) 2002-2024 Roumen Petrov.  All rights reserved.
 .\"
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions
@@ -44,7 +44,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: December 4 2023 $
+.Dd $Mdocdate: June 28 2024 $
 .Dt SSH-KEYGEN 1
 .Os
 .Sh NAME
@@ -800,8 +800,7 @@ are signed by a custom Certification Authority (CA) key.
 Clients or servers may then trust only the CA key and verify its signature
 on a custom certificate rather than trusting many user/host keys.
 Note that OpenSSH custom certificates are a different, and much limited, format to
-the X.509 certificates used in
-.Xr ssl 8 .
+the X.509 certificates used in TLS.
 .Pp
 .Nm
 supports two types of custom certificates: user and host.

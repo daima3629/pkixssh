@@ -42,8 +42,8 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: ssh.1,v 1.440 2024/05/26 20:35:12 naddy Exp $
-.Dd $Mdocdate: May 26 2024 $
+.\" $OpenBSD: ssh.1,v 1.442 2024/06/27 21:02:16 jmc Exp $
+.Dd $Mdocdate: June 28 2024 $
 .Dt SSH 1
 .Os
 .Sh NAME
@@ -876,9 +876,6 @@ The server knows the public key or X.509 certificate, and only the user knows th
 .Nm
 implements public key authentication protocol automatically,
 using one of the DSA, ECDSA, Ed25519 or RSA algorithms or X.509 certificates.
-The HISTORY section of
-.Xr ssl 8
-contains a brief discussion of the DSA and RSA algorithms.
 .Pp
 The file
 .Pa ~/.ssh/authorized_keys
