@@ -1332,7 +1332,6 @@ mips-sony-bsd|mips-sony-newsos4)
 	AC_DEFINE([BROKEN_SETREGID], [1])
 	AC_DEFINE([BROKEN_READV_COMPARISON], [1], [Can't do comparisons on readv])
 	;;
-
 *-*-nto-qnx*)
 	AC_DEFINE([USE_PIPES])
 	AC_DEFINE([NO_X11_UNIX_SOCKETS])
@@ -1346,7 +1345,6 @@ mips-sony-bsd|mips-sony-newsos4)
 		;;
 	esac
 	;;
-
 *-*-ultrix*)
 	AC_DEFINE([BROKEN_GETGROUPS], [1], [getgroups(0,NULL) will return -1])
 	AC_DEFINE([NEED_SETPGRP])
@@ -1367,11 +1365,17 @@ mips-sony-bsd|mips-sony-newsos4)
 EOD
 	done
 	;;
-
 *-*-lynxos)
 	CFLAGS="$CFLAGS -D__NO_INCLUDE_WARN__"
 	AC_DEFINE([BROKEN_SETVBUF], [1],
 	    [LynxOS has broken setvbuf() implementation])
+	;;
+*-*-gnu*)
+	dnl GNU Hurd, use preprocessor flags same as linux.
+	dnl Target SUSv3/POSIX.1-2001 plus BSD specifics.
+	dnl _DEFAULT_SOURCE is the new name for _BSD_SOURCE
+	dnl Note _GNU_SOURCE (set by default) is needed for setres*id prototypes.
+	CPPFLAGS="$CPPFLAGS -D_XOPEN_SOURCE=600 -D_BSD_SOURCE -D_DEFAULT_SOURCE"
 	;;
 esac
 
