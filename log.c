@@ -499,7 +499,11 @@ void
 sshsigdie(const char *file, const char *func, int line,
     const char *fmt,...)
 {
-#if 1
+#if 0
+/* NOTE 2024-07-01: Logging in alarm handler is still considered insecure on glibc.
+ * Ref.: CVE-2024-6387, CVE-2008-4109, CVE-2006-5051
+ * https://blog.qualys.com/vulnerabilities-threat-research/2024/07/01/regresshion-remote-unauthenticated-code-execution-vulnerability-in-openssh-server
+ */
 /* NOTE: "OpenSSH bug 3286". See grace_alarm_handler() in sshd.c.
  * Logging in signal handler cannot be considered as safe.
  * Let enable log as now daemon does not sent explicitly alarm
