@@ -266,6 +266,9 @@ sftp-server$(EXEEXT): $(DEPLIBS) $(SFTPSERVER_OBJS)
 sftp$(EXEEXT): $(DEPLIBS) $(SFTP_OBJS)
 	$(LD) -o $@ $(SFTP_OBJS) $(LDFLAGS) $(SSHLIBS) $(LIBS) $(LIBEDIT)
 
+# temporary, TODO: split daemon into separate binaries
+sshd.o: sshd-session.c
+
 # test driver for the loginrec code - not built by default
 logintest: logintest.o $(DEPLIBS) loginrec.o
 	$(LD) -o $@ logintest.o $(LDFLAGS) loginrec.o $(SSHLIBS) $(LIBS)
