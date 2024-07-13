@@ -1,4 +1,4 @@
-.\"	$OpenBSD: ssh-keygen.1,v 1.230 2023/09/04 10:29:58 job Exp $
+.\"	$OpenBSD: ssh-keygen.1,v 1.232 2024/06/17 13:50:18 naddy Exp $
 .\"
 .\" Author: Tatu Ylonen <ylo@cs.hut.fi>
 .\" Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -401,7 +401,7 @@ Prints the contents of one or more custom certificates.
 Show fingerprint of public key read from specified file.
 For all key types
 .Nm
-tries to find file with the matching public key and prints its fingerprint.
+will try to find file with the matching public key and prints its fingerprint.
 When identity contain X.509 certificate public key is extracted
 from it and fingerprint is printed for public key.
 If combined with
