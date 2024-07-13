@@ -1182,6 +1182,10 @@ section.
 .It Cm IdentityFile
 Specifies a file from which the user's RSA, ECDSA, Ed25519 or DSA authentication
 identity is read.
+You can also specify a public key file to use the corresponding
+private key that is loaded in
+.Xr ssh-agent 1
+when the private key file is not present locally.
 The default is
 .Pa ~/.ssh/id_rsa ,
 .Pa ~/.ssh/id_ecdsa ,
