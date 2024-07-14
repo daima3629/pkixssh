@@ -20,7 +20,7 @@
 .\" Copyright (c) 1999,2000 Markus Friedl.  All rights reserved.
 .\" Copyright (c) 1999 Aaron Campbell.  All rights reserved.
 .\" Copyright (c) 1999 Theo de Raadt.  All rights reserved.
-.\" Copyright (c) 2002-2023 Roumen Petrov.  All rights reserved.
+.\" Copyright (c) 2002-2024 Roumen Petrov.  All rights reserved.
 .\"
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions
@@ -43,7 +43,7 @@
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
 .\" $OpenBSD: sshd_config.5,v 1.367 2024/07/10 21:58:34 djm Exp $
-.Dd $Mdocdate: July 10 2024 $
+.Dd $Mdocdate: July 14 2024 $
 .Dt SSHD_CONFIG 5
 .Os
 .Sh NAME
@@ -935,7 +935,7 @@ option restricts which of the keys are actually used by
 .Pp
 It is possible to have multiple host key files.
 .Pp
-For RSA, ECDSA, Ed25519 or DSA host key file may contain X.509 certificate that
+For RSA, ECDSA, or Ed25519 host key file may contain X.509 certificate that
 match it. In addition file may contain extra X.509 certificates.
 Extra certificates along with certificates from X.509 store are used
 to build chain of certificates leading to a trusted certificate
@@ -2165,9 +2165,8 @@ in form specified in
 Programs use the first listed for
 .Cm ECDSA ,
 .Cm Ed25519 ,
-.Cm RSA ,
 or
-.Cm DSA
+.Cm RSA
 key in signing and
 accept all listed.
 .Pp
@@ -2220,25 +2219,6 @@ The default for certificates with RSA key is:
 .Cm X509KeyAlgorithm
 .Sm off
 .Ar x509v3-sign-rsa , Ar rsa-md5
-.Sm on
-.El
-.Pp
-The default for certificates with DSA key is:
-.Bl -item -offset indent -compact
-.It
-.Cm X509KeyAlgorithm
-.Sm off
-.Ar x509v3-ssh-dss , Ar dss-raw , Ar ssh-dss
-.Sm on
-.It
-.Cm X509KeyAlgorithm
-.Sm off
-.Ar x509v3-sign-dss , Ar dss-asn1
-.Sm on
-.It
-.Cm X509KeyAlgorithm
-.Sm off
-.Ar x509v3-sign-dss , Ar dss-raw
 .Sm on
 .El
 .Pp
@@ -2376,14 +2356,6 @@ is
 .It Cm rsa2048-sha256
 : RSA key and signature using the SHA-256 hash as specified in
 .Dq RFC 6187 ;
-.It Cm dss-asn1
-: DSA key and signature as specified in
-.Dq RFC 3279 ;
-.It Cm dss-raw
-: DSA key and signature in
-.Dq ssh-dss
-format as specified in
-.Dq RFC 4253 .
 .It Cm ssh-sha256
 .It Cm ssh-sha384
 .It Cm ssh-sha512

@@ -1,4 +1,4 @@
-.\"	$OpenBSD: ssh-add.1,v 1.86 2023/12/19 06:57:34 jmc Exp $
+.\"	$OpenBSD: ssh-add.1,v 1.87 2024/06/17 08:30:29 djm Exp $
 .\"
 .\" Author: Tatu Ylonen <ylo@cs.hut.fi>
 .\" Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -44,7 +44,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: January 9 2024 $
+.Dd $Mdocdate: July 14 2024 $
 .Dt SSH-ADD 1
 .Os
 .Sh NAME
@@ -68,7 +68,7 @@
 adds private key identities to the authentication agent,
 .Xr ssh-agent 1 .
 .Pp
-For RSA, ECDSA, Ed25519  or DSA identity may contain X.509 certificate that
+For RSA, ECDSA, or Ed25519 identity may contain X.509 certificate that
 match private key. This certificate will be loaded as well.
 Also identity may contain extra X.509 certificates.
 Agent client uses those extra certificates along with certificates
@@ -78,9 +78,8 @@ leading to a trusted certificate authority.
 When run without arguments, it adds the files
 .Pa ~/.ssh/id_rsa ,
 .Pa ~/.ssh/id_ecdsa ,
-.Pa ~/.ssh/id_ed25519
 and
-.Pa ~/.ssh/id_dsa .
+.Pa ~/.ssh/id_ed25519 .
 After loading a private key,
 .Nm
 will try to load corresponding custom certificate information from the
@@ -246,14 +245,13 @@ socket used to communicate with the agent.
 .El
 .Sh FILES
 .Bl -tag -width Ds -compact
-.It Pa ~/.ssh/id_dsa
 .It Pa ~/.ssh/id_ecdsa
 .It Pa ~/.ssh/id_ed25519
 .It Pa ~/.ssh/id_rsa
-Contains the DSA, ECDSA, Ed25519 or RSA authentication identity of the user.
+Contains the ECDSA, Ed25519 or RSA authentication identity of the user.
 .El
 .Pp
-For RSA, ECDSA, Ed25519 or DSA identity file may contain X.509 certificate that
+For RSA, ECDSA, or Ed25519 identity file may contain X.509 certificate that
 match private key and extra X.509 certificates.
 .Pp
 Identity files should not be readable by anyone but the user.

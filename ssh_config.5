@@ -20,7 +20,7 @@
 .\" Copyright (c) 1999,2000 Markus Friedl.  All rights reserved.
 .\" Copyright (c) 1999 Aaron Campbell.  All rights reserved.
 .\" Copyright (c) 1999 Theo de Raadt.  All rights reserved.
-.\" Copyright (c) 2002-2023 Roumen Petrov.  All rights reserved.
+.\" Copyright (c) 2002-2024 Roumen Petrov.  All rights reserved.
 .\"
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions
@@ -43,7 +43,7 @@
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
 .\" $OpenBSD: ssh_config.5,v 1.397 2024/07/04 22:53:59 djm Exp $
-.Dd $Mdocdate: July 4 2024 $
+.Dd $Mdocdate: July 14 2024 $
 .Dt SSH_CONFIG 5
 .Os
 .Sh NAME
@@ -1089,7 +1089,7 @@ default set.
 The default for this option depend from
 .Cm X509KeyAlgorithm .
 By default it contain unique list build from names of X509KeyAlgorithm
-defined for ECDSA, Ed25519, RSA and DSA keys, followed by
+defined for ECDSA, Ed25519, and RSA keys, followed by
 .Bd -literal -offset 3n
 ssh-ed25519-cert-v01@openssh.com,
 ecdsa-sha2-nistp256-cert-v01@openssh.com,
@@ -1099,8 +1099,7 @@ rsa-sha2-256-cert-v01@openssh.com,rsa-sha2-512-cert-v01@openssh.com,
 ssh-rsa-cert-v01@openssh.com,
 ssh-ed25519,
 ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ecdsa-sha2-nistp521,
-rsa-sha2-256,rsa-sha2-512,ssh-rsa,
-ssh-dss
+rsa-sha2-256,rsa-sha2-512,ssh-rsa
 .Ed
 .Pp
 If hostkeys are known for the destination host
@@ -1180,7 +1179,7 @@ section and environment variables as described in the
 .Sx ENVIRONMENT VARIABLES
 section.
 .It Cm IdentityFile
-Specifies a file from which the user's RSA, ECDSA, Ed25519 or DSA authentication
+Specifies a file from which the user's RSA, ECDSA, or Ed25519 authentication
 identity is read.
 You can also specify a public key file to use the corresponding
 private key that is loaded in
@@ -1189,11 +1188,10 @@ when the private key file is not present locally.
 The default is
 .Pa ~/.ssh/id_rsa ,
 .Pa ~/.ssh/id_ecdsa ,
-.Pa ~/.ssh/id_ed25519
 and
-.Pa ~/.ssh/id_dsa .
+.Pa ~/.ssh/id_ed25519 .
 .Pp
-For RSA, ECDSA, Ed25519 or DSA identity file may contain X.509 certificate that
+For RSA, ECDSA, or Ed25519 identity file may contain X.509 certificate that
 match key. In addition file may contain extra X.509 certificates.
 Extra certificates along with certificates from X.509 store are used
 to build chain of certificates leading to a trusted certificate
@@ -1741,7 +1739,7 @@ plus
 key algorithms like
 ssh-ed25519,
 ecdsa-sha2-nistp256, ecdsa-sha2-nistp384, ecdsa-sha2-nistp521,
-ssh-rsa and ssh-dss.
+and ssh-rsa.
 If a X.509 certificate is used as identity
 but corresponding algorithms are not allowed
 the client will try plain key algorithm
@@ -2302,9 +2300,8 @@ section of
 Programs use the first listed for
 .Cm ECDSA ,
 .Cm Ed25519 ,
-.Cm RSA ,
 or
-.Cm DSA
+.Cm RSA
 key in signing and accept all listed.
 .Pp
 The default for certificates with ECDSA keys is:
@@ -2355,25 +2352,6 @@ The default for certificates with RSA key is:
 .Cm X509KeyAlgorithm
 .Sm off
 .Ar x509v3-sign-rsa , Ar rsa-md5
-.Sm on
-.El
-.Pp
-The default for certificates with DSA key is:
-.Bl -item -offset indent -compact
-.It
-.Cm X509KeyAlgorithm
-.Sm off
-.Ar x509v3-ssh-dss , Ar dss-raw , Ar ssh-dss
-.Sm on
-.It
-.Cm X509KeyAlgorithm
-.Sm off
-.Ar x509v3-sign-dss , Ar dss-asn1
-.Sm on
-.It
-.Cm X509KeyAlgorithm
-.Sm off
-.Ar x509v3-sign-dss , Ar dss-raw
 .Sm on
 .El
 .Pp

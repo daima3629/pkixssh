@@ -43,7 +43,7 @@
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
 .\" $OpenBSD: ssh.1,v 1.442 2024/06/27 21:02:16 jmc Exp $
-.Dd $Mdocdate: June 28 2024 $
+.Dd $Mdocdate: July 14 2024 $
 .Dt SSH 1
 .Os
 .Sh NAME
@@ -326,9 +326,8 @@ when the private key file is not present locally.
 The default is
 .Pa ~/.ssh/id_rsa ,
 .Pa ~/.ssh/id_ecdsa ,
-.Pa ~/.ssh/id_ed25519
 and
-.Pa ~/.ssh/id_dsa .
+.Pa ~/.ssh/id_ed25519 .
 Identity files may also be specified on
 a per-host basis in the configuration file.
 It is possible to have multiple
@@ -348,7 +347,7 @@ or
 to load identifies using engine or store functionality
 provided by cryptographic library.
 .Pp
-For RSA, ECDSA, Ed25519 or DSA identity file may contain X.509 certificate that
+For RSA, ECDSA, or Ed25519 identity file may contain X.509 certificate that
 match key. In addition file may contain extra X.509 certificates.
 Extra certificates along with certificates from X.509 store are used
 to build chain of certificates leading to a trusted certificate
@@ -875,7 +874,7 @@ key pair for authentication purposes.
 The server knows the public key or X.509 certificate, and only the user knows the private key.
 .Nm
 implements public key authentication protocol automatically,
-using one of the DSA, ECDSA, Ed25519 or RSA algorithms or X.509 certificates.
+using one of the ECDSA, Ed25519, or RSA key algorithms, or X.509 certificates.
 .Pp
 The file
 .Pa ~/.ssh/authorized_keys
@@ -902,8 +901,6 @@ flag).
 The user creates their key pair by running
 .Xr ssh-keygen 1 .
 This stores the private key in
-.Pa ~/.ssh/id_dsa
-(DSA),
 .Pa ~/.ssh/id_ecdsa
 (ECDSA),
 .Pa ~/.ssh/id_ed25519
@@ -912,8 +909,6 @@ or
 .Pa ~/.ssh/id_rsa
 (RSA)
 and stores the public key in
-.Pa ~/.ssh/id_dsa.pub
-(DSA),
 .Pa ~/.ssh/id_ecdsa.pub
 (ECDSA),
 .Pa ~/.ssh/id_ed25519.pub
@@ -922,7 +917,7 @@ or
 .Pa ~/.ssh/id_rsa.pub
 (RSA)
 in the user's home directory.
-For RSA, ECDSA, Ed25519 or DSA identity files may contain private key,
+For RSA, ECDSA, or Ed25519 identity files may contain private key,
 X.509 certificate that match it and extra X.509 certificates.
 In this case *.pub file must contain certificate that match key.
 The user should then copy the public key or X.509 certificate
@@ -1535,7 +1530,7 @@ secret, but the recommended permissions are read/write/execute for the user,
 and not accessible by others.
 .Pp
 .It Pa ~/.ssh/authorized_keys
-Lists the public keys (DSA, ECDSA, Ed25519, RSA)
+Lists the public keys (ECDSA, Ed25519, RSA)
 or X.509 certificates
 that can be used for logging in as this user.
 The format of this file is described in the
@@ -1568,7 +1563,6 @@ Contains additional definitions for environment variables; see
 .Sx ENVIRONMENT ,
 above.
 .Pp
-.It Pa ~/.ssh/id_dsa
 .It Pa ~/.ssh/id_ecdsa
 .It Pa ~/.ssh/id_ed25519
 .It Pa ~/.ssh/id_rsa
@@ -1582,14 +1576,13 @@ It is possible to specify a passphrase when
 generating the key which will be used to encrypt the
 sensitive part of this file using 256-bit AES.
 .Pp
-For RSA, ECDSA, Ed25519 or DSA identity file (private key)
+For RSA, ECDSA, or Ed25519 identity file (private key)
 may contain X.509 certificate that match key.
 In addition file may contain extra X.509 certificates.
 Extra certificates along with certificates from X.509 store are used
 to build chain of certificates leading to a trusted certificate
 authority if required by public key algorithm format.
 .Pp
-.It Pa ~/.ssh/id_dsa.pub
 .It Pa ~/.ssh/id_ecdsa.pub
 .It Pa ~/.ssh/id_ed25519.pub
 .It Pa ~/.ssh/id_rsa.pub

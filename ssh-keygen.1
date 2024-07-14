@@ -44,7 +44,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: June 28 2024 $
+.Dd $Mdocdate: July 14 2024 $
 .Dt SSH-KEYGEN 1
 .Os
 .Sh NAME
@@ -59,7 +59,7 @@
 .Op Fl f Ar output_keyfile
 .Op Fl m Ar format
 .Op Fl N Ar new_passphrase
-.Op Fl t Cm dsa | ecdsa | ed25519 | rsa
+.Op Fl t Cm ecdsa | ed25519 | rsa
 .Op Fl Z Ar cipher
 .Nm ssh-keygen
 .Fl p
@@ -198,7 +198,6 @@ section for details.
 Normally each user wishing to use SSH
 with public key authentication runs this once to create the authentication
 key in
-.Pa ~/.ssh/id_dsa ,
 .Pa ~/.ssh/id_ecdsa ,
 .Pa ~/.ssh/id_ed25519
 or
@@ -276,7 +275,6 @@ Show the bubblebabble digest of specified private or public key file.
 Specifies the number of bits in the key to create.
 For RSA keys, the minimum size is 1024 bits and the default is 3072 bits.
 Generally, 3072 bits is considered sufficient.
-DSA keys must be exactly 1024 bits as specified by FIPS 186-2.
 For ECDSA keys, the
 .Fl b
 flag determines the key length by selecting from one of three elliptic
@@ -570,10 +568,9 @@ by key ID or serial number.
 See the
 .Sx KEY REVOCATION LISTS
 section for details.
-.It Fl t Cm dsa | ecdsa | ed25519 | rsa
+.It Fl t Cm ecdsa | ed25519 | rsa
 Specifies the type of key to create.
 The possible values are
-.Dq dsa ,
 .Dq ecdsa ,
 .Dq ed25519 ,
 or
@@ -1058,16 +1055,15 @@ Overrides default location of engine configuration file.
 .El
 .Sh FILES
 .Bl -tag -width Ds -compact
-.It Pa ~/.ssh/id_dsa
 .It Pa ~/.ssh/id_ecdsa
 .It Pa ~/.ssh/id_ed25519
 .It Pa ~/.ssh/id_rsa
-Contains the DSA, ECDSA, Ed25519 or RSA
+Contains the ECDSA, Ed25519, or RSA
 authentication identity of the user.
 .Pp
 This file should not be readable by anyone but the user.
 .Pp
-For RSA, ECDSA, Ed25519 or DSA identity file may contain X.509 certificate that
+For RSA, ECDSA, or Ed25519 identity file may contain X.509 certificate that
 match it. In addition file may contain extra X.509 certificates.
 Extra certificates along with certificates from X.509 store are used
 to build chain of certificates leading to a trusted certificate
@@ -1082,11 +1078,10 @@ but it is offered as the default file for the private key.
 .Xr ssh 1
 will read this file when a login attempt is made.
 .Pp
-.It Pa ~/.ssh/id_dsa.pub
 .It Pa ~/.ssh/id_ecdsa.pub
 .It Pa ~/.ssh/id_ed25519.pub
 .It Pa ~/.ssh/id_rsa.pub
-Contains the DSA, ECDSA, Ed25519 or RSA
+Contains the ECDSA, Ed25519 or RSA
 public key for authentication.
 The contents of this file should be added to
 .Pa ~/.ssh/authorized_keys
@@ -1096,10 +1091,9 @@ There is no need to keep the contents of this file secret.
 If file
 .Pa ~/.ssh/id_rsa ,
 .Pa ~/.ssh/id_ecdsa ,
-.Pa ~/.ssh/id_ed25519 ,
 or
-.Pa ~/.ssh/id_dsa
-contain RSA/ECDSA/Ed25519/DSA private key and X.509 certificates
+.Pa ~/.ssh/id_ed25519
+contain RSA/ECDSA/Ed25519 private key and X.509 certificates
 public key file must contain certificate that match private key!
 Use
 .Nm
@@ -1138,13 +1132,6 @@ The file format is described in
 .%D March 1999
 .%R RFC 2535
 .%T Domain Name System Security Extensions
-.Re
-.It
-.Rs
-.%A D. Eastlake
-.%D March 1999
-.%R RFC 2536
-.%T DSA KEYs and SIGs in the Domain Name System (DNS)
 .Re
 .It
 .Rs

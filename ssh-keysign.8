@@ -1,7 +1,7 @@
-.\" $OpenBSD: ssh-keysign.8,v 1.17 2022/03/31 17:27:27 naddy Exp $
+.\" $OpenBSD: ssh-keysign.8,v 1.18 2024/06/17 08:30:29 djm Exp $
 .\"
 .\" Copyright (c) 2002 Markus Friedl.  All rights reserved.
-.\" Copyright (c) 2002-2022 Roumen Petrov.  All rights reserved.
+.\" Copyright (c) 2002-2024 Roumen Petrov.  All rights reserved.
 .\"
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions
@@ -31,7 +31,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: December 17 2022 $
+.Dd $Mdocdate: July 14 2024 $
 .Dt SSH-KEYSIGN 8
 .Os
 .Sh NAME
@@ -70,7 +70,6 @@ Controls whether
 .Nm
 is enabled.
 .Pp
-.It Pa /etc/ssh/ssh_host_dsa_key
 .It Pa /etc/ssh/ssh_host_ecdsa_key
 .It Pa /etc/ssh/ssh_host_ed25519_key
 .It Pa /etc/ssh/ssh_host_rsa_key
@@ -82,17 +81,16 @@ Since they are readable only by root,
 .Nm
 must be set-uid root if host-based authentication is used.
 .Pp
-For RSA, ECDSA, Ed25519 or DSA host key file may contain X.509 certificate that
+For RSA, ECDSA, or Ed25519 host key file may contain X.509 certificate that
 match the key. In addition file may contain extra X.509 certificates.
 Extra certificates along with certificates from X.509 store are used
 to build chain of certificates leading to a trusted certificate
 authority if required by public key algorithm format.
 .Pp
-.It Pa /etc/ssh/ssh_host_dsa_key-cert.pub
 .It Pa /etc/ssh/ssh_host_ecdsa_key-cert.pub
 .It Pa /etc/ssh/ssh_host_ed25519_key-cert.pub
 .It Pa /etc/ssh/ssh_host_rsa_key-cert.pub
-If these files exist, they are assumed to contain public certificate
+If these files exist, they are assumed to contain custom certificate
 information corresponding with the private keys above.
 .El
 .Sh SEE ALSO
