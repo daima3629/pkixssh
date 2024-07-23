@@ -1,7 +1,7 @@
 /* $OpenBSD: auth.c,v 1.160 2023/03/05 05:34:09 dtucker Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
- * Copyright (c) 2016-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2016-2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -482,9 +482,6 @@ getpwnamallow(struct ssh *ssh, const char *user)
 {
 #ifdef HAVE_LOGIN_CAP
 	extern login_cap_t *lc;
-#ifdef BSD_AUTH
-	auth_session_t *as;
-#endif
 #endif
 	struct passwd *pw;
 	struct connection_info *ci;
@@ -524,15 +521,38 @@ getpwnamallow(struct ssh *ssh, const char *user)
 		debug("unable to get login class: %s", user);
 		return (NULL);
 	}
+#ifdef HAVE_AUTH_HOSTOK
+{
+	const char *from_host, *from_ip;
+
+	from_host = auth_get_canonical_hostname(ssh, options.use_dns);
+	from_ip = ssh_remote_ipaddr(ssh);
+	if (!auth_hostok(lc, from_host, from_ip)) {
+		debug("denied connection for %.200s from %.200s [%.200s].",
+		      pw->pw_name, from_host, from_ip);
+		return (NULL);
+	}
+}
+#endif /* HAVE_AUTH_HOSTOK */
+#ifdef HAVE_AUTH_TIMEOK
+	if (!auth_timeok(lc, time(NULL))) {
+		debug("login %.200s refused (time)", pw->pw_name);
+		return (NULL);
+	}
+#endif /* HAVE_AUTH_TIMEOK */
 #ifdef BSD_AUTH
+{
+	auth_session_t *as;
+
 	if ((as = auth_open()) == NULL || auth_setpwd(as, pw) != 0 ||
 	    auth_approval(as, lc, pw->pw_name, "ssh") <= 0) {
-		debug("Approval failure for %s", user);
+		debug("approval failure for %s", user);
 		pw = NULL;
 	}
 	if (as != NULL)
 		auth_close(as);
-#endif
+}
+#endif /* BSD_AUTH */
 #endif
 	if (pw != NULL)
 		return (pwcopy(pw));
