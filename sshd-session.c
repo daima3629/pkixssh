@@ -5,6 +5,8 @@ static void do_ssh2_kex(struct ssh *);
 
 /*
  * Signal handler for the alarm after the login grace period has expired.
+ * As usual, this may only take signal-safe actions, even though it is
+ * terminal.
  */
 static void
 grace_alarm_handler(int sig)
@@ -24,7 +26,20 @@ grace_alarm_handler(int sig)
 	 * keys command helpers or privsep children.
 	 */
 	if (getpgid(0) == getpid()) {
+#ifdef HAVE_SIGACTION
+		struct sigaction sa;
+
+		/* mask all other signals while in handler */
+		memset(&sa, 0, sizeof(sa));
+		sa.sa_handler = SIG_IGN;
+		sigfillset(&sa.sa_mask);
+#if defined(SA_RESTART) && !defined(BROKEN_SA_RESTART)
+		sa.sa_flags = SA_RESTART;
+#endif
+		(void)sigaction(SIGTERM, &sa, NULL);
+#else
 		ssh_signal(SIGTERM, SIG_IGN);
+#endif
 		kill(0, SIGTERM);
 	}
 
