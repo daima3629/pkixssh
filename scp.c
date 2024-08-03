@@ -173,9 +173,6 @@ int throughlocal = 1;
 /* Non-standard port to use for the ssh connection or -1. */
 int sshport = -1;
 
-/* This is the program to execute for the secured connection. ("ssh" or -S) */
-static const char *ssh_program = _PATH_SSH_PROGRAM;
-
 /* This is used to store the pid of ssh_program */
 pid_t do_cmd_pid = -1;
 pid_t do_cmd_pid2 = -1;
@@ -466,8 +463,8 @@ int response(void);
 void rsource(char *, struct stat *);
 void sink(int, char *[], const char *);
 void source(int, char *[]);
-void tolocal(int, char *[], enum scp_mode_e, char *sftp_direct);
-void toremote(int, char *[], enum scp_mode_e, char *sftp_direct);
+void tolocal(int, char *[], enum scp_mode_e, const char *ssh_program, char *sftp_direct);
+void toremote(int, char *[], enum scp_mode_e, const char *ssh_program, char *sftp_direct);
 void usage(void);
 
 void source_sftp(int, char *, char *, struct sftp_conn *);
@@ -480,6 +477,7 @@ main(int argc, char **argv)
 {
 	int ch, fflag, tflag, status, r, n;
 	char **newargv, *argv0;
+	const char *ssh_program = _PATH_SSH_PROGRAM;
 	const char *errstr;
 	extern char *optarg;
 	extern int optind;
@@ -736,11 +734,11 @@ main(int argc, char **argv)
 	(void) ssh_signal(SIGPIPE, lostconn);
 
 	if (colon(argv[argc - 1]))	/* Dest is remote host. */
-		toremote(argc, argv, mode, sftp_direct);
-	else {
+		toremote(argc, argv, mode, ssh_program, sftp_direct);
+	else {				/* Dest is local host. */
 		if (targetshouldbedirectory)
 			verifydir(argv[argc - 1]);
-		tolocal(argc, argv, mode, sftp_direct);	/* Dest is local host. */
+		tolocal(argc, argv, mode, ssh_program, sftp_direct);
 	}
 	/*
 	 * Finally check the exit status of the ssh process, if one was forked
@@ -1057,8 +1055,9 @@ brace_expand(const char *pattern, char ***patternsp, size_t *npatternsp)
 }
 
 static struct sftp_conn *
-do_sftp_connect(char *host, char *user, int port, char *sftp_direct,
-   int *reminp, int *remoutp, int *pidp)
+do_sftp_connect(char *host, char *user, int port,
+    const char *ssh_program, char *sftp_direct,
+    int *reminp, int *remoutp, int *pidp)
 {
 	if (sftp_direct == NULL) {
 		if (do_cmd(ssh_program, host, user, port, 1, "sftp",
@@ -1082,7 +1081,8 @@ do_sftp_connect(char *host, char *user, int port, char *sftp_direct,
 }
 
 void
-toremote(int argc, char **argv, enum scp_mode_e mode, char *sftp_direct)
+toremote(int argc, char **argv, enum scp_mode_e mode,
+    const char *ssh_program, char *sftp_direct)
 {
 	char *suser = NULL, *host = NULL, *src = NULL;
 	char *bp, *tuser, *thost, *targ;
@@ -1134,7 +1134,7 @@ toremote(int argc, char **argv, enum scp_mode_e mode, char *sftp_direct)
 				if (remin == -1) {
 					/* Connect to dest now */
 					conn = do_sftp_connect(thost, tuser,
-					    tport, sftp_direct,
+					    tport, ssh_program, sftp_direct,
 					    &remin, &remout, &do_cmd_pid);
 					if (conn == NULL) {
 						fatal("Unable to open "
@@ -1151,7 +1151,7 @@ toremote(int argc, char **argv, enum scp_mode_e mode, char *sftp_direct)
 				 */
 				/* Connect to origin now */
 				conn2 = do_sftp_connect(host, suser,
-				    sport, sftp_direct,
+				    sport, ssh_program, sftp_direct,
 				    &remin2, &remout2, &do_cmd_pid2);
 				if (conn2 == NULL) {
 					fatal("Unable to open "
@@ -1243,7 +1243,7 @@ toremote(int argc, char **argv, enum scp_mode_e mode, char *sftp_direct)
 				if (remin == -1) {
 					/* Connect to remote now */
 					conn = do_sftp_connect(thost, tuser,
-					    tport, sftp_direct,
+					    tport, ssh_program, sftp_direct,
 					    &remin, &remout, &do_cmd_pid);
 					if (conn == NULL) {
 						fatal("Unable to open sftp "
@@ -1281,7 +1281,8 @@ out:
 }
 
 void
-tolocal(int argc, char **argv, enum scp_mode_e mode, char *sftp_direct)
+tolocal(int argc, char **argv, enum scp_mode_e mode,
+    const char *ssh_program, char *sftp_direct)
 {
 	char *bp, *host = NULL, *src = NULL, *suser = NULL;
 	arglist alist;
@@ -1325,7 +1326,7 @@ tolocal(int argc, char **argv, enum scp_mode_e mode, char *sftp_direct)
 			struct sftp_conn *conn;
 
 			conn = do_sftp_connect(host, suser, sport,
-			    sftp_direct, &remin, &remout, &do_cmd_pid);
+			    ssh_program, sftp_direct, &remin, &remout, &do_cmd_pid);
 			if (conn == NULL) {
 				error("sftp connection failed");
 				++errs;
