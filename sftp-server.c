@@ -1,7 +1,7 @@
 /* $OpenBSD: sftp-server.c,v 1.148 2024/04/30 06:23:51 djm Exp $ */
 /*
  * Copyright (c) 2000-2004 Markus Friedl.  All rights reserved.
- * Copyright (c) 2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2021-2024 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -1328,7 +1328,7 @@ process_rename(u_int32_t id)
 static void
 process_readlink(u_int32_t id)
 {
-	int r, len;
+	int r;
 	char buf[PATH_MAX];
 	char *path;
 
@@ -1337,16 +1337,28 @@ process_readlink(u_int32_t id)
 
 	debug3("request %u: readlink", id);
 	verbose("readlink \"%s\"", path);
-	if ((len = readlink(path, buf, sizeof(buf) - 1)) == -1)
-		send_status(id, errno_to_portable(errno));
-	else {
-		Stat s;
 
-		buf[len] = '\0';
-		attrib_clear(&s.attrib);
-		s.name = s.long_name = buf;
-		send_names(id, 1, &s);
+{	ssize_t len;
+
+	len = readlink(path, buf, sizeof(buf));
+	if (len == -1) {
+		send_status(id, errno_to_portable(errno));
+		goto out;
 	}
+	if (len >= (ssize_t)sizeof(buf)) {/*truncate*/
+		send_status(id, errno_to_portable(ENAMETOOLONG));
+		goto out;
+	}
+	buf[len] = '\0';
+}
+{
+	Stat s;
+
+	attrib_clear(&s.attrib);
+	s.name = s.long_name = buf;
+	send_names(id, 1, &s);
+}
+out:
 	free(path);
 }
 
