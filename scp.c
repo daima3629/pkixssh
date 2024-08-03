@@ -17,7 +17,7 @@
 /*
  * Copyright (c) 1999 Theo de Raadt.  All rights reserved.
  * Copyright (c) 1999 Aaron Campbell.  All rights reserved.
- * Copyright (c) 2022-2023 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2022-2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -144,7 +144,7 @@ extern char *__progname;
 #define COPY_BUFLEN	16384
 
 int do_cmd(const char *, char *, char *, int, int, char *, int *, int *, pid_t *);
-int do_cmd2(char *, char *, int, char *, int, int);
+int do_cmd2(const char *, char *, char *, int, char *, int, int);
 
 /* Struct for addargs */
 arglist args;
@@ -382,7 +382,7 @@ do_cmd(const char *program, char *host, char *remuser, int port, int subsystem,
  * This way the input and output of two commands can be connected.
  */
 int
-do_cmd2(char *host, char *remuser, int port, char *cmd,
+do_cmd2(const char *program, char *host, char *remuser, int port, char *cmd,
     int fdin, int fdout)
 {
 	int status;
@@ -391,7 +391,7 @@ do_cmd2(char *host, char *remuser, int port, char *cmd,
 	if (verbose_mode)
 		fmprintf(stderr,
 		    "Executing: 2nd program %s host %s, user %s, command %s\n",
-		    ssh_program, host,
+		    program, host,
 		    remuser ? remuser : "(unspecified)", cmd);
 
 	if (port == -1)
@@ -405,7 +405,7 @@ do_cmd2(char *host, char *remuser, int port, char *cmd,
 		if (dup2(fdout, STDOUT_FILENO) == -1)
 			perror("dup2 stdout");
 
-		replacearg(&args, 0, "%s", ssh_program);
+		replacearg(&args, 0, "%s", program);
 		if (port != -1) {
 			addargs(&args, "-p");
 			addargs(&args, "%d", port);
@@ -419,8 +419,8 @@ do_cmd2(char *host, char *remuser, int port, char *cmd,
 		addargs(&args, "%s", host);
 		addargs(&args, "%s", cmd);
 
-		execvp(ssh_program, args.list);
-		perror(ssh_program);
+		execvp(program, args.list);
+		perror(program);
 		exit(1);
 	} else if (pid == -1) {
 		fatal("fork: %s", strerror(errno));
@@ -1180,7 +1180,7 @@ toremote(int argc, char **argv, enum scp_mode_e mode, char *sftp_direct)
 			free(bp);
 			xasprintf(&bp, "%s%s -t %s%s", cmdprefix2, cmd,
 			    *targ == '-' ? "-- " : "", targ);
-			if (do_cmd2(thost, tuser, tport, bp,
+			if (do_cmd2(ssh_program, thost, tuser, tport, bp,
 			    remin, remout) < 0)
 				exit(1);
 			free(bp);
