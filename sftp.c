@@ -1,7 +1,7 @@
 /* $OpenBSD: sftp.c,v 1.239 2024/06/26 23:14:14 deraadt Exp $ */
 /*
  * Copyright (c) 2001-2004 Damien Miller <djm@openbsd.org>
- * Copyright (c) 2013-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2013-2024 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -2455,7 +2455,7 @@ main(int argc, char **argv)
 	char *host = NULL, *user = NULL, *file2 = NULL;
 	int debug_level = 0;
 	char *file1 = NULL, *sftp_server = NULL;
-	const char *ssh_program = _PATH_SSH_PROGRAM, *sftp_direct = NULL;
+	const char *ssh_program, *sftp_direct = NULL;
 	const char *errstr;
 	LogLevel ll = SYSLOG_LEVEL_INFO;
 	arglist args;
@@ -2472,11 +2472,8 @@ main(int argc, char **argv)
 	msetlocale();
 
 	__progname = ssh_get_progname(argv[0]);
-#ifdef __ANDROID__
-{	static char pathbuf[PATH_MAX];
-	ssh_program = relocate_path(ssh_program, pathbuf, sizeof(pathbuf));
-}
-#endif
+	ssh_program = get_ssh_binary_path();
+
 	memset(&args, '\0', sizeof(args));
 	args.list = NULL;
 	addargs(&args, "%s", ssh_program);

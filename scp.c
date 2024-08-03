@@ -477,7 +477,7 @@ main(int argc, char **argv)
 {
 	int ch, fflag, tflag, status, r, n;
 	char **newargv, *argv0;
-	const char *ssh_program = _PATH_SSH_PROGRAM;
+	const char *ssh_program;
 	const char *errstr;
 	extern char *optarg;
 	extern int optind;
@@ -512,14 +512,10 @@ main(int argc, char **argv)
 	argv = newargv;
 
 	__progname = ssh_get_progname(argv[0]);
+	ssh_program = get_ssh_binary_path();
 
 	log_init(argv0, log_level, SYSLOG_FACILITY_USER, 2);
 
-#ifdef __ANDROID__
-{	static char pathbuf[PATH_MAX];
-	ssh_program = relocate_path(ssh_program, pathbuf, sizeof(pathbuf));
-}
-#endif
 	memset(&args, '\0', sizeof(args));
 	memset(&remote_remote_args, '\0', sizeof(remote_remote_args));
 	args.list = remote_remote_args.list = NULL;

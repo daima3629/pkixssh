@@ -79,6 +79,7 @@
 #include "sshbuf.h"
 #include "ssherr.h"
 #include "platform.h"
+#include "pathnames.h"
 
 /* Operations on timespecs. */
 #ifndef timespecclear
@@ -100,6 +101,15 @@
 			(vsp)->tv_nsec += 1000000000L;			\
 		}							\
 	} while (0)
+#endif
+
+#ifdef __ANDROID__
+/* see port-android.c */
+#else
+const char*
+get_ssh_binary_path(void) {
+	return SSHBINDIR "/ssh";
+}
 #endif
 
 /* remove newline at end of string */

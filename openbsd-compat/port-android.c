@@ -1,6 +1,6 @@
 #ifdef __ANDROID__
 /*
- * Copyright (c) 2016-2023 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2016-2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -253,6 +253,18 @@ relocate_path(const char *pathname, char *pathbuf, size_t pathlen) {
 		return pathbuf;
 	}
 
+	return pathname;
+}
+
+
+const char*
+get_ssh_binary_path(void) {
+	const char *pathname = SSHBINDIR "/ssh";
+	static char pathbuf[PATH_MAX] = "\0";
+
+	if (*pathbuf != '\0') return pathbuf;
+	if (relocate_bindir(pathname, pathbuf, sizeof(pathbuf)))
+		return pathbuf;
 	return pathname;
 }
 
