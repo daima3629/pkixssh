@@ -263,8 +263,33 @@ get_ssh_binary_path(void) {
 	static char pathbuf[PATH_MAX] = "\0";
 
 	if (*pathbuf != '\0') return pathbuf;
+#ifndef USE_LIBAPPWRAP
 	if (relocate_bindir(pathname, pathbuf, sizeof(pathbuf)))
 		return pathbuf;
+#else
+{	static const char ssh_utility[] = "libcmd-ssh.so";
+	ssize_t len;
+	char *s;
+
+	len = readlink("/proc/self/exe", pathbuf, sizeof(pathbuf));
+	if (len == -1) goto err;
+	if (len == (ssize_t)sizeof(pathbuf)) goto err;
+	pathbuf[len] = '\0';
+
+	s = strrchr(pathbuf, '/');
+	if (s == NULL) goto err;
+	*++s = '\0';
+
+	len = strlen(ssh_utility) + 1/*terminating NUL character*/;
+	if (strlen(pathbuf) > (sizeof(pathbuf) - len)) goto err;
+
+	memcpy(s, ssh_utility, len);
+	return pathbuf;
+
+err:
+	*pathbuf = '\0';
+}
+#endif
 	return pathname;
 }
 
