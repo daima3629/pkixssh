@@ -244,7 +244,7 @@ relocate_libexecdir(const char *pathname, char *pathbuf, size_t pathlen) {
 	return len <= pathlen;
 }
 
-const char*
+static const char*
 relocate_path(const char *pathname, char *pathbuf, size_t pathlen) {
 
 	if (relocate_etcdir(pathname, pathbuf, pathlen) ||
@@ -344,6 +344,7 @@ __wrap_fopen(const char *path, const char *mode) {
 }
 
 
+#ifndef USE_LIBAPPWRAP
 extern int __real_rename(const char *oldpath, const char *newpath);
 
 int
@@ -355,6 +356,7 @@ __wrap_rename(const char *oldpath, const char *newpath) {
 
 	return __real_rename(oldpath, newpath);
 }
+#endif
 
 
 /* Fake user for android */

@@ -954,12 +954,15 @@ case "$host" in
 
 	case "$host" in
 	*-*-linux-android*)
+		CPPFLAGS="$CPPFLAGS -DUSE_LIBAPPWRAP"
 		LIBS="$LIBS -llog"
 		XLDFLAGS="$XLDFLAGS -Wl,--wrap=open -Wl,--wrap=fopen"
-		XLDFLAGS="$XLDFLAGS -Wl,--wrap=rename"
 		dnl app library stub
 		XLDFLAGS="$XLDFLAGS -L. -lappinfo"
 		XDEPLIBS="$XDEPLIBS libappinfo.so"
+		dnl wrap library stub
+		XLDFLAGS="$XLDFLAGS -lappwrap"
+		XDEPLIBS="$XDEPLIBS libappwrap.so"
 		;;
 	esac
 
