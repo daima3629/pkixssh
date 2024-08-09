@@ -954,15 +954,20 @@ case "$host" in
 
 	case "$host" in
 	*-*-linux-android*)
-		CPPFLAGS="$CPPFLAGS -DUSE_LIBAPPWRAP"
+	use_addon_model=:
 		LIBS="$LIBS -llog"
 		XLDFLAGS="$XLDFLAGS -Wl,--wrap=open -Wl,--wrap=fopen"
-		dnl app library stub
-		XLDFLAGS="$XLDFLAGS -L. -lappinfo"
-		XDEPLIBS="$XDEPLIBS libappinfo.so"
+	AS_IF([$use_addon_model], [
+		CPPFLAGS="$CPPFLAGS -DUSE_LIBAPPWRAP"
 		dnl wrap library stub
 		XLDFLAGS="$XLDFLAGS -lappwrap"
 		XDEPLIBS="$XDEPLIBS libappwrap.so"
+	], [
+		XLDFLAGS="$XLDFLAGS -Wl,--wrap=rename"
+		dnl app library stub
+		XLDFLAGS="$XLDFLAGS -L. -lappinfo"
+		XDEPLIBS="$XDEPLIBS libappinfo.so"
+	])
 		;;
 	esac
 
