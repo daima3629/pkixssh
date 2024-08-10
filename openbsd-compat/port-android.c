@@ -34,6 +34,7 @@
 #include "pathnames.h"
 extern char *__progname;
 
+#ifndef USE_LIBAPPWRAP
 /* paths to application specific directories: */
 extern char *get2_app_etcdir(const char *cmd);
 extern char *get2_app_bindir(const char *cmd);
@@ -53,6 +54,7 @@ static inline char*
 get_app_libexecdir(void) {
 	return get2_app_libexecdir(__progname);
 }
+#endif /*ndef USE_LIBAPPWRAP*/
 
 /* Obsolete package rule:
  * Note it is expected binaries to be installed in $(prefix)/xbin.
@@ -181,7 +183,9 @@ endpwent(void) {
  * Only application library directory is write protected.
  * In consequence executable must be packaged into it and with
  * name is a specific pattern.
- * On old versions for some reasons application could install
+ */
+#ifndef USE_LIBAPPWRAP
+/* On old versions for some reasons application could install
  * executable outside libdir.
  * So instead to relocate executable to "lib" directory let
  * relocate "bin" and "libexec".
@@ -255,6 +259,7 @@ relocate_path(const char *pathname, char *pathbuf, size_t pathlen) {
 
 	return pathname;
 }
+#endif /*ndef USE_LIBAPPWRAP*/
 
 
 const char*
