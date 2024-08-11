@@ -53,18 +53,17 @@ case "$host" in
   dnl LARGE FILES
   dnl https://android.googlesource.com/platform/bionic/+/master/docs/32-bit-abi.md
   dnl
-  dnl Autoconf 2.72 largefile test will define _FILE_OFFSET_BITS to
-  dnl 64 and as result on 32-bit platforms is activated
-  dnl __USE_FILE_OFFSET64.
-  dnl Note autoconf 2.72 removes cache variable ac_cv_sys_file_offset_bits!
-  dnl Also variable ac_have_largefile cannot use used as is documented.
+  dnl Autoconf 2.72 largefile test defines _FILE_OFFSET_BITS to 64.
+  dnl If pre Autoconf 2.72 build is with unified headers test
+  dnl defines _FILE_OFFSET_BITS.
+  dnl As result on 32-bit platforms is activated __USE_FILE_OFFSET64.
   dnl => temporary suppress for now
-  enable_largefile=no
-
-  dnl If build is with unified headers configuration check will
-  dnl define _FILE_OFFSET_BITS and as result on 32-bit platforms
-  dnl is activated __USE_FILE_OFFSET64
-  dnl => temporary suppress for now
+  dnl
+  dnl NOTE: autoconf 2.72 removes cache variable ac_cv_sys_file_offset_bits!
+  dnl Also variable ac_have_largefile cannot be used as is documented.
+  dnl autoconf 2.72:
+  ac_cv_sys_largefile_opts='none needed'
+  dnl pre autoconf 2.72:
   ac_cv_sys_file_offset_bits=no
 
   dnl see port-android.c for details
