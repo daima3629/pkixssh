@@ -1,4 +1,4 @@
-/* $OpenBSD: nchan.c,v 1.74 2022/02/01 23:32:51 djm Exp $ */
+/* $OpenBSD: nchan.c,v 1.76 2024/07/25 22:40:08 djm Exp $ */
 /*
  * Copyright (c) 1999, 2000, 2001, 2002 Markus Friedl.  All rights reserved.
  * Copyright (c) 2019-2021 Roumen Petrov.  All rights reserved.
@@ -220,6 +220,8 @@ chan_send_close2(struct ssh *ssh, Channel *c)
 	} else {
 		if (!c->have_remote_id)
 			fatal_f("channel %d: no remote_id", c->self);
+		debug2("channel %d: send close for remote id %u", c->self,
+		    (unsigned)c->remote_id);
 		if ((r = sshpkt_start(ssh, SSH2_MSG_CHANNEL_CLOSE)) != 0 ||
 		    (r = sshpkt_put_u32(ssh, c->remote_id)) != 0 ||
 		    (r = sshpkt_send(ssh)) != 0)
