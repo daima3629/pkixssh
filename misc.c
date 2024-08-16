@@ -1,4 +1,4 @@
-/* $OpenBSD: misc.c,v 1.194 2024/05/17 00:30:23 djm Exp $ */
+/* $OpenBSD: misc.c,v 1.195 2024/05/17 06:11:17 deraadt Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2005,2006 Damien Miller.  All rights reserved.
@@ -2992,7 +2992,7 @@ subprocess(const char *tag, const char *command,
 		/* Prepare a minimal environment for the child. */
 		if ((flags & SSH_SUBPROCESS_PRESERVE_ENV) == 0) {
 			u_int nenv = 6;
-			env = xcalloc(sizeof(*env), nenv);
+			env = xcalloc(nenv, sizeof(*env));
 			child_set_env(&env, &nenv, "PATH", _PATH_STDPATH);
 			child_set_env(&env, &nenv, "USER", pw->pw_name);
 			child_set_env(&env, &nenv, "LOGNAME", pw->pw_name);

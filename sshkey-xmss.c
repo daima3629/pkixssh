@@ -101,7 +101,7 @@ sshkey_xmss_init(struct sshkey *key, const char *name)
 		return SSH_ERR_INVALID_FORMAT;
 	if (name == NULL)
 		return SSH_ERR_INVALID_FORMAT;
-	state = calloc(sizeof(struct ssh_xmss_state), 1);
+	state = calloc(1, sizeof(struct ssh_xmss_state));
 	if (state == NULL)
 		return SSH_ERR_ALLOC_FAIL;
 	if (strcmp(name, XMSS_SHA2_256_W16_H10_NAME) == 0) {
@@ -279,7 +279,7 @@ sshkey_xmss_init_enc_key(struct sshkey *k, const char *ciphername)
 	keylen = cipher_keylen(cipher);
 	ivlen = cipher_ivlen(cipher);
 	state->enc_keyiv_len = keylen + ivlen;
-	if ((state->enc_keyiv = calloc(state->enc_keyiv_len, 1)) == NULL) {
+	if ((state->enc_keyiv = calloc(1, state->enc_keyiv_len)) == NULL) {
 		free(state->enc_ciphername);
 		state->enc_ciphername = NULL;
 		return SSH_ERR_ALLOC_FAIL;
@@ -408,7 +408,7 @@ sshkey_xmss_get_state_from_file(struct sshkey *k, const char *filename,
 			goto done;
 		}
 		len = PEEK_U32(buf);
-		if ((data = calloc(len, 1)) == NULL) {
+		if ((data = calloc(1, len)) == NULL) {
 			ret = SSH_ERR_ALLOC_FAIL;
 			goto done;
 		}
