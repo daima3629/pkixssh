@@ -1,4 +1,4 @@
-/* $OpenBSD: packet.c,v 1.315 2024/05/31 08:49:35 djm Exp $ */
+/* $OpenBSD: packet.c,v 1.316 2024/08/15 00:51:51 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -2653,22 +2653,7 @@ sshpkt_put_stringb(struct ssh *ssh, const struct sshbuf *v)
 	return sshbuf_put_stringb(ssh->state->outgoing_packet, v);
 }
 
-int
-sshpkt_getb_froms(struct ssh *ssh, struct sshbuf **valp)
-{
-	return sshbuf_froms(ssh->state->incoming_packet, valp);
-}
-
 #ifdef WITH_OPENSSL
-#ifdef OPENSSL_HAS_ECC
-int
-sshpkt_put_ec(struct ssh *ssh, const EC_POINT *v, const EC_GROUP *g)
-{
-	return sshbuf_put_ec(ssh->state->outgoing_packet, v, g);
-}
-#endif /* OPENSSL_HAS_ECC */
-
-
 int
 sshpkt_put_bignum2(struct ssh *ssh, const BIGNUM *v)
 {
@@ -2736,15 +2721,13 @@ sshpkt_get_cstring(struct ssh *ssh, char **valp, size_t *lenp)
 	return sshbuf_get_cstring(ssh->state->incoming_packet, valp, lenp);
 }
 
-#ifdef WITH_OPENSSL
-#ifdef OPENSSL_HAS_ECC
 int
-sshpkt_get_ec(struct ssh *ssh, EC_POINT *v, const EC_GROUP *g)
+sshpkt_getb_froms(struct ssh *ssh, struct sshbuf **valp)
 {
-	return sshbuf_get_ec(ssh->state->incoming_packet, v, g);
+	return sshbuf_froms(ssh->state->incoming_packet, valp);
 }
-#endif /* OPENSSL_HAS_ECC */
 
+#ifdef WITH_OPENSSL
 int
 sshpkt_get_bignum2(struct ssh *ssh, BIGNUM **valp)
 {
