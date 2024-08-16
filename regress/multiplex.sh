@@ -1,4 +1,4 @@
-#	$OpenBSD: multiplex.sh,v 1.34 2022/06/03 04:31:54 djm Exp $
+#	$OpenBSD: multiplex.sh,v 1.37 2024/07/19 04:33:36 djm Exp $
 #	Placed in the Public Domain.
 
 make_tmpdir
@@ -75,18 +75,20 @@ if test $? -ne 0 ; then
 	fail "pass env TERM fail"
 fi
 
-verbose "test $tid: transfer"
-rm -f ${COPY}
-trace "ssh transfer over multiplexed connection and check result"
-${SSH} -F $OBJ/ssh_config -S$CTL otherhost cat ${DATA} > ${COPY}
-test -f ${COPY}			|| fail "ssh -Sctl: failed copy ${DATA}"
-cmp ${DATA} ${COPY}		|| fail "ssh -Sctl: corrupted copy of ${DATA}"
+for mode in "" "-Oproxy"; do
+	verbose "test $tid: transfer $mode"
+	rm -f ${COPY}
+	trace "ssh transfer over $mode multiplexed connection and check result"
+	${SSH} $mode -F $OBJ/ssh_config -S$CTL otherhost cat ${DATA} > ${COPY}
+	test -f ${COPY}		|| fail "ssh -Sctl: failed copy ${DATA}"
+	cmp ${DATA} ${COPY}	|| fail "ssh -Sctl: corrupted copy of ${DATA}"
 
-rm -f ${COPY}
-trace "ssh transfer over multiplexed connection and check result"
-${SSH} -F $OBJ/ssh_config -S $CTL otherhost cat ${DATA} > ${COPY}
-test -f ${COPY}			|| fail "ssh -S ctl: failed copy ${DATA}"
-cmp ${DATA} ${COPY}		|| fail "ssh -S ctl: corrupted copy of ${DATA}"
+	rm -f ${COPY}
+	trace "ssh transfer over $mode multiplexed connection and check result"
+	${SSH} $mode -F $OBJ/ssh_config -S $CTL otherhost cat ${DATA} > ${COPY}
+	test -f ${COPY}		|| fail "ssh -S ctl: failed copy ${DATA}"
+	cmp ${DATA} ${COPY}	|| fail "ssh -S ctl: corrupted copy of ${DATA}"
+done
 
 rm -f ${COPY}
 trace "sftp transfer over multiplexed connection and check result"
