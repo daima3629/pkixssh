@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-rsa.c,v 1.79 2023/03/05 05:34:09 dtucker Exp $ */
+/* $OpenBSD: ssh-rsa.c,v 1.80 2024/08/15 00:51:51 djm Exp $ */
 /*
  * Copyright (c) 2000, 2003 Markus Friedl <markus@openbsd.org>
  * Copyright (c) 2011 Dr. Stephen Henson.  All rights reserved.
@@ -700,19 +700,12 @@ ssh_rsa_serialize_private(const struct sshkey *key, struct sshbuf *buf,
 }
 
 static int
-ssh_rsa_generate(struct sshkey *key, int bits) {
+ssh_pkey_rsa_generate(int bits, EVP_PKEY **ret) {
 	EVP_PKEY *pk;
 	RSA *private = NULL;
 	BIGNUM *f4 = NULL;
-	int r;
+	int r = 0;
 
-	r = sshrsa_verify_length(bits);
-	if (r != 0) return r;
-
-	if (bits > SSHBUF_MAX_BIGNUM * 8)
-		return SSH_ERR_KEY_LENGTH;
-
-	;
 	if ((pk = EVP_PKEY_new()) == NULL ||
 	    (private = RSA_new()) == NULL ||
 	    (f4 = BN_new()) == NULL
@@ -720,9 +713,14 @@ ssh_rsa_generate(struct sshkey *key, int bits) {
 		r = SSH_ERR_ALLOC_FAIL;
 		goto err;
 	}
-	if (!BN_set_word(f4, RSA_F4) ||
-	    !RSA_generate_key_ex(private, bits, f4, NULL)) {
+
+	if (!BN_set_word(f4, RSA_F4)) {
 		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	if (!RSA_generate_key_ex(private, bits, f4, NULL)) {
+		r = SSH_ERR_KEY_LENGTH;
 		goto err;
 	}
 
@@ -731,13 +729,32 @@ ssh_rsa_generate(struct sshkey *key, int bits) {
 		goto err;
 	}
 
-	key->pk = pk;
+	/* success */
+	*ret = pk;
 	pk = NULL;
 
 err:
 	EVP_PKEY_free(pk);
 	RSA_free(private);
 	BN_free(f4);
+	return r;
+}
+
+static int
+ssh_rsa_generate(struct sshkey *key, int bits) {
+	EVP_PKEY *pk;
+	int r;
+
+	r = sshrsa_verify_length(bits);
+	if (r != 0) return r;
+
+	if (bits > SSHBUF_MAX_BIGNUM * 8)
+		return SSH_ERR_KEY_LENGTH;
+
+	r = ssh_pkey_rsa_generate(bits, &pk);
+	if (r == 0)
+		key->pk = pk;
+
 	return r;
 }
 

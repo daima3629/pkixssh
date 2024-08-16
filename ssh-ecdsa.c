@@ -1,8 +1,8 @@
-/* $OpenBSD: ssh-ecdsa.c,v 1.25 2022/10/28 00:44:44 djm Exp $ */
+/* $OpenBSD: ssh-ecdsa.c,v 1.27 2024/08/15 00:51:51 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2010 Damien Miller.  All rights reserved.
- * Copyright (c) 2020-2023 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2020-2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -505,13 +505,10 @@ ssh_ecdsa_serialize_private(const struct sshkey *key, struct sshbuf *buf,
 }
 
 static int
-ssh_ecdsa_generate(struct sshkey *key, int bits) {
+ssh_pkey_ec_generate(int nid, EVP_PKEY **ret) {
 	EVP_PKEY *pk;
 	EC_KEY *private = NULL;
-	int r = 0, nid;
-
-	nid = sshkey_ecdsa_bits_to_nid(bits);
-	if (nid == -1) return SSH_ERR_KEY_LENGTH;
+	int r = 0;
 
 	if ((pk = EVP_PKEY_new()) == NULL ||
 	    (private = ssh_EC_KEY_new_by_curve_name(nid)) == NULL
@@ -530,13 +527,30 @@ ssh_ecdsa_generate(struct sshkey *key, int bits) {
 		goto err;
 	}
 
-	key->pk = pk;
+	/* success */
+	*ret = pk;
 	pk = NULL;
-	key->ecdsa_nid = nid;
 
 err:
 	EVP_PKEY_free(pk);
 	EC_KEY_free(private);
+	return r;
+}
+
+static int
+ssh_ecdsa_generate(struct sshkey *key, int bits) {
+	EVP_PKEY *pk;
+	int r = 0, nid;
+
+	nid = sshkey_ecdsa_bits_to_nid(bits);
+	if (nid == -1) return SSH_ERR_KEY_LENGTH;
+
+	r = ssh_pkey_ec_generate(nid, &pk);
+	if (r == 0) {
+		key->pk = pk;
+		key->ecdsa_nid = nid;
+	}
+
 	return r;
 }
 

@@ -488,13 +488,10 @@ ssh_dss_serialize_private(const struct sshkey *key, struct sshbuf *buf,
 }
 
 static int
-ssh_dss_generate(struct sshkey *key, int bits) {
+ssh_pkey_dsa_generate(int bits, EVP_PKEY **ret) {
 	EVP_PKEY *pk;
 	DSA *private = NULL;
-	int r;
-
-	r = sshdsa_verify_length(bits);
-	if (r != 0) return r;
+	int r = 0;
 
 	if ((pk = EVP_PKEY_new()) == NULL ||
 	    (private = DSA_new()) == NULL
@@ -503,8 +500,12 @@ ssh_dss_generate(struct sshkey *key, int bits) {
 		goto err;
 	}
 
-	if (!DSA_generate_parameters_ex(private, bits, NULL, 0, NULL, NULL, NULL) ||
-	    !DSA_generate_key(private)) {
+	if (!DSA_generate_parameters_ex(private, bits, NULL, 0, NULL, NULL, NULL)) {
+		r = SSH_ERR_KEY_LENGTH;
+		goto err;
+	}
+
+	if (!DSA_generate_key(private)) {
 		r = SSH_ERR_LIBCRYPTO_ERROR;
 		goto err;
 	}
@@ -514,12 +515,28 @@ ssh_dss_generate(struct sshkey *key, int bits) {
 		goto err;
 	}
 
-	key->pk = pk;
+	/* success */
+	*ret = pk;
 	pk = NULL;
 
 err:
 	EVP_PKEY_free(pk);
 	DSA_free(private);
+	return r;
+}
+
+static int
+ssh_dss_generate(struct sshkey *key, int bits) {
+	EVP_PKEY *pk;
+	int r;
+
+	r = sshdsa_verify_length(bits);
+	if (r != 0) return r;
+
+	r = ssh_pkey_dsa_generate(bits, &pk);
+	if (r == 0)
+		key->pk = pk;
+
 	return r;
 }
 
