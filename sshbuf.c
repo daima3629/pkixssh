@@ -57,6 +57,7 @@ sshbuf_check_sanity(const struct sshbuf *buf)
 	SSHBUF_TELL("sanity");
 	if (__predict_false(buf == NULL ||
 	    (!buf->readonly && buf->d != buf->cd) ||
+	    buf->parent == buf ||
 	    buf->refcount < 1 || buf->refcount > SSHBUF_REFS_MAX ||
 	    buf->cd == NULL ||
 	    buf->max_size > SSHBUF_SIZE_MAX ||
@@ -132,7 +133,8 @@ sshbuf_set_parent(struct sshbuf *child, struct sshbuf *parent)
 	if ((r = sshbuf_check_sanity(child)) != 0 ||
 	    (r = sshbuf_check_sanity(parent)) != 0)
 		return r;
-	if (child->parent != NULL && child->parent != parent)
+	if ((child->parent != NULL && child->parent != parent) ||
+	    child == parent)
 		return SSH_ERR_INTERNAL_ERROR;
 	child->parent = parent;
 	child->parent->refcount++;
