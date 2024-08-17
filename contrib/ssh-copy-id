@@ -106,7 +106,6 @@ use_id_file() {
       exit 1
     }
   done
-  printf '%s: INFO: Source of key(s) to be installed: "%s"\n' "$0" "$PUB_ID_FILE" >&2
   GET_ID="cat \"$PUB_ID_FILE\""
 }
 
@@ -178,6 +177,8 @@ eval set -- "$SSH_OPTS"
 if test -z "$(eval $GET_ID)" && test -r "${PUB_ID_FILE:=$DEFAULT_PUB_ID_FILE}" ; then
   use_id_file "$PUB_ID_FILE"
 fi
+
+printf '%s: INFO: Source of key(s) to be installed: %s\n' "$0" "${GET_ID#cat }" >&2
 
 if test -z "$(eval $GET_ID)" ; then
   printf '%s: ERROR: No identities found\n' "$0" >&2
