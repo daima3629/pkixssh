@@ -1,4 +1,4 @@
-/* $OpenBSD: servconf.c,v 1.411 2024/06/12 22:36:00 djm Exp $ */
+/* $OpenBSD: servconf.c,v 1.413 2024/08/17 08:23:04 djm Exp $ */
 /*
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
@@ -2166,6 +2166,7 @@ parse_string:
 		xasprintf(&options->subsystem_args[options->num_subsystems],
 		    "%s%s%s", arg, *arg2 == '\0' ? "" : " ", arg2);
 		free(arg2);
+		free(arg);
 		argv_consume(&ac);
 		options->num_subsystems++;
 		break;
