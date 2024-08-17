@@ -48,6 +48,22 @@
 #include "log.h"
 
 
+#undef TRACE_EVP_ERROR_ENABLED
+#ifdef TRACE_EVP_ERROR
+# undef TRACE_EVP_ERROR
+# define TRACE_EVP_ERROR_ENABLED 1
+static inline void
+TRACE_EVP_ERROR(const char *msg) {
+	error_crypto(msg);
+}
+#else
+static inline void
+TRACE_EVP_ERROR(const char *msg) {
+	UNUSED(msg);
+}
+#endif
+
+
 #ifndef HAVE_DSA_SIG_GET0		/* OpenSSL < 1.1 */
 static inline void
 DSA_SIG_get0(const DSA_SIG *sig, const BIGNUM **pr, const BIGNUM **ps) {
@@ -1220,9 +1236,7 @@ ssh_pkey_sign(
 #endif
 	if (ret <= 0) {
 		error_f("init fail");
-#ifdef TRACE_EVP_ERROR
-		error_crypto("SignInit");
-#endif
+		TRACE_EVP_ERROR("SignInit");
 		goto done;
 	}
 
@@ -1233,9 +1247,7 @@ ssh_pkey_sign(
 
 		ret = EVP_DigestSign(ctx, NULL, &len, data, datalen);
 		if (ret <= 0) {
-#ifdef TRACE_EVP_ERROR
-			error_crypto("DigestSign");
-#endif
+			TRACE_EVP_ERROR("DigestSign");
 			goto done;
 		}
 
@@ -1249,9 +1261,7 @@ ssh_pkey_sign(
 		ret = EVP_DigestSign(ctx, sigbuf, &len, data, datalen);
 		if (ret <= 0) {
 			OPENSSL_free(sigbuf);
-#ifdef TRACE_EVP_ERROR
-			error_crypto("DigestSign");
-#endif
+			TRACE_EVP_ERROR("DigestSign");
 			goto done;
 		}
 		/* NULL if caller checks for signature buffer size */
@@ -1284,9 +1294,7 @@ ssh_pkey_sign(
 #endif
 	if (ret <= 0) {
 		error_f("update fail");
-#ifdef TRACE_EVP_ERROR
-		error_crypto("SignUpdate");
-#endif
+		TRACE_EVP_ERROR("SignUpdate");
 		goto done;
 	}
 
@@ -1295,12 +1303,8 @@ ssh_pkey_sign(
 #else
 	ret = dgst->SignFinal(ctx, sig, siglen, privkey);
 #endif
-	if (ret <= 0) {
-#ifdef TRACE_EVP_ERROR
-		error_crypto("SignFinal");
-#endif
-		goto done;
-	}
+	if (ret <= 0)
+		TRACE_EVP_ERROR("SignFinal");
 
 done:
 	EVP_MD_CTX_free(ctx);
@@ -1329,19 +1333,15 @@ ssh_pkey_verify(
 #endif
 	if (ret <= 0) {
 		error_f("init fail");
-#ifdef TRACE_EVP_ERROR
-		error_crypto("VerifyInit");
-#endif
+		TRACE_EVP_ERROR("VerifyInit");
 		goto done;
 	}
 
 	if (dgst->md() == NULL) {
 #ifdef HAVE_EVP_DIGESTSIGN
 		ret = EVP_DigestVerify(ctx, sig, siglen, data, datalen);
-#ifdef TRACE_EVP_ERROR
 		if (ret <= 0)
-			error_crypto("DigestVerify");
-#endif
+			TRACE_EVP_ERROR("DigestVerify");
 #else
 		ret = -1; /*unreachable*/
 #endif
@@ -1363,9 +1363,7 @@ ssh_pkey_verify(
 #endif
 	if (ret <= 0) {
 		error_f("update fail");
-#ifdef TRACE_EVP_ERROR
-		error_crypto("VerifyUpdate");
-#endif
+		TRACE_EVP_ERROR("VerifyUpdate");
 		goto done;
 	}
 
@@ -1374,12 +1372,8 @@ ssh_pkey_verify(
 #else
 	ret = dgst->VerifyFinal(ctx, sig, siglen, pubkey);
 #endif
-	if (ret <= 0) {
-#ifdef TRACE_EVP_ERROR
-		error_crypto("VerifyFinal");
-#endif
-		goto done;
-	}
+	if (ret <= 0)
+		TRACE_EVP_ERROR("VerifyFinal");
 
 done:
 	EVP_MD_CTX_free(ctx);
