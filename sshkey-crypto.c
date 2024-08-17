@@ -64,6 +64,35 @@ TRACE_EVP_ERROR(const char *msg) {
 #endif
 
 
+#ifndef HAVE_EVP_DIGESTSIGNINIT		/* OpenSSL < 1.0 */
+static inline int
+EVP_DigestSignUpdate(EVP_MD_CTX *ctx, const void *data, size_t datalen) {
+# if OPENSSL_VERSION_NUMBER < 0x00908000L
+{
+	u_int dlen = datalen;
+	if ((size_t)dlen != datalen) return -1;
+	return EVP_SignUpdate(ctx, data, dlen);
+}
+# else
+	return EVP_SignUpdate(ctx, data, datalen);
+# endif
+}
+#endif
+
+#ifndef HAVE_EVP_DIGESTSIGNINIT		/* OpenSSL < 1.0 */
+static inline int
+EVP_DigestVerifyUpdate(EVP_MD_CTX *ctx, const void *data, size_t datalen) {
+# if OPENSSL_VERSION_NUMBER < 0x00908000L
+	u_int dlen = datalen;
+	if ((size_t)dlen != datalen) return -1;
+	return EVP_VerifyUpdate(ctx, data, dlen);
+# else
+	return EVP_VerifyUpdate(ctx, data, datalen);
+# endif
+}
+#endif
+
+
 #ifndef HAVE_DSA_SIG_GET0		/* OpenSSL < 1.1 */
 static inline void
 DSA_SIG_get0(const DSA_SIG *sig, const BIGNUM **pr, const BIGNUM **ps) {
@@ -1279,19 +1308,7 @@ ssh_pkey_sign(
 		goto done;
 	}
 
-#ifdef HAVE_EVP_DIGESTSIGNINIT
 	ret = EVP_DigestSignUpdate(ctx, data, datalen);
-#else
-# if OPENSSL_VERSION_NUMBER < 0x00908000L
-{
-	u_int dlen = datalen;
-	if ((size_t)dlen != datalen) return -1;
-	ret = EVP_SignUpdate(ctx, data, dlen);
-}
-# else
-	ret = EVP_SignUpdate(ctx, data, datalen);
-# endif
-#endif
 	if (ret <= 0) {
 		error_f("update fail");
 		TRACE_EVP_ERROR("SignUpdate");
@@ -1348,19 +1365,7 @@ ssh_pkey_verify(
 		goto done;
 	}
 
-#ifdef HAVE_EVP_DIGESTSIGNINIT
 	ret = EVP_DigestVerifyUpdate(ctx, data, datalen);
-#else
-# if OPENSSL_VERSION_NUMBER < 0x00908000L
-{
-	u_int dlen = datalen;
-	if ((size_t)dlen != datalen) return -1;
-	ret = EVP_VerifyUpdate(ctx, data, dlen);
-}
-# else
-	ret = EVP_VerifyUpdate(ctx, data, datalen);
-# endif
-#endif
 	if (ret <= 0) {
 		error_f("update fail");
 		TRACE_EVP_ERROR("VerifyUpdate");
