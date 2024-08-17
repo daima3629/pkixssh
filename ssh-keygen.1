@@ -1,4 +1,4 @@
-.\"	$OpenBSD: ssh-keygen.1,v 1.232 2024/06/17 13:50:18 naddy Exp $
+.\"	$OpenBSD: ssh-keygen.1,v 1.233 2024/08/17 08:35:04 djm Exp $
 .\"
 .\" Author: Tatu Ylonen <ylo@cs.hut.fi>
 .\" Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -44,7 +44,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: July 14 2024 $
+.Dd $Mdocdate: August 17 2024 $
 .Dt SSH-KEYGEN 1
 .Os
 .Sh NAME
@@ -575,14 +575,18 @@ The possible values are
 .Dq ed25519 ,
 or
 .Dq rsa .
+The default is
+.Dq rsa
+if FIPS mode is active otherwise
+.Dq ed25519 .
 .Pp
 This flag may also be used to specify the desired signature type when
 signing custom certificates using an RSA CA key.
 The available RSA signature variants are
 .Dq ssh-rsa
 (SHA1 signatures, not recommended),
-.Dq rsa-sha2-256 ,
-(the default) and
+.Dq rsa-sha2-256
+(the default for RSA keys), and
 .Dq rsa-sha2-512 .
 .It Fl U
 When used in combination with
