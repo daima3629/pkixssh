@@ -113,7 +113,7 @@ if test -n "$SSH_AUTH_SOCK" && ssh-add -L >/dev/null 2>&1 ; then
   GET_ID="ssh-add -L"
 fi
 
-SEEN_OPT_I=false
+SEEN_OPT_I=
 FORCED=false
 DRY_RUN=false
 OPTS_oF=
@@ -122,11 +122,11 @@ while getopts "i:o:p:F:t:fnsxh?" OPT
 do
   case "$OPT" in
     i)
-      if $SEEN_OPT_I ; then
+      if tests -n "$SEEN_OPT_I" ; then
         printf '\n%s: ERROR: -i option must not be specified more than once\n\n' "$0" >&2
         usage
       fi
-      SEEN_OPT_I=:
+      SEEN_OPT_I=yes
       use_id_file "${OPTARG:-$DEFAULT_PUB_ID_FILE}"
       ;;
     o|F)
@@ -388,7 +388,7 @@ else
 
 	Number of key(s) added: $ADDED
 
-	Now try logging into the machine, with: "${SFTP:-ssh} ${SSH_PORT:+-${PORT_OPT:-p} $SSH_PORT }${OPTS_USER_HOST}"
+	Now try logging into the machine, with: "${SFTP:-ssh} ${SEEN_OPT_I:+-i${PRIV_ID_FILE:+ $PRIV_ID_FILE} }${SSH_PORT:+-${PORT_OPT:-p} $SSH_PORT }${OPTS_USER_HOST}"
 	and check to make sure that only the key(s) you wanted were added.
 
 	EOF
