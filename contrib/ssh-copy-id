@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# Copyright (c) 1999-2023 Philip Hands <phil@hands.com>
+# Copyright (c) 1999-2024 Philip Hands <phil@hands.com>
 #               2021 Carlos Rodríguez Gili <carlos.rodriguez-gili@upc.edu>
 #               2020 Matthias Blümel <blaimi@blaimi.de>
 #               2019-2024 Roumen Petrov, Sofia, Bulgaria
@@ -67,7 +67,7 @@ TARGET_PATH=.ssh/authorized_keys
 umask 0177
 
 usage () {
-  printf 'Usage: %s [-h|-?|-f|-n|-s|-x] [-i [identity_file]] [-p port] [-F alternative ssh_config file] [-t target_path] [[-o <ssh -o options>] ...] [user@]hostname\n' "$0" >&2
+  printf 'Usage: %s [-h|-?|-f|-n|-s|-x] [-i [identity_file]] [-t target_path] [-p port] [-F ssh_config] [[-o ssh_option] ...] [user@]hostname\n' "$0" >&2
   printf '\t-f: force mode -- copy keys without trying to check if they are already installed\n' >&2
   printf '\t-n: dry run    -- no keys are actually copied\n' >&2
   printf '\t-s: use sftp   -- use sftp instead of executing remote-commands. Can be useful if the remote only allows sftp\n' >&2

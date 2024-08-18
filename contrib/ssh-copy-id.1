@@ -1,5 +1,5 @@
 .ig \"  -*- nroff -*-
-Copyright (c) 1999-2023 hands.com Ltd. <http://hands.com/>
+Copyright (c) 1999-2024 Philip Hands <phil@hands.com>
               2019-2024 Roumen Petrov, Sofia, Bulgaria
 
 Redistribution and use in source and binary forms, with or without
@@ -28,7 +28,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: June 17 2010 $
+.Dd $Mdocdate: Aug 18 2024 $
 .Dt SSH-COPY-ID 1
 .Os
 .Sh NAME
@@ -42,7 +42,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .Op Fl x
 .Op Fl i Op Ar identity_file
 .Op Fl p Ar port
-.Op Fl o Ar ssh_option
+.Op Fl F Ar ssh_config
+.Op Bo Fl o Ar ssh_option Bc ...
 .Op Fl t Ar target_path
 .Op Ar user Ns @ Ns
 .Ar hostname
@@ -100,11 +101,13 @@ on the remote system.
 do a dry-run.
 Instead of installing keys on the remote system simply
 prints the key(s) that would have been installed.
-.It Fl p Ar port , Fl o Ar ssh_option
-These two options are simply passed through untouched, along with their
-argument, to allow one to set the port or other
-.Xr ssh 1
-options, respectively.
+.It Fl p Ar port
+Specifies the port to connect to on the remote host.
+.It Fl F Ar ssh_config , Fl o Ar ssh_option
+These options are simply passed through untouched (with their argument)
+to ssh/sftp,
+allowing one to set an alternative config file,
+or other options, respectively.
 .Pp
 Rather than specifying these as command line options,
 it is often better to use (per-host) settings in
