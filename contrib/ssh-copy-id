@@ -3,7 +3,7 @@
 # Copyright (c) 1999-2023 Philip Hands <phil@hands.com>
 #               2021 Carlos Rodríguez Gili <carlos.rodriguez-gili@upc.edu>
 #               2020 Matthias Blümel <blaimi@blaimi.de>
-#               2019-2023 Roumen Petrov, Sofia, Bulgaria
+#               2019-2024 Roumen Petrov, Sofia, Bulgaria
 #               2017 Sebastien Boyron <seb@boyron.eu>
 #               2013 Martin Kletzander <mkletzan@redhat.com>
 #               2010 Adeodato =?iso-8859-1?Q?Sim=F3?= <asp16@alu.ua.es>
@@ -388,7 +388,7 @@ else
 
 	Number of key(s) added: $ADDED
 
-	Now try logging into the machine, with:   "${SFTP:-ssh}${SSH_PORT:+ -${PORT_OPT:-p} $SSH_PORT} ${OPTS_USER_HOST}"
+	Now try logging into the machine, with: "${SFTP:-ssh} ${SSH_PORT:+-${PORT_OPT:-p} $SSH_PORT }${OPTS_USER_HOST}"
 	and check to make sure that only the key(s) you wanted were added.
 
 	EOF
