@@ -1,5 +1,6 @@
 .ig \"  -*- nroff -*-
 Copyright (c) 1999-2023 hands.com Ltd. <http://hands.com/>
+              2019-2024 Roumen Petrov, Sofia, Bulgaria
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
@@ -20,6 +21,12 @@ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
 THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+.rn Dd xD
+.de Dd
+.ie \\$1$Mdocdate: \{\
+.	xD \\$3 \\$2 \\$4
+.\}
+.el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
 .Dd $Mdocdate: June 17 2010 $
 .Dt SSH-COPY-ID 1
