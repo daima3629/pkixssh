@@ -131,4 +131,4 @@ ${SSH} -F $OBJ/ssh_config -S $CTL -O exit somehost 2>/dev/null
 ${SSH} -F $OBJ/ssh_config -S $CTL.1 -O exit somehost 2>/dev/null
 ${SSH} -F $OBJ/ssh_config -S $CTL.2 -O exit somehost 2>/dev/null
 ${SSH} -F $OBJ/ssh_config -S $CTL.3 -O exit somehost 2>/dev/null
-
+rm -f $OBJ/unix-[123].fwd
