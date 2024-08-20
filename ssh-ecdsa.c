@@ -687,11 +687,8 @@ ssh_ecdsa_verify(const ssh_verify_ctx *ctx,
 		goto out;
 	}
 
-{	size_t len = sshbuf_len(sigbuf);
-	if (ssh_pkey_verify(dgst, key->pk,
-		sshbuf_ptr(sigbuf), len, data, datalen) <= 0)
-		ret = SSH_ERR_SIGNATURE_INVALID;
-}
+	ret = ssh_pkey_verify_r(dgst, key->pk,
+	    sshbuf_ptr(sigbuf), sshbuf_len(sigbuf), data, datalen);
 
  out:
 	sshbuf_free(sigbuf);

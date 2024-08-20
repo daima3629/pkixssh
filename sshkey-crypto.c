@@ -1351,6 +1351,7 @@ ssh_pkey_verify(
 	if (ret <= 0) {
 		error_f("init fail");
 		TRACE_EVP_ERROR("VerifyInit");
+		ret = -1; /* mark as error */
 		goto done;
 	}
 
@@ -1369,6 +1370,7 @@ ssh_pkey_verify(
 	if (ret <= 0) {
 		error_f("update fail");
 		TRACE_EVP_ERROR("VerifyUpdate");
+		ret = -1; /* mark as error */
 		goto done;
 	}
 
@@ -1383,6 +1385,19 @@ ssh_pkey_verify(
 done:
 	EVP_MD_CTX_free(ctx);
 	return ret;
+}
+
+int
+ssh_pkey_verify_r(
+	const ssh_evp_md *dgst, EVP_PKEY *pubkey,
+	const u_char *sig, size_t siglen, const u_char *data, size_t datalen
+) {
+	int ret = ssh_pkey_verify(dgst, pubkey, sig, siglen, data, datalen);
+	return (ret > 0)
+	    ? SSH_ERR_SUCCESS
+	    : (ret == 0)
+		? SSH_ERR_SIGNATURE_INVALID
+		: SSH_ERR_LIBCRYPTO_ERROR;
 }
 
 #else

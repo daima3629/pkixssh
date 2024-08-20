@@ -963,10 +963,8 @@ ssh_rsa_verify(const ssh_verify_ctx *ctx,
 		len = modlen;
 	}
 
-	if (ssh_pkey_verify(dgst, key->pk,
-	    sigblob, len, data, datalen) <= 0) {
-		ret = SSH_ERR_SIGNATURE_INVALID;
-	}
+	ret = ssh_pkey_verify_r(dgst, key->pk,
+	    sigblob, len, data, datalen);
 
  out:
 	freezero(sigblob, len);

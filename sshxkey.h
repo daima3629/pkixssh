@@ -92,5 +92,7 @@ int	ssh_pkey_sign(const ssh_evp_md *dgst, EVP_PKEY *privkey,
 	    u_char *sig, size_t *siglen, const u_char *data, size_t datalen);
 int	ssh_pkey_verify(const ssh_evp_md *dgst, EVP_PKEY *pubkey,
 	    const u_char *sig, size_t siglen, const u_char *data, size_t datalen);
+int	ssh_pkey_verify_r(const ssh_evp_md *dgst, EVP_PKEY *pubkey,
+	    const u_char *sig, size_t siglen, const u_char *data, size_t datalen);
 
 #endif /* SSHXKEY_H */

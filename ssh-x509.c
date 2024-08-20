@@ -1774,12 +1774,20 @@ end_sign_blob:
 
 		ret = ssh_pkey_verify(&dgst, pubkey, sigblob, len, data, datalen);
 		if (ret > 0) break;
+		/*cache invalid signature*/
+		if (ret == 0)
+			r = SSH_ERR_SIGNATURE_INVALID;
 
 		do_log_crypto_errors(SYSLOG_LEVEL_ERROR);
 	}
 	if (ret <= 0) {
 		debug3_f("failed for all digests");
-		r = SSH_ERR_SIGNATURE_INVALID;
+		/*keep invalid signature*/
+		if (r != SSH_ERR_SIGNATURE_INVALID)
+			r = SSH_ERR_LIBCRYPTO_ERROR;
+	} else {
+		/*loop may set invalid signature*/
+		r = SSH_ERR_SUCCESS;
 	}
 }
 

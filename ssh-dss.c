@@ -653,7 +653,7 @@ ssh_dss_verify(const ssh_verify_ctx *ctx,
 	const ssh_evp_md *dgst;
 	u_char *sigblob = NULL;
 	size_t len;
-	int ret = SSH_ERR_INTERNAL_ERROR;
+	int ret;
 	struct sshbuf *b = NULL;
 	char *ktype = NULL;
 
@@ -687,10 +687,8 @@ ssh_dss_verify(const ssh_verify_ctx *ctx,
 		goto out;
 	}
 
-	if (ssh_pkey_verify(dgst, key->pk,
-	    sigblob, len, data, datalen) <= 0) {
-		ret = SSH_ERR_SIGNATURE_INVALID;
-	}
+	ret = ssh_pkey_verify_r(dgst, key->pk,
+	    sigblob, len, data, datalen);
 
  out:
 	sshbuf_free(b);
