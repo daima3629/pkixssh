@@ -139,9 +139,8 @@ for s in 5 10; do
 	fi
 done
 
-verbose "rekeylimit parsing"
+verbose "rekeylimit parsing: bytes"
 for size in 16 1k 1K 1m 1M 1g 1G 4G 8G; do
-    for time in 1 1m 1M 1h 1H 1d 1D 1w 1W; do
 	case $size in
 		16)	bytes=16 ;;
 		1k|1K)	bytes=1024 ;;
@@ -150,6 +149,15 @@ for size in 16 1k 1K 1m 1M 1g 1G 4G 8G; do
 		4g|4G)	bytes=4294967296 ;;
 		8g|8G)	bytes=8589934592 ;;
 	esac
+	b=`$SSH -d -o "rekeylimit $size" -f $OBJ/ssh_proxy host | \
+	    awk '/rekeylimit/{print $2}'`
+	if test "$bytes" != "$b" ; then
+		fatal "rekeylimit size: expected $bytes bytes got $b"
+	fi
+done
+
+verbose "rekeylimit parsing: seconds"
+for time in 1 1m 1M 1h 1H 1d 1D 1w 1W; do
 	case $time in
 		1)	seconds=1 ;;
 		1m|1M)	seconds=60 ;;
@@ -157,19 +165,11 @@ for size in 16 1k 1K 1m 1M 1g 1G 4G 8G; do
 		1d|1D)	seconds=86400 ;;
 		1w|1W)	seconds=604800 ;;
 	esac
-
-	b=`$SUDO ${SSHD} -T -o "rekeylimit $size $time" -f $OBJ/sshd_proxy | \
-	    awk '/rekeylimit/{print $2}'`
-	s=`$SUDO ${SSHD} -T -o "rekeylimit $size $time" -f $OBJ/sshd_proxy | \
+	s=`$SSH -d -o "rekeylimit default $time" -f $OBJ/ssh_proxy host | \
 	    awk '/rekeylimit/{print $3}'`
-
-	if [ "$bytes" != "$b" ]; then
-		fatal "rekeylimit size: expected $bytes bytes got $b"
-	fi
-	if [ "$seconds" != "$s" ]; then
+	if test "$seconds" != "$s" ; then
 		fatal "rekeylimit time: expected $time seconds got $s"
 	fi
-    done
 done
 
 rm -f ${COPY} ${DATA}
