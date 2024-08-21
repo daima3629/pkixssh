@@ -34,6 +34,7 @@ update_file .delmy "$CA_LOG" > /dev/null || exit $?
 
 rsa_bits=2048
 dsa_bits=1024   # match secsh algorithm specification
+dsa_qbits=160   # NOTE OpenSSL 1.0.2+ default q to 224 bits
 ec_curve=prime256v1
 
 if $openssl_use_pkey ; then
@@ -186,7 +187,9 @@ get_dsa_prm () {
 
   if $openssl_use_pkey ; then
     $OPENSSL genpkey -genparam -algorithm DSA \
-      -out "$1" -pkeyopt dsa_paramgen_bits:$dsa_bits
+      -out "$1" \
+        -pkeyopt dsa_paramgen_bits:$dsa_bits \
+        -pkeyopt dsa_paramgen_q_bits:$dsa_qbits
   else
     $OPENSSL dsaparam $DSA_OPT \
       -out "$1" $dsa_bits
