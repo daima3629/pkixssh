@@ -1,4 +1,4 @@
-/* $OpenBSD: sshkey.c,v 1.142 2024/01/11 01:45:36 djm Exp $ */
+/* $OpenBSD: sshkey.c,v 1.145 2024/08/20 11:10:04 djm Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Alexander von Gernler.  All rights reserved.
@@ -29,6 +29,7 @@
 #include "includes.h"
 
 #include <sys/types.h>
+#include <sys/mman.h>
 #include <netinet/in.h>
 
 #ifdef WITH_OPENSSL
@@ -712,6 +713,43 @@ sshkey_new(int type)
 	return k;
 }
 
+#ifdef USE_SSHKEY_SHIELDING
+
+#if defined(MAP_NOCORE)		/* FreeBSD and etc. */
+# define PREKEY_MMAP_FLAG	MAP_NOCORE
+#elif defined(MAP_CONCEAL)	/* OpenBSD */
+# define PREKEY_MMAP_FLAG	MAP_CONCEAL
+#else
+# define PREKEY_MMAP_FLAG	0
+#endif
+
+static int
+sshkey_prekey_alloc(u_char **prekeyp, size_t len)
+{
+	u_char *prekey;
+
+	*prekeyp = NULL;
+	if ((prekey = mmap(NULL, len, PROT_READ|PROT_WRITE,
+	    MAP_ANON|MAP_PRIVATE|PREKEY_MMAP_FLAG, -1, 0)) == MAP_FAILED)
+		return SSH_ERR_SYSTEM_ERROR;
+#if PREKEY_MMAP_FLAG == 0
+#  ifdef MADV_DONTDUMP		/* Linux */
+	(void)madvise(prekey, len, MADV_DONTDUMP);
+#  endif
+#endif
+	*prekeyp = prekey;
+	return 0;
+}
+
+static void
+sshkey_prekey_free(void *prekey, size_t len)
+{
+	if (prekey == NULL)
+		return;
+	munmap(prekey, len);
+}
+#endif /*def USE_SSHKEY_SHIELDING*/
+
 void
 sshkey_free(struct sshkey *k)
 {
@@ -731,7 +769,7 @@ sshkey_free(struct sshkey *k)
 		cert_free(k->cert);
 #ifdef USE_SSHKEY_SHIELDING
 	freezero(k->shielded_private, k->shielded_len);
-	freezero(k->shield_prekey, k->shield_prekey_len);
+	sshkey_prekey_free(k->shield_prekey, k->shield_prekey_len);
 #endif /*def USE_SSHKEY_SHIELDING*/
 	freezero(k, sizeof(*k));
 }
@@ -1648,10 +1686,8 @@ sshkey_shield_private(struct sshkey *k)
 	}
 
 	/* Prepare a random pre-key, and from it an ephemeral key */
-	if ((prekey = malloc(SSHKEY_SHIELD_PREKEY_LEN)) == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
+	if ((r = sshkey_prekey_alloc(&prekey, SSHKEY_SHIELD_PREKEY_LEN)) != 0)
 		goto out;
-	}
 	arc4random_buf(prekey, SSHKEY_SHIELD_PREKEY_LEN);
 	if ((r = ssh_digest_memory(SSHKEY_SHIELD_PREKEY_HASH,
 	    prekey, SSHKEY_SHIELD_PREKEY_LEN,
@@ -1726,7 +1762,7 @@ sshkey_shield_private(struct sshkey *k)
 	explicit_bzero(keyiv, sizeof(keyiv));
 	explicit_bzero(&tmp, sizeof(tmp));
 	freezero(enc, enclen);
-	freezero(prekey, SSHKEY_SHIELD_PREKEY_LEN);
+	sshkey_prekey_free(prekey, SSHKEY_SHIELD_PREKEY_LEN);
 	sshkey_free(kswap);
 	sshbuf_free(prvbuf);
 	return r;
