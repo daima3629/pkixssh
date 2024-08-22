@@ -1,4 +1,4 @@
-#	$OpenBSD: rekey.sh,v 1.19 2021/07/19 05:08:54 dtucker Exp $
+#	$OpenBSD: rekey.sh,v 1.25 2024/08/20 09:15:49 dtucker Exp $
 #	Placed in the Public Domain.
 
 tid="rekey"
@@ -11,6 +11,9 @@ cp $OBJ/sshd_proxy $OBJ/sshd_proxy_bak
 # Note all of the rekey tests must not use compression otherwise
 # the encrypted byte counts would not match.
 echo "Compression no" >> $OBJ/ssh_proxy
+if config_defined HAVE_EVP_SHA256 ; then
+	echo "KexAlgorithms curve25519-sha256" >> ssh_proxy
+fi
 
 # Test rekeying based on data volume only.
 # Arguments will be passed to ssh.
@@ -41,7 +44,13 @@ ssh_data_rekeying()
 increase_datafile_size 300
 
 opts=""
-for i in `${SSH} -Q kex`; do
+
+# filter key exchange algorithm aliases
+# Note curve25519-sha256@libssh.org is the pre-standardization name
+# for the same curve25519-sha256.
+kexs=`$SSH -Q kex | grep -v curve25519-sha256@libssh.org`
+
+for i in $kexs; do
 	opts="$opts KexAlgorithms=$i"
 done
 for i in `${SSH} -Q cipher`; do
@@ -52,19 +61,17 @@ for i in `${SSH} -Q mac`; do
 done
 
 for opt in $opts; do
+	if $SSH -Q cipher-auth | sed 's/^/Ciphers=/' | \
+	    grep $opt >/dev/null; then
+		for kex in $kexs; do
+			verbose "client rekey $opt $kex"
+			ssh_data_rekeying "KexAlgorithms=$kex" -oRekeyLimit=256k -o"$opt"
+		done
+		continue
+	fi
 	verbose "client rekey $opt"
 	ssh_data_rekeying "$opt" -oRekeyLimit=256k
 done
-
-# AEAD ciphers are magical so test with all KexAlgorithms
-if ${SSH} -Q cipher-auth | grep '^.*$' >/dev/null 2>&1 ; then
-  for c in `${SSH} -Q cipher-auth`; do
-    for kex in `${SSH} -Q kex`; do
-	verbose "client rekey $c $kex"
-	ssh_data_rekeying "KexAlgorithms=$kex" -oRekeyLimit=256k -oCiphers=$c
-    done
-  done
-fi
 
 # restore configuration to prevent impact from previous tests
 cp $OBJ/sshd_proxy_bak $OBJ/sshd_proxy
