@@ -3303,6 +3303,7 @@ AC_CHECK_FUNCS([ \
   EVP_DigestSignInit \
   EVP_MD_flags \
   EVP_PKEY_base_id \
+  EVP_PKEY_keygen \
   EVP_PKEY_print_params \
   X509_STORE_set_verify_cb \
 ])

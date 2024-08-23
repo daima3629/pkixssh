@@ -969,6 +969,17 @@ struct winsize {
 # endif
 #endif
 
+/* X.509 regression tests use "pkey" utilities if OpenSSL >= 1.1
+ * regardless that genpkey functionality is available in
+ * OpenSSL >= 1.0. Follow the same rule in code.
+ */
+#undef USE_EVP_PKEY_KEYGEN
+#ifdef HAVE_EVP_PKEY_KEYGEN		/* OpenSSL >= 1.0 */
+# ifdef HAVE_OPENSSL_INIT_CRYPTO	/* OpenSSL >= 1.1 */
+#  define USE_EVP_PKEY_KEYGEN
+# endif
+#endif
+
 
 #ifndef HAVE_EVP_SHA512
 /* check only for EVP_sha512() as build with OpenSSL is required */

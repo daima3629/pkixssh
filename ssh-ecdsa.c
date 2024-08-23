@@ -504,6 +504,46 @@ ssh_ecdsa_serialize_private(const struct sshkey *key, struct sshbuf *buf,
 	return sshbuf_write_priv_ecdsa(buf, key);
 }
 
+#ifdef USE_EVP_PKEY_KEYGEN
+static int
+ssh_pkey_keygen_ec(int nid, EVP_PKEY **ret) {
+	EVP_PKEY *pk = NULL;
+	EVP_PKEY_CTX *ctx = NULL;
+	int r;
+
+	ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_EC, NULL);
+	if (ctx == NULL) return SSH_ERR_ALLOC_FAIL;
+
+	if (EVP_PKEY_keygen_init(ctx) <= 0) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	if (EVP_PKEY_CTX_set_ec_paramgen_curve_nid(ctx, nid) <= 0) {
+		r = SSH_ERR_EC_CURVE_INVALID;
+		goto err;
+	}
+
+	/* for compatibility reason between OpenSSL releases */
+	if (EVP_PKEY_CTX_set_ec_param_enc(ctx, OPENSSL_EC_NAMED_CURVE) <= 0) {
+		r = SSH_ERR_EC_CURVE_MISMATCH;
+		goto err;
+	}
+
+	if (EVP_PKEY_keygen(ctx, &pk) <= 0) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	/* success */
+	*ret = pk;
+	r = 0;
+
+err:
+	EVP_PKEY_CTX_free(ctx);
+	return r;
+}
+#else /*ndef USE_EVP_PKEY_KEYGEN*/
 static int
 ssh_pkey_ec_generate(int nid, EVP_PKEY **ret) {
 	EVP_PKEY *pk;
@@ -536,6 +576,7 @@ err:
 	EC_KEY_free(private);
 	return r;
 }
+#endif /*ndef USE_EVP_PKEY_KEYGEN*/
 
 static int
 ssh_ecdsa_generate(struct sshkey *key, int bits) {
@@ -545,7 +586,11 @@ ssh_ecdsa_generate(struct sshkey *key, int bits) {
 	nid = sshkey_ecdsa_bits_to_nid(bits);
 	if (nid == -1) return SSH_ERR_KEY_LENGTH;
 
+#ifdef USE_EVP_PKEY_KEYGEN
+	r = ssh_pkey_keygen_ec(nid, &pk);
+#else
 	r = ssh_pkey_ec_generate(nid, &pk);
+#endif
 	if (r == 0) {
 		key->pk = pk;
 		key->ecdsa_nid = nid;

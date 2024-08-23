@@ -487,6 +487,95 @@ ssh_dss_serialize_private(const struct sshkey *key, struct sshbuf *buf,
 	return sshbuf_write_priv_dsa(buf, key);
 }
 
+#ifdef USE_EVP_PKEY_KEYGEN
+/* RFC4253
+The "ssh-dss" key format has the following specific encoding:
+      string    "ssh-dss"
+      mpint     p
+      mpint     q
+      mpint     g
+      mpint     y
+Here, the 'p', 'q', 'g', and 'y' parameters form the signature key blob.
+Signing and verifying using this key format is done according to the
+Digital Signature Standard [FIPS-186-2] using the SHA-1 hash [FIPS-180-2].
+
+=> 1024(=SSH_DSA_BITS)-bits DSA uses 160 q-bits
+*/
+static int
+ssh_pkey_paramgen_dsa(int bits, EVP_PKEY **params) {
+	EVP_PKEY *pk = NULL;
+	EVP_PKEY_CTX *ctx = NULL;
+	int r;
+
+	ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_DSA, NULL);
+	if (ctx == NULL) return SSH_ERR_ALLOC_FAIL;
+
+	if (EVP_PKEY_paramgen_init(ctx) <= 0) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	if (EVP_PKEY_CTX_set_dsa_paramgen_bits(ctx, bits) <= 0) {
+		r = SSH_ERR_KEY_LENGTH;
+		goto err;
+	}
+
+	/*NOTE OpenSSL 1.0.2+ default to 224 bits for the subprime parameter q*/
+	if (EVP_PKEY_CTX_set_dsa_paramgen_q_bits(ctx, 160) <= 0) {
+		r = SSH_ERR_KEY_LENGTH;
+		goto err;
+	}
+
+	if (EVP_PKEY_paramgen(ctx, &pk) <= 0) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	/* success */
+	*params = pk;
+	r = 0;
+
+err:
+	EVP_PKEY_CTX_free(ctx);
+	return r;
+}
+
+static int
+ssh_pkey_keygen_dsa(int bits, EVP_PKEY **ret) {
+	EVP_PKEY *pk = NULL;
+	EVP_PKEY_CTX *ctx = NULL;
+	int r;
+
+{	EVP_PKEY *pk_params = NULL;
+
+	r = ssh_pkey_paramgen_dsa(bits, &pk_params);
+	if (r != 0) return r;
+
+	/* use DSA parameters in a EVP_PKEY context */
+	ctx = EVP_PKEY_CTX_new(pk_params, NULL);
+	EVP_PKEY_free(pk_params);
+	if (ctx == NULL) return SSH_ERR_ALLOC_FAIL;
+}
+
+	if (EVP_PKEY_keygen_init(ctx) <= 0) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	if (EVP_PKEY_keygen(ctx, &pk) <= 0)  {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	/* success */
+	*ret = pk;
+	/*r = 0;*/
+
+err:
+	EVP_PKEY_CTX_free(ctx);
+	return r;
+}
+#else /*ndef USE_EVP_PKEY_KEYGEN*/
 static int
 ssh_pkey_dsa_generate(int bits, EVP_PKEY **ret) {
 	EVP_PKEY *pk;
@@ -524,6 +613,7 @@ err:
 	DSA_free(private);
 	return r;
 }
+#endif /*ndef USE_EVP_PKEY_KEYGEN*/
 
 static int
 ssh_dss_generate(struct sshkey *key, int bits) {
@@ -533,7 +623,11 @@ ssh_dss_generate(struct sshkey *key, int bits) {
 	r = sshdsa_verify_length(bits);
 	if (r != 0) return r;
 
+#ifdef USE_EVP_PKEY_KEYGEN
+	r = ssh_pkey_keygen_dsa(bits, &pk);
+#else
 	r = ssh_pkey_dsa_generate(bits, &pk);
+#endif
 	if (r == 0)
 		key->pk = pk;
 

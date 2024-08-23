@@ -699,6 +699,67 @@ ssh_rsa_serialize_private(const struct sshkey *key, struct sshbuf *buf,
 	return sshbuf_write_priv_rsa(buf, key);
 }
 
+#ifdef USE_EVP_PKEY_KEYGEN
+static int
+ssh_pkey_ctx_set_rsa_keygen_pubexp(EVP_PKEY_CTX *ctx) {
+	BIGNUM *f4;
+	int ret;
+
+	if ((f4 = BN_new()) == NULL) return SSH_ERR_ALLOC_FAIL;
+
+	if (!BN_set_word(f4, RSA_F4)) {
+		BN_free(f4);
+		return SSH_ERR_LIBCRYPTO_ERROR;
+	}
+
+#ifdef EVP_PKEY_CTX_set_rsa_keygen_pubexp
+	/*definition if OpenSSL < 3.0 and OpenSSL >= 1.0*/
+	ret = EVP_PKEY_CTX_set_rsa_keygen_pubexp(ctx, f4);
+#else
+	/*OpenSSL >= 3.0*/
+	ret = EVP_PKEY_CTX_set1_rsa_keygen_pubexp(ctx, f4);
+	if (ret > 0)
+		BN_free(f4);
+#endif
+	return (ret > 0) ? SSH_ERR_SUCCESS: SSH_ERR_LIBCRYPTO_ERROR;
+}
+
+static int
+ssh_pkey_keygen_rsa(int bits, EVP_PKEY **ret) {
+	EVP_PKEY *pk = NULL;
+	EVP_PKEY_CTX *ctx = NULL;
+	int r;
+
+	ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_RSA, NULL);
+	if (ctx == NULL) return SSH_ERR_ALLOC_FAIL;
+
+	if (EVP_PKEY_keygen_init(ctx) <= 0)  {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	if (EVP_PKEY_CTX_set_rsa_keygen_bits(ctx, bits) <= 0) {
+		r = SSH_ERR_KEY_LENGTH;
+		goto err;
+	}
+
+	r = ssh_pkey_ctx_set_rsa_keygen_pubexp(ctx);
+	if (r != 0) goto err;
+
+	if (EVP_PKEY_keygen(ctx, &pk) <= 0) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	/* success */
+	*ret = pk;
+	/*r = 0;*/
+
+err:
+	EVP_PKEY_CTX_free(ctx);
+	return r;
+}
+#else /*ndef USE_EVP_PKEY_KEYGEN*/
 static int
 ssh_pkey_rsa_generate(int bits, EVP_PKEY **ret) {
 	EVP_PKEY *pk;
@@ -739,6 +800,7 @@ err:
 	BN_free(f4);
 	return r;
 }
+#endif /*ndef USE_EVP_PKEY_KEYGEN*/
 
 static int
 ssh_rsa_generate(struct sshkey *key, int bits) {
@@ -751,7 +813,11 @@ ssh_rsa_generate(struct sshkey *key, int bits) {
 	if (bits > SSHBUF_MAX_BIGNUM * 8)
 		return SSH_ERR_KEY_LENGTH;
 
+#ifdef USE_EVP_PKEY_KEYGEN
+	r = ssh_pkey_keygen_rsa(bits, &pk);
+#else
 	r = ssh_pkey_rsa_generate(bits, &pk);
+#endif
 	if (r == 0)
 		key->pk = pk;
 
