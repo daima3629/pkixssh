@@ -1,4 +1,4 @@
-#	$OpenBSD: Makefile,v 1.133 2024/01/11 04:50:28 djm Exp $
+#	$OpenBSD: Makefile,v 1.135 2024/06/14 04:43:11 djm Exp $
 
 tests: unit file-tests t-exec
 check-core: tests
@@ -129,7 +129,7 @@ CLEANFILES=	*.core actual agent-ca agent-ca.pub agent-key.* authkeys_orig \
 		authorized_keys_* \
 		authorized_principals_* \
 		banner.in banner.out cert_host_key* cert_user_key* \
-		batch copy2 data \
+		batch copy copy2 data \
 		ssh-dss-agent* ssh-dss ssh-dss.pub \
 		ssh-ed25519-agent* ssh-ed25519-conch* ssh-ed25519 ssh-ed25519.pub empty.in \
 		ecdsa-sha2-nistp256-agent* ecdsa-sha2-nistp256 ecdsa-sha2-nistp256.pub \
