@@ -12,7 +12,7 @@ cp $OBJ/sshd_proxy $OBJ/sshd_proxy_bak
 # the encrypted byte counts would not match.
 echo "Compression no" >> $OBJ/ssh_proxy
 if config_defined HAVE_EVP_SHA256 ; then
-	echo "KexAlgorithms curve25519-sha256" >> ssh_proxy
+	echo "KexAlgorithms curve25519-sha256" >> $OBJ/ssh_proxy
 fi
 
 # Test rekeying based on data volume only.
@@ -25,6 +25,12 @@ ssh_data_rekeying()
 		cp $OBJ/sshd_proxy_bak $OBJ/sshd_proxy
 		echo "$_kexopt" >> $OBJ/sshd_proxy
 		_opts="$_opts -o$_kexopt"
+		case "$_kexopt" in
+		MACs=*)
+			# if is used chacha20-poly1305 cipher by default
+			# it has implicit MAC
+			_opts="$_opts -oCiphers=aes128-ctr" ;;
+		esac
 	fi
 	rm -f ${COPY} ${LOG}
 
@@ -36,6 +42,24 @@ ssh_data_rekeying()
 	n=`grep 'NEWKEYS sent' ${LOG} | wc -l`
 	n=`expr $n - 1`
 	trace "$n rekeying(s)"
+	if test -n "$_kexopt" ; then
+		_want=`echo $_kexopt | cut -f2 -d=`
+		_got=
+		case "$_kexopt" in
+		KexAlgorithms=*)
+			_got=`awk '/kex: algorithm: /{print $4}' $LOG | \
+			tr -d '\r' | sort -u` ;;
+		Ciphers=*)
+			_got=`awk '/kex: client->server cipher:/{print $5}' $LOG | \
+			tr -d '\r' | sort -u` ;;
+		MACs=*)
+			_got=`awk '/kex: client->server cipher:/{print $7}' $LOG | \
+			tr -d '\r' | sort -u` ;;
+		esac
+		if test "x$_want" != "x$_got" ; then
+			fail "unexpected algorithm, want $_want, got $_got"
+		fi
+	fi
 	if [ $n -lt 1 ]; then
 		fail "no rekeying occurred ($@)"
 	fi
