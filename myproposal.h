@@ -1,4 +1,4 @@
-/* $OpenBSD: myproposal.h,v 1.71 2022/03/30 21:13:23 djm Exp $ */
+/* $OpenBSD: myproposal.h,v 1.72 2024/08/22 23:11:30 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  *
@@ -26,7 +26,9 @@
 #include "includes.h"
 
 #ifdef ENABLE_KEX_SNTRUP761X25519
-# define KEX_SNTRUP761X25519	"sntrup761x25519-sha512@openssh.com,"
+# define KEX_SNTRUP761X25519	\
+	"sntrup761x25519-sha512," \
+	"sntrup761x25519-sha512@openssh.com,"
 #else
 # define KEX_SNTRUP761X25519
 #endif
