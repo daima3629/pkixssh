@@ -1,4 +1,4 @@
-#	$OpenBSD: rekey.sh,v 1.29 2024/08/22 10:21:02 dtucker Exp $
+#	$OpenBSD: rekey.sh,v 1.30 2024/08/28 12:08:26 djm Exp $
 #	Placed in the Public Domain.
 
 tid="rekey"
@@ -194,7 +194,7 @@ for size in 16 1k 1K 1m 1M 1g 1G 4G 8G; do
 		4g|4G)	bytes=4294967296 ;;
 		8g|8G)	bytes=8589934592 ;;
 	esac
-	b=`$SSH -d -o "rekeylimit $size" -f $OBJ/ssh_proxy host | \
+	b=`$SSH -d -o "rekeylimit $size" -F $OBJ/ssh_proxy host | \
 	    awk '/rekeylimit/{print $2}'`
 	if test "$bytes" != "$b" ; then
 		fatal "rekeylimit size: expected $bytes bytes got $b"
@@ -210,7 +210,7 @@ for time in 1 1m 1M 1h 1H 1d 1D 1w 1W; do
 		1d|1D)	seconds=86400 ;;
 		1w|1W)	seconds=604800 ;;
 	esac
-	s=`$SSH -d -o "rekeylimit default $time" -f $OBJ/ssh_proxy host | \
+	s=`$SSH -d -o "rekeylimit default $time" -F $OBJ/ssh_proxy host | \
 	    awk '/rekeylimit/{print $3}'`
 	if test "$seconds" != "$s" ; then
 		fatal "rekeylimit time: expected $time seconds got $s"
