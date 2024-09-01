@@ -1244,8 +1244,12 @@ main(int ac, char **av)
 	}
 	if (rexeced_flag || inetd_flag)
 		rexec_flag = 0;
+#ifdef __ANDROID__
+	/* NOTE: Android model does not recommend absolute paths */
+#else
 	if (!test_flag && !do_dump_cfg && rexec_flag && !path_absolute(av[0]))
 		fatal("sshd re-exec requires execution with an absolute path");
+#endif
 	if (rexeced_flag)
 		closefrom(REEXEC_MIN_FREE_FD);
 	else
