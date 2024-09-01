@@ -35,6 +35,9 @@
 # Note applicable if OpenSSL < 1.1
 %global enable_dsa_ca 1
 
+# Do we want to enable integration with systemd? (1=yes 0=no)
+%global enable_systemd 1
+
 
 # Disable non-working configurations
 %if !%{enable_openssl_fips}
@@ -104,7 +107,11 @@ License:	BSD-2-Clause
 Group:		Productivity/Networking/SSH
 
 PreReq:		permissions
-Requires(pre):	%insserv_prereq %fillup_prereq
+%if %{enable_systemd}
+Requires(post):	%fillup_only
+%else
+Requires(post):	%insserv_prereq %fillup_prereq
+%endif
 
 BuildRequires:	libselinux-devel
 BuildRequires:	zlib-devel
@@ -167,6 +174,8 @@ Source0:	https://roumenpetrov.info/secsh/src/%{name}-%{version}.tar.gz
 %define sshd_gid	475
 %define sshd_uid	472
 
+%define systemd_servicedir	/usr/lib/systemd/system
+
 %if ! %{defined _fillupdir}
  %define _fillupdir /var/adm/fillup-templates
 %endif
@@ -211,6 +220,11 @@ two untrusted hosts over an insecure network.
   --enable-dsa \
 %else
   --disable-dsa \
+%endif
+%if %{enable_systemd}
+  --with-systemd \
+%else
+  --without-systemd \
 %endif
   --with-pie \
   --with-pam \
@@ -261,6 +275,11 @@ install -m644 contrib/sshd.pam.generic %{buildroot}/etc/pam.d/sshd
 
 install -d %{buildroot}/etc/init.d/
 install -m744 contrib/suse/rc.sshd %{buildroot}/etc/init.d/sshd
+
+%if %{enable_systemd}
+install -d %{buildroot}%{systemd_servicedir}
+install -m644 contrib/suse/sshd.service.out %{buildroot}%{systemd_servicedir}/sshd.service
+%endif
 
 install -d %{buildroot}%{_fillupdir}
 install -m744 contrib/suse/sysconfig.ssh %{buildroot}%{_fillupdir}
@@ -323,6 +342,9 @@ install -m744 contrib/suse/sysconfig.ssh %{buildroot}%{_fillupdir}
 %attr(0600,root,root) %verify(not mode) %config(noreplace) %{ssh_sysconfdir}/moduli
 %attr(0644,root,root) %config(noreplace) /etc/pam.d/sshd
 %attr(0755,root,root) %config /etc/init.d/sshd
+%if %{enable_systemd}
+%attr(0644,root,root) %config(noreplace) %{systemd_servicedir}/sshd.service
+%endif
 %if %{use_fipscheck}
 # TODO: installation into fipscheck "lib" directory?
 %attr(0644,root,root) %{_bindir}/.ssh.hmac

@@ -5290,6 +5290,17 @@ AC_SUBST([LIBOCSP])
 AC_SUBST([OCSP_ON])
 AC_SUBST([OCSP_OFF])
 
+# Check whether user wants systemd support
+SYSTEMD_MSG=no
+AC_ARG_WITH(systemd,
+	[AS_HELP_STRING([--with-systemd],
+		[Enable systemd support])],
+	[AS_IF([test "x$withval" != "xno"], [
+	        AC_DEFINE([SYSTEMD_NOTIFY], [1], [Have sshd notify systemd on start/reload])
+		SYSTEMD_MSG=yes
+	])]
+)
+
 
 # Looking for programs, paths and files
 
@@ -6144,6 +6155,7 @@ echo "               Compression support: $ZLIB_MSG"
 echo "  Solaris process contract support: $SPC_MSG"
 echo "           Solaris project support: $SP_MSG"
 echo "         Solaris privilege support: $SPP_MSG"
+echo "      systemd notification support: $SYSTEMD_MSG"
 echo "       IP address in \$DISPLAY hack: $DISPLAY_HACK_MSG"
 echo "           Translate v4 in v6 hack: $IPV4_IN6_HACK_MSG"
 echo "                  BSD Auth support: $BSD_AUTH_MSG"

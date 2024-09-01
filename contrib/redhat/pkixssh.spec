@@ -31,6 +31,9 @@
 # Do we want to enable DSA publickey algorithms? (1=yes 0=no)
 %global enable_dsa 0
 
+# Do we want to enable integration with systemd? (1=yes 0=no)
+%global enable_systemd 1
+
 # TODO: do not produce debug package(temporary)
 %global debug_package %{nil}
 
@@ -133,6 +136,8 @@ Source0:	https://roumenpetrov.info/secsh/src/%{name}-%{version}.tar.xz
 %define sshd_gid	74
 %define sshd_uid	74
 
+%define systemd_servicedir	/usr/lib/systemd/system
+
 
 %description
 Ssh (Secure Shell) is a program for logging into a remote machine and for
@@ -173,6 +178,11 @@ two untrusted hosts over an insecure network.
   --enable-dsa \
 %else
   --disable-dsa \
+%endif
+%if %{enable_systemd}
+  --with-systemd \
+%else
+  --without-systemd \
 %endif
   --with-pie \
   --with-pam \
@@ -217,6 +227,11 @@ install -m644 contrib/redhat/sshd.pam %{buildroot}/etc/pam.d/sshd
 install -d %{buildroot}/etc/rc.d/init.d/
 install -m744 contrib/redhat/sshd.init %{buildroot}/etc/rc.d/init.d/sshd
 
+%if %{enable_systemd}
+install -d %{buildroot}%{systemd_servicedir}
+install -m644 contrib/redhat/sshd.service.out %{buildroot}%{systemd_servicedir}/sshd.service
+%endif
+
 
 %clean
 
@@ -258,6 +273,9 @@ install -m744 contrib/redhat/sshd.init %{buildroot}/etc/rc.d/init.d/sshd
 %attr(0600,root,root) %config(noreplace) %{ssh_sysconfdir}/moduli
 %attr(0644,root,root) %config(noreplace) /etc/pam.d/sshd
 %attr(0755,root,root) %config /etc/rc.d/init.d/sshd
+%if %{enable_systemd}
+%attr(0644,root,root) %config(noreplace) %{systemd_servicedir}/sshd.service
+%endif
 %if %{use_fipscheck}
 # TODO: installation into fipscheck "lib" directory
 %attr(0644,root,root) %{_bindir}/.ssh.hmac

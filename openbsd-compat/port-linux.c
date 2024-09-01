@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2005 Daniel Walsh <dwalsh@redhat.com>
  * Copyright (c) 2006 Damien Miller <djm@openbsd.org>
- * Copyright (c) 2023 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2023-2024 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -22,16 +22,25 @@
 
 #include "includes.h"
 
-#if defined(WITH_SELINUX) || defined(LINUX_OOM_ADJUST)
+#if defined(WITH_SELINUX) || defined(LINUX_OOM_ADJUST) || \
+    defined(SYSTEMD_NOTIFY)
+#include <sys/socket.h>
+#include <sys/un.h>
+
 #include <errno.h>
+#include <inttypes.h>
 #include <stdarg.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "log.h"
 #include "xmalloc.h"
 #include "port-linux.h"
+#include "misc.h"
+#include "atomicio.h"
 
 #ifdef WITH_SELINUX
 #include <selinux/selinux.h>
@@ -318,4 +327,112 @@ oom_adjust_restore(void)
 	return;
 }
 #endif /* LINUX_OOM_ADJUST */
-#endif /* WITH_SELINUX || LINUX_OOM_ADJUST */
+
+#ifdef SYSTEMD_NOTIFY
+
+static void
+ssh_systemd_notify(const char *, ...)
+    __attribute__((__format__ (printf, 1, 2))) __attribute__((__nonnull__ (1)));
+
+
+static const char*
+ssh_notify_socket(void)
+{
+	const char *path;
+
+	path = getenv("NOTIFY_SOCKET");
+	if (path == NULL) {
+		debug3_f("notify socket in not defined");
+		return NULL;
+	}
+
+	/* Only AF_UNIX is supported, with path or abstract sockets */
+	if (*path == '/') {
+		struct stat st;
+		if (stat(path, &st) == -1) {
+			error_f("socket \"%s\" stat: %s", path, strerror(errno));
+			return NULL;
+		}
+		return path;
+	}
+	if (*path != '@') {
+		error_f("socket \"%s\" is not compatible with AF_UNIX", path);
+		return NULL;
+	}
+	return path;
+}
+
+static void
+ssh_systemd_notify(const char *fmt, ...)
+{
+	const char *path;
+	char *s = NULL;
+	struct sockaddr_un addr;
+	int fd = -1;
+
+	path = ssh_notify_socket();
+	if (path == NULL) return;
+
+{	va_list ap;
+	va_start(ap, fmt);
+	xvasprintf(&s, fmt, ap);
+	va_end(ap);
+}
+
+	memset(&addr, 0, sizeof(addr));
+	addr.sun_family = AF_UNIX;
+	if (strlcpy(addr.sun_path, path,
+	    sizeof(addr.sun_path)) >= sizeof(addr.sun_path)) {
+		error_f("socket path \"%s\" too long", path);
+		goto out;
+	}
+	/* Support for abstract socket */
+	if (addr.sun_path[0] == '@')
+		addr.sun_path[0] = 0;
+
+	if ((fd = socket(PF_UNIX, SOCK_DGRAM, 0)) == -1) {
+		error_f("socket \"%s\": %s", path, strerror(errno));
+		goto out;
+	}
+	if (connect(fd, &addr, sizeof(addr)) != 0) {
+		error_f("socket \"%s\" connect: %s", path, strerror(errno));
+		goto out;
+	}
+{	size_t len = strlen(s);
+	if (len != atomicio(vwrite, fd, s, len)) {
+		error_f("socket \"%s\" write: %s", path, strerror(errno));
+		goto out;
+	}
+}
+	debug3_f("socket \"%s\" notified %s", path, s);
+
+ out:
+	if (fd != -1)
+		close(fd);
+	free(s);
+}
+
+void
+ssh_systemd_notify_ready(void)
+{
+	ssh_systemd_notify("READY=1");
+}
+
+void
+ssh_systemd_notify_reload(void)
+{
+	struct timespec now;
+
+	monotime_ts(&now);
+	if (now.tv_sec < 0 || now.tv_nsec < 0) {
+		error_f("monotime returned negative value");
+		ssh_systemd_notify("RELOADING=1");
+	} else {
+		ssh_systemd_notify("RELOADING=1\nMONOTONIC_USEC=%llu",
+		    ((uint64_t)now.tv_sec * 1000000ULL) +
+		    ((uint64_t)now.tv_nsec / 1000ULL));
+	}
+}
+#endif /* SYSTEMD_NOTIFY */
+
+#endif /* WITH_SELINUX || LINUX_OOM_ADJUST || SYSTEMD_NOTIFY */

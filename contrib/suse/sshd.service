@@ -1,0 +1,16 @@
+[Unit]
+Description=SecSH Daemon
+After=network.target
+
+[Service]
+Type=notify
+EnvironmentFile=-/etc/sysconfig/ssh
+ExecStartPre=/usr/sbin/sshd -t $SSHD_OPTS
+ExecStart=/usr/sbin/sshd -D $SSHD_OPTS
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+Restart=on-failure
+RestartPreventExitStatus=255
+
+[Install]
+WantedBy=multi-user.target
