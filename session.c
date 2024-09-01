@@ -1232,8 +1232,17 @@ do_setup_env(struct ssh *ssh, Session *s, const char *shell)
 	COPY_ANDROID_ENV("SECONDARY_STORAGE");		/* ??? */
 	COPY_ANDROID_ENV("SD_EXT_DIRECTORY");		/* ??? */
 
+	/* NOTE: daemon process should set some variables suitable
+	 * for user session.
+	 */
 	/* may contain path to custom libraries */
 	COPY_ANDROID_ENV("LD_LIBRARY_PATH");
+	/* may contain path to custom commands */
+	COPY_ANDROID_ENV("PATH");
+	/* may contain custom mkshrc file */
+	COPY_ANDROID_ENV("ENV");
+	/* may contain writable directory */
+	COPY_ANDROID_ENV("TMPDIR");
 #undef COPY_ANDROID_ENV
 }
 #endif
