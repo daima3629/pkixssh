@@ -1779,17 +1779,8 @@ main(int ac, char **av)
 	    rdomain == NULL ? "" : "\"");
 	free(laddr);
 
-	/*
-	 * We don't want to listen forever unless the other side
-	 * successfully authenticates itself.  So we set up an alarm which is
-	 * cleared after successful authentication.  A limit of zero
-	 * indicates no limit. Note that we don't set the alarm in debugging
-	 * mode; it is just annoying to have the server exit just when you
-	 * are about to discover the bug.
-	 */
 	ssh_signal(SIGALRM, grace_alarm_handler);
-	if (!debug_flag)
-		alarm(options.login_grace_time);
+	grace_alarm_start(options.login_grace_time);
 
 	if ((r = prepare_server_banner(ssh)) != 0)
 		sshpkt_fatal(ssh, r, "prepare server banner");
@@ -1843,11 +1834,7 @@ main(int ac, char **av)
 	}
 
  authenticated:
-	/*
-	 * Cancel the alarm we set to limit the time taken for
-	 * authentication.
-	 */
-	alarm(0);
+	grace_alarm_stop();
 	ssh_signal(SIGALRM, SIG_DFL);
 	authctxt->authenticated = 1;
 	if (startup_pipe != -1) {

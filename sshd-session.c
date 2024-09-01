@@ -49,6 +49,31 @@ grace_alarm_handler(int sig)
 	    ssh_remote_port(the_active_state));
 }
 
+/*
+ * We don't want to listen forever unless the other side
+ * successfully authenticates itself.  So we set up an alarm which is
+ * cleared after successful authentication.  A limit of zero
+ * indicates no limit. Note that we don't set the alarm in debugging
+ * mode; it is just annoying to have the server exit just when you
+ * are about to discover the bug.
+ */
+static inline void
+grace_alarm_start(int grace_time) {
+	if (debug_flag) return;
+	if (grace_time <= 0) return;
+
+	alarm(grace_time);
+}
+
+/*
+ * Cancel the alarm we set to limit the time taken for
+ * authentication.
+ */
+static inline void
+grace_alarm_stop(void) {
+	alarm(0);
+}
+
 /* Destroy the host and server keys.  They will no longer be needed. */
 void
 destroy_sensitive_data(void)
