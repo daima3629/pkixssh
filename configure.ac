@@ -2075,6 +2075,7 @@ AC_CHECK_FUNCS([ \
 	seteuid \
 	setgroupent \
 	setgroups \
+	setitimer \
 	setlinebuf \
 	setlogin \
 	setpassent\

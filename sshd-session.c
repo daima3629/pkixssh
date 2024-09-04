@@ -49,6 +49,11 @@ grace_alarm_handler(int sig)
 	    ssh_remote_port(the_active_state));
 }
 
+#undef USE_GRACE_ALARM_TIMER
+#if defined(HAVE_SETITIMER)
+/* TODO: setitimer(2) is obsolete, to use timer_settimer(2) */
+#  define USE_GRACE_ALARM_TIMER	1
+#endif
 /*
  * We don't want to listen forever unless the other side
  * successfully authenticates itself.  So we set up an alarm which is
@@ -62,7 +67,21 @@ grace_alarm_start(int grace_time) {
 	if (debug_flag) return;
 	if (grace_time <= 0) return;
 
+#ifdef USE_GRACE_ALARM_TIMER
+{	struct itimerval itv;
+	int ujitter = arc4random_uniform(4 * 1000000);
+
+	timerclear(&itv.it_interval);
+	itv.it_value.tv_sec = grace_time;
+	itv.it_value.tv_sec += ujitter / 1000000;
+	itv.it_value.tv_usec = ujitter % 1000000;
+
+	if (setitimer(ITIMER_REAL, &itv, NULL) == -1)
+		fatal("login grace time setitimer failed");
+}
+#else
 	alarm(grace_time);
+#endif
 }
 
 /*
@@ -71,7 +90,18 @@ grace_alarm_start(int grace_time) {
  */
 static inline void
 grace_alarm_stop(void) {
+#ifdef USE_GRACE_ALARM_TIMER
+{	struct itimerval itv;
+
+	timerclear(&itv.it_interval);
+	timerclear(&itv.it_value);
+
+	if (setitimer(ITIMER_REAL, &itv, NULL) == -1)
+		fatal("login grace time clear failed");
+}
+#else
 	alarm(0);
+#endif
 }
 
 /* Destroy the host and server keys.  They will no longer be needed. */
