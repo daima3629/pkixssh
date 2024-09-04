@@ -2,7 +2,7 @@
 /*
  * Copyright (c) 2010 Damien Miller.  All rights reserved.
  * Copyright (c) 2019 Markus Friedl.  All rights reserved.
- * Copyright (c) 2021-2023 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2021-2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -53,8 +53,65 @@
 #include "ssherr.h"
 
 static int
-kex_ecdh_dec_key_group(struct kex *, const struct sshbuf *, EC_KEY *key,
-    const EC_GROUP *, struct sshbuf **);
+kex_ecdh_dec_key_group(struct kex *kex, const struct sshbuf *ec_blob,
+    EC_KEY *key, struct sshbuf **shared_secretp)
+{
+	const EC_GROUP *group;
+	struct sshbuf *buf = NULL;
+	BIGNUM *shared_secret = NULL;
+	EC_POINT *dh_pub = NULL;
+	u_char *kbuf = NULL;
+	size_t klen = 0;
+	int r;
+
+	UNUSED(kex);
+	*shared_secretp = NULL;
+
+	if ((group = EC_KEY_get0_group(key)) == NULL)
+		return SSH_ERR_INTERNAL_ERROR;
+	if ((buf = sshbuf_new()) == NULL)
+		return SSH_ERR_ALLOC_FAIL;
+
+	if ((r = sshbuf_put_stringb(buf, ec_blob)) != 0)
+		goto out;
+	if ((dh_pub = EC_POINT_new(group)) == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto out;
+	}
+	if ((r = sshbuf_get_ec(buf, dh_pub, group)) != 0) {
+		goto out;
+	}
+	sshbuf_reset(buf);
+
+	if (sshkey_ec_validate_public(group, dh_pub) != 0) {
+		r = SSH_ERR_MESSAGE_INCOMPLETE;
+		goto out;
+	}
+	klen = (EC_GROUP_get_degree(group) + 7) / 8;
+	if ((kbuf = malloc(klen)) == NULL ||
+	    (shared_secret = BN_new()) == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto out;
+	}
+	if (ECDH_compute_key(kbuf, klen, dh_pub, key, NULL) != (int)klen ||
+	    BN_bin2bn(kbuf, klen, shared_secret) == NULL) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto out;
+	}
+#ifdef DEBUG_KEXECDH
+	dump_digest("shared secret", kbuf, klen);
+#endif
+	if ((r = sshbuf_put_bignum2(buf, shared_secret)) != 0)
+		goto out;
+	*shared_secretp = buf;
+	buf = NULL;
+ out:
+	EC_POINT_clear_free(dh_pub);
+	BN_clear_free(shared_secret);
+	freezero(kbuf, klen);
+	sshbuf_free(buf);
+	return r;
+}
 
 int
 kex_ecdh_keypair(struct kex *kex)
@@ -143,7 +200,7 @@ kex_ecdh_enc(struct kex *kex, const struct sshbuf *client_blob,
 	if ((r = sshbuf_put_ec(server_blob, pub_key, group)) != 0 ||
 	    (r = sshbuf_get_u32(server_blob, NULL)) != 0)
 		goto out;
-	if ((r = kex_ecdh_dec_key_group(kex, client_blob, server_key, group,
+	if ((r = kex_ecdh_dec_key_group(kex, client_blob, server_key,
 	    shared_secretp)) != 0)
 		goto out;
 	*server_blobp = server_blob;
@@ -151,65 +208,6 @@ kex_ecdh_enc(struct kex *kex, const struct sshbuf *client_blob,
  out:
 	EC_KEY_free(server_key);
 	sshbuf_free(server_blob);
-	return r;
-}
-
-static int
-kex_ecdh_dec_key_group(struct kex *kex, const struct sshbuf *ec_blob,
-    EC_KEY *key, const EC_GROUP *group, struct sshbuf **shared_secretp)
-{
-	struct sshbuf *buf = NULL;
-	BIGNUM *shared_secret = NULL;
-	EC_POINT *dh_pub = NULL;
-	u_char *kbuf = NULL;
-	size_t klen = 0;
-	int r;
-
-	UNUSED(kex);
-	*shared_secretp = NULL;
-
-	if ((buf = sshbuf_new()) == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto out;
-	}
-	if ((r = sshbuf_put_stringb(buf, ec_blob)) != 0)
-		goto out;
-	if ((dh_pub = EC_POINT_new(group)) == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto out;
-	}
-	if ((r = sshbuf_get_ec(buf, dh_pub, group)) != 0) {
-		goto out;
-	}
-	sshbuf_reset(buf);
-
-	if (sshkey_ec_validate_public(group, dh_pub) != 0) {
-		r = SSH_ERR_MESSAGE_INCOMPLETE;
-		goto out;
-	}
-	klen = (EC_GROUP_get_degree(group) + 7) / 8;
-	if ((kbuf = malloc(klen)) == NULL ||
-	    (shared_secret = BN_new()) == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto out;
-	}
-	if (ECDH_compute_key(kbuf, klen, dh_pub, key, NULL) != (int)klen ||
-	    BN_bin2bn(kbuf, klen, shared_secret) == NULL) {
-		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto out;
-	}
-#ifdef DEBUG_KEXECDH
-	dump_digest("shared secret", kbuf, klen);
-#endif
-	if ((r = sshbuf_put_bignum2(buf, shared_secret)) != 0)
-		goto out;
-	*shared_secretp = buf;
-	buf = NULL;
- out:
-	EC_POINT_clear_free(dh_pub);
-	BN_clear_free(shared_secret);
-	freezero(kbuf, klen);
-	sshbuf_free(buf);
 	return r;
 }
 
@@ -223,17 +221,9 @@ kex_ecdh_dec(struct kex *kex, const struct sshbuf *server_blob,
 	ec = EVP_PKEY_get1_EC_KEY(kex->pk);
 	if (ec == NULL) return SSH_ERR_INVALID_ARGUMENT;
 
-{	const EC_GROUP *group = EC_KEY_get0_group(ec);
-	if (group == NULL) {
-		r = SSH_ERR_INTERNAL_ERROR;
-		goto done;
-	}
-
-	r = kex_ecdh_dec_key_group(kex, server_blob, ec, group, shared_secretp);
+	r = kex_ecdh_dec_key_group(kex, server_blob, ec, shared_secretp);
 	kex_reset_crypto_keys(kex);
-}
 
-done:
 	EC_KEY_free(ec);
 	return r;
 }
