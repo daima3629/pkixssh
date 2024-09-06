@@ -83,6 +83,31 @@ kex_key_init_ecdh(struct kex *kex) {
 }
 
 static int
+kex_key_gen_ecdh(struct kex *kex) {
+	int r;
+	EC_KEY *ec;
+
+	if (kex->pk == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+
+	ec = EVP_PKEY_get1_EC_KEY(kex->pk);
+	if (ec == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+
+	if (EC_KEY_generate_key(ec) == 0) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto done;
+	}
+
+	/* success */
+	r = 0;
+
+done:
+	EC_KEY_free(ec);
+	return r;
+}
+
+static int
 kex_ecdh_dec_key_group(struct kex *kex, const struct sshbuf *ec_blob,
     EC_KEY *key, struct sshbuf **shared_secretp)
 {
@@ -152,14 +177,11 @@ kex_ecdh_keypair(struct kex *kex)
 	struct sshbuf *buf = NULL;
 	int r;
 
-	if ((r = kex_key_init_ecdh(kex)) != 0)
-		return r;
+	if ((r = kex_key_init_ecdh(kex)) != 0 ||
+	    (r = kex_key_gen_ecdh(kex)) != 0)
+		goto out;
 	if ((client_key = EVP_PKEY_get1_EC_KEY(kex->pk)) == NULL) {
 		r = SSH_ERR_ALLOC_FAIL;
-		goto out;
-	}
-	if (EC_KEY_generate_key(client_key) != 1) {
-		r = SSH_ERR_LIBCRYPTO_ERROR;
 		goto out;
 	}
 	group = EC_KEY_get0_group(client_key);
@@ -179,6 +201,8 @@ kex_ecdh_keypair(struct kex *kex)
 	kex->client_pub = buf;
 	buf = NULL;
  out:
+	if (r != 0)
+		kex_reset_crypto_keys(kex);
 	EC_KEY_free(client_key);
 	sshbuf_free(buf);
 	return r;
@@ -197,14 +221,11 @@ kex_ecdh_enc(struct kex *kex, const struct sshbuf *client_blob,
 	*server_blobp = NULL;
 	*shared_secretp = NULL;
 
-	if ((r = kex_key_init_ecdh(kex)) != 0)
+	if ((r = kex_key_init_ecdh(kex)) != 0 ||
+	    (r = kex_key_gen_ecdh(kex)) != 0)
 		goto out;
 	if ((server_key = EVP_PKEY_get1_EC_KEY(kex->pk)) == NULL) {
 		r = SSH_ERR_ALLOC_FAIL;
-		goto out;
-	}
-	if (EC_KEY_generate_key(server_key) != 1) {
-		r = SSH_ERR_LIBCRYPTO_ERROR;
 		goto out;
 	}
 	group = EC_KEY_get0_group(server_key);
