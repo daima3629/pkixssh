@@ -1,7 +1,7 @@
-/*	$OpenBSD: sshbuf-getput-crypto.c,v 1.10 2022/05/25 06:03:44 djm Exp $	*/
+/*	$OpenBSD: sshbuf-getput-crypto.c,v 1.12 2024/08/15 00:51:51 djm Exp $	*/
 /*
  * Copyright (c) 2011 Damien Miller
- * Copyright (c) 2020-2023 Roumen Petrov
+ * Copyright (c) 2020-2024 Roumen Petrov
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -149,7 +149,7 @@ sshbuf_put_bignum2(struct sshbuf *buf, const BIGNUM *v)
 }
 
 #ifdef OPENSSL_HAS_ECC
-int
+static int
 sshbuf_put_ec(struct sshbuf *buf, const EC_POINT *v, const EC_GROUP *g)
 {
 	u_char d[SSHBUF_MAX_ECPOINT];

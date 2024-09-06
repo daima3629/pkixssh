@@ -172,13 +172,37 @@ kex_ecdh_compute_key(struct kex *kex, const struct sshbuf *ec_blob,
 	return r;
 }
 
+static int
+kex_ecdh_to_sshbuf(struct kex *kex, struct sshbuf **bufp) {
+	EC_KEY *key;
+	struct sshbuf *buf;
+	int r;
+
+	*bufp = NULL;
+
+	if ((key = EVP_PKEY_get1_EC_KEY(kex->pk)) == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+	if ((buf = sshbuf_new()) == NULL)
+		return SSH_ERR_ALLOC_FAIL;
+
+	if ((r = sshbuf_put_eckey(buf, key)) != 0 ||
+	    (r = sshbuf_get_u32(buf, NULL)) != 0)
+		goto out;
+
+	*bufp = buf;
+	buf = NULL;
+
+ out:
+	EC_KEY_free(key);
+	sshbuf_free(buf);
+	return r;
+}
+
+
 int
 kex_ecdh_keypair(struct kex *kex)
 {
 	EC_KEY *client_key = NULL;
-	const EC_GROUP *group;
-	const EC_POINT *public_key;
-	struct sshbuf *buf = NULL;
 	int r;
 
 	if ((r = kex_key_init_ecdh(kex)) != 0 ||
@@ -188,27 +212,17 @@ kex_ecdh_keypair(struct kex *kex)
 		r = SSH_ERR_ALLOC_FAIL;
 		goto out;
 	}
-	group = EC_KEY_get0_group(client_key);
-	public_key = EC_KEY_get0_public_key(client_key);
-
-	if ((buf = sshbuf_new()) == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto out;
-	}
-	if ((r = sshbuf_put_ec(buf, public_key, group)) != 0 ||
-	    (r = sshbuf_get_u32(buf, NULL)) != 0)
-		goto out;
 #ifdef DEBUG_KEXECDH
 	fputs("client private key:\n", stderr);
 	EC_KEY_print_fp(stderr, client_key, 0);
 #endif
-	kex->client_pub = buf;
-	buf = NULL;
+
+	r = kex_ecdh_to_sshbuf(kex, &kex->client_pub);
+
  out:
 	if (r != 0)
 		kex_reset_crypto_keys(kex);
 	EC_KEY_free(client_key);
-	sshbuf_free(buf);
 	return r;
 }
 
@@ -216,45 +230,35 @@ int
 kex_ecdh_enc(struct kex *kex, const struct sshbuf *client_blob,
     struct sshbuf **server_blobp, struct sshbuf **shared_secretp)
 {
-	const EC_GROUP *group;
-	const EC_POINT *pub_key;
 	EC_KEY *server_key = NULL;
-	struct sshbuf *server_blob = NULL;
 	int r;
 
 	*server_blobp = NULL;
 	*shared_secretp = NULL;
 
 	if ((r = kex_key_init_ecdh(kex)) != 0 ||
-	    (r = kex_key_gen_ecdh(kex)) != 0)
+	    (r = kex_key_gen_ecdh(kex)) != 0 ||
+	    (r = kex_ecdh_to_sshbuf(kex, server_blobp)) != 0)
 		goto out;
+
 	if ((server_key = EVP_PKEY_get1_EC_KEY(kex->pk)) == NULL) {
 		r = SSH_ERR_ALLOC_FAIL;
 		goto out;
 	}
-	group = EC_KEY_get0_group(server_key);
-
 #ifdef DEBUG_KEXECDH
 	fputs("server private key:\n", stderr);
 	EC_KEY_print_fp(stderr, server_key, 0);
 #endif
-	pub_key = EC_KEY_get0_public_key(server_key);
-	if ((server_blob = sshbuf_new()) == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto out;
-	}
-	if ((r = sshbuf_put_ec(server_blob, pub_key, group)) != 0 ||
-	    (r = sshbuf_get_u32(server_blob, NULL)) != 0)
-		goto out;
-	if ((r = kex_ecdh_compute_key(kex, client_blob,
-	    shared_secretp)) != 0)
-		goto out;
-	*server_blobp = server_blob;
-	server_blob = NULL;
+
+	r = kex_ecdh_compute_key(kex, client_blob, shared_secretp);
+
  out:
+	if (r != 0) {
+		sshbuf_free(*server_blobp);
+		*server_blobp = NULL;
+	}
 	kex_reset_crypto_keys(kex);
 	EC_KEY_free(server_key);
-	sshbuf_free(server_blob);
 	return r;
 }
 

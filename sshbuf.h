@@ -1,7 +1,7 @@
-/*	$OpenBSD: sshbuf.h,v 1.28 2022/12/02 04:40:27 djm Exp $	*/
+/*	$OpenBSD: sshbuf.h,v 1.29 2024/08/15 00:51:51 djm Exp $	*/
 /*
  * Copyright (c) 2011 Damien Miller
- * Copyright (c) 2020-2022 Roumen Petrov
+ * Copyright (c) 2020-2024 Roumen Petrov
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -223,7 +223,6 @@ int	sshbuf_put_bignum2(struct sshbuf *buf, const BIGNUM *v);
 # ifdef OPENSSL_HAS_ECC
 int	sshbuf_get_ec(struct sshbuf *buf, EC_POINT *v, const EC_GROUP *g);
 int	sshbuf_get_eckey(struct sshbuf *buf, EC_KEY *v);
-int	sshbuf_put_ec(struct sshbuf *buf, const EC_POINT *v, const EC_GROUP *g);
 int	sshbuf_put_eckey(struct sshbuf *buf, const EC_KEY *v);
 # endif /* OPENSSL_HAS_ECC */
 #endif /* WITH_OPENSSL */
