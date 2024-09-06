@@ -182,6 +182,10 @@ kex_ecdh_to_sshbuf(struct kex *kex, struct sshbuf **bufp) {
 
 	if ((key = EVP_PKEY_get1_EC_KEY(kex->pk)) == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;
+#ifdef DEBUG_KEXECDH
+	fputs("ecdh private key:\n", stderr);
+	EC_KEY_print_fp(stderr, key, 0);
+#endif
 	if ((buf = sshbuf_new()) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
 
@@ -202,27 +206,17 @@ kex_ecdh_to_sshbuf(struct kex *kex, struct sshbuf **bufp) {
 int
 kex_ecdh_keypair(struct kex *kex)
 {
-	EC_KEY *client_key = NULL;
 	int r;
 
 	if ((r = kex_key_init_ecdh(kex)) != 0 ||
 	    (r = kex_key_gen_ecdh(kex)) != 0)
 		goto out;
-	if ((client_key = EVP_PKEY_get1_EC_KEY(kex->pk)) == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto out;
-	}
-#ifdef DEBUG_KEXECDH
-	fputs("client private key:\n", stderr);
-	EC_KEY_print_fp(stderr, client_key, 0);
-#endif
 
 	r = kex_ecdh_to_sshbuf(kex, &kex->client_pub);
 
  out:
 	if (r != 0)
 		kex_reset_crypto_keys(kex);
-	EC_KEY_free(client_key);
 	return r;
 }
 
@@ -230,7 +224,6 @@ int
 kex_ecdh_enc(struct kex *kex, const struct sshbuf *client_blob,
     struct sshbuf **server_blobp, struct sshbuf **shared_secretp)
 {
-	EC_KEY *server_key = NULL;
 	int r;
 
 	*server_blobp = NULL;
@@ -241,15 +234,6 @@ kex_ecdh_enc(struct kex *kex, const struct sshbuf *client_blob,
 	    (r = kex_ecdh_to_sshbuf(kex, server_blobp)) != 0)
 		goto out;
 
-	if ((server_key = EVP_PKEY_get1_EC_KEY(kex->pk)) == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto out;
-	}
-#ifdef DEBUG_KEXECDH
-	fputs("server private key:\n", stderr);
-	EC_KEY_print_fp(stderr, server_key, 0);
-#endif
-
 	r = kex_ecdh_compute_key(kex, client_blob, shared_secretp);
 
  out:
@@ -258,7 +242,6 @@ kex_ecdh_enc(struct kex *kex, const struct sshbuf *client_blob,
 		*server_blobp = NULL;
 	}
 	kex_reset_crypto_keys(kex);
-	EC_KEY_free(server_key);
 	return r;
 }
 
