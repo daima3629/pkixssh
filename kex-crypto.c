@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2021-2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -302,7 +302,7 @@ kex_key_init_dh(struct kex *kex) {
 	if (!EVP_PKEY_set1_DH(pk, dh)) {
 		DH_free(dh);
 		EVP_PKEY_free(pk);
-		return SSH_ERR_ALLOC_FAIL;
+		return SSH_ERR_LIBCRYPTO_ERROR;
 	}
 	DH_free(dh);
 	kex->pk = pk;

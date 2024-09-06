@@ -53,6 +53,36 @@
 #include "ssherr.h"
 
 static int
+kex_key_init_ecdh(struct kex *kex) {
+	EC_KEY *ec = NULL;
+
+	ec = EC_KEY_new_by_curve_name(kex->ec_nid);
+	if (ec == NULL) return SSH_ERR_ALLOC_FAIL;
+
+#if defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x10100000L) || \
+    defined(LIBRESSL_VERSION_NUMBER)
+	/* see ssh-ecdsa.c */
+	EC_KEY_set_asn1_flag(ec, OPENSSL_EC_NAMED_CURVE);
+#endif
+
+{	EVP_PKEY *pk = EVP_PKEY_new();
+	if (pk == NULL) {
+		EC_KEY_free(ec);
+		return SSH_ERR_ALLOC_FAIL;
+	}
+	if (!EVP_PKEY_set1_EC_KEY(pk, ec)) {
+		EC_KEY_free(ec);
+		EVP_PKEY_free(pk);
+		return SSH_ERR_LIBCRYPTO_ERROR;
+	}
+	EC_KEY_free(ec);
+	kex->pk = pk;
+}
+
+	return 0;
+}
+
+static int
 kex_ecdh_dec_key_group(struct kex *kex, const struct sshbuf *ec_blob,
     EC_KEY *key, struct sshbuf **shared_secretp)
 {
@@ -122,7 +152,9 @@ kex_ecdh_keypair(struct kex *kex)
 	struct sshbuf *buf = NULL;
 	int r;
 
-	if ((client_key = EC_KEY_new_by_curve_name(kex->ec_nid)) == NULL) {
+	if ((r = kex_key_init_ecdh(kex)) != 0)
+		return r;
+	if ((client_key = EVP_PKEY_get1_EC_KEY(kex->pk)) == NULL) {
 		r = SSH_ERR_ALLOC_FAIL;
 		goto out;
 	}
@@ -144,19 +176,6 @@ kex_ecdh_keypair(struct kex *kex)
 	fputs("client private key:\n", stderr);
 	EC_KEY_print_fp(stderr, client_key, 0);
 #endif
-{	EVP_PKEY *pk = EVP_PKEY_new();
-	if (pk == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto out;
-	}
-	if (!EVP_PKEY_set1_EC_KEY(pk, client_key)) {
-		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto out;
-	}
-	EC_KEY_free(client_key);
-	client_key = NULL;	/* owned by the kex */
-	kex->pk = pk;
-}
 	kex->client_pub = buf;
 	buf = NULL;
  out:
@@ -178,7 +197,9 @@ kex_ecdh_enc(struct kex *kex, const struct sshbuf *client_blob,
 	*server_blobp = NULL;
 	*shared_secretp = NULL;
 
-	if ((server_key = EC_KEY_new_by_curve_name(kex->ec_nid)) == NULL) {
+	if ((r = kex_key_init_ecdh(kex)) != 0)
+		goto out;
+	if ((server_key = EVP_PKEY_get1_EC_KEY(kex->pk)) == NULL) {
 		r = SSH_ERR_ALLOC_FAIL;
 		goto out;
 	}
@@ -206,6 +227,7 @@ kex_ecdh_enc(struct kex *kex, const struct sshbuf *client_blob,
 	*server_blobp = server_blob;
 	server_blob = NULL;
  out:
+	kex_reset_crypto_keys(kex);
 	EC_KEY_free(server_key);
 	sshbuf_free(server_blob);
 	return r;
