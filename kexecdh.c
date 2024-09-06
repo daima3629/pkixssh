@@ -108,9 +108,10 @@ done:
 }
 
 static int
-kex_ecdh_dec_key_group(struct kex *kex, const struct sshbuf *ec_blob,
-    EC_KEY *key, struct sshbuf **shared_secretp)
+kex_ecdh_compute_key(struct kex *kex, const struct sshbuf *ec_blob,
+    struct sshbuf **shared_secretp)
 {
+	EC_KEY *key;
 	const EC_GROUP *group;
 	struct sshbuf *buf = NULL;
 	BIGNUM *shared_secret = NULL;
@@ -122,6 +123,8 @@ kex_ecdh_dec_key_group(struct kex *kex, const struct sshbuf *ec_blob,
 	UNUSED(kex);
 	*shared_secretp = NULL;
 
+	if ((key = EVP_PKEY_get1_EC_KEY(kex->pk)) == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
 	if ((group = EC_KEY_get0_group(key)) == NULL)
 		return SSH_ERR_INTERNAL_ERROR;
 	if ((buf = sshbuf_new()) == NULL)
@@ -161,6 +164,7 @@ kex_ecdh_dec_key_group(struct kex *kex, const struct sshbuf *ec_blob,
 	*shared_secretp = buf;
 	buf = NULL;
  out:
+	EC_KEY_free(key);
 	EC_POINT_clear_free(dh_pub);
 	BN_clear_free(shared_secret);
 	freezero(kbuf, klen);
@@ -242,7 +246,7 @@ kex_ecdh_enc(struct kex *kex, const struct sshbuf *client_blob,
 	if ((r = sshbuf_put_ec(server_blob, pub_key, group)) != 0 ||
 	    (r = sshbuf_get_u32(server_blob, NULL)) != 0)
 		goto out;
-	if ((r = kex_ecdh_dec_key_group(kex, client_blob, server_key,
+	if ((r = kex_ecdh_compute_key(kex, client_blob,
 	    shared_secretp)) != 0)
 		goto out;
 	*server_blobp = server_blob;
@@ -259,15 +263,10 @@ kex_ecdh_dec(struct kex *kex, const struct sshbuf *server_blob,
     struct sshbuf **shared_secretp)
 {
 	int r;
-	EC_KEY *ec;
 
-	ec = EVP_PKEY_get1_EC_KEY(kex->pk);
-	if (ec == NULL) return SSH_ERR_INVALID_ARGUMENT;
+	r = kex_ecdh_compute_key(kex, server_blob, shared_secretp);
 
-	r = kex_ecdh_dec_key_group(kex, server_blob, ec, shared_secretp);
 	kex_reset_crypto_keys(kex);
-
-	EC_KEY_free(ec);
 	return r;
 }
 #endif /* defined(WITH_OPENSSL) && defined(OPENSSL_HAS_ECC) */
