@@ -3025,7 +3025,7 @@ main(int argc, char **argv)
 		printf("Generating public/private %s key pair.\n",
 		    key_type_name);
 	if ((r = sshkey_generate(type, bits, &private)) != 0)
-		fatal("sshkey_generate failed");
+		fatal_r(r, "sshkey_generate failed");
 	if ((r = sshkey_from_private(private, &public)) != 0)
 		fatal_r(r, "sshkey_from_private");
 

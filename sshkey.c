@@ -1,4 +1,4 @@
-/* $OpenBSD: sshkey.c,v 1.145 2024/08/20 11:10:04 djm Exp $ */
+/* $OpenBSD: sshkey.c,v 1.146 2024/09/04 05:33:34 djm Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Alexander von Gernler.  All rights reserved.
@@ -1524,6 +1524,8 @@ sshkey_generate(int type, u_int bits, struct sshkey **keyp)
 		return SSH_ERR_ALLOC_FAIL;
 	if ((ret = impl->funcs->generate(k, bits)) != 0) {
 		sshkey_free(k);
+		if (ret == SSH_ERR_LIBCRYPTO_ERROR)
+			do_log_crypto_errors(SYSLOG_LEVEL_ERROR);
 		return ret;
 	}
 	/* success */
