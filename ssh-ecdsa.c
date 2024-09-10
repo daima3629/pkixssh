@@ -454,7 +454,7 @@ sshbuf_write_priv_ecdsa(struct sshbuf *buf, const struct sshkey *key) {
 }
 	return sshbuf_put_bignum2(buf, exponent);
 }
-#endif /* def WITH_OPENSSL_3_1_API */
+#endif /* def WITH_OPENSSL_4_0_API */
 
 
 /* key implementation */

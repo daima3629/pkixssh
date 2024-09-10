@@ -654,7 +654,7 @@ err:
 	sshkey_clear_pkey(key);
 	return r;
 }
-#endif /* def WITH_OPENSSL_3_1_API */
+#endif /* def WITH_OPENSSL_4_0_API */
 
 
 /* key implementation */
