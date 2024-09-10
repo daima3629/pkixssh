@@ -56,21 +56,32 @@ sshbuf_get_bignum2(struct sshbuf *buf, BIGNUM **valp)
 
 #ifdef OPENSSL_HAS_ECC
 static int
-get_ec(const u_char *d, size_t len, EC_POINT *v, const EC_GROUP *g)
+get_ecpub(const EC_GROUP *g, const u_char *d, size_t len, EC_POINT **valp)
 {
+	EC_POINT *v;
+
 	/* Refuse overlong bignums */
 	if (len == 0 || len > SSHBUF_MAX_ECPOINT)
 		return SSH_ERR_ECPOINT_TOO_LARGE;
 	/* Only handle uncompressed points */
 	if (*d != POINT_CONVERSION_UNCOMPRESSED)
 		return SSH_ERR_INVALID_FORMAT;
-	if (v != NULL && EC_POINT_oct2point(g, v, d, len, NULL) != 1)
+
+	if ((v = EC_POINT_new(g)) == NULL) {
+		SSHBUF_DBG(("SSH_ERR_ALLOC_FAIL"));
+		return SSH_ERR_ALLOC_FAIL;
+	}
+	if (EC_POINT_oct2point(g, v, d, len, NULL) != 1) {
+		EC_POINT_clear_free(v);
 		return SSH_ERR_INVALID_FORMAT; /* XXX assumption */
+	}
+	*valp = v;
+
 	return 0;
 }
 
 int
-sshbuf_get_ec(struct sshbuf *buf, EC_POINT *v, const EC_GROUP *g)
+sshbuf_get_ecpub(struct sshbuf *buf, const EC_GROUP *g, EC_POINT **valp)
 {
 	const u_char *d;
 	size_t len;
@@ -78,11 +89,13 @@ sshbuf_get_ec(struct sshbuf *buf, EC_POINT *v, const EC_GROUP *g)
 
 	if ((r = sshbuf_peek_string_direct(buf, &d, &len)) < 0)
 		return r;
-	if ((r = get_ec(d, len, v, g)) != 0)
+	if ((r = get_ecpub(g, d, len, valp)) != 0)
 		return r;
 	/* Skip string */
 	if (sshbuf_get_string_direct(buf, NULL, NULL) != 0) {
 		/* Shouldn't happen */
+		EC_POINT_clear_free(*valp);
+		*valp = NULL;
 		SSHBUF_DBG(("SSH_ERR_INTERNAL_ERROR"));
 		SSHBUF_ABORT();
 		return SSH_ERR_INTERNAL_ERROR;
@@ -93,20 +106,14 @@ sshbuf_get_ec(struct sshbuf *buf, EC_POINT *v, const EC_GROUP *g)
 int
 sshbuf_get_eckey(struct sshbuf *buf, EC_KEY *v)
 {
-	EC_POINT *pt = EC_POINT_new(EC_KEY_get0_group(v));
+	EC_POINT *pt = NULL;
 	int r;
 	const u_char *d;
 	size_t len;
 
-	if (pt == NULL) {
-		SSHBUF_DBG(("SSH_ERR_ALLOC_FAIL"));
-		return SSH_ERR_ALLOC_FAIL;
-	}
-	if ((r = sshbuf_peek_string_direct(buf, &d, &len)) < 0) {
-		EC_POINT_free(pt);
+	if ((r = sshbuf_peek_string_direct(buf, &d, &len)) < 0)
 		return r;
-	}
-	if ((r = get_ec(d, len, pt, EC_KEY_get0_group(v))) != 0) {
+	if ((r = get_ecpub(EC_KEY_get0_group(v), d, len, &pt)) != 0) {
 		EC_POINT_free(pt);
 		return r;
 	}
