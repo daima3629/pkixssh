@@ -138,8 +138,8 @@ err:
 }
 
 
-static int
-_dh_pub_is_valid(const DH *dh, const BIGNUM *dh_pub)
+static int/*boolean*/
+dh_pub_is_valid(const DH *dh, const BIGNUM *dh_pub)
 {
 	int i;
 	int n = BN_num_bits(dh_pub);
@@ -186,25 +186,6 @@ _dh_pub_is_valid(const DH *dh, const BIGNUM *dh_pub)
 		return 0;
 	}
 	return 1;
-}
-
-int
-kex_key_validate_public_dh(struct kex *kex, const BIGNUM *pub_key) {
-	int r;
-	DH *dh;
-
-	if (kex->pk == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
-
-	dh = EVP_PKEY_get1_DH(kex->pk);
-	if (dh == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
-
-	r = _dh_pub_is_valid(dh, pub_key)
-	    ? 0 : SSH_ERR_INVALID_ARGUMENT;
-
-	DH_free(dh);
-	return r;
 }
 
 
@@ -256,7 +237,7 @@ kex_key_gen_dh(struct kex *kex)
 
 {	const BIGNUM *pub_key;
 	DH_get0_key(dh, &pub_key, NULL);
-	if (kex_key_validate_public_dh(kex, pub_key) < 0) {
+	if (!dh_pub_is_valid(dh, pub_key)) {
 		r = SSH_ERR_INVALID_FORMAT;
 		goto done;
 	}
@@ -390,12 +371,12 @@ kex_dh_compute_key(struct kex *kex, BIGNUM *pub_key, struct sshbuf *out)
 	BIO_free_all(err);
 }
 #endif
-	if (kex_key_validate_public_dh(kex, pub_key) < 0)
-		return SSH_ERR_MESSAGE_INCOMPLETE;
-
 	dh = EVP_PKEY_get1_DH(kex->pk);
 	if (dh == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;
+
+	if (!dh_pub_is_valid(dh, pub_key))
+		return SSH_ERR_MESSAGE_INCOMPLETE;
 
 	/* NOTE EVP_PKEY_size fail for DH key if OpenSSL < 1.0.0 */
 	klen = DH_size(dh);
