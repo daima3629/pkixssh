@@ -121,16 +121,47 @@ get_ecdh_pub(const struct sshbuf *ec_blob, const EC_KEY *key, struct sshbuf *buf
 }
 
 static int
+derive_ecdh_shared_secret(const EC_POINT *dh_pub, const EC_KEY *key, struct sshbuf *buf) {
+	const EC_GROUP *group;
+	BIGNUM *shared_secret = NULL;
+	u_char *kbuf = NULL;
+	size_t klen = 0;
+	int r;
+
+	if ((group = EC_KEY_get0_group(key)) == NULL)
+		return SSH_ERR_INTERNAL_ERROR;
+
+	klen = (EC_GROUP_get_degree(group) + 7) / 8;
+	if ((kbuf = malloc(klen)) == NULL ||
+	    (shared_secret = BN_new()) == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto out;
+	}
+
+	if (ECDH_compute_key(kbuf, klen, dh_pub, key, NULL) != (int)klen ||
+	    BN_bin2bn(kbuf, klen, shared_secret) == NULL) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto out;
+	}
+#ifdef DEBUG_KEXECDH
+	dump_digest("shared secret", kbuf, klen);
+#endif
+
+	r = sshbuf_put_bignum2(buf, shared_secret);
+
+ out:
+	BN_clear_free(shared_secret);
+	freezero(kbuf, klen);
+	return r;
+}
+
+static int
 kex_ecdh_compute_key(struct kex *kex, const struct sshbuf *ec_blob,
     struct sshbuf **shared_secretp)
 {
 	EC_KEY *key;
-	const EC_GROUP *group;
 	struct sshbuf *buf = NULL;
-	BIGNUM *shared_secret = NULL;
 	EC_POINT *dh_pub = NULL;
-	u_char *kbuf = NULL;
-	size_t klen = 0;
 	int r;
 
 	UNUSED(kex);
@@ -138,8 +169,6 @@ kex_ecdh_compute_key(struct kex *kex, const struct sshbuf *ec_blob,
 
 	if ((key = EVP_PKEY_get1_EC_KEY(kex->pk)) == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;
-	if ((group = EC_KEY_get0_group(key)) == NULL)
-		return SSH_ERR_INTERNAL_ERROR;
 	if ((buf = sshbuf_new()) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
 
@@ -153,29 +182,15 @@ kex_ecdh_compute_key(struct kex *kex, const struct sshbuf *ec_blob,
 		r = SSH_ERR_MESSAGE_INCOMPLETE;
 		goto out;
 	}
-	klen = (EC_GROUP_get_degree(group) + 7) / 8;
-	if ((kbuf = malloc(klen)) == NULL ||
-	    (shared_secret = BN_new()) == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto out;
-	}
-	if (ECDH_compute_key(kbuf, klen, dh_pub, key, NULL) != (int)klen ||
-	    BN_bin2bn(kbuf, klen, shared_secret) == NULL) {
-		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto out;
-	}
-#ifdef DEBUG_KEXECDH
-	dump_digest("shared secret", kbuf, klen);
-#endif
-	if ((r = sshbuf_put_bignum2(buf, shared_secret)) != 0)
-		goto out;
+
+	r = derive_ecdh_shared_secret(dh_pub, key, buf);
+	if (r != 0) goto out;
+
 	*shared_secretp = buf;
 	buf = NULL;
  out:
 	EC_KEY_free(key);
 	EC_POINT_clear_free(dh_pub);
-	BN_clear_free(shared_secret);
-	freezero(kbuf, klen);
 	sshbuf_free(buf);
 	return r;
 }
