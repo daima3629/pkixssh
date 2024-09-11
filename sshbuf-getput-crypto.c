@@ -108,27 +108,14 @@ sshbuf_get_eckey(struct sshbuf *buf, EC_KEY *v)
 {
 	EC_POINT *pt = NULL;
 	int r;
-	const u_char *d;
-	size_t len;
 
-	if ((r = sshbuf_peek_string_direct(buf, &d, &len)) < 0)
+	if ((r = sshbuf_get_ecpub(buf, EC_KEY_get0_group(v), &pt)) != 0)
 		return r;
-	if ((r = get_ecpub(EC_KEY_get0_group(v), d, len, &pt)) != 0) {
-		EC_POINT_free(pt);
-		return r;
-	}
 	if (EC_KEY_set_public_key(v, pt) != 1) {
 		EC_POINT_free(pt);
 		return SSH_ERR_ALLOC_FAIL; /* XXX assumption */
 	}
 	EC_POINT_free(pt);
-	/* Skip string */
-	if (sshbuf_get_string_direct(buf, NULL, NULL) != 0) {
-		/* Shouldn't happen */
-		SSHBUF_DBG(("SSH_ERR_INTERNAL_ERROR"));
-		SSHBUF_ABORT();
-		return SSH_ERR_INTERNAL_ERROR;
-	}
 	return 0;
 }
 #endif /* OPENSSL_HAS_ECC */
