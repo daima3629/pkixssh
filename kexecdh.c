@@ -137,7 +137,8 @@ kex_ecdh_compute_key(struct kex *kex, const struct sshbuf *ec_blob,
 	}
 	sshbuf_reset(buf);
 
-	if (sshkey_ec_validate_public(group, dh_pub) != 0) {
+	/* ignore exact result from validation */
+	if (sshkey_ec_validate_public(key, dh_pub) != 0) {
 		r = SSH_ERR_MESSAGE_INCOMPLETE;
 		goto out;
 	}

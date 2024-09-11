@@ -227,11 +227,15 @@ sshbuf_write_ec_curve(struct sshbuf *buf, const struct sshkey *key) {
 
 
 int
-sshkey_ec_validate_public(const EC_GROUP *group, const EC_POINT *public)
+sshkey_ec_validate_public(const EC_KEY *ec, const EC_POINT *public)
 {
+	const EC_GROUP *group;
 	EC_POINT *nq = NULL;
 	BIGNUM *order = NULL, *x = NULL, *y = NULL, *tmp = NULL;
 	int ret = SSH_ERR_KEY_INVALID_EC_VALUE;
+
+	if ((group = EC_KEY_get0_group(ec)) == NULL)
+		return SSH_ERR_INTERNAL_ERROR;
 
 	/*
 	 * NB. This assumes OpenSSL has already verified that the public
@@ -310,8 +314,7 @@ static int
 sshkey_validate_ec_pub(const EC_KEY *ec) {
 	int r;
 
-	r = sshkey_ec_validate_public(EC_KEY_get0_group(ec),
-	    EC_KEY_get0_public_key(ec));
+	r = sshkey_ec_validate_public(ec, EC_KEY_get0_public_key(ec));
 	if (r != 0) return r;
 
 	/* other checks ? */
