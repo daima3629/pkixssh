@@ -132,9 +132,9 @@ kex_ecdh_compute_key(struct kex *kex, const struct sshbuf *ec_blob,
 
 	if ((r = sshbuf_put_stringb(buf, ec_blob)) != 0)
 		goto out;
-	if ((r = sshbuf_get_ecpub(buf, group, &dh_pub)) != 0) {
+	if ((r = sshbuf_get_ecpub(buf, key, &dh_pub)) != 0)
 		goto out;
-	}
+
 	sshbuf_reset(buf);
 
 	/* ignore exact result from validation */

@@ -81,11 +81,15 @@ get_ecpub(const EC_GROUP *g, const u_char *d, size_t len, EC_POINT **valp)
 }
 
 int
-sshbuf_get_ecpub(struct sshbuf *buf, const EC_GROUP *g, EC_POINT **valp)
+sshbuf_get_ecpub(struct sshbuf *buf, const EC_KEY *key, EC_POINT **valp)
 {
+	const EC_GROUP *g;
 	const u_char *d;
 	size_t len;
 	int r;
+
+	if ((g = EC_KEY_get0_group(key)) == NULL)
+		return SSH_ERR_INTERNAL_ERROR;
 
 	if ((r = sshbuf_peek_string_direct(buf, &d, &len)) < 0)
 		return r;
@@ -109,7 +113,7 @@ sshbuf_get_eckey(struct sshbuf *buf, EC_KEY *v)
 	EC_POINT *pt = NULL;
 	int r;
 
-	if ((r = sshbuf_get_ecpub(buf, EC_KEY_get0_group(v), &pt)) != 0)
+	if ((r = sshbuf_get_ecpub(buf, v, &pt)) != 0)
 		return r;
 	if (EC_KEY_set_public_key(v, pt) != 1) {
 		EC_POINT_free(pt);
