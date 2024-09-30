@@ -211,7 +211,7 @@ siginfo(int unused __attribute__((__unused__)))
 struct fuzz *
 fuzz_begin(u_int strategies, const void *p, size_t l)
 {
-	struct fuzz *ret = calloc(sizeof(*ret), 1);
+	struct fuzz *ret = calloc(1, sizeof(*ret));
 
 	assert(p != NULL);
 	assert(ret != NULL);
@@ -290,7 +290,7 @@ fuzz_next(struct fuzz *fuzz)
 		/* If we are just starting out, we need to allocate too */
 		if (fuzz->fuzzed == NULL) {
 			FUZZ_DBG(("alloc"));
-			fuzz->fuzzed = calloc(fuzz->slen, 1);
+			fuzz->fuzzed = calloc(1, fuzz->slen);
 		}
 		/* Pick next strategy */
 		FUZZ_DBG(("advance"));
