@@ -1,4 +1,4 @@
-/* $OpenBSD: authfile.c,v 1.143 2022/06/21 14:52:13 tobhe Exp $ */
+/* $OpenBSD: authfile.c,v 1.145 2024/09/22 12:56:21 jsg Exp $ */
 /*
  * Copyright (c) 2000, 2013 Markus Friedl.  All rights reserved.
  * Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
@@ -50,8 +50,6 @@
 #include "key-eng.h"
 #include "ssherr.h"
 #include "krl.h"
-
-#define MAX_KEY_FILE_SIZE	(1024 * 1024)
 
 /* Save a key blob to a file */
 static int
