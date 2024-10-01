@@ -34,7 +34,7 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: ssh_config.5,v 1.399 2024/08/22 23:11:30 djm Exp $
+.\" $OpenBSD: ssh_config.5,v 1.403 2024/09/25 06:13:01 jmc Exp $
 .\" Implement .Dd with the Mdocdate RCS keyword
 .rn Dd xD
 .de Dd
@@ -43,7 +43,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: August 22 2024 $
+.Dd $Mdocdate: September 25 2024 $
 .Dt SSH_CONFIG 5
 .Os
 .Sh NAME
@@ -1673,14 +1673,12 @@ ProxyCommand /usr/bin/nc -X connect -x 192.0.2.0:8080 %h %p
 .Ed
 .It Cm ProxyJump
 Specifies one or more jump proxies as either
-.Xo
 .Sm off
 .Op Ar user No @
 .Ar host
 .Op : Ns Ar port
 .Sm on
-or an ssh URI
-.Xc .
+or an ssh URI.
 Multiple proxies may be separated by comma characters and will be visited
 sequentially.
 Setting this option will cause
