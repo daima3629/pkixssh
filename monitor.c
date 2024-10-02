@@ -802,6 +802,15 @@ mm_answer_pwnamallow(struct ssh *ssh, int sock, struct sshbuf *m)
 	ssh_packet_set_log_preamble(ssh, "%suser %s",
 	    authctxt->valid ? "authenticating" : "invalid ", authctxt->user);
 
+	if (options.refuse_connection) {
+		logit("administratively prohibited connection for "
+		    "%s%s from %.128s port %d",
+		    authctxt->valid ? "" : "invalid user ",
+		    authctxt->user, ssh_remote_ipaddr(ssh),
+		    ssh_remote_port(ssh));
+		cleanup_exit(255);
+	}
+
 	/* Send active options to unprivileged process */
 	mm_encode_server_options(m);
 

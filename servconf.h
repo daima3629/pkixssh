@@ -1,4 +1,4 @@
-/* $OpenBSD: servconf.h,v 1.165 2024/06/12 22:36:00 djm Exp $ */
+/* $OpenBSD: servconf.h,v 1.167 2024/09/15 01:11:26 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -271,6 +271,8 @@ typedef struct {
 	u_int	num_channel_timeouts;
 
 	int	unused_connection_timeout;
+
+	int	refuse_connection;
 }       ServerOptions;
 
 /* Information about the incoming connection as used by Match */
