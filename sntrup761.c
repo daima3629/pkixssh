@@ -8,6 +8,7 @@
  */
 
 #include "includes.h"
+#ifdef ENABLE_KEX_SNTRUP761X25519
 
 #include <string.h>
 #include "crypto_api.h"
@@ -2151,3 +2152,9 @@ int crypto_kem_sntrup761_dec(unsigned char *k, const unsigned char *c, const uns
   HashSession(k, 1 + mask, r_enc, c);
   return 0;
 }
+
+#else /* ENABLE_KEX_SNTRUP761X25519 */
+
+typedef int sntrup761_empty_translation_unit;
+
+#endif /* ENABLE_KEX_SNTRUP761X25519 */

@@ -15,7 +15,7 @@ FILES="
 
 set -euo pipefail
 cd $1
-echo -n '/*  $OpenBSD: $ */'
+printf '/*  $Open'; printf 'BSD$ */\n'
 echo
 echo '/*'
 echo ' * Public Domain, Authors:'
@@ -23,6 +23,7 @@ sed -e '/Alphabetical order:/d' -e 's/^/ * - /' < $AUTHOR
 echo ' */'
 echo
 echo '#include "includes.h"'
+echo '#ifdef ENABLE_KEX_SNTRUP761X25519'
 echo
 echo '#include <string.h>'
 echo '#include "crypto_api.h"'
@@ -40,8 +41,8 @@ for x in 16 32 64 ; do
 	echo "extern volatile crypto_int$x crypto_int${x}_optblocker;"
 done
 
+echo
 for i in $FILES; do
-	echo
 	echo "/* from $i */"
 	# Changes to all files:
 	#  - remove all includes, we inline everything required.
@@ -102,4 +103,10 @@ for i in $FILES; do
 	    cat
 	    ;;
 	esac
+	echo
 done
+echo '#else /* ENABLE_KEX_SNTRUP761X25519 */'
+echo
+echo 'typedef int sntrup761_empty_translation_unit;'
+echo
+echo '#endif /* ENABLE_KEX_SNTRUP761X25519 */'
