@@ -1,4 +1,4 @@
-/* $OpenBSD: kexgen.c,v 1.7 2021/04/03 06:18:40 djm Exp $ */
+/* $OpenBSD: kexgen.c,v 1.10 2024/09/09 02:39:57 djm Exp $ */
 /*
  * Copyright (c) 2019 Markus Friedl.  All rights reserved.
  * Copyright (c) 2019-2021 Roumen Petrov.  All rights reserved.
@@ -125,6 +125,11 @@ kex_gen_client(struct ssh *ssh)
 		r = kex_kem_sntrup761x25519_keypair(kex);
 		break;
 #endif
+#ifdef ENABLE_KEX_MLKEM768X25519
+	case KEX_KEM_MLKEM768X25519_SHA256:
+		r = kex_kem_mlkem768x25519_keypair(kex);
+		break;
+#endif
 	default:
 		r = SSH_ERR_INVALID_ARGUMENT;
 		break;
@@ -203,6 +208,12 @@ input_kex_gen_reply(int type, u_int32_t seq, struct ssh *ssh)
 		    &shared_secret);
 		break;
 #endif
+#ifdef ENABLE_KEX_MLKEM768X25519
+	case KEX_KEM_MLKEM768X25519_SHA256:
+		r = kex_kem_mlkem768x25519_dec(kex, server_blob,
+		    &shared_secret);
+		break;
+#endif
 	default:
 		r = SSH_ERR_INVALID_ARGUMENT;
 		break;
@@ -238,6 +249,8 @@ out:
 	explicit_bzero(kex->c25519_client_key, sizeof(kex->c25519_client_key));
 	explicit_bzero(kex->sntrup761_client_key,
 	    sizeof(kex->sntrup761_client_key));
+	explicit_bzero(kex->mlkem768_client_key,
+	    sizeof(kex->mlkem768_client_key));
 	sshbuf_free(server_host_key_blob);
 	free(signature);
 	sshkey_free(server_host_key);
@@ -308,6 +321,12 @@ input_kex_gen_init(int type, u_int32_t seq, struct ssh *ssh)
 #ifdef ENABLE_KEX_SNTRUP761X25519
 	case KEX_KEM_SNTRUP761X25519_SHA512:
 		r = kex_kem_sntrup761x25519_enc(kex, client_pubkey,
+		    &server_pubkey, &shared_secret);
+		break;
+#endif
+#ifdef ENABLE_KEX_MLKEM768X25519
+	case KEX_KEM_MLKEM768X25519_SHA256:
+		r = kex_kem_mlkem768x25519_enc(kex, client_pubkey,
 		    &server_pubkey, &shared_secret);
 		break;
 #endif
@@ -384,6 +403,7 @@ kex_set_callbacks_client(struct kex *kex) {
 #endif /* WITH_OPENSSL */
 	kex->kex[KEX_C25519_SHA256] = kex_gen_client;
 	kex->kex[KEX_KEM_SNTRUP761X25519_SHA512] = kex_gen_client;
+	kex->kex[KEX_KEM_MLKEM768X25519_SHA256] = kex_gen_client;
 }
 
 void
@@ -402,4 +422,5 @@ kex_set_callbacks_server(struct kex *kex) {
 #endif /* WITH_OPENSSL */
 	kex->kex[KEX_C25519_SHA256] = kex_gen_server;
 	kex->kex[KEX_KEM_SNTRUP761X25519_SHA512] = kex_gen_server;
+	kex->kex[KEX_KEM_MLKEM768X25519_SHA256] = kex_gen_server;
 }

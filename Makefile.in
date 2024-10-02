@@ -109,7 +109,7 @@ LIBSSH_OBJS=${LIBOPENSSH_OBJS} \
 	ed25519.o hash.o blocks.o \
 	kex.o kex-names.o kex-crypto.o kexdh.o kexgex.o kexecdh.o kexc25519.o \
 	kexgen.o kexgexc.o kexgexs.o \
-	kexsntrup761x25519.o sntrup761.o \
+	kexsntrup761x25519.o sntrup761.o kexmlkem768x25519.o \
 	platform-pledge.o platform-tracing.o platform-misc.o \
 	sshbuf-io.o
 

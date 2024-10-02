@@ -1,4 +1,4 @@
-/* 	$OpenBSD: test_kex.c,v 1.7 2024/01/11 01:45:58 djm Exp $ */
+/* 	$OpenBSD: test_kex.c,v 1.9 2024/09/09 03:13:39 djm Exp $ */
 /*
  * Regress test KEX
  *
@@ -194,6 +194,9 @@ kex_tests(void)
 #ifdef ENABLE_KEX_SNTRUP761X25519
 	do_kex("sntrup761x25519-sha512@openssh.com");
 #endif /*def ENABLE_KEX_SNTRUP761X25519*/
+#ifdef ENABLE_KEX_MLKEM768X25519
+	do_kex("mlkem768x25519-sha256");
+#endif /*def ENABLE_KEX_MLKEM768X25519*/
 	do_kex("diffie-hellman-group-exchange-sha1");
 	do_kex("diffie-hellman-group14-sha1");
 	do_kex("diffie-hellman-group1-sha1");

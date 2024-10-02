@@ -1,4 +1,4 @@
-/* $OpenBSD: kex.h,v 1.124 2024/08/22 23:11:30 djm Exp $ */
+/* $OpenBSD: kex.h,v 1.126 2024/09/02 12:13:56 djm Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2014-2024 Roumen Petrov.  All rights reserved.
@@ -75,6 +75,7 @@ enum kex_exchange {
 	KEX_ECDH_SHA2,
 	KEX_C25519_SHA256,
 	KEX_KEM_SNTRUP761X25519_SHA512,
+	KEX_KEM_MLKEM768X25519_SHA256,
 	KEX_MAX
 };
 
@@ -141,6 +142,7 @@ struct kex {
 	u_char c25519_client_key[CURVE25519_SIZE]; /* 25519 + KEM */
 	u_char c25519_client_pubkey[CURVE25519_SIZE]; /* 25519 */
 	u_char sntrup761_client_key[crypto_kem_sntrup761_SECRETKEYBYTES]; /* KEM */
+	u_char mlkem768_client_key[crypto_kem_mlkem768_SECRETKEYBYTES]; /* KEM */
 	struct sshbuf *client_pub;
 };
 
@@ -206,6 +208,12 @@ int	 kex_kem_sntrup761x25519_keypair(struct kex *);
 int	 kex_kem_sntrup761x25519_enc(struct kex *, const struct sshbuf *,
     struct sshbuf **, struct sshbuf **);
 int	 kex_kem_sntrup761x25519_dec(struct kex *, const struct sshbuf *,
+    struct sshbuf **);
+
+int	 kex_kem_mlkem768x25519_keypair(struct kex *);
+int	 kex_kem_mlkem768x25519_enc(struct kex *, const struct sshbuf *,
+    struct sshbuf **, struct sshbuf **);
+int	 kex_kem_mlkem768x25519_dec(struct kex *, const struct sshbuf *,
     struct sshbuf **);
 
 int	 kex_key_init_dh(struct kex *);
