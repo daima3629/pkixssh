@@ -1,4 +1,4 @@
-/* $OpenBSD: readconf.c,v 1.387 2024/05/17 02:39:11 jsg Exp $ */
+/* $OpenBSD: readconf.c,v 1.392 2024/09/26 23:55:08 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -693,6 +693,64 @@ check_match_ifaddrs(const char *addrlist)
 }
 
 /*
+ * Expand client "TOKENS", caller must free returned value.
+ */
+static char*
+expand_tokens(const char *arg, Options *options,
+    struct passwd *pw, const char *host_arg, const char *original_host,
+    int final_pass)
+{
+	char thishost[NI_MAXHOST], shorthost[NI_MAXHOST], portstr[NI_MAXSERV];
+	char uidstr[32];
+	const char *ruser, *host, *conn_hash_hex, *keyalias, *jmphost;
+	char *ret;
+	int port;
+
+	port = options->port <= 0 ? default_ssh_port() : options->port;
+	ruser = options->user == NULL ? pw->pw_name : options->user;
+	if (final_pass) {
+		host = xstrdup(options->hostname);
+	} else if (options->hostname != NULL) {
+		/* NB. Please keep in sync with ssh.c:main() */
+		host = percent_expand(options->hostname,
+		    "h", host_arg, (char *)NULL);
+	} else {
+		host = xstrdup(host_arg);
+	}
+	if (gethostname(thishost, sizeof(thishost)) == -1)
+		fatal("gethostname: %s", strerror(errno));
+	jmphost = option_clear_or_none(options->jump_host) ?
+	    "" : options->jump_host;
+	strlcpy(shorthost, thishost, sizeof(shorthost));
+	shorthost[strcspn(thishost, ".")] = '\0';
+	snprintf(portstr, sizeof(portstr), "%d", port);
+	snprintf(uidstr, sizeof(uidstr), "%llu",
+	    (unsigned long long)pw->pw_uid);
+	conn_hash_hex = ssh_connection_hash(thishost, host,
+	    portstr, ruser, jmphost);
+	keyalias = options->host_key_alias ? options->host_key_alias : host;
+
+	/* keep synchronised with sshconnect.h */
+	ret = percent_expand(arg,
+	    "C", conn_hash_hex,
+	    "L", shorthost,
+	    "i", uidstr,
+	    "k", keyalias,
+	    "l", thishost,
+	    "n", original_host,
+	    "p", portstr,
+	    "h", host,
+	    "r", ruser,
+	    "d", pw->pw_dir,
+	    "u", pw->pw_name,
+	    "j", jmphost,
+	    (char *)NULL);
+	free((void*)host);
+	free((void*)conn_hash_hex);
+	return ret;
+}
+
+/*
  * Parse and execute a Match directive.
  */
 static int
@@ -702,13 +760,12 @@ match_cfg_line(Options *options, char **condition, struct passwd *pw,
 {
 	char *arg, *oattrib, *attrib, *cp = *condition, *host;
 	const char *ruser;
-	int r, port, result = 1, attributes = 0;
+	int r, result = 1, attributes = 0;
 
 	/*
 	 * Configuration is likely to be incomplete at this point so we
 	 * must be prepared to use default values.
 	 */
-	port = options->port <= 0 ? default_ssh_port() : options->port;
 	ruser = options->user == NULL ? pw->pw_name : options->user;
 	if (final_pass) {
 		host = xstrdup(options->hostname);
@@ -805,40 +862,12 @@ match_cfg_line(Options *options, char **condition, struct passwd *pw,
 			if (r == (negate ? 1 : 0))
 				this_result = result = 0;
 		} else if (strcasecmp(attrib, "exec") == 0) {
-			char thishost[NI_MAXHOST], shorthost[NI_MAXHOST];
-			char portstr[NI_MAXSERV], uidstr[32];
-			char *cmd, *conn_hash_hex, *keyalias, *jmphost;
-
-			if (gethostname(thishost, sizeof(thishost)) == -1)
-				fatal("gethostname: %s", strerror(errno));
-			jmphost = option_clear_or_none(options->jump_host) ?
-			    "" : options->jump_host;
-			strlcpy(shorthost, thishost, sizeof(shorthost));
-			shorthost[strcspn(thishost, ".")] = '\0';
-			snprintf(portstr, sizeof(portstr), "%d", port);
-			snprintf(uidstr, sizeof(uidstr), "%llu",
-			    (unsigned long long)pw->pw_uid);
-			conn_hash_hex = ssh_connection_hash(thishost, host,
-			    portstr, ruser, jmphost);
-			keyalias = options->host_key_alias ?
-			    options->host_key_alias : host;
-
-			/* keep synchronised with sshconnect.h */
-			cmd = percent_expand(arg,
-			    "C", conn_hash_hex,
-			    "L", shorthost,
-			    "i", uidstr,
-			    "k", keyalias,
-			    "l", thishost,
-			    "n", original_host,
-			    "p", portstr,
-			    "h", host,
-			    "r", ruser,
-			    "d", pw->pw_dir,
-			    "u", pw->pw_name,
-			    "j", jmphost,
-			    (char *)NULL);
-			free(conn_hash_hex);
+			char *cmd = expand_tokens(arg, options, pw, host_arg,
+			    original_host, final_pass);
+			if (cmd == NULL) {
+				fatal("%.200s line %d: failed to expand match "
+				    "exec '%.100s'", filename, linenum, arg);
+			}
 			if (result != 1) {
 				/* skip execution if prior predicate failed */
 				debug3("%.200s line %d: skipped exec "
