@@ -40,6 +40,11 @@
 
 
 # Disable non-working configurations
+%if 0%{?sle_version} >= 0150600
+%undefine enable_openssl_fips
+%global enable_openssl_fips 0
+%endif
+
 %if !%{enable_openssl_fips}
 %undefine enable_fips_test
 %global enable_fips_test 0
@@ -59,6 +64,14 @@
 %undefine use_fipscheck
 %global use_fipscheck 0
 %endif
+
+
+# NOTE: do not use systemd on SUSE Linux Enterprise Server 11
+%if 0%{?sles_version} == 11
+%undefine enable_systemd
+%global enable_systemd 0
+%endif
+
 
 # NOTE: On SUSE Linux Enterprise Server 11 SP4 test keygen-convert.sh
 # crash when imports PKCS#8 DSA keys. It pass on SLE 11 SP3.
