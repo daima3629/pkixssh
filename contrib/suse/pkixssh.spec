@@ -108,7 +108,7 @@ Group:		Productivity/Networking/SSH
 
 PreReq:		permissions
 %if %{enable_systemd}
-Requires(post):	%fillup_only
+Requires(post):	%fillup_prereq
 %else
 Requires(post):	%insserv_prereq %fillup_prereq
 %endif
@@ -306,7 +306,11 @@ install -m744 contrib/suse/sysconfig.ssh %{buildroot}%{_fillupdir}
 %set_permissions %{ssh_sysconfdir}/moduli
 %set_permissions %{ssh_libexecdir}/ssh-keysign
 %endif
+%if %{enable_systemd}
+%{fillup_only -n ssh sshd}
+%else
 %{fillup_and_insserv -n -y ssh sshd}
+%endif
 
 
 %verifyscript
@@ -322,7 +326,9 @@ install -m744 contrib/suse/sysconfig.ssh %{buildroot}%{_fillupdir}
 
 %postun
 %restart_on_update sshd
+%if ! %{enable_systemd}
 %{insserv_cleanup}
+%endif
 
 
 %files
