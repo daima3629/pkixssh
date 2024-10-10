@@ -34,6 +34,7 @@
 # define OPENSSL_SUPPRESS_DEPRECATED
 #endif
 
+#define SSHKEY_INTERNAL
 #include "includes.h"
 
 #if defined(WITH_OPENSSL) && defined(OPENSSL_HAS_ECC)
@@ -151,7 +152,6 @@ kex_ecdh_compute_key(struct kex *kex, const struct sshbuf *ec_blob,
 	EC_POINT *dh_pub = NULL;
 	int r;
 
-	UNUSED(kex);
 	*shared_secretp = NULL;
 
 	if ((key = EVP_PKEY_get1_EC_KEY(kex->pk)) == NULL)
@@ -168,7 +168,7 @@ kex_ecdh_compute_key(struct kex *kex, const struct sshbuf *ec_blob,
 	sshbuf_reset(buf);
 
 	/* ignore exact result from validation */
-	if (sshkey_ec_validate_public(key, dh_pub) != 0) {
+	if (ssh_EVP_PKEY_validate_public_ec(kex->pk, dh_pub) != 0) {
 		r = SSH_ERR_MESSAGE_INCOMPLETE;
 		goto out;
 	}

@@ -226,7 +226,7 @@ sshbuf_write_ec_curve(struct sshbuf *buf, const struct sshkey *key) {
 }
 
 
-int
+static int
 sshkey_ec_validate_public(const EC_KEY *ec, const EC_POINT *public)
 {
 	const EC_GROUP *group;
@@ -312,6 +312,21 @@ sshkey_ec_validate_public(const EC_KEY *ec, const EC_POINT *public)
 	return ret;
 }
 
+int
+ssh_EVP_PKEY_validate_public_ec(EVP_PKEY *pk, const EC_POINT *public) {
+	EC_KEY *ec;
+	int r;
+
+	if (pk == NULL) return SSH_ERR_INVALID_ARGUMENT;
+
+	ec = EVP_PKEY_get1_EC_KEY(pk);
+	if (ec == NULL) return SSH_ERR_INVALID_ARGUMENT;
+
+	r = sshkey_ec_validate_public(ec, public);
+
+	EC_KEY_free(ec);
+	return r;
+}
 
 static inline int
 sshkey_validate_ec_pub(const EC_KEY *ec) {

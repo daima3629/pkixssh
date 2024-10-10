@@ -345,6 +345,7 @@ sshkey_dump(const char *func, const struct sshkey *key) {
 
 #  ifdef OPENSSL_HAS_ECC
 int	 ssh_EC_KEY_preserve_nid(EC_KEY *);
+int	 ssh_EVP_PKEY_validate_public_ec(EVP_PKEY *pk, const EC_POINT *public);
 #  endif /* OPENSSL_HAS_ECC */
 # endif /* WITH_OPENSSL */
 #endif /* SSHKEY_INTERNAL */
@@ -353,7 +354,6 @@ int	 ssh_EC_KEY_preserve_nid(EC_KEY *);
 int	sshkey_validate_public_rsa(const struct sshkey *key);
 int	sshkey_validate_public_dsa(const struct sshkey *key);
 #  ifdef OPENSSL_HAS_ECC
-int	sshkey_ec_validate_public(const EC_KEY *ec, const EC_POINT *);
 int	sshkey_validate_public_ecdsa(const struct sshkey *key);
 #  endif /* OPENSSL_HAS_ECC */
 int	sshkey_validate_public(const struct sshkey *key);
