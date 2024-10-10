@@ -107,19 +107,6 @@ done:
 	return r;
 }
 
-static inline int
-get_ecdh_pub(const struct sshbuf *ec_blob, const EC_KEY *key, struct sshbuf *buf, EC_POINT **dh_pubp) {
-	int r;
-
-	if ((r = sshbuf_put_stringb(buf, ec_blob)) != 0)
-		goto out;
-
-	r = sshbuf_get_ecpub(buf, key, dh_pubp);
-
- out:
-	return r;
-}
-
 static int
 derive_ecdh_shared_secret(const EC_POINT *dh_pub, const EC_KEY *key, struct sshbuf *buf) {
 	const EC_GROUP *group;
@@ -172,7 +159,10 @@ kex_ecdh_compute_key(struct kex *kex, const struct sshbuf *ec_blob,
 	if ((buf = sshbuf_new()) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
 
-	r = get_ecdh_pub(ec_blob, key, buf, &dh_pub);
+	r = sshbuf_put_stringb(buf, ec_blob);
+	if (r != 0) goto out;
+
+	r = sshbuf_get_ecpub(buf, key, &dh_pub);
 	if (r != 0) goto out;
 
 	sshbuf_reset(buf);
