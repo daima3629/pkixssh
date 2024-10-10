@@ -299,6 +299,9 @@ sshkey_ec_validate_public(const EC_KEY *ec, const EC_POINT *public)
 	}
 	if (BN_cmp(x, tmp) >= 0 || BN_cmp(y, tmp) >= 0)
 		goto out;
+
+	/* other checks ? */
+
 	ret = 0;
  out:
 	BN_clear_free(x);
@@ -310,15 +313,9 @@ sshkey_ec_validate_public(const EC_KEY *ec, const EC_POINT *public)
 }
 
 
-static int
+static inline int
 sshkey_validate_ec_pub(const EC_KEY *ec) {
-	int r;
-
-	r = sshkey_ec_validate_public(ec, EC_KEY_get0_public_key(ec));
-	if (r != 0) return r;
-
-	/* other checks ? */
-	return 0;
+	return sshkey_ec_validate_public(ec, EC_KEY_get0_public_key(ec));
 }
 
 int
