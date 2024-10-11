@@ -108,16 +108,38 @@ done:
 	return r;
 }
 
+static inline int
+shared_secret_bn_to_sshbuf(const BIGNUM *shared_secret, struct sshbuf **bufp) {
+	struct sshbuf *buf;
+	int r;
+
+	if ((buf = sshbuf_new()) == NULL)
+		return SSH_ERR_ALLOC_FAIL;
+
+	r = sshbuf_put_bignum2(buf, shared_secret);
+	if (r == 0)
+		*bufp = buf;
+	else
+		sshbuf_free(buf);
+	return r;
+}
+
 static int
-derive_ecdh_shared_secret(const EC_POINT *dh_pub, const EC_KEY *key, struct sshbuf *buf) {
+derive_ecdh_shared_secret(const EC_POINT *dh_pub, EVP_PKEY *pk, struct sshbuf **bufp) {
+	EC_KEY *key;
 	const EC_GROUP *group;
 	BIGNUM *shared_secret = NULL;
 	u_char *kbuf = NULL;
 	size_t klen = 0;
 	int r;
 
-	if ((group = EC_KEY_get0_group(key)) == NULL)
-		return SSH_ERR_INTERNAL_ERROR;
+	if ((key = EVP_PKEY_get1_EC_KEY(pk)) == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+
+	if ((group = EC_KEY_get0_group(key)) == NULL) {
+		r = SSH_ERR_INTERNAL_ERROR;
+		goto out;
+	}
 
 	klen = (EC_GROUP_get_degree(group) + 7) / 8;
 	if ((kbuf = malloc(klen)) == NULL ||
@@ -135,9 +157,10 @@ derive_ecdh_shared_secret(const EC_POINT *dh_pub, const EC_KEY *key, struct sshb
 	dump_digest("shared secret", kbuf, klen);
 #endif
 
-	r = sshbuf_put_bignum2(buf, shared_secret);
+	r = shared_secret_bn_to_sshbuf(shared_secret, bufp);
 
  out:
+	EC_KEY_free(key);
 	BN_clear_free(shared_secret);
 	freezero(kbuf, klen);
 	return r;
@@ -147,25 +170,11 @@ static int
 kex_ecdh_compute_key(struct kex *kex, const struct sshbuf *ec_blob,
     struct sshbuf **shared_secretp)
 {
-	EC_KEY *key;
-	struct sshbuf *buf = NULL;
 	EC_POINT *dh_pub = NULL;
 	int r;
 
-	*shared_secretp = NULL;
-
-	if ((key = EVP_PKEY_get1_EC_KEY(kex->pk)) == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
-	if ((buf = sshbuf_new()) == NULL)
-		return SSH_ERR_ALLOC_FAIL;
-
-	r = sshbuf_put_stringb(buf, ec_blob);
-	if (r != 0) goto out;
-
-	r = sshbuf_get_ecpub(buf, key, &dh_pub);
-	if (r != 0) goto out;
-
-	sshbuf_reset(buf);
+	r = sshbuf_to_ecpub(ec_blob, kex->pk, &dh_pub);
+	if (r != 0) return r;
 
 	/* ignore exact result from validation */
 	if (ssh_EVP_PKEY_validate_public_ec(kex->pk, dh_pub) != 0) {
@@ -173,15 +182,10 @@ kex_ecdh_compute_key(struct kex *kex, const struct sshbuf *ec_blob,
 		goto out;
 	}
 
-	r = derive_ecdh_shared_secret(dh_pub, key, buf);
-	if (r != 0) goto out;
+	r = derive_ecdh_shared_secret(dh_pub, kex->pk, shared_secretp);
 
-	*shared_secretp = buf;
-	buf = NULL;
  out:
-	EC_KEY_free(key);
 	EC_POINT_clear_free(dh_pub);
-	sshbuf_free(buf);
 	return r;
 }
 
@@ -263,6 +267,8 @@ kex_ecdh_dec(struct kex *kex, const struct sshbuf *server_blob,
     struct sshbuf **shared_secretp)
 {
 	int r;
+
+	*shared_secretp = NULL;
 
 	r = kex_ecdh_compute_key(kex, server_blob, shared_secretp);
 

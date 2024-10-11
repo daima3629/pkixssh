@@ -35,6 +35,7 @@
 
 #ifdef WITH_OPENSSL
 
+#include "evp-compat.h"
 #include "ssherr.h"
 #include "sshbuf.h"
 
@@ -56,8 +57,9 @@ sshbuf_get_bignum2(struct sshbuf *buf, BIGNUM **valp)
 
 #ifdef OPENSSL_HAS_ECC
 static int
-get_ecpub(const EC_GROUP *g, const u_char *d, size_t len, EC_POINT **valp)
+get_ecpub(const EC_KEY *key, const u_char *d, size_t len, EC_POINT **valp)
 {
+	const EC_GROUP *g;
 	EC_POINT *v;
 
 	/* Refuse overlong bignums */
@@ -66,6 +68,9 @@ get_ecpub(const EC_GROUP *g, const u_char *d, size_t len, EC_POINT **valp)
 	/* Only handle uncompressed points */
 	if (*d != POINT_CONVERSION_UNCOMPRESSED)
 		return SSH_ERR_INVALID_FORMAT;
+
+	if ((g = EC_KEY_get0_group(key)) == NULL)
+		return SSH_ERR_INTERNAL_ERROR;
 
 	if ((v = EC_POINT_new(g)) == NULL) {
 		SSHBUF_DBG(("SSH_ERR_ALLOC_FAIL"));
@@ -81,19 +86,30 @@ get_ecpub(const EC_GROUP *g, const u_char *d, size_t len, EC_POINT **valp)
 }
 
 int
+sshbuf_to_ecpub(const struct sshbuf *buf, EVP_PKEY *pk, EC_POINT **valp)
+{
+	EC_KEY *key;
+	int r;
+
+	if ((key = EVP_PKEY_get1_EC_KEY(pk)) == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+
+	r = get_ecpub(key, sshbuf_ptr(buf), sshbuf_len(buf), valp);
+
+	EC_KEY_free(key);
+	return r;
+}
+
+static int
 sshbuf_get_ecpub(struct sshbuf *buf, const EC_KEY *key, EC_POINT **valp)
 {
-	const EC_GROUP *g;
 	const u_char *d;
 	size_t len;
 	int r;
 
-	if ((g = EC_KEY_get0_group(key)) == NULL)
-		return SSH_ERR_INTERNAL_ERROR;
-
 	if ((r = sshbuf_peek_string_direct(buf, &d, &len)) < 0)
 		return r;
-	if ((r = get_ecpub(g, d, len, valp)) != 0)
+	if ((r = get_ecpub(key, d, len, valp)) != 0)
 		return r;
 	/* Skip string */
 	if (sshbuf_get_string_direct(buf, NULL, NULL) != 0) {
