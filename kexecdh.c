@@ -142,11 +142,25 @@ shared_secret_bn_to_sshbuf(const BIGNUM *shared_secret, struct sshbuf **bufp) {
 	return r;
 }
 
+static inline int
+shared_secret_to_sshbuf(u_char *kbuf, size_t klen, struct sshbuf **bufp) {
+	BIGNUM *shared_secret;
+	int r;
+
+	shared_secret = BN_bin2bn(kbuf, klen, NULL);
+	if (shared_secret == NULL)
+		return SSH_ERR_LIBCRYPTO_ERROR;
+
+	r = shared_secret_bn_to_sshbuf(shared_secret, bufp);
+
+	BN_clear_free(shared_secret);
+	return r;
+}
+
 static int
 derive_ecdh_shared_secret(const EC_POINT *dh_pub, EVP_PKEY *pk, struct sshbuf **bufp) {
 	EC_KEY *key;
 	const EC_GROUP *group;
-	BIGNUM *shared_secret = NULL;
 	u_char *kbuf = NULL;
 	size_t klen = 0;
 	int r;
@@ -160,14 +174,12 @@ derive_ecdh_shared_secret(const EC_POINT *dh_pub, EVP_PKEY *pk, struct sshbuf **
 	}
 
 	klen = (EC_GROUP_get_degree(group) + 7) / 8;
-	if ((kbuf = malloc(klen)) == NULL ||
-	    (shared_secret = BN_new()) == NULL) {
+	if ((kbuf = malloc(klen)) == NULL) {
 		r = SSH_ERR_ALLOC_FAIL;
 		goto out;
 	}
 
-	if (ECDH_compute_key(kbuf, klen, dh_pub, key, NULL) != (int)klen ||
-	    BN_bin2bn(kbuf, klen, shared_secret) == NULL) {
+	if (ECDH_compute_key(kbuf, klen, dh_pub, key, NULL) != (int)klen) {
 		r = SSH_ERR_LIBCRYPTO_ERROR;
 		goto out;
 	}
@@ -175,11 +187,10 @@ derive_ecdh_shared_secret(const EC_POINT *dh_pub, EVP_PKEY *pk, struct sshbuf **
 	dump_digest("shared secret", kbuf, klen);
 #endif
 
-	r = shared_secret_bn_to_sshbuf(shared_secret, bufp);
+	r = shared_secret_to_sshbuf(kbuf, klen, bufp);
 
  out:
 	EC_KEY_free(key);
-	BN_clear_free(shared_secret);
 	freezero(kbuf, klen);
 	return r;
 }
