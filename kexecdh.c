@@ -109,6 +109,14 @@ done:
 }
 
 static inline int
+kex_pkey_keygen_ecdh(struct kex *kex) {
+	int r = kex_key_init_ecdh(kex);
+	if (r != 0) return r;
+	return kex_key_gen_ecdh(kex);
+}
+
+
+static inline int
 shared_secret_bn_to_sshbuf(const BIGNUM *shared_secret, struct sshbuf **bufp) {
 	struct sshbuf *buf;
 	int r;
@@ -225,8 +233,7 @@ kex_ecdh_keypair(struct kex *kex)
 {
 	int r;
 
-	if ((r = kex_key_init_ecdh(kex)) != 0 ||
-	    (r = kex_key_gen_ecdh(kex)) != 0)
+	if ((r = kex_pkey_keygen_ecdh(kex)) != 0)
 		goto out;
 
 	r = kex_ecdh_to_sshbuf(kex, &kex->client_pub);
@@ -246,8 +253,7 @@ kex_ecdh_enc(struct kex *kex, const struct sshbuf *client_blob,
 	*server_blobp = NULL;
 	*shared_secretp = NULL;
 
-	if ((r = kex_key_init_ecdh(kex)) != 0 ||
-	    (r = kex_key_gen_ecdh(kex)) != 0 ||
+	if ((r = kex_pkey_keygen_ecdh(kex)) != 0 ||
 	    (r = kex_ecdh_to_sshbuf(kex, server_blobp)) != 0)
 		goto out;
 
