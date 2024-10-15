@@ -520,7 +520,10 @@ ssh_ecdsa_serialize_private(const struct sshkey *key, struct sshbuf *buf,
 }
 
 #ifdef USE_EVP_PKEY_KEYGEN
-static int
+extern int /* see kexecdh.c */
+ssh_pkey_keygen_ec(int nid, EVP_PKEY **ret);
+
+int
 ssh_pkey_keygen_ec(int nid, EVP_PKEY **ret) {
 	EVP_PKEY *pk = NULL;
 	EVP_PKEY_CTX *ctx = NULL;

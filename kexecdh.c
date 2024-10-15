@@ -53,6 +53,7 @@
 #include "digest.h"
 #include "ssherr.h"
 
+#ifndef USE_EVP_PKEY_KEYGEN
 static int
 kex_key_init_ecdh(struct kex *kex) {
 	EC_KEY *ec = NULL;
@@ -114,6 +115,15 @@ kex_pkey_keygen_ecdh(struct kex *kex) {
 	if (r != 0) return r;
 	return kex_key_gen_ecdh(kex);
 }
+#else
+extern int /* see ssh-ecdsa.c */
+ssh_pkey_keygen_ec(int nid, EVP_PKEY **ret);
+
+static inline int
+kex_pkey_keygen_ecdh(struct kex *kex) {
+	return ssh_pkey_keygen_ec(kex->ec_nid, &kex->pk);
+}
+#endif
 
 
 static inline int
