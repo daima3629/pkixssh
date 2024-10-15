@@ -142,6 +142,7 @@ setuid-allowed
 ssh_askpass-pkcs11
 
 # interoperability tests
+.putty
 .dropbear
 
 # TODO
