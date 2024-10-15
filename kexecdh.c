@@ -158,14 +158,14 @@ shared_secret_to_sshbuf(u_char *kbuf, size_t klen, struct sshbuf **bufp) {
 }
 
 static int
-derive_ecdh_shared_secret(const EC_POINT *dh_pub, EVP_PKEY *pk, struct sshbuf **bufp) {
+kex_ecdh_derive_shared_secret(struct kex *kex, const EC_POINT *dh_pub, struct sshbuf **bufp) {
 	EC_KEY *key;
 	const EC_GROUP *group;
 	u_char *kbuf = NULL;
 	size_t klen = 0;
 	int r;
 
-	if ((key = EVP_PKEY_get1_EC_KEY(pk)) == NULL)
+	if ((key = EVP_PKEY_get1_EC_KEY(kex->pk)) == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;
 
 	if ((group = EC_KEY_get0_group(key)) == NULL) {
@@ -211,7 +211,7 @@ kex_ecdh_compute_key(struct kex *kex, const struct sshbuf *ec_blob,
 		goto out;
 	}
 
-	r = derive_ecdh_shared_secret(dh_pub, kex->pk, shared_secretp);
+	r = kex_ecdh_derive_shared_secret(kex, dh_pub, shared_secretp);
 
  out:
 	EC_POINT_clear_free(dh_pub);
