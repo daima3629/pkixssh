@@ -55,7 +55,7 @@
 
 #ifndef USE_EVP_PKEY_KEYGEN
 static int
-kex_key_init_ecdh(struct kex *kex) {
+kex_ecdh_key_init(struct kex *kex) {
 	EC_KEY *ec = NULL;
 
 	ec = EC_KEY_new_by_curve_name(kex->ec_nid);
@@ -85,7 +85,7 @@ kex_key_init_ecdh(struct kex *kex) {
 }
 
 static int
-kex_key_gen_ecdh(struct kex *kex) {
+kex_ecdh_key_gen(struct kex *kex) {
 	int r;
 	EC_KEY *ec;
 
@@ -110,20 +110,20 @@ done:
 }
 
 static inline int
-kex_pkey_keygen_ecdh(struct kex *kex) {
-	int r = kex_key_init_ecdh(kex);
+kex_ecdh_pkey_keygen(struct kex *kex) {
+	int r = kex_ecdh_key_init(kex);
 	if (r != 0) return r;
-	return kex_key_gen_ecdh(kex);
+	return kex_ecdh_key_gen(kex);
 }
-#else
+#else /*def USE_EVP_PKEY_KEYGEN*/
 extern int /* see ssh-ecdsa.c */
 ssh_pkey_keygen_ec(int nid, EVP_PKEY **ret);
 
 static inline int
-kex_pkey_keygen_ecdh(struct kex *kex) {
+kex_ecdh_pkey_keygen(struct kex *kex) {
 	return ssh_pkey_keygen_ec(kex->ec_nid, &kex->pk);
 }
-#endif
+#endif /*def USE_EVP_PKEY_KEYGEN*/
 
 
 static inline int
@@ -254,7 +254,7 @@ kex_ecdh_keypair(struct kex *kex)
 {
 	int r;
 
-	if ((r = kex_pkey_keygen_ecdh(kex)) != 0)
+	if ((r = kex_ecdh_pkey_keygen(kex)) != 0)
 		goto out;
 
 	r = kex_ecdh_to_sshbuf(kex, &kex->client_pub);
@@ -274,7 +274,7 @@ kex_ecdh_enc(struct kex *kex, const struct sshbuf *client_blob,
 	*server_blobp = NULL;
 	*shared_secretp = NULL;
 
-	if ((r = kex_pkey_keygen_ecdh(kex)) != 0 ||
+	if ((r = kex_ecdh_pkey_keygen(kex)) != 0 ||
 	    (r = kex_ecdh_to_sshbuf(kex, server_blobp)) != 0)
 		goto out;
 
