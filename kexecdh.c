@@ -157,8 +157,43 @@ shared_secret_to_sshbuf(u_char *kbuf, size_t klen, struct sshbuf **bufp) {
 	return r;
 }
 
+#ifdef USE_EVP_PKEY_KEYGEN
+static int
+create_peer_pkey(struct kex *kex, const EC_POINT *dh_pub, EVP_PKEY **peerkeyp) {
+	EVP_PKEY *peerkey = NULL;
+	EC_KEY *ec;
+	int r = SSH_ERR_LIBCRYPTO_ERROR;
+
+	ec = EC_KEY_new_by_curve_name(kex->ec_nid);
+	if (ec == NULL) return SSH_ERR_ALLOC_FAIL;
+	/* NOTE: named curve flag is not required */
+
+	peerkey = EVP_PKEY_new();
+	if (peerkey == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto out;
+	}
+
+	if (EC_KEY_set_public_key(ec, dh_pub) != 1)
+		goto out;
+
+	if (!EVP_PKEY_set1_EC_KEY(peerkey, ec))
+		goto out;
+
+	*peerkeyp = peerkey;
+	peerkey = NULL;
+	r = 0;
+
+ out:
+	EC_KEY_free(ec);
+	EVP_PKEY_free(peerkey);
+	return r;
+}
+#endif /*def USE_EVP_PKEY_KEYGEN*/
+
 static int
 kex_ecdh_derive_shared_secret(struct kex *kex, const EC_POINT *dh_pub, struct sshbuf **bufp) {
+#ifndef USE_EVP_PKEY_KEYGEN
 	EC_KEY *key;
 	const EC_GROUP *group;
 	u_char *kbuf = NULL;
@@ -192,6 +227,44 @@ kex_ecdh_derive_shared_secret(struct kex *kex, const EC_POINT *dh_pub, struct ss
  out:
 	EC_KEY_free(key);
 	freezero(kbuf, klen);
+#else /*def USE_EVP_PKEY_KEYGEN*/
+	EVP_PKEY_CTX *ctx;
+	EVP_PKEY *peerkey = NULL;
+	u_char *kbuf = NULL;
+	size_t klen = 0;
+	int r = SSH_ERR_LIBCRYPTO_ERROR;
+
+	ctx = EVP_PKEY_CTX_new(kex->pk, NULL);
+	if (ctx == NULL) return SSH_ERR_INTERNAL_ERROR;
+
+	if (EVP_PKEY_derive_init(ctx) != 1)
+		goto out;
+
+	r = create_peer_pkey(kex, dh_pub, &peerkey);
+	if (r != 0) goto out;
+
+	if (EVP_PKEY_derive_set_peer(ctx, peerkey) != 1)
+		goto out;
+
+	if (EVP_PKEY_derive(ctx, NULL, &klen) != 1)
+		goto out;
+	kbuf = OPENSSL_malloc(klen);
+	if (kbuf == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto out;
+	}
+	if (EVP_PKEY_derive(ctx, kbuf, &klen) != 1)
+		goto out;
+#ifdef DEBUG_KEXECDH
+	dump_digest("shared secret", kbuf, klen);
+#endif
+
+	r = shared_secret_to_sshbuf(kbuf, klen, bufp);
+
+ out:
+	EVP_PKEY_free(peerkey);
+	OPENSSL_clear_free(kbuf, klen);
+#endif /*def USE_EVP_PKEY_KEYGEN*/
 	return r;
 }
 
