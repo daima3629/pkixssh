@@ -2,7 +2,7 @@
 /*
  * Copyright (c) 2000 Niels Provos.  All rights reserved.
  * Copyright (c) 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2014-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2014-2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -102,7 +102,7 @@ input_kex_dh_gex_request(int type, u_int32_t seq, struct ssh *ssh)
 	debug("SSH2_MSG_KEX_DH_GEX_GROUP sent");
 
 	/* Compute our exchange value in parallel with the client */
-	if ((r = kex_key_gen_dh(kex)) != 0)
+	if ((r = kex_dh_key_gen(kex)) != 0)
 		goto out;
 
 	debug("expecting SSH2_MSG_KEX_DH_GEX_INIT");

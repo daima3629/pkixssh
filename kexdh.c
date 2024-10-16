@@ -57,8 +57,7 @@ kex_dh_keypair(struct kex *kex)
 	struct sshbuf *buf = NULL;
 	int r;
 
-	if ((r = kex_key_init_dh(kex)) != 0 ||
-	    (r = kex_key_gen_dh(kex)) != 0)
+	if ((r = kex_dh_pkey_keygen(kex)) != 0)
 		goto out;
 
 	r = kex_dh_to_sshbuf(kex, &kex->client_pub);
@@ -79,8 +78,7 @@ kex_dh_enc(struct kex *kex, const struct sshbuf *client_blob,
 	*server_blobp = NULL;
 	*shared_secretp = NULL;
 
-	if ((r = kex_key_init_dh(kex)) != 0 ||
-	    (r = kex_key_gen_dh(kex)) != 0 ||
+	if ((r = kex_dh_pkey_keygen(kex)) != 0 ||
 	    (r = kex_dh_to_sshbuf(kex, server_blobp)) != 0)
 		goto out;
 

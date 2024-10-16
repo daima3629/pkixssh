@@ -2,7 +2,7 @@
 /*
  * Copyright (c) 2000 Niels Provos.  All rights reserved.
  * Copyright (c) 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2014-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2014-2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -128,7 +128,7 @@ input_kex_dh_gex_group(int type, u_int32_t seq, struct ssh *ssh)
 	p = g = NULL; /* belong to kex->pk[dh] now */
 
 	/* generate and send 'e', client DH public key */
-	if ((r = kex_key_gen_dh(kex)) != 0 ||
+	if ((r = kex_dh_key_gen(kex)) != 0 ||
 	    (r = sshpkt_start(ssh, SSH2_MSG_KEX_DH_GEX_INIT)) != 0 ||
 	    (r = sshpkt_write_dh_pub(ssh, kex->pk)) != 0 ||
 	    (r = sshpkt_send(ssh)) != 0)

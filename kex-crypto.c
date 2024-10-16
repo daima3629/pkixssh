@@ -219,7 +219,7 @@ dh_calc_length(struct kex *kex, DH *dh)
 
 
 int
-kex_key_gen_dh(struct kex *kex)
+kex_dh_key_gen(struct kex *kex)
 {
 	int r;
 	DH *dh;
@@ -264,8 +264,8 @@ done:
 }
 
 
-int
-kex_key_init_dh(struct kex *kex) {
+static int
+kex_dh_key_init(struct kex *kex) {
 	DH *dh;
 
 	switch (kex->kex_type) {
@@ -302,6 +302,14 @@ kex_key_init_dh(struct kex *kex) {
 }
 
 	return 0;
+}
+
+
+int
+kex_dh_pkey_keygen(struct kex *kex) {
+	int r = kex_dh_key_init(kex);
+	if (r != 0) return r;
+	return kex_dh_key_gen(kex);
 }
 
 
