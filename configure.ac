@@ -3415,6 +3415,7 @@ AC_CHECK_DECLS([UTF8_getc],,,[
 AC_CHECK_FUNCS([ \
   EVP_CIPHER_CTX_get_iv \
   UTF8_getc \
+  X509_STORE_CTX_purpose_inherit \
 ])
 
 # ASN1_STRING_length const argument >= 1.0

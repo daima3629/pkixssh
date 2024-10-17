@@ -838,17 +838,18 @@ ssh_verify_cert(X509_STORE_CTX *_csc) {
 	int flag;
 
 	if (ssh_x509flags.allowedcertpurpose >= 0) {
-		int def_purpose =  ( ssh_x509flags.is_server
-			? X509_PURPOSE_SSL_CLIENT
-			: X509_PURPOSE_SSL_SERVER
-		);
 		X509_PURPOSE *xptmp = X509_PURPOSE_get0(ssh_x509flags.allowedcertpurpose);
-		int purpose;
 		if (xptmp == NULL) {
 			fatal_f("cannot get purpose from index");
 			return -1; /* ;-) */
 		}
-		purpose = X509_PURPOSE_get_id(xptmp);
+	#ifdef HAVE_X509_STORE_CTX_PURPOSE_INHERIT
+	{	int purpose = X509_PURPOSE_get_id(xptmp);
+		int def_purpose =  ( ssh_x509flags.is_server
+			? X509_PURPOSE_SSL_CLIENT
+			: X509_PURPOSE_SSL_SERVER
+		);
+
 		flag = X509_STORE_CTX_purpose_inherit(_csc, def_purpose, purpose, 0);
 		if (flag <= 0) {
 			/*
@@ -872,6 +873,20 @@ ssh_verify_cert(X509_STORE_CTX *_csc) {
 			error_crypto("X509_STORE_CTX_purpose_inherit");
 			return -1;
 		}
+	}
+	#else /* ndef HAVE_X509_STORE_CTX_PURPOSE_INHERIT */
+	{	int purpose = X509_PURPOSE_get_id(xptmp);
+		flag = X509_STORE_CTX_set_purpose(_csc, purpose);
+		if (flag <= 0) {
+			int ecode = X509_STORE_CTX_get_error(_csc);
+			error_f("context purpose error, code=%d, msg='%.200s'"
+				, ecode
+				, X509_verify_cert_error_string(ecode));
+			error_crypto("X509_STORE_CTX_set_purpose");
+			return -1;
+		}
+	}
+	#endif /* ndef HAVE_X509_STORE_CTX_PURPOSE_INHERIT */
 	}
 
 {	/* lets use same time in all time checks */
