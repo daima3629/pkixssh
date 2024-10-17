@@ -57,6 +57,18 @@
 #ifdef WITH_OPENSSL
 #include "openbsd-compat/openssl-compat.h"
 
+#ifndef OPENSSL_clear_free		/* OpenSSL < 1.1 */
+/* still missing in some forks */
+static inline void
+ssh_OPENSSL_clear_free (void *ptr, size_t num) {
+	if (ptr == NULL) return;
+	if (num > 0)
+		OPENSSL_cleanse(ptr, num);
+	OPENSSL_free(ptr);
+}
+# define OPENSSL_clear_free(addr, num) \
+	ssh_OPENSSL_clear_free(addr, num)
+#endif
 
 #ifndef HAVE_EVP_MD_CTX_NEW		/* OpenSSL < 1.1 */
 static inline EVP_MD_CTX*
