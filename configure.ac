@@ -2827,7 +2827,9 @@ if test "x$openssl" = "xyes" ; then
  * only for backward compatibility, i.e. some builds could
  * deprecate it.
   OpenSSL_add_all_algorithms(); */
-  EVP_add_cipher(NULL);
+/* Removed in some brain-damaged forks
+  EVP_add_cipher(NULL); */
+  (void)EVP_get_cipherbyname(NULL);
 ]])],
 			[ac_CRYPTO_LINK=:])
 		$ac_CRYPTO_LINK && break
