@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keygen.c,v 1.474 2024/09/04 05:33:34 djm Exp $ */
+/* $OpenBSD: ssh-keygen.c,v 1.476 2024/10/18 05:37:24 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1994 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -2451,7 +2451,9 @@ do_moduli_gen(const char *out_file, char **opts, size_t nopts)
 		}
 	}
 
-	if ((out = fopen(out_file, "w")) == NULL) {
+	if (strcmp(out_file, "-") == 0)
+		out = stdout;
+	else if ((out = fopen(out_file, "w")) == NULL) {
 		fatal("Couldn't open modulus candidate file \"%s\": %s",
 		    out_file, strerror(errno));
 	}
@@ -2516,7 +2518,9 @@ do_moduli_screen(const char *out_file, char **opts, size_t nopts)
 		}
 	}
 
-	if ((out = fopen(out_file, "a")) == NULL) {
+	if (strcmp(out_file, "-") == 0)
+		out = stdout;
+	else if ((out = fopen(out_file, "a")) == NULL) {
 		fatal("Couldn't open moduli file \"%s\": %s",
 		    out_file, strerror(errno));
 	}
