@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keyscan.c,v 1.158 2024/06/14 00:25:25 djm Exp $ */
+/* $OpenBSD: ssh-keyscan.c,v 1.164 2024/10/18 05:32:51 djm Exp $ */
 /*
  * Copyright 1995, 1996 by David Mazieres <dm@lcs.mit.edu>.
  *
@@ -585,7 +585,7 @@ conloop(void)
 	for (i = 0; i < maxfd; i++) {
 		if (read_wait[i].revents & (POLLHUP|POLLERR|POLLNVAL))
 			confree(i);
-		else if (read_wait[i].revents & (POLLIN|POLLHUP))
+		else if (read_wait[i].revents & POLLIN)
 			conread(i);
 	}
 
