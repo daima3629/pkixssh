@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2005 Darren Tucker <dtucker@zip.com.au>
- * Copyright (c) 2011-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2024 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -35,6 +35,12 @@
 # define LIBCRYPTO_EVP_INL_TYPE size_t
 #endif
 
+
+#if !defined(HAVE_ERR_ADD_ERROR_DATA) && defined(HAVE_ERR_ASPRINTF_ERROR_DATA)
+/* OpenSSL all, but ... */
+void ERR_add_error_data(int num, ...);
+void ERR_add_error_vdata(int num, va_list arg);
+#endif
 
 #ifndef HAVE_EVP_PKEY_PRINT_PARAMS
 int EVP_PKEY_print_params(BIO *out, const EVP_PKEY *pkey,

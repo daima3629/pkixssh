@@ -3413,6 +3413,8 @@ AC_CHECK_DECLS([UTF8_getc],,,[
 #include <openssl/asn1.h>
 ])
 AC_CHECK_FUNCS([ \
+  ERR_add_error_data \
+  ERR_asprintf_error_data \
   EVP_CIPHER_CTX_get_iv \
   UTF8_getc \
   X509_STORE_CTX_purpose_inherit \
