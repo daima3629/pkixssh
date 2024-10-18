@@ -1,6 +1,7 @@
 /* $OpenBSD: sftp-glob.c,v 1.33 2023/09/10 23:12:32 djm Exp $ */
 /*
  * Copyright (c) 2001-2004 Damien Miller <djm@openbsd.org>
+ * Copyright (c) 2024 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -62,8 +63,9 @@ fudge_opendir(const char *path)
 }
 
 static struct dirent *
-fudge_readdir(struct SFTP_OPENDIR *od)
+fudge_readdir(void *odp)
 {
+	struct SFTP_OPENDIR *od = odp;
 	/* Solaris needs sizeof(dirent) + path length (see below) */
 	static char buf[sizeof(struct dirent) + MAXPATHLEN];
 	struct dirent *ret = (struct dirent *)buf;
@@ -101,8 +103,9 @@ fudge_readdir(struct SFTP_OPENDIR *od)
 }
 
 static void
-fudge_closedir(struct SFTP_OPENDIR *od)
+fudge_closedir(void *odp)
 {
+	struct SFTP_OPENDIR *od = odp;
 	sftp_free_dirents(od->dir);
 	free(od);
 }
