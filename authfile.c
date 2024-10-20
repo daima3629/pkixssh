@@ -86,6 +86,15 @@ sshkey_save_private(struct sshkey *key, const char *filename,
 }
 
 /* XXX remove error() calls from here? */
+static inline int/*bool*/
+sshkey_perm_mode_notok(mode_t m) {
+#ifdef __ANDROID__
+	if (S_ISSOCK(m)) return 0;
+#endif
+	if (!S_ISREG(m)) return 1;
+	return (m & 077) != 0;
+}
+
 int
 sshkey_perm_ok(int fd, const char *filename)
 {
@@ -101,7 +110,8 @@ sshkey_perm_ok(int fd, const char *filename)
 #ifdef HAVE_CYGWIN
 	if (check_ntsec(filename))
 #endif
-	if ((st.st_uid == getuid()) && (st.st_mode & 077) != 0) {
+	if ((st.st_uid == getuid()) && sshkey_perm_mode_notok(st.st_mode))
+	     {
 		error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 		error("@         WARNING: UNPROTECTED PRIVATE KEY FILE!          @");
 		error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
