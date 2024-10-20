@@ -23,6 +23,7 @@
 
 
 BEGIN {
+  start=0
   optlist=0
   oldoptlist=0
   nospace=0
@@ -62,9 +63,14 @@ function add(str) {
   next
 }
 
+# skip comments
 /^\.\\"/ { next }
 
+# start after end of Dd macro substitutions
+/^\.\./ { start=1; next }
+
 {
+  if(!start) next
   option=0
   parens=0
   angles=0
