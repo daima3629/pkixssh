@@ -245,7 +245,7 @@ function add(str) {
       while(w<nwords&&match(words[w+1],"^[\\.,:;)]"))
 	add(words[++w])
     } else if(match(words[w],"^Op$")) {
-      option=1
+      option++
       if(!nospace)
 	nospace=1
       add("[")
@@ -255,7 +255,7 @@ function add(str) {
       prenl++
     } else if(match(words[w],"^Ss$")) {
       add(".SS")
-    } else if(match(words[w],"^Pa$")&&!option) {
+    } else if(match(words[w],"^Pa$")&&option==0) {
       add("\\fI")
       w++
       if(match(words[w],"^\\."))
@@ -364,7 +364,7 @@ function add(str) {
     add(")")
   if(angles)
     add(">")
-  if(option)
+  for(;option;option--)
     add("]")
   if(ext&&!extopt&&!match(line," $"))
     add(OFS)
