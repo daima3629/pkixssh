@@ -97,7 +97,6 @@ int
 kex_dh_dec(struct kex *kex, const struct sshbuf *dh_blob,
     struct sshbuf **shared_secretp)
 {
-	struct sshbuf *buf = NULL;
 	BIGNUM *dh_pub = NULL;
 	int r;
 
@@ -106,18 +105,11 @@ kex_dh_dec(struct kex *kex, const struct sshbuf *dh_blob,
 	r = sshbuf_to_dhpub(dh_blob, &dh_pub);
 	if (r != 0) return r;
 
-	if ((buf = sshbuf_new()) == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto out;
-	}
-	if ((r = kex_dh_compute_key(kex, dh_pub, buf)) != 0)
-		goto out;
-	*shared_secretp = buf;
-	buf = NULL;
+	r = kex_dh_compute_key(kex, dh_pub, shared_secretp);
+
  out:
 	BN_free(dh_pub);
 	kex_reset_crypto_keys(kex);
-	sshbuf_free(buf);
 	return r;
 }
 #endif /* WITH_OPENSSL */

@@ -180,11 +180,7 @@ input_kex_dh_gex_reply(int type, u_int32_t seq, struct ssh *ssh)
 	    (r = sshpkt_get_string(ssh, &signature, &slen)) != 0 ||
 	    (r = sshpkt_get_end(ssh)) != 0)
 		goto out;
-	if ((shared_secret = sshbuf_new()) == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto out;
-	}
-	if ((r = kex_dh_compute_key(kex, dh_server_pub, shared_secret)) != 0)
+	if ((r = kex_dh_compute_key(kex, dh_server_pub, &shared_secret)) != 0)
 		goto out;
 	if (ssh_compat_fellows(ssh, SSH_OLD_DHGEX))
 		kex->min = kex->max = -1;

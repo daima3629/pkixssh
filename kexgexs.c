@@ -139,11 +139,7 @@ input_kex_dh_gex_init(int type, u_int32_t seq, struct ssh *ssh)
 	if ((r = sshpkt_get_bignum2(ssh, &dh_client_pub)) != 0 ||
 	    (r = sshpkt_get_end(ssh)) != 0)
 		goto out;
-	if ((shared_secret = sshbuf_new()) == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto out;
-	}
-	if ((r = kex_dh_compute_key(kex, dh_client_pub, shared_secret)) != 0)
+	if ((r = kex_dh_compute_key(kex, dh_client_pub, &shared_secret)) != 0)
 		goto out;
 
 	if ((server_host_key_blob = sshbuf_new()) == NULL) {

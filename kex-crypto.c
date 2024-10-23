@@ -373,7 +373,7 @@ done:
 
 
 int
-kex_dh_compute_key(struct kex *kex, BIGNUM *pub_key, struct sshbuf *out)
+kex_dh_compute_key(struct kex *kex, BIGNUM *pub_key, struct sshbuf **shared_secretp)
 {
 	DH *dh;
 	BIGNUM *shared_secret = NULL;
@@ -422,7 +422,17 @@ kex_dh_compute_key(struct kex *kex, BIGNUM *pub_key, struct sshbuf *out)
 		goto done;
 	}
 
+{	struct sshbuf *out = sshbuf_new();
+	if (out == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto done;
+	}
 	r = sshbuf_put_bignum2(out, shared_secret);
+	if (r == 0)
+		*shared_secretp = out;
+	else
+		sshbuf_free(out);
+}
 
 done:
 	freezero(kbuf, klen);
