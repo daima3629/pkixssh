@@ -55,6 +55,25 @@ sshbuf_get_bignum2(struct sshbuf *buf, BIGNUM **valp)
 	return *valp != NULL ? 0 : SSH_ERR_ALLOC_FAIL;
 }
 
+int
+sshbuf_to_dhpub(const struct sshbuf *buf, BIGNUM **valp)
+{
+	/* TODO: direct read */
+	struct sshbuf *tmp;
+	int r;
+
+	tmp = sshbuf_new();
+	if (tmp == NULL) return SSH_ERR_ALLOC_FAIL;
+
+	if ((r = sshbuf_put_stringb(tmp, buf)) != 0)
+		goto out;
+	r = sshbuf_get_bignum2(tmp, valp);
+
+ out:
+	sshbuf_free(tmp);
+	return r;
+}
+
 #ifdef OPENSSL_HAS_ECC
 static int
 get_ecpub(const EC_KEY *key, const u_char *d, size_t len, EC_POINT **valp)

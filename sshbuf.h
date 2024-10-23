@@ -220,6 +220,7 @@ int	sshbuf_get_bignum2_bytes_direct(struct sshbuf *buf,
 int	sshbuf_get_bignum1x(struct sshbuf *buf, BIGNUM **valp);
 int	sshbuf_get_bignum2(struct sshbuf *buf, BIGNUM **valp);
 int	sshbuf_put_bignum2(struct sshbuf *buf, const BIGNUM *v);
+int	sshbuf_to_dhpub(const struct sshbuf *buf, BIGNUM **valp);
 # ifdef OPENSSL_HAS_ECC
 int	sshbuf_to_ecpub(const struct sshbuf *buf, EVP_PKEY *pk, EC_POINT **valp);
 int	sshbuf_get_eckey(struct sshbuf *buf, EC_KEY *v);

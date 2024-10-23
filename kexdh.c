@@ -103,14 +103,13 @@ kex_dh_dec(struct kex *kex, const struct sshbuf *dh_blob,
 
 	*shared_secretp = NULL;
 
+	r = sshbuf_to_dhpub(dh_blob, &dh_pub);
+	if (r != 0) return r;
+
 	if ((buf = sshbuf_new()) == NULL) {
 		r = SSH_ERR_ALLOC_FAIL;
 		goto out;
 	}
-	if ((r = sshbuf_put_stringb(buf, dh_blob)) != 0 ||
-	    (r = sshbuf_get_bignum2(buf, &dh_pub)) != 0)
-		goto out;
-	sshbuf_reset(buf);
 	if ((r = kex_dh_compute_key(kex, dh_pub, buf)) != 0)
 		goto out;
 	*shared_secretp = buf;
