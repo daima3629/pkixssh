@@ -107,7 +107,6 @@ kex_dh_dec(struct kex *kex, const struct sshbuf *dh_blob,
 
 	r = kex_dh_compute_key(kex, dh_pub, shared_secretp);
 
- out:
 	BN_free(dh_pub);
 	kex_reset_crypto_keys(kex);
 	return r;
