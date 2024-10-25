@@ -126,37 +126,6 @@ kex_ecdh_pkey_keygen(struct kex *kex) {
 #endif /*def USE_EVP_PKEY_KEYGEN*/
 
 
-static inline int
-shared_secret_bn_to_sshbuf(const BIGNUM *shared_secret, struct sshbuf **bufp) {
-	struct sshbuf *buf;
-	int r;
-
-	if ((buf = sshbuf_new()) == NULL)
-		return SSH_ERR_ALLOC_FAIL;
-
-	r = sshbuf_put_bignum2(buf, shared_secret);
-	if (r == 0)
-		*bufp = buf;
-	else
-		sshbuf_free(buf);
-	return r;
-}
-
-static inline int
-shared_secret_to_sshbuf(u_char *kbuf, size_t klen, struct sshbuf **bufp) {
-	BIGNUM *shared_secret;
-	int r;
-
-	shared_secret = BN_bin2bn(kbuf, klen, NULL);
-	if (shared_secret == NULL)
-		return SSH_ERR_LIBCRYPTO_ERROR;
-
-	r = shared_secret_bn_to_sshbuf(shared_secret, bufp);
-
-	BN_clear_free(shared_secret);
-	return r;
-}
-
 #ifdef USE_EVP_PKEY_KEYGEN
 static int
 create_peer_pkey(struct kex *kex, const EC_POINT *dh_pub, EVP_PKEY **peerkeyp) {
@@ -222,7 +191,7 @@ kex_ecdh_derive_shared_secret(struct kex *kex, const EC_POINT *dh_pub, struct ss
 	dump_digest("shared secret", kbuf, klen);
 #endif
 
-	r = shared_secret_to_sshbuf(kbuf, klen, bufp);
+	r = kex_dh_shared_secret_to_sshbuf(kbuf, klen, bufp);
 
  out:
 	EC_KEY_free(key);
@@ -259,7 +228,7 @@ kex_ecdh_derive_shared_secret(struct kex *kex, const EC_POINT *dh_pub, struct ss
 	dump_digest("shared secret", kbuf, klen);
 #endif
 
-	r = shared_secret_to_sshbuf(kbuf, klen, bufp);
+	r = kex_dh_shared_secret_to_sshbuf(kbuf, klen, bufp);
 
  out:
 	EVP_PKEY_free(peerkey);

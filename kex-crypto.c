@@ -372,11 +372,42 @@ done:
 }
 
 
+static inline int
+shared_secret_bn_to_sshbuf(const BIGNUM *shared_secret, struct sshbuf **bufp) {
+	struct sshbuf *buf;
+	int r;
+
+	if ((buf = sshbuf_new()) == NULL)
+		return SSH_ERR_ALLOC_FAIL;
+
+	r = sshbuf_put_bignum2(buf, shared_secret);
+	if (r == 0)
+		*bufp = buf;
+	else
+		sshbuf_free(buf);
+	return r;
+}
+
+int
+kex_dh_shared_secret_to_sshbuf(u_char *kbuf, size_t klen, struct sshbuf **bufp) {
+	BIGNUM *shared_secret;
+	int r;
+
+	shared_secret = BN_bin2bn(kbuf, klen, NULL);
+	if (shared_secret == NULL)
+		return SSH_ERR_LIBCRYPTO_ERROR;
+
+	r = shared_secret_bn_to_sshbuf(shared_secret, bufp);
+
+	BN_clear_free(shared_secret);
+	return r;
+}
+
+
 int
 kex_dh_compute_key(struct kex *kex, BIGNUM *pub_key, struct sshbuf **shared_secretp)
 {
 	DH *dh;
-	BIGNUM *shared_secret = NULL;
 	int klen;
 	u_char *kbuf = NULL;
 	int r;
@@ -415,28 +446,12 @@ kex_dh_compute_key(struct kex *kex, BIGNUM *pub_key, struct sshbuf **shared_secr
 #ifdef DEBUG_KEXDH
 	dump_digest("shared secret", kbuf, kout);
 #endif
-	shared_secret = BN_bin2bn(kbuf, kout, NULL);
-}
-	if (shared_secret == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto done;
-	}
 
-{	struct sshbuf *out = sshbuf_new();
-	if (out == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto done;
-	}
-	r = sshbuf_put_bignum2(out, shared_secret);
-	if (r == 0)
-		*shared_secretp = out;
-	else
-		sshbuf_free(out);
+	r = kex_dh_shared_secret_to_sshbuf(kbuf, kout, shared_secretp);
 }
 
 done:
 	freezero(kbuf, klen);
-	BN_clear_free(shared_secret);
 	DH_free(dh);
 	return r;
 }

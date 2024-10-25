@@ -248,6 +248,7 @@ int	kexc25519_shared_key_ext(const u_char key[CURVE25519_SIZE],
 
 EVP_PKEY*	kex_new_dh_group_bits(int min, int wantbits, int max);
 EVP_PKEY*	kex_new_dh_group(BIGNUM *modulus, BIGNUM *gen);
+int	kex_dh_shared_secret_to_sshbuf(u_char *kbuf, size_t klen, struct sshbuf **bufp);
 
 int	sshbuf_kex_write_dh_group(struct sshbuf *buf, EVP_PKEY *pk);
 int	sshbuf_kex_write_dh_pub(struct sshbuf *buf, EVP_PKEY *pk);
