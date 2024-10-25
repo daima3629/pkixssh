@@ -1,4 +1,4 @@
-.\" $OpenBSD: ssh-agent.1,v 1.75 2022/10/07 06:00:58 jmc Exp $
+.\" $OpenBSD: ssh-agent.1,v 1.80 2024/10/24 03:15:47 djm Exp $
 .\"
 .\" Author: Tatu Ylonen <ylo@cs.hut.fi>
 .\" Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -43,7 +43,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: Jul 23 2023 $
+.Dd $Mdocdate: October 24 2024 $
 .Dt SSH-AGENT 1
 .Os
 .Sh NAME
@@ -207,6 +207,10 @@ the connection to the agent is forwarded over SSH remote connections
 and the result is returned to the requester,
 allowing the user access to their identities anywhere in the network
 in a secure fashion.
+.Pp
+.Nm
+will delete all keys it has loaded upon receiving
+.Dv SIGUSR1 .
 .Sh ENVIRONMENT
 .Bl -tag -width Ds
 .It Ev SSH_AGENT_PID

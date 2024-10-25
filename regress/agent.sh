@@ -1,4 +1,4 @@
-#	$OpenBSD: agent.sh,v 1.20 2021/02/25 03:27:34 djm Exp $
+#	$OpenBSD: agent.sh,v 1.22 2024/10/24 03:28:34 djm Exp $
 #	Placed in the Public Domain.
 
 tid="simple agent test"
@@ -166,7 +166,7 @@ done
 
 ## Deletion tests.
 
-trace "delete all agent keys"
+trace "delete all agent keys using -D"
 ${SSHADD} -D > /dev/null 2>&1
 r=$?
 if [ $r -ne 0 ]; then
@@ -179,6 +179,30 @@ if [ $r -ne 1 ]; then
 	fail "ssh-add -l returned unexpected exit code: $r"
 fi
 trace "readd keys"
+# re-add keys/certs to agent
+for t in $PLAIN_TYPES; do
+	${SSHADD} $OBJ/$t-agent-private >/dev/null 2>&1 || \
+		fail "ssh-add failed exit code $?"
+done
+# make sure they are there
+${SSHADD} -l > /dev/null 2>&1
+r=$?
+if [ $r -ne 0 ]; then
+	fail "ssh-add -l failed: exit code $r"
+fi
+
+trace "delete all agent keys using SIGUSR1"
+kill -s USR1 $SSH_AGENT_PID
+r=$?
+if [ $r -ne 0 ]; then
+	fail "kill -s USR1 failed: exit code $r"
+fi
+# make sure they're gone
+${SSHADD} -l > /dev/null 2>&1
+r=$?
+if [ $r -ne 1 ]; then
+	fail "ssh-add -l returned unexpected exit code: $r"
+fi
 # re-add keys/certs to agent
 for t in $PLAIN_TYPES; do
 	${SSHADD} $OBJ/$t-agent-private >/dev/null 2>&1 || \
