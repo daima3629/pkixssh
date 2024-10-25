@@ -264,6 +264,7 @@ kex_ecdh_derive_shared_secret(struct kex *kex, const EC_POINT *dh_pub, struct ss
  out:
 	EVP_PKEY_free(peerkey);
 	OPENSSL_clear_free(kbuf, klen);
+	EVP_PKEY_CTX_free(ctx);
 #endif /*def USE_EVP_PKEY_KEYGEN*/
 	return r;
 }
