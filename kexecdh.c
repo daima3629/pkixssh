@@ -197,43 +197,15 @@ kex_ecdh_derive_shared_secret(struct kex *kex, const EC_POINT *dh_pub, struct ss
 	EC_KEY_free(key);
 	freezero(kbuf, klen);
 #else /*def USE_EVP_PKEY_KEYGEN*/
-	EVP_PKEY_CTX *ctx;
 	EVP_PKEY *peerkey = NULL;
-	u_char *kbuf = NULL;
-	size_t klen = 0;
-	int r = SSH_ERR_LIBCRYPTO_ERROR;
-
-	ctx = EVP_PKEY_CTX_new(kex->pk, NULL);
-	if (ctx == NULL) return SSH_ERR_INTERNAL_ERROR;
-
-	if (EVP_PKEY_derive_init(ctx) != 1)
-		goto out;
+	int r;
 
 	r = create_peer_pkey(kex, dh_pub, &peerkey);
-	if (r != 0) goto out;
+	if (r != 0) return r;
 
-	if (EVP_PKEY_derive_set_peer(ctx, peerkey) != 1)
-		goto out;
+	r = kex_pkey_derive_shared_secret(kex, peerkey, bufp);
 
-	if (EVP_PKEY_derive(ctx, NULL, &klen) != 1)
-		goto out;
-	kbuf = OPENSSL_malloc(klen);
-	if (kbuf == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto out;
-	}
-	if (EVP_PKEY_derive(ctx, kbuf, &klen) != 1)
-		goto out;
-#ifdef DEBUG_KEXECDH
-	dump_digest("shared secret", kbuf, klen);
-#endif
-
-	r = kex_dh_shared_secret_to_sshbuf(kbuf, klen, bufp);
-
- out:
 	EVP_PKEY_free(peerkey);
-	OPENSSL_clear_free(kbuf, klen);
-	EVP_PKEY_CTX_free(ctx);
 #endif /*def USE_EVP_PKEY_KEYGEN*/
 	return r;
 }
