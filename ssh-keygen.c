@@ -364,6 +364,17 @@ ask_filename(const struct passwd *pw, const char *prompt)
 	have_identity = 1;
 }
 
+static char* asc_new_passphrase(const char *path, u_int retry_num);
+
+static char*
+private_key_new_passphrase(const char *path, u_int retry_num)
+{
+	if (identity_new_passphrase)
+		return xstrdup(identity_new_passphrase);
+
+	return asc_new_passphrase(path, retry_num);
+}
+
 static int
 Xstat(char *filename)
 {
@@ -1334,7 +1345,7 @@ static void
 do_change_passphrase(const struct passwd *pw)
 {
 	char *comment;
-	char *old_passphrase, *passphrase1, *passphrase2;
+	char *old_passphrase, *passphrase;
 	struct stat st;
 	struct sshkey *private;
 	int r;
@@ -1364,42 +1375,21 @@ do_change_passphrase(const struct passwd *pw)
 	if (comment)
 		mprintf("Key has comment '%s'\n", comment);
 
-	/* Ask the new passphrase (twice). */
-	if (identity_new_passphrase) {
-		passphrase1 = xstrdup(identity_new_passphrase);
-		passphrase2 = NULL;
-	} else {
-		passphrase1 =
-			read_passphrase("Enter new passphrase (empty for no "
-			    "passphrase): ", RP_ALLOW_STDIN);
-		passphrase2 = read_passphrase("Enter same passphrase again: ",
-		    RP_ALLOW_STDIN);
-
-		/* Verify that they are the same. */
-		if (strcmp(passphrase1, passphrase2) != 0) {
-			freezero(passphrase1, strlen(passphrase1));
-			freezero(passphrase2, strlen(passphrase2));
-			printf("Pass phrases do not match.  Try again.\n");
-			exit(1);
-		}
-		/* Destroy the other copy. */
-		freezero(passphrase2, strlen(passphrase2));
-	}
+	passphrase = private_key_new_passphrase(identity_file, 3);
 
 	/* Save the file using the new passphrase. */
-	if ((r = sshkey_save_private(private, identity_file, passphrase1,
-	    comment, private_key_format, openssh_format_cipher, rounds)) != 0) {
-		error_r(r, "Saving key \"%s\" failed", identity_file);
-		freezero(passphrase1, strlen(passphrase1));
-		sshkey_free(private);
-		free(comment);
-		exit(1);
-	}
+	r = sshkey_save_private(private, identity_file, passphrase,
+	    comment, private_key_format, openssh_format_cipher, rounds);
+
 	/* Destroy the passphrase and the copy of the key in memory. */
-	freezero(passphrase1, strlen(passphrase1));
+	freezero(passphrase, strlen(passphrase));
 	sshkey_free(private);		 /* Destroys contents */
 	free(comment);
 
+	if (r != 0) {
+		error_r(r, "Saving key \"%s\" failed", identity_file);
+		exit(1);
+	}
 	printf("Your identification has been saved with the new passphrase.\n");
 	exit(0);
 }
@@ -2538,11 +2528,12 @@ do_moduli_screen(const char *out_file, char **opts, size_t nopts)
 /* Read and confirm a passphrase */
 static char *
 read_check_passphrase(const char *prompt1, const char *prompt2,
-    const char *retry_prompt)
+    const char *retry_prompt, u_int retry_num)
 {
+	u_int k;
 	char *passphrase1, *passphrase2;
 
-	for (;;) {
+	for (k = 0; k < retry_num; k++) {
 		passphrase1 = read_passphrase(prompt1, RP_ALLOW_STDIN);
 		passphrase2 = read_passphrase(prompt2, RP_ALLOW_STDIN);
 		if (strcmp(passphrase1, passphrase2) == 0) {
@@ -2552,26 +2543,28 @@ read_check_passphrase(const char *prompt1, const char *prompt2,
 		/* The passphrases do not match. Clear them and retry. */
 		freezero(passphrase1, strlen(passphrase1));
 		freezero(passphrase2, strlen(passphrase2));
-		fputs(retry_prompt, stdout);
-		fputc('\n', stdout);
-		fflush(stdout);
+		/* NOTE readpassphrase uses /dev/tty or stderr for writes */
+		fputs(retry_prompt, stderr);
+		fputc('\n', stderr);
 	}
+	fatal("Too many passphrase attempts.");
 	/* NOTREACHED */
 	return NULL;
 }
 
-static char *
-private_key_passphrase(void)
+static char*
+asc_new_passphrase(const char *path, u_int retry_num)
 {
-	if (identity_passphrase)
-		return xstrdup(identity_passphrase);
-	if (identity_new_passphrase)
-		return xstrdup(identity_new_passphrase);
+	char *prompt, *ret;
 
-	return read_check_passphrase(
-	    "Enter passphrase (empty for no passphrase): ",
+	xasprintf(&prompt, "Enter passphrase for \"%s\" "
+	    "(empty for no passphrase): ", path);
+	ret = read_check_passphrase(prompt,
 	    "Enter same passphrase again: ",
-	    "Passphrases do not match.  Try again.");
+	    "Passphrases do not match.  Try again.", retry_num);
+	free(prompt);
+
+	return ret;
 }
 
 static void
@@ -3044,7 +3037,8 @@ main(int argc, char **argv)
 		exit(1);
 
 	/* Determine the passphrase for the private key */
-	passphrase = private_key_passphrase();
+	passphrase = private_key_new_passphrase(identity_file,
+	    (u_int)-1/*practically unlimited*/);
 
 	if (identity_comment) {
 		strlcpy(comment, identity_comment, sizeof(comment));
