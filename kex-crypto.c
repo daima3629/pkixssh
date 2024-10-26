@@ -399,15 +399,9 @@ kex_dh_shared_secret_to_sshbuf(u_char *kbuf, size_t klen, struct sshbuf **bufp) 
 }
 
 
-int
-kex_dh_compute_key(struct kex *kex, BIGNUM *pub_key, struct sshbuf **shared_secretp)
-{
-	DH *dh;
-	int klen;
-	u_char *kbuf = NULL;
-	int r;
-
 #ifdef DEBUG_KEXDH
+static void
+DEBUG_DH_COMPUTE_KEY(struct kex *kex, BIGNUM *pub_key) {
 	fprintf(stderr, "dh pub: ");
 	BN_print_fp(stderr, pub_key);
 	fprintf(stderr, "\n");
@@ -416,7 +410,24 @@ kex_dh_compute_key(struct kex *kex, BIGNUM *pub_key, struct sshbuf **shared_secr
 	EVP_PKEY_print_params(err, kex->pk, 0, NULL);
 	BIO_free_all(err);
 }
+}
+#else
+static inline void
+DEBUG_DH_COMPUTE_KEY(struct kex *kex, BIGNUM *pub_key) {
+	UNUSED(kex); UNUSED(pub_key);
+}
 #endif
+
+int
+kex_dh_compute_key(struct kex *kex, BIGNUM *pub_key, struct sshbuf **shared_secretp)
+{
+	DH *dh;
+	int klen;
+	u_char *kbuf = NULL;
+	int r;
+
+	DEBUG_DH_COMPUTE_KEY(kex, pub_key);
+
 	dh = EVP_PKEY_get1_DH(kex->pk);
 	if (dh == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;
