@@ -375,6 +375,20 @@ private_key_new_passphrase(const char *path, u_int retry_num)
 	return asc_new_passphrase(path, retry_num);
 }
 
+static char*
+private_key_passphrase(const char *path)
+{
+	char *prompt, *ret;
+
+	if (identity_passphrase)
+		return xstrdup(identity_passphrase);
+
+	xasprintf(&prompt, "Enter passphrase for \"%s\": ", path);
+	ret = read_passphrase(prompt, RP_ALLOW_STDIN);
+	free(prompt);
+	return ret;
+}
+
 static int
 Xstat(char *filename)
 {
@@ -405,11 +419,7 @@ load_identity(const char *filename, char **commentp)
 		fatal_r(r, "Load key \"%s\"", filename);
 
 {	/* try passphrase only for file based keys */
-	char *pass;
-	if (identity_passphrase)
-		pass = xstrdup(identity_passphrase);
-	else
-		pass = read_passphrase("Enter passphrase: ", RP_ALLOW_STDIN);
+	char *pass = private_key_passphrase(filename);;
 	r = sshkey_load_private(filename, pass, &prv, commentp);
 	freezero(pass, strlen(pass));
 }
@@ -1454,13 +1464,7 @@ do_change_comment(const struct passwd *pw, const char *identity_comment)
 	else if (r != SSH_ERR_KEY_WRONG_PASSPHRASE)
 		fatal_r(r, "Cannot load private key \"%s\"", identity_file);
 	else {
-		if (identity_passphrase)
-			passphrase = xstrdup(identity_passphrase);
-		else if (identity_new_passphrase)
-			passphrase = xstrdup(identity_new_passphrase);
-		else
-			passphrase = read_passphrase("Enter passphrase: ",
-			    RP_ALLOW_STDIN);
+		passphrase = private_key_passphrase(identity_file);
 		/* Try to load using the passphrase. */
 		if ((r = sshkey_load_private(identity_file, passphrase,
 		    &private, &comment)) != 0) {
