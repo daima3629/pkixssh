@@ -51,7 +51,15 @@ kex_dh_to_sshbuf(struct kex *kex, struct sshbuf **bufp) {
 	return r;
 }
 
-int
+
+/* diffie-hellman key exchange implementation */
+
+static int
+kex_dh_dec(struct kex *kex, const struct sshbuf *dh_blob,
+    struct sshbuf **shared_secretp);
+
+
+static int
 kex_dh_keypair(struct kex *kex)
 {
 	struct sshbuf *buf = NULL;
@@ -69,7 +77,7 @@ kex_dh_keypair(struct kex *kex)
 	return r;
 }
 
-int
+static int
 kex_dh_enc(struct kex *kex, const struct sshbuf *client_blob,
     struct sshbuf **server_blobp, struct sshbuf **shared_secretp)
 {
@@ -93,7 +101,7 @@ kex_dh_enc(struct kex *kex, const struct sshbuf *client_blob,
 	return r;
 }
 
-int
+static int
 kex_dh_dec(struct kex *kex, const struct sshbuf *dh_blob,
     struct sshbuf **shared_secretp)
 {
@@ -111,4 +119,35 @@ kex_dh_dec(struct kex *kex, const struct sshbuf *dh_blob,
 	kex_reset_crypto_keys(kex);
 	return r;
 }
+
+static const struct kex_impl_funcs kex_dh_funcs = {
+	kex_dh_keypair,
+	kex_dh_enc,
+	kex_dh_dec
+};
+
+const struct kex_impl kex_dh_grp1_sha1_impl = {
+	KEX_DH_GRP1_SHA1, 0,
+	&kex_dh_funcs
+};
+
+const struct kex_impl kex_dh_grp14_sha1_impl = {
+	KEX_DH_GRP14_SHA1, 0,
+	&kex_dh_funcs
+};
+
+const struct kex_impl kex_dh_grp14_sha256_impl = {
+	KEX_DH_GRP14_SHA256, 0,
+	&kex_dh_funcs
+};
+
+const struct kex_impl kex_dh_grp16_sha512_impl = {
+	KEX_DH_GRP16_SHA512, 0,
+	&kex_dh_funcs
+};
+
+const struct kex_impl kex_dh_grp18_sha512_impl = {
+	KEX_DH_GRP18_SHA512, 0,
+	&kex_dh_funcs
+};
 #endif /* WITH_OPENSSL */

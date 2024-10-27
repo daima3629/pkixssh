@@ -146,6 +146,21 @@ struct kex {
 	struct sshbuf *client_pub;
 };
 
+struct kex_impl_funcs {
+	int (*keypair)(struct kex *);
+	int (*enc)(struct kex *, const struct sshbuf *, struct sshbuf **,
+	    struct sshbuf **);
+	int (*dec)(struct kex *, const struct sshbuf *, struct sshbuf **);
+};
+
+struct kex_impl {
+	/* TODO: temporary primary key */
+	u_int kex_type;
+	int ec_nid;
+
+	const struct kex_impl_funcs *funcs;
+};
+
 int	 kex_name_valid(const char *);
 u_int	 kex_type_from_name(const char *);
 int	 kex_hash_from_name(const char *);
@@ -188,11 +203,6 @@ int	 kex_verify_host_key(struct ssh *ssh, struct sshkey *key);
 
 int	 kexgex_client(struct ssh *);
 int	 kexgex_server(struct ssh *);
-
-int	 kex_dh_keypair(struct kex *);
-int	 kex_dh_enc(struct kex *, const struct sshbuf *, struct sshbuf **,
-    struct sshbuf **);
-int	 kex_dh_dec(struct kex *, const struct sshbuf *, struct sshbuf **);
 
 int	 kex_ecdh_keypair(struct kex *);
 int	 kex_ecdh_enc(struct kex *, const struct sshbuf *, struct sshbuf **,

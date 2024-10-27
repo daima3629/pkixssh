@@ -1,7 +1,7 @@
 /* $OpenBSD: kexgen.c,v 1.10 2024/09/09 02:39:57 djm Exp $ */
 /*
  * Copyright (c) 2019 Markus Friedl.  All rights reserved.
- * Copyright (c) 2019-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2019-2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -44,6 +44,23 @@
 
 static int input_kex_gen_init(int, u_int32_t, struct ssh *);
 static int input_kex_gen_reply(int type, u_int32_t seq, struct ssh *ssh);
+
+extern const struct kex_impl* const kex_impl_list[];
+
+static const struct kex_impl*
+find_kex_impl(struct kex *kex)
+{
+	const struct kex_impl *const* p;
+
+	for (p = kex_impl_list; *p != NULL; p++) {
+		/* TODO: temporary primary key */
+		if ((*p)->ec_nid != kex->ec_nid)
+			continue;
+		if ((*p)->kex_type == kex->kex_type)
+			return *p;
+	}
+	return NULL;
+}
 
 static int
 kex_gen_hash(
@@ -102,15 +119,14 @@ kex_gen_client(struct ssh *ssh)
 	struct kex *kex = ssh->kex;
 	int r;
 
+{	const struct kex_impl* impl = find_kex_impl(kex);
+	if (impl != NULL) {
+		r = impl->funcs->keypair(kex);
+		goto skip_switch;
+	}
+}
 	switch (kex->kex_type) {
 #ifdef WITH_OPENSSL
-	case KEX_DH_GRP1_SHA1:
-	case KEX_DH_GRP14_SHA1:
-	case KEX_DH_GRP14_SHA256:
-	case KEX_DH_GRP16_SHA512:
-	case KEX_DH_GRP18_SHA512:
-		r = kex_dh_keypair(kex);
-		break;
 #ifdef OPENSSL_HAS_ECC
 	case KEX_ECDH_SHA2:
 		r = kex_ecdh_keypair(kex);
@@ -134,6 +150,7 @@ kex_gen_client(struct ssh *ssh)
 		r = SSH_ERR_INVALID_ARGUMENT;
 		break;
 	}
+skip_switch:
 	if (r != 0)
 		return r;
 	if ((r = sshpkt_start(ssh, SSH2_MSG_KEX_ECDH_INIT)) != 0 ||
@@ -184,15 +201,15 @@ input_kex_gen_reply(int type, u_int32_t seq, struct ssh *ssh)
 		goto out;
 
 	/* compute shared secret */
+{	const struct kex_impl* impl = find_kex_impl(kex);
+	if (impl != NULL) {
+		r = impl->funcs->dec(kex, server_blob,
+		    &shared_secret);
+		goto skip_switch;
+	}
+}
 	switch (kex->kex_type) {
 #ifdef WITH_OPENSSL
-	case KEX_DH_GRP1_SHA1:
-	case KEX_DH_GRP14_SHA1:
-	case KEX_DH_GRP14_SHA256:
-	case KEX_DH_GRP16_SHA512:
-	case KEX_DH_GRP18_SHA512:
-		r = kex_dh_dec(kex, server_blob, &shared_secret);
-		break;
 #ifdef OPENSSL_HAS_ECC
 	case KEX_ECDH_SHA2:
 		r = kex_ecdh_dec(kex, server_blob, &shared_secret);
@@ -218,7 +235,8 @@ input_kex_gen_reply(int type, u_int32_t seq, struct ssh *ssh)
 		r = SSH_ERR_INVALID_ARGUMENT;
 		break;
 	}
-	if (r !=0 )
+skip_switch:
+	if (r != 0)
 		goto out;
 
 	/* calc and verify H */
@@ -297,16 +315,15 @@ input_kex_gen_init(int type, u_int32_t seq, struct ssh *ssh)
 		goto out;
 
 	/* compute shared secret */
+{	const struct kex_impl* impl = find_kex_impl(kex);
+	if (impl != NULL) {
+		r = impl->funcs->enc(kex, client_pubkey, &server_pubkey,
+		    &shared_secret);
+		goto skip_switch;
+	}
+}
 	switch (kex->kex_type) {
 #ifdef WITH_OPENSSL
-	case KEX_DH_GRP1_SHA1:
-	case KEX_DH_GRP14_SHA1:
-	case KEX_DH_GRP14_SHA256:
-	case KEX_DH_GRP16_SHA512:
-	case KEX_DH_GRP18_SHA512:
-		r = kex_dh_enc(kex, client_pubkey, &server_pubkey,
-		    &shared_secret);
-		break;
 #ifdef OPENSSL_HAS_ECC
 	case KEX_ECDH_SHA2:
 		r = kex_ecdh_enc(kex, client_pubkey, &server_pubkey,
@@ -334,7 +351,8 @@ input_kex_gen_init(int type, u_int32_t seq, struct ssh *ssh)
 		r = SSH_ERR_INVALID_ARGUMENT;
 		break;
 	}
-	if (r !=0 )
+skip_switch:
+	if (r != 0)
 		goto out;
 
 	/* calc H */

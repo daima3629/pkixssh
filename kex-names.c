@@ -92,6 +92,26 @@ static const struct kexalg kexalgs[] = {
 	{ NULL, 0, -1, -1},
 };
 
+/* supported key exchange implementations */
+#ifdef WITH_OPENSSL
+extern const struct kex_impl kex_dh_grp1_sha1_impl;
+extern const struct kex_impl kex_dh_grp14_sha1_impl;
+extern const struct kex_impl kex_dh_grp14_sha256_impl;
+extern const struct kex_impl kex_dh_grp16_sha512_impl;
+extern const struct kex_impl kex_dh_grp18_sha512_impl;
+#endif /* WITH_OPENSSL */
+
+const struct kex_impl* const kex_impl_list[] = {
+#ifdef WITH_OPENSSL
+	&kex_dh_grp1_sha1_impl,
+	&kex_dh_grp14_sha1_impl,
+	&kex_dh_grp14_sha256_impl,
+	&kex_dh_grp16_sha512_impl,
+	&kex_dh_grp18_sha512_impl,
+#endif /* WITH_OPENSSL */
+	NULL
+};
+
 char *
 kex_alg_list(char sep)
 {
