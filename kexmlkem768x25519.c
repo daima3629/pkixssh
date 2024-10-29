@@ -1,4 +1,4 @@
-/* $OpenBSD: kexmlkem768x25519.c,v 1.1 2024/09/02 12:13:56 djm Exp $ */
+/* $OpenBSD: kexmlkem768x25519.c,v 1.2 2024/10/27 02:06:59 djm Exp $ */
 /*
  * Copyright (c) 2023 Markus Friedl.  All rights reserved.
  *
@@ -35,6 +35,9 @@
 #include <stdbool.h>
 #include <string.h>
 #include <signal.h>
+#ifdef HAVE_ENDIAN_H
+# include <endian.h>
+#endif
 
 #include "sshkey.h"
 #include "kex.h"
@@ -43,6 +46,31 @@
 #include "ssherr.h"
 #include "log.h"
 
+#ifndef HAVE_ENDIAN_H
+# define compat_swap32(v)					\
+	(uint32_t)(((uint32_t)(v) & 0xff) << 24 |		\
+	((uint32_t)(v) & 0xff00) << 8 |				\
+	((uint32_t)(v) & 0xff0000) >> 8 |			\
+	((uint32_t)(v) & 0xff000000) >> 24)
+# define compat_swap64(v)					\
+	(__uint64_t)((((__uint64_t)(v) & 0xff) << 56) |		\
+	((__uint64_t)(v) & 0xff00ULL) << 40 |			\
+	((__uint64_t)(v) & 0xff0000ULL) << 24 |			\
+	((__uint64_t)(v) & 0xff000000ULL) << 8 |		\
+	((__uint64_t)(v) & 0xff00000000ULL) >> 8 |		\
+	((__uint64_t)(v) & 0xff0000000000ULL) >> 24 |		\
+	((__uint64_t)(v) & 0xff000000000000ULL) >> 40 |		\
+	((__uint64_t)(v) & 0xff00000000000000ULL) >> 56)
+# ifdef WORDS_BIGENDIAN
+#  define le32toh(v) (compat_swap32(v))
+#  define le64toh(v) (compat_swap64(v))
+#  define htole64(v) (compat_swap64(v))
+# else
+#  define le32toh(v) ((uint32_t)v)
+#  define le64toh(v) ((uint64_t)v)
+#  define htole64(v) ((uint64_t)v)
+# endif
+#endif
 #include "libcrux_mlkem768_sha3.h"
 
 int
