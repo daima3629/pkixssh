@@ -53,14 +53,14 @@
 	((uint32_t)(v) & 0xff0000) >> 8 |			\
 	((uint32_t)(v) & 0xff000000) >> 24)
 # define compat_swap64(v)					\
-	(__uint64_t)((((__uint64_t)(v) & 0xff) << 56) |		\
-	((__uint64_t)(v) & 0xff00ULL) << 40 |			\
-	((__uint64_t)(v) & 0xff0000ULL) << 24 |			\
-	((__uint64_t)(v) & 0xff000000ULL) << 8 |		\
-	((__uint64_t)(v) & 0xff00000000ULL) >> 8 |		\
-	((__uint64_t)(v) & 0xff0000000000ULL) >> 24 |		\
-	((__uint64_t)(v) & 0xff000000000000ULL) >> 40 |		\
-	((__uint64_t)(v) & 0xff00000000000000ULL) >> 56)
+	(uint64_t)((((uint64_t)(v) & 0xff) << 56) |		\
+	((uint64_t)(v) & 0xff00ULL) << 40 |			\
+	((uint64_t)(v) & 0xff0000ULL) << 24 |			\
+	((uint64_t)(v) & 0xff000000ULL) << 8 |		\
+	((uint64_t)(v) & 0xff00000000ULL) >> 8 |		\
+	((uint64_t)(v) & 0xff0000000000ULL) >> 24 |		\
+	((uint64_t)(v) & 0xff000000000000ULL) >> 40 |		\
+	((uint64_t)(v) & 0xff00000000000000ULL) >> 56)
 # ifdef WORDS_BIGENDIAN
 #  define le32toh(v) (compat_swap32(v))
 #  define le64toh(v) (compat_swap64(v))
