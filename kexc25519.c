@@ -3,6 +3,7 @@
  * Copyright (c) 2019 Markus Friedl.  All rights reserved.
  * Copyright (c) 2010 Damien Miller.  All rights reserved.
  * Copyright (c) 2013 Aris Adamantiadis.  All rights reserved.
+ * Copyright (c) 2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -81,7 +82,9 @@ kexc25519_shared_key_ext(const u_char key[CURVE25519_SIZE],
 	return r;
 }
 
-int
+/* curve25519 key exchange implementation */
+
+static int
 kex_c25519_keypair(struct kex *kex)
 {
 	struct sshbuf *buf = NULL;
@@ -103,7 +106,7 @@ kex_c25519_keypair(struct kex *kex)
 	return r;
 }
 
-int
+static int
 kex_c25519_enc(struct kex *kex, const struct sshbuf *client_blob,
    struct sshbuf **server_blobp, struct sshbuf **shared_secretp)
 {
@@ -156,7 +159,7 @@ kex_c25519_enc(struct kex *kex, const struct sshbuf *client_blob,
 	return r;
 }
 
-int
+static int
 kex_c25519_dec(struct kex *kex, const struct sshbuf *server_blob,
     struct sshbuf **shared_secretp)
 {
@@ -191,3 +194,14 @@ kex_c25519_dec(struct kex *kex, const struct sshbuf *server_blob,
 	sshbuf_free(buf);
 	return r;
 }
+
+static const struct kex_impl_funcs kex_c25519_funcs = {
+	kex_c25519_keypair,
+	kex_c25519_enc,
+	kex_c25519_dec
+};
+
+const struct kex_impl kex_c25519_sha256_impl = {
+	KEX_C25519_SHA256, 0,
+	&kex_c25519_funcs
+};

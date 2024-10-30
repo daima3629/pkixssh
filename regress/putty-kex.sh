@@ -14,7 +14,8 @@ cp $OBJ/sshd_proxy $OBJ/sshd_proxy_bak
 kex='dh-gex-sha1 dh-group1-sha1'
 kex="$kex dh-group14-sha1 dh-group14-sha256"
 kex="$kex dh-group16 dh-group18" # requires PuTTY 0.78
-kex="$kex ecdh ecdh-256 ecdh-384 ecdh-521"
+kex="$kex ecdh ecdh-256 ecdh-384 ecdh-521" # requires PuTTY 0.68
+kex="$kex curve25519-sha256" # requires PuTTY 0.68
 
 for k in $kex ; do
 	verbose "$tid: kex $k"
@@ -31,6 +32,7 @@ for k in $kex ; do
 	ecdh-256)		sk=ecdh-sha2-nistp256;;
 	ecdh-384)		sk=ecdh-sha2-nistp384;;
 	ecdh-521)		sk=ecdh-sha2-nistp521;;
+	curve25519-sha256)	sk=curve25519-sha256;;
 	*) continue;;
 	esac
 	cp $OBJ/sshd_proxy_bak $OBJ/sshd_proxy

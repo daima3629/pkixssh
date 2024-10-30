@@ -264,7 +264,9 @@ kex_ecdh_to_sshbuf(struct kex *kex, struct sshbuf **bufp) {
 }
 
 
-int
+/* elliptic-curve diffie-hellman key exchange implementation */
+
+static int
 kex_ecdh_keypair(struct kex *kex)
 {
 	int r;
@@ -280,7 +282,7 @@ kex_ecdh_keypair(struct kex *kex)
 	return r;
 }
 
-int
+static int
 kex_ecdh_enc(struct kex *kex, const struct sshbuf *client_blob,
     struct sshbuf **server_blobp, struct sshbuf **shared_secretp)
 {
@@ -304,7 +306,7 @@ kex_ecdh_enc(struct kex *kex, const struct sshbuf *client_blob,
 	return r;
 }
 
-int
+static int
 kex_ecdh_dec(struct kex *kex, const struct sshbuf *server_blob,
     struct sshbuf **shared_secretp)
 {
@@ -317,4 +319,28 @@ kex_ecdh_dec(struct kex *kex, const struct sshbuf *server_blob,
 	kex_reset_crypto_keys(kex);
 	return r;
 }
+
+static const struct kex_impl_funcs kex_ecdh_funcs = {
+	kex_ecdh_keypair,
+	kex_ecdh_enc,
+	kex_ecdh_dec
+};
+
+const struct kex_impl kex_ecdh_p256_sha256_impl = {
+	KEX_ECDH_SHA2, NID_X9_62_prime256v1,
+	&kex_ecdh_funcs
+};
+
+const struct kex_impl kex_ecdh_p384_sha384_impl = {
+	KEX_ECDH_SHA2, NID_secp384r1,
+	&kex_ecdh_funcs
+};
+
+# ifdef OPENSSL_HAS_NISTP521
+const struct kex_impl kex_ecdh_p521_sha512_impl = {
+	KEX_ECDH_SHA2, NID_secp521r1,
+	&kex_ecdh_funcs
+};
+# endif /* OPENSSL_HAS_NISTP521 */
+
 #endif /* defined(WITH_OPENSSL) && defined(OPENSSL_HAS_ECC) */

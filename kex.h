@@ -204,16 +204,6 @@ int	 kex_verify_host_key(struct ssh *ssh, struct sshkey *key);
 int	 kexgex_client(struct ssh *);
 int	 kexgex_server(struct ssh *);
 
-int	 kex_ecdh_keypair(struct kex *);
-int	 kex_ecdh_enc(struct kex *, const struct sshbuf *, struct sshbuf **,
-    struct sshbuf **);
-int	 kex_ecdh_dec(struct kex *, const struct sshbuf *, struct sshbuf **);
-
-int	 kex_c25519_keypair(struct kex *);
-int	 kex_c25519_enc(struct kex *, const struct sshbuf *, struct sshbuf **,
-    struct sshbuf **);
-int	 kex_c25519_dec(struct kex *, const struct sshbuf *, struct sshbuf **);
-
 int	 kex_kem_sntrup761x25519_keypair(struct kex *);
 int	 kex_kem_sntrup761x25519_enc(struct kex *, const struct sshbuf *,
     struct sshbuf **, struct sshbuf **);

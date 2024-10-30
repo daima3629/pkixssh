@@ -48,20 +48,20 @@ static const struct kexalg kexalgs[] = {
 	    KEX_DH_GRP1_SHA1, 0, SSH_DIGEST_SHA1 },
 	{ "diffie-hellman-group14-sha1",
 	    KEX_DH_GRP14_SHA1, 0, SSH_DIGEST_SHA1 },
-#ifdef HAVE_EVP_SHA256
+# ifdef HAVE_EVP_SHA256
 	{ "diffie-hellman-group14-sha256",
 	    KEX_DH_GRP14_SHA256, 0, SSH_DIGEST_SHA256 },
 	{ "diffie-hellman-group16-sha512",
 	    KEX_DH_GRP16_SHA512, 0, SSH_DIGEST_SHA512 },
 	{ "diffie-hellman-group18-sha512",
 	    KEX_DH_GRP18_SHA512, 0, SSH_DIGEST_SHA512 },
-#endif /* HAVE_EVP_SHA256 */
+# endif /* HAVE_EVP_SHA256 */
 	{ "diffie-hellman-group-exchange-sha1",
 	    KEX_DH_GEX_SHA1, 0, SSH_DIGEST_SHA1 },
-#ifdef HAVE_EVP_SHA256
+# ifdef HAVE_EVP_SHA256
 	{ "diffie-hellman-group-exchange-sha256",
 	    KEX_DH_GEX_SHA256, 0, SSH_DIGEST_SHA256 },
-#endif /* HAVE_EVP_SHA256 */
+# endif /* HAVE_EVP_SHA256 */
 #ifdef OPENSSL_HAS_ECC
 	{ "ecdh-sha2-nistp256",
 	    KEX_ECDH_SHA2, NID_X9_62_prime256v1, SSH_DIGEST_SHA256 },
@@ -96,19 +96,43 @@ static const struct kexalg kexalgs[] = {
 #ifdef WITH_OPENSSL
 extern const struct kex_impl kex_dh_grp1_sha1_impl;
 extern const struct kex_impl kex_dh_grp14_sha1_impl;
+# ifdef HAVE_EVP_SHA256
 extern const struct kex_impl kex_dh_grp14_sha256_impl;
 extern const struct kex_impl kex_dh_grp16_sha512_impl;
 extern const struct kex_impl kex_dh_grp18_sha512_impl;
+# endif /* HAVE_EVP_SHA256 */
+# ifdef OPENSSL_HAS_ECC
+extern const struct kex_impl kex_ecdh_p256_sha256_impl;
+extern const struct kex_impl kex_ecdh_p384_sha384_impl;
+#  ifdef OPENSSL_HAS_NISTP521
+extern const struct kex_impl kex_ecdh_p521_sha512_impl;
+#  endif /* OPENSSL_HAS_NISTP521 */
+# endif /* OPENSSL_HAS_ECC */
 #endif /* WITH_OPENSSL */
+#if defined(HAVE_EVP_SHA256) || !defined(WITH_OPENSSL)
+extern const struct kex_impl kex_c25519_sha256_impl;
+#endif /* HAVE_EVP_SHA256 || !WITH_OPENSSL */
 
 const struct kex_impl* const kex_impl_list[] = {
 #ifdef WITH_OPENSSL
 	&kex_dh_grp1_sha1_impl,
 	&kex_dh_grp14_sha1_impl,
+# ifdef HAVE_EVP_SHA256
 	&kex_dh_grp14_sha256_impl,
 	&kex_dh_grp16_sha512_impl,
 	&kex_dh_grp18_sha512_impl,
+# endif /* HAVE_EVP_SHA256 */
+# ifdef OPENSSL_HAS_ECC
+	&kex_ecdh_p256_sha256_impl,
+	&kex_ecdh_p384_sha384_impl,
+#  ifdef OPENSSL_HAS_NISTP521
+	&kex_ecdh_p521_sha512_impl,
+#  endif /* OPENSSL_HAS_NISTP521 */
+# endif /* OPENSSL_HAS_ECC */
 #endif /* WITH_OPENSSL */
+#if defined(HAVE_EVP_SHA256) || !defined(WITH_OPENSSL)
+	&kex_c25519_sha256_impl,
+#endif /* HAVE_EVP_SHA256 || !WITH_OPENSSL */
 	NULL
 };
 
