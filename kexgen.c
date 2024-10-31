@@ -120,27 +120,11 @@ kex_gen_client(struct ssh *ssh)
 	int r;
 
 {	const struct kex_impl* impl = find_kex_impl(kex);
-	if (impl != NULL) {
+	if (impl != NULL)
 		r = impl->funcs->keypair(kex);
-		goto skip_switch;
-	}
-}
-	switch (kex->kex_type) {
-#ifdef ENABLE_KEX_SNTRUP761X25519
-	case KEX_KEM_SNTRUP761X25519_SHA512:
-		r = kex_kem_sntrup761x25519_keypair(kex);
-		break;
-#endif
-#ifdef ENABLE_KEX_MLKEM768X25519
-	case KEX_KEM_MLKEM768X25519_SHA256:
-		r = kex_kem_mlkem768x25519_keypair(kex);
-		break;
-#endif
-	default:
+	else
 		r = SSH_ERR_INVALID_ARGUMENT;
-		break;
-	}
-skip_switch:
+}
 	if (r != 0)
 		return r;
 	if ((r = sshpkt_start(ssh, SSH2_MSG_KEX_ECDH_INIT)) != 0 ||
@@ -192,30 +176,11 @@ input_kex_gen_reply(int type, u_int32_t seq, struct ssh *ssh)
 
 	/* compute shared secret */
 {	const struct kex_impl* impl = find_kex_impl(kex);
-	if (impl != NULL) {
-		r = impl->funcs->dec(kex, server_blob,
-		    &shared_secret);
-		goto skip_switch;
-	}
-}
-	switch (kex->kex_type) {
-#ifdef ENABLE_KEX_SNTRUP761X25519
-	case KEX_KEM_SNTRUP761X25519_SHA512:
-		r = kex_kem_sntrup761x25519_dec(kex, server_blob,
-		    &shared_secret);
-		break;
-#endif
-#ifdef ENABLE_KEX_MLKEM768X25519
-	case KEX_KEM_MLKEM768X25519_SHA256:
-		r = kex_kem_mlkem768x25519_dec(kex, server_blob,
-		    &shared_secret);
-		break;
-#endif
-	default:
+	if (impl != NULL)
+		r = impl->funcs->dec(kex, server_blob, &shared_secret);
+	else
 		r = SSH_ERR_INVALID_ARGUMENT;
-		break;
-	}
-skip_switch:
+}
 	if (r != 0)
 		goto out;
 
@@ -296,30 +261,12 @@ input_kex_gen_init(int type, u_int32_t seq, struct ssh *ssh)
 
 	/* compute shared secret */
 {	const struct kex_impl* impl = find_kex_impl(kex);
-	if (impl != NULL) {
+	if (impl != NULL)
 		r = impl->funcs->enc(kex, client_pubkey, &server_pubkey,
 		    &shared_secret);
-		goto skip_switch;
-	}
-}
-	switch (kex->kex_type) {
-#ifdef ENABLE_KEX_SNTRUP761X25519
-	case KEX_KEM_SNTRUP761X25519_SHA512:
-		r = kex_kem_sntrup761x25519_enc(kex, client_pubkey,
-		    &server_pubkey, &shared_secret);
-		break;
-#endif
-#ifdef ENABLE_KEX_MLKEM768X25519
-	case KEX_KEM_MLKEM768X25519_SHA256:
-		r = kex_kem_mlkem768x25519_enc(kex, client_pubkey,
-		    &server_pubkey, &shared_secret);
-		break;
-#endif
-	default:
+	else
 		r = SSH_ERR_INVALID_ARGUMENT;
-		break;
-	}
-skip_switch:
+}
 	if (r != 0)
 		goto out;
 

@@ -1,6 +1,7 @@
 /* $OpenBSD: kexmlkem768x25519.c,v 1.2 2024/10/27 02:06:59 djm Exp $ */
 /*
  * Copyright (c) 2023 Markus Friedl.  All rights reserved.
+ * Copyright (c) 2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -73,7 +74,9 @@
 #endif
 #include "libcrux_mlkem768_sha3.h"
 
-int
+/* Post-Quantum Traditional hybrid key exchange implementation */
+
+static int
 kex_kem_mlkem768x25519_keypair(struct kex *kex)
 {
 	struct sshbuf *buf = NULL;
@@ -112,7 +115,7 @@ kex_kem_mlkem768x25519_keypair(struct kex *kex)
 	return r;
 }
 
-int
+static int
 kex_kem_mlkem768x25519_enc(struct kex *kex,
    const struct sshbuf *client_blob, struct sshbuf **server_blobp,
    struct sshbuf **shared_secretp)
@@ -211,7 +214,7 @@ kex_kem_mlkem768x25519_enc(struct kex *kex,
 	return r;
 }
 
-int
+static int
 kex_kem_mlkem768x25519_dec(struct kex *kex,
     const struct sshbuf *server_blob, struct sshbuf **shared_secretp)
 {
@@ -283,6 +286,17 @@ kex_kem_mlkem768x25519_dec(struct kex *kex,
 	sshbuf_free(buf);
 	return r;
 }
+
+static const struct kex_impl_funcs kex_kem_mlkem768x25519_funcs = {
+	kex_kem_mlkem768x25519_keypair,
+	kex_kem_mlkem768x25519_enc,
+	kex_kem_mlkem768x25519_dec
+};
+
+const struct kex_impl kex_kem_mlkem768x25519_sha256_impl = {
+	KEX_KEM_MLKEM768X25519_SHA256, 0,
+	&kex_kem_mlkem768x25519_funcs
+};
 
 #else /* ENABLE_KEX_MLKEM768X25519 */
 

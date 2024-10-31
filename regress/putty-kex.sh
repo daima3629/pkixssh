@@ -16,6 +16,8 @@ kex="$kex dh-group14-sha1 dh-group14-sha256"
 kex="$kex dh-group16 dh-group18" # requires PuTTY 0.78
 kex="$kex ecdh ecdh-256 ecdh-384 ecdh-521" # requires PuTTY 0.68
 kex="$kex curve25519-sha256" # requires PuTTY 0.68
+kex="$kex sntrup761x25519-sha512@openssh.com" # requires PuTTY 0.78
+
 
 for k in $kex ; do
 	verbose "$tid: kex $k"
@@ -33,6 +35,8 @@ for k in $kex ; do
 	ecdh-384)		sk=ecdh-sha2-nistp384;;
 	ecdh-521)		sk=ecdh-sha2-nistp521;;
 	curve25519-sha256)	sk=curve25519-sha256;;
+	sntrup761x25519-sha512@openssh.com)
+				sk=sntrup761x25519-sha512@openssh.com;;
 	*) continue;;
 	esac
 	cp $OBJ/sshd_proxy_bak $OBJ/sshd_proxy

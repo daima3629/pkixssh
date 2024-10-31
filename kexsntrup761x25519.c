@@ -1,6 +1,7 @@
 /* $OpenBSD: kexsntrup761x25519.c,v 1.3 2024/09/15 02:20:51 djm Exp $ */
 /*
  * Copyright (c) 2019 Markus Friedl.  All rights reserved.
+ * Copyright (c) 2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -42,7 +43,9 @@ volatile crypto_int16 crypto_int16_optblocker = 0;
 volatile crypto_int32 crypto_int32_optblocker = 0;
 volatile crypto_int64 crypto_int64_optblocker = 0;
 
-int
+/* NTRU Prime post-quantum key exchange implementation */
+
+static int
 kex_kem_sntrup761x25519_keypair(struct kex *kex)
 {
 	struct sshbuf *buf = NULL;
@@ -72,7 +75,7 @@ kex_kem_sntrup761x25519_keypair(struct kex *kex)
 	return r;
 }
 
-int
+static int
 kex_kem_sntrup761x25519_enc(struct kex *kex,
    const struct sshbuf *client_blob, struct sshbuf **server_blobp,
    struct sshbuf **shared_secretp)
@@ -158,7 +161,7 @@ kex_kem_sntrup761x25519_enc(struct kex *kex,
 	return r;
 }
 
-int
+static int
 kex_kem_sntrup761x25519_dec(struct kex *kex,
     const struct sshbuf *server_blob, struct sshbuf **shared_secretp)
 {
@@ -220,6 +223,17 @@ kex_kem_sntrup761x25519_dec(struct kex *kex,
 	sshbuf_free(buf);
 	return r;
 }
+
+static const struct kex_impl_funcs kex_kem_sntrup761x25519_funcs = {
+	kex_kem_sntrup761x25519_keypair,
+	kex_kem_sntrup761x25519_enc,
+	kex_kem_sntrup761x25519_dec
+};
+
+const struct kex_impl kex_kem_sntrup761x25519_sha512_impl = {
+	KEX_KEM_SNTRUP761X25519_SHA512, 0,
+	&kex_kem_sntrup761x25519_funcs
+};
 
 #else /* ENABLE_KEX_SNTRUP761X25519 */
 
