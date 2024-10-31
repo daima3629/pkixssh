@@ -121,13 +121,12 @@ ssh_init(struct ssh **sshp, int is_server, struct kex_params *kex_params)
 		ssh_free(ssh);
 		return r;
 	}
+	kex_set_callbacks(ssh->kex);
 	if (is_server) {
-		kex_set_callbacks_server(ssh->kex);
 		ssh->kex->find_host_public_key=&_ssh_host_public_key;
 		ssh->kex->find_host_private_key=&_ssh_host_private_key;
 		ssh->kex->xsign=&_ssh_host_key_sign;
 	} else {
-		kex_set_callbacks_client(ssh->kex);
 		ssh->kex->verify_host_key =&_ssh_verify_host_key;
 	}
 	*sshp = ssh;

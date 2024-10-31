@@ -177,8 +177,7 @@ void	 kex_proposal_free_entries(char *prop[PROPOSAL_MAX]);
 int	 kex_exchange_identification(struct ssh *, int);
 
 struct kex *kex_new(void);
-void	 kex_set_callbacks_client(struct kex *);
-void	 kex_set_callbacks_server(struct kex *);
+void	 kex_set_callbacks(struct kex *);
 int	 kex_ready(struct ssh *, char *[PROPOSAL_MAX]);
 int	 kex_setup(struct ssh *, char *[PROPOSAL_MAX]);
 void	 kex_free_newkeys(struct newkeys *);

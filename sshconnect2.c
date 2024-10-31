@@ -243,7 +243,7 @@ ssh_kex2(struct ssh *ssh, char *host, struct sockaddr *hostaddr, u_short port,
 	if ((r = kex_setup(ssh, myproposal)) != 0)
 		fatal_fr(r, "kex_setup");
 	kex = ssh->kex;
-	kex_set_callbacks_client(kex);
+	kex_set_callbacks(kex);
 	kex->verify_host_key=&verify_host_key_callback;
 
 	ssh_dispatch_run_fatal(ssh, DISPATCH_BLOCK, &kex->done);

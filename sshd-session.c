@@ -880,7 +880,7 @@ do_ssh2_kex(struct ssh *ssh)
 	if ((r = kex_setup(ssh, myproposal)) != 0)
 		fatal_fr(r, "kex_setup");
 	kex = ssh->kex;
-	kex_set_callbacks_server(kex);
+	kex_set_callbacks(kex);
 	kex->find_host_public_key=&get_hostkey_public_by_alg;
 	kex->find_host_private_key=&get_hostkey_private_by_alg;
 	kex->host_key_index=&get_hostkey_index;
