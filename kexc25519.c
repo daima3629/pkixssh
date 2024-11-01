@@ -1,4 +1,4 @@
-/* $OpenBSD: kexc25519.c,v 1.17 2019/01/21 10:40:11 djm Exp $ */
+/* $OpenBSD: kexc25519.c,v 1.18 2024/09/02 12:13:56 djm Exp $ */
 /*
  * Copyright (c) 2019 Markus Friedl.  All rights reserved.
  * Copyright (c) 2010 Damien Miller.  All rights reserved.
@@ -203,5 +203,6 @@ static const struct kex_impl_funcs kex_c25519_funcs = {
 
 const struct kex_impl kex_c25519_sha256_impl = {
 	KEX_C25519_SHA256, 0,
+	SSH_DIGEST_SHA256,
 	&kex_c25519_funcs
 };

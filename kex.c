@@ -791,8 +791,8 @@ choose_kex(struct kex *k, char *client, char *server)
 		return SSH_ERR_INTERNAL_ERROR;
 	}
 	k->kex_type = kex_type_from_name(k->name);
-	k->hash_alg = kex_hash_from_name(k->name);
 	k->ec_nid = kex_nid_from_name(k->name);
+	kex_set_hash_alg(k);
 	return 0;
 }
 

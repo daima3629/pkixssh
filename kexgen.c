@@ -62,6 +62,14 @@ find_kex_impl(struct kex *kex)
 	return NULL;
 }
 
+void
+kex_set_hash_alg(struct kex *kex)
+{	const struct kex_impl* impl = find_kex_impl(kex);
+	if (impl == NULL)
+		fatal("internal error - missing kex implementation");
+	 kex->hash_alg = impl->hash_alg;
+}
+
 static int
 kex_gen_hash(
     int hash_alg,

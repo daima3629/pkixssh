@@ -29,6 +29,7 @@
 #ifdef WITH_OPENSSL
 
 #include "kex.h"
+#include "digest.h"
 #include "ssherr.h"
 #include "misc.h"
 
@@ -128,26 +129,31 @@ static const struct kex_impl_funcs kex_dh_funcs = {
 
 const struct kex_impl kex_dh_grp1_sha1_impl = {
 	KEX_DH_GRP1_SHA1, 0,
+	SSH_DIGEST_SHA1,
 	&kex_dh_funcs
 };
 
 const struct kex_impl kex_dh_grp14_sha1_impl = {
 	KEX_DH_GRP14_SHA1, 0,
+	SSH_DIGEST_SHA1,
 	&kex_dh_funcs
 };
 
 const struct kex_impl kex_dh_grp14_sha256_impl = {
 	KEX_DH_GRP14_SHA256, 0,
+	SSH_DIGEST_SHA256,
 	&kex_dh_funcs
 };
 
 const struct kex_impl kex_dh_grp16_sha512_impl = {
 	KEX_DH_GRP16_SHA512, 0,
+	SSH_DIGEST_SHA512,
 	&kex_dh_funcs
 };
 
 const struct kex_impl kex_dh_grp18_sha512_impl = {
 	KEX_DH_GRP18_SHA512, 0,
+	SSH_DIGEST_SHA512,
 	&kex_dh_funcs
 };
 #endif /* WITH_OPENSSL */

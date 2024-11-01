@@ -158,12 +158,12 @@ struct kex_impl {
 	u_int kex_type;
 	int ec_nid;
 
+	int hash_alg;
 	const struct kex_impl_funcs *funcs;
 };
 
 int	 kex_name_valid(const char *);
 u_int	 kex_type_from_name(const char *);
-int	 kex_hash_from_name(const char *);
 int	 kex_nid_from_name(const char *);
 int	 kex_names_valid(const char *);
 char	*kex_alg_list(char);
@@ -177,6 +177,7 @@ void	 kex_proposal_free_entries(char *prop[PROPOSAL_MAX]);
 int	 kex_exchange_identification(struct ssh *, int);
 
 struct kex *kex_new(void);
+void	 kex_set_hash_alg(struct kex *);
 void	 kex_set_callbacks(struct kex *);
 int	 kex_ready(struct ssh *, char *[PROPOSAL_MAX]);
 int	 kex_setup(struct ssh *, char *[PROPOSAL_MAX]);

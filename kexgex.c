@@ -106,12 +106,14 @@ kexgex_hash(
 
 const struct kex_impl kex_dh_gex_sha1_impl = {
 	KEX_DH_GEX_SHA1, 0,
+	SSH_DIGEST_SHA1,
 	NULL
 };
 
 # ifdef HAVE_EVP_SHA256
 const struct kex_impl kex_dh_gex_sha256_impl = {
 	KEX_DH_GEX_SHA256, 0,
+	SSH_DIGEST_SHA256,
 	NULL
 };
 # endif /* HAVE_EVP_SHA256 */

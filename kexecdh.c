@@ -328,17 +328,20 @@ static const struct kex_impl_funcs kex_ecdh_funcs = {
 
 const struct kex_impl kex_ecdh_p256_sha256_impl = {
 	KEX_ECDH_SHA2, NID_X9_62_prime256v1,
+	SSH_DIGEST_SHA256,
 	&kex_ecdh_funcs
 };
 
 const struct kex_impl kex_ecdh_p384_sha384_impl = {
 	KEX_ECDH_SHA2, NID_secp384r1,
+	SSH_DIGEST_SHA384,
 	&kex_ecdh_funcs
 };
 
 # ifdef OPENSSL_HAS_NISTP521
 const struct kex_impl kex_ecdh_p521_sha512_impl = {
 	KEX_ECDH_SHA2, NID_secp521r1,
+	SSH_DIGEST_SHA512,
 	&kex_ecdh_funcs
 };
 # endif /* OPENSSL_HAS_NISTP521 */
