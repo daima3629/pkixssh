@@ -108,6 +108,10 @@ extern const struct kex_impl kex_ecdh_p384_sha384_impl;
 extern const struct kex_impl kex_ecdh_p521_sha512_impl;
 #  endif /* OPENSSL_HAS_NISTP521 */
 # endif /* OPENSSL_HAS_ECC */
+extern const struct kex_impl kex_dh_gex_sha1_impl;
+# ifdef HAVE_EVP_SHA256
+extern const struct kex_impl kex_dh_gex_sha256_impl;
+# endif /* HAVE_EVP_SHA256 */
 #endif /* WITH_OPENSSL */
 #if defined(HAVE_EVP_SHA256) || !defined(WITH_OPENSSL)
 extern const struct kex_impl kex_c25519_sha256_impl;
@@ -145,6 +149,12 @@ const struct kex_impl* const kex_impl_list[] = {
 #ifdef ENABLE_KEX_MLKEM768X25519
 	&kex_kem_mlkem768x25519_sha256_impl,
 #endif
+#ifdef WITH_OPENSSL
+	&kex_dh_gex_sha1_impl,
+# ifdef HAVE_EVP_SHA256
+	&kex_dh_gex_sha256_impl,
+# endif /* HAVE_EVP_SHA256 */
+#endif /* WITH_OPENSSL */
 	NULL
 };
 

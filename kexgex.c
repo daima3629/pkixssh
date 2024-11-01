@@ -97,4 +97,23 @@ kexgex_hash(
 #endif
 	return 0;
 }
+
+
+/* diffie-hellman group and key exchange implementation */
+/* Note implementation uses specific message sequence implemented in callback.
+ * The only difference is digest, so no need to set function pointers.
+ */
+
+const struct kex_impl kex_dh_gex_sha1_impl = {
+	KEX_DH_GEX_SHA1, 0,
+	NULL
+};
+
+# ifdef HAVE_EVP_SHA256
+const struct kex_impl kex_dh_gex_sha256_impl = {
+	KEX_DH_GEX_SHA256, 0,
+	NULL
+};
+# endif /* HAVE_EVP_SHA256 */
+
 #endif /* WITH_OPENSSL */
