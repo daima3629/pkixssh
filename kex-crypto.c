@@ -264,6 +264,23 @@ done:
 }
 
 
+static inline int
+kex_new_dh_pkey(EVP_PKEY **pkp, DH *dh) {
+	EVP_PKEY *pk = EVP_PKEY_new();
+
+	if (pk == NULL)
+		return SSH_ERR_ALLOC_FAIL;
+
+	if (!EVP_PKEY_set1_DH(pk, dh)) {
+		EVP_PKEY_free(pk);
+		return SSH_ERR_LIBCRYPTO_ERROR;
+	}
+
+	*pkp = pk;
+	return 0;
+}
+
+
 static int
 kex_dh_key_init(struct kex *kex) {
 	DH *dh;
@@ -287,21 +304,10 @@ kex_dh_key_init(struct kex *kex) {
 	}
 	if (dh == NULL) return SSH_ERR_ALLOC_FAIL;
 
-{	EVP_PKEY *pk = EVP_PKEY_new();
-	if (pk == NULL) {
-		DH_free(dh);
-		return SSH_ERR_ALLOC_FAIL;
-	}
-	if (!EVP_PKEY_set1_DH(pk, dh)) {
-		DH_free(dh);
-		EVP_PKEY_free(pk);
-		return SSH_ERR_LIBCRYPTO_ERROR;
-	}
+{	int r = kex_new_dh_pkey(&kex->pk, dh);
 	DH_free(dh);
-	kex->pk = pk;
+	return r;
 }
-
-	return 0;
 }
 
 
@@ -325,21 +331,14 @@ extern DH* _choose_dh(int, int, int);
 
 EVP_PKEY*
 kex_new_dh_group_bits(int min, int wantbits, int max) {
-	EVP_PKEY *pk;
+	EVP_PKEY *pk = NULL;
 	DH *dh = NULL;
 
 	dh = _choose_dh(min, wantbits, max);
 	if (dh == NULL) return NULL;
 
-	pk = EVP_PKEY_new();
-	if (pk == NULL) goto done;
+	(void)kex_new_dh_pkey(&pk, dh);
 
-	if (!EVP_PKEY_set1_DH(pk, dh)) {
-		EVP_PKEY_free(pk);
-		pk = NULL;
-	}
-
-done:
 	DH_free(dh);
 	return pk;
 }
@@ -352,16 +351,8 @@ kex_new_dh_group(BIGNUM *modulus, BIGNUM *gen) {
 	dh = _dh_new_group(modulus, gen);
 	if (dh == NULL) return NULL;
 
-	pk = EVP_PKEY_new();
-	if (pk == NULL)
-		goto done;
+	(void)kex_new_dh_pkey(&pk, dh);
 
-	if (!EVP_PKEY_set1_DH(pk, dh)) {
-		EVP_PKEY_free(pk);
-		pk = NULL;
-	}
-
-done:
 	DH_free(dh);
 	return pk;
 }
