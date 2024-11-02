@@ -61,6 +61,19 @@ DH_get0_key(const DH *dh, const BIGNUM **pub_key, const BIGNUM **priv_key) {
 }
 
 static inline int
+DH_set0_key(DH *dh, BIGNUM *pub_key, BIGNUM *priv_key) {
+	if (pub_key != NULL) {
+		BN_clear_free(dh->pub_key);
+		dh->pub_key = pub_key;
+	}
+	if (priv_key != NULL) {
+		BN_clear_free(dh->priv_key);
+		dh->priv_key = priv_key;
+	}
+	return 1;
+}
+
+static inline int
 DH_set_length(DH *dh, long length) {
 	dh->length = length;
 	return 1;
@@ -430,6 +443,66 @@ kex_pkey_derive_shared_secret(struct kex *kex, EVP_PKEY *peerkey, struct sshbuf 
 #endif /*def USE_EVP_PKEY_KEYGEN*/
 
 
+#ifdef USE_EVP_PKEY_KEYGEN
+static DH*
+_dh_new_group_pkey(EVP_PKEY *pk) {
+	BIGNUM *dh_p, *dh_g;
+	DH *dh;
+
+{	const BIGNUM *modulus, *gen;
+
+	dh = EVP_PKEY_get1_DH(pk);
+	if (dh == NULL) return NULL;
+
+	DH_get0_pqg(dh, &modulus, NULL, &gen);
+	DH_free(dh);
+
+	dh_p = BN_dup(modulus);
+	dh_g = BN_dup(gen);
+}
+
+	if (dh_p == NULL || dh_g == NULL)
+		goto err;
+
+	dh = _dh_new_group(dh_p, dh_g);
+	if (dh == NULL) goto err;
+
+	return dh;
+
+err:
+	BN_free(dh_p);
+	BN_free(dh_g);
+
+	return NULL;
+}
+
+
+static int
+create_peer_pkey(struct kex *kex, BIGNUM *dh_pub, EVP_PKEY **peerkeyp) {
+	DH *peerdh;
+	int r;
+
+	peerdh = _dh_new_group_pkey(kex->pk);
+	if (peerdh == NULL) return SSH_ERR_ALLOC_FAIL;
+
+{	BIGNUM *pub_key = BN_dup(dh_pub);
+	if (pub_key == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto done;
+	}
+
+	(void)DH_set0_key(peerdh, pub_key, NULL);
+}
+
+	r = kex_new_dh_pkey(peerkeyp, peerdh);
+
+done:
+	DH_free(peerdh);
+	return r;
+}
+#endif /*def USE_EVP_PKEY_KEYGEN*/
+
+
 #ifdef DEBUG_KEXDH
 static void
 DEBUG_DH_COMPUTE_KEY(struct kex *kex, BIGNUM *pub_key) {
@@ -449,9 +522,11 @@ DEBUG_DH_COMPUTE_KEY(struct kex *kex, BIGNUM *pub_key) {
 }
 #endif
 
+
 int
 kex_dh_compute_key(struct kex *kex, BIGNUM *pub_key, struct sshbuf **shared_secretp)
 {
+#ifndef USE_EVP_PKEY_KEYGEN
 	DH *dh;
 	int klen;
 	u_char *kbuf = NULL;
@@ -490,6 +565,19 @@ kex_dh_compute_key(struct kex *kex, BIGNUM *pub_key, struct sshbuf **shared_secr
 done:
 	freezero(kbuf, klen);
 	DH_free(dh);
+#else /*def USE_EVP_PKEY_KEYGEN*/
+	EVP_PKEY *peerkey = NULL;
+	int r;
+
+	DEBUG_DH_COMPUTE_KEY(kex, pub_key);
+
+	r = create_peer_pkey(kex, pub_key, &peerkey);
+	if (r != 0) return r;
+
+	r = kex_pkey_derive_shared_secret(kex, peerkey, shared_secretp);
+
+	EVP_PKEY_free(peerkey);
+#endif /*def USE_EVP_PKEY_KEYGEN*/
 	return r;
 }
 
