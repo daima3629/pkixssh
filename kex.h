@@ -128,7 +128,6 @@ struct kex {
 	struct sshbuf *session_id;
 	sig_atomic_t done;
 	u_int	flags;
-	int	hash_alg;
 	int	ec_nid;
 	char	*failed_choice;
 	int	(*verify_host_key)(struct sshkey *, struct ssh *);

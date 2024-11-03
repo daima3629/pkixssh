@@ -180,7 +180,7 @@ kex_kem_mlkem768x25519_enc(struct kex *kex,
 	client_pub += crypto_kem_mlkem768_PUBLICKEYBYTES;
 	if ((r = kexc25519_shared_key_ext(server_key, client_pub, buf, 1)) < 0)
 		goto out;
-	if ((r = ssh_digest_buffer(kex->hash_alg, buf, hash, sizeof(hash))) != 0)
+	if ((r = ssh_digest_buffer(kex->impl->hash_alg, buf, hash, sizeof(hash))) != 0)
 		goto out;
 #ifdef DEBUG_KEXECDH
 	dump_digest("server public key 25519:", server_pub, CURVE25519_SIZE);
@@ -193,7 +193,7 @@ kex_kem_mlkem768x25519_enc(struct kex *kex,
 	/* string-encoded hash is resulting shared secret */
 	sshbuf_reset(buf);
 	if ((r = sshbuf_put_string(buf, hash,
-	    ssh_digest_bytes(kex->hash_alg))) != 0)
+	    ssh_digest_bytes(kex->impl->hash_alg))) != 0)
 		goto out;
 #ifdef DEBUG_KEXECDH
 	dump_digest("encoded shared secret:", sshbuf_ptr(buf), sshbuf_len(buf));
@@ -259,7 +259,7 @@ kex_kem_mlkem768x25519_dec(struct kex *kex,
 	if ((r = kexc25519_shared_key_ext(kex->c25519_client_key, server_pub,
 	    buf, 1)) < 0)
 		goto out;
-	if ((r = ssh_digest_buffer(kex->hash_alg, buf,
+	if ((r = ssh_digest_buffer(kex->impl->hash_alg, buf,
 	    hash, sizeof(hash))) != 0)
 		goto out;
 #ifdef DEBUG_KEXECDH
@@ -269,7 +269,7 @@ kex_kem_mlkem768x25519_dec(struct kex *kex,
 #endif
 	sshbuf_reset(buf);
 	if ((r = sshbuf_put_string(buf, hash,
-	    ssh_digest_bytes(kex->hash_alg))) != 0)
+	    ssh_digest_bytes(kex->impl->hash_alg))) != 0)
 		goto out;
 #ifdef DEBUG_KEXECDH
 	dump_digest("encoded shared secret:", sshbuf_ptr(buf), sshbuf_len(buf));

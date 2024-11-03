@@ -168,7 +168,7 @@ input_kex_gen_reply(int type, u_int32_t seq, struct ssh *ssh)
 	/* calc and verify H */
 	hashlen = sizeof(hash);
 	if ((r = kex_gen_hash(
-	    kex->hash_alg,
+	    kex->impl->hash_alg,
 	    kex->client_version,
 	    kex->server_version,
 	    kex->my,
@@ -260,7 +260,7 @@ input_kex_gen_init(int type, u_int32_t seq, struct ssh *ssh)
 
 	hashlen = sizeof(hash);
 	if ((r = kex_gen_hash(
-	    kex->hash_alg,
+	    kex->impl->hash_alg,
 	    kex->client_version,
 	    kex->server_version,
 	    kex->peer,

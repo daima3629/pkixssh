@@ -794,7 +794,6 @@ choose_kex(struct kex *k, char *client, char *server)
 	/* TODO temporary for backward compatibility */
 	k->kex_type = k->impl->kex_type;
 	k->ec_nid = k->impl->ec_nid;
-	k->hash_alg = k->impl->hash_alg;
 	return 0;
 }
 
@@ -994,7 +993,7 @@ derive_key(struct ssh *ssh, int id, u_int need, u_char *hash, u_int hashlen,
 	u_char *digest;
 	int r;
 
-	if ((mdsz = ssh_digest_bytes(kex->hash_alg)) == 0)
+	if ((mdsz = ssh_digest_bytes(kex->impl->hash_alg)) == 0)
 		return SSH_ERR_INVALID_ARGUMENT;
 	if ((digest = calloc(1, ROUNDUP(need, mdsz))) == NULL) {
 		r = SSH_ERR_ALLOC_FAIL;
@@ -1002,7 +1001,7 @@ derive_key(struct ssh *ssh, int id, u_int need, u_char *hash, u_int hashlen,
 	}
 
 	/* K1 = HASH(K || H || "A" || session_id) */
-	if ((hashctx = ssh_digest_start(kex->hash_alg)) == NULL ||
+	if ((hashctx = ssh_digest_start(kex->impl->hash_alg)) == NULL ||
 	    ssh_digest_update_buffer(hashctx, shared_secret) != 0 ||
 	    ssh_digest_update(hashctx, hash, hashlen) != 0 ||
 	    ssh_digest_update(hashctx, &c, 1) != 0 ||
@@ -1021,7 +1020,7 @@ derive_key(struct ssh *ssh, int id, u_int need, u_char *hash, u_int hashlen,
 	 * Key = K1 || K2 || ... || Kn
 	 */
 	for (have = mdsz; need > have; have += mdsz) {
-		if ((hashctx = ssh_digest_start(kex->hash_alg)) == NULL ||
+		if ((hashctx = ssh_digest_start(kex->impl->hash_alg)) == NULL ||
 		    ssh_digest_update_buffer(hashctx, shared_secret) != 0 ||
 		    ssh_digest_update(hashctx, hash, hashlen) != 0 ||
 		    ssh_digest_update(hashctx, digest, have) != 0 ||

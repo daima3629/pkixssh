@@ -650,7 +650,7 @@ kexgex_hash_client(const struct kex *kex,
 	DH_get0_key(dh, &my_pub, NULL);
 	DH_get0_pqg(dh, &dh_p, NULL, &dh_g);
 
-	r = kexgex_hash(kex->hash_alg,
+	r = kexgex_hash(kex->impl->hash_alg,
 	    kex->client_version, kex->server_version,
 	    kex->my, kex->peer, key_blob,
 	    kex->min, kex->nbits, kex->max,
@@ -679,7 +679,7 @@ kexgex_hash_server(const struct kex *kex,
 	DH_get0_key(dh, &my_pub, NULL);
 	DH_get0_pqg(dh, &dh_p, NULL, &dh_g);
 
-	r = kexgex_hash(kex->hash_alg,
+	r = kexgex_hash(kex->impl->hash_alg,
 	    kex->client_version, kex->server_version,
 	    kex->peer, kex->my, key_blob,
 	    kex->min, kex->nbits, kex->max,
