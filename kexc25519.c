@@ -195,6 +195,8 @@ kex_c25519_dec(struct kex *kex, const struct sshbuf *server_blob,
 	return r;
 }
 
+static int kex_c25519_enabled(void) { return 1; }
+
 static const struct kex_impl_funcs kex_c25519_funcs = {
 	kex_c25519_keypair,
 	kex_c25519_enc,
@@ -203,6 +205,16 @@ static const struct kex_impl_funcs kex_c25519_funcs = {
 
 const struct kex_impl kex_c25519_sha256_impl = {
 	KEX_C25519_SHA256, 0,
+	"curve25519-sha256",
 	SSH_DIGEST_SHA256,
+	kex_c25519_enabled,
+	&kex_c25519_funcs
+};
+
+const struct kex_impl kex_c25519_sha256_impl_ext = {
+	KEX_C25519_SHA256, 0,
+	"curve25519-sha256@libssh.org",
+	SSH_DIGEST_SHA256,
+	kex_c25519_enabled,
 	&kex_c25519_funcs
 };

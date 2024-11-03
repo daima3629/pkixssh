@@ -103,19 +103,27 @@ kexgex_hash(
 /* Note implementation uses specific message sequence implemented in callback.
  * The only difference is digest, so no need to set function pointers.
  */
+static int kex_dh_gex_sha1_enabled(void) { return 1; }
+# ifdef HAVE_EVP_SHA256
+static int kex_dh_gex_sha2_enabled(void) { return 1; }
+# else
+static int kex_dh_gex_sha2_enabled(void) { return 0; }
+# endif
 
 const struct kex_impl kex_dh_gex_sha1_impl = {
 	KEX_DH_GEX_SHA1, 0,
+	"diffie-hellman-group-exchange-sha1",
 	SSH_DIGEST_SHA1,
+	kex_dh_gex_sha1_enabled,
 	NULL
 };
 
-# ifdef HAVE_EVP_SHA256
 const struct kex_impl kex_dh_gex_sha256_impl = {
 	KEX_DH_GEX_SHA256, 0,
+	"diffie-hellman-group-exchange-sha256",
 	SSH_DIGEST_SHA256,
+	kex_dh_gex_sha2_enabled,
 	NULL
 };
-# endif /* HAVE_EVP_SHA256 */
 
 #endif /* WITH_OPENSSL */

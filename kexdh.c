@@ -121,6 +121,13 @@ kex_dh_dec(struct kex *kex, const struct sshbuf *dh_blob,
 	return r;
 }
 
+static int kex_dh_sha1_enabled(void) { return 1; }
+# ifdef HAVE_EVP_SHA256
+static int kex_dh_sha2_enabled(void) { return 1; }
+# else
+static int kex_dh_sha2_enabled(void) { return 0; }
+# endif
+
 static const struct kex_impl_funcs kex_dh_funcs = {
 	kex_dh_keypair,
 	kex_dh_enc,
@@ -129,31 +136,41 @@ static const struct kex_impl_funcs kex_dh_funcs = {
 
 const struct kex_impl kex_dh_grp1_sha1_impl = {
 	KEX_DH_GRP1_SHA1, 0,
+	"diffie-hellman-group1-sha1",
 	SSH_DIGEST_SHA1,
+	kex_dh_sha1_enabled,
 	&kex_dh_funcs
 };
 
 const struct kex_impl kex_dh_grp14_sha1_impl = {
 	KEX_DH_GRP14_SHA1, 0,
+	"diffie-hellman-group14-sha1",
 	SSH_DIGEST_SHA1,
+	kex_dh_sha1_enabled,
 	&kex_dh_funcs
 };
 
 const struct kex_impl kex_dh_grp14_sha256_impl = {
 	KEX_DH_GRP14_SHA256, 0,
+	"diffie-hellman-group14-sha256",
 	SSH_DIGEST_SHA256,
+	kex_dh_sha2_enabled,
 	&kex_dh_funcs
 };
 
 const struct kex_impl kex_dh_grp16_sha512_impl = {
 	KEX_DH_GRP16_SHA512, 0,
+	"diffie-hellman-group16-sha512",
 	SSH_DIGEST_SHA512,
+	kex_dh_sha2_enabled,
 	&kex_dh_funcs
 };
 
 const struct kex_impl kex_dh_grp18_sha512_impl = {
 	KEX_DH_GRP18_SHA512, 0,
+	"diffie-hellman-group18-sha512",
 	SSH_DIGEST_SHA512,
+	kex_dh_sha2_enabled,
 	&kex_dh_funcs
 };
 #endif /* WITH_OPENSSL */

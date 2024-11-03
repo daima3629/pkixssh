@@ -88,18 +88,16 @@ static const struct kexalg kexalgs[] = {
 	{ "mlkem768x25519-sha256",
 	    KEX_KEM_MLKEM768X25519_SHA256, 0},
 #endif
-	{ NULL, 0, -1, -1},
+	{ NULL, 0, -1},
 };
 
 /* supported key exchange implementations */
 #ifdef WITH_OPENSSL
 extern const struct kex_impl kex_dh_grp1_sha1_impl;
 extern const struct kex_impl kex_dh_grp14_sha1_impl;
-# ifdef HAVE_EVP_SHA256
 extern const struct kex_impl kex_dh_grp14_sha256_impl;
 extern const struct kex_impl kex_dh_grp16_sha512_impl;
 extern const struct kex_impl kex_dh_grp18_sha512_impl;
-# endif /* HAVE_EVP_SHA256 */
 # ifdef OPENSSL_HAS_ECC
 extern const struct kex_impl kex_ecdh_p256_sha256_impl;
 extern const struct kex_impl kex_ecdh_p384_sha384_impl;
@@ -108,29 +106,27 @@ extern const struct kex_impl kex_ecdh_p521_sha512_impl;
 #  endif /* OPENSSL_HAS_NISTP521 */
 # endif /* OPENSSL_HAS_ECC */
 extern const struct kex_impl kex_dh_gex_sha1_impl;
-# ifdef HAVE_EVP_SHA256
 extern const struct kex_impl kex_dh_gex_sha256_impl;
-# endif /* HAVE_EVP_SHA256 */
 #endif /* WITH_OPENSSL */
 #if defined(HAVE_EVP_SHA256) || !defined(WITH_OPENSSL)
 extern const struct kex_impl kex_c25519_sha256_impl;
+extern const struct kex_impl kex_c25519_sha256_impl_ext;
 #endif /* HAVE_EVP_SHA256 || !WITH_OPENSSL */
 #ifdef ENABLE_KEX_SNTRUP761X25519
 extern const struct kex_impl kex_kem_sntrup761x25519_sha512_impl;
+extern const struct kex_impl kex_kem_sntrup761x25519_sha512_impl_ext;
 #endif
 #ifdef ENABLE_KEX_MLKEM768X25519
 extern const struct kex_impl kex_kem_mlkem768x25519_sha256_impl;
 #endif
 
-const struct kex_impl* const kex_impl_list[] = {
+static const struct kex_impl* const kex_impl_list[] = {
 #ifdef WITH_OPENSSL
 	&kex_dh_grp1_sha1_impl,
 	&kex_dh_grp14_sha1_impl,
-# ifdef HAVE_EVP_SHA256
 	&kex_dh_grp14_sha256_impl,
 	&kex_dh_grp16_sha512_impl,
 	&kex_dh_grp18_sha512_impl,
-# endif /* HAVE_EVP_SHA256 */
 # ifdef OPENSSL_HAS_ECC
 	&kex_ecdh_p256_sha256_impl,
 	&kex_ecdh_p384_sha384_impl,
@@ -141,21 +137,34 @@ const struct kex_impl* const kex_impl_list[] = {
 #endif /* WITH_OPENSSL */
 #if defined(HAVE_EVP_SHA256) || !defined(WITH_OPENSSL)
 	&kex_c25519_sha256_impl,
+	&kex_c25519_sha256_impl_ext,
 #endif /* HAVE_EVP_SHA256 || !WITH_OPENSSL */
 #ifdef ENABLE_KEX_SNTRUP761X25519
 	&kex_kem_sntrup761x25519_sha512_impl,
+	&kex_kem_sntrup761x25519_sha512_impl_ext,
 #endif
 #ifdef ENABLE_KEX_MLKEM768X25519
 	&kex_kem_mlkem768x25519_sha256_impl,
 #endif
 #ifdef WITH_OPENSSL
 	&kex_dh_gex_sha1_impl,
-# ifdef HAVE_EVP_SHA256
 	&kex_dh_gex_sha256_impl,
-# endif /* HAVE_EVP_SHA256 */
 #endif /* WITH_OPENSSL */
 	NULL
 };
+
+const struct kex_impl*
+kex_find_impl(const char *name)
+{
+	const struct kex_impl* const *p;
+
+	for (p = kex_impl_list; *p != NULL; p++) {
+		if (!(*p)->enabled()) continue;
+		if (strcmp((*p)->name, name) == 0)
+			return *p;
+	}
+	return NULL;
+}
 
 char *
 kex_alg_list(char sep)
@@ -189,32 +198,6 @@ kex_alg_by_name(const char *name)
 			return k;
 	}
 	return NULL;
-}
-
-int
-kex_name_valid(const char *name)
-{
-	return kex_alg_by_name(name) != NULL;
-}
-
-u_int
-kex_type_from_name(const char *name)
-{
-	const struct kexalg *k;
-
-	if ((k = kex_alg_by_name(name)) == NULL)
-		return 0;
-	return k->type;
-}
-
-int
-kex_nid_from_name(const char *name)
-{
-	const struct kexalg *k;
-
-	if ((k = kex_alg_by_name(name)) == NULL)
-		return -1;
-	return k->ec_nid;
 }
 
 /* Validate KEX method name list */

@@ -45,31 +45,6 @@
 static int input_kex_gen_init(int, u_int32_t, struct ssh *);
 static int input_kex_gen_reply(int type, u_int32_t seq, struct ssh *ssh);
 
-extern const struct kex_impl* const kex_impl_list[];
-
-static const struct kex_impl*
-find_kex_impl(struct kex *kex)
-{
-	const struct kex_impl *const* p;
-
-	for (p = kex_impl_list; *p != NULL; p++) {
-		/* TODO: temporary primary key */
-		if ((*p)->ec_nid != kex->ec_nid)
-			continue;
-		if ((*p)->kex_type == kex->kex_type)
-			return *p;
-	}
-	return NULL;
-}
-
-void
-kex_set_hash_alg(struct kex *kex)
-{	const struct kex_impl* impl = find_kex_impl(kex);
-	if (impl == NULL)
-		fatal("internal error - missing kex implementation");
-	 kex->hash_alg = impl->hash_alg;
-}
-
 static int
 kex_gen_hash(
     int hash_alg,
@@ -127,9 +102,8 @@ kex_gen_client(struct ssh *ssh)
 	struct kex *kex = ssh->kex;
 	int r;
 
-{	const struct kex_impl* impl = find_kex_impl(kex);
-	if (impl != NULL)
-		r = impl->funcs->keypair(kex);
+{	if (kex->impl != NULL)
+		r = kex->impl->funcs->keypair(kex);
 	else
 		r = SSH_ERR_INVALID_ARGUMENT;
 }
@@ -183,9 +157,8 @@ input_kex_gen_reply(int type, u_int32_t seq, struct ssh *ssh)
 		goto out;
 
 	/* compute shared secret */
-{	const struct kex_impl* impl = find_kex_impl(kex);
-	if (impl != NULL)
-		r = impl->funcs->dec(kex, server_blob, &shared_secret);
+{	if (kex->impl != NULL)
+		r = kex->impl->funcs->dec(kex, server_blob, &shared_secret);
 	else
 		r = SSH_ERR_INVALID_ARGUMENT;
 }
@@ -268,9 +241,8 @@ input_kex_gen_init(int type, u_int32_t seq, struct ssh *ssh)
 		goto out;
 
 	/* compute shared secret */
-{	const struct kex_impl* impl = find_kex_impl(kex);
-	if (impl != NULL)
-		r = impl->funcs->enc(kex, client_pubkey, &server_pubkey,
+{	if (kex->impl != NULL)
+		r = kex->impl->funcs->enc(kex, client_pubkey, &server_pubkey,
 		    &shared_secret);
 	else
 		r = SSH_ERR_INVALID_ARGUMENT;

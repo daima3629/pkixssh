@@ -786,13 +786,15 @@ choose_kex(struct kex *k, char *client, char *server)
 	debug("kex: algorithm: %s", k->name ? k->name : "(no match)");
 	if (k->name == NULL)
 		return SSH_ERR_NO_KEX_ALG_MATCH;
-	if (!kex_name_valid(k->name)) {
+	k->impl = kex_find_impl(k->name);
+	if (k->impl == NULL) {
 		error_f("unsupported KEX method %s", k->name);
 		return SSH_ERR_INTERNAL_ERROR;
 	}
-	k->kex_type = kex_type_from_name(k->name);
-	k->ec_nid = kex_nid_from_name(k->name);
-	kex_set_hash_alg(k);
+	/* TODO temporary for backward compatibility */
+	k->kex_type = k->impl->kex_type;
+	k->ec_nid = k->impl->ec_nid;
+	k->hash_alg = k->impl->hash_alg;
 	return 0;
 }
 

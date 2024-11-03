@@ -320,6 +320,8 @@ kex_ecdh_dec(struct kex *kex, const struct sshbuf *server_blob,
 	return r;
 }
 
+static int kex_ecdh_enabled(void) { return 1; }
+
 static const struct kex_impl_funcs kex_ecdh_funcs = {
 	kex_ecdh_keypair,
 	kex_ecdh_enc,
@@ -328,20 +330,28 @@ static const struct kex_impl_funcs kex_ecdh_funcs = {
 
 const struct kex_impl kex_ecdh_p256_sha256_impl = {
 	KEX_ECDH_SHA2, NID_X9_62_prime256v1,
+	"ecdh-sha2-nistp256",
 	SSH_DIGEST_SHA256,
+	kex_ecdh_enabled,
 	&kex_ecdh_funcs
 };
 
 const struct kex_impl kex_ecdh_p384_sha384_impl = {
 	KEX_ECDH_SHA2, NID_secp384r1,
+	"ecdh-sha2-nistp384",
 	SSH_DIGEST_SHA384,
+	kex_ecdh_enabled,
 	&kex_ecdh_funcs
 };
 
 # ifdef OPENSSL_HAS_NISTP521
+static int kex_ecdh_p521_enabled(void) { return 1; }
+
 const struct kex_impl kex_ecdh_p521_sha512_impl = {
 	KEX_ECDH_SHA2, NID_secp521r1,
+	"ecdh-sha2-nistp521",
 	SSH_DIGEST_SHA512,
+	kex_ecdh_p521_enabled,
 	&kex_ecdh_funcs
 };
 # endif /* OPENSSL_HAS_NISTP521 */

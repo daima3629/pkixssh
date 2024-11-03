@@ -107,6 +107,7 @@ struct newkeys {
 };
 
 struct ssh;
+struct kex_impl;
 
 struct kex {
 	struct newkeys	*newkeys[MODE_MAX];
@@ -114,6 +115,7 @@ struct kex {
 	u_int	dh_need;
 	int	server;
 	char	*name;
+	const struct kex_impl *impl;
 	char	*hostkey_alg;
 	u_int	kex_type;
 	char	*pkalgs;
@@ -158,13 +160,14 @@ struct kex_impl {
 	u_int kex_type;
 	int ec_nid;
 
+	const char *name;
 	int hash_alg;
+	int (*enabled)(void);
 	const struct kex_impl_funcs *funcs;
 };
 
-int	 kex_name_valid(const char *);
-u_int	 kex_type_from_name(const char *);
-int	 kex_nid_from_name(const char *);
+const struct kex_impl
+	*kex_find_impl(const char *);
 int	 kex_names_valid(const char *);
 char	*kex_alg_list(char);
 char	*kex_names_cat(const char *, const char *);
@@ -177,7 +180,6 @@ void	 kex_proposal_free_entries(char *prop[PROPOSAL_MAX]);
 int	 kex_exchange_identification(struct ssh *, int);
 
 struct kex *kex_new(void);
-void	 kex_set_hash_alg(struct kex *);
 void	 kex_set_callbacks(struct kex *);
 int	 kex_ready(struct ssh *, char *[PROPOSAL_MAX]);
 int	 kex_setup(struct ssh *, char *[PROPOSAL_MAX]);

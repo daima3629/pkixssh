@@ -287,6 +287,8 @@ kex_kem_mlkem768x25519_dec(struct kex *kex,
 	return r;
 }
 
+static int kex_kem_mlkem768x25519_enabled(void) { return 1; }
+
 static const struct kex_impl_funcs kex_kem_mlkem768x25519_funcs = {
 	kex_kem_mlkem768x25519_keypair,
 	kex_kem_mlkem768x25519_enc,
@@ -295,7 +297,9 @@ static const struct kex_impl_funcs kex_kem_mlkem768x25519_funcs = {
 
 const struct kex_impl kex_kem_mlkem768x25519_sha256_impl = {
 	KEX_KEM_MLKEM768X25519_SHA256, 0,
+	"mlkem768x25519-sha256",
 	SSH_DIGEST_SHA256,
+	kex_kem_mlkem768x25519_enabled,
 	&kex_kem_mlkem768x25519_funcs
 };
 
