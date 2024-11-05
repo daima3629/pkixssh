@@ -36,61 +36,6 @@
 
 #include "ssherr.h"
 
-struct kexalg {
-	const char *name;
-	u_int type;
-	int ec_nid;
-};
-static const struct kexalg kexalgs[] = {
-#ifdef WITH_OPENSSL
-	{ "diffie-hellman-group1-sha1",
-	    KEX_DH_GRP1_SHA1, 0 },
-	{ "diffie-hellman-group14-sha1",
-	    KEX_DH_GRP14_SHA1, 0 },
-# ifdef HAVE_EVP_SHA256
-	{ "diffie-hellman-group14-sha256",
-	    KEX_DH_GRP14_SHA256, 0 },
-	{ "diffie-hellman-group16-sha512",
-	    KEX_DH_GRP16_SHA512, 0 },
-	{ "diffie-hellman-group18-sha512",
-	    KEX_DH_GRP18_SHA512, 0 },
-# endif /* HAVE_EVP_SHA256 */
-	{ "diffie-hellman-group-exchange-sha1",
-	    KEX_DH_GEX_SHA1, 0 },
-# ifdef HAVE_EVP_SHA256
-	{ "diffie-hellman-group-exchange-sha256",
-	    KEX_DH_GEX_SHA256, 0 },
-# endif /* HAVE_EVP_SHA256 */
-#ifdef OPENSSL_HAS_ECC
-	{ "ecdh-sha2-nistp256",
-	    KEX_ECDH_SHA2, NID_X9_62_prime256v1 },
-	{ "ecdh-sha2-nistp384",
-	    KEX_ECDH_SHA2, NID_secp384r1 },
-# ifdef OPENSSL_HAS_NISTP521
-	{ "ecdh-sha2-nistp521",
-	    KEX_ECDH_SHA2, NID_secp521r1 },
-# endif /* OPENSSL_HAS_NISTP521 */
-#endif /* OPENSSL_HAS_ECC */
-#endif /* WITH_OPENSSL */
-#if defined(HAVE_EVP_SHA256) || !defined(WITH_OPENSSL)
-	{ "curve25519-sha256",
-	    KEX_C25519_SHA256, 0 },
-	{ "curve25519-sha256@libssh.org",
-	    KEX_C25519_SHA256, 0 },
-#endif /* HAVE_EVP_SHA256 || !WITH_OPENSSL */
-#ifdef ENABLE_KEX_SNTRUP761X25519
-	{ "sntrup761x25519-sha512",
-	    KEX_KEM_SNTRUP761X25519_SHA512, 0 },
-	{ "sntrup761x25519-sha512@openssh.com",
-	    KEX_KEM_SNTRUP761X25519_SHA512, 0 },
-#endif
-#ifdef ENABLE_KEX_MLKEM768X25519
-	{ "mlkem768x25519-sha256",
-	    KEX_KEM_MLKEM768X25519_SHA256, 0},
-#endif
-	{ NULL, 0, -1},
-};
-
 /* supported key exchange implementations */
 #ifdef WITH_OPENSSL
 extern const struct kex_impl kex_dh_grp1_sha1_impl;
@@ -98,6 +43,8 @@ extern const struct kex_impl kex_dh_grp14_sha1_impl;
 extern const struct kex_impl kex_dh_grp14_sha256_impl;
 extern const struct kex_impl kex_dh_grp16_sha512_impl;
 extern const struct kex_impl kex_dh_grp18_sha512_impl;
+extern const struct kex_impl kex_dh_gex_sha1_impl;
+extern const struct kex_impl kex_dh_gex_sha256_impl;
 # ifdef OPENSSL_HAS_ECC
 extern const struct kex_impl kex_ecdh_p256_sha256_impl;
 extern const struct kex_impl kex_ecdh_p384_sha384_impl;
@@ -105,8 +52,6 @@ extern const struct kex_impl kex_ecdh_p384_sha384_impl;
 extern const struct kex_impl kex_ecdh_p521_sha512_impl;
 #  endif /* OPENSSL_HAS_NISTP521 */
 # endif /* OPENSSL_HAS_ECC */
-extern const struct kex_impl kex_dh_gex_sha1_impl;
-extern const struct kex_impl kex_dh_gex_sha256_impl;
 #endif /* WITH_OPENSSL */
 #if defined(HAVE_EVP_SHA256) || !defined(WITH_OPENSSL)
 extern const struct kex_impl kex_c25519_sha256_impl;
@@ -127,6 +72,8 @@ static const struct kex_impl* const kex_impl_list[] = {
 	&kex_dh_grp14_sha256_impl,
 	&kex_dh_grp16_sha512_impl,
 	&kex_dh_grp18_sha512_impl,
+	&kex_dh_gex_sha1_impl,
+	&kex_dh_gex_sha256_impl,
 # ifdef OPENSSL_HAS_ECC
 	&kex_ecdh_p256_sha256_impl,
 	&kex_ecdh_p384_sha384_impl,
@@ -146,10 +93,6 @@ static const struct kex_impl* const kex_impl_list[] = {
 #ifdef ENABLE_KEX_MLKEM768X25519
 	&kex_kem_mlkem768x25519_sha256_impl,
 #endif
-#ifdef WITH_OPENSSL
-	&kex_dh_gex_sha1_impl,
-	&kex_dh_gex_sha256_impl,
-#endif /* WITH_OPENSSL */
 	NULL
 };
 
@@ -171,33 +114,22 @@ kex_alg_list(char sep)
 {
 	char *ret = NULL, *tmp;
 	size_t nlen, rlen = 0;
-	const struct kexalg *k;
+	const struct kex_impl* const *p;
 
-	for (k = kexalgs; k->name != NULL; k++) {
+	for (p = kex_impl_list; *p != NULL; p++) {
+		if (!(*p)->enabled()) continue;
 		if (ret != NULL)
 			ret[rlen++] = sep;
-		nlen = strlen(k->name);
+		nlen = strlen((*p)->name);
 		if ((tmp = realloc(ret, rlen + nlen + 2)) == NULL) {
 			free(ret);
 			return NULL;
 		}
 		ret = tmp;
-		memcpy(ret + rlen, k->name, nlen + 1);
+		memcpy(ret + rlen, (*p)->name, nlen + 1);
 		rlen += nlen;
 	}
 	return ret;
-}
-
-static const struct kexalg *
-kex_alg_by_name(const char *name)
-{
-	const struct kexalg *k;
-
-	for (k = kexalgs; k->name != NULL; k++) {
-		if (strcmp(k->name, name) == 0)
-			return k;
-	}
-	return NULL;
 }
 
 /* Validate KEX method name list */
@@ -212,7 +144,7 @@ kex_names_valid(const char *names)
 		return 0;
 	for ((p = strsep(&cp, ",")); p && *p != '\0';
 	    (p = strsep(&cp, ","))) {
-		if (kex_alg_by_name(p) == NULL) {
+		if (kex_find_impl(p) == NULL) {
 			error("Unsupported KEX algorithm \"%.100s\"", p);
 			free(s);
 			return 0;
