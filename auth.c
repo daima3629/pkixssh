@@ -502,6 +502,16 @@ getpwnamallow(struct ssh *ssh, const char *user)
 #if defined(_AIX) && defined(HAVE_SETAUTHDB)
 	aix_restoreauthdb();
 #endif
+
+	if (!use_privsep && options.refuse_connection) {
+		logit("administratively prohibited connection for "
+		    "%s%s from %.128s port %d",
+		    (pw == NULL) ? "invalid user " : "",
+		    user, ssh_remote_ipaddr(ssh),
+		    ssh_remote_port(ssh));
+		cleanup_exit(255);
+	}
+
 	if (pw == NULL) {
 		logit("Invalid user %.100s from %.100s port %d",
 		    user, ssh_remote_ipaddr(ssh), ssh_remote_port(ssh));
