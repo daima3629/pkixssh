@@ -181,7 +181,7 @@ sshbuf_free(struct sshbuf *buf)
 		return;
 
 	/*
-	 * If we are a child, the free our parent to decrement its reference
+	 * If we are a child, then free our parent to decrement its reference
 	 * count and possibly free it.
 	 */
 	sshbuf_free(buf->parent);

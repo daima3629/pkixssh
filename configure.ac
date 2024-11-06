@@ -5070,11 +5070,11 @@ AC_ARG_WITH([kerberos5],
 	[AS_HELP_STRING([--with-kerberos5@<:@=PATH@:>@],
 		[Enable Kerberos 5 support])],
 	[AS_IF([test "x$withval" != "xno"], [
-		defect_krb5=config
+		detect_krb5=config
 		AS_IF([test "x$withval" = "xyes"], [
 			KRB5ROOT="/usr/local"
 			AS_IF([test "x$PKGCONFIG" != "xno"], [
-				defect_krb5=package
+				detect_krb5=package
 			])
 		], [
 			KRB5ROOT=${withval}
@@ -5083,25 +5083,25 @@ AC_ARG_WITH([kerberos5],
 		AC_DEFINE([KRB5], [1], [Define if you want Kerberos 5 support])
 		KRB5_MSG="yes"
 
-		AS_IF([test "x$defect_krb5" == "xpackage"], [
+		AS_IF([test "x$detect_krb5" == "xpackage"], [
 			AC_MSG_CHECKING([if $PKGCONFIG knows about kerberos5])
 			AS_IF(["$PKGCONFIG" krb5], [
 				AC_MSG_RESULT([yes])
 			], [
 				AC_MSG_RESULT([no])
-				defect_krb5=config
+				detect_krb5=config
 			])
 		])
-		AS_IF([test "x$defect_krb5" == "xconfig"], [
+		AS_IF([test "x$detect_krb5" == "xconfig"], [
 			AC_PATH_TOOL([KRB5CONF], [krb5-config],
 			     [false],
 			     [$KRB5ROOT/bin:$PATH])
 			AS_IF([$KRB5CONF --version > /dev/null 2>&1], [], [
-				defect_krb5=direct
+				detect_krb5=direct
 			])
 		])
 
-		AS_IF([test "x$defect_krb5" = "xpackage"], [
+		AS_IF([test "x$detect_krb5" = "xpackage"], [
 			K5CFLAGS=`$PKGCONFIG --cflags krb5`
 			K5LIBS=`$PKGCONFIG --libs krb5`
 			CPPFLAGS="$CPPFLAGS $K5CFLAGS"
@@ -5121,7 +5121,7 @@ AC_ARG_WITH([kerberos5],
 
 			SSH_KRB5_IMPLEMENTATION
 		],
-		[test "x$defect_krb5" == "xconfig"], [
+		[test "x$detect_krb5" == "xconfig"], [
 			K5CFLAGS="`$KRB5CONF --cflags`"
 			K5LIBS="`$KRB5CONF --libs`"
 			CPPFLAGS="$CPPFLAGS $K5CFLAGS"

@@ -662,7 +662,7 @@ do_host(char *host)
 			if (addr_cmp(&addr, &end_addr) == 0)
 				break;
 			addr_increment(&addr);
-		};
+		}
 	}
 }
 
