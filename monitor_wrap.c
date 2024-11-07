@@ -1,4 +1,4 @@
-/* $OpenBSD: monitor_wrap.c,v 1.130 2024/05/17 00:30:24 djm Exp $ */
+/* $OpenBSD: monitor_wrap.c,v 1.138 2024/10/22 06:13:00 dtucker Exp $ */
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * Copyright 2002 Markus Friedl <markus@openbsd.org>
@@ -1145,6 +1145,7 @@ server_get_connection_info(struct ssh *ssh, int populate, int use_dns)
 {
 	static struct connection_info ci = {
 		NULL	/* user */,
+		1	/* user_invalid */,
 		NULL	/* host */,
 		NULL	/* address */,
 		NULL	/* laddress */,

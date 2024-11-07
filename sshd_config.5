@@ -34,7 +34,7 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: sshd_config.5,v 1.372 2024/09/15 01:11:26 djm Exp $
+.\" $OpenBSD: sshd_config.5,v 1.378 2024/10/25 21:53:24 naddy Exp $
 .\" Implement .Dd with the Mdocdate RCS keyword
 .rn Dd xD
 .de Dd
@@ -43,7 +43,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: September 15 2024 $
+.Dd $Mdocdate: November 5 2024 $
 .Dt SSHD_CONFIG 5
 .Os
 .Sh NAME
@@ -1363,9 +1363,11 @@ applied.
 .Pp
 The arguments to
 .Cm Match
-are one or more criteria-pattern pairs or the single token
-.Cm All
-which matches all criteria.
+are one or more criteria-pattern pairs or one of the single token criteria:
+.Cm All ,
+which matches all criteria, or
+.Cm Invalid-User ,
+which matches when the requested user-name does not match any known account.
 The available criteria are
 .Cm User ,
 .Cm Group ,

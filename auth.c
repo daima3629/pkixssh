@@ -1,4 +1,4 @@
-/* $OpenBSD: auth.c,v 1.160 2023/03/05 05:34:09 dtucker Exp $ */
+/* $OpenBSD: auth.c,v 1.162 2024/09/15 01:18:26 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2016-2024 Roumen Petrov.  All rights reserved.
@@ -498,6 +498,7 @@ getpwnamallow(struct ssh *ssh, const char *user)
 #endif
 
 	pw = getpwnam(user);
+	ci->user_invalid = (pw == NULL);
 
 #if defined(_AIX) && defined(HAVE_SETAUTHDB)
 	aix_restoreauthdb();
