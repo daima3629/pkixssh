@@ -5805,14 +5805,14 @@ AC_ARG_ENABLE([utmpx],
 		ssh_disable_utmpx=$enableval
 	]
 )
-if test no = $ac_cv_header_utmpx_h; then
+AS_IF([test "x$ac_cv_header_utmpx_h" != "xyes"], [
 	dnl Always disable utmpx if missing header utmpx.h (Android)
 	ssh_disable_utmpx=yes
-fi
-if test yes = $ssh_disable_utmpx; then
+])
+AS_IF([test "x$ssh_disable_utmpx" = "xyes"], [
 	AC_DEFINE([DISABLE_UTMPX], [1],
 		[Define if you don't want to use utmpx])
-fi
+])
 AC_ARG_ENABLE([wtmp],
 	[  --disable-wtmp          disable use of wtmp even if detected [no]],
 	[

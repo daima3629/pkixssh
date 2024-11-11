@@ -1,10 +1,8 @@
 # Android configuration settings
 #
-# Copyright (c) 2018 Roumen Petrov
-# Revisions:
-#   27 Dec 2018 : refactored from configure.ac
+# Copyright (c) 2018-2024 Roumen Petrov
 #
-# serail 20181217
+# serial 20241111
 
 AC_DEFUN([SSH_ANDROID_PRECONF], [
 case "$host" in
@@ -118,6 +116,10 @@ case "$host" in
 
   dnl Function "ppoll" is declared in API 21(unified headers).
   dnl NOTE: Use system.
+
+  dnl Header utmpx.h is addeed in NDK r27 with no-op implementation.
+  dnl => ignore to disable utmpx automatically
+  ac_cv_header_utmpx_h=ignore
   ;;
 esac
 ])
