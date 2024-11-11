@@ -114,6 +114,12 @@ case "$host" in
   dnl => do not use "reallocarray" for consistency
   ac_cv_func_reallocarray=ignore
 
+  dnl Function "close_range" is declared in API 34(unified headers).
+  dnl Before API 34 it is defined in "C" static-library on some
+  dnl platforms depending from NDK version!
+  dnl => do not use "close_range" for consistency
+  ac_cv_func_close_range=ignore
+
   dnl Function "ppoll" is declared in API 21(unified headers).
   dnl NOTE: Use system.
 
