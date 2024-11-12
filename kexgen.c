@@ -46,6 +46,39 @@ static int input_kex_gen_init(int, u_int32_t, struct ssh *);
 static int input_kex_gen_reply(int type, u_int32_t seq, struct ssh *ssh);
 
 static int
+kex_new_sshbuf(u_char *kbuf, size_t klen, struct sshbuf **retp) {
+	struct sshbuf *buf;
+	int r;
+
+	if ((buf = sshbuf_new()) == NULL)
+		return SSH_ERR_ALLOC_FAIL;
+
+	r = sshbuf_put_string(buf, kbuf, klen);
+	if (r == 0)
+		*retp = buf;
+	else
+		sshbuf_free(buf);
+	return r;
+}
+
+int
+kex_digest_buffer(int hash_alg, struct sshbuf *buf, struct sshbuf **retp) {
+	u_char hash[SSH_DIGEST_MAX_LENGTH];
+	int r;
+
+	*retp = NULL;
+
+	r = ssh_digest_buffer(hash_alg, buf, hash, sizeof(hash));
+	if (r != 0) goto out;
+
+	r = kex_new_sshbuf(hash, ssh_digest_bytes(hash_alg), retp);
+
+out:
+	explicit_bzero(hash, sizeof(hash));
+	return r;
+}
+
+static int
 kex_gen_hash(
     int hash_alg,
     const struct sshbuf *client_version,

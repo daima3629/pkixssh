@@ -125,7 +125,6 @@ kex_kem_mlkem768x25519_enc(struct kex *kex,
 	const u_char *client_pub;
 	u_char rnd[LIBCRUX_ML_KEM_ENC_PRNG_LEN];
 	u_char server_pub[CURVE25519_SIZE], server_key[CURVE25519_SIZE];
-	u_char hash[SSH_DIGEST_MAX_LENGTH];
 	size_t need;
 	int r = SSH_ERR_INTERNAL_ERROR;
 	struct libcrux_mlkem768_enc_result enc;
@@ -180,32 +179,26 @@ kex_kem_mlkem768x25519_enc(struct kex *kex,
 	client_pub += crypto_kem_mlkem768_PUBLICKEYBYTES;
 	if ((r = kexc25519_shared_key_ext(server_key, client_pub, buf, 1)) < 0)
 		goto out;
-	if ((r = ssh_digest_buffer(kex->impl->hash_alg, buf, hash, sizeof(hash))) != 0)
-		goto out;
 #ifdef DEBUG_KEXECDH
 	dump_digest("server public key 25519:", server_pub, CURVE25519_SIZE);
 	dump_digest("server cipher text:",
 	    enc.fst.value, sizeof(enc.fst.value));
 	dump_digest("server kem key:", enc.snd, sizeof(enc.snd));
-	dump_digest("concatenation of KEM key and ECDH shared key:",
-	    sshbuf_ptr(buf), sshbuf_len(buf));
+	dump_digestb("concatenation of KEM key and ECDH shared key:", buf);
 #endif
 	/* string-encoded hash is resulting shared secret */
-	sshbuf_reset(buf);
-	if ((r = sshbuf_put_string(buf, hash,
-	    ssh_digest_bytes(kex->impl->hash_alg))) != 0)
-		goto out;
+	r = kex_digest_buffer(kex->impl->hash_alg, buf, shared_secretp);
 #ifdef DEBUG_KEXECDH
-	dump_digest("encoded shared secret:", sshbuf_ptr(buf), sshbuf_len(buf));
+	if (r == 0)
+		dump_digestb("encoded shared secret:", *shared_secretp);
+	else
+		fprintf(stderr, "shared secret error: %s", ssh_err(r));
 #endif
-	/* success */
-	r = 0;
-	*server_blobp = server_blob;
-	*shared_secretp = buf;
-	server_blob = NULL;
-	buf = NULL;
+	if (r == 0) {
+		*server_blobp = server_blob;
+		server_blob = NULL;
+	}
  out:
-	explicit_bzero(hash, sizeof(hash));
 	explicit_bzero(server_key, sizeof(server_key));
 	explicit_bzero(rnd, sizeof(rnd));
 	explicit_bzero(&enc, sizeof(enc));
@@ -221,7 +214,6 @@ kex_kem_mlkem768x25519_dec(struct kex *kex,
 	struct sshbuf *buf = NULL;
 	u_char mlkem_key[crypto_kem_mlkem768_BYTES];
 	const u_char *ciphertext, *server_pub;
-	u_char hash[SSH_DIGEST_MAX_LENGTH];
 	size_t need;
 	int r;
 	struct libcrux_mlkem768_sk mlkem_priv;
@@ -259,27 +251,18 @@ kex_kem_mlkem768x25519_dec(struct kex *kex,
 	if ((r = kexc25519_shared_key_ext(kex->c25519_client_key, server_pub,
 	    buf, 1)) < 0)
 		goto out;
-	if ((r = ssh_digest_buffer(kex->impl->hash_alg, buf,
-	    hash, sizeof(hash))) != 0)
-		goto out;
 #ifdef DEBUG_KEXECDH
 	dump_digest("client kem key:", mlkem_key, sizeof(mlkem_key));
-	dump_digest("concatenation of KEM key and ECDH shared key:",
-	    sshbuf_ptr(buf), sshbuf_len(buf));
+	dump_digestb("concatenation of KEM key and ECDH shared key:", buf);
 #endif
-	sshbuf_reset(buf);
-	if ((r = sshbuf_put_string(buf, hash,
-	    ssh_digest_bytes(kex->impl->hash_alg))) != 0)
-		goto out;
+	r = kex_digest_buffer(kex->impl->hash_alg, buf, shared_secretp);
 #ifdef DEBUG_KEXECDH
-	dump_digest("encoded shared secret:", sshbuf_ptr(buf), sshbuf_len(buf));
+	if (r == 0)
+		dump_digestb("encoded shared secret:", *shared_secretp);
+	else
+		fprintf(stderr, "shared secret error: %s", ssh_err(r));
 #endif
-	/* success */
-	r = 0;
-	*shared_secretp = buf;
-	buf = NULL;
  out:
-	explicit_bzero(hash, sizeof(hash));
 	explicit_bzero(&mlkem_priv, sizeof(mlkem_priv));
 	explicit_bzero(&mlkem_ciphertext, sizeof(mlkem_ciphertext));
 	explicit_bzero(mlkem_key, sizeof(mlkem_key));

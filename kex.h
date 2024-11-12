@@ -244,6 +244,8 @@ int	kex_dh_shared_secret_to_sshbuf(u_char *kbuf, size_t klen,
 int	kex_pkey_derive_shared_secret(struct kex *kex, EVP_PKEY *peerkey,
     struct sshbuf **bufp);
 #endif
+int	kex_digest_buffer(int hash_alg, struct sshbuf *buf,
+    struct sshbuf **bufp);
 
 int	sshbuf_kex_write_dh_group(struct sshbuf *buf, EVP_PKEY *pk);
 int	sshbuf_kex_write_dh_pub(struct sshbuf *buf, EVP_PKEY *pk);
