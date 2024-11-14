@@ -59,13 +59,13 @@ kex_kem_sntrup761x25519_keypair(struct kex *kex)
 	if ((r = sshbuf_reserve(buf, need, &cp)) != 0)
 		goto out;
 	crypto_kem_sntrup761_keypair(cp, kex->sntrup761_client_key);
-#ifdef DEBUG_KEXECDH
+#ifdef DEBUG_KEXKEM
 	dump_digest("client public key sntrup761:", cp,
 	    crypto_kem_sntrup761_PUBLICKEYBYTES);
 #endif
 	cp += crypto_kem_sntrup761_PUBLICKEYBYTES;
 	kexc25519_keygen(kex->c25519_client_key, cp);
-#ifdef DEBUG_KEXECDH
+#ifdef DEBUG_KEXKEM
 	dump_digest("client public key c25519:", cp, CURVE25519_SIZE);
 #endif
 	kex->client_pub = buf;
@@ -98,10 +98,10 @@ kex_kem_sntrup761x25519_enc(struct kex *kex,
 		goto out;
 	}
 	client_pub = sshbuf_ptr(client_blob);
-#ifdef DEBUG_KEXECDH
+#ifdef DEBUG_KEXKEM
 	dump_digest("client public key sntrup761:", client_pub,
 	    crypto_kem_sntrup761_PUBLICKEYBYTES);
-	dump_digest("client public key 25519:",
+	dump_digest("client public key c25519:",
 	    client_pub + crypto_kem_sntrup761_PUBLICKEYBYTES,
 	    CURVE25519_SIZE);
 #endif
@@ -131,8 +131,8 @@ kex_kem_sntrup761x25519_enc(struct kex *kex,
 	client_pub += crypto_kem_sntrup761_PUBLICKEYBYTES;
 	if ((r = kexc25519_shared_key_ext(server_key, client_pub, buf, 1)) < 0)
 		goto out;
-#ifdef DEBUG_KEXECDH
-	dump_digest("server public key 25519:", server_pub, CURVE25519_SIZE);
+#ifdef DEBUG_KEXKEM
+	dump_digest("server public key c25519:", server_pub, CURVE25519_SIZE);
 	dump_digest("server cipher text:", ciphertext,
 	    crypto_kem_sntrup761_CIPHERTEXTBYTES);
 	dump_digest("server kem key:", kem_key, crypto_kem_sntrup761_BYTES);
@@ -140,7 +140,7 @@ kex_kem_sntrup761x25519_enc(struct kex *kex,
 #endif
 	/* string-encoded hash is resulting shared secret */
 	r = kex_digest_buffer(kex->impl->hash_alg, buf, shared_secretp);
-#ifdef DEBUG_KEXECDH
+#ifdef DEBUG_KEXKEM
 	if (r == 0)
 		dump_digestb("encoded shared secret:", *shared_secretp);
 	else
@@ -176,7 +176,7 @@ kex_kem_sntrup761x25519_dec(struct kex *kex,
 	}
 	ciphertext = sshbuf_ptr(server_blob);
 	server_pub = ciphertext + crypto_kem_sntrup761_CIPHERTEXTBYTES;
-#ifdef DEBUG_KEXECDH
+#ifdef DEBUG_KEXKEM
 	dump_digest("server cipher text:", ciphertext,
 	    crypto_kem_sntrup761_CIPHERTEXTBYTES);
 	dump_digest("server public key c25519:", server_pub, CURVE25519_SIZE);
@@ -194,12 +194,12 @@ kex_kem_sntrup761x25519_dec(struct kex *kex,
 	if ((r = kexc25519_shared_key_ext(kex->c25519_client_key, server_pub,
 	    buf, 1)) < 0)
 		goto out;
-#ifdef DEBUG_KEXECDH
+#ifdef DEBUG_KEXKEM
 	dump_digest("client kem key:", kem_key, crypto_kem_sntrup761_BYTES);
 	dump_digestb("concatenation of KEM key and ECDH shared key:", buf);
 #endif
 	r = kex_digest_buffer(kex->impl->hash_alg, buf, shared_secretp);
-#ifdef DEBUG_KEXECDH
+#ifdef DEBUG_KEXKEM
 	if (r == 0)
 		dump_digestb("encoded shared secret:", *shared_secretp);
 	else

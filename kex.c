@@ -1124,19 +1124,18 @@ kex_verify_host_key(struct ssh *ssh, struct sshkey *server_host_key)
 	return 0;
 }
 
-#if defined(DEBUG_KEX) || defined(DEBUG_KEXDH) || defined(DEBUG_KEXECDH)
+#if defined(DEBUG_KEX) || defined(DEBUG_KEXDH) || defined(DEBUG_KEXECDH) || defined(DEBUG_KEXKEM)
 void
 dump_digest(const char *msg, const u_char *digest, size_t len)
 {
-	fprintf(stderr, "%s\n", msg);
+	fprintf(stderr, "length %zd, %s\n", len, msg);
 	sshbuf_dump_data(digest, len, stderr);
 }
 
 void
 dump_digestb(const char *msg, const struct sshbuf *digest)
 {
-	fprintf(stderr, "%s\n", msg);
-	sshbuf_dump_data(sshbuf_ptr(digest), sshbuf_len(digest), stderr);
+	dump_digest(msg, sshbuf_ptr(digest), sshbuf_len(digest));
 }
 #endif
 
