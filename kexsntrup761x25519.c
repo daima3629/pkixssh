@@ -85,18 +85,18 @@ kex_kem_sntrup761x25519_enc(struct kex *kex,
 	const u_char *client_pub;
 	u_char *kem_key, *ciphertext, *server_pub;
 	u_char server_key[CURVE25519_SIZE];
-	size_t need;
 	int r;
 
 	*server_blobp = NULL;
 	*shared_secretp = NULL;
 
 	/* client_blob contains both KEM and ECDH client pubkeys */
-	need = crypto_kem_sntrup761_PUBLICKEYBYTES + CURVE25519_SIZE;
+{	size_t need = crypto_kem_sntrup761_PUBLICKEYBYTES + CURVE25519_SIZE;
 	if (sshbuf_len(client_blob) != need) {
 		r = SSH_ERR_SIGNATURE_INVALID;
 		goto out;
 	}
+}
 	client_pub = sshbuf_ptr(client_blob);
 #ifdef DEBUG_KEXKEM
 	dump_digest("client public key sntrup761:", client_pub,
@@ -119,9 +119,10 @@ kex_kem_sntrup761x25519_enc(struct kex *kex,
 		r = SSH_ERR_ALLOC_FAIL;
 		goto out;
 	}
-	need = crypto_kem_sntrup761_CIPHERTEXTBYTES + CURVE25519_SIZE;
+{	size_t need = crypto_kem_sntrup761_CIPHERTEXTBYTES + CURVE25519_SIZE;
 	if ((r = sshbuf_reserve(server_blob, need, &ciphertext)) != 0)
 		goto out;
+}
 	/* generate and encrypt KEM key with client key */
 	crypto_kem_sntrup761_enc(ciphertext, kem_key, client_pub);
 	/* generate ECDH key pair, store server pubkey after ciphertext */
@@ -164,16 +165,16 @@ kex_kem_sntrup761x25519_dec(struct kex *kex,
 	struct sshbuf *buf = NULL;
 	u_char *kem_key = NULL;
 	const u_char *ciphertext, *server_pub;
-	size_t need;
 	int r, decoded;
 
 	*shared_secretp = NULL;
 
-	need = crypto_kem_sntrup761_CIPHERTEXTBYTES + CURVE25519_SIZE;
+{	size_t need = crypto_kem_sntrup761_CIPHERTEXTBYTES + CURVE25519_SIZE;
 	if (sshbuf_len(server_blob) != need) {
 		r = SSH_ERR_SIGNATURE_INVALID;
 		goto out;
 	}
+}
 	ciphertext = sshbuf_ptr(server_blob);
 	server_pub = ciphertext + crypto_kem_sntrup761_CIPHERTEXTBYTES;
 #ifdef DEBUG_KEXKEM

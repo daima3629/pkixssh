@@ -135,7 +135,6 @@ kex_kem_mlkem768x25519_enc(struct kex *kex,
 	const u_char *client_pub;
 	u_char rnd[LIBCRUX_ML_KEM_ENC_PRNG_LEN];
 	u_char server_pub[CURVE25519_SIZE], server_key[CURVE25519_SIZE];
-	size_t need;
 	int r = SSH_ERR_INTERNAL_ERROR;
 	struct libcrux_mlkem768_enc_result enc;
 	struct libcrux_mlkem768_pk mlkem_pub;
@@ -145,11 +144,12 @@ kex_kem_mlkem768x25519_enc(struct kex *kex,
 	memset(&mlkem_pub, 0, sizeof(mlkem_pub));
 
 	/* client_blob contains both KEM and ECDH client pubkeys */
-	need = crypto_kem_mlkem768_PUBLICKEYBYTES + CURVE25519_SIZE;
+{	size_t need = crypto_kem_mlkem768_PUBLICKEYBYTES + CURVE25519_SIZE;
 	if (sshbuf_len(client_blob) != need) {
 		r = SSH_ERR_SIGNATURE_INVALID;
 		goto out;
 	}
+}
 	client_pub = sshbuf_ptr(client_blob);
 #ifdef DEBUG_KEXKEM
 	dump_digest("client public key mlkem768:", client_pub,
@@ -224,7 +224,6 @@ kex_kem_mlkem768x25519_dec(struct kex *kex,
 	struct sshbuf *buf = NULL;
 	u_char mlkem_key[crypto_kem_mlkem768_BYTES];
 	const u_char *ciphertext, *server_pub;
-	size_t need;
 	int r;
 	struct libcrux_mlkem768_sk mlkem_priv;
 	struct libcrux_mlkem768_ciphertext mlkem_ciphertext;
@@ -233,11 +232,12 @@ kex_kem_mlkem768x25519_dec(struct kex *kex,
 	memset(&mlkem_priv, 0, sizeof(mlkem_priv));
 	memset(&mlkem_ciphertext, 0, sizeof(mlkem_ciphertext));
 
-	need = crypto_kem_mlkem768_CIPHERTEXTBYTES + CURVE25519_SIZE;
+{	size_t need = crypto_kem_mlkem768_CIPHERTEXTBYTES + CURVE25519_SIZE;
 	if (sshbuf_len(server_blob) != need) {
 		r = SSH_ERR_SIGNATURE_INVALID;
 		goto out;
 	}
+}
 	ciphertext = sshbuf_ptr(server_blob);
 	server_pub = ciphertext + crypto_kem_mlkem768_CIPHERTEXTBYTES;
 	/* hash concatenation of KEM key and ECDH shared key */
