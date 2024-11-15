@@ -74,4 +74,5 @@ platform_disable_tracing(int strict)
 	if (ptrace(PT_DENY_ATTACH, 0, 0, 0) == -1 && strict)
 		fatal("unable to set PT_DENY_ATTACH: %s", strerror(errno));
 #endif
+	UNUSED(strict); /* prevents warning if no one of above is applicable */
 }
