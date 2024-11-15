@@ -72,7 +72,17 @@
 #  define htole64(v) ((uint64_t)v)
 # endif
 #endif
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunknown-pragmas"
+#pragma clang diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma clang diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Waggregate-return"
+#pragma GCC diagnostic ignored "-Winline"
 #include "libcrux_mlkem768_sha3.h"
+#pragma clang diagnostic pop
+#pragma GCC diagnostic pop
 
 /* Post-Quantum Traditional hybrid key exchange implementation */
 
