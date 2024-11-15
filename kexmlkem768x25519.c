@@ -106,13 +106,13 @@ kex_kem_mlkem768x25519_keypair(struct kex *kex)
 	memcpy(kex->mlkem768_client_key, keypair.sk.value,
 	    sizeof(kex->mlkem768_client_key));
 #ifdef DEBUG_KEXKEM
-	dump_digest("client public key mlkem768:", cp,
+	dump_digest("client public keypair mlkem768:", cp,
 	    crypto_kem_mlkem768_PUBLICKEYBYTES);
 #endif
 	cp += crypto_kem_mlkem768_PUBLICKEYBYTES;
 	kexc25519_keygen(kex->c25519_client_key, cp);
 #ifdef DEBUG_KEXKEM
-	dump_digest("client public key c25519:", cp, CURVE25519_SIZE);
+	dump_digest("client public keypair c25519:", cp, CURVE25519_SIZE);
 #endif
 	/* success */
 	r = 0;

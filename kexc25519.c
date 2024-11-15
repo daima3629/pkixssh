@@ -97,7 +97,7 @@ kex_c25519_keypair(struct kex *kex)
 		goto out;
 	kexc25519_keygen(kex->c25519_client_key, cp);
 #ifdef DEBUG_KEXECDH
-	dump_digest("client public key c25519:", cp, CURVE25519_SIZE);
+	dump_digest("client public keypair c25519:", cp, CURVE25519_SIZE);
 #endif
 	kex->client_pub = buf;
 	buf = NULL;

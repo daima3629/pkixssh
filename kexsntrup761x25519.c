@@ -60,13 +60,13 @@ kex_kem_sntrup761x25519_keypair(struct kex *kex)
 		goto out;
 	crypto_kem_sntrup761_keypair(cp, kex->sntrup761_client_key);
 #ifdef DEBUG_KEXKEM
-	dump_digest("client public key sntrup761:", cp,
+	dump_digest("client public keypair sntrup761:", cp,
 	    crypto_kem_sntrup761_PUBLICKEYBYTES);
 #endif
 	cp += crypto_kem_sntrup761_PUBLICKEYBYTES;
 	kexc25519_keygen(kex->c25519_client_key, cp);
 #ifdef DEBUG_KEXKEM
-	dump_digest("client public key c25519:", cp, CURVE25519_SIZE);
+	dump_digest("client public keypair c25519:", cp, CURVE25519_SIZE);
 #endif
 	kex->client_pub = buf;
 	buf = NULL;
