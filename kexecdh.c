@@ -273,6 +273,9 @@ kex_ecdh_keypair(struct kex *kex)
 
 	if ((r = kex_ecdh_pkey_keygen(kex)) != 0)
 		goto out;
+#ifdef DEBUG_KEXECDH
+	dump_digestb("client public keypair ecdh:", kex->client_pub);
+#endif
 
 	r = kex_ecdh_to_sshbuf(kex, &kex->client_pub);
 
@@ -291,6 +294,9 @@ kex_ecdh_enc(struct kex *kex, const struct sshbuf *client_blob,
 	*server_blobp = NULL;
 	*shared_secretp = NULL;
 
+#ifdef DEBUG_KEXECDH
+	dump_digestb("client public key ecdh:", client_blob);
+#endif
 	if ((r = kex_ecdh_pkey_keygen(kex)) != 0 ||
 	    (r = kex_ecdh_to_sshbuf(kex, server_blobp)) != 0)
 		goto out;
@@ -313,8 +319,15 @@ kex_ecdh_dec(struct kex *kex, const struct sshbuf *server_blob,
 	int r;
 
 	*shared_secretp = NULL;
+#ifdef DEBUG_KEXECDH
+	dump_digestb("server public key ecdh:", server_blob);
+#endif
 
 	r = kex_ecdh_compute_key(kex, server_blob, shared_secretp);
+#ifdef DEBUG_KEXECDH
+	if (r == 0)
+		dump_digestb("encoded shared secret:", *shared_secretp);
+#endif
 
 	kex_reset_crypto_keys(kex);
 	return r;

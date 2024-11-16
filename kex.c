@@ -1128,7 +1128,7 @@ kex_verify_host_key(struct ssh *ssh, struct sshkey *server_host_key)
 void
 dump_digest(const char *msg, const u_char *digest, size_t len)
 {
-	fprintf(stderr, "length %zd, %s\n", len, msg);
+	fprintf(stderr, "length %zu, %s\n", len, msg);
 	sshbuf_dump_data(digest, len, stderr);
 }
 
