@@ -505,20 +505,20 @@ done:
 
 #ifdef DEBUG_KEXDH
 static void
-DEBUG_DH_COMPUTE_KEY(struct kex *kex, BIGNUM *pub_key) {
+DUMP_DH_KEY(const EVP_PKEY *pk, const BIGNUM *pub_key) {
 	fprintf(stderr, "dh pub: ");
 	BN_print_fp(stderr, pub_key);
 	fprintf(stderr, "\n");
 	fprintf(stderr, "bits %d\n", BN_num_bits(pub_key));
 {	BIO *err = BIO_new_fp(stderr, BIO_NOCLOSE);
-	EVP_PKEY_print_params(err, kex->pk, 0, NULL);
+	EVP_PKEY_print_params(err, pk, 0, NULL);
 	BIO_free_all(err);
 }
 }
 #else
 static inline void
-DEBUG_DH_COMPUTE_KEY(struct kex *kex, BIGNUM *pub_key) {
-	UNUSED(kex); UNUSED(pub_key);
+DUMP_DH_KEY(const EVP_PKEY *pk, const BIGNUM *pub_key) {
+	UNUSED(pk); UNUSED(pub_key);
 }
 #endif
 
@@ -532,7 +532,7 @@ kex_dh_compute_key(struct kex *kex, BIGNUM *pub_key, struct sshbuf **shared_secr
 	u_char *kbuf = NULL;
 	int r;
 
-	DEBUG_DH_COMPUTE_KEY(kex, pub_key);
+	DUMP_DH_KEY(kex->pk, pub_key);
 
 	dh = EVP_PKEY_get1_DH(kex->pk);
 	if (dh == NULL)
@@ -569,7 +569,7 @@ done:
 	EVP_PKEY *peerkey = NULL;
 	int r;
 
-	DEBUG_DH_COMPUTE_KEY(kex, pub_key);
+	DUMP_DH_KEY(kex->pk, pub_key);
 
 	r = create_peer_pkey(kex, pub_key, &peerkey);
 	if (r != 0) return r;
@@ -615,16 +615,7 @@ sshbuf_kex_write_dh_pub(struct sshbuf *buf, EVP_PKEY *pk) {
 
 {	const BIGNUM *pub_key;
 	DH_get0_key(dh, &pub_key, NULL);
-#ifdef DEBUG_KEXDH
-	fprintf(stderr, "dh pub: ");
-	BN_print_fp(stderr, pub_key);
-	fprintf(stderr, "\n");
-	fprintf(stderr, "bits %d\n", BN_num_bits(pub_key));
-{	BIO *err = BIO_new_fp(stderr, BIO_NOCLOSE);
-	EVP_PKEY_print_params(err, pk, 0, NULL);
-	BIO_free_all(err);
-}
-#endif
+	DUMP_DH_KEY(pk, pub_key);
 
 	r = sshbuf_put_bignum2(buf, pub_key);
 }
