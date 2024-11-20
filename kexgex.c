@@ -84,7 +84,7 @@ kexgex_hash(
 		return r;
 	}
 #ifdef DEBUG_KEX
-	sshbuf_dump(b, stderr);
+	dump_digestb("hash-input", b);
 #endif
 	if (ssh_digest_buffer(hash_alg, b, hash, *hashlen) != 0) {
 		sshbuf_free(b);

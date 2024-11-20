@@ -127,7 +127,7 @@ kex_c25519_enc(struct kex *kex, const struct sshbuf *client_blob,
 	}
 	client_pub = sshbuf_ptr(client_blob);
 #ifdef DEBUG_KEXECDH
-	dump_digest("client public key c25519:", client_pub, CURVE25519_SIZE);
+	dump_digestb("client public key c25519:", client_blob);
 #endif
 	/* allocate space for encrypted KEM key and ECDH pub key */
 	if ((server_blob = sshbuf_new()) == NULL) {
@@ -175,7 +175,7 @@ kex_c25519_dec(struct kex *kex, const struct sshbuf *server_blob,
 	}
 	server_pub = sshbuf_ptr(server_blob);
 #ifdef DEBUG_KEXECDH
-	dump_digest("server public key c25519:", server_pub, CURVE25519_SIZE);
+	dump_digestb("server public key c25519:", server_blob);
 #endif
 	/* shared secret */
 	if ((buf = sshbuf_new()) == NULL) {
