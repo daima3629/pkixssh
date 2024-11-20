@@ -148,6 +148,7 @@ struct kex {
 };
 
 struct kex_impl_funcs {
+	int (*init)(struct ssh *);
 	int (*keypair)(struct kex *);
 	int (*enc)(struct kex *, const struct sshbuf *, struct sshbuf **,
 	    struct sshbuf **);
@@ -177,6 +178,7 @@ void	 kex_proposal_populate_entries(struct ssh *, char *prop[PROPOSAL_MAX],
 void	 kex_proposal_free_entries(char *prop[PROPOSAL_MAX]);
 
 int	 kex_exchange_identification(struct ssh *, int);
+int	 kex_init_gen(struct ssh *);
 
 struct kex *kex_new(void);
 void	 kex_set_callbacks(struct kex *);

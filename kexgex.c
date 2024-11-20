@@ -2,7 +2,7 @@
 /*
  * Copyright (c) 2000 Niels Provos.  All rights reserved.
  * Copyright (c) 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2018-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2018-2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -34,6 +34,7 @@
 #include <openssl/bn.h>
 
 #include "kex.h"
+#include "packet.h"
 #include "ssh2.h"
 #include "ssherr.h"
 #include "sshbuf.h"
@@ -110,12 +111,28 @@ static int kex_dh_gex_sha2_enabled(void) { return 1; }
 static int kex_dh_gex_sha2_enabled(void) { return 0; }
 # endif
 
+static int
+kex_init_gex(struct ssh *ssh) {
+	struct kex *kex = ssh->kex;
+
+	return kex->server
+		? kexgex_server(ssh)
+		: kexgex_client(ssh);
+}
+
+static const struct kex_impl_funcs kex_dh_gex_funcs = {
+	kex_init_gex,
+	NULL,
+	NULL,
+	NULL
+};
+
 const struct kex_impl kex_dh_gex_sha1_impl = {
 	KEX_DH_GEX_SHA1, 0,
 	"diffie-hellman-group-exchange-sha1",
 	SSH_DIGEST_SHA1,
 	kex_dh_gex_sha1_enabled,
-	NULL
+	&kex_dh_gex_funcs
 };
 
 const struct kex_impl kex_dh_gex_sha256_impl = {
@@ -123,7 +140,7 @@ const struct kex_impl kex_dh_gex_sha256_impl = {
 	"diffie-hellman-group-exchange-sha256",
 	SSH_DIGEST_SHA256,
 	kex_dh_gex_sha2_enabled,
-	NULL
+	&kex_dh_gex_funcs
 };
 
 #endif /* WITH_OPENSSL */

@@ -370,3 +370,12 @@ kex_set_callbacks(struct kex *kex) {
 	kex->kex[KEX_KEM_SNTRUP761X25519_SHA512] = kexgen_callback;
 	kex->kex[KEX_KEM_MLKEM768X25519_SHA256] = kexgen_callback;
 }
+
+int
+kex_init_gen(struct ssh *ssh) {
+	struct kex *kex = ssh->kex;
+
+	return kex->server
+		? kex_gen_server(ssh)
+		: kex_gen_client(ssh);
+}

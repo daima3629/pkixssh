@@ -585,11 +585,8 @@ kex_input_kexinit(int type, u_int32_t seq, struct ssh *ssh)
 	if ((r = kex_choose_conf(ssh, seq)) != 0)
 		return r;
 
-	if (kex->kex_type < KEX_MAX && kex->kex[kex->kex_type] != NULL)
-		return (kex->kex[kex->kex_type])(ssh);
-
-	error_f("unknown kex type %u", kex->kex_type);
-	return SSH_ERR_INTERNAL_ERROR;
+	/* implementation already selected - kex_choose_conf(...)->choose_kex(...) */
+	return kex->impl->funcs->init(ssh);
 }
 
 struct kex *

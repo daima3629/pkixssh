@@ -283,6 +283,7 @@ kex_kem_mlkem768x25519_dec(struct kex *kex,
 static int kex_kem_mlkem768x25519_enabled(void) { return 1; }
 
 static const struct kex_impl_funcs kex_kem_mlkem768x25519_funcs = {
+	kex_init_gen,
 	kex_kem_mlkem768x25519_keypair,
 	kex_kem_mlkem768x25519_enc,
 	kex_kem_mlkem768x25519_dec

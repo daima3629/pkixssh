@@ -142,6 +142,7 @@ static int kex_dh_sha2_enabled(void) { return 0; }
 # endif
 
 static const struct kex_impl_funcs kex_dh_funcs = {
+	kex_init_gen,
 	kex_dh_keypair,
 	kex_dh_enc,
 	kex_dh_dec

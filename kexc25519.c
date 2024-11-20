@@ -198,6 +198,7 @@ kex_c25519_dec(struct kex *kex, const struct sshbuf *server_blob,
 static int kex_c25519_enabled(void) { return 1; }
 
 static const struct kex_impl_funcs kex_c25519_funcs = {
+	kex_init_gen,
 	kex_c25519_keypair,
 	kex_c25519_enc,
 	kex_c25519_dec

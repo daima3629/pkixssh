@@ -336,6 +336,7 @@ kex_ecdh_dec(struct kex *kex, const struct sshbuf *server_blob,
 static int kex_ecdh_enabled(void) { return 1; }
 
 static const struct kex_impl_funcs kex_ecdh_funcs = {
+	kex_init_gen,
 	kex_ecdh_keypair,
 	kex_ecdh_enc,
 	kex_ecdh_dec
