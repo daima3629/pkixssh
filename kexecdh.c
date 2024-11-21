@@ -273,11 +273,11 @@ kex_ecdh_keypair(struct kex *kex)
 
 	if ((r = kex_ecdh_pkey_keygen(kex)) != 0)
 		goto out;
+
+	r = kex_ecdh_to_sshbuf(kex, &kex->client_pub);
 #ifdef DEBUG_KEXECDH
 	dump_digestb("client public keypair ecdh:", kex->client_pub);
 #endif
-
-	r = kex_ecdh_to_sshbuf(kex, &kex->client_pub);
 
  out:
 	if (r != 0)

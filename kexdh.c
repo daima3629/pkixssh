@@ -68,11 +68,11 @@ kex_dh_keypair(struct kex *kex)
 
 	if ((r = kex_dh_pkey_keygen(kex)) != 0)
 		goto out;
+
+	r = kex_dh_to_sshbuf(kex, &kex->client_pub);
 #ifdef DEBUG_KEXDH
 	dump_digestb("client public keypair dh:", kex->client_pub);
 #endif
-
-	r = kex_dh_to_sshbuf(kex, &kex->client_pub);
 
  out:
 	if (r != 0)

@@ -133,11 +133,12 @@ kex_kem_sntrup761x25519_enc(struct kex *kex,
 	if ((r = kexc25519_shared_key_ext(server_key, client_pub, buf, 1)) < 0)
 		goto out;
 #ifdef DEBUG_KEXKEM
-	dump_digest("server public key c25519:", server_pub, CURVE25519_SIZE);
 	dump_digest("server cipher text:", ciphertext,
 	    crypto_kem_sntrup761_CIPHERTEXTBYTES);
+	dump_digest("server public key c25519:", server_pub, CURVE25519_SIZE);
+	dump_digestb("concatenation of KEM and ECDH public part:", server_blob);
 	dump_digest("server kem key:", kem_key, crypto_kem_sntrup761_BYTES);
-	dump_digestb("concatenation of KEM key and ECDH shared key:", buf);
+	dump_digestb("concatenation of KEM and ECDH shared key:", buf);
 #endif
 	/* string-encoded hash is resulting shared secret */
 	r = kex_digest_buffer(kex->impl->hash_alg, buf, shared_secretp);
