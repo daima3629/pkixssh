@@ -136,7 +136,6 @@ struct kex {
 	int	(*host_key_index)(struct sshkey *, int, struct ssh *);
 	int	(*xsign)(struct ssh *ssh, ssh_sign_ctx *ctx, struct sshkey *pub,
 	    u_char **sigp, size_t *lenp, const u_char *data, size_t datalen);
-	int	(*kex[KEX_MAX])(struct ssh *);
 	/* kex specific state */
 	EVP_PKEY	*pk;
 	u_int	min, max, nbits;	/* GEX */
@@ -181,7 +180,6 @@ int	 kex_exchange_identification(struct ssh *, int);
 int	 kex_init_gen(struct ssh *);
 
 struct kex *kex_new(void);
-void	 kex_set_callbacks(struct kex *);
 int	 kex_ready(struct ssh *, char *[PROPOSAL_MAX]);
 int	 kex_setup(struct ssh *, char *[PROPOSAL_MAX]);
 void	 kex_free_newkeys(struct newkeys *);

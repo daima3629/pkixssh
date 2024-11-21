@@ -1702,7 +1702,6 @@ monitor_apply_keystate(struct ssh *ssh)
 	kex = ssh->kex;
 	if (kex == NULL) return;
 
-	kex_set_callbacks(kex);
 	kex->find_host_public_key=&get_hostkey_public_by_alg;
 	kex->find_host_private_key=&get_hostkey_private_by_alg;
 	kex->host_key_index=&get_hostkey_index;

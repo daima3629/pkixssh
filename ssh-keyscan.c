@@ -290,7 +290,6 @@ keygrab_ssh2(con *c)
 		fprintf(stderr, "kex_setup: %s\n", ssh_err(r));
 		exit(1);
 	}
-	kex_set_callbacks(c->c_ssh->kex);
 	ssh_set_verify_host_key_callback(c->c_ssh, key_print_wrapper);
 	/*
 	 * do the key-exchange until an error occurs or until

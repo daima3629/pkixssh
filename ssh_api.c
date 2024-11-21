@@ -121,7 +121,6 @@ ssh_init(struct ssh **sshp, int is_server, struct kex_params *kex_params)
 		ssh_free(ssh);
 		return r;
 	}
-	kex_set_callbacks(ssh->kex);
 	if (is_server) {
 		ssh->kex->find_host_public_key=&_ssh_host_public_key;
 		ssh->kex->find_host_private_key=&_ssh_host_private_key;

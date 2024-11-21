@@ -134,7 +134,6 @@ do_kex_with_key(char *kex, int keytype, int bits)
 	ASSERT_INT_EQ(sshbuf_len(state), 0);
 	sshbuf_free(state);
 	ASSERT_PTR_NE(server2->kex, NULL);
-	kex_set_callbacks(server2->kex);
 	server2->kex->find_host_public_key = server->kex->find_host_public_key;
 	server2->kex->find_host_private_key = server->kex->find_host_private_key;
 	server2->kex->xsign = server->kex->xsign;

@@ -332,45 +332,6 @@ out:
 	return r;
 }
 
-
-static int
-kexgen_callback(struct ssh *ssh) {
-	struct kex *kex = ssh->kex;
-
-	return kex->server
-		? kex_gen_server(ssh)
-		: kex_gen_client(ssh);
-}
-
-static int
-kexgex_callback(struct ssh *ssh) {
-	struct kex *kex = ssh->kex;
-
-	return kex->server
-		? kexgex_server(ssh)
-		: kexgex_client(ssh);
-}
-
-
-void
-kex_set_callbacks(struct kex *kex) {
-#ifdef WITH_OPENSSL
-	kex->kex[KEX_DH_GRP1_SHA1] = kexgen_callback;
-	kex->kex[KEX_DH_GRP14_SHA1] = kexgen_callback;
-	kex->kex[KEX_DH_GRP14_SHA256] = kexgen_callback;
-	kex->kex[KEX_DH_GRP16_SHA512] = kexgen_callback;
-	kex->kex[KEX_DH_GRP18_SHA512] = kexgen_callback;
-	kex->kex[KEX_DH_GEX_SHA1] = kexgex_callback;
-	kex->kex[KEX_DH_GEX_SHA256] = kexgex_callback;
-# ifdef OPENSSL_HAS_ECC
-	kex->kex[KEX_ECDH_SHA2] = kexgen_callback;
-# endif
-#endif /* WITH_OPENSSL */
-	kex->kex[KEX_C25519_SHA256] = kexgen_callback;
-	kex->kex[KEX_KEM_SNTRUP761X25519_SHA512] = kexgen_callback;
-	kex->kex[KEX_KEM_MLKEM768X25519_SHA256] = kexgen_callback;
-}
-
 int
 kex_init_gen(struct ssh *ssh) {
 	struct kex *kex = ssh->kex;
