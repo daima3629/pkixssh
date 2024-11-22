@@ -230,19 +230,21 @@ static const struct kex_impl_funcs kex_kem_sntrup761x25519_funcs = {
 };
 
 const struct kex_impl kex_kem_sntrup761x25519_sha512_impl = {
-	KEX_KEM_SNTRUP761X25519_SHA512, 0,
+	KEX_KEM_SNTRUP761X25519_SHA512,
 	"sntrup761x25519-sha512",
 	SSH_DIGEST_SHA512,
 	kex_kem_sntrup761x25519_enabled,
-	&kex_kem_sntrup761x25519_funcs
+	&kex_kem_sntrup761x25519_funcs,
+	NULL
 };
 
 const struct kex_impl kex_kem_sntrup761x25519_sha512_impl_ext = {
-	KEX_KEM_SNTRUP761X25519_SHA512, 0,
+	KEX_KEM_SNTRUP761X25519_SHA512,
 	"sntrup761x25519-sha512@openssh.com",
 	SSH_DIGEST_SHA512,
 	kex_kem_sntrup761x25519_enabled,
-	&kex_kem_sntrup761x25519_funcs
+	&kex_kem_sntrup761x25519_funcs,
+	NULL
 };
 
 #else /* ENABLE_KEX_SNTRUP761X25519 */

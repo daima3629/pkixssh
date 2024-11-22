@@ -53,12 +53,17 @@
 #include "digest.h"
 #include "ssherr.h"
 
+struct kex_ecdh_spec {
+	int	ec_nid;
+};
+
 #ifndef USE_EVP_PKEY_KEYGEN
 static int
 kex_ecdh_key_init(struct kex *kex) {
+	struct kex_ecdh_spec *spec = kex->impl->spec;
 	EC_KEY *ec = NULL;
 
-	ec = EC_KEY_new_by_curve_name(kex->ec_nid);
+	ec = EC_KEY_new_by_curve_name(spec->ec_nid);
 	if (ec == NULL) return SSH_ERR_ALLOC_FAIL;
 
 #if defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x10100000L) || \
@@ -121,7 +126,8 @@ ssh_pkey_keygen_ec(int nid, EVP_PKEY **ret);
 
 static inline int
 kex_ecdh_pkey_keygen(struct kex *kex) {
-	return ssh_pkey_keygen_ec(kex->ec_nid, &kex->pk);
+	struct kex_ecdh_spec *spec = kex->impl->spec;
+	return ssh_pkey_keygen_ec(spec->ec_nid, &kex->pk);
 }
 #endif /*def USE_EVP_PKEY_KEYGEN*/
 
@@ -129,11 +135,12 @@ kex_ecdh_pkey_keygen(struct kex *kex) {
 #ifdef USE_EVP_PKEY_KEYGEN
 static int
 create_peer_pkey(struct kex *kex, const EC_POINT *dh_pub, EVP_PKEY **peerkeyp) {
+	struct kex_ecdh_spec *spec = kex->impl->spec;
 	EVP_PKEY *peerkey = NULL;
 	EC_KEY *ec;
 	int r = SSH_ERR_LIBCRYPTO_ERROR;
 
-	ec = EC_KEY_new_by_curve_name(kex->ec_nid);
+	ec = EC_KEY_new_by_curve_name(spec->ec_nid);
 	if (ec == NULL) return SSH_ERR_ALLOC_FAIL;
 	/* NOTE: named curve flag is not required */
 
@@ -342,31 +349,43 @@ static const struct kex_impl_funcs kex_ecdh_funcs = {
 	kex_ecdh_dec
 };
 
+static struct kex_ecdh_spec kex_ecdh_p256_spec = {
+	NID_X9_62_prime256v1
+};
 const struct kex_impl kex_ecdh_p256_sha256_impl = {
-	KEX_ECDH_SHA2, NID_X9_62_prime256v1,
+	KEX_ECDH_SHA2,
 	"ecdh-sha2-nistp256",
 	SSH_DIGEST_SHA256,
 	kex_ecdh_enabled,
-	&kex_ecdh_funcs
+	&kex_ecdh_funcs,
+	&kex_ecdh_p256_spec
 };
 
+static struct kex_ecdh_spec kex_ecdh_p384_spec = {
+	NID_secp384r1
+};
 const struct kex_impl kex_ecdh_p384_sha384_impl = {
-	KEX_ECDH_SHA2, NID_secp384r1,
+	KEX_ECDH_SHA2,
 	"ecdh-sha2-nistp384",
 	SSH_DIGEST_SHA384,
 	kex_ecdh_enabled,
-	&kex_ecdh_funcs
+	&kex_ecdh_funcs,
+	&kex_ecdh_p384_spec
 };
 
 # ifdef OPENSSL_HAS_NISTP521
 static int kex_ecdh_p521_enabled(void) { return 1; }
 
+static struct kex_ecdh_spec kex_ecdh_p521_spec = {
+	NID_secp521r1
+};
 const struct kex_impl kex_ecdh_p521_sha512_impl = {
-	KEX_ECDH_SHA2, NID_secp521r1,
+	KEX_ECDH_SHA2,
 	"ecdh-sha2-nistp521",
 	SSH_DIGEST_SHA512,
 	kex_ecdh_p521_enabled,
-	&kex_ecdh_funcs
+	&kex_ecdh_funcs,
+	&kex_ecdh_p521_spec
 };
 # endif /* OPENSSL_HAS_NISTP521 */
 

@@ -128,7 +128,6 @@ struct kex {
 	struct sshbuf *session_id;
 	sig_atomic_t done;
 	u_int	flags;
-	int	ec_nid;
 	char	*failed_choice;
 	int	(*verify_host_key)(struct sshkey *, struct ssh *);
 	struct sshkey *(*find_host_public_key)(const char* pkalg, struct ssh *);
@@ -157,12 +156,13 @@ struct kex_impl_funcs {
 struct kex_impl {
 	/* TODO: temporary primary key */
 	u_int kex_type;
-	int ec_nid;
 
 	const char *name;
 	int hash_alg;
 	int (*enabled)(void);
 	const struct kex_impl_funcs *funcs;
+
+	void *spec;
 };
 
 const struct kex_impl

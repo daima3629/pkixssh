@@ -128,19 +128,21 @@ static const struct kex_impl_funcs kex_dh_gex_funcs = {
 };
 
 const struct kex_impl kex_dh_gex_sha1_impl = {
-	KEX_DH_GEX_SHA1, 0,
+	KEX_DH_GEX_SHA1,
 	"diffie-hellman-group-exchange-sha1",
 	SSH_DIGEST_SHA1,
 	kex_dh_gex_sha1_enabled,
-	&kex_dh_gex_funcs
+	&kex_dh_gex_funcs,
+	NULL
 };
 
 const struct kex_impl kex_dh_gex_sha256_impl = {
-	KEX_DH_GEX_SHA256, 0,
+	KEX_DH_GEX_SHA256,
 	"diffie-hellman-group-exchange-sha256",
 	SSH_DIGEST_SHA256,
 	kex_dh_gex_sha2_enabled,
-	&kex_dh_gex_funcs
+	&kex_dh_gex_funcs,
+	NULL
 };
 
 #endif /* WITH_OPENSSL */

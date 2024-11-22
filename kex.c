@@ -790,7 +790,6 @@ choose_kex(struct kex *k, char *client, char *server)
 	}
 	/* TODO temporary for backward compatibility */
 	k->kex_type = k->impl->kex_type;
-	k->ec_nid = k->impl->ec_nid;
 	return 0;
 }
 
