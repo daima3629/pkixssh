@@ -54,7 +54,6 @@ struct dhgroup {
 
 static DH *dh_new_group_fallback(int);
 extern DH* _dh_new_group(BIGNUM *, BIGNUM *);
-extern DH* _dh_new_group_asc(const char *, const char *);
 extern DH* _dh_new_group_num(int);
 extern DH* _choose_dh(int, int, int);
 
@@ -249,21 +248,40 @@ _choose_dh(int min, int wantbits, int max)
 	return _dh_new_group(dhg.p, dhg.g);
 }
 
+static DH*
+dh_new_group_asc(const char *gen, const char *modulus)
+{
+	BIGNUM *p = NULL, *g = NULL;
+
+	if (BN_hex2bn(&p, modulus) == 0 ||
+	    BN_hex2bn(&g, gen) == 0)
+		goto err;
+
+	return _dh_new_group(p, g);
+
+err:
+	BN_clear_free(p);
+	BN_clear_free(g);
+	return NULL;
+}
+
 /* diffie-hellman-groupN-sha1 */
 
-DH*
-_dh_new_group_num(int num) {
-	switch (num) {
+struct dh_group {
+	int id;
+	const char *generator;
+	const char *modulus;
+} dh_group_list[] = {
 	/* rfc2409 "Second Oakley Group" (1024 bits) */
-	case 1: return _dh_new_group_asc("2",
+	{   1, "2",
 	    "FFFFFFFF" "FFFFFFFF" "C90FDAA2" "2168C234" "C4C6628B" "80DC1CD1"
 	    "29024E08" "8A67CC74" "020BBEA6" "3B139B22" "514A0879" "8E3404DD"
 	    "EF9519B3" "CD3A431B" "302B0A6D" "F25F1437" "4FE1356D" "6D51C245"
 	    "E485B576" "625E7EC6" "F44C42E9" "A637ED6B" "0BFF5CB6" "F406B7ED"
 	    "EE386BFB" "5A899FA5" "AE9F2411" "7C4B1FE6" "49286651" "ECE65381"
-	    "FFFFFFFF" "FFFFFFFF");
+	    "FFFFFFFF" "FFFFFFFF" },
 	/* rfc3526 group 14 "2048-bit MODP Group" */
-	case 14: return _dh_new_group_asc("2",
+	{   14, "2",
 	    "FFFFFFFF" "FFFFFFFF" "C90FDAA2" "2168C234" "C4C6628B" "80DC1CD1"
 	    "29024E08" "8A67CC74" "020BBEA6" "3B139B22" "514A0879" "8E3404DD"
 	    "EF9519B3" "CD3A431B" "302B0A6D" "F25F1437" "4FE1356D" "6D51C245"
@@ -274,9 +292,9 @@ _dh_new_group_num(int num) {
 	    "670C354E" "4ABC9804" "F1746C08" "CA18217C" "32905E46" "2E36CE3B"
 	    "E39E772C" "180E8603" "9B2783A2" "EC07A28F" "B5C55DF0" "6F4C52C9"
 	    "DE2BCBF6" "95581718" "3995497C" "EA956AE5" "15D22618" "98FA0510"
-	    "15728E5A" "8AACAA68" "FFFFFFFF" "FFFFFFFF");
+	    "15728E5A" "8AACAA68" "FFFFFFFF" "FFFFFFFF" },
 	/* rfc3526 group 16 "4096-bit MODP Group" */
-	case 16: return _dh_new_group_asc("2",
+	{   16, "2",
 	    "FFFFFFFF" "FFFFFFFF" "C90FDAA2" "2168C234" "C4C6628B" "80DC1CD1"
 	    "29024E08" "8A67CC74" "020BBEA6" "3B139B22" "514A0879" "8E3404DD"
 	    "EF9519B3" "CD3A431B" "302B0A6D" "F25F1437" "4FE1356D" "6D51C245"
@@ -298,9 +316,9 @@ _dh_new_group_num(int num) {
 	    "287C5947" "4E6BC05D" "99B2964F" "A090C3A2" "233BA186" "515BE7ED"
 	    "1F612970" "CEE2D7AF" "B81BDD76" "2170481C" "D0069127" "D5B05AA9"
 	    "93B4EA98" "8D8FDDC1" "86FFB7DC" "90A6C08F" "4DF435C9" "34063199"
-	    "FFFFFFFF" "FFFFFFFF");
+	    "FFFFFFFF" "FFFFFFFF" },
 	/* rfc3526 group 18 "8192-bit MODP Group" */
-	case 18: return _dh_new_group_asc("2",
+	{    18, "2",
 	    "FFFFFFFF" "FFFFFFFF" "C90FDAA2" "2168C234" "C4C6628B" "80DC1CD1"
 	    "29024E08" "8A67CC74" "020BBEA6" "3B139B22" "514A0879" "8E3404DD"
 	    "EF9519B3" "CD3A431B" "302B0A6D" "F25F1437" "4FE1356D" "6D51C245"
@@ -343,7 +361,18 @@ _dh_new_group_num(int num) {
 	    "B1D510BD" "7EE74D73" "FAF36BC3" "1ECFA268" "359046F4" "EB879F92"
 	    "4009438B" "481C6CD7" "889A002E" "D5EE382B" "C9190DA6" "FC026E47"
 	    "9558E447" "5677E9AA" "9E3050E2" "765694DF" "C81F56E8" "80B96E71"
-	    "60C980DD" "98EDD3DF" "FFFFFFFF" "FFFFFFFF");
+	    "60C980DD" "98EDD3DF" "FFFFFFFF" "FFFFFFFF" }
+};
+
+DH*
+_dh_new_group_num(int num) {
+	size_t k;
+
+	for (k = 0; k < sizeof(dh_group_list) / sizeof(*dh_group_list); k++) {
+		if (num == dh_group_list[k].id)
+			return dh_new_group_asc(
+			    dh_group_list[k].generator,
+			    dh_group_list[k].modulus);
 	}
 	return NULL;
 }

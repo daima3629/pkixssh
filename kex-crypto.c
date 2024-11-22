@@ -109,7 +109,6 @@ DH_set0_pqg(DH *dh, BIGNUM *p, BIGNUM *q, BIGNUM *g) {
 #endif /*ndef HAVE_DH_GET0_KEY*/
 
 extern DH* _dh_new_group(BIGNUM *, BIGNUM *);
-extern DH* _dh_new_group_asc(const char *, const char *);
 extern DH* _dh_new_group_num(int);
 
 
@@ -131,23 +130,6 @@ _dh_new_group(BIGNUM *modulus, BIGNUM *gen)
 	}
 
 	return dh;
-}
-
-DH*
-_dh_new_group_asc(const char *gen, const char *modulus)
-{
-	BIGNUM *p = NULL, *g = NULL;
-
-	if (BN_hex2bn(&p, modulus) == 0 ||
-	    BN_hex2bn(&g, gen) == 0)
-		goto err;
-
-	return _dh_new_group(p, g);
-
-err:
-	BN_clear_free(p);
-	BN_clear_free(g);
-	return NULL;
 }
 
 
