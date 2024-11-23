@@ -64,21 +64,6 @@ enum kex_modes {
 	MODE_MAX
 };
 
-enum kex_exchange {
-	KEX_DH_GRP1_SHA1 = 1,
-	KEX_DH_GRP14_SHA1,
-	KEX_DH_GRP14_SHA256,
-	KEX_DH_GRP16_SHA512,
-	KEX_DH_GRP18_SHA512,
-	KEX_DH_GEX_SHA1,
-	KEX_DH_GEX_SHA256,
-	KEX_ECDH_SHA2,
-	KEX_C25519_SHA256,
-	KEX_KEM_SNTRUP761X25519_SHA512,
-	KEX_KEM_MLKEM768X25519_SHA256,
-	KEX_MAX
-};
-
 /* kex->flags */
 #define KEX_INIT_SENT			0x0001
 #define KEX_INITIAL			0x0002
@@ -117,7 +102,6 @@ struct kex {
 	char	*name;
 	const struct kex_impl *impl;
 	char	*hostkey_alg;
-	u_int	kex_type;
 	char	*pkalgs;
 	int	ext_info_c;
 	int	kex_strict;
@@ -154,9 +138,6 @@ struct kex_impl_funcs {
 };
 
 struct kex_impl {
-	/* TODO: temporary primary key */
-	u_int kex_type;
-
 	const char *name;
 	int hash_alg;
 	int (*enabled)(void);

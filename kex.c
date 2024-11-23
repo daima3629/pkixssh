@@ -788,8 +788,6 @@ choose_kex(struct kex *k, char *client, char *server)
 		error_f("unsupported KEX method %s", k->name);
 		return SSH_ERR_INTERNAL_ERROR;
 	}
-	/* TODO temporary for backward compatibility */
-	k->kex_type = k->impl->kex_type;
 	return 0;
 }
 

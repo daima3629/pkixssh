@@ -205,7 +205,6 @@ static const struct kex_impl_funcs kex_c25519_funcs = {
 };
 
 const struct kex_impl kex_c25519_sha256_impl = {
-	KEX_C25519_SHA256,
 	"curve25519-sha256",
 	SSH_DIGEST_SHA256,
 	kex_c25519_enabled,
@@ -214,7 +213,6 @@ const struct kex_impl kex_c25519_sha256_impl = {
 };
 
 const struct kex_impl kex_c25519_sha256_impl_ext = {
-	KEX_C25519_SHA256,
 	"curve25519-sha256@libssh.org",
 	SSH_DIGEST_SHA256,
 	kex_c25519_enabled,

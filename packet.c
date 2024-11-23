@@ -2354,8 +2354,8 @@ kex_to_blob(struct sshbuf *m, struct kex *kex)
 
 	if ((r = sshbuf_put_u32(m, kex->we_need)) != 0 ||
 	    /* TODO why to send hostkey_foo as is not set? */
+	    (r = sshbuf_put_cstring(m, kex->name)) != 0 ||
 	    (r = sshbuf_put_cstring(m, kex->hostkey_alg)) != 0 ||
-	    (r = sshbuf_put_u32(m, kex->kex_type)) != 0 ||
 	    (r = sshbuf_put_u32(m, kex->kex_strict)) != 0 ||
 	    (r = sshbuf_put_stringb(m, kex->my)) != 0 ||
 	    (r = sshbuf_put_stringb(m, kex->peer)) != 0 ||
@@ -2517,8 +2517,8 @@ kex_from_blob(struct sshbuf *m, struct kex **kexp)
 		goto out;
 	}
 	if ((r = sshbuf_get_u32(m, &kex->we_need)) != 0 ||
+	    (r = sshbuf_get_cstring(m, &kex->name, NULL)) != 0 ||
 	    (r = sshbuf_get_cstring(m, &kex->hostkey_alg, NULL)) != 0 ||
-	    (r = sshbuf_get_u32(m, &kex->kex_type)) != 0 ||
 	    (r = sshbuf_get_u32(m, &kex->kex_strict)) != 0 ||
 	    (r = sshbuf_get_stringb(m, kex->my)) != 0 ||
 	    (r = sshbuf_get_stringb(m, kex->peer)) != 0 ||
@@ -2527,6 +2527,7 @@ kex_from_blob(struct sshbuf *m, struct kex **kexp)
 	    (r = sshbuf_get_stringb(m, kex->session_id)) != 0 ||
 	    (r = sshbuf_get_u32(m, &kex->flags)) != 0)
 		goto out;
+	kex->impl = kex_find_impl(kex->name);
 	/* as hostkey_alg is not set we receive empty string - so free it */
 	if (kex->hostkey_alg[0] == '\0') {
 		free(kex->hostkey_alg);

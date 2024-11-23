@@ -291,7 +291,6 @@ static const struct kex_impl_funcs kex_kem_mlkem768x25519_funcs = {
 };
 
 const struct kex_impl kex_kem_mlkem768x25519_sha256_impl = {
-	KEX_KEM_MLKEM768X25519_SHA256,
 	"mlkem768x25519-sha256",
 	SSH_DIGEST_SHA256,
 	kex_kem_mlkem768x25519_enabled,

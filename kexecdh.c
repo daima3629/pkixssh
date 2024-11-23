@@ -353,7 +353,6 @@ static struct kex_ecdh_spec kex_ecdh_p256_spec = {
 	NID_X9_62_prime256v1
 };
 const struct kex_impl kex_ecdh_p256_sha256_impl = {
-	KEX_ECDH_SHA2,
 	"ecdh-sha2-nistp256",
 	SSH_DIGEST_SHA256,
 	kex_ecdh_enabled,
@@ -365,7 +364,6 @@ static struct kex_ecdh_spec kex_ecdh_p384_spec = {
 	NID_secp384r1
 };
 const struct kex_impl kex_ecdh_p384_sha384_impl = {
-	KEX_ECDH_SHA2,
 	"ecdh-sha2-nistp384",
 	SSH_DIGEST_SHA384,
 	kex_ecdh_enabled,
@@ -380,7 +378,6 @@ static struct kex_ecdh_spec kex_ecdh_p521_spec = {
 	NID_secp521r1
 };
 const struct kex_impl kex_ecdh_p521_sha512_impl = {
-	KEX_ECDH_SHA2,
 	"ecdh-sha2-nistp521",
 	SSH_DIGEST_SHA512,
 	kex_ecdh_p521_enabled,
