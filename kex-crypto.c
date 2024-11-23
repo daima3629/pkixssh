@@ -43,6 +43,11 @@
 #include "misc.h"
 #include "log.h"
 
+/* see kexdh.c */
+struct kex_dh_spec {
+	int	dh_group;
+};
+
 #ifndef HAVE_BN_IS_NEGATIVE	/*macro before OpenSSL 1.1*/
 # ifndef BN_is_negative		/*not defined before OpenSSL 0.9.8*/
 #  define BN_is_negative(a) ((a)->neg != 0)
@@ -280,23 +285,9 @@ static int
 kex_dh_key_init(struct kex *kex) {
 	DH *dh;
 
-	switch (kex->kex_type) {
-	case KEX_DH_GRP1_SHA1:
-		dh = _dh_new_group_num(1);
-		break;
-	case KEX_DH_GRP14_SHA1:
-	case KEX_DH_GRP14_SHA256:
-		dh = _dh_new_group_num(14);
-		break;
-	case KEX_DH_GRP16_SHA512:
-		dh = _dh_new_group_num(16);
-		break;
-	case KEX_DH_GRP18_SHA512:
-		dh = _dh_new_group_num(18);
-		break;
-	default:
-		return SSH_ERR_INVALID_ARGUMENT;
-	}
+{	struct kex_dh_spec *spec = kex->impl->spec;
+	dh = _dh_new_group_num(spec->dh_group);
+}
 	if (dh == NULL) return SSH_ERR_ALLOC_FAIL;
 
 {	int r = kex_new_dh_pkey(&kex->pk, dh);
