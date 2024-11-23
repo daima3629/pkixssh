@@ -139,7 +139,7 @@ CLEANFILES=	*.core actual agent-ca agent-ca.pub agent-key.* authkeys_orig \
 		finished.* \
 		hkr.* host.ecdsa-sha2-nistp256 host.ecdsa-sha2-nistp384 \
 		host.ecdsa-sha2-nistp521 host.ssh-dss host.ssh-ed25519 \
-		host.ssh-rsa host.ssh-xmss@openssh.com \
+		host.ssh-rsa host.ssh-xmss@openssh.com* \
 		host_ca_key* host_krl_* host_revoked_* key.* \
 		key.dsa-* key.ecdsa-* key.ed25519-512 \
 		key.ed25519-512.pub key.rsa-* keys-command-args kh.* askpass \
