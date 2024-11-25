@@ -77,47 +77,6 @@ EC_GROUP_get_field_type(const EC_GROUP *group) {
 #endif /*ndef HAVE_EC_GROUP_GET_FIELD_TYPE*/
 
 
-#ifdef DEBUG_KEXECDH
-static void
-dump_ec_point(const EC_GROUP *g, const EC_POINT *p)
-{
-	BIGNUM *x, *y = NULL;
-
-	if (p == NULL) {
-		fputs("point=(NULL)\n", stderr);
-		return;
-	}
-	if (EC_GROUP_get_field_type(g) != NID_X9_62_prime_field) {
-		fprintf(stderr, "%s: group is not a prime field\n", __func__);
-		return;
-	}
-
-	x = BN_new();
-	y = BN_new();
-	if (x == NULL || y == NULL) {
-		fprintf(stderr, "%s: BN_new failed\n", __func__);
-		goto err;
-	}
-	if (EC_POINT_get_affine_coordinates(g, p, x, y, NULL) != 1) {
-		fprintf(stderr, "%s: EC_POINT_get_affine_coordinates\n", __func__);
-		goto err;
-	}
-
-	fputs("x=", stderr);
-	BN_print_fp(stderr, x);
-	fputs("\n", stderr);
-
-	fputs("y=", stderr);
-	BN_print_fp(stderr, y);
-	fputs("\n", stderr);
-
-err:
-	BN_clear_free(x);
-	BN_clear_free(y);
-}
-#endif
-
-
 static const ssh_evp_md*
 ssh_ecdsa_dgst(const struct sshkey *key)
 {
@@ -244,10 +203,6 @@ sshkey_ec_validate_public(const EC_KEY *ec, const EC_POINT *public)
 	 * reachable with public points not unmarshalled using
 	 * EC_POINT_oct2point then the caller will need to explicitly check.
 	 */
-#ifdef DEBUG_KEXECDH
-	fputs("public key:\n", stderr);
-	dump_ec_point(group, public);
-#endif
 
 	/*
 	 * We shouldn't ever hit this case because bignum_get_ecpoint()
