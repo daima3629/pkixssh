@@ -305,6 +305,10 @@ int	sshkey_private_deserialize(struct sshbuf *buf,  struct sshkey **keyp);
 int	sshkey_private_to_fileblob(struct sshkey *key, struct sshbuf *blob,
     const char *passphrase, const char *comment,
     int format, const char *openssh_format_cipher, int openssh_format_rounds);
+#if defined(WITH_OPENSSL) && defined(SSHKEY_INTERNAL)
+int	sshbuf_parse_private_pem(struct sshbuf *blob,
+    const char *passphrase, struct sshkey **keyp);
+#endif
 int	sshkey_parse_private_fileblob(struct sshbuf *blob,
     const char *passphrase, struct sshkey **keyp, char **commentp);
 int	sshkey_parse_pubkey_from_private_fileblob(struct sshbuf *blob,

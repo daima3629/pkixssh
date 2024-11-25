@@ -31,15 +31,16 @@
 # define OPENSSL_SUPPRESS_DEPRECATED
 #endif
 
-#define SSHKEY_INTERNAL
 #include "includes.h"
 
 #ifdef WITH_OPENSSL
 #include "evp-compat.h"
 #include <openssl/pem.h>
+#include <openssl/err.h>
 
 #include <string.h>	/*for memcpy*/
 
+#define SSHKEY_INTERNAL
 #include "ssh-x509.h"
 #include "compat.h"
 #include "ssherr.h"
@@ -510,6 +511,59 @@ sshkey_from_pkey(EVP_PKEY *pk, struct sshkey **keyp) {
 		r = SSH_ERR_KEY_TYPE_UNKNOWN;
 	}
 
+	return r;
+}
+
+
+int
+sshbuf_parse_private_pem(struct sshbuf *blob,
+    const char *passphrase, struct sshkey **keyp)
+{
+	EVP_PKEY *pk = NULL;
+	struct sshkey *prv = NULL;
+	BIO *bio = NULL;
+	int r;
+
+	if (keyp != NULL)
+		*keyp = NULL;
+
+	debug3("read PEM private key begin");
+	if (sshbuf_len(blob) == 0 || sshbuf_len(blob) > INT_MAX)
+		return SSH_ERR_INVALID_ARGUMENT;
+	bio = BIO_new_mem_buf(sshbuf_mutable_ptr(blob), sshbuf_len(blob));
+	if (bio == NULL )
+		return SSH_ERR_ALLOC_FAIL;
+
+	ERR_clear_error();
+	if ((pk = PEM_read_bio_PrivateKey(bio, NULL, NULL,
+	    (char *)passphrase)) == NULL) {
+		debug3("read PEM private key fail");
+		do_log_crypto_errors(SYSLOG_LEVEL_DEBUG3);
+		r = SSH_ERR_KEY_WRONG_PASSPHRASE;
+		goto out;
+	}
+	r = sshkey_from_pkey(pk, &prv);
+	if (r != 0) goto out;
+	pk = NULL; /* transferred */
+
+	BIO_free(bio);
+	bio = BIO_new_mem_buf(sshbuf_mutable_ptr(blob), sshbuf_len(blob));
+	if (bio == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto out;
+	}
+	x509key_parse_cert(prv, bio);
+
+	r = 0;
+	if (keyp != NULL) {
+		*keyp = prv;
+		prv = NULL;
+	}
+ out:
+	BIO_free(bio);
+	EVP_PKEY_free(pk);
+	sshkey_free(prv);
+	debug3("read PEM private key done: %d", r);
 	return r;
 }
 

@@ -32,15 +32,6 @@
 #include <sys/mman.h>
 #include <netinet/in.h>
 
-#ifdef WITH_OPENSSL
-#include <openssl/evp.h>
-#include <openssl/err.h>
-#include <openssl/pem.h>
-#include "evp-compat.h"
-#endif
-
-#include "crypto_api.h"
-
 #include <errno.h>
 #include <limits.h>
 #include <stdio.h>
@@ -60,7 +51,6 @@
 #include "cipher.h"
 #include "digest.h"
 #define SSHKEY_INTERNAL
-#include "sshkey.h"
 #include "ssh-x509.h"
 #include "ssh-xkalg.h"
 #include "compat.h"
@@ -3233,60 +3223,6 @@ sshkey_private_to_fileblob(struct sshkey *key, struct sshbuf *blob,
 	}
 }
 
-#ifdef WITH_OPENSSL
-static int
-sshkey_parse_private_pem_fileblob(struct sshbuf *blob,
-    const char *passphrase, struct sshkey **keyp)
-{
-	EVP_PKEY *pk = NULL;
-	struct sshkey *prv = NULL;
-	BIO *bio = NULL;
-	int r;
-
-	if (keyp != NULL)
-		*keyp = NULL;
-
-	debug3("read PEM private key begin");
-	if (sshbuf_len(blob) == 0 || sshbuf_len(blob) > INT_MAX)
-		return SSH_ERR_INVALID_ARGUMENT;
-	bio = BIO_new_mem_buf(sshbuf_mutable_ptr(blob), sshbuf_len(blob));
-	if (bio == NULL )
-		return SSH_ERR_ALLOC_FAIL;
-
-	ERR_clear_error();
-	if ((pk = PEM_read_bio_PrivateKey(bio, NULL, NULL,
-	    (char *)passphrase)) == NULL) {
-		debug3("read PEM private key fail");
-		do_log_crypto_errors(SYSLOG_LEVEL_DEBUG3);
-		r = SSH_ERR_KEY_WRONG_PASSPHRASE;
-		goto out;
-	}
-	r = sshkey_from_pkey(pk, &prv);
-	if (r != 0) goto out;
-	pk = NULL; /* transferred */
-
-	BIO_free(bio);
-	bio = BIO_new_mem_buf(sshbuf_mutable_ptr(blob), sshbuf_len(blob));
-	if (bio == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto out;
-	}
-	x509key_parse_cert(prv, bio);
-
-	r = 0;
-	if (keyp != NULL) {
-		*keyp = prv;
-		prv = NULL;
-	}
- out:
-	BIO_free(bio);
-	EVP_PKEY_free(pk);
-	sshkey_free(prv);
-	debug3("read PEM private key done: %d", r);
-	return r;
-}
-#endif /* WITH_OPENSSL */
-
 int
 sshkey_parse_private_fileblob(struct sshbuf *blob,
     const char *passphrase, struct sshkey **keyp, char **commentp)
@@ -3303,7 +3239,7 @@ sshkey_parse_private_fileblob(struct sshbuf *blob,
 	if (r == 0 || r == SSH_ERR_KEY_WRONG_PASSPHRASE)
 		return r;
 #ifdef WITH_OPENSSL
-	return sshkey_parse_private_pem_fileblob(blob, passphrase, keyp);
+	return sshbuf_parse_private_pem(blob, passphrase, keyp);
 #else
 	return SSH_ERR_INVALID_FORMAT;
 #endif /* WITH_OPENSSL */
