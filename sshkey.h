@@ -92,9 +92,6 @@ enum sshkey_private_format {
 /* key is stored in external hardware */
 #define SSHKEY_FLAG_EXT		0x0001
 
-/* "key shielding" is experimental */
-#undef USE_SSHKEY_SHIELDING
-
 #define SSHKEY_CERT_MAX_PRINCIPALS	256
 /* XXX opaquify? */
 struct sshkey_cert {
