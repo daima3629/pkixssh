@@ -183,10 +183,75 @@ ssh_ed25519_serialize_private(const struct sshkey *key, struct sshbuf *buf,
 	return sshbuf_write_priv_ed25519(buf, key);
 }
 
+#ifdef USE_EVP_PKEY_KEYGEN
+static int
+ssh_pkey_keygen_ed25519(EVP_PKEY **ret) {
+	EVP_PKEY *pk = NULL;
+	EVP_PKEY_CTX *ctx = NULL;
+	int r;
+
+	ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_ED25519, NULL);
+	if (ctx == NULL) return SSH_ERR_ALLOC_FAIL;
+
+	if (EVP_PKEY_keygen_init(ctx) <= 0) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	if (EVP_PKEY_keygen(ctx, &pk) <= 0) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	/* success */
+	*ret = pk;
+	r = 0;
+
+err:
+	EVP_PKEY_CTX_free(ctx);
+	return r;
+}
+#endif
+
 static int
 ssh_ed25519_generate(struct sshkey *key, int bits) {
 	UNUSED(bits);
 
+#ifdef USE_EVP_PKEY_KEYGEN
+{	EVP_PKEY *pk = NULL;
+	size_t len;
+	size_t slen;
+	int r = 0;
+
+	r = ssh_pkey_keygen_ed25519(&pk);
+	if (r != 0) return r;
+
+	if ((key->ed25519_pk = malloc(ED25519_PK_SZ)) == NULL ||
+	    (key->ed25519_sk = malloc(ED25519_SK_SZ)) == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto err;
+	}
+
+	len = ED25519_PK_SZ;
+	if (EVP_PKEY_get_raw_public_key(pk, key->ed25519_pk, &len) != 1 &&
+	   len != ED25519_PK_SZ) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+	len = slen = ED25519_SK_SZ - ED25519_PK_SZ;
+	if (EVP_PKEY_get_raw_private_key(pk, key->ed25519_sk, &len) != 1 &&
+	   len != slen) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+	memcpy(key->ed25519_sk + slen, key->ed25519_pk, ED25519_PK_SZ);
+
+	key->pk = pk;
+	pk = NULL;
+err:
+	EVP_PKEY_free(pk);
+}
+#else /* ndef USE_EVP_PKEY_KEYGEN */
 	if ((key->ed25519_pk = malloc(ED25519_PK_SZ)) == NULL ||
 	    (key->ed25519_sk = malloc(ED25519_SK_SZ)) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
@@ -197,6 +262,7 @@ ssh_ed25519_generate(struct sshkey *key, int bits) {
 	if (key->pk == NULL)
 		return SSH_ERR_LIBCRYPTO_ERROR;
 #endif
+#endif /* ndef USE_EVP_PKEY_KEYGEN */
 	return 0;
 }
 
