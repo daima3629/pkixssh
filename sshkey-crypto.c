@@ -584,26 +584,6 @@ sshkey_move_pk(struct sshkey *from, struct sshkey *to) {
 }
 
 
-int
-sshkey_validate_public(const struct sshkey *key) {
-	int evp_id = EVP_PKEY_base_id(key->pk);
-
-	switch (evp_id) {
-	case EVP_PKEY_RSA:	return sshkey_validate_public_rsa(key);
-#ifdef WITH_DSA
-	case EVP_PKEY_DSA:	return sshkey_validate_public_dsa(key);
-#endif
-#ifdef OPENSSL_HAS_ECC
-	case EVP_PKEY_EC:	return sshkey_validate_public_ecdsa(key);
-#endif
-#ifdef OPENSSL_HAS_ED25519
-	case EVP_PKEY_ED25519:	return 0 /* TODO? */;
-#endif
-	}
-	return SSH_ERR_KEY_TYPE_UNKNOWN;
-}
-
-
 #ifndef HAVE_EVP_PKEY_CMP	/* OpenSSL < 0.9.8 */
 extern int ssh_EVP_PKEY_cmp_rsa(const EVP_PKEY *a, const EVP_PKEY *b);
 #ifdef WITH_DSA

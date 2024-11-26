@@ -1609,6 +1609,30 @@ plain_alg:
 
 
 static int
+ssh_x509_validate_public(const struct sshkey *key) {
+	EVP_PKEY *pk = key->pk;
+
+	if (pk == NULL) return SSH_ERR_INVALID_ARGUMENT;
+
+{	int evp_id = EVP_PKEY_base_id(pk);
+	switch (evp_id) {
+	case EVP_PKEY_RSA:	return ssh_pkey_validate_public_rsa(pk);
+#ifdef WITH_DSA
+	case EVP_PKEY_DSA:	return ssh_pkey_validate_public_dsa(pk);
+#endif
+#ifdef OPENSSL_HAS_ECC
+	case EVP_PKEY_EC:	return ssh_pkey_validate_public_ecdsa(pk);
+#endif
+#ifdef OPENSSL_HAS_ED25519
+	case EVP_PKEY_ED25519:	return 0 /* TODO? */;
+#endif
+	}
+}
+	return SSH_ERR_KEY_TYPE_UNKNOWN;
+}
+
+
+static int
 ssh_x509_sign(
 	const SSHX509KeyAlgs *xkalg, ssh_sign_ctx *ctx,
 	u_char **sigp, size_t *lenp, const u_char *data, size_t datalen
@@ -1624,7 +1648,7 @@ ssh_x509_sign(
 	debug3_f("compatibility: { 0x%08x, 0x%08x }",
 	    ctx->compat->datafellows, ctx->compat->extra);
 
-	r = sshkey_validate_public(key);
+	r = ssh_x509_validate_public(key);
 	if (r != 0) return r;
 
 	/* compute signature */
@@ -1711,7 +1735,7 @@ ssh_x509_verify(
 		return SSH_ERR_INVALID_ARGUMENT;
 	}
 
-	r = sshkey_validate_public(key);
+	r = ssh_x509_validate_public(key);
 	if (r != 0) return r;
 
 	pubkey = X509_get_pubkey(key->x509_data->cert);

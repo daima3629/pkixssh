@@ -268,18 +268,22 @@ sshkey_validate_dsa_pub(const DSA *dsa) {
 }
 
 int
-sshkey_validate_public_dsa(const struct sshkey *key) {
+ssh_pkey_validate_public_dsa(EVP_PKEY *pk) {
 	int r;
 
-	if (key == NULL) return SSH_ERR_INVALID_ARGUMENT;
-
-{	DSA *dsa = EVP_PKEY_get1_DSA(key->pk);
+{	DSA *dsa = EVP_PKEY_get1_DSA(pk);
 	if (dsa == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;
 	r = sshkey_validate_dsa_pub(dsa);
 	DSA_free(dsa);
 }
 	return r;
+}
+
+int
+sshkey_validate_public_dsa(const struct sshkey *key) {
+	if (key == NULL) return SSH_ERR_INVALID_ARGUMENT;
+	return ssh_pkey_validate_public_dsa(key->pk);
 }
 
 
@@ -323,7 +327,7 @@ sshbuf_read_pub_dsa(struct sshbuf *buf, struct sshkey *key) {
 	if (r != 0) goto err;
 	pub_key = NULL; /* transferred */
 
-	r = sshkey_validate_public_dsa(key);
+	r = ssh_pkey_validate_public_dsa(key->pk);
 	if (r != 0) goto err;
 
 	/* success */
@@ -425,7 +429,7 @@ sshbuf_read_custom_dsa(struct sshbuf *buf, struct sshkey *key) {
 	if (r != 0) goto err;
 	pub_key = priv_key = NULL; /* transferred */
 
-	r = sshkey_validate_public_dsa(key);
+	r = ssh_pkey_validate_public_dsa(key->pk);
 	if (r != 0) goto err;
 
 	/* success */

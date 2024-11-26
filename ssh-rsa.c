@@ -292,18 +292,22 @@ sshkey_validate_rsa_pub(const RSA *rsa) {
 }
 
 int
-sshkey_validate_public_rsa(const struct sshkey *key) {
+ssh_pkey_validate_public_rsa(EVP_PKEY *pk) {
 	int r;
 
-	if (key == NULL) return SSH_ERR_INVALID_ARGUMENT;
-
-{	RSA *rsa = EVP_PKEY_get1_RSA(key->pk);
+{	RSA *rsa = EVP_PKEY_get1_RSA(pk);
 	if (rsa == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;
 	r = sshkey_validate_rsa_pub(rsa);
 	RSA_free(rsa);
 }
 	return r;
+}
+
+int
+sshkey_validate_public_rsa(const struct sshkey *key) {
+	if (key == NULL) return SSH_ERR_INVALID_ARGUMENT;
+	return ssh_pkey_validate_public_rsa(key->pk);
 }
 
 

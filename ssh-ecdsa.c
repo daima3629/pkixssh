@@ -289,18 +289,22 @@ sshkey_validate_ec_pub(const EC_KEY *ec) {
 }
 
 int
-sshkey_validate_public_ecdsa(const struct sshkey *key) {
+ssh_pkey_validate_public_ecdsa(EVP_PKEY *pk) {
 	int r;
 
-	if (key == NULL) return SSH_ERR_INVALID_ARGUMENT;
-
-{	EC_KEY *ec = EVP_PKEY_get1_EC_KEY(key->pk);
+{	EC_KEY *ec = EVP_PKEY_get1_EC_KEY(pk);
 	if (ec == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;
 	r = sshkey_validate_ec_pub(ec);
 	EC_KEY_free(ec);
 }
 	return r;
+}
+
+static int
+sshkey_validate_public_ecdsa(const struct sshkey *key) {
+	if (key == NULL) return SSH_ERR_INVALID_ARGUMENT;
+	return ssh_pkey_validate_public_ecdsa(key->pk);
 }
 
 
