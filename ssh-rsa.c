@@ -304,12 +304,6 @@ ssh_pkey_validate_public_rsa(EVP_PKEY *pk) {
 	return r;
 }
 
-int
-sshkey_validate_public_rsa(const struct sshkey *key) {
-	if (key == NULL) return SSH_ERR_INVALID_ARGUMENT;
-	return ssh_pkey_validate_public_rsa(key->pk);
-}
-
 
 extern int /* see sshkey-crypto.c */
 ssh_EVP_PKEY_complete_pub_rsa(EVP_PKEY *pk);
@@ -904,12 +898,14 @@ ssh_rsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 	if (sigp != NULL)
 		*sigp = NULL;
 
+	if (key == NULL) return SSH_ERR_INVALID_ARGUMENT;
+
 	alg_info = ssh_rsa_alg_info(ctx->alg);
 	if (alg_info == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;
 	debug3_f("alg=%s/%s", (ctx->alg != NULL ? ctx->alg : "(nil)"), alg_info->name);
 
-	ret = sshkey_validate_public_rsa(key);
+	ret = ssh_pkey_validate_public_rsa(key->pk);
 	if (ret != 0) return ret;
 
 	dgst = ssh_evp_md_find(alg_info->id);
@@ -973,7 +969,9 @@ ssh_rsa_verify(const ssh_verify_ctx *ctx,
 	if (sig == NULL || siglen == 0)
 		return SSH_ERR_INVALID_ARGUMENT;
 
-	ret = sshkey_validate_public_rsa(key);
+	if (key == NULL) return SSH_ERR_INVALID_ARGUMENT;
+
+	ret = ssh_pkey_validate_public_rsa(key->pk);
 	if (ret != 0) return ret;
 
 	if ((b = sshbuf_from(sig, siglen)) == NULL)

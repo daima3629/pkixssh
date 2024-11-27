@@ -301,12 +301,6 @@ ssh_pkey_validate_public_ecdsa(EVP_PKEY *pk) {
 	return r;
 }
 
-static int
-sshkey_validate_public_ecdsa(const struct sshkey *key) {
-	if (key == NULL) return SSH_ERR_INVALID_ARGUMENT;
-	return ssh_pkey_validate_public_ecdsa(key->pk);
-}
-
 
 extern int /* see sshkey-crypto.c */
 ssh_EVP_PKEY_complete_pub_ecdsa(EVP_PKEY *pk);
@@ -654,10 +648,12 @@ ssh_ecdsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 	if (sigp != NULL)
 		*sigp = NULL;
 
+	if (key == NULL) return SSH_ERR_INVALID_ARGUMENT;
+
 	dgst = ssh_ecdsa_dgst(key);
 	if (dgst == NULL) return SSH_ERR_INTERNAL_ERROR;
 
-	ret = sshkey_validate_public_ecdsa(key);
+	ret = ssh_pkey_validate_public_ecdsa(key->pk);
 	if (ret != 0) return ret;
 
 	if (ssh_pkey_sign(dgst, key->pk, sigblob, &siglen, data, datalen) <= 0) {
@@ -686,10 +682,12 @@ ssh_ecdsa_verify(const ssh_verify_ctx *ctx,
 	if (sig == NULL || siglen == 0)
 		return SSH_ERR_INVALID_ARGUMENT;
 
+	if (key == NULL) return SSH_ERR_INVALID_ARGUMENT;
+
 	dgst = ssh_ecdsa_dgst(key);
 	if (dgst == NULL) return SSH_ERR_INTERNAL_ERROR;
 
-	ret = sshkey_validate_public_ecdsa(key);
+	ret = ssh_pkey_validate_public_ecdsa(key->pk);
 	if (ret != 0) return ret;
 
 	/* fetch signature */

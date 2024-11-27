@@ -356,10 +356,6 @@ int	 ssh_EVP_PKEY_validate_public_ec(EVP_PKEY *pk, const EC_POINT *public);
 # endif /* WITH_OPENSSL */
 #endif /* SSHKEY_INTERNAL */
 
-/*TODO internal*/
-int	sshkey_validate_public_rsa(const struct sshkey *key);
-int	sshkey_validate_public_dsa(const struct sshkey *key);
-
 int	sshkey_equal_public_pkey(const struct sshkey *, const struct sshkey *);
 
 #endif /* SSHKEY_H */

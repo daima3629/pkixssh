@@ -280,12 +280,6 @@ ssh_pkey_validate_public_dsa(EVP_PKEY *pk) {
 	return r;
 }
 
-int
-sshkey_validate_public_dsa(const struct sshkey *key) {
-	if (key == NULL) return SSH_ERR_INVALID_ARGUMENT;
-	return ssh_pkey_validate_public_dsa(key->pk);
-}
-
 
 extern int /* see sshkey-crypto.c */
 ssh_EVP_PKEY_complete_pub_dsa(EVP_PKEY *pk);
@@ -724,7 +718,9 @@ ssh_dss_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 	if (sigp != NULL)
 		*sigp = NULL;
 
-	ret = sshkey_validate_public_dsa(key);
+	if (key == NULL) return SSH_ERR_INVALID_ARGUMENT;
+
+	ret = ssh_pkey_validate_public_dsa(key->pk);
 	if (ret != 0) return ret;
 
 	dgst = ssh_evp_md_find(SSH_MD_DSA_RAW);
@@ -758,10 +754,12 @@ ssh_dss_verify(const ssh_verify_ctx *ctx,
 	if (sig == NULL || siglen == 0)
 		return SSH_ERR_INVALID_ARGUMENT;
 
+	if (key == NULL) return SSH_ERR_INVALID_ARGUMENT;
+
 	dgst = ssh_evp_md_find(SSH_MD_DSA_RAW);
 	if (dgst == NULL) return SSH_ERR_INTERNAL_ERROR;
 
-	ret = sshkey_validate_public_dsa(key);
+	ret = ssh_pkey_validate_public_dsa(key->pk);
 	if (ret != 0) return ret;
 
 	/* fetch signature */

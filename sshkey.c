@@ -1997,10 +1997,10 @@ sshkey_check_length(const struct sshkey *k)
 	/* NOTE RSA/DSA keys validates only length */
 	switch(sshkey_type_plain(k->type)) {
 	case KEY_RSA:
-		return sshkey_validate_public_rsa(k);
+		return ssh_pkey_validate_public_rsa(k->pk);
 #ifdef WITH_DSA
 	case KEY_DSA:
-		return sshkey_validate_public_dsa(k);
+		return ssh_pkey_validate_public_dsa(k->pk);
 #endif
 	}
 #else
