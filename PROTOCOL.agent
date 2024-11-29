@@ -1,5 +1,5 @@
 This file used to contain a description of the SSH agent protocol
 implemented by OpenSSH. It has since been superseded by
-https://tools.ietf.org/html/draft-miller-ssh-agent
+https://datatracker.ietf.org/doc/draft-ietf-sshm-ssh-agent/
 
-$OpenBSD: PROTOCOL.agent,v 1.20 2023/10/03 23:56:10 djm Exp $
+$OpenBSD: PROTOCOL.agent,v 1.24 2024/11/27 13:27:34 djm Exp $
