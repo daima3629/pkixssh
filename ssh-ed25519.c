@@ -31,7 +31,7 @@
 #include "log.h"
 #include "sshbuf.h"
 #define SSHKEY_INTERNAL
-#include "sshkey.h"
+#include "sshxkey.h"
 #include "ssherr.h"
 #include "ssh.h"
 
@@ -321,13 +321,36 @@ ssh_ed25519_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 	const struct sshkey *key = ctx->key;
 	u_char *sig = NULL;
 	size_t slen = 0;
-	unsigned long long smlen;
 	int r;
 
 	if (lenp != NULL)
 		*lenp = 0;
 	if (sigp != NULL)
 		*sigp = NULL;
+
+#ifdef USE_EVP_PKEY_KEYGEN
+{	const ssh_evp_md *dgst;
+
+	dgst = ssh_evp_md_find(SSH_MD_NONE);
+	if (dgst == NULL) return SSH_ERR_INTERNAL_ERROR;
+
+	if (ssh_pkey_sign(dgst, key->pk, NULL, &slen, data, datalen) <= 0) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto out;
+	}
+	if ((sig = malloc(slen)) == NULL)
+		return SSH_ERR_ALLOC_FAIL;
+	if (ssh_pkey_sign(dgst, key->pk, sig, &slen, data, datalen) <= 0) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto out;
+	}
+
+	r = ssh_encode_signature(sigp, lenp,
+	    sshkey_ssh_name_plain(key), sig, slen);
+}
+#else /* ndef USE_EVP_PKEY_KEYGEN */
+{
+	unsigned long long smlen;
 
 	if (key == NULL ||
 	    sshkey_type_plain(key->type) != KEY_ED25519 ||
@@ -346,6 +369,8 @@ ssh_ed25519_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 
 	r = ssh_encode_signature(sigp, lenp,
 	    "ssh-ed25519", sig, smlen - datalen);
+}
+#endif /* ndef USE_EVP_PKEY_KEYGEN */
 
  out:
 	if (sig != NULL)
