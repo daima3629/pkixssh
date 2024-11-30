@@ -1129,6 +1129,10 @@ dump_digest(const char *msg, const u_char *digest, size_t len)
 void
 dump_digestb(const char *msg, const struct sshbuf *digest)
 {
+	if (digest == NULL) {
+		fprintf(stderr, "length none, %s\n", msg);
+		return;
+	}
 	dump_digest(msg, sshbuf_ptr(digest), sshbuf_len(digest));
 }
 #endif

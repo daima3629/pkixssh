@@ -203,7 +203,7 @@ kex_kem_mlkem768x25519_enc(struct kex *kex,
 	if (r == 0)
 		dump_digestb("encoded shared secret:", *shared_secretp);
 	else
-		fprintf(stderr, "shared secret error: %s", ssh_err(r));
+		fprintf(stderr, "shared secret error: %s\n", ssh_err(r));
 #endif
 	if (r == 0) {
 		*server_blobp = server_blob;
@@ -271,7 +271,7 @@ kex_kem_mlkem768x25519_dec(struct kex *kex,
 	if (r == 0)
 		dump_digestb("encoded shared secret:", *shared_secretp);
 	else
-		fprintf(stderr, "shared secret error: %s", ssh_err(r));
+		fprintf(stderr, "shared secret error: %s\n", ssh_err(r));
 #endif
  out:
 	explicit_bzero(&mlkem_priv, sizeof(mlkem_priv));
