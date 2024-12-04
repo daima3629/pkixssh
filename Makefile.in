@@ -19,7 +19,6 @@ srcdir=@srcdir@
 abs_srcdir=@abs_srcdir@
 abs_builddir=@abs_builddir@
 
-DESTDIR=
 VPATH=@srcdir@
 PRIVSEP_PATH=@PRIVSEP_PATH@
 SSH_PRIVSEP_USER=@SSH_PRIVSEP_USER@
