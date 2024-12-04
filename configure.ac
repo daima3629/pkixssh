@@ -1879,6 +1879,49 @@ AC_ARG_WITH([libedit],
 	fi ]
 )
 
+# Check whether user wants wtmpdb support
+WTMPDB_MSG="no"
+AC_ARG_WITH([wtmpdb],
+	[AS_HELP_STRING([--with-wtmpdb@<:@=PATH@:>@],
+		[Enable wtmpdb support for sshd (optionally in PATH)])],
+	[AS_IF([test "x$withval" != "xno"],[
+		use_pkgconfig_for_libwtmpdb=false
+		AS_IF([test "x$withval" = "xyes"],[
+			AS_IF([test "x$PKGCONFIG" != "xno"],[
+				AC_MSG_CHECKING([if $PKGCONFIG knows about wtmpdb])
+				AS_IF(["$PKGCONFIG" libwtmpdb],[
+					AC_MSG_RESULT([yes])
+					use_pkgconfig_for_libwtmpdb=:
+				],[
+					AC_MSG_RESULT([no])
+				])
+			])
+		],[
+			CPPFLAGS="$CPPFLAGS -I${withval}/include"
+			AS_IF([test -n "$rpath_opt"],[
+				LDFLAGS="-L${withval}/lib $rpath_opt${withval}/lib ${LDFLAGS}"
+			],[
+				LDFLAGS="-L${withval}/lib ${LDFLAGS}"
+			])
+		])
+		AS_IF([$use_pkgconfig_for_libwtmpdb],[
+			LIBWTMPDB=`$PKGCONFIG --libs libwtmpdb`
+			CPPFLAGS="$CPPFLAGS `$PKGCONFIG --cflags libwtmpdb`"
+		],[
+			LIBWTMPDB="-lwtmpdb"
+		])
+		OTHERLIBS=`echo $LIBWTMPDB | sed 's/-lwtmpdb//'`
+		AC_CHECK_LIB([wtmpdb], [wtmpdb_login],
+			[ AC_DEFINE([USE_WTMPDB], [1], [Use libwtmpdb for sshd])
+			  WTMPDB_MSG="yes"
+			  AC_SUBST([LIBWTMPDB])
+			],
+			[ AC_MSG_ERROR([libwtmpdb not found]) ],
+			[ $OTHERLIBS ]
+		)
+	])]
+)
+
 AUDIT_MODULE=none
 AC_ARG_WITH([audit],
 	[  --with-audit=module     Enable audit support (modules=debug,bsm,linux)],
@@ -6156,6 +6199,7 @@ echo "                      OCSP support: $OCSP_MSG"
 echo "                      LDAP queries: $LDAP_MSG"
 echo "                   libedit support: $LIBEDIT_MSG"
 echo "                   libldns support: $LDNS_MSG"
+echo "                    wtmpdb support: $WTMPDB_MSG"
 echo "               Compression support: $ZLIB_MSG"
 echo "  Solaris process contract support: $SPC_MSG"
 echo "           Solaris project support: $SP_MSG"
