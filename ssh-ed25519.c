@@ -334,6 +334,8 @@ ssh_ed25519_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 	dgst = ssh_evp_md_find(SSH_MD_NONE);
 	if (dgst == NULL) return SSH_ERR_INTERNAL_ERROR;
 
+	/* TODO: validate public? */
+
 	if (ssh_pkey_sign(dgst, key->pk, NULL, &slen, data, datalen) <= 0) {
 		r = SSH_ERR_LIBCRYPTO_ERROR;
 		goto out;
@@ -382,22 +384,59 @@ ssh_ed25519_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 static int
 ssh_ed25519_verify(const ssh_verify_ctx *ctx,
     const u_char *sig, size_t siglen,
-    const u_char *data, size_t dlen)
+    const u_char *data, size_t datalen)
 {
 	const struct sshkey *key = ctx->key;
 	struct sshbuf *b = NULL;
 	char *ktype = NULL;
-	const u_char *sigblob;
-	u_char *sm = NULL, *m = NULL;
+	const u_char *sigblob = NULL;
 	size_t len;
-	unsigned long long smlen = 0, mlen = 0;
-	int r, ret;
+	int r;
 
-	if (key == NULL ||
-	    sshkey_type_plain(key->type) != KEY_ED25519 ||
+	if (sig == NULL || siglen == 0)
+		return SSH_ERR_INVALID_ARGUMENT;
+
+	if (key == NULL) return SSH_ERR_INVALID_ARGUMENT;
+
+#ifdef USE_EVP_PKEY_KEYGEN
+{	const ssh_evp_md *dgst;
+
+	dgst = ssh_evp_md_find(SSH_MD_NONE);
+	if (dgst == NULL) return SSH_ERR_INTERNAL_ERROR;
+
+	/* TODO: validate public? */
+
+	/* fetch signature */
+	if ((b = sshbuf_from(sig, siglen)) == NULL)
+		return SSH_ERR_ALLOC_FAIL;
+	if (sshbuf_get_cstring(b, &ktype, NULL) != 0 ||
+	    sshbuf_get_string(b, &sigblob, &len) != 0) {
+		r = SSH_ERR_INVALID_FORMAT;
+		goto out;
+	}
+	if (strcmp(sshkey_ssh_name_plain(key), ktype) != 0) {
+		r = SSH_ERR_KEY_TYPE_MISMATCH;
+		goto out;
+	}
+	if (sshbuf_len(b) != 0) {
+		r = SSH_ERR_UNEXPECTED_TRAILING_DATA;
+		goto out;
+	}
+
+	r = ssh_pkey_verify_r(dgst, key->pk,
+	    sigblob, len, data, datalen);
+ out:
+	if (sigblob != NULL)
+		freezero(sigblob, len);
+}
+#else /* ndef USE_EVP_PKEY_KEYGEN */
+{	size_t dlen = datalen; /* compatibility argument */
+	u_char *sm = NULL, *m = NULL;
+	unsigned long long smlen = 0, mlen = 0;
+
+	if (sshkey_type_plain(key->type) != KEY_ED25519 ||
 	    key->ed25519_pk == NULL ||
-	    dlen >= INT_MAX - crypto_sign_ed25519_BYTES ||
-	    sig == NULL || siglen == 0)
+	    dlen >= INT_MAX - crypto_sign_ed25519_BYTES)
 		return SSH_ERR_INVALID_ARGUMENT;
 
 	if ((b = sshbuf_from(sig, siglen)) == NULL)
@@ -429,6 +468,7 @@ ssh_ed25519_verify(const ssh_verify_ctx *ctx,
 	}
 	memcpy(sm, sigblob, len);
 	memcpy(sm+len, data, dlen);
+{	int ret;
 	if ((ret = crypto_sign_ed25519_open(m, &mlen, sm, smlen,
 	    key->ed25519_pk)) != 0) {
 		debug2_f("crypto_sign_ed25519_open failed: %d", ret);
@@ -437,6 +477,7 @@ ssh_ed25519_verify(const ssh_verify_ctx *ctx,
 		r = SSH_ERR_SIGNATURE_INVALID;
 		goto out;
 	}
+}
 	/* XXX compare 'm' and 'data' ? */
 	/* success */
 	r = 0;
@@ -445,6 +486,8 @@ ssh_ed25519_verify(const ssh_verify_ctx *ctx,
 		freezero(sm, smlen);
 	if (m != NULL)
 		freezero(m, smlen); /* NB mlen may be invalid if r != 0 */
+}
+#endif /* ndef USE_EVP_PKEY_KEYGEN */
 	sshbuf_free(b);
 	free(ktype);
 	return r;
