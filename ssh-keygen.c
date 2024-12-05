@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keygen.c,v 1.476 2024/10/18 05:37:24 djm Exp $ */
+/* $OpenBSD: ssh-keygen.c,v 1.477 2024/12/04 14:24:20 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1994 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -923,7 +923,7 @@ do_fingerprint(const struct passwd *pw)
 		char *comment = NULL;
 		lnum++;
 		cp = line;
-		cp[strcspn(cp, "\n")] = '\0';
+		cp[strcspn(cp, "\r\n")] = '\0';
 		/* Trim leading space and comments */
 		cp = line + strspn(line, " \t");
 		if (*cp == '#' || *cp == '\0')
