@@ -745,7 +745,7 @@ ssh_dss_verify(const ssh_verify_ctx *ctx,
 {
 	const struct sshkey *key = ctx->key;
 	const ssh_evp_md *dgst;
-	u_char *sigblob = NULL;
+	const u_char *sigblob;
 	size_t len;
 	int ret;
 	struct sshbuf *b = NULL;
@@ -766,7 +766,7 @@ ssh_dss_verify(const ssh_verify_ctx *ctx,
 	if ((b = sshbuf_from(sig, siglen)) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
 	if (sshbuf_get_cstring(b, &ktype, NULL) != 0 ||
-	    sshbuf_get_string(b, &sigblob, &len) != 0) {
+	    sshbuf_get_string_direct(b, &sigblob, &len) != 0) {
 		ret = SSH_ERR_INVALID_FORMAT;
 		goto out;
 	}
@@ -789,8 +789,6 @@ ssh_dss_verify(const ssh_verify_ctx *ctx,
  out:
 	sshbuf_free(b);
 	free(ktype);
-	if (sigblob != NULL)
-		freezero(sigblob, len);
 	return ret;
 }
 

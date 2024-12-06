@@ -675,8 +675,10 @@ ssh_ecdsa_verify(const ssh_verify_ctx *ctx,
 {
 	const struct sshkey *key = ctx->key;
 	const ssh_evp_md *dgst;
-	struct sshbuf *b = NULL, *sigbuf = NULL;
+	struct sshbuf *b = NULL;
 	char *ktype = NULL;
+	const u_char *sigblob;
+	size_t len;
 	int ret;
 
 	if (sig == NULL || siglen == 0)
@@ -694,7 +696,7 @@ ssh_ecdsa_verify(const ssh_verify_ctx *ctx,
 	if ((b = sshbuf_from(sig, siglen)) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
 	if (sshbuf_get_cstring(b, &ktype, NULL) != 0 ||
-	    sshbuf_froms(b, &sigbuf) != 0) {
+	    sshbuf_get_string_direct(b, &sigblob, &len) != 0) {
 		ret = SSH_ERR_INVALID_FORMAT;
 		goto out;
 	}
@@ -708,10 +710,9 @@ ssh_ecdsa_verify(const ssh_verify_ctx *ctx,
 	}
 
 	ret = ssh_pkey_verify_r(dgst, key->pk,
-	    sshbuf_ptr(sigbuf), sshbuf_len(sigbuf), data, datalen);
+	    sigblob, len, data, datalen);
 
  out:
-	sshbuf_free(sigbuf);
 	sshbuf_free(b);
 	free(ktype);
 	return ret;
