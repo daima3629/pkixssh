@@ -1,4 +1,4 @@
-/* $OpenBSD: session.c,v 1.336 2023/08/10 23:05:48 djm Exp $ */
+/* $OpenBSD: session.c,v 1.340 2024/12/06 06:55:28 dtucker Exp $ */
 /*
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
@@ -1515,7 +1515,7 @@ do_pwchange(Session *s)
 	fprintf(stderr, "WARNING: Your password has expired.\n");
 	if (s->ttyfd != -1) {
 		fprintf(stderr,
-		    "You must change your password now and login again!\n");
+		    "You must change your password now and log in again!\n");
 #ifdef WITH_SELINUX
 		setexeccon(NULL);
 #endif
