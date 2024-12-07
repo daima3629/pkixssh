@@ -1,4 +1,4 @@
-#	$OpenBSD: test-exec.sh,v 1.115 2024/06/11 01:58:27 djm Exp $
+#	$OpenBSD: test-exec.sh,v 1.122 2024/12/06 07:05:54 dtucker Exp $
 #	Placed in the Public Domain.
 
 #SUDO=sudo
@@ -176,6 +176,11 @@ fi
 case "$SSHD" in
 /*) ;;
 *) SSHD=`which $SSHD` ;;
+esac
+
+case "$SSH" in
+/*) ;;
+*) SSH=`which $SSH` ;;
 esac
 
 case "$SSHAGENT" in
