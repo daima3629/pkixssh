@@ -4652,7 +4652,11 @@ long int num = 0x7fffffffffffffff;
 long long num = 0x7fffffffffffffffll;
 #endif
 strcpy(expected_out, "9223372036854775807");
+#if (SIZEOF_LONG_INT == 8)
+snprintf(buf, mazsize, "%ld", num);
+#else
 snprintf(buf, mazsize, "%lld", num);
+#endif
 if (strcmp(buf, expected_out) != 0)
 	return 1;
 	]])],
