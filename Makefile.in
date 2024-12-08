@@ -56,6 +56,7 @@ XAUTH_PATH=@XAUTH_PATH@
 XLDFLAGS = @XLDFLAGS@
 LDFLAGS=-L. -Lopenbsd-compat/ @LDFLAGS@ $(XLDFLAGS)
 EXEEXT=@EXEEXT@
+SHLIBEXT=@SHLIBEXT@
 MANFMT=@MANFMT@
 MKDIR_P=$(srcdir)/install-sh -d
 
@@ -221,10 +222,10 @@ libssh.a: $(LIBSSH_OBJS)
 	$(AR) rv $@ $(LIBSSH_OBJS)
 	$(RANLIB) $@
 
-libappinfo.so: appinfo.o
+libappinfo$(SHLIBEXT): appinfo.o
 	$(LD) -shared -o $@ appinfo.o
 
-libappwrap.so: appwrap.o
+libappwrap$(SHLIBEXT): appwrap.o
 	$(LD) -shared -o $@ appwrap.o
 
 XDEPLIBS = @XDEPLIBS@

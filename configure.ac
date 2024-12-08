@@ -652,6 +652,10 @@ SPP_MSG="no"
 # the --with-solaris-privs option and --with-sandbox=solaris).
 SOLARIS_PRIVS="no"
 
+# Default shared library extension
+AC_SUBST([SHLIBEXT])
+SHLIBEXT=".so"
+
 # Check for some target-specific stuff
 AC_SUBST([XLDFLAGS])
 AC_SUBST([XDEPLIBS])
@@ -767,6 +771,7 @@ case "$host" in
 	# Cygwin defines optargs, optargs as declspec(dllimport) for historical
 	# reasons which cause compile warnings, so we disable those warnings.
 	OSSH_CHECK_CFLAG_COMPILE([-Wno-attributes])
+	SHLIBEXT=".dll"
 	;;
 *-*-dgux*)
 	AC_DEFINE([IP_TOS_IS_BROKEN], [1],
@@ -828,6 +833,7 @@ case "$host" in
 	# poll(2) is broken for character-special devices (at least).
 	# cf. Apple bug 3710161 (not public, but searchable)
 	AC_DEFINE([BROKEN_POLL], [1])
+	SHLIBEXT=".dylib"
 	;;
 *-*-dragonfly*)
 	TEST_MALLOC_OPTIONS="AFGJPRX"
@@ -961,12 +967,12 @@ case "$host" in
 		CPPFLAGS="$CPPFLAGS -DUSE_LIBAPPWRAP"
 		dnl wrap library stub
 		XLDFLAGS="$XLDFLAGS -lappwrap"
-		XDEPLIBS="$XDEPLIBS libappwrap.so"
+		XDEPLIBS="$XDEPLIBS libappwrap$SHLIBEXT"
 	], [
 		XLDFLAGS="$XLDFLAGS -Wl,--wrap=rename"
 		dnl app library stub
 		XLDFLAGS="$XLDFLAGS -L. -lappinfo"
-		XDEPLIBS="$XDEPLIBS libappinfo.so"
+		XDEPLIBS="$XDEPLIBS libappinfo$SHLIBEXT"
 	])
 		;;
 	esac
