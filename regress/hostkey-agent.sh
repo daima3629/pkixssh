@@ -102,12 +102,13 @@ grep -vi 'globalknownhostsfile' $OBJ/ssh_proxy.orig > $OBJ/ssh_proxy
 echo "UpdateHostkeys=yes" >> $OBJ/ssh_proxy
 echo "GlobalKnownHostsFile=none" >> $OBJ/ssh_proxy
 
+> $OBJ/known_hosts
 for k in $PLAIN_TYPES ; do
 	verbose "  add key type $k"
 	echo "Hostkey $OBJ/agent-key.${k}" >> $OBJ/sshd_proxy
 
 	( printf 'localhost-with-alias ' ;
-    cat $OBJ/agent-key.$k.pub) > $OBJ/known_hosts
+    cat $OBJ/agent-key.$k.pub) >> $OBJ/known_hosts
 done
 
 opts="-oStrictHostKeyChecking=yes -F $OBJ/ssh_proxy"
@@ -123,3 +124,4 @@ trace "kill agent"
 ${SSHAGENT} -k > /dev/null
 
 rm $OBJ/agent-ca.pub
+rm $OBJ/known_hosts
