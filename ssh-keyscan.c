@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keyscan.c,v 1.164 2024/10/18 05:32:51 djm Exp $ */
+/* $OpenBSD: ssh-keyscan.c,v 1.165 2024/12/06 15:17:15 djm Exp $ */
 /*
  * Copyright 1995, 1996 by David Mazieres <dm@lcs.mit.edu>.
  *
@@ -810,6 +810,7 @@ main(int argc, char **argv)
 	free(all);
 }
 
+	ssh_signal(SIGPIPE, SIG_IGN);
 	for (j = 0; j < fopt_count; j++) {
 		if (argv[j] == NULL)
 			fp = stdin;
