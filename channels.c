@@ -1,4 +1,4 @@
-/* $OpenBSD: channels.c,v 1.439 2024/07/25 22:40:08 djm Exp $ */
+/* $OpenBSD: channels.c,v 1.442 2024/12/05 06:49:26 dtucker Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -121,7 +121,14 @@ orig:	0.184	0.523	0.330	0.162	0.046
 
 /* -- X11 forwarding */
 /* Maximum number of fake X11 displays to try. */
-#define MAX_DISPLAYS  1000
+#define MAX_DISPLAYS	1000
+/* X11 port for display :0 */
+#define X11_BASE_PORT	6000
+
+static inline u_int
+get_x11_port(u_int display_number) {
+	return X11_BASE_PORT + display_number;
+}
 
 /* Per-channel callback for pre/post IO actions */
 typedef void chan_fn(struct ssh *, Channel *c);
@@ -5096,24 +5103,29 @@ x11_create_display_inet(struct ssh *ssh, int x11_display_offset,
     u_int *display_numberp, int **chanids)
 {
 	Channel *nc = NULL;
-	int display_number, sock;
-	u_short port;
+	u_int display_number;
+	int sock;
 	struct addrinfo hints, *ai, *aitop;
 	char strport[NI_MAXSERV];
 	int gaierr, n, num_socks = 0, socks[NUM_SOCKS];
 
 	if (chanids == NULL)
 		return -1;
+	if (x11_display_offset < 0 ||
+	    x11_display_offset > (INT16_MAX - X11_BASE_PORT - MAX_DISPLAYS)) {
+		error("Invalid display offset: %d", x11_display_offset);
+		return -1;
+	}
 
 	for (display_number = x11_display_offset;
 	    display_number < MAX_DISPLAYS;
 	    display_number++) {
-		port = 6000 + display_number;
+		u_int port = get_x11_port(display_number);
 		memset(&hints, 0, sizeof(hints));
 		hints.ai_family = ssh->chanctxt->IPv4or6;
 		hints.ai_flags = x11_use_localhost ? 0: AI_PASSIVE;
 		hints.ai_socktype = SOCK_STREAM;
-		snprintf(strport, sizeof strport, "%d", port);
+		snprintf(strport, sizeof strport, "%u", port);
 		if ((gaierr = getaddrinfo(NULL, strport,
 		    &hints, &aitop)) != 0) {
 			error("getaddrinfo: %.100s", ssh_gai_strerror(gaierr));
@@ -5145,7 +5157,7 @@ x11_create_display_inet(struct ssh *ssh, int x11_display_offset,
 			if (x11_use_localhost)
 				set_reuseaddr(sock);
 			if (bind(sock, ai->ai_addr, ai->ai_addrlen) == -1) {
-				debug2_f("bind port %d: %.100s", port,
+				debug2_f("bind port %u: %.100s", port,
 				    strerror(errno));
 				close(sock);
 				for (n = 0; n < num_socks; n++)
@@ -5329,12 +5341,16 @@ x11_connect_display(struct ssh *ssh)
 		    display);
 		return -1;
 	}
+	if (display_number > (INT16_MAX - X11_BASE_PORT)) {
+		error("Invalid display number: %u", display_number);
+		return -1;
+	}
 
 	/* Look up the host address */
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = ssh->chanctxt->IPv4or6;
 	hints.ai_socktype = SOCK_STREAM;
-	snprintf(strport, sizeof strport, "%u", 6000 + display_number);
+	snprintf(strport, sizeof strport, "%u", get_x11_port(display_number));
 	if ((gaierr = getaddrinfo(buf, strport, &hints, &aitop)) != 0) {
 		error("%.100s: unknown host. (%s)", buf,
 		ssh_gai_strerror(gaierr));
@@ -5350,7 +5366,7 @@ x11_connect_display(struct ssh *ssh)
 		/* Connect it to the display. */
 		if (connect(sock, ai->ai_addr, ai->ai_addrlen) == -1) {
 			debug2("connect %.100s port %u: %.100s", buf,
-			    6000 + display_number, strerror(errno));
+			    get_x11_port(display_number), strerror(errno));
 			close(sock);
 			continue;
 		}
@@ -5360,7 +5376,7 @@ x11_connect_display(struct ssh *ssh)
 	freeaddrinfo(aitop);
 	if (!ai) {
 		error("connect %.100s port %u: %.100s", buf,
-		    6000 + display_number, strerror(errno));
+		    get_x11_port(display_number), strerror(errno));
 		return -1;
 	}
 	set_nodelay(sock);
