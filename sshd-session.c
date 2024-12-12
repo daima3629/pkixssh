@@ -1,4 +1,4 @@
-/* $OpenBSD: sshd-session.c,v 1.8 2024/09/02 12:18:35 djm Exp $ */
+/* $OpenBSD: sshd-session.c,v 1.9 2024/09/09 02:39:57 djm Exp $ */
 /*
  * SSH2 implementation:
  * Privilege Separation:
@@ -350,105 +350,6 @@ privsep_postauth(struct ssh *ssh, Authctxt *authctxt)
 	 * this information is not part of the key state.
 	 */
 	ssh_packet_set_authenticated(ssh);
-}
-
-static void
-append_hostkey_type(struct sshbuf *b, const char *s)
-{
-	int r;
-
-	if (match_pattern_list(s, options.hostkeyalgorithms, 0) != 1) {
-		debug3_f("%s key not permitted by HostkeyAlgorithms", s);
-		return;
-	}
-	if ((r = sshbuf_putf(b, "%s%s", sshbuf_len(b) > 0 ? "," : "", s)) != 0)
-		fatal_fr(r, "sshbuf_putf");
-}
-
-static void
-add_hostkey_algoritms(int k, struct sshbuf *b) {
-	const char **algs;
-
-	algs = sensitive_data.host_algorithms[k];
-	if (algs == NULL) {
-		debug("no suitable algorithms for host key %d", k);
-		return;
-	}
-
-	for (; *algs != NULL; algs++) {
-		const char *pkalg = *algs;
-
-		/* Check that the key is accepted in HostkeyAlgorithms */
-		if (match_pattern_list(pkalg,
-		    options.hostkeyalgorithms, 0) != 1
-		) {
-			debug3_f("%s not permitted by "
-				"HostkeyAlgorithms for key %d",
-				pkalg, k);
-			continue;
-		}
-
-		if (sshbuf_len(b) > 0) {
-			if (sshbuf_put(b, ",", 1) != 0)
-				goto err;
-		}
-		if (sshbuf_put(b, pkalg, strlen(pkalg)) != 0)
-			goto err;
-	}
-
-	return;
-err:
-	fatal("cannot prepare hotkey algorithm list");
-}
-
-static char *
-list_hostkey_types(void)
-{
-	struct sshbuf *b;
-	struct sshkey *key;
-	char *ret;
-	u_int i;
-
-	if ((b = sshbuf_new()) == NULL)
-		fatal_f("sshbuf_new failed");
-	for (i = 0; i < options.num_host_key_files; i++) {
-		key = sensitive_data.host_keys[i];
-		if (key == NULL)
-			key = sensitive_data.host_pubkeys[i];
-		if (key == NULL)
-			continue;
-
-		add_hostkey_algoritms(i, b);
-
-		/* If the private key has a cert peer, then list that too */
-		key = sensitive_data.host_certificates[i];
-		if (key == NULL)
-			continue;
-		switch (key->type) {
-		case KEY_RSA_CERT:
-			/* for RSA we also support SHA2 signatures */
-			append_hostkey_type(b,
-			    "rsa-sha2-256-cert-v01@openssh.com");
-			append_hostkey_type(b,
-			    "rsa-sha2-512-cert-v01@openssh.com");
-			/* FALLTHROUGH */
-	#ifdef WITH_DSA
-		case KEY_DSA_CERT:
-	#endif
-		case KEY_ECDSA_CERT:
-		case KEY_ED25519_CERT:
-	#ifdef WITH_XMSS
-		case KEY_XMSS_CERT:
-	#endif
-			append_hostkey_type(b, sshkey_ssh_name(key));
-			break;
-		}
-	}
-	if ((ret = sshbuf_dup_string(b)) == NULL)
-		fatal_f("sshbuf_dup_string failed");
-	sshbuf_free(b);
-	debug_f("%s", ret);
-	return ret;
 }
 
 static struct sshkey *

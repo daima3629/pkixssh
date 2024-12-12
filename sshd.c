@@ -397,6 +397,7 @@ main_sigchld_handler(int sig)
 	errno = save_errno;
 }
 
+#include "sshd-auth.c"
 #include "sshd-session.c"
 
 static int
