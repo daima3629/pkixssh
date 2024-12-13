@@ -28,6 +28,9 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/* Prototypes for various functions defined later in this file. */
+static void do_ssh2_kex(struct ssh *);
+
 
 static void
 append_hostkey_type(struct sshbuf *b, const char *s)
@@ -126,4 +129,64 @@ list_hostkey_types(void)
 	sshbuf_free(b);
 	debug_f("%s", ret);
 	return ret;
+}
+
+/* SSH2 key exchange */
+static void
+do_ssh2_kex(struct ssh *ssh)
+{
+	char *myproposal[PROPOSAL_MAX] = { KEX_SERVER };
+	struct kex *kex;
+	int r;
+
+	if (options.rekey_limit || options.rekey_interval)
+		ssh_packet_set_rekey_limits(ssh, options.rekey_limit,
+		    options.rekey_interval);
+
+{	/* prepare proposal */
+	char *s, *hkalgs = NULL;
+	const char *compression = NULL;
+
+	s = kex_names_cat(options.kex_algorithms,
+#ifndef WITHOUT_ETM_FUNCTIONALITY
+	    "kex-strict-s-v00@openssh.com"
+#else
+	    ""
+#endif
+	);
+	if (s == NULL) fatal_f("kex_names_cat");
+
+	if (options.compression == COMP_NONE)
+		compression = "none";
+
+	hkalgs = list_hostkey_types();
+
+	kex_proposal_populate_entries(ssh, myproposal, s, options.ciphers,
+	    options.macs, compression, hkalgs);
+
+	free(hkalgs);
+	free(s);
+}
+
+	/* start key exchange */
+	if ((r = kex_setup(ssh, myproposal)) != 0)
+		fatal_fr(r, "kex_setup");
+	kex = ssh->kex;
+	kex->find_host_public_key=&get_hostkey_public_by_alg;
+	kex->find_host_private_key=&get_hostkey_private_by_alg;
+	kex->host_key_index=&get_hostkey_index;
+	kex->xsign = Xsshd_hostkey_sign;
+
+	ssh_dispatch_run_fatal(ssh, DISPATCH_BLOCK, &kex->done);
+	kex_proposal_free_entries(myproposal);
+
+#ifdef DEBUG_KEX
+	/* send 1st encrypted/maced/compressed message */
+	if ((r = sshpkt_start(ssh, SSH2_MSG_IGNORE)) != 0 ||
+	    (r = sshpkt_put_cstring(ssh, "roumen")) != 0 ||
+	    (r = sshpkt_send(ssh)) != 0 ||
+	    (r = ssh_packet_write_wait(ssh)) != 0)
+		fatal_fr(r, "kex 1st message");
+#endif
+	debug("KEX done");
 }
