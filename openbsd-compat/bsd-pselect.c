@@ -42,9 +42,19 @@
 #include <unistd.h>
 
 #include "log.h"
-#include "misc.h"      /* for set_nonblock, sshsig_t */
+#include "misc.h"      /* for sshsig_t */
 
 static sshsig_t saved_sighandler[NSIG];
+
+static void
+pselect_set_nonblock(int fd)
+{
+	int val;
+
+	if ((val = fcntl(fd, F_GETFL)) == -1 ||
+	     fcntl(fd, F_SETFL, val|O_NONBLOCK) == -1)
+		error_f("fcntl: %s", strerror(errno));
+}
 
 /*
  * Set up the descriptors.  Because they are close-on-exec, in the case
@@ -98,8 +108,8 @@ pselect_notify_setup(void)
 		close(notify_pipe[0]);
 		close(notify_pipe[1]);
 	} else {
-		set_nonblock(notify_pipe[0]);
-		set_nonblock(notify_pipe[1]);
+		pselect_set_nonblock(notify_pipe[0]);
+		pselect_set_nonblock(notify_pipe[1]);
 		notify_pid = getpid();
 		debug3_f("pid %d saved %d pipe0 %d pipe1 %d", getpid(),
 		    notify_pid, notify_pipe[0], notify_pipe[1]);
