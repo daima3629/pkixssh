@@ -187,7 +187,7 @@ kex_kem_mlkem768x25519_enc(struct kex *kex,
 		goto out;
 	/* append ECDH shared key */
 	client_pub += crypto_kem_mlkem768_PUBLICKEYBYTES;
-	if ((r = kexc25519_shared_key_ext(server_key, client_pub, buf, 1)) < 0)
+	if ((r = kexc25519_shared_key_ext(server_key, client_pub, buf, 1)) != 0)
 		goto out;
 #ifdef DEBUG_KEXKEM
 	dump_digest("server cipher text:",
@@ -260,7 +260,7 @@ kex_kem_mlkem768x25519_dec(struct kex *kex,
 	if ((r = sshbuf_put(buf, mlkem_key, sizeof(mlkem_key))) != 0)
 		goto out;
 	if ((r = kexc25519_shared_key_ext(kex->c25519_client_key, server_pub,
-	    buf, 1)) < 0)
+	    buf, 1)) != 0)
 		goto out;
 #ifdef DEBUG_KEXKEM
 	dump_digest("client kem key:", mlkem_key, sizeof(mlkem_key));
