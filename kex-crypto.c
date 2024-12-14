@@ -499,7 +499,19 @@ DUMP_DH_KEY(const EVP_PKEY *pk, const BIGNUM *pub_key) {
 int
 kex_dh_compute_key(struct kex *kex, BIGNUM *pub_key, struct sshbuf **shared_secretp)
 {
-#ifndef USE_EVP_PKEY_KEYGEN
+#ifdef USE_EVP_PKEY_KEYGEN
+	EVP_PKEY *peerkey = NULL;
+	int r;
+
+	DUMP_DH_KEY(kex->pk, pub_key);
+
+	r = create_peer_pkey(kex, pub_key, &peerkey);
+	if (r != 0) return r;
+
+	r = kex_pkey_derive_shared_secret(kex, peerkey, shared_secretp);
+
+	EVP_PKEY_free(peerkey);
+#else /*ndef USE_EVP_PKEY_KEYGEN*/
 	DH *dh;
 	int klen;
 	u_char *kbuf = NULL;
@@ -538,19 +550,7 @@ kex_dh_compute_key(struct kex *kex, BIGNUM *pub_key, struct sshbuf **shared_secr
 done:
 	freezero(kbuf, klen);
 	DH_free(dh);
-#else /*def USE_EVP_PKEY_KEYGEN*/
-	EVP_PKEY *peerkey = NULL;
-	int r;
-
-	DUMP_DH_KEY(kex->pk, pub_key);
-
-	r = create_peer_pkey(kex, pub_key, &peerkey);
-	if (r != 0) return r;
-
-	r = kex_pkey_derive_shared_secret(kex, peerkey, shared_secretp);
-
-	EVP_PKEY_free(peerkey);
-#endif /*def USE_EVP_PKEY_KEYGEN*/
+#endif /*ndef USE_EVP_PKEY_KEYGEN*/
 	return r;
 }
 

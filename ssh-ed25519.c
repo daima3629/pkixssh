@@ -251,7 +251,7 @@ ssh_ed25519_generate(struct sshkey *key, int bits) {
 err:
 	EVP_PKEY_free(pk);
 }
-#else /* ndef USE_EVP_PKEY_KEYGEN */
+#else /*ndef USE_EVP_PKEY_KEYGEN*/
 	if ((key->ed25519_pk = malloc(ED25519_PK_SZ)) == NULL ||
 	    (key->ed25519_sk = malloc(ED25519_SK_SZ)) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
@@ -262,7 +262,7 @@ err:
 	if (key->pk == NULL)
 		return SSH_ERR_LIBCRYPTO_ERROR;
 #endif
-#endif /* ndef USE_EVP_PKEY_KEYGEN */
+#endif /*ndef USE_EVP_PKEY_KEYGEN*/
 	return 0;
 }
 
@@ -350,7 +350,7 @@ ssh_ed25519_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 	r = ssh_encode_signature(sigp, lenp,
 	    sshkey_ssh_name_plain(key), sig, slen);
 }
-#else /* ndef USE_EVP_PKEY_KEYGEN */
+#else /*ndef USE_EVP_PKEY_KEYGEN*/
 {
 	unsigned long long smlen;
 
@@ -372,7 +372,7 @@ ssh_ed25519_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 	r = ssh_encode_signature(sigp, lenp,
 	    "ssh-ed25519", sig, smlen - datalen);
 }
-#endif /* ndef USE_EVP_PKEY_KEYGEN */
+#endif /*ndef USE_EVP_PKEY_KEYGEN*/
 
  out:
 	if (sig != NULL)
@@ -427,7 +427,7 @@ ssh_ed25519_verify(const ssh_verify_ctx *ctx,
 	    sigblob, len, data, datalen);
 }
  out:
-#else /* ndef USE_EVP_PKEY_KEYGEN */
+#else /*ndef USE_EVP_PKEY_KEYGEN*/
 {	size_t dlen = datalen; /* compatibility argument */
 	u_char *sm = NULL, *m = NULL;
 	unsigned long long smlen = 0, mlen = 0;
@@ -485,7 +485,7 @@ ssh_ed25519_verify(const ssh_verify_ctx *ctx,
 	if (m != NULL)
 		freezero(m, smlen); /* NB mlen may be invalid if r != 0 */
 }
-#endif /* ndef USE_EVP_PKEY_KEYGEN */
+#endif /*ndef USE_EVP_PKEY_KEYGEN*/
 	sshbuf_free(b);
 	free(ktype);
 	return r;

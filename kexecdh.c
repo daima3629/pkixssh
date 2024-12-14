@@ -57,7 +57,16 @@ struct kex_ecdh_spec {
 	int	ec_nid;
 };
 
-#ifndef USE_EVP_PKEY_KEYGEN
+#ifdef USE_EVP_PKEY_KEYGEN
+extern int /* see ssh-ecdsa.c */
+ssh_pkey_keygen_ec(int nid, EVP_PKEY **ret);
+
+static inline int
+kex_ecdh_pkey_keygen(struct kex *kex) {
+	struct kex_ecdh_spec *spec = kex->impl->spec;
+	return ssh_pkey_keygen_ec(spec->ec_nid, &kex->pk);
+}
+#else /*ndef USE_EVP_PKEY_KEYGEN*/
 static int
 kex_ecdh_key_init(struct kex *kex) {
 	struct kex_ecdh_spec *spec = kex->impl->spec;
@@ -120,16 +129,7 @@ kex_ecdh_pkey_keygen(struct kex *kex) {
 	if (r != 0) return r;
 	return kex_ecdh_key_gen(kex);
 }
-#else /*def USE_EVP_PKEY_KEYGEN*/
-extern int /* see ssh-ecdsa.c */
-ssh_pkey_keygen_ec(int nid, EVP_PKEY **ret);
-
-static inline int
-kex_ecdh_pkey_keygen(struct kex *kex) {
-	struct kex_ecdh_spec *spec = kex->impl->spec;
-	return ssh_pkey_keygen_ec(spec->ec_nid, &kex->pk);
-}
-#endif /*def USE_EVP_PKEY_KEYGEN*/
+#endif /*ndef USE_EVP_PKEY_KEYGEN*/
 
 
 #ifdef USE_EVP_PKEY_KEYGEN
@@ -169,7 +169,17 @@ create_peer_pkey(struct kex *kex, const EC_POINT *dh_pub, EVP_PKEY **peerkeyp) {
 
 static int
 kex_ecdh_derive_shared_secret(struct kex *kex, const EC_POINT *dh_pub, struct sshbuf **bufp) {
-#ifndef USE_EVP_PKEY_KEYGEN
+#ifdef USE_EVP_PKEY_KEYGEN
+	EVP_PKEY *peerkey = NULL;
+	int r;
+
+	r = create_peer_pkey(kex, dh_pub, &peerkey);
+	if (r != 0) return r;
+
+	r = kex_pkey_derive_shared_secret(kex, peerkey, bufp);
+
+	EVP_PKEY_free(peerkey);
+#else /*ndef USE_EVP_PKEY_KEYGEN*/
 	EC_KEY *key;
 	const EC_GROUP *group;
 	u_char *kbuf = NULL;
@@ -203,17 +213,7 @@ kex_ecdh_derive_shared_secret(struct kex *kex, const EC_POINT *dh_pub, struct ss
  out:
 	EC_KEY_free(key);
 	freezero(kbuf, klen);
-#else /*def USE_EVP_PKEY_KEYGEN*/
-	EVP_PKEY *peerkey = NULL;
-	int r;
-
-	r = create_peer_pkey(kex, dh_pub, &peerkey);
-	if (r != 0) return r;
-
-	r = kex_pkey_derive_shared_secret(kex, peerkey, bufp);
-
-	EVP_PKEY_free(peerkey);
-#endif /*def USE_EVP_PKEY_KEYGEN*/
+#endif /*ndef USE_EVP_PKEY_KEYGEN*/
 	return r;
 }
 
