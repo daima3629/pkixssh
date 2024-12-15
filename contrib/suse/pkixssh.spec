@@ -42,8 +42,18 @@
 %global enable_systemd 1
 
 
+# Development builds
+%if 0%{?suse_version} >= 1699
+# Tumbleweed ...
+# OpenSSL 3+ FIPS model is not supported yet
+%undefine enable_openssl_fips
+%global enable_openssl_fips 0
+%endif
+
+
 # Disable non-working configurations
 %if 0%{?sle_version} >= 0150600
+# OpenSSL 3+ FIPS model is not supported yet
 %undefine enable_openssl_fips
 %global enable_openssl_fips 0
 %endif
