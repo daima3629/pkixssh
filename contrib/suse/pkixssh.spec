@@ -35,6 +35,9 @@
 # Note applicable if OpenSSL < 1.1
 %global enable_dsa_ca 1
 
+# Do we want to enable OpenSSL engine support? (1=yes 0=no)
+%global enable_ssl_engine 1
+
 # Do we want to enable integration with systemd? (1=yes 0=no)
 %global enable_systemd 1
 
@@ -217,6 +220,11 @@ two untrusted hosts over an insecure network.
   --enable-dsa \
 %else
   --disable-dsa \
+%endif
+%if %{enable_ssl_engine}
+  --with-ssl-engine \
+%else
+  --without-ssl-engine \
 %endif
 %if %{enable_systemd}
   --with-systemd \

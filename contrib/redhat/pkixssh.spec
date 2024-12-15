@@ -31,6 +31,9 @@
 # Do we want to enable DSA publickey algorithms? (1=yes 0=no)
 %global enable_dsa 0
 
+# Do we want to enable OpenSSL engine support? (1=yes 0=no)
+%global enable_ssl_engine 1
+
 # Do we want to enable integration with systemd? (1=yes 0=no)
 %global enable_systemd 1
 
@@ -38,11 +41,22 @@
 %global debug_package %{nil}
 
 
+# Development builds
+%if 0%{?fedora:} >= 99
+# "Rawhide" ....
+%endif
+
+
 # Disable non-working configurations
 %if 0%{?centos_version} >= 800
 # No more openldap server package on CentOS 8
 %undefine enable_ldap_test
 %global enable_ldap_test 0
+%endif
+
+%if 0%{?fedora:} >= 41
+%undefine enable_ssl_engine
+%global enable_ssl_engine 0
 %endif
 
 %if 0%{?fedora} >= 36
@@ -67,6 +81,7 @@
 %undefine use_fipscheck
 %global use_fipscheck 0
 %endif
+
 
 %global use_groff_package 0
 %if 0%{?rhel_version} && 0%{?rhel_version} < 700
@@ -178,6 +193,11 @@ two untrusted hosts over an insecure network.
   --enable-dsa \
 %else
   --disable-dsa \
+%endif
+%if %{enable_ssl_engine}
+  --with-ssl-engine \
+%else
+  --without-ssl-engine \
 %endif
 %if %{enable_systemd}
   --with-systemd \
