@@ -153,6 +153,12 @@ Source0:	https://roumenpetrov.info/secsh/src/%{name}-%{version}.tar.xz
 
 %define systemd_servicedir	/usr/lib/systemd/system
 
+%if %{defined _distconfdir}
+  %define pam_sysconfdir 	%{_distconfdir}/pam.d
+%else
+  %define pam_sysconfdir 	%{_sysconfdir}/pam.d
+%endif
+
 
 %description
 Ssh (Secure Shell) is a program for logging into a remote machine and for
@@ -241,11 +247,13 @@ make t-exec LTESTS=fips-try-ciphers || :
 %install
 make install DESTDIR=%{buildroot}
 
-install -d %{buildroot}/etc/pam.d/
-install -m644 contrib/redhat/sshd.pam %{buildroot}/etc/pam.d/sshd
+install -d %{buildroot}%{pam_sysconfdir}
+install -m644 contrib/redhat/sshd.pam %{buildroot}%{pam_sysconfdir}/sshd
 
-install -d %{buildroot}/etc/rc.d/init.d/
-install -m744 contrib/redhat/sshd.init %{buildroot}/etc/rc.d/init.d/sshd
+%if !%{enable_systemd}
+install -d %{buildroot}%{_sysconfdir}/rc.d/init.d
+install -m744 contrib/redhat/sshd.init %{buildroot}%{_sysconfdir}/rc.d/init.d/sshd
+%endif
 
 %if %{enable_systemd}
 install -d %{buildroot}%{systemd_servicedir}
@@ -291,8 +299,11 @@ install -m644 contrib/redhat/sshd.service.out %{buildroot}%{systemd_servicedir}/
 %attr(0644,root,root) %config(noreplace) %{ssh_sysconfdir}/ssh_config
 %attr(0600,root,root) %config(noreplace) %{ssh_sysconfdir}/sshd_config
 %attr(0600,root,root) %config(noreplace) %{ssh_sysconfdir}/moduli
-%attr(0644,root,root) %config(noreplace) /etc/pam.d/sshd
-%attr(0755,root,root) %config /etc/rc.d/init.d/sshd
+%attr(0755,root,root) %dir %{pam_sysconfdir}
+%attr(0644,root,root) %config(noreplace) %{pam_sysconfdir}/sshd
+%if !%{enable_systemd}
+%attr(0755,root,root) %config %{_sysconfdir}/rc.d/init.d/sshd
+%endif
 %if %{enable_systemd}
 %attr(0644,root,root) %config(noreplace) %{systemd_servicedir}/sshd.service
 %endif

@@ -176,7 +176,13 @@ Source0:	https://roumenpetrov.info/secsh/src/%{name}-%{version}.tar.gz
 
 %define systemd_servicedir	/usr/lib/systemd/system
 
-%if ! %{defined _fillupdir}
+%if %{defined _distconfdir}
+  %define pam_sysconfdir 	%{_distconfdir}/pam.d
+%else
+  %define pam_sysconfdir 	%{_sysconfdir}/pam.d
+%endif
+
+%if !%{defined _fillupdir}
  %define _fillupdir /var/adm/fillup-templates
 %endif
 
@@ -275,11 +281,13 @@ make t-exec LTESTS=fips-try-ciphers || :
 %install
 make install DESTDIR=%{buildroot}
 
-install -d %{buildroot}/etc/pam.d/
-install -m644 contrib/sshd.pam.generic %{buildroot}/etc/pam.d/sshd
+install -d %{buildroot}%{pam_sysconfdir}
+install -m644 contrib/sshd.pam.generic %{buildroot}%{pam_sysconfdir}/sshd
 
-install -d %{buildroot}/etc/init.d/
-install -m744 contrib/suse/rc.sshd %{buildroot}/etc/init.d/sshd
+%if !%{enable_systemd}
+install -d %{buildroot}%{_sysconfdir}/init.d
+install -m744 contrib/suse/rc.sshd %{buildroot}%{_sysconfdir}/init.d/sshd
+%endif
 
 %if %{enable_systemd}
 install -d %{buildroot}%{systemd_servicedir}
@@ -351,8 +359,11 @@ install -m744 contrib/suse/sysconfig.ssh %{buildroot}%{_fillupdir}
 %attr(0600,root,root) %verify(not mode) %config(noreplace) %{ssh_sysconfdir}/sshd_config
 %endif
 %attr(0600,root,root) %verify(not mode) %config(noreplace) %{ssh_sysconfdir}/moduli
-%attr(0644,root,root) %config(noreplace) /etc/pam.d/sshd
-%attr(0755,root,root) %config /etc/init.d/sshd
+%attr(0755,root,root) %dir %{pam_sysconfdir}
+%attr(0644,root,root) %config(noreplace) %{pam_sysconfdir}/sshd
+%if !%{enable_systemd}
+%attr(0755,root,root) %config %{_sysconfdir}/init.d/sshd
+%endif
 %if %{enable_systemd}
 %attr(0644,root,root) %config(noreplace) %{systemd_servicedir}/sshd.service
 %endif
