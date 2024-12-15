@@ -3320,6 +3320,28 @@ if test "x$openssl" = "xyes" ; then
 			AC_MSG_RESULT([no])
 		]
 	)
+
+	# Check for OpenSSL with X25519
+	AC_MSG_CHECKING([whether OpenSSL has X25519 support])
+	AC_LINK_IFELSE(
+		[AC_LANG_PROGRAM([[
+	#include <openssl/evp.h>
+		]], [[
+		unsigned char buf[64];
+		if (EVP_PKEY_new_raw_private_key(
+		    EVP_PKEY_X25519, NULL,
+		    buf, sizeof(buf)) == NULL)
+			return 1;
+		]])],
+		[
+			AC_MSG_RESULT([yes])
+			AC_DEFINE([OPENSSL_HAS_X25519], [1],
+			    [libcrypto has x25519 support])
+		],
+		[
+			AC_MSG_RESULT([no])
+		]
+	)
 fi
 
 
