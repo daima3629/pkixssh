@@ -345,11 +345,17 @@ install -m744 contrib/suse/sysconfig.ssh %{buildroot}%{_fillupdir}
 
 %preun
 %stop_on_removal sshd
+%if %{enable_systemd}
+%service_del_preun sshd.service
+%endif
 
 
 %postun
 %restart_on_update sshd
-%if ! %{enable_systemd}
+%if %{enable_systemd}
+%service_del_postun sshd.service
+%endif
+%if !%{enable_systemd}
 %{insserv_cleanup}
 %endif
 
@@ -420,3 +426,6 @@ install -m744 contrib/suse/sysconfig.ssh %{buildroot}%{_fillupdir}
 %attr(0755,root,root) %dir %{_fillupdir}
 %endif
 %attr(0644,root,root) %{_fillupdir}/sysconfig.ssh
+
+%changelog
+#See pkixssh.changes
