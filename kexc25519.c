@@ -41,19 +41,102 @@
 #include "ssherr.h"
 #include "ssh2.h"
 
+#ifndef USE_EVP_PKEY_KEYGEN
+# undef OPENSSL_HAS_X25519
+#endif
+
 extern int crypto_scalarmult_curve25519(u_char a[CURVE25519_SIZE],
     const u_char b[CURVE25519_SIZE], const u_char c[CURVE25519_SIZE])
 	__attribute__((__bounded__(__minbytes__, 1, CURVE25519_SIZE)))
 	__attribute__((__bounded__(__minbytes__, 2, CURVE25519_SIZE)))
 	__attribute__((__bounded__(__minbytes__, 3, CURVE25519_SIZE)));
 
-void
-kexc25519_keygen(u_char key[CURVE25519_SIZE], u_char pub[CURVE25519_SIZE])
-{
+#ifdef OPENSSL_HAS_X25519
+static int
+ssh_pkey_keygen_x25519(EVP_PKEY **ret) {
+	EVP_PKEY *pk = NULL;
+	EVP_PKEY_CTX *ctx = NULL;
+	int r;
+
+	ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_X25519, NULL);
+	if (ctx == NULL) return SSH_ERR_ALLOC_FAIL;
+
+	if (EVP_PKEY_keygen_init(ctx) <= 0) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	if (EVP_PKEY_keygen(ctx, &pk) <= 0) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	/* success */
+	*ret = pk;
+	r = 0;
+
+err:
+	EVP_PKEY_CTX_free(ctx);
+	return r;
+}
+#endif /*def OPENSSL_HAS_X25519*/
+
+#ifdef OPENSSL_HAS_X25519
+static int
+kexc25519_keygen_crypto(struct kex *kex,
+    u_char key[CURVE25519_SIZE], u_char pub[CURVE25519_SIZE]
+) {
+	EVP_PKEY *pk = NULL;
+	size_t len;
+	int r;
+
+	r = ssh_pkey_keygen_x25519(&pk);
+	if (r != 0) return r;
+
+	/* compatibility: fill data used by build-in implementation */
+	len = CURVE25519_SIZE;
+	if (EVP_PKEY_get_raw_public_key(pk, pub, &len) != 1 &&
+	    len != CURVE25519_SIZE) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	len = CURVE25519_SIZE;
+	if (EVP_PKEY_get_raw_private_key(pk, key, &len) != 1 &&
+	    len != CURVE25519_SIZE) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	kex->pk = pk;
+	pk = NULL;
+err:
+	EVP_PKEY_free(pk);
+	return r;
+}
+#endif /*def OPENSSL_HAS_X25519*/
+
+static int
+kexc25519_keygen_buildin(struct kex *kex,
+    u_char key[CURVE25519_SIZE], u_char pub[CURVE25519_SIZE]
+) {
 	static const u_char basepoint[CURVE25519_SIZE] = {9};
 
+	UNUSED(kex);
 	arc4random_buf(key, CURVE25519_SIZE);
 	crypto_scalarmult_curve25519(pub, key, basepoint);
+	return 0;
+}
+
+int
+kexc25519_keygen(struct kex *kex,
+    u_char key[CURVE25519_SIZE], u_char pub[CURVE25519_SIZE]
+) {
+#ifdef OPENSSL_HAS_X25519
+	/*TODO: FIPS mode?*/
+	return kexc25519_keygen_crypto(kex, key, pub);
+#endif
+	return kexc25519_keygen_buildin(kex, key, pub);
 }
 
 int
@@ -95,7 +178,8 @@ kex_c25519_keypair(struct kex *kex)
 		return SSH_ERR_ALLOC_FAIL;
 	if ((r = sshbuf_reserve(buf, CURVE25519_SIZE, &cp)) != 0)
 		goto out;
-	kexc25519_keygen(kex->c25519_client_key, cp);
+	r = kexc25519_keygen(kex, kex->c25519_client_key, cp);
+	if (r != 0) goto out;
 #ifdef DEBUG_KEXECDH
 	dump_digest("client public keypair c25519:", cp, CURVE25519_SIZE);
 #endif
@@ -136,7 +220,8 @@ kex_c25519_enc(struct kex *kex, const struct sshbuf *client_blob,
 	}
 	if ((r = sshbuf_reserve(server_blob, CURVE25519_SIZE, &server_pub)) != 0)
 		goto out;
-	kexc25519_keygen(server_key, server_pub);
+	r = kexc25519_keygen(kex, server_key, server_pub);
+	if (r != 0) goto out;
 	/* allocate shared secret */
 	if ((buf = sshbuf_new()) == NULL) {
 		r = SSH_ERR_ALLOC_FAIL;
@@ -156,6 +241,7 @@ kex_c25519_enc(struct kex *kex, const struct sshbuf *client_blob,
 	explicit_bzero(server_key, sizeof(server_key));
 	sshbuf_free(server_blob);
 	sshbuf_free(buf);
+	kex_reset_crypto_keys(kex);
 	return r;
 }
 
@@ -192,6 +278,7 @@ kex_c25519_dec(struct kex *kex, const struct sshbuf *server_blob,
 	buf = NULL;
  out:
 	sshbuf_free(buf);
+	kex_reset_crypto_keys(kex);
 	return r;
 }
 
