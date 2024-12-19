@@ -223,7 +223,6 @@ input_kex_gen_reply(int type, u_int32_t seq, struct ssh *ssh)
 		r = kex_send_newkeys(ssh);
 out:
 	explicit_bzero(hash, sizeof(hash));
-	explicit_bzero(kex->c25519_client_key, sizeof(kex->c25519_client_key));
 	explicit_bzero(kex->sntrup761_client_key,
 	    sizeof(kex->sntrup761_client_key));
 	explicit_bzero(kex->mlkem768_client_key,

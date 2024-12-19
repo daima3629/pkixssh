@@ -178,7 +178,7 @@ kex_c25519_keypair(struct kex *kex)
 		return SSH_ERR_ALLOC_FAIL;
 	if ((r = sshbuf_reserve(buf, CURVE25519_SIZE, &cp)) != 0)
 		goto out;
-	r = kexc25519_keygen(kex, kex->c25519_client_key, cp);
+	r = kexc25519_keygen(kex, kex->c25519_key, cp);
 	if (r != 0) goto out;
 #ifdef DEBUG_KEXECDH
 	dump_digest("client public keypair c25519:", cp, CURVE25519_SIZE);
@@ -198,7 +198,6 @@ kex_c25519_enc(struct kex *kex, const struct sshbuf *client_blob,
 	struct sshbuf *buf = NULL;
 	const u_char *client_pub;
 	u_char *server_pub;
-	u_char server_key[CURVE25519_SIZE];
 	int r;
 
 	UNUSED(kex);
@@ -220,14 +219,14 @@ kex_c25519_enc(struct kex *kex, const struct sshbuf *client_blob,
 	}
 	if ((r = sshbuf_reserve(server_blob, CURVE25519_SIZE, &server_pub)) != 0)
 		goto out;
-	r = kexc25519_keygen(kex, server_key, server_pub);
+	r = kexc25519_keygen(kex, kex->c25519_key, server_pub);
 	if (r != 0) goto out;
 	/* allocate shared secret */
 	if ((buf = sshbuf_new()) == NULL) {
 		r = SSH_ERR_ALLOC_FAIL;
 		goto out;
 	}
-	if ((r = kexc25519_shared_key_ext(server_key, client_pub, buf, 0)) != 0)
+	if ((r = kexc25519_shared_key_ext(kex->c25519_key, client_pub, buf, 0)) != 0)
 		goto out;
 #ifdef DEBUG_KEXECDH
 	dump_digest("server public key 25519:", server_pub, CURVE25519_SIZE);
@@ -238,10 +237,12 @@ kex_c25519_enc(struct kex *kex, const struct sshbuf *client_blob,
 	server_blob = NULL;
 	buf = NULL;
  out:
-	explicit_bzero(server_key, sizeof(server_key));
 	sshbuf_free(server_blob);
 	sshbuf_free(buf);
+#ifdef WITH_OPENSSL
 	kex_reset_crypto_keys(kex);
+#endif /* WITH_OPENSSL */
+	explicit_bzero(kex->c25519_key, sizeof(kex->c25519_key));
 	return r;
 }
 
@@ -268,7 +269,7 @@ kex_c25519_dec(struct kex *kex, const struct sshbuf *server_blob,
 		r = SSH_ERR_ALLOC_FAIL;
 		goto out;
 	}
-	if ((r = kexc25519_shared_key_ext(kex->c25519_client_key, server_pub,
+	if ((r = kexc25519_shared_key_ext(kex->c25519_key, server_pub,
 	    buf, 0)) != 0)
 		goto out;
 #ifdef DEBUG_KEXECDH
@@ -278,7 +279,10 @@ kex_c25519_dec(struct kex *kex, const struct sshbuf *server_blob,
 	buf = NULL;
  out:
 	sshbuf_free(buf);
+#ifdef WITH_OPENSSL
 	kex_reset_crypto_keys(kex);
+#endif /* WITH_OPENSSL */
+	explicit_bzero(kex->c25519_key, sizeof(kex->c25519_key));
 	return r;
 }
 
