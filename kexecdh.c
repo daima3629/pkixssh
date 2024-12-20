@@ -288,7 +288,7 @@ kex_ecdh_keypair(struct kex *kex)
 
  out:
 	if (r != 0)
-		kex_reset_crypto_keys(kex);
+		kex_reset_keys(kex);
 	return r;
 }
 
@@ -311,11 +311,11 @@ kex_ecdh_enc(struct kex *kex, const struct sshbuf *client_blob,
 	r = kex_ecdh_compute_key(kex, client_blob, shared_secretp);
 
  out:
+	kex_reset_keys(kex);
 	if (r != 0) {
 		sshbuf_free(*server_blobp);
 		*server_blobp = NULL;
 	}
-	kex_reset_crypto_keys(kex);
 	return r;
 }
 
@@ -336,7 +336,7 @@ kex_ecdh_dec(struct kex *kex, const struct sshbuf *server_blob,
 		dump_digestb("encoded shared secret:", *shared_secretp);
 #endif
 
-	kex_reset_crypto_keys(kex);
+	kex_reset_keys(kex);
 	return r;
 }
 

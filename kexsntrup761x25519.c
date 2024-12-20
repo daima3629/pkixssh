@@ -154,12 +154,9 @@ kex_kem_sntrup761x25519_enc(struct kex *kex,
 		server_blob = NULL;
 	}
  out:
+	kex_reset_keys(kex);
 	sshbuf_free(server_blob);
 	sshbuf_free(buf);
-#ifdef WITH_OPENSSL
-	kex_reset_crypto_keys(kex);
-#endif /* WITH_OPENSSL */
-	explicit_bzero(kex->c25519_key, sizeof(kex->c25519_key));
 	return r;
 }
 
@@ -220,11 +217,8 @@ kex_kem_sntrup761x25519_dec(struct kex *kex,
 		goto out;
 	}
  out:
+	kex_reset_keys(kex);
 	sshbuf_free(buf);
-#ifdef WITH_OPENSSL
-	kex_reset_crypto_keys(kex);
-#endif /* WITH_OPENSSL */
-	explicit_bzero(kex->c25519_key, sizeof(kex->c25519_key));
 	return r;
 }
 

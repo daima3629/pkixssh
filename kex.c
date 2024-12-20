@@ -633,6 +633,18 @@ kex_free_newkeys(struct newkeys *newkeys)
 	freezero(newkeys, sizeof(*newkeys));
 }
 
+#ifdef WITH_OPENSSL
+extern void kex_reset_crypto_keys(struct kex *);
+#endif
+
+void
+kex_reset_keys(struct kex *kex) {
+#ifdef WITH_OPENSSL
+	kex_reset_crypto_keys(kex);
+#endif
+	explicit_bzero(kex->c25519_key, sizeof(kex->c25519_key));
+}
+
 void
 kex_free(struct kex *kex)
 {
@@ -640,9 +652,6 @@ kex_free(struct kex *kex)
 
 	if (kex == NULL) return;
 
-#ifdef WITH_OPENSSL
-	kex_reset_crypto_keys(kex);
-#endif /* WITH_OPENSSL */
 	for (mode = 0; mode < MODE_MAX; mode++) {
 		kex_free_newkeys(kex->newkeys[mode]);
 		kex->newkeys[mode] = NULL;

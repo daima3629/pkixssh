@@ -237,12 +237,9 @@ kex_c25519_enc(struct kex *kex, const struct sshbuf *client_blob,
 	server_blob = NULL;
 	buf = NULL;
  out:
+	kex_reset_keys(kex);
 	sshbuf_free(server_blob);
 	sshbuf_free(buf);
-#ifdef WITH_OPENSSL
-	kex_reset_crypto_keys(kex);
-#endif /* WITH_OPENSSL */
-	explicit_bzero(kex->c25519_key, sizeof(kex->c25519_key));
 	return r;
 }
 
@@ -278,11 +275,8 @@ kex_c25519_dec(struct kex *kex, const struct sshbuf *server_blob,
 	*shared_secretp = buf;
 	buf = NULL;
  out:
+	kex_reset_keys(kex);
 	sshbuf_free(buf);
-#ifdef WITH_OPENSSL
-	kex_reset_crypto_keys(kex);
-#endif /* WITH_OPENSSL */
-	explicit_bzero(kex->c25519_key, sizeof(kex->c25519_key));
 	return r;
 }
 

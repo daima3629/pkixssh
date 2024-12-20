@@ -177,8 +177,8 @@ input_kex_dh_gex_init(int type, u_int32_t seq, struct ssh *ssh)
 	if ((r = kex_derive_keys(ssh, hash, hashlen, shared_secret)) == 0)
 		r = kex_send_newkeys(ssh);
  out:
+	kex_reset_keys(kex);
 	explicit_bzero(hash, sizeof(hash));
-	kex_reset_crypto_keys(kex);
 	BN_clear_free(dh_client_pub);
 	sshbuf_free(shared_secret);
 	sshbuf_free(server_host_key_blob);
