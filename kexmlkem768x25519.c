@@ -110,7 +110,7 @@ kex_kem_mlkem768x25519_keypair(struct kex *kex)
 	    crypto_kem_mlkem768_PUBLICKEYBYTES);
 #endif
 	cp += crypto_kem_mlkem768_PUBLICKEYBYTES;
-	r = kexc25519_keygen(kex, kex->c25519_key, cp);
+	r = kex_c25519_keygen_pub(kex, cp);
 	if (r != 0) goto out;
 #ifdef DEBUG_KEXKEM
 	dump_digest("client public keypair c25519:", cp, CURVE25519_SIZE);
@@ -181,7 +181,7 @@ kex_kem_mlkem768x25519_enc(struct kex *kex,
 	arc4random_buf(rnd, sizeof(rnd));
 	enc = libcrux_ml_kem_mlkem768_portable_encapsulate(&mlkem_pub, rnd);
 	/* generate ECDH key pair, store server pubkey after ciphertext */
-	r = kexc25519_keygen(kex, kex->c25519_key, server_pub);
+	r = kex_c25519_keygen_pub(kex, server_pub);
 	if (r != 0) goto out;
 	if ((r = sshbuf_put(buf, enc.snd, sizeof(enc.snd))) != 0 ||
 	    (r = sshbuf_put(server_blob, enc.fst.value, sizeof(enc.fst.value))) != 0 ||
@@ -189,7 +189,7 @@ kex_kem_mlkem768x25519_enc(struct kex *kex,
 		goto out;
 	/* append ECDH shared key */
 	client_pub += crypto_kem_mlkem768_PUBLICKEYBYTES;
-	if ((r = kexc25519_shared_key_ext(kex->c25519_key, client_pub, buf, 1)) != 0)
+	if ((r = kex_c25519_shared_key_ext(kex, client_pub, buf, 1)) != 0)
 		goto out;
 #ifdef DEBUG_KEXKEM
 	dump_digest("server cipher text:",
@@ -261,8 +261,7 @@ kex_kem_mlkem768x25519_dec(struct kex *kex,
 	    &mlkem_ciphertext, mlkem_key);
 	if ((r = sshbuf_put(buf, mlkem_key, sizeof(mlkem_key))) != 0)
 		goto out;
-	if ((r = kexc25519_shared_key_ext(kex->c25519_key, server_pub,
-	    buf, 1)) != 0)
+	if ((r = kex_c25519_shared_key_ext(kex, server_pub, buf, 1)) != 0)
 		goto out;
 #ifdef DEBUG_KEXKEM
 	dump_digest("client kem key:", mlkem_key, sizeof(mlkem_key));

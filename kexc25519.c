@@ -116,6 +116,7 @@ err:
 }
 #endif /*def OPENSSL_HAS_X25519*/
 
+#ifndef OPENSSL_HAS_X25519
 static int
 kexc25519_keygen_buildin(struct kex *kex,
     u_char key[CURVE25519_SIZE], u_char pub[CURVE25519_SIZE]
@@ -127,22 +128,25 @@ kexc25519_keygen_buildin(struct kex *kex,
 	crypto_scalarmult_curve25519(pub, key, basepoint);
 	return 0;
 }
+#endif /*ndef OPENSSL_HAS_X25519*/
 
 int
-kexc25519_keygen(struct kex *kex,
-    u_char key[CURVE25519_SIZE], u_char pub[CURVE25519_SIZE]
-) {
+kex_c25519_keygen_pub(struct kex *kex, u_char pub[CURVE25519_SIZE]) {
+	int r;
 #ifdef OPENSSL_HAS_X25519
 	/*TODO: FIPS mode?*/
-	return kexc25519_keygen_crypto(kex, key, pub);
+	r = kexc25519_keygen_crypto(kex, kex->c25519_key, pub);
+#else
+	r = kexc25519_keygen_buildin(kex, kex->c25519_key, pub);
 #endif
-	return kexc25519_keygen_buildin(kex, key, pub);
+	return r;
 }
 
 int
-kexc25519_shared_key_ext(const u_char key[CURVE25519_SIZE],
+kex_c25519_shared_key_ext(struct kex *kex,
     const u_char pub[CURVE25519_SIZE], struct sshbuf *out, int raw)
 {
+	const u_char *key = kex->c25519_key;
 	u_char shared_key[CURVE25519_SIZE];
 	u_char zero[CURVE25519_SIZE];
 	int r;
@@ -178,7 +182,7 @@ kex_c25519_keypair(struct kex *kex)
 		return SSH_ERR_ALLOC_FAIL;
 	if ((r = sshbuf_reserve(buf, CURVE25519_SIZE, &cp)) != 0)
 		goto out;
-	r = kexc25519_keygen(kex, kex->c25519_key, cp);
+	r = kex_c25519_keygen_pub(kex, cp);
 	if (r != 0) goto out;
 #ifdef DEBUG_KEXECDH
 	dump_digest("client public keypair c25519:", cp, CURVE25519_SIZE);
@@ -219,14 +223,14 @@ kex_c25519_enc(struct kex *kex, const struct sshbuf *client_blob,
 	}
 	if ((r = sshbuf_reserve(server_blob, CURVE25519_SIZE, &server_pub)) != 0)
 		goto out;
-	r = kexc25519_keygen(kex, kex->c25519_key, server_pub);
+	r = kex_c25519_keygen_pub(kex, server_pub);
 	if (r != 0) goto out;
 	/* allocate shared secret */
 	if ((buf = sshbuf_new()) == NULL) {
 		r = SSH_ERR_ALLOC_FAIL;
 		goto out;
 	}
-	if ((r = kexc25519_shared_key_ext(kex->c25519_key, client_pub, buf, 0)) != 0)
+	if ((r = kex_c25519_shared_key_ext(kex, client_pub, buf, 0)) != 0)
 		goto out;
 #ifdef DEBUG_KEXECDH
 	dump_digest("server public key 25519:", server_pub, CURVE25519_SIZE);
@@ -266,8 +270,7 @@ kex_c25519_dec(struct kex *kex, const struct sshbuf *server_blob,
 		r = SSH_ERR_ALLOC_FAIL;
 		goto out;
 	}
-	if ((r = kexc25519_shared_key_ext(kex->c25519_key, server_pub,
-	    buf, 0)) != 0)
+	if ((r = kex_c25519_shared_key_ext(kex, server_pub, buf, 0)) != 0)
 		goto out;
 #ifdef DEBUG_KEXECDH
 	dump_digestb("encoded shared secret:", buf);
