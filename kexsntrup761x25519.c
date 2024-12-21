@@ -131,8 +131,9 @@ kex_kem_sntrup761x25519_enc(struct kex *kex,
 	if (r != 0) goto out;
 	/* append ECDH shared key */
 	client_pub += crypto_kem_sntrup761_PUBLICKEYBYTES;
-	if ((r = kex_c25519_shared_key_ext(kex, client_pub, buf, 1)) != 0)
-		goto out;
+	r = kex_c25519_shared_secret_to_sshbuf(kex, client_pub, 1, &buf);
+	if (r != 0) goto out;
+
 #ifdef DEBUG_KEXKEM
 	dump_digest("server cipher text:", ciphertext,
 	    crypto_kem_sntrup761_CIPHERTEXTBYTES);
@@ -194,8 +195,8 @@ kex_kem_sntrup761x25519_dec(struct kex *kex,
 		goto out;
 	decoded = crypto_kem_sntrup761_dec(kem_key, ciphertext,
 	    kex->sntrup761_client_key);
-	if ((r = kex_c25519_shared_key_ext(kex, server_pub, buf, 1)) != 0)
-		goto out;
+	r = kex_c25519_shared_secret_to_sshbuf(kex, server_pub, 1, &buf);
+	if (r != 0) goto out;
 #ifdef DEBUG_KEXKEM
 	dump_digest("client kem key:", kem_key, crypto_kem_sntrup761_BYTES);
 	dump_digestb("concatenation of KEM key and ECDH shared key:", buf);

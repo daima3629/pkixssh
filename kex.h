@@ -209,8 +209,8 @@ int	kexgex_hash_server(const struct kex *kex,
 
 int	kex_c25519_keygen_pub(struct kex *kex, u_char pub[CURVE25519_SIZE])
 	__attribute__((__bounded__(__minbytes__, 2, CURVE25519_SIZE)));
-int	kex_c25519_shared_key_ext(struct kex *kex,
-    const u_char pub[CURVE25519_SIZE], struct sshbuf *out, int)
+int	kex_c25519_shared_secret_to_sshbuf(struct kex *kex,
+    const u_char pub[CURVE25519_SIZE], int raw, struct sshbuf **bufp)
 	__attribute__((__bounded__(__minbytes__, 2, CURVE25519_SIZE)));
 
 

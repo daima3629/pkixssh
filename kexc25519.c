@@ -142,7 +142,7 @@ kex_c25519_keygen_pub(struct kex *kex, u_char pub[CURVE25519_SIZE]) {
 	return r;
 }
 
-int
+static int
 kex_c25519_shared_key_ext(struct kex *kex,
     const u_char pub[CURVE25519_SIZE], struct sshbuf *out, int raw)
 {
@@ -166,6 +166,29 @@ kex_c25519_shared_key_ext(struct kex *kex,
 	else
 		r = sshbuf_put_bignum2_bytes(out, shared_key, CURVE25519_SIZE);
 	explicit_bzero(shared_key, CURVE25519_SIZE);
+	return r;
+}
+
+int
+kex_c25519_shared_secret_to_sshbuf(struct kex *kex, const u_char pub[CURVE25519_SIZE],
+    int raw, struct sshbuf **bufp) {
+	struct sshbuf *buf;
+	int r;
+
+	if (*bufp == NULL) {
+		buf = sshbuf_new();
+		if (buf == NULL) return SSH_ERR_ALLOC_FAIL;
+	} else
+		buf = *bufp;
+
+	r = kex_c25519_shared_key_ext(kex, pub, buf, raw);
+
+	if (*bufp == NULL) {
+		if (r == 0)
+			*bufp = buf;
+		else
+			sshbuf_free(buf);
+	}
 	return r;
 }
 
@@ -199,8 +222,6 @@ kex_c25519_enc(struct kex *kex, const struct sshbuf *client_blob,
    struct sshbuf **server_blobp, struct sshbuf **shared_secretp)
 {
 	struct sshbuf *server_blob = NULL;
-	struct sshbuf *buf = NULL;
-	const u_char *client_pub;
 	u_char *server_pub;
 	int r;
 
@@ -212,7 +233,6 @@ kex_c25519_enc(struct kex *kex, const struct sshbuf *client_blob,
 		r = SSH_ERR_SIGNATURE_INVALID;
 		goto out;
 	}
-	client_pub = sshbuf_ptr(client_blob);
 #ifdef DEBUG_KEXECDH
 	dump_digestb("client public key c25519:", client_blob);
 #endif
@@ -225,25 +245,20 @@ kex_c25519_enc(struct kex *kex, const struct sshbuf *client_blob,
 		goto out;
 	r = kex_c25519_keygen_pub(kex, server_pub);
 	if (r != 0) goto out;
-	/* allocate shared secret */
-	if ((buf = sshbuf_new()) == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto out;
-	}
-	if ((r = kex_c25519_shared_key_ext(kex, client_pub, buf, 0)) != 0)
-		goto out;
+{	const u_char *client_pub = sshbuf_ptr(client_blob);
+	r = kex_c25519_shared_secret_to_sshbuf(kex, client_pub, 0, shared_secretp);
+	if (r != 0) goto out;
+}
 #ifdef DEBUG_KEXECDH
 	dump_digest("server public key 25519:", server_pub, CURVE25519_SIZE);
-	dump_digestb("encoded shared secret:", buf);
+	dump_digestb("encoded shared secret:", *shared_secretp);
 #endif
 	*server_blobp = server_blob;
-	*shared_secretp = buf;
 	server_blob = NULL;
-	buf = NULL;
+
  out:
 	kex_reset_keys(kex);
 	sshbuf_free(server_blob);
-	sshbuf_free(buf);
 	return r;
 }
 
@@ -251,8 +266,6 @@ static int
 kex_c25519_dec(struct kex *kex, const struct sshbuf *server_blob,
     struct sshbuf **shared_secretp)
 {
-	struct sshbuf *buf = NULL;
-	const u_char *server_pub;
 	int r;
 
 	*shared_secretp = NULL;
@@ -261,25 +274,19 @@ kex_c25519_dec(struct kex *kex, const struct sshbuf *server_blob,
 		r = SSH_ERR_SIGNATURE_INVALID;
 		goto out;
 	}
-	server_pub = sshbuf_ptr(server_blob);
 #ifdef DEBUG_KEXECDH
 	dump_digestb("server public key c25519:", server_blob);
 #endif
-	/* shared secret */
-	if ((buf = sshbuf_new()) == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto out;
-	}
-	if ((r = kex_c25519_shared_key_ext(kex, server_pub, buf, 0)) != 0)
-		goto out;
+{	const u_char *server_pub = sshbuf_ptr(server_blob);
+	r = kex_c25519_shared_secret_to_sshbuf(kex, server_pub, 0, shared_secretp);
+	if (r != 0) goto out;
+}
 #ifdef DEBUG_KEXECDH
-	dump_digestb("encoded shared secret:", buf);
+	dump_digestb("encoded shared secret:", *shared_secretp);
 #endif
-	*shared_secretp = buf;
-	buf = NULL;
+
  out:
 	kex_reset_keys(kex);
-	sshbuf_free(buf);
 	return r;
 }
 
