@@ -305,6 +305,9 @@ kex_dh_pkey_keygen(struct kex *kex) {
 }
 
 
+extern void/*internal*/
+kex_reset_crypto_keys(struct kex *kex);
+
 void
 kex_reset_crypto_keys(struct kex *kex) {
 	EVP_PKEY_free(kex->pk);

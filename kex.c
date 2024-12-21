@@ -634,7 +634,8 @@ kex_free_newkeys(struct newkeys *newkeys)
 }
 
 #ifdef WITH_OPENSSL
-extern void kex_reset_crypto_keys(struct kex *);
+extern void/*internal*/
+kex_reset_crypto_keys(struct kex *kex);
 #endif
 
 void
