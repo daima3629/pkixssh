@@ -1611,7 +1611,7 @@ sftp_download(struct sftp_conn *conn, const char *remote_path,
 	max_req = 1;
 	progress_counter = offset;
 
-	if (showprogress && size != 0) {
+	if (showprogress) {
 		start_progress_meter(progress_meter_path(remote_path),
 		    size, &progress_counter);
 	}
@@ -1746,7 +1746,7 @@ sftp_download(struct sftp_conn *conn, const char *remote_path,
 		}
 	}
 
-	if (showprogress && size)
+	if (showprogress)
 		stop_progress_meter();
 
 	/* Sanity check */
@@ -2455,7 +2455,7 @@ sftp_crossload(struct sftp_conn *from, struct sftp_conn *to,
 	max_req = 1;
 	progress_counter = 0;
 
-	if (showprogress && size != 0) {
+	if (showprogress) {
 		start_progress_meter(progress_meter_path(from_path),
 		    size, &progress_counter);
 	}
@@ -2582,7 +2582,7 @@ sftp_crossload(struct sftp_conn *from, struct sftp_conn *to,
 		}
 	}
 
-	if (showprogress && size)
+	if (showprogress)
 		stop_progress_meter();
 
 	/* Drain replies from the server (blocking) */
