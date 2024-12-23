@@ -55,7 +55,7 @@ kex_kem_sntrup761x25519_keypair(struct kex *kex)
 
 	if ((buf = sshbuf_new()) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
-	need = crypto_kem_sntrup761_PUBLICKEYBYTES + CURVE25519_SIZE;
+	need = crypto_kem_sntrup761_PUBLICKEYBYTES;
 	if ((r = sshbuf_reserve(buf, need, &cp)) != 0)
 		goto out;
 	crypto_kem_sntrup761_keypair(cp, kex->sntrup761_client_key);
@@ -63,12 +63,11 @@ kex_kem_sntrup761x25519_keypair(struct kex *kex)
 	dump_digest("client public keypair sntrup761:", cp,
 	    crypto_kem_sntrup761_PUBLICKEYBYTES);
 #endif
-	cp += crypto_kem_sntrup761_PUBLICKEYBYTES;
-	r = kex_c25519_keygen_pub(kex, cp);
+
+	r = kex_c25519_keygen_to_sshbuf(kex, &buf);
 	if (r != 0) goto out;
-#ifdef DEBUG_KEXKEM
-	dump_digest("client public keypair c25519:", cp, CURVE25519_SIZE);
-#endif
+
+	/* success */
 	kex->client_pub = buf;
 	buf = NULL;
  out:
@@ -84,7 +83,7 @@ kex_kem_sntrup761x25519_enc(struct kex *kex,
 	struct sshbuf *server_blob = NULL;
 	struct sshbuf *buf = NULL;
 	const u_char *client_pub;
-	u_char *kem_key, *ciphertext, *server_pub;
+	u_char *kem_key, *ciphertext;
 	int r;
 
 	*server_blobp = NULL;
@@ -119,16 +118,16 @@ kex_kem_sntrup761x25519_enc(struct kex *kex,
 		r = SSH_ERR_ALLOC_FAIL;
 		goto out;
 	}
-{	size_t need = crypto_kem_sntrup761_CIPHERTEXTBYTES + CURVE25519_SIZE;
+{	size_t need = crypto_kem_sntrup761_CIPHERTEXTBYTES;
 	if ((r = sshbuf_reserve(server_blob, need, &ciphertext)) != 0)
 		goto out;
 }
 	/* generate and encrypt KEM key with client key */
 	crypto_kem_sntrup761_enc(ciphertext, kem_key, client_pub);
 	/* generate ECDH key pair, store server pubkey after ciphertext */
-	server_pub = ciphertext + crypto_kem_sntrup761_CIPHERTEXTBYTES;
-	r = kex_c25519_keygen_pub(kex, server_pub);
+	r = kex_c25519_keygen_to_sshbuf(kex, &server_blob);
 	if (r != 0) goto out;
+
 	/* append ECDH shared key */
 	client_pub += crypto_kem_sntrup761_PUBLICKEYBYTES;
 	r = kex_c25519_shared_secret_to_sshbuf(kex, client_pub, 1, &buf);
@@ -137,7 +136,6 @@ kex_kem_sntrup761x25519_enc(struct kex *kex,
 #ifdef DEBUG_KEXKEM
 	dump_digest("server cipher text:", ciphertext,
 	    crypto_kem_sntrup761_CIPHERTEXTBYTES);
-	dump_digest("server public key c25519:", server_pub, CURVE25519_SIZE);
 	dump_digestb("concatenation of KEM and ECDH public part:", server_blob);
 	dump_digest("server kem key:", kem_key, crypto_kem_sntrup761_BYTES);
 	dump_digestb("concatenation of KEM and ECDH shared key:", buf);

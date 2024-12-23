@@ -97,7 +97,7 @@ kex_kem_mlkem768x25519_keypair(struct kex *kex)
 
 	if ((buf = sshbuf_new()) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
-	need = crypto_kem_mlkem768_PUBLICKEYBYTES + CURVE25519_SIZE;
+	need = crypto_kem_mlkem768_PUBLICKEYBYTES;
 	if ((r = sshbuf_reserve(buf, need, &cp)) != 0)
 		goto out;
 	arc4random_buf(rnd, sizeof(rnd));
@@ -109,14 +109,11 @@ kex_kem_mlkem768x25519_keypair(struct kex *kex)
 	dump_digest("client public keypair mlkem768:", cp,
 	    crypto_kem_mlkem768_PUBLICKEYBYTES);
 #endif
-	cp += crypto_kem_mlkem768_PUBLICKEYBYTES;
-	r = kex_c25519_keygen_pub(kex, cp);
+
+	r = kex_c25519_keygen_to_sshbuf(kex, &buf);
 	if (r != 0) goto out;
-#ifdef DEBUG_KEXKEM
-	dump_digest("client public keypair c25519:", cp, CURVE25519_SIZE);
-#endif
+
 	/* success */
-	r = 0;
 	kex->client_pub = buf;
 	buf = NULL;
  out:
@@ -135,7 +132,6 @@ kex_kem_mlkem768x25519_enc(struct kex *kex,
 	struct sshbuf *buf = NULL;
 	const u_char *client_pub;
 	u_char rnd[LIBCRUX_ML_KEM_ENC_PRNG_LEN];
-	u_char server_pub[CURVE25519_SIZE];
 	int r = SSH_ERR_INTERNAL_ERROR;
 	struct libcrux_mlkem768_enc_result enc;
 	struct libcrux_mlkem768_pk mlkem_pub;
@@ -181,12 +177,12 @@ kex_kem_mlkem768x25519_enc(struct kex *kex,
 	arc4random_buf(rnd, sizeof(rnd));
 	enc = libcrux_ml_kem_mlkem768_portable_encapsulate(&mlkem_pub, rnd);
 	/* generate ECDH key pair, store server pubkey after ciphertext */
-	r = kex_c25519_keygen_pub(kex, server_pub);
-	if (r != 0) goto out;
 	if ((r = sshbuf_put(buf, enc.snd, sizeof(enc.snd))) != 0 ||
-	    (r = sshbuf_put(server_blob, enc.fst.value, sizeof(enc.fst.value))) != 0 ||
-	    (r = sshbuf_put(server_blob, server_pub, sizeof(server_pub))) != 0)
+	    (r = sshbuf_put(server_blob, enc.fst.value, sizeof(enc.fst.value))) != 0)
 		goto out;
+	r = kex_c25519_keygen_to_sshbuf(kex, &server_blob);
+	if (r != 0) goto out;
+
 	/* append ECDH shared key */
 	client_pub += crypto_kem_mlkem768_PUBLICKEYBYTES;
 	r = kex_c25519_shared_secret_to_sshbuf(kex, client_pub, 1, &buf);
@@ -194,7 +190,6 @@ kex_kem_mlkem768x25519_enc(struct kex *kex,
 #ifdef DEBUG_KEXKEM
 	dump_digest("server cipher text:",
 	    enc.fst.value, sizeof(enc.fst.value));
-	dump_digest("server public key c25519:", server_pub, CURVE25519_SIZE);
 	dump_digestb("concatenation of KEM and ECDH public part:", server_blob);
 	dump_digest("server kem key:", enc.snd, sizeof(enc.snd));
 	dump_digestb("concatenation of KEM and ECDH shared key:", buf);

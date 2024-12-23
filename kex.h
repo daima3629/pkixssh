@@ -123,7 +123,6 @@ struct kex {
 	EVP_PKEY	*pk;
 	u_int	min, max, nbits;	/* GEX */
 	u_char c25519_key[CURVE25519_SIZE];
-	u_char c25519_pub[CURVE25519_SIZE];
 	u_char sntrup761_client_key[crypto_kem_sntrup761_SECRETKEYBYTES]; /* KEM */
 	u_char mlkem768_client_key[crypto_kem_mlkem768_SECRETKEYBYTES]; /* KEM */
 	struct sshbuf *client_pub;
@@ -207,8 +206,7 @@ int	kexgex_hash_server(const struct kex *kex,
     const struct sshbuf *shared_secret,
     u_char *hash, size_t *hashlen);
 
-int	kex_c25519_keygen_pub(struct kex *kex, u_char pub[CURVE25519_SIZE])
-	__attribute__((__bounded__(__minbytes__, 2, CURVE25519_SIZE)));
+int	kex_c25519_keygen_to_sshbuf(struct kex *kex, struct sshbuf **bufp);
 int	kex_c25519_shared_secret_to_sshbuf(struct kex *kex,
     const u_char pub[CURVE25519_SIZE], int raw, struct sshbuf **bufp)
 	__attribute__((__bounded__(__minbytes__, 2, CURVE25519_SIZE)));
