@@ -123,6 +123,18 @@ kex_kem_mlkem768x25519_keypair(struct kex *kex)
 	return r;
 }
 
+static inline struct libcrux_mlkem768_enc_result
+ssh_libcrux_ml_kem_mlkem768_portable_encapsulate(struct libcrux_mlkem768_pk *pub) {
+	u_char rnd[LIBCRUX_ML_KEM_ENC_PRNG_LEN];
+	struct libcrux_mlkem768_enc_result ret;
+
+	arc4random_buf(rnd, sizeof(rnd));
+	ret = libcrux_ml_kem_mlkem768_portable_encapsulate(pub, rnd);
+	explicit_bzero(rnd, sizeof(rnd));
+
+	return ret;
+}
+
 static int
 kex_kem_mlkem768x25519_enc(struct kex *kex,
    const struct sshbuf *client_blob, struct sshbuf **server_blobp,
@@ -131,14 +143,11 @@ kex_kem_mlkem768x25519_enc(struct kex *kex,
 	struct sshbuf *server_blob = NULL;
 	struct sshbuf *buf = NULL;
 	const u_char *client_pub;
-	u_char rnd[LIBCRUX_ML_KEM_ENC_PRNG_LEN];
 	int r = SSH_ERR_INTERNAL_ERROR;
 	struct libcrux_mlkem768_enc_result enc;
-	struct libcrux_mlkem768_pk mlkem_pub;
 
 	*server_blobp = NULL;
 	*shared_secretp = NULL;
-	memset(&mlkem_pub, 0, sizeof(mlkem_pub));
 
 	/* client_blob contains both KEM and ECDH client pubkeys */
 {	size_t need = crypto_kem_mlkem768_PUBLICKEYBYTES + CURVE25519_SIZE;
@@ -155,12 +164,6 @@ kex_kem_mlkem768x25519_enc(struct kex *kex,
 	    client_pub + crypto_kem_mlkem768_PUBLICKEYBYTES,
 	    CURVE25519_SIZE);
 #endif
-	/* check public key validity */
-	memcpy(mlkem_pub.value, client_pub, crypto_kem_mlkem768_PUBLICKEYBYTES);
-	if (!libcrux_ml_kem_mlkem768_portable_validate_public_key(&mlkem_pub)) {
-		r = SSH_ERR_SIGNATURE_INVALID;
-		goto out;
-	}
 
 	/* allocate buffer for concatenation of KEM key and ECDH shared key */
 	/* the buffer will be hashed and the result is the shared secret */
@@ -174,8 +177,18 @@ kex_kem_mlkem768x25519_enc(struct kex *kex,
 		goto out;
 	}
 	/* generate and encrypt KEM key with client key */
-	arc4random_buf(rnd, sizeof(rnd));
-	enc = libcrux_ml_kem_mlkem768_portable_encapsulate(&mlkem_pub, rnd);
+{	struct libcrux_mlkem768_pk mlkem_pub;
+	memset(&mlkem_pub, 0, sizeof(mlkem_pub));
+
+	/* check public key validity */
+	memcpy(mlkem_pub.value, client_pub, crypto_kem_mlkem768_PUBLICKEYBYTES);
+	if (!libcrux_ml_kem_mlkem768_portable_validate_public_key(&mlkem_pub)) {
+		r = SSH_ERR_SIGNATURE_INVALID;
+		goto out;
+	}
+
+	enc = ssh_libcrux_ml_kem_mlkem768_portable_encapsulate(&mlkem_pub);
+}
 	/* generate ECDH key pair, store server pubkey after ciphertext */
 	if ((r = sshbuf_put(buf, enc.snd, sizeof(enc.snd))) != 0 ||
 	    (r = sshbuf_put(server_blob, enc.fst.value, sizeof(enc.fst.value))) != 0)
@@ -208,7 +221,6 @@ kex_kem_mlkem768x25519_enc(struct kex *kex,
 	}
  out:
 	kex_reset_keys(kex);
-	explicit_bzero(rnd, sizeof(rnd));
 	explicit_bzero(&enc, sizeof(enc));
 	sshbuf_free(server_blob);
 	sshbuf_free(buf);
@@ -220,7 +232,6 @@ kex_kem_mlkem768x25519_dec(struct kex *kex,
     const struct sshbuf *server_blob, struct sshbuf **shared_secretp)
 {
 	struct sshbuf *buf = NULL;
-	u_char mlkem_key[crypto_kem_mlkem768_BYTES];
 	const u_char *ciphertext, *server_pub;
 	int r;
 	struct libcrux_mlkem768_sk mlkem_priv;
@@ -252,14 +263,23 @@ kex_kem_mlkem768x25519_dec(struct kex *kex,
 	    sizeof(mlkem_ciphertext.value));
 	dump_digest("server public key c25519:", server_pub, CURVE25519_SIZE);
 #endif
+
+{	u_char mlkem_key[crypto_kem_mlkem768_BYTES];
 	libcrux_ml_kem_mlkem768_portable_decapsulate(&mlkem_priv,
 	    &mlkem_ciphertext, mlkem_key);
-	if ((r = sshbuf_put(buf, mlkem_key, sizeof(mlkem_key))) != 0)
+	if ((r = sshbuf_put(buf, mlkem_key, sizeof(mlkem_key))) != 0) {
+		explicit_bzero(mlkem_key, sizeof(mlkem_key));
 		goto out;
+	}
+#ifdef DEBUG_KEXKEM
+	dump_digest("client kem key:", mlkem_key, sizeof(mlkem_key));
+#endif
+	explicit_bzero(mlkem_key, sizeof(mlkem_key));
+}
+
 	r = kex_c25519_shared_secret_to_sshbuf(kex, server_pub, 1, &buf);
 	if (r != 0) goto out;
 #ifdef DEBUG_KEXKEM
-	dump_digest("client kem key:", mlkem_key, sizeof(mlkem_key));
 	dump_digestb("concatenation of KEM key and ECDH shared key:", buf);
 #endif
 	r = kex_digest_buffer(kex->impl->hash_alg, buf, shared_secretp);
@@ -273,7 +293,6 @@ kex_kem_mlkem768x25519_dec(struct kex *kex,
 	kex_reset_keys(kex);
 	explicit_bzero(&mlkem_priv, sizeof(mlkem_priv));
 	explicit_bzero(&mlkem_ciphertext, sizeof(mlkem_ciphertext));
-	explicit_bzero(mlkem_key, sizeof(mlkem_key));
 	sshbuf_free(buf);
 	return r;
 }
