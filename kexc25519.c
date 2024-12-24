@@ -218,6 +218,14 @@ kex_c25519_shared_secret_to_sshbuf(struct kex *kex, const u_char pub[CURVE25519_
 	return r;
 }
 
+static inline int
+kex_c25519_shared_secret2_to_sshbuf(struct kex *kex,
+    const struct sshbuf *blob, int raw, struct sshbuf **bufp
+) {
+	const u_char *pub = sshbuf_ptr(blob);
+	return kex_c25519_shared_secret_to_sshbuf(kex, pub, raw, bufp);
+}
+
 /* curve25519 key exchange implementation */
 
 static int
@@ -246,10 +254,8 @@ kex_c25519_enc(struct kex *kex, const struct sshbuf *client_blob,
 	r = kex_c25519_keygen_to_sshbuf(kex, server_blobp);
 	if (r != 0) goto out;
 
-{	const u_char *client_pub = sshbuf_ptr(client_blob);
-	r = kex_c25519_shared_secret_to_sshbuf(kex, client_pub, 0, shared_secretp);
+	r = kex_c25519_shared_secret2_to_sshbuf(kex, client_blob, 0, shared_secretp);
 	if (r != 0) goto out;
-}
 #ifdef DEBUG_KEXECDH
 	dump_digestb("encoded shared secret:", *shared_secretp);
 #endif
@@ -278,10 +284,8 @@ kex_c25519_dec(struct kex *kex, const struct sshbuf *server_blob,
 #ifdef DEBUG_KEXECDH
 	dump_digestb("server public key c25519:", server_blob);
 #endif
-{	const u_char *server_pub = sshbuf_ptr(server_blob);
-	r = kex_c25519_shared_secret_to_sshbuf(kex, server_pub, 0, shared_secretp);
+	r = kex_c25519_shared_secret2_to_sshbuf(kex, server_blob, 0, shared_secretp);
 	if (r != 0) goto out;
-}
 #ifdef DEBUG_KEXECDH
 	dump_digestb("encoded shared secret:", *shared_secretp);
 #endif
