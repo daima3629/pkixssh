@@ -218,6 +218,8 @@ EVP_PKEY*	kex_new_dh_group(BIGNUM *modulus, BIGNUM *gen);
 int	kex_dh_shared_secret_to_sshbuf(u_char *kbuf, size_t klen,
     struct sshbuf **bufp);
 #ifdef USE_EVP_PKEY_KEYGEN
+int	kex_pkey_derive_shared_secret_raw(struct kex *kex, EVP_PKEY *peerkey,
+    u_char **kbufp, size_t *klenp);
 int	kex_pkey_derive_shared_secret(struct kex *kex, EVP_PKEY *peerkey,
     struct sshbuf **bufp);
 #endif

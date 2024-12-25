@@ -381,7 +381,9 @@ kex_dh_shared_secret_to_sshbuf(u_char *kbuf, size_t klen, struct sshbuf **bufp) 
 
 #ifdef USE_EVP_PKEY_KEYGEN
 int
-kex_pkey_derive_shared_secret(struct kex *kex, EVP_PKEY *peerkey, struct sshbuf **bufp) {
+kex_pkey_derive_shared_secret_raw(struct kex *kex, EVP_PKEY *peerkey,
+    u_char **kbufp, size_t *klenp
+) {
 	EVP_PKEY_CTX *ctx;
 	u_char *kbuf = NULL;
 	size_t klen = 0;
@@ -403,17 +405,40 @@ kex_pkey_derive_shared_secret(struct kex *kex, EVP_PKEY *peerkey, struct sshbuf 
 		r = SSH_ERR_ALLOC_FAIL;
 		goto out;
 	}
-	if (EVP_PKEY_derive(ctx, kbuf, &klen) != 1)
+	if (EVP_PKEY_derive(ctx, kbuf, &klen) != 1) {
+		OPENSSL_free(kbuf);
 		goto out;
+	}
 #if defined(DEBUG_KEX) || defined(DEBUG_KEXDH) || defined(DEBUG_KEXECDH)
 	dump_digest("shared secret", kbuf, klen);
 #endif
+
+	*klenp = klen;
+	*kbufp = kbuf;
+	r = 0;
+
+ out:
+	EVP_PKEY_CTX_free(ctx);
+	return r;
+}
+#endif /*def USE_EVP_PKEY_KEYGEN*/
+
+
+#ifdef USE_EVP_PKEY_KEYGEN
+int
+kex_pkey_derive_shared_secret(struct kex *kex, EVP_PKEY *peerkey, struct sshbuf **bufp) {
+	u_char *kbuf = NULL;
+	size_t klen = 0;
+	int r = SSH_ERR_LIBCRYPTO_ERROR;
+
+	r =  kex_pkey_derive_shared_secret_raw(kex, peerkey,
+	    &kbuf, &klen);
+	if (r != 0) goto out;
 
 	r = kex_dh_shared_secret_to_sshbuf(kbuf, klen, bufp);
 
  out:
 	OPENSSL_clear_free(kbuf, klen);
-	EVP_PKEY_CTX_free(ctx);
 	return r;
 }
 #endif /*def USE_EVP_PKEY_KEYGEN*/
