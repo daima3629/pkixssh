@@ -34,7 +34,7 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: ssh.1,v 1.443 2024/07/18 01:47:27 djm Exp $
+.\" $OpenBSD: ssh.1,v 1.444 2024/12/04 14:37:55 djm Exp $
 .\" Implement .Dd with the Mdocdate RCS keyword
 .rn Dd xD
 .de Dd
@@ -43,7 +43,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: July 18 2024 $
+.Dd $Mdocdate: December 26 2024 $
 .Dt SSH 1
 .Os
 .Sh NAME
@@ -1873,10 +1873,37 @@ if an error occurred.
 .Re
 .It
 .Rs
+.%A A. Adamantiadis
+.%A S. Josefsson
+.%A M. Baushke
+.%D February 2020
+.%R RFC 8731
+.%T Secure Shell (SSH) Key Exchange Method Using Curve25519 and Curve448
+.Re
+.It
+.Rs
 .%A M. Baushke
 .%D January 2022
 .%R RFC 9142
 .%T Key Exchange (KEX) Method Updates and Recommendations for Secure Shell (SSH)
+.Re
+.It
+.Rs
+.%A M. Friedl
+.%A J. Mojzis
+.%A S. Josefsson
+.%D 19 September 2023
+.%O draft-josefsson-ntruprime-ssh-02
+.%T Secure Shell (SSH) Key Exchange Method Using Hybrid Streamlined NTRU Prime sntrup761 and X25519 with SHA-512: sntrup761x25519-sha512
+.Re
+.It
+.Rs
+.%A P. Kampanakis
+.%A D. Stebila
+.%A T. Hansen
+.%D 24 August 2024
+.%O draft-kampanakis-curdle-ssh-pq-ke-04
+.%T PQ/T Hybrid Key Exchange in SSH
 .Re
 .El
 .Sh AUTHORS
