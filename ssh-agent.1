@@ -1,4 +1,4 @@
-.\" $OpenBSD: ssh-agent.1,v 1.80 2024/10/24 03:15:47 djm Exp $
+.\" $OpenBSD: ssh-agent.1,v 1.81 2024/11/06 22:51:26 djm Exp $
 .\"
 .\" Author: Tatu Ylonen <ylo@cs.hut.fi>
 .\" Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -13,7 +13,7 @@
 .\" Copyright (c) 1999,2000 Markus Friedl.  All rights reserved.
 .\" Copyright (c) 1999 Aaron Campbell.  All rights reserved.
 .\" Copyright (c) 1999 Theo de Raadt.  All rights reserved.
-.\" Copyright (c) 2002-2023 Roumen Petrov.  All rights reserved.
+.\" Copyright (c) 2002-2024 Roumen Petrov.  All rights reserved.
 .\"
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions
@@ -43,7 +43,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: October 24 2024 $
+.Dd $Mdocdate: December 26 2024 $
 .Dt SSH-AGENT 1
 .Os
 .Sh NAME
@@ -266,11 +266,14 @@ The sockets should get automatically removed when the agent exits.
 .An -nosplit
 PKIX-SSH is a derivative of the original and free ssh 1.2.12 release by
 .An Tatu Ylonen .
-.An Aaron Campbell , Bob Beck , Markus Friedl , Niels Provos , Theo de Raadt
+.An Aaron Campbell , Bob Beck , Markus Friedl ,
+.An Niels Provos , Theo de Raadt
 and
 .An Dug Song
 removed many bugs, re-added newer features and created OpenSSH.
 .An Markus Friedl
 contributed the support for SSH protocol versions 1.5 and 2.0.
 .An Roumen Petrov
-contributed support for X.509 certificates.
+contributed the support for X.509 certificate based public-key algorithms,
+rewrite use of cryptography library API,
+added newer features, and created PKIX-SSH.

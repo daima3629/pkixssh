@@ -34,7 +34,7 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: sshd_config.5,v 1.378 2024/10/25 21:53:24 naddy Exp $
+.\" $OpenBSD: sshd_config.5,v 1.379 2024/12/05 22:45:03 naddy Exp $
 .\" Implement .Dd with the Mdocdate RCS keyword
 .rn Dd xD
 .de Dd
@@ -43,7 +43,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: November 5 2024 $
+.Dd $Mdocdate: December 26 2024 $
 .Dt SSHD_CONFIG 5
 .Os
 .Sh NAME
@@ -2413,15 +2413,13 @@ This file should be writable by root only, but it is recommended
 .Xr sshd 8
 .Sh AUTHORS
 .An -nosplit
-PKIX-SSH is a derivative of the original and free
-ssh 1.2.12 release by
+PKIX-SSH is a derivative of the original and free ssh 1.2.12 release by
 .An Tatu Ylonen .
-.An Aaron Campbell , Bob Beck , Markus Friedl , Niels Provos ,
-.An Theo de Raadt
+.An Aaron Campbell , Bob Beck , Markus Friedl ,
+.An Niels Provos , Theo de Raadt
 and
 .An Dug Song
-removed many bugs, re-added newer features and
-created OpenSSH.
+removed many bugs, re-added newer features and created OpenSSH.
 .An Markus Friedl
 contributed the support for SSH protocol versions 1.5 and 2.0.
 .An Niels Provos
@@ -2429,4 +2427,6 @@ and
 .An Markus Friedl
 contributed support for privilege separation.
 .An Roumen Petrov
-contributed support for X.509 certificates.
+contributed the support for X.509 certificate based public-key algorithms,
+rewrite use of cryptography library API,
+added newer features, and created PKIX-SSH.

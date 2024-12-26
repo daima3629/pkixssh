@@ -43,7 +43,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: November 5 2024 $
+.Dd $Mdocdate: December 26 2024 $
 .Dt SSHD 8
 .Os
 .Sh NAME
@@ -1109,17 +1109,24 @@ The content of this file is not sensitive; it can be world-readable.
 .Xr inetd 8 ,
 .Xr sftp-server 8
 .Sh AUTHORS
-PKIX-SSH is a derivative of the original and free
-ssh 1.2.12 release by Tatu Ylonen.
-Aaron Campbell, Bob Beck, Markus Friedl, Niels Provos,
-Theo de Raadt and Dug Song
-removed many bugs, re-added newer features and
-created OpenSSH.
-Markus Friedl contributed the support for SSH
-protocol versions 1.5 and 2.0.
-Niels Provos and Markus Friedl contributed support
-for privilege separation.
-Roumen Petrov contributed support for X.509 certificates.
+.An -nosplit
+PKIX-SSH is a derivative of the original and free ssh 1.2.12 release by
+.An Tatu Ylonen .
+.An Aaron Campbell , Bob Beck , Markus Friedl ,
+.An Niels Provos , Theo de Raadt
+and
+.An Dug Song
+removed many bugs, re-added newer features and created OpenSSH.
+.An Markus Friedl
+contributed the support for SSH protocol versions 1.5 and 2.0.
+.An Niels Provos
+and
+.An Markus Friedl
+contributed support for privilege separation.
+.An Roumen Petrov
+contributed the support for X.509 certificate based public-key algorithms,
+rewrite use of cryptography library API,
+added newer features, and created PKIX-SSH.
 .Sh CAVEATS
 System security is not improved unless
 .Nm rshd ,

@@ -34,7 +34,7 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: ssh_config.5,v 1.404 2024/10/18 05:53:26 djm Exp $
+.\" $OpenBSD: ssh_config.5,v 1.407 2024/12/06 16:21:48 djm Exp $
 .\" Implement .Dd with the Mdocdate RCS keyword
 .rn Dd xD
 .de Dd
@@ -43,7 +43,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: October 18 2024 $
+.Dd $Mdocdate: December 26 2024 $
 .Dt SSH_CONFIG 5
 .Os
 .Sh NAME
@@ -2568,16 +2568,16 @@ This file must be world-readable.
 .Xr ssh 1
 .Sh AUTHORS
 .An -nosplit
-PKIX-SSH is a derivative of the original and free
-ssh 1.2.12 release by
+PKIX-SSH is a derivative of the original and free ssh 1.2.12 release by
 .An Tatu Ylonen .
 .An Aaron Campbell , Bob Beck , Markus Friedl ,
 .An Niels Provos , Theo de Raadt
 and
 .An Dug Song
-removed many bugs, re-added newer features and
-created OpenSSH.
+removed many bugs, re-added newer features and created OpenSSH.
 .An Markus Friedl
 contributed the support for SSH protocol versions 1.5 and 2.0.
 .An Roumen Petrov
-contributed support for X.509 certificates.
+contributed the support for X.509 certificate based public-key algorithms,
+rewrite use of cryptography library API,
+added newer features, and created PKIX-SSH.
