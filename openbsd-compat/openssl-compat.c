@@ -33,6 +33,8 @@
 #include "evp-compat.h"
 
 #if !defined(HAVE_ERR_ADD_ERROR_DATA) && defined(HAVE_ERR_ASPRINTF_ERROR_DATA)
+#include <openssl/err.h>	/* for ERR_asprintf_error_data() */
+
 void
 ERR_add_error_data(int num, ...) {
 	va_list args;
