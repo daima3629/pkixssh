@@ -208,7 +208,7 @@ kex_ecdh_derive_shared_secret(struct kex *kex, const EC_POINT *dh_pub, struct ss
 	dump_digest("shared secret", kbuf, klen);
 #endif
 
-	r = kex_dh_shared_secret_to_sshbuf(kbuf, klen, bufp);
+	r = kex_shared_secret_to_sshbuf(kbuf, klen, 0, bufp);
 
  out:
 	EC_KEY_free(key);

@@ -1375,3 +1375,30 @@ kex_exchange_identification(struct ssh *ssh, int timeout_ms)
 		errno = oerrno;
 	return r;
 }
+
+int
+kex_shared_secret_to_sshbuf(u_char *kbuf, size_t klen,
+    int raw, struct sshbuf **bufp
+) {
+	struct sshbuf *buf;
+	int r;
+
+	if (*bufp == NULL) {
+		buf = sshbuf_new();
+		if (buf == NULL) return SSH_ERR_ALLOC_FAIL;
+	} else
+		buf = *bufp;
+
+	if (raw)
+		r = sshbuf_put(buf, kbuf, klen);
+	else
+		r = sshbuf_put_bignum2_bytes(buf, kbuf, klen);
+
+	if (*bufp == NULL) {
+		if (r == 0)
+			*bufp = buf;
+		else
+			sshbuf_free(buf);
+	}
+	return r;
+}

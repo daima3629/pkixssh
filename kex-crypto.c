@@ -347,38 +347,6 @@ kex_new_dh_group(BIGNUM *modulus, BIGNUM *gen) {
 }
 
 
-static inline int
-shared_secret_bn_to_sshbuf(const BIGNUM *shared_secret, struct sshbuf **bufp) {
-	struct sshbuf *buf;
-	int r;
-
-	if ((buf = sshbuf_new()) == NULL)
-		return SSH_ERR_ALLOC_FAIL;
-
-	r = sshbuf_put_bignum2(buf, shared_secret);
-	if (r == 0)
-		*bufp = buf;
-	else
-		sshbuf_free(buf);
-	return r;
-}
-
-int
-kex_dh_shared_secret_to_sshbuf(u_char *kbuf, size_t klen, struct sshbuf **bufp) {
-	BIGNUM *shared_secret;
-	int r;
-
-	shared_secret = BN_bin2bn(kbuf, klen, NULL);
-	if (shared_secret == NULL)
-		return SSH_ERR_LIBCRYPTO_ERROR;
-
-	r = shared_secret_bn_to_sshbuf(shared_secret, bufp);
-
-	BN_clear_free(shared_secret);
-	return r;
-}
-
-
 #ifdef USE_EVP_PKEY_KEYGEN
 int
 kex_pkey_derive_shared_secret_raw(struct kex *kex, EVP_PKEY *peerkey,
@@ -435,7 +403,7 @@ kex_pkey_derive_shared_secret(struct kex *kex, EVP_PKEY *peerkey, struct sshbuf 
 	    &kbuf, &klen);
 	if (r != 0) goto out;
 
-	r = kex_dh_shared_secret_to_sshbuf(kbuf, klen, bufp);
+	r = kex_shared_secret_to_sshbuf(kbuf, klen, 0, bufp);
 
  out:
 	OPENSSL_clear_free(kbuf, klen);
@@ -572,7 +540,7 @@ kex_dh_compute_key(struct kex *kex, BIGNUM *pub_key, struct sshbuf **shared_secr
 	dump_digest("shared secret", kbuf, kout);
 #endif
 
-	r = kex_dh_shared_secret_to_sshbuf(kbuf, kout, shared_secretp);
+	r = kex_shared_secret_to_sshbuf(kbuf, kout, 0, shared_secretp);
 }
 
 done:

@@ -187,10 +187,9 @@ kex_c25519_shared_key_ext(struct kex *kex,
 #ifdef DEBUG_KEXECDH
 	dump_digest("shared secret", shared_key, CURVE25519_SIZE);
 #endif
-	if (raw)
-		r = sshbuf_put(out, shared_key, CURVE25519_SIZE);
-	else
-		r = sshbuf_put_bignum2_bytes(out, shared_key, CURVE25519_SIZE);
+
+	r = kex_shared_secret_to_sshbuf(shared_key, CURVE25519_SIZE, raw, &out);
+
 	explicit_bzero(shared_key, CURVE25519_SIZE);
 	return r;
 }
