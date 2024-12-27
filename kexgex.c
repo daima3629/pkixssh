@@ -29,8 +29,6 @@
 
 #ifdef WITH_OPENSSL
 
-#include <signal.h>
-
 #include <openssl/bn.h>
 
 #include "kex.h"

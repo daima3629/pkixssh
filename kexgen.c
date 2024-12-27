@@ -31,7 +31,6 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
-#include <signal.h>
 
 #include "sshxkey.h"
 #include "kex.h"
