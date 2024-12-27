@@ -49,7 +49,7 @@ sshbuf_read_pub_ed25519(struct sshbuf *buf, struct sshkey *key) {
 		goto err;
 	}
 
-#ifdef OPENSSL_HAS_ED25519
+#ifdef USE_PKEY_ED25519
 {	EVP_PKEY *pk = EVP_PKEY_new_raw_public_key(EVP_PKEY_ED25519, NULL, ed25519_pk, pklen);
 	if (pk == NULL) {
 		r = SSH_ERR_INVALID_FORMAT;
@@ -86,7 +86,7 @@ sshbuf_read_priv_ed25519(struct sshbuf *buf, struct sshkey *key) {
 		goto err;
 	}
 
-#ifdef OPENSSL_HAS_ED25519
+#ifdef USE_PKEY_ED25519
 {	EVP_PKEY *pk = EVP_PKEY_new_raw_private_key(EVP_PKEY_ED25519, NULL,
 	    ed25519_sk, sklen - ED25519_PK_SZ);
 	if (pk == NULL) {
@@ -140,7 +140,7 @@ ssh_ed25519_size(const struct sshkey *key)
 static void
 ssh_ed25519_cleanup(struct sshkey *k)
 {
-#ifdef OPENSSL_HAS_ED25519
+#ifdef USE_PKEY_ED25519
 	sshkey_clear_pkey(k);
 #endif
 	freezero(k->ed25519_pk, ED25519_PK_SZ);
@@ -217,7 +217,7 @@ static int
 ssh_ed25519_generate(struct sshkey *key, int bits) {
 	UNUSED(bits);
 
-#ifdef USE_EVP_PKEY_KEYGEN
+#ifdef USE_PKEY_ED25519
 {	EVP_PKEY *pk = NULL;
 	size_t len;
 	size_t slen;
@@ -251,24 +251,18 @@ ssh_ed25519_generate(struct sshkey *key, int bits) {
 err:
 	EVP_PKEY_free(pk);
 }
-#else /*ndef USE_EVP_PKEY_KEYGEN*/
+#else /*ndef USE_PKEY_ED25519*/
 	if ((key->ed25519_pk = malloc(ED25519_PK_SZ)) == NULL ||
 	    (key->ed25519_sk = malloc(ED25519_SK_SZ)) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
 	crypto_sign_ed25519_keypair(key->ed25519_pk, key->ed25519_sk);
-#ifdef OPENSSL_HAS_ED25519
-	key->pk = EVP_PKEY_new_raw_private_key(EVP_PKEY_ED25519, NULL,
-	    key->ed25519_sk, ED25519_SK_SZ - ED25519_PK_SZ);
-	if (key->pk == NULL)
-		return SSH_ERR_LIBCRYPTO_ERROR;
-#endif
-#endif /*ndef USE_EVP_PKEY_KEYGEN*/
+#endif /*ndef USE_PKEY_ED25519*/
 	return 0;
 }
 
 static void
 ssh_ed25519_move_public(struct sshkey *from, struct sshkey *to) {
-#ifdef OPENSSL_HAS_ED25519
+#ifdef USE_PKEY_ED25519
 	sshkey_move_pk(from, to);
 #endif
 	freezero(to->ed25519_pk, ED25519_PK_SZ);
@@ -284,7 +278,7 @@ ssh_ed25519_copy_public(const struct sshkey *from, struct sshkey *to)
 	if ((to->ed25519_pk = malloc(ED25519_PK_SZ)) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
 	memcpy(to->ed25519_pk, from->ed25519_pk, ED25519_PK_SZ);
-#ifdef OPENSSL_HAS_ED25519
+#ifdef USE_PKEY_ED25519
 	to->pk = EVP_PKEY_new_raw_public_key(EVP_PKEY_ED25519, NULL,
 	    to->ed25519_pk, ED25519_PK_SZ);
 	if (to->pk == NULL)
@@ -328,7 +322,7 @@ ssh_ed25519_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 	if (sigp != NULL)
 		*sigp = NULL;
 
-#ifdef USE_EVP_PKEY_KEYGEN
+#ifdef USE_PKEY_ED25519
 {	const ssh_evp_md *dgst;
 
 	dgst = ssh_evp_md_find(SSH_MD_NONE);
@@ -350,7 +344,7 @@ ssh_ed25519_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 	r = ssh_encode_signature(sigp, lenp,
 	    sshkey_ssh_name_plain(key), sig, slen);
 }
-#else /*ndef USE_EVP_PKEY_KEYGEN*/
+#else /*ndef USE_PKEY_ED25519*/
 {
 	unsigned long long smlen;
 
@@ -372,7 +366,7 @@ ssh_ed25519_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 	r = ssh_encode_signature(sigp, lenp,
 	    "ssh-ed25519", sig, smlen - datalen);
 }
-#endif /*ndef USE_EVP_PKEY_KEYGEN*/
+#endif /*ndef USE_PKEY_ED25519*/
 
  out:
 	if (sig != NULL)
@@ -398,7 +392,7 @@ ssh_ed25519_verify(const ssh_verify_ctx *ctx,
 
 	if (key == NULL) return SSH_ERR_INVALID_ARGUMENT;
 
-#ifdef USE_EVP_PKEY_KEYGEN
+#ifdef USE_PKEY_ED25519
 {	const ssh_evp_md *dgst;
 
 	dgst = ssh_evp_md_find(SSH_MD_NONE);
@@ -427,7 +421,7 @@ ssh_ed25519_verify(const ssh_verify_ctx *ctx,
 	    sigblob, len, data, datalen);
 }
  out:
-#else /*ndef USE_EVP_PKEY_KEYGEN*/
+#else /*ndef USE_PKEY_ED25519*/
 {	size_t dlen = datalen; /* compatibility argument */
 	u_char *sm = NULL, *m = NULL;
 	unsigned long long smlen = 0, mlen = 0;
@@ -485,7 +479,7 @@ ssh_ed25519_verify(const ssh_verify_ctx *ctx,
 	if (m != NULL)
 		freezero(m, smlen); /* NB mlen may be invalid if r != 0 */
 }
-#endif /*ndef USE_EVP_PKEY_KEYGEN*/
+#endif /*ndef USE_PKEY_ED25519*/
 	sshbuf_free(b);
 	free(ktype);
 	return r;

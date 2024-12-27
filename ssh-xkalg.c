@@ -136,8 +136,8 @@ logit("TRACE_XKALG add_default_xkalg:");
 		fatal_f("oops");
 #endif /*WITH_DSA*/
 
-#ifdef OPENSSL_HAS_ED25519
-	/* NOTE: OPENSSL_HAS_ED25519 implies HAVE_EVP_DIGESTSIGN */
+#ifdef USE_PKEY_ED25519
+	/* NOTE: USE_PKEY_ED25519 implies HAVE_EVP_DIGESTSIGN */
 #ifdef OPENSSL_FIPS
 	if (!FIPS_mode())
 #endif
@@ -289,7 +289,7 @@ ssh_add_x509key_alg(const char *data) {
 		p->chain = 0;
 	} else
 #endif
-#ifdef OPENSSL_HAS_ED25519
+#ifdef USE_PKEY_ED25519
 	if (strncmp(name, "x509v3-ssh-ed25519", 18) == 0) {
 		p->basetype = KEY_ED25519;
 		p->chain = 1;
@@ -511,7 +511,7 @@ ssh_xkalg_listall(struct sshbuf *b, const char *sep) {
 #ifdef WITH_DSA
 	ssh_xkalg_list(KEY_DSA, b, sep);
 #endif
-#ifdef OPENSSL_HAS_ED25519
+#ifdef USE_PKEY_ED25519
 	ssh_xkalg_list(KEY_ED25519, b, sep);
 #endif
 }

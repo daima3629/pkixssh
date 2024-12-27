@@ -1,4 +1,4 @@
-/* $OpenBSD: sshkey.c,v 1.147 2024/09/22 12:56:21 jsg Exp $ */
+/* $OpenBSD: sshkey.c,v 1.148 2024/12/03 15:53:51 tb Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Alexander von Gernler.  All rights reserved.
@@ -3196,9 +3196,9 @@ sshkey_private_to_fileblob(struct sshkey *key, struct sshbuf *blob,
 	}
 
 	switch (key->type) {
-#ifdef OPENSSL_HAS_ED25519
+#ifdef USE_PKEY_ED25519
 	case KEY_ED25519:
-#endif /*def OPENSSL_HAS_ED25519*/
+#endif
 #ifdef WITH_OPENSSL
 #ifdef WITH_DSA
 	case KEY_DSA:
@@ -3210,9 +3210,9 @@ sshkey_private_to_fileblob(struct sshkey *key, struct sshbuf *blob,
 			    passphrase, format);
 #endif /* WITH_OPENSSL */
 		/* FALLTHROUGH */
-#ifndef OPENSSL_HAS_ED25519
+#ifndef USE_PKEY_ED25519
 	case KEY_ED25519:
-#endif /*ndef OPENSSL_HAS_ED25519*/
+#endif
 #ifdef WITH_XMSS
 	case KEY_XMSS:
 #endif /* WITH_XMSS */

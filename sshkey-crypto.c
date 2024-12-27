@@ -421,7 +421,7 @@ err:
 }
 #endif /* OPENSSL_HAS_ECC */
 
-#ifdef OPENSSL_HAS_ED25519
+#ifdef USE_PKEY_ED25519
 static int
 sshkey_from_pkey_ed25519(EVP_PKEY *pk, struct sshkey **keyp) {
 	int r;
@@ -479,7 +479,7 @@ err:
 	sshkey_free(key);
 	return r;
 }
-#endif /*def OPENSSL_HAS_ED25519*/
+#endif /*def USE_PKEY_ED25519*/
 
 int
 sshkey_from_pkey(EVP_PKEY *pk, struct sshkey **keyp) {
@@ -501,11 +501,11 @@ sshkey_from_pkey(EVP_PKEY *pk, struct sshkey **keyp) {
 		r = sshkey_from_pkey_ecdsa(pk, keyp);
 		break;
 #endif /*def OPENSSL_HAS_ECC*/
-#ifdef OPENSSL_HAS_ED25519
+#ifdef USE_PKEY_ED25519
 	case EVP_PKEY_ED25519:
 		r = sshkey_from_pkey_ed25519(pk, keyp);
 		break;
-#endif /*def OPENSSL_HAS_ED25519*/
+#endif /*def USE_PKEY_ED25519*/
 	default:
 		error_f("unsupported pkey type %d", evp_id);
 		r = SSH_ERR_KEY_TYPE_UNKNOWN;

@@ -178,7 +178,7 @@ ssh_x509_support_plain_type(int k_type) {
 #ifdef OPENSSL_HAS_ECC
 	    (k_type == KEY_ECDSA) ||
 #endif
-#ifdef OPENSSL_HAS_ED25519
+#ifdef USE_PKEY_ED25519
 	    (k_type == KEY_ED25519) ||
 #endif
 #ifdef WITH_DSA
@@ -1623,7 +1623,7 @@ ssh_x509_validate_public(const struct sshkey *key) {
 #ifdef OPENSSL_HAS_ECC
 	case EVP_PKEY_EC:	return ssh_pkey_validate_public_ecdsa(pk);
 #endif
-#ifdef OPENSSL_HAS_ED25519
+#ifdef USE_PKEY_ED25519
 	case EVP_PKEY_ED25519:	return 0 /* TODO? */;
 #endif
 	}
