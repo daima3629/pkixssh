@@ -208,6 +208,7 @@ destroy_ssh_ui_method(void) {
 }
 
 
+#ifdef USE_OPENSSL_ENGINE
 static char*
 ignore_suffixes(const char *filename) {
 	char* keyid;
@@ -242,7 +243,6 @@ ignore_suffixes(const char *filename) {
 }
 
 
-#ifdef USE_OPENSSL_ENGINE
 static void
 eng_try_load_cert(ENGINE *e, const char *keyid, EVP_PKEY *pk, struct sshkey *k) {
 	X509*	x509 = NULL;
