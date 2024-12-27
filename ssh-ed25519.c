@@ -1,7 +1,7 @@
 /* $OpenBSD: ssh-ed25519.c,v 1.19 2022/10/28 00:44:44 djm Exp $ */
 /*
  * Copyright (c) 2013 Markus Friedl <markus@openbsd.org>
- * Copyright (c) 2022 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2022-2024 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -183,36 +183,6 @@ ssh_ed25519_serialize_private(const struct sshkey *key, struct sshbuf *buf,
 	return sshbuf_write_priv_ed25519(buf, key);
 }
 
-#ifdef USE_EVP_PKEY_KEYGEN
-static int
-ssh_pkey_keygen_ed25519(EVP_PKEY **ret) {
-	EVP_PKEY *pk = NULL;
-	EVP_PKEY_CTX *ctx = NULL;
-	int r;
-
-	ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_ED25519, NULL);
-	if (ctx == NULL) return SSH_ERR_ALLOC_FAIL;
-
-	if (EVP_PKEY_keygen_init(ctx) <= 0) {
-		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto err;
-	}
-
-	if (EVP_PKEY_keygen(ctx, &pk) <= 0) {
-		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto err;
-	}
-
-	/* success */
-	*ret = pk;
-	r = 0;
-
-err:
-	EVP_PKEY_CTX_free(ctx);
-	return r;
-}
-#endif
-
 static int
 ssh_ed25519_generate(struct sshkey *key, int bits) {
 	UNUSED(bits);
@@ -223,7 +193,7 @@ ssh_ed25519_generate(struct sshkey *key, int bits) {
 	size_t slen;
 	int r = 0;
 
-	r = ssh_pkey_keygen_ed25519(&pk);
+	r = ssh_pkey_keygen_simple(EVP_PKEY_ED25519, &pk);
 	if (r != 0) return r;
 
 	if ((key->ed25519_pk = malloc(ED25519_PK_SZ)) == NULL ||

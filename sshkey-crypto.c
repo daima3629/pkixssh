@@ -202,6 +202,37 @@ sshkey_dump(const char *func, const struct sshkey *key) {
 #define SSHKEY_DUMP(...)	sshkey_dump(__func__, __VA_ARGS__)
 
 
+#ifdef USE_EVP_PKEY_KEYGEN
+int
+ssh_pkey_keygen_simple(int type, EVP_PKEY **ret) {
+	EVP_PKEY *pk = NULL;
+	EVP_PKEY_CTX *ctx = NULL;
+	int r;
+
+	ctx = EVP_PKEY_CTX_new_id(type, NULL);
+	if (ctx == NULL) return SSH_ERR_ALLOC_FAIL;
+
+	if (EVP_PKEY_keygen_init(ctx) <= 0) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	if (EVP_PKEY_keygen(ctx, &pk) <= 0) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	/* success */
+	*ret = pk;
+	r = 0;
+
+err:
+	EVP_PKEY_CTX_free(ctx);
+	return r;
+}
+#endif /*def USE_EVP_PKEY_KEYGEN*/
+
+
 #ifdef OPENSSL_HAS_ECC
 extern int /* TODO move to ssh-ecdsa.c */
 sshkey_validate_ec_priv(const EC_KEY *ec);

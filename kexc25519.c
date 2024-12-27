@@ -53,36 +53,6 @@ extern int crypto_scalarmult_curve25519(u_char a[CURVE25519_SIZE],
 
 #ifdef OPENSSL_HAS_X25519
 static int
-ssh_pkey_keygen_x25519(EVP_PKEY **ret) {
-	EVP_PKEY *pk = NULL;
-	EVP_PKEY_CTX *ctx = NULL;
-	int r;
-
-	ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_X25519, NULL);
-	if (ctx == NULL) return SSH_ERR_ALLOC_FAIL;
-
-	if (EVP_PKEY_keygen_init(ctx) <= 0) {
-		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto err;
-	}
-
-	if (EVP_PKEY_keygen(ctx, &pk) <= 0) {
-		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto err;
-	}
-
-	/* success */
-	*ret = pk;
-	r = 0;
-
-err:
-	EVP_PKEY_CTX_free(ctx);
-	return r;
-}
-#endif /*def OPENSSL_HAS_X25519*/
-
-#ifdef OPENSSL_HAS_X25519
-static int
 kexc25519_keygen_crypto(struct kex *kex,
     u_char key[CURVE25519_SIZE], u_char pub[CURVE25519_SIZE]
 ) {
@@ -90,7 +60,7 @@ kexc25519_keygen_crypto(struct kex *kex,
 	size_t len;
 	int r;
 
-	r = ssh_pkey_keygen_x25519(&pk);
+	r = ssh_pkey_keygen_simple(EVP_PKEY_X25519, &pk);
 	if (r != 0) return r;
 
 	/* compatibility: fill data used by build-in implementation */

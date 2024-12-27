@@ -322,8 +322,13 @@ int	sshkey_check_length(const struct sshkey *);
 /* For XMSS */
 int	sshkey_set_filename(struct sshkey *, const char *);
 
-int	 ssh_encode_signature(u_char **, size_t *, const u_char *,
+int	ssh_encode_signature(u_char **, size_t *, const u_char *,
     const u_char *, size_t);
+
+
+#ifdef USE_EVP_PKEY_KEYGEN
+int	ssh_pkey_keygen_simple(int type, EVP_PKEY **pk);
+#endif
 
 #ifdef SSHKEY_INTERNAL
 # ifdef WITH_OPENSSL
