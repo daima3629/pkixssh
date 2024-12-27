@@ -1128,7 +1128,6 @@ kex_verify_host_key(struct ssh *ssh, struct sshkey *server_host_key)
 	return 0;
 }
 
-#if defined(DEBUG_KEX) || defined(DEBUG_KEXDH) || defined(DEBUG_KEXECDH) || defined(DEBUG_KEXKEM)
 void
 dump_digest(const char *msg, const u_char *digest, size_t len)
 {
@@ -1145,7 +1144,6 @@ dump_digestb(const char *msg, const struct sshbuf *digest)
 	}
 	dump_digest(msg, sshbuf_ptr(digest), sshbuf_len(digest));
 }
-#endif
 
 /*
  * Send a plaintext error message to the peer, suffixed by \r\n.

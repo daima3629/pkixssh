@@ -230,9 +230,7 @@ int	sshbuf_kex_write_dh_group(struct sshbuf *buf, EVP_PKEY *pk);
 int	sshbuf_kex_write_dh_pub(struct sshbuf *buf, EVP_PKEY *pk);
 
 
-#if defined(DEBUG_KEX) || defined(DEBUG_KEXDH) || defined(DEBUG_KEXECDH) || defined(DEBUG_KEXKEM)
 void	dump_digest(const char *, const u_char *, size_t);
 void	dump_digestb(const char *, const struct sshbuf *);
-#endif
 
 #endif
