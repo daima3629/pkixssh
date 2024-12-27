@@ -394,7 +394,9 @@ kex_pkey_derive_shared_secret_raw(struct kex *kex, EVP_PKEY *peerkey,
 
 #ifdef USE_EVP_PKEY_KEYGEN
 int
-kex_pkey_derive_shared_secret(struct kex *kex, EVP_PKEY *peerkey, struct sshbuf **bufp) {
+kex_pkey_derive_shared_secret(struct kex *kex, EVP_PKEY *peerkey,
+    int raw, struct sshbuf **bufp
+) {
 	u_char *kbuf = NULL;
 	size_t klen = 0;
 	int r = SSH_ERR_LIBCRYPTO_ERROR;
@@ -403,7 +405,7 @@ kex_pkey_derive_shared_secret(struct kex *kex, EVP_PKEY *peerkey, struct sshbuf 
 	    &kbuf, &klen);
 	if (r != 0) goto out;
 
-	r = kex_shared_secret_to_sshbuf(kbuf, klen, 0, bufp);
+	r = kex_shared_secret_to_sshbuf(kbuf, klen, raw, bufp);
 
  out:
 	OPENSSL_clear_free(kbuf, klen);
@@ -504,7 +506,7 @@ kex_dh_compute_key(struct kex *kex, BIGNUM *pub_key, struct sshbuf **shared_secr
 	r = create_peer_pkey(kex, pub_key, &peerkey);
 	if (r != 0) return r;
 
-	r = kex_pkey_derive_shared_secret(kex, peerkey, shared_secretp);
+	r = kex_pkey_derive_shared_secret(kex, peerkey, 0, shared_secretp);
 
 	EVP_PKEY_free(peerkey);
 #else /*ndef USE_EVP_PKEY_KEYGEN*/

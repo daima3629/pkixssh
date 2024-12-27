@@ -176,7 +176,7 @@ kex_ecdh_derive_shared_secret(struct kex *kex, const EC_POINT *dh_pub, struct ss
 	r = create_peer_pkey(kex, dh_pub, &peerkey);
 	if (r != 0) return r;
 
-	r = kex_pkey_derive_shared_secret(kex, peerkey, bufp);
+	r = kex_pkey_derive_shared_secret(kex, peerkey, 0, bufp);
 
 	EVP_PKEY_free(peerkey);
 #else /*ndef USE_EVP_PKEY_KEYGEN*/
