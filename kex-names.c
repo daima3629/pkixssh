@@ -57,6 +57,9 @@ extern const struct kex_impl kex_ecdh_p521_sha512_impl;
 extern const struct kex_impl kex_c25519_sha256_impl;
 extern const struct kex_impl kex_c25519_sha256_impl_ext;
 #endif /* HAVE_EVP_SHA256 || !WITH_OPENSSL */
+#ifdef USE_ECDH_X448
+extern const struct kex_impl kex_c448_sha512_impl;
+#endif
 #ifdef ENABLE_KEX_SNTRUP761X25519
 extern const struct kex_impl kex_kem_sntrup761x25519_sha512_impl;
 extern const struct kex_impl kex_kem_sntrup761x25519_sha512_impl_ext;
@@ -86,6 +89,9 @@ static const struct kex_impl* const kex_impl_list[] = {
 	&kex_c25519_sha256_impl,
 	&kex_c25519_sha256_impl_ext,
 #endif /* HAVE_EVP_SHA256 || !WITH_OPENSSL */
+#ifdef USE_ECDH_X448
+	&kex_c448_sha512_impl,
+#endif
 #ifdef ENABLE_KEX_SNTRUP761X25519
 	&kex_kem_sntrup761x25519_sha512_impl,
 	&kex_kem_sntrup761x25519_sha512_impl_ext,
