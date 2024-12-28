@@ -40,17 +40,13 @@
 #include "ssherr.h"
 #include "ssh2.h"
 
-#ifndef USE_EVP_PKEY_KEYGEN
-# undef OPENSSL_HAS_X25519
-#endif
-
 extern int crypto_scalarmult_curve25519(u_char a[CURVE25519_SIZE],
     const u_char b[CURVE25519_SIZE], const u_char c[CURVE25519_SIZE])
 	__attribute__((__bounded__(__minbytes__, 1, CURVE25519_SIZE)))
 	__attribute__((__bounded__(__minbytes__, 2, CURVE25519_SIZE)))
 	__attribute__((__bounded__(__minbytes__, 3, CURVE25519_SIZE)));
 
-#ifdef OPENSSL_HAS_X25519
+#ifdef USE_ECDH_X25519
 static int
 kexc25519_keygen_crypto(struct kex *kex,
     u_char key[CURVE25519_SIZE], u_char pub[CURVE25519_SIZE]
@@ -83,9 +79,9 @@ err:
 	EVP_PKEY_free(pk);
 	return r;
 }
-#endif /*def OPENSSL_HAS_X25519*/
+#endif /*def USE_ECDH_X25519*/
 
-#ifndef OPENSSL_HAS_X25519
+#ifndef USE_ECDH_X25519
 static int
 kexc25519_keygen_buildin(struct kex *kex,
     u_char key[CURVE25519_SIZE], u_char pub[CURVE25519_SIZE]
@@ -97,7 +93,7 @@ kexc25519_keygen_buildin(struct kex *kex,
 	crypto_scalarmult_curve25519(pub, key, basepoint);
 	return 0;
 }
-#endif /*ndef OPENSSL_HAS_X25519*/
+#endif /*ndef USE_ECDH_X25519*/
 
 int
 kex_c25519_keygen_to_sshbuf(struct kex *kex, struct sshbuf **bufp) {
@@ -111,7 +107,7 @@ kex_c25519_keygen_to_sshbuf(struct kex *kex, struct sshbuf **bufp) {
 	} else
 		buf = *bufp;
 
-#ifdef OPENSSL_HAS_X25519
+#ifdef USE_ECDH_X25519
 	/*TODO: FIPS mode?*/
 	r = kexc25519_keygen_crypto(kex, kex->c25519_key, pub);
 #else
@@ -186,6 +182,7 @@ kex_c25519_shared_secret_to_sshbuf(struct kex *kex, const u_char pub[CURVE25519_
 	return r;
 }
 
+#ifndef USE_ECDH_X25519
 static inline int
 kex_c25519_shared_secret2_to_sshbuf(struct kex *kex,
     const struct sshbuf *blob, int raw, struct sshbuf **bufp
@@ -193,7 +190,9 @@ kex_c25519_shared_secret2_to_sshbuf(struct kex *kex,
 	const u_char *pub = sshbuf_ptr(blob);
 	return kex_c25519_shared_secret_to_sshbuf(kex, pub, raw, bufp);
 }
+#endif /*ndef USE_ECDH_X25519*/
 
+#ifndef USE_ECDH_X25519	/*use build-in*/
 /* curve25519 key exchange implementation */
 
 static int
@@ -287,3 +286,4 @@ const struct kex_impl kex_c25519_sha256_impl_ext = {
 	&kex_c25519_funcs,
 	NULL
 };
+#endif /*ndef USE_ECDH_X25519*/

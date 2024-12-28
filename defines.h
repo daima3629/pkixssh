@@ -994,6 +994,17 @@ struct winsize {
 # endif
 #endif
 
+#undef USE_ECDH_X25519
+#ifdef USE_EVP_PKEY_KEYGEN
+# ifdef OPENSSL_HAS_X25519		/* OpenSSL >= 1.1.1 */
+/* Project specific - use elliptic curve Curve25519 only if pkey
+ * based key generation is allowed(see above).
+ * Remark: SHA-256 support is assumed.
+ */
+#  define USE_ECDH_X25519
+# endif
+#endif
+
 #undef USE_ECDH_X448
 #ifdef USE_EVP_PKEY_KEYGEN
 # ifdef OPENSSL_HAS_X448		/* OpenSSL >= 1.1.1 */

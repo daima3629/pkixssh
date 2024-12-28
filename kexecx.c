@@ -32,7 +32,7 @@
 #include "ssherr.h"
 
 #undef USE_KEX_ECX
-#ifdef USE_ECDH_X448
+#if defined(USE_ECDH_X448) || defined(USE_ECDH_X25519)
 # define USE_KEX_ECX
 #endif
 
@@ -190,13 +190,29 @@ static const struct kex_impl_funcs kex_ecx_funcs = {
 };
 
 
-static int kex_c448_enabled(void) {
+#ifdef USE_ECDH_X25519
+static int kex_c25519_enabled(void) { return 1; }
+static struct kex_ecx_spec kex_c25519_spec = {
+	EVP_PKEY_X25519, 32
+};
+const struct kex_impl kex_c25519_sha256_impl = {
+	"curve25519-sha256",
+	SSH_DIGEST_SHA256,
+	kex_c25519_enabled,
+	&kex_ecx_funcs,
+	&kex_c25519_spec
+};
+const struct kex_impl kex_c25519_sha256_impl_ext = {
+	"curve25519-sha256@libssh.org",
+	SSH_DIGEST_SHA256,
+	kex_c25519_enabled,
+	&kex_ecx_funcs,
+	&kex_c25519_spec
+};
+#endif /*def USE_ECDH_X25519*/
+
 #ifdef USE_ECDH_X448
-	return 1;
-#else
-	return 0;
-#endif
-}
+static int kex_c448_enabled(void) { return 1; }
 static struct kex_ecx_spec kex_c448_spec = {
 	EVP_PKEY_X448, 56
 };
@@ -207,6 +223,8 @@ const struct kex_impl kex_c448_sha512_impl = {
 	&kex_ecx_funcs,
 	&kex_c448_spec
 };
+#endif /*def USE_ECDH_X448*/
+
 #else /*ndef USE_KEX_ECX*/
 
 typedef int kexecx_empty_translation_unit;
