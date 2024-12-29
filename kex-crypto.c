@@ -377,7 +377,8 @@ kex_pkey_derive_shared_secret_raw(struct kex *kex, EVP_PKEY *peerkey,
 		OPENSSL_free(kbuf);
 		goto out;
 	}
-#if defined(DEBUG_KEX) || defined(DEBUG_KEXDH) || defined(DEBUG_KEXECDH)
+#if defined(DEBUG_KEX) || defined(DEBUG_KEXDH) || defined(DEBUG_KEXECDH) || \
+    defined(DEBUG_KEXECX) || defined(DEBUG_KEXKEM)
 	dump_digest("shared secret", kbuf, klen);
 #endif
 
