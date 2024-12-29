@@ -40,11 +40,13 @@
 #include "ssherr.h"
 #include "ssh2.h"
 
+#ifndef USE_ECDH_X25519
 extern int crypto_scalarmult_curve25519(u_char a[CURVE25519_SIZE],
     const u_char b[CURVE25519_SIZE], const u_char c[CURVE25519_SIZE])
 	__attribute__((__bounded__(__minbytes__, 1, CURVE25519_SIZE)))
 	__attribute__((__bounded__(__minbytes__, 2, CURVE25519_SIZE)))
 	__attribute__((__bounded__(__minbytes__, 3, CURVE25519_SIZE)));
+#endif
 
 #ifdef USE_ECDH_X25519
 static int
@@ -129,6 +131,27 @@ out:
 	return r;
 }
 
+#ifdef USE_ECDH_X25519
+static int
+kex_c25519_derive_shared_secret(struct kex *kex,
+    const u_char pub[CURVE25519_SIZE], int raw, struct sshbuf **bufp
+) {
+	EVP_PKEY *peerkey = NULL;
+	int r;
+
+	peerkey = EVP_PKEY_new_raw_public_key(EVP_PKEY_X25519, NULL,
+	    pub, CURVE25519_SIZE);
+	if (peerkey == NULL)
+		return SSH_ERR_INVALID_FORMAT;
+
+	r = kex_pkey_derive_shared_secret(kex, peerkey, raw, bufp);
+
+	EVP_PKEY_free(peerkey);
+	return r;
+}
+#endif /*def USE_ECDH_X25519*/
+
+#ifndef USE_ECDH_X25519
 static int
 kex_c25519_shared_key_ext(struct kex *kex,
     const u_char pub[CURVE25519_SIZE], struct sshbuf *out, int raw)
@@ -154,6 +177,7 @@ kex_c25519_shared_key_ext(struct kex *kex,
 	explicit_bzero(shared_key, CURVE25519_SIZE);
 	return r;
 }
+#endif /*ndef USE_ECDH_X25519*/
 
 int
 kex_c25519_shared_secret_to_sshbuf(struct kex *kex, const u_char pub[CURVE25519_SIZE],
@@ -167,7 +191,11 @@ kex_c25519_shared_secret_to_sshbuf(struct kex *kex, const u_char pub[CURVE25519_
 	} else
 		buf = *bufp;
 
+#ifdef USE_ECDH_X25519
+	r = kex_c25519_derive_shared_secret(kex, pub, raw, &buf);
+#else
 	r = kex_c25519_shared_key_ext(kex, pub, buf, raw);
+#endif
 
 	if (*bufp == NULL) {
 		if (r == 0)
@@ -180,11 +208,11 @@ kex_c25519_shared_secret_to_sshbuf(struct kex *kex, const u_char pub[CURVE25519_
 
 #ifndef USE_ECDH_X25519
 static inline int
-kex_c25519_shared_secret2_to_sshbuf(struct kex *kex,
-    const struct sshbuf *blob, int raw, struct sshbuf **bufp
+kex_c25519_mpint_shared_secret_to_sshbuf(struct kex *kex,
+    const struct sshbuf *blob, struct sshbuf **bufp
 ) {
 	const u_char *pub = sshbuf_ptr(blob);
-	return kex_c25519_shared_secret_to_sshbuf(kex, pub, raw, bufp);
+	return kex_c25519_shared_secret_to_sshbuf(kex, pub, 0, bufp);
 }
 #endif /*ndef USE_ECDH_X25519*/
 
@@ -217,7 +245,7 @@ kex_c25519_enc(struct kex *kex, const struct sshbuf *client_blob,
 	r = kex_c25519_keygen_to_sshbuf(kex, server_blobp);
 	if (r != 0) goto out;
 
-	r = kex_c25519_shared_secret2_to_sshbuf(kex, client_blob, 0, shared_secretp);
+	r = kex_c25519_mpint_shared_secret_to_sshbuf(kex, client_blob, shared_secretp);
 	if (r != 0) goto out;
 #ifdef DEBUG_KEXECDH
 	dump_digestb("encoded shared secret:", *shared_secretp);
@@ -247,7 +275,7 @@ kex_c25519_dec(struct kex *kex, const struct sshbuf *server_blob,
 #ifdef DEBUG_KEXECDH
 	dump_digestb("server public key c25519:", server_blob);
 #endif
-	r = kex_c25519_shared_secret2_to_sshbuf(kex, server_blob, 0, shared_secretp);
+	r = kex_c25519_mpint_shared_secret_to_sshbuf(kex, server_blob, shared_secretp);
 	if (r != 0) goto out;
 #ifdef DEBUG_KEXECDH
 	dump_digestb("encoded shared secret:", *shared_secretp);
