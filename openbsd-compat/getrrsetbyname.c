@@ -2,7 +2,7 @@
 
 /*
  * Copyright (c) 2001 Jakob Schlyter. All rights reserved.
- * Copyright (c) 2022 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2022-2024 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -111,41 +111,28 @@ struct __res_state _res;
 /*
  * Routines to insert/extract short/long's.
  *
- * Usually resolver library (libresolv) provides _getshort interface
- * but without to define.
- * If the system does not provide _getshort or _get_long use compatibility
- * code below. Also use project names to avoid name collisions.
+ * Usually resolver library (libresolv) provides _getshort and _getlong
+ * interface but without to define.
+ * To simplify compatibility use custom _getshort and _getlong in code below.
  */
 
-#ifndef HAVE__GETSHORT
-static u_int16_t
+static inline u_int16_t
 _ssh_getshort(const u_char *msgp)
 {
 	u_int16_t u;
-
 	GETSHORT(u, msgp);
-	return (u);
+	return u;
 }
 #define _getshort _ssh_getshort
-#endif
-#if !HAVE_DECL__GETSHORT
-u_int16_t _getshort(const u_char *);
-#endif
 
-#ifndef HAVE__GETLONG
-static u_int32_t
+static inline u_int32_t
 _ssh_getlong(const u_char *msgp)
 {
 	u_int32_t u;
-
 	GETLONG(u, msgp);
-	return (u);
+	return u;
 }
 #define _getlong _ssh_getlong
-#endif
-#if !HAVE_DECL__GETLONG
-u_int32_t _getlong(register const u_char *);
-#endif
 
 /* ************** */
 

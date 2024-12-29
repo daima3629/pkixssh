@@ -5084,10 +5084,6 @@ AC_SEARCH_LIBS([getrrsetbyname], [resolv],
 			[LIBS="$saved_LIBS"
 			 AC_MSG_RESULT([no])])
 		    ])
-		AC_CHECK_FUNCS([_getshort _getlong])
-		AC_CHECK_DECLS([_getshort, _getlong], , ,
-		    [#include <sys/types.h>
-		    #include <arpa/nameser.h>])
 		AC_CHECK_MEMBER([HEADER.ad],
 			[AC_DEFINE([HAVE_HEADER_AD], [1],
 			    [Define if HEADER.ad exists in arpa/nameser.h])],
