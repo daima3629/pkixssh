@@ -48,9 +48,7 @@ extern int crypto_scalarmult_curve25519(u_char a[CURVE25519_SIZE],
 
 #ifdef USE_ECDH_X25519
 static int
-kexc25519_keygen_crypto(struct kex *kex,
-    u_char key[CURVE25519_SIZE], u_char pub[CURVE25519_SIZE]
-) {
+kexc25519_keygen_crypto(struct kex *kex, u_char pub[CURVE25519_SIZE]) {
 	EVP_PKEY *pk = NULL;
 	size_t len;
 	int r;
@@ -67,7 +65,7 @@ kexc25519_keygen_crypto(struct kex *kex,
 	}
 
 	len = CURVE25519_SIZE;
-	if (EVP_PKEY_get_raw_private_key(pk, key, &len) != 1 &&
+	if (EVP_PKEY_get_raw_private_key(pk, kex->c25519_key, &len) != 1 &&
 	    len != CURVE25519_SIZE) {
 		r = SSH_ERR_LIBCRYPTO_ERROR;
 		goto err;
@@ -83,14 +81,12 @@ err:
 
 #ifndef USE_ECDH_X25519
 static int
-kexc25519_keygen_buildin(struct kex *kex,
-    u_char key[CURVE25519_SIZE], u_char pub[CURVE25519_SIZE]
+kexc25519_keygen_buildin(struct kex *kex, u_char pub[CURVE25519_SIZE]
 ) {
 	static const u_char basepoint[CURVE25519_SIZE] = {9};
 
-	UNUSED(kex);
-	arc4random_buf(key, CURVE25519_SIZE);
-	crypto_scalarmult_curve25519(pub, key, basepoint);
+	arc4random_buf(kex->c25519_key, CURVE25519_SIZE);
+	crypto_scalarmult_curve25519(pub, kex->c25519_key, basepoint);
 	return 0;
 }
 #endif /*ndef USE_ECDH_X25519*/
@@ -109,9 +105,9 @@ kex_c25519_keygen_to_sshbuf(struct kex *kex, struct sshbuf **bufp) {
 
 #ifdef USE_ECDH_X25519
 	/*TODO: FIPS mode?*/
-	r = kexc25519_keygen_crypto(kex, kex->c25519_key, pub);
+	r = kexc25519_keygen_crypto(kex, pub);
 #else
-	r = kexc25519_keygen_buildin(kex, kex->c25519_key, pub);
+	r = kexc25519_keygen_buildin(kex, pub);
 #endif
 	if (r != 0) goto out;
 
