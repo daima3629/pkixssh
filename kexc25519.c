@@ -120,6 +120,8 @@ kex_c25519_keygen_to_sshbuf(struct kex *kex, struct sshbuf **bufp) {
 		dump_digest("client public key 25519:", pub, CURVE25519_SIZE);
 #endif
 	r = sshbuf_put(buf, pub, CURVE25519_SIZE);
+	if (r != 0)
+		kex_reset_keys(kex);
 
 out:
 	if (*bufp == NULL) {
