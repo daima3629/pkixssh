@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2023-2024 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2023-2025 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -23,83 +23,17 @@
 #  - "IdentityFile" is not used.
 #  - "PubkeyAlgorithms" selects either X.509 or plain key.
 #  - "AuthorizedKeysFile" contain encoded public key.
-# NOTE: Engine require pkcs#11 module.
-# TODO: Refactor pkcs#11 token setup.
+# NOTE: Engine requires pkcs#11 module.
 
 
 # === common PKCS#11 setup:
 . ${SCRIPTDIR}../pkcs11-env
-
-#load X.509 certificate to token:
-load_cert=:
-#load_cert=false
 
 SSH_MODULE_LOG="$CWD/.ssh-module.log"
 create_empty_file "$SSH_MODULE_LOG" || exit $?
 
 SSH_ENGINE="$CWD/ssh_engine"
 OPENSSL_CONF="$CWD/openssl_engine.cnf"
-
-# ===
-#env. vars:
-#  TEST_SSH_PKCS11 - pkcs#11 module
-#  userpin
-pkcs11_module_write() {
-  OPENSC_DEBUG=1 \
-  $PKCS11_TOOL --module $TEST_SSH_PKCS11 --verbose \
-    --login --pin $userpin \
-    ${1+"$@"} \
-  >> $SSH_MODULE_LOG 2>&1
-}
-
-
-# ===
-#args:
-#  $1 - userpin
-#  $2 - key_file
-#  $3 - key_id
-#  $4 - key_label
-pkcs11_write() {
-  userpin=$1
-  key_file=$2
-  key_id=$3
-  key_label=$4
-
-  echo "write ${extd}$key_label${norm} ..." >&2
-
-  echo "= prepare $key_id ..." >> $SSH_MODULE_LOG
-  $OPENSSL x509 -in $key_file -outform DER -out pkcs11_tool-$key_id-cert.der || return $?
-
-  key_type=privkey
-  echo "== write $key_id-$key_type" >> $SSH_MODULE_LOG
-  $OPENSSL pkey -in $key_file -outform DER -out pkcs11_tool-$key_id-$key_type.der || return $?
-  pkcs11_module_write \
-    --write-object pkcs11_tool-$key_id-$key_type.der --type $key_type \
-    --id $key_id --label "$key_label" \
-    --attr-from pkcs11_tool-$key_id-cert.der \
-  || return $?
-  rm -f pkcs11_tool-$key_id-$key_type.der
-
-  key_type=pubkey
-  echo "== write $key_id-$key_type" >> $SSH_MODULE_LOG
-  $OPENSSL pkey -in $key_file -outform DER -pubout -out pkcs11_tool-$key_id-$key_type.der || return $?
-  pkcs11_module_write \
-    --write-object pkcs11_tool-$key_id-$key_type.der --type $key_type \
-    --id $key_id --label "$key_label" \
-  || return $?
-  rm -f pkcs11_tool-$key_id-$key_type.der
-
-if $load_cert ; then
-  key_type=cert
-  echo "== write $key_id-$key_type" >> $SSH_MODULE_LOG
-  pkcs11_module_write \
-    --write-object pkcs11_tool-$key_id-$key_type.der --type $key_type \
-    --id $key_id --label "$key_label" \
-  || return $?
-fi
-
-  rm -f pkcs11_tool-$key_id-cert.der
-}
 
 
 # ===
@@ -257,13 +191,16 @@ do_test () {
       *eccnistp521*) key_id='0004'; key_label=p11-ec521;;
       *) continue;;
       esac
-      pkcs11_write $TEST_SSH_PIN $SSH_CLIENTKEY-$type $key_id $key_label \
+      p11_write_object $TEST_SSH_PIN $SSH_CLIENTKEY-$type $key_id $key_label \
       || exit $?
     done
     echo "=== write end" >> $SSH_MODULE_LOG
     cat > $SSH_ENGINE << EOF
 Engine pkcs11
-VERBOSE
+# debug if libp11 <= 0.4.13
+#VERBOSE
+# debug if libp11 > 0.4.13, NOTE without backward compatibility!
+#DEBUG_LEVEL = 7
 MODULE_PATH = $TEST_SSH_PKCS11
 EOF
     cat > $OPENSSL_CONF << EOF
