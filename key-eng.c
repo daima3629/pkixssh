@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -37,7 +37,6 @@
 #include <string.h>
 #include <errno.h>
 
-#include <openssl/ui.h>
 #ifdef USE_OPENSSL_STORE2
 # include <openssl/store.h>
 #endif
@@ -51,161 +50,9 @@
 #include "xmalloc.h"
 #include "ssherr.h"
 
-/* structure reserved for future use */
-typedef struct ssh_pw_cb_data {
-	const void *password;
-} SSH_PW_CB_DATA;
-
-
-static UI_METHOD *ssh_ui_method = NULL;
-
-/**/
-static int
-ui_open(UI *ui) {
-	return(UI_method_get_opener(UI_OpenSSL())(ui));
-}
-
-
-static int
-ui_read(UI *ui, UI_STRING *uis) {
-	enum UI_string_types  uis_type;
-	int ui_flags;
-
-	ui_flags = UI_get_input_flags(uis);
-	uis_type = UI_get_string_type(uis);
-
-	if (ui_flags & UI_INPUT_FLAG_DEFAULT_PWD) {
-		SSH_PW_CB_DATA* cb_data = (SSH_PW_CB_DATA*)UI_get0_user_data(ui);
-		if (cb_data != NULL) {
-			switch(uis_type) {
-			case UIT_PROMPT:
-			case UIT_VERIFY: {
-				const char *password = cb_data->password;
-				if (password && password[0] != '\0') {
-					UI_set_result(ui, uis, password);
-					return(1);
-				}
-				} break;
-			default:
-				break;
-			}
-		}
-	}
-
-{ /* use own method to prompt properly */
-	int flags = RP_USE_ASKPASS | RP_ALLOW_STDIN;
-	if (ui_flags & UI_INPUT_FLAG_ECHO)
-		flags |= RP_ECHO;
-
-	switch(uis_type) {
-	case UIT_PROMPT:
-	case UIT_VERIFY: {
-		const char *prompt;
-		char *password;
-
-		prompt = UI_get0_output_string(uis);
-		debug3_f("read_passphrase prompt=%s",  prompt);
-		password = read_passphrase(prompt, flags);
-		UI_set_result(ui, uis, password);
-		memset(password, 'x', strlen(password));
-		free(password);
-		return(1);
-		} break;
-	case UIT_INFO: {
-		const char *s = UI_get0_output_string(uis);
-		debug_f("UIT_INFO '%s'", s);
-		return(1);
-		} break;
-	case UIT_ERROR: {
-		const char *s = UI_get0_output_string(uis);
-		error_f("UIT_ERROR '%s'", s);
-		return(1);
-		} break;
-	default:
-		break;
-	}
-}
-
-	return(UI_method_get_reader(UI_OpenSSL())(ui, uis));
-}
-
-
-static int
-ui_write(UI *ui, UI_STRING *uis) {
-	enum UI_string_types  uis_type;
-	int ui_flags;
-
-	ui_flags = UI_get_input_flags(uis);
-	uis_type = UI_get_string_type(uis);
-
-	if (ui_flags & UI_INPUT_FLAG_DEFAULT_PWD) {
-		SSH_PW_CB_DATA* cb_data = (SSH_PW_CB_DATA*)UI_get0_user_data(ui);
-		if (cb_data != NULL) {
-			switch(uis_type) {
-			case UIT_PROMPT:
-			case UIT_VERIFY: {
-				const char *password = cb_data->password;
-				if (password && password[0] != '\0') {
-					return(1);
-				}
-				} break;
-			default:
-				break;
-			}
-		}
-	}
-	switch(uis_type) {
-	case UIT_INFO: {
-		const char *s = UI_get0_output_string(uis);
-		debug_f("UIT_INFO '%s'", s);
-		return(1);
-		} break;
-	case UIT_ERROR: {
-		const char *s = UI_get0_output_string(uis);
-		error_f("UIT_ERROR '%s'", s);
-		return(1);
-		} break;
-	default:
-		break;
-	}
-	return(UI_method_get_writer(UI_OpenSSL())(ui, uis));
-}
-
-
-static int
-ui_close(UI *ui) {
-	return(UI_method_get_closer(UI_OpenSSL())(ui));
-}
-
-
-static int/*bool*/setup_ssh_ui_method(void);
-static void destroy_ssh_ui_method(void);
-
-
-static int/*bool*/
-setup_ssh_ui_method(void) {
-	ssh_ui_method = UI_create_method("PKIX-SSH application user interface");
-
-	if (ssh_ui_method == NULL) return(0);
-
-	if ((UI_method_set_opener(ssh_ui_method, ui_open ) < 0)
-	||  (UI_method_set_reader(ssh_ui_method, ui_read ) < 0)
-	||  (UI_method_set_writer(ssh_ui_method, ui_write) < 0)
-	||  (UI_method_set_closer(ssh_ui_method, ui_close) < 0)) {
-		destroy_ssh_ui_method();
-		return(0);
-	}
-	return(1);
-}
-
-
-static void
-destroy_ssh_ui_method(void) {
-	if (ssh_ui_method == NULL) return;
-
-	UI_destroy_method(ssh_ui_method);
-	ssh_ui_method = NULL;
-}
+extern UI_METHOD *ssh_ui_method;
+extern int/*bool*/setup_ssh_ui_method(void);
+extern void destroy_ssh_ui_method(void);
 
 
 #ifdef USE_OPENSSL_ENGINE

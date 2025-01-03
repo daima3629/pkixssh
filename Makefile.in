@@ -66,7 +66,7 @@ MKDIR_P=$(srcdir)/install-sh -d
 @OCSP_ON@OCSP_OBJS=ssh-ocsp.o
 @OCSP_OFF@OCSP_OBJS=
 
-SSHX509_OBJS=ssh-x509.o ssh-xkalg.o x509_nm_cmp.o key-eng.o a_utf8.o
+SSHX509_OBJS=ssh-x509.o ssh-xkalg.o x509_nm_cmp.o key-eng.o ssh-ui.o a_utf8.o
 X509STORE_OBJS=x509store.o x509_by_store.o $(LDAP_OBJS)
 
 TARGETS=ssh$(EXEEXT) sshd$(EXEEXT) ssh-add$(EXEEXT) ssh-keygen$(EXEEXT) ssh-keyscan${EXEEXT} ssh-keysign${EXEEXT} ssh-pkcs11-helper$(EXEEXT) ssh-agent$(EXEEXT) scp$(EXEEXT) sftp-server$(EXEEXT) sftp$(EXEEXT)
