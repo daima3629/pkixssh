@@ -1,7 +1,7 @@
 #ifndef KEY_ENG_H
 #define KEY_ENG_H
 /*
- * Copyright (c) 2011-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,12 +31,7 @@ extern void ssh_engines_startup(void);
 extern void ssh_engines_shutdown(void);
 
 #ifdef	USE_OPENSSL_ENGINE
-
-#include <openssl/engine.h>
-
 extern int/*bool*/ process_engconfig_file(const char *engconfig);
-
-extern void ssh_load_engines(void);
 
 extern int engine_load_private(const char *name, const char *passphrase, struct sshkey **keyp, char **commentp);
 extern int engine_try_load_public(const char *name, struct sshkey **keyp, char **commentp);
