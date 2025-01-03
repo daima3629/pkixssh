@@ -26,6 +26,7 @@
 
 #include <openssl/ui.h>
 
+#include "key-eng.h"
 #include "misc.h"
 #include "log.h"
 
@@ -154,12 +155,9 @@ ui_close(UI *ui) {
 }
 
 
-extern int/*bool*/setup_ssh_ui_method(void);
-extern void destroy_ssh_ui_method(void);
-
 UI_METHOD *ssh_ui_method = NULL;
 
-void
+static void
 destroy_ssh_ui_method(void) {
 	if (ssh_ui_method == NULL) return;
 
@@ -167,7 +165,7 @@ destroy_ssh_ui_method(void) {
 	ssh_ui_method = NULL;
 }
 
-int/*bool*/
+static int/*bool*/
 setup_ssh_ui_method(void) {
 	ssh_ui_method = UI_create_method("PKIX-SSH application user interface");
 
@@ -181,4 +179,21 @@ setup_ssh_ui_method(void) {
 		return 0;
 	}
 	return 1;
+}
+
+
+void
+ssh_module_startup(void) {
+	setup_ssh_ui_method();
+#ifdef USE_OPENSSL_ENGINE
+	ssh_engines_startup();
+#endif
+}
+
+void
+ssh_module_shutdown(void) {
+#ifdef USE_OPENSSL_ENGINE
+	ssh_engines_shutdown();
+#endif
+	destroy_ssh_ui_method();
 }

@@ -598,23 +598,18 @@ done:
 }
 	return ret;
 }
-#endif /*def USE_OPENSSL_ENGINE*/
 
 
 void
 ssh_engines_startup(void) {
-#ifdef USE_OPENSSL_ENGINE
 	eng_list = sshbuf_new();
 	if (eng_list == NULL)
 		fatal_f("sshbuf_new failed");
-#endif
-	(void) setup_ssh_ui_method();
 }
 
 
 void
 ssh_engines_shutdown(void) {
-#ifdef USE_OPENSSL_ENGINE
 	free(eng_name);
 	eng_name = NULL;
 
@@ -630,6 +625,10 @@ ssh_engines_shutdown(void) {
 	};
 	sshbuf_free(eng_list);
 	eng_list = NULL;
-#endif
-	destroy_ssh_ui_method();
 }
+
+#else /*ndef USE_OPENSSL_ENGINE*/
+
+typedef int key_eng_empty_translation_unit;
+
+#endif /*ndef USE_OPENSSL_ENGINE*/

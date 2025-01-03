@@ -27,10 +27,13 @@
 #include "includes.h"
 #include "sshkey.h"
 
+extern void ssh_module_startup(void);
+extern void ssh_module_shutdown(void);
+
+#ifdef	USE_OPENSSL_ENGINE
 extern void ssh_engines_startup(void);
 extern void ssh_engines_shutdown(void);
 
-#ifdef	USE_OPENSSL_ENGINE
 extern int/*bool*/ process_engconfig_file(const char *engconfig);
 
 extern int engine_load_private(const char *name, const char *passphrase, struct sshkey **keyp, char **commentp);

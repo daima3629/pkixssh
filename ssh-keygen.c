@@ -2656,7 +2656,7 @@ main(int argc, char **argv)
 		fprintf(stderr, "%s runs in FIPS mode\n", __progname);
 	}
 #endif /*def OPENSSL_FIPS*/
-	ssh_engines_startup();
+	ssh_module_startup();
 	fill_default_xkalg();
 
 	seed_rng();

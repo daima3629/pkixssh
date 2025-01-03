@@ -733,7 +733,7 @@ main(int ac, char **av)
 		fprintf(stderr, "%s runs in FIPS mode\n", __progname);
 	}
 #endif /*def OPENSSL_FIPS*/
-	ssh_engines_startup();
+	ssh_module_startup();
 #ifdef WITH_OPENSSL
 	ssh_OpenSSL_load_error_strings();
 #ifdef LDAP_ENABLED
@@ -1916,7 +1916,7 @@ main(int ac, char **av)
 
 	cleanup_options(&options);
 
-	ssh_engines_shutdown();
+	ssh_module_shutdown();
 	ssh_OpenSSL_shuthdown();
 
 	/* extra clean-up to find easily significant memory leaks */
