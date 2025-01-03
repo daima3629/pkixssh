@@ -163,38 +163,10 @@ do_test () {
     echo "warning: ${extd}PKCS#11 tool not found${norm}" >&2
     return 1
   fi
-  p11_setup
 
-  # stop on first rsa digest
-  for type in $SSH_SIGN_TYPES; do
-    case $type in
-    *rsa*);;
-    *) continue;;
-    esac
-    break;
-  done
+  p11_setup_token || return $?
 
-  # setup token and load X.509 certificates and keys
   (
-    echo "create ${extd}test0${norm} token ..." >&2
-    echo "=== create token" >> $SSH_MODULE_LOG
-    $SOFTHSM2_TOOL --init-token --label test0 --slot free \
-      --so-pin $TEST_SSH_SOPIN --pin $TEST_SSH_PIN \
-      >> $SSH_MODULE_LOG 2>&1 \
-    || exit $?
-
-    for SSH_CLIENTKEY in $TEST_SSH_CLIENTKEYS; do
-      case $SSH_CLIENTKEY in
-      *rsa*)         key_id='0001'; key_label=p11-rsa;;
-      *eccnistp256*) key_id='0002'; key_label=p11-ec256;;
-      *eccnistp384*) key_id='0003'; key_label=p11-ec384;;
-      *eccnistp521*) key_id='0004'; key_label=p11-ec521;;
-      *) continue;;
-      esac
-      p11_write_object $TEST_SSH_PIN $SSH_CLIENTKEY-$type $key_id $key_label \
-      || exit $?
-    done
-    echo "=== write end" >> $SSH_MODULE_LOG
     cat > $SSH_ENGINE << EOF
 Engine pkcs11
 # debug if libp11 <= 0.4.13
