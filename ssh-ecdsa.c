@@ -360,6 +360,33 @@ err:
 }
 
 static int
+sshbuf_put_ec(struct sshbuf *buf, const EC_POINT *v, const EC_GROUP *g)
+{
+	u_char d[SSHBUF_MAX_ECPOINT];
+	size_t len;
+	int ret;
+
+	if ((len = EC_POINT_point2oct(g, v, POINT_CONVERSION_UNCOMPRESSED,
+	    NULL, 0, NULL)) > SSHBUF_MAX_ECPOINT) {
+		return SSH_ERR_INVALID_ARGUMENT;
+	}
+	if (EC_POINT_point2oct(g, v, POINT_CONVERSION_UNCOMPRESSED,
+	    d, len, NULL) != len) {
+		return SSH_ERR_INTERNAL_ERROR; /* Shouldn't happen */
+	}
+	ret = sshbuf_put_string(buf, d, len);
+	explicit_bzero(d, len);
+	return ret;
+}
+
+int
+sshbuf_put_eckey(struct sshbuf *buf, const EC_KEY *v)
+{
+	return sshbuf_put_ec(buf, EC_KEY_get0_public_key(v),
+	    EC_KEY_get0_group(v));
+}
+
+static int
 sshbuf_write_pub_ecdsa(struct sshbuf *buf, const struct sshkey *key) {
 	int r;
 	EC_KEY *ec;
