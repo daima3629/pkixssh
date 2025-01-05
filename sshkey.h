@@ -338,6 +338,7 @@ void	sshkey_clear_pkey(struct sshkey *key);
 
 void	sshkey_move_pk(struct sshkey *from, struct sshkey *to);
 
+void	ssh_EVP_PKEY_print_private_fp(FILE *fp, const EVP_PKEY *pkey);
 #ifdef DEBUG_PK
 static void sshkey_dump(const char *func, const struct sshkey *key);
 #else

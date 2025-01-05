@@ -3492,6 +3492,7 @@ AC_CHECK_FUNCS([ \
   EVP_MD_get_flags \
   EVP_PKEY_eq \
   EVP_PKEY_get_base_id \
+  EVP_PKEY_print_private_fp \
   X509_LOOKUP_store \
 ])
 

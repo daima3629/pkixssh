@@ -148,10 +148,11 @@ static inline const EVP_MD* EVP_dss1(void) { return EVP_sha1(); }
 #endif
 
 
-#ifdef DEBUG_PK
-static void
-ssh_EVP_PKEY_print_fp(FILE *fp, const EVP_PKEY *pkey) {
-#ifdef HAVE_EVP_PKEY_PRINT_PARAMS /* OpenSSL 1.0.0+ */
+void
+ssh_EVP_PKEY_print_private_fp(FILE *fp, const EVP_PKEY *pkey) {
+#ifdef HAVE_EVP_PKEY_PRINT_PRIVATE_FP		/* OpenSSL >= 3.0 */
+	EVP_PKEY_print_private_fp(fp, pkey, 0, NULL);
+#elif defined(HAVE_EVP_PKEY_PRINT_PARAMS)	/* OpenSSL >= 1.0.0 */
 {	/* OpenSSL lacks print to file stream */
 	BIO *bio = BIO_new_fp(fp, BIO_NOCLOSE);
 #ifdef VMS
@@ -163,7 +164,7 @@ ssh_EVP_PKEY_print_fp(FILE *fp, const EVP_PKEY *pkey) {
 	EVP_PKEY_print_private(bio, pkey, 0, NULL);
 	BIO_free_all(bio);
 }
-#else
+#else /*ndef HAVE_EVP_PKEY_PRINT_PARAMS*/
 {
 	int evp_id = EVP_PKEY_base_id(pkey);
 
@@ -192,10 +193,11 @@ ssh_EVP_PKEY_print_fp(FILE *fp, const EVP_PKEY *pkey) {
 #endif /*ndef HAVE_EVP_PKEY_PRINT_PARAMS*/
 }
 
+#ifdef DEBUG_PK
 static void
 sshkey_dump(const char *func, const struct sshkey *key) {
 	fprintf(stderr, "dump key %s():\n", func);
-	ssh_EVP_PKEY_print_fp(stderr, key->pk);
+	ssh_EVP_PKEY_print_private_fp(stderr, key->pk);
 }
 #endif /* DEBUG_PK */
 

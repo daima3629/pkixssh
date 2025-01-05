@@ -251,7 +251,7 @@ kex_ecdh_to_sshbuf(struct kex *kex, struct sshbuf **bufp) {
 		return SSH_ERR_INVALID_ARGUMENT;
 #ifdef DEBUG_KEXECDH
 	fputs("ecdh private key:\n", stderr);
-	EC_KEY_print_fp(stderr, key, 0);
+	ssh_EVP_PKEY_print_private_fp(stderr, kex->pk);
 #endif
 	if ((buf = sshbuf_new()) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
