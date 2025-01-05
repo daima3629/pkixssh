@@ -36,13 +36,13 @@
 #include <openssl/bn.h>
 
 #include <stdarg.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "sshbuf.h"
 #include "ssherr.h"
 #define SSHKEY_INTERNAL
 #include "sshxkey.h"
-#include "xmalloc.h"
 #include "log.h"
 
 
@@ -913,7 +913,8 @@ ssh_rsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 	slen = EVP_PKEY_size(key->pk);
 	debug3_f("slen=%ld", (long)slen);
 
-{	u_char sig[slen];
+{	u_char *sig = malloc(slen);
+	if (sig == NULL) return SSH_ERR_ALLOC_FAIL;
 #ifdef HAVE_EVP_DIGESTSIGNINIT /* OpenSSL >= 1.0 */
 	/* NOTE: Function EVP_SignFinal() in OpenSSL before 1.0 does not
 	 * return signature length if signature argument is NULL.
@@ -946,8 +947,9 @@ ssh_rsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 
 	ret = ssh_encode_signature(sigp, lenp,
 	    alg_info->signame, sig, slen);
-}
  out:
+	free(sig);
+}
 	return ret;
 }
 

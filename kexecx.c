@@ -26,6 +26,8 @@
 
 #include <sys/types.h>
 
+#include <stdlib.h>
+
 #include "kex.h"
 #include "sshbuf.h"
 #include "digest.h"
@@ -48,6 +50,7 @@ static int
 kex_ecx_keygen_to_sshbuf(struct kex *kex, struct sshbuf **bufp) {
 	struct kex_ecx_spec *spec = kex->impl->spec;
 	EVP_PKEY *pk = NULL;
+	u_char *pub = NULL;
 	struct sshbuf *buf;
 	int r;
 
@@ -58,15 +61,19 @@ kex_ecx_keygen_to_sshbuf(struct kex *kex, struct sshbuf **bufp) {
 	r = ssh_pkey_keygen_simple(spec->key_id, &pk);
 	if (r != 0) goto err;
 
-{	u_char *pub = alloca(spec->pub_len);
-	size_t len;
+	pub = malloc(spec->pub_len);
+	if (pub == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto err;
+	}
 
-	len = spec->pub_len;
+{	size_t len = spec->pub_len;
 	if (EVP_PKEY_get_raw_public_key(pk, pub, &len) != 1 &&
 	    len != spec->pub_len) {
 		r = SSH_ERR_LIBCRYPTO_ERROR;
 		goto err;
 	}
+}
 #ifdef DEBUG_KEXECX
 	if (kex->server)
 		dump_digest("server ecx public key:", pub, spec->pub_len);
@@ -76,12 +83,12 @@ kex_ecx_keygen_to_sshbuf(struct kex *kex, struct sshbuf **bufp) {
 
 	r = sshbuf_put(buf, pub, spec->pub_len);
 	if (r != 0) goto err;
-}
 
 	kex->pk = pk;
 	pk = NULL;
 
 err:
+	free(pub);
 	EVP_PKEY_free(pk);
 	if (r == 0)
 		*bufp = buf;
