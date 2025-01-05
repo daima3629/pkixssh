@@ -241,14 +241,11 @@ kex_ecdh_compute_key(struct kex *kex, const struct sshbuf *ec_blob,
 
 static int
 kex_ecdh_to_sshbuf(struct kex *kex, struct sshbuf **bufp) {
-	EC_KEY *key;
 	struct sshbuf *buf;
 	int r;
 
 	*bufp = NULL;
 
-	if ((key = EVP_PKEY_get1_EC_KEY(kex->pk)) == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
 #ifdef DEBUG_KEXECDH
 	fputs("ecdh private key:\n", stderr);
 	ssh_EVP_PKEY_print_private_fp(stderr, kex->pk);
@@ -256,7 +253,7 @@ kex_ecdh_to_sshbuf(struct kex *kex, struct sshbuf **bufp) {
 	if ((buf = sshbuf_new()) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
 
-	if ((r = sshbuf_put_eckey(buf, key)) != 0 ||
+	if ((r = sshbuf_write_pkey_ecpub(buf, kex->pk)) != 0 ||
 	    (r = sshbuf_get_u32(buf, NULL)) != 0)
 		goto out;
 
@@ -264,7 +261,6 @@ kex_ecdh_to_sshbuf(struct kex *kex, struct sshbuf **bufp) {
 	buf = NULL;
 
  out:
-	EC_KEY_free(key);
 	sshbuf_free(buf);
 	return r;
 }

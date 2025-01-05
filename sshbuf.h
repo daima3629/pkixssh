@@ -224,7 +224,7 @@ int	sshbuf_to_dhpub(const struct sshbuf *buf, BIGNUM **valp);
 # ifdef OPENSSL_HAS_ECC
 int	sshbuf_to_ecpub(const struct sshbuf *buf, EVP_PKEY *pk, EC_POINT **valp);
 int	sshbuf_get_eckey(struct sshbuf *buf, EC_KEY *v);
-int	sshbuf_put_eckey(struct sshbuf *buf, const EC_KEY *v);
+int	sshbuf_write_pkey_ecpub(struct sshbuf *buf, EVP_PKEY *pk);
 # endif /* OPENSSL_HAS_ECC */
 #endif /* WITH_OPENSSL */
 

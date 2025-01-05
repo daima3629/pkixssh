@@ -379,22 +379,19 @@ sshbuf_put_ec(struct sshbuf *buf, const EC_POINT *v, const EC_GROUP *g)
 	return ret;
 }
 
-int
+static inline int
 sshbuf_put_eckey(struct sshbuf *buf, const EC_KEY *v)
 {
 	return sshbuf_put_ec(buf, EC_KEY_get0_public_key(v),
 	    EC_KEY_get0_group(v));
 }
 
-static int
-sshbuf_write_pub_ecdsa(struct sshbuf *buf, const struct sshkey *key) {
+int
+sshbuf_write_pkey_ecpub(struct sshbuf *buf, EVP_PKEY *pk) {
 	int r;
 	EC_KEY *ec;
 
-	if (key->pk == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
-
-	ec = EVP_PKEY_get1_EC_KEY(key->pk);
+	ec = EVP_PKEY_get1_EC_KEY(pk);
 	if (ec == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;
 
@@ -402,6 +399,12 @@ sshbuf_write_pub_ecdsa(struct sshbuf *buf, const struct sshkey *key) {
 
 	EC_KEY_free(ec);
 	return r;
+}
+
+static int
+sshbuf_write_pub_ecdsa(struct sshbuf *buf, const struct sshkey *key) {
+	if (key->pk == NULL) return SSH_ERR_INVALID_ARGUMENT;
+	return sshbuf_write_pkey_ecpub(buf, key->pk);
 }
 
 

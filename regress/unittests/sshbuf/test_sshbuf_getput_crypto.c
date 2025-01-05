@@ -258,7 +258,12 @@ sshbuf_getput_crypto_tests(void)
 	EC_POINT_free(ecp);
 	p1 = sshbuf_new();
 	ASSERT_PTR_NE(p1, NULL);
-	ASSERT_INT_EQ(sshbuf_put_eckey(p1, eck), 0);
+{	EVP_PKEY *pk = EVP_PKEY_new();
+	ASSERT_PTR_NE(pk, NULL);
+	ASSERT_INT_NE(EVP_PKEY_set1_EC_KEY(pk, eck), 0);
+	ASSERT_INT_EQ(sshbuf_write_pkey_ecpub(p1, pk), 0);
+	EVP_PKEY_free(pk);
+}
 	ASSERT_INT_EQ(sshbuf_get_string_direct(p1, &d, &s), 0);
 	ASSERT_SIZE_T_EQ(s, sizeof(expec256));
 	ASSERT_MEM_EQ(d, expec256, sizeof(expec256));
