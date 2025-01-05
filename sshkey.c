@@ -3189,38 +3189,26 @@ sshkey_private_to_fileblob(struct sshkey *key, struct sshbuf *blob,
     const char *passphrase, const char *comment,
     int format, const char *openssh_format_cipher, int openssh_format_rounds)
 {
+	if (key->type == KEY_UNSPEC)
+		return SSH_ERR_INVALID_ARGUMENT;
+	if (sshkey_is_cert(key)) /* paranoid check */
+		return SSH_ERR_INVALID_ARGUMENT;
+
 	/* never use proprietary format for X.509 keys */
 	if (sshkey_is_x509(key)) {
 		if (format == SSHKEY_PRIVATE_OPENSSH)
 			format = SSHKEY_PRIVATE_PKCS8;
 	}
-
-	switch (key->type) {
-#ifdef USE_PKEY_ED25519
-	case KEY_ED25519:
-#endif
 #ifdef WITH_OPENSSL
-#ifdef WITH_DSA
-	case KEY_DSA:
-#endif
-	case KEY_ECDSA:
-	case KEY_RSA:
+	if (key->pk != NULL) {
 		if (format != SSHKEY_PRIVATE_OPENSSH)
 			return sshkey_private_pem_to_blob(key, blob,
 			    passphrase, format);
-#endif /* WITH_OPENSSL */
-		/* FALLTHROUGH */
-#ifndef USE_PKEY_ED25519
-	case KEY_ED25519:
-#endif
-#ifdef WITH_XMSS
-	case KEY_XMSS:
-#endif /* WITH_XMSS */
-		return sshkey_private_to_blob2(key, blob, passphrase,
-		    comment, openssh_format_cipher, openssh_format_rounds);
-	default:
-		return SSH_ERR_KEY_TYPE_UNKNOWN;
 	}
+#endif /* WITH_OPENSSL */
+
+	return sshkey_private_to_blob2(key, blob, passphrase,
+	    comment, openssh_format_cipher, openssh_format_rounds);
 }
 
 int
