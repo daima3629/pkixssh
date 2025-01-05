@@ -911,7 +911,7 @@ ssh_rsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 	dgst = ssh_evp_md_find(alg_info->id);
 
 	slen = EVP_PKEY_size(key->pk);
-	debug3_f("slen=%ld", (long)slen);
+	debug3_f("slen=%zu", slen);
 
 {	u_char *sig = malloc(slen);
 	if (sig == NULL) return SSH_ERR_ALLOC_FAIL;
@@ -923,6 +923,7 @@ ssh_rsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 		ret = SSH_ERR_LIBCRYPTO_ERROR;
 		goto out;
 	}
+	debug3_f("len=%zu", len);
 	/* paranoid check */
 	if (len > slen) {
 		ret = SSH_ERR_INTERNAL_ERROR;
