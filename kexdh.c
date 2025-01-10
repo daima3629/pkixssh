@@ -43,7 +43,7 @@
 #include "misc.h"
 
 extern DH* _choose_dh(int, int, int);
-extern DH* _dh_new_group(BIGNUM *, BIGNUM *);
+extern DH* dh_new_group(BIGNUM *, BIGNUM *);
 extern DH* _dh_new_group_num(int);
 
 
@@ -112,7 +112,7 @@ kex_new_dh_group(BIGNUM *modulus, BIGNUM *gen) {
 	EVP_PKEY *pk = NULL;
 	DH *dh = NULL;
 
-	dh = _dh_new_group(modulus, gen);
+	dh = dh_new_group(modulus, gen);
 	if (dh == NULL) return NULL;
 
 	(void)kex_new_dh_pkey(&pk, dh);

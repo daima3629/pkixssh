@@ -108,28 +108,7 @@ DH_set0_pqg(DH *dh, BIGNUM *p, BIGNUM *q, BIGNUM *g) {
 }
 #endif /*ndef HAVE_DH_GET0_KEY*/
 
-extern DH* _dh_new_group(BIGNUM *, BIGNUM *);
-
-
-/*
- * This just returns the group, we still need to generate the exchange
- * value.
- */
-DH*
-_dh_new_group(BIGNUM *modulus, BIGNUM *gen)
-{
-	DH *dh;
-
-	dh = DH_new();
-	if (dh == NULL) return NULL;
-
-	if (!DH_set0_pqg(dh, modulus, NULL, gen)) {
-		DH_free(dh);
-		return NULL;
-	}
-
-	return dh;
-}
+extern DH* dh_new_group(BIGNUM *, BIGNUM *);
 
 
 static int/*boolean*/
@@ -357,7 +336,7 @@ _dh_new_group_pkey(EVP_PKEY *pk) {
 	if (dh_p == NULL || dh_g == NULL)
 		goto err;
 
-	dh = _dh_new_group(dh_p, dh_g);
+	dh = dh_new_group(dh_p, dh_g);
 	if (dh == NULL) goto err;
 
 	return dh;

@@ -1,7 +1,7 @@
 /* $OpenBSD: dh.c,v 1.75 2024/12/03 16:27:53 dtucker Exp $ */
 /*
  * Copyright (c) 2000 Niels Provos.  All rights reserved.
- * Copyright (c) 2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2021-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -24,9 +24,18 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "includes.h"
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
 #ifdef WITH_OPENSSL
+
+#ifndef USE_OPENSSL_PROVIDER
+/* TODO: implement OpenSSL 4.0 API, as OpenSSL 3.* is quite nonfunctional */
+# define OPENSSL_SUPPRESS_DEPRECATED
+#endif
+
+#include "includes.h"
 
 #include <errno.h>
 #include <stdarg.h>
@@ -44,6 +53,39 @@
 #include "misc.h"
 #include "ssherr.h"
 
+#ifndef HAVE_DH_GET0_KEY	/* OpenSSL < 1.1 */
+/* Partial backport of opaque DH from OpenSSL >= 1.1, commits
+ * "Make DH opaque", "RSA, DSA, DH: Allow some given input to be NULL
+ * on already initialised keys" and etc.
+ */
+static inline int
+DH_set_length(DH *dh, long length) {
+	dh->length = length;
+	return 1;
+}
+
+static inline int
+DH_set0_pqg(DH *dh, BIGNUM *p, BIGNUM *q, BIGNUM *g) {
+/* If the fields p and g in d are NULL, the corresponding input
+ * parameters MUST be non-NULL.  q may remain NULL.
+ *
+ * It is an error to give the results from get0 on d as input
+ * parameters.
+ */
+	if (p == dh->p || (dh->q != NULL && q == dh->q) || g == dh->g)
+		return 0;
+
+	if (p != NULL) { BN_free(dh->p); dh->p = p; }
+	if (q != NULL) { BN_free(dh->q); dh->q = q; }
+	if (g != NULL) { BN_free(dh->g); dh->g = g; }
+
+	if (q != NULL)
+	        (void)DH_set_length(dh, BN_num_bits(q));
+
+	return 1;
+}
+#endif /*ndef HAVE_DH_GET0_KEY*/
+
 
 struct dhgroup {
 	int size;
@@ -53,7 +95,7 @@ struct dhgroup {
 
 
 static DH *dh_new_group_fallback(int);
-extern DH* _dh_new_group(BIGNUM *, BIGNUM *);
+extern DH* dh_new_group(BIGNUM *, BIGNUM *);
 extern DH* _dh_new_group_num(int);
 extern DH* _choose_dh(int, int, int);
 
@@ -245,8 +287,9 @@ _choose_dh(int min, int wantbits, int max)
 		return (dh_new_group_fallback(max));
 	}
 
-	return _dh_new_group(dhg.p, dhg.g);
+	return dh_new_group(dhg.p, dhg.g);
 }
+
 
 static DH*
 dh_new_group_asc(const char *gen, const char *modulus)
@@ -257,13 +300,35 @@ dh_new_group_asc(const char *gen, const char *modulus)
 	    BN_hex2bn(&g, gen) == 0)
 		goto err;
 
-	return _dh_new_group(p, g);
+	return dh_new_group(p, g);
 
 err:
 	BN_clear_free(p);
 	BN_clear_free(g);
 	return NULL;
 }
+
+
+/*
+ * This just returns the group, we still need to generate the exchange
+ * value.
+ */
+DH*
+dh_new_group(BIGNUM *modulus, BIGNUM *gen)
+{
+	DH *dh;
+
+	dh = DH_new();
+	if (dh == NULL) return NULL;
+
+	if (!DH_set0_pqg(dh, modulus, NULL, gen)) {
+		DH_free(dh);
+		return NULL;
+	}
+
+	return dh;
+}
+
 
 /* diffie-hellman-groupN-sha1 */
 
@@ -392,4 +457,8 @@ dh_new_group_fallback(int max)
 	debug3("using 8k bit group 18");
 	return _dh_new_group_num(18);
 }
+#else
+
+typedef int dh_empty_translation_unit;
+
 #endif /* WITH_OPENSSL */
