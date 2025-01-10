@@ -189,6 +189,7 @@ ssh_EVP_PKEY_print_private_fp(FILE *fp, const EVP_PKEY *pkey) {
 		} break;
 	}
 #endif
+	}
 }
 #endif /*ndef HAVE_EVP_PKEY_PRINT_PARAMS*/
 }
