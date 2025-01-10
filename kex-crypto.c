@@ -497,65 +497,6 @@ sshbuf_kex_write_dh_pub(struct sshbuf *buf, EVP_PKEY *pk) {
 	DH_free(dh);
 	return r;
 }
-
-
-int
-kexgex_hash_client(const struct kex *kex,
-    const struct sshbuf *key_blob, const BIGNUM *peer_pub,
-    const struct sshbuf *shared_secret,
-    u_char *hash, size_t *hashlen
-) {
-	int r;
-	DH *dh;
-	const BIGNUM *my_pub, *dh_p, *dh_g;
-
-	dh = EVP_PKEY_get1_DH(kex->pk);
-	if (dh == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
-
-	DH_get0_key(dh, &my_pub, NULL);
-	DH_get0_pqg(dh, &dh_p, NULL, &dh_g);
-
-	r = kexgex_hash(kex->impl->hash_alg,
-	    kex->client_version, kex->server_version,
-	    kex->my, kex->peer, key_blob,
-	    kex->min, kex->nbits, kex->max,
-	    dh_p, dh_g, my_pub, peer_pub,
-	    sshbuf_ptr(shared_secret), sshbuf_len(shared_secret),
-	    hash, hashlen);
-
-	DH_free(dh);
-	return r;
-}
-
-int
-kexgex_hash_server(const struct kex *kex,
-    const struct sshbuf *key_blob, const BIGNUM *peer_pub,
-    const struct sshbuf *shared_secret,
-    u_char *hash, size_t *hashlen
-) {
-	int r;
-	DH *dh;
-	const BIGNUM *my_pub, *dh_p, *dh_g;
-
-	dh = EVP_PKEY_get1_DH(kex->pk);
-	if (dh == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
-
-	DH_get0_key(dh, &my_pub, NULL);
-	DH_get0_pqg(dh, &dh_p, NULL, &dh_g);
-
-	r = kexgex_hash(kex->impl->hash_alg,
-	    kex->client_version, kex->server_version,
-	    kex->peer, kex->my, key_blob,
-	    kex->min, kex->nbits, kex->max,
-	    dh_p, dh_g, peer_pub, my_pub,
-	    sshbuf_ptr(shared_secret), sshbuf_len(shared_secret),
-	    hash, hashlen);
-
-	DH_free(dh);
-	return r;
-}
 #else
 
 typedef int kex_crypto_empty_translation_unit;

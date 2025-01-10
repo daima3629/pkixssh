@@ -2,7 +2,7 @@
 /*
  * Copyright (c) 2000 Niels Provos.  All rights reserved.
  * Copyright (c) 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2014-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2014-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -25,13 +25,24 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "includes.h"
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
 #ifdef WITH_OPENSSL
+
+#ifndef USE_OPENSSL_PROVIDER
+/* TODO: implement OpenSSL 4.0 API, as OpenSSL 3.* is quite nonfunctional */
+# define OPENSSL_SUPPRESS_DEPRECATED
+#endif
+
+#include "includes.h"
 
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+
+#include <openssl/dh.h>
 
 #include "kex.h"
 #include "dh.h"
@@ -43,8 +54,58 @@
 #include "digest.h"
 #include "misc.h"
 
+#ifndef HAVE_DH_GET0_KEY	/* OpenSSL < 1.1 */
+/* Partial backport of opaque DH from OpenSSL >= 1.1, commits
+ * "Make DH opaque", "RSA, DSA, DH: Allow some given input to be NULL
+ * on already initialised keys" and etc.
+ */
+static inline void
+DH_get0_key(const DH *dh, const BIGNUM **pub_key, const BIGNUM **priv_key) {
+	if (pub_key  != NULL) *pub_key  = dh->pub_key;
+	if (priv_key != NULL) *priv_key = dh->priv_key;
+}
+
+static inline void
+DH_get0_pqg(const DH *dh, const BIGNUM **p, const BIGNUM **q, const BIGNUM **g) {
+	if (p != NULL) *p = dh->p;
+	if (q != NULL) *q = dh->q;
+	if (g != NULL) *g = dh->g;
+}
+#endif /*ndef HAVE_DH_GET0_KEY*/
+
+
 static int input_kex_dh_gex_request(int, u_int32_t, struct ssh *);
 static int input_kex_dh_gex_init(int, u_int32_t, struct ssh *);
+
+static int
+kexgex_hash_server(const struct kex *kex,
+    const struct sshbuf *key_blob, const BIGNUM *peer_pub,
+    const struct sshbuf *shared_secret,
+    u_char *hash, size_t *hashlen
+) {
+	int r;
+	DH *dh;
+	const BIGNUM *my_pub, *dh_p, *dh_g;
+
+	dh = EVP_PKEY_get1_DH(kex->pk);
+	if (dh == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+
+	DH_get0_key(dh, &my_pub, NULL);
+	DH_get0_pqg(dh, &dh_p, NULL, &dh_g);
+
+	r = kexgex_hash(kex->impl->hash_alg,
+	    kex->client_version, kex->server_version,
+	    kex->peer, kex->my, key_blob,
+	    kex->min, kex->nbits, kex->max,
+	    dh_p, dh_g, peer_pub, my_pub,
+	    sshbuf_ptr(shared_secret), sshbuf_len(shared_secret),
+	    hash, hashlen);
+
+	DH_free(dh);
+	return r;
+}
+
 
 int
 kexgex_server(struct ssh *ssh)
@@ -184,4 +245,8 @@ input_kex_dh_gex_init(int type, u_int32_t seq, struct ssh *ssh)
 	free(signature);
 	return r;
 }
+#else
+
+typedef int kexgexs_empty_translation_unit;
+
 #endif /* WITH_OPENSSL */

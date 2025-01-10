@@ -195,16 +195,6 @@ int	 kexgex_hash(int, const struct sshbuf *, const struct sshbuf *,
     const BIGNUM *, const u_char *, size_t,
     u_char *, size_t *);
 
-int	kexgex_hash_client(const struct kex *kex,
-    const struct sshbuf *key_blob, const BIGNUM *peer_pub,
-    const struct sshbuf *shared_secret,
-    u_char *hash, size_t *hashlen);
-
-int	kexgex_hash_server(const struct kex *kex,
-    const struct sshbuf *key_blob, const BIGNUM *peer_pub,
-    const struct sshbuf *shared_secret,
-    u_char *hash, size_t *hashlen);
-
 int	kex_c25519_keygen_to_sshbuf(struct kex *kex, struct sshbuf **bufp);
 int	kex_c25519_shared_secret_to_sshbuf(struct kex *kex,
     const u_char pub[CURVE25519_SIZE], int raw, struct sshbuf **bufp)
