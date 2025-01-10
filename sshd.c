@@ -1,4 +1,4 @@
-/* $OpenBSD: sshd.c,v 1.600 2023/03/08 04:43:12 guenther Exp $ */
+/* $OpenBSD: sshd.c,v 1.612 2024/09/15 01:11:26 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -20,7 +20,7 @@
  *
  * Copyright (c) 2000, 2001, 2002 Markus Friedl.  All rights reserved.
  * Copyright (c) 2002 Niels Provos.  All rights reserved.
- * Copyright (c) 2002-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -82,8 +82,6 @@
 #include <limits.h>
 
 #ifdef WITH_OPENSSL
-#include <openssl/dh.h>
-#include <openssl/bn.h>
 #include <openssl/rand.h>
 #include "evp-compat.h"
 #endif

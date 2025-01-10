@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2021-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -42,11 +42,6 @@
 #include "ssherr.h"
 #include "misc.h"
 #include "log.h"
-
-/* see kexdh.c */
-struct kex_dh_spec {
-	int	dh_group;
-};
 
 #ifndef HAVE_BN_IS_NEGATIVE	/*macro before OpenSSL 1.1*/
 # ifndef BN_is_negative		/*not defined before OpenSSL 0.9.8*/
@@ -114,7 +109,6 @@ DH_set0_pqg(DH *dh, BIGNUM *p, BIGNUM *q, BIGNUM *g) {
 #endif /*ndef HAVE_DH_GET0_KEY*/
 
 extern DH* _dh_new_group(BIGNUM *, BIGNUM *);
-extern DH* _dh_new_group_num(int);
 
 
 /*
@@ -264,47 +258,6 @@ done:
 }
 
 
-static inline int
-kex_new_dh_pkey(EVP_PKEY **pkp, DH *dh) {
-	EVP_PKEY *pk = EVP_PKEY_new();
-
-	if (pk == NULL)
-		return SSH_ERR_ALLOC_FAIL;
-
-	if (!EVP_PKEY_set1_DH(pk, dh)) {
-		EVP_PKEY_free(pk);
-		return SSH_ERR_LIBCRYPTO_ERROR;
-	}
-
-	*pkp = pk;
-	return 0;
-}
-
-
-static int
-kex_dh_key_init(struct kex *kex) {
-	DH *dh;
-
-{	struct kex_dh_spec *spec = kex->impl->spec;
-	dh = _dh_new_group_num(spec->dh_group);
-}
-	if (dh == NULL) return SSH_ERR_ALLOC_FAIL;
-
-{	int r = kex_new_dh_pkey(&kex->pk, dh);
-	DH_free(dh);
-	return r;
-}
-}
-
-
-int
-kex_dh_pkey_keygen(struct kex *kex) {
-	int r = kex_dh_key_init(kex);
-	if (r != 0) return r;
-	return kex_dh_key_gen(kex);
-}
-
-
 extern void/*internal*/
 kex_reset_crypto_keys(struct kex *kex);
 
@@ -312,38 +265,6 @@ void
 kex_reset_crypto_keys(struct kex *kex) {
 	EVP_PKEY_free(kex->pk);
 	kex->pk = NULL;
-}
-
-
-/* TODO: internal */
-extern DH* _choose_dh(int, int, int);
-
-EVP_PKEY*
-kex_new_dh_group_bits(int min, int wantbits, int max) {
-	EVP_PKEY *pk = NULL;
-	DH *dh = NULL;
-
-	dh = _choose_dh(min, wantbits, max);
-	if (dh == NULL) return NULL;
-
-	(void)kex_new_dh_pkey(&pk, dh);
-
-	DH_free(dh);
-	return pk;
-}
-
-EVP_PKEY*
-kex_new_dh_group(BIGNUM *modulus, BIGNUM *gen) {
-	EVP_PKEY *pk = NULL;
-	DH *dh = NULL;
-
-	dh = _dh_new_group(modulus, gen);
-	if (dh == NULL) return NULL;
-
-	(void)kex_new_dh_pkey(&pk, dh);
-
-	DH_free(dh);
-	return pk;
 }
 
 
@@ -448,6 +369,9 @@ err:
 	return NULL;
 }
 
+
+extern int/*internal*/
+kex_new_dh_pkey(EVP_PKEY **pkp, DH *dh);
 
 static int
 create_peer_pkey(struct kex *kex, BIGNUM *dh_pub, EVP_PKEY **peerkeyp) {

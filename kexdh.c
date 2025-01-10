@@ -1,7 +1,7 @@
 /* $OpenBSD: kexdh.c,v 1.34 2020/12/04 02:29:25 djm Exp $ */
 /*
  * Copyright (c) 2019 Markus Friedl.  All rights reserved.
- * Copyright (c) 2021-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2021-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -24,19 +24,33 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "includes.h"
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
 #ifdef WITH_OPENSSL
+
+#ifndef USE_OPENSSL_PROVIDER
+/* TODO: implement OpenSSL 4.0 API, as OpenSSL 3.* is quite nonfunctional */
+# define OPENSSL_SUPPRESS_DEPRECATED
+#endif
+
+#include "includes.h"
 
 #include "kex.h"
 #include "digest.h"
 #include "ssherr.h"
 #include "misc.h"
 
-/* see kex-crypto.c */
+extern DH* _choose_dh(int, int, int);
+extern DH* _dh_new_group(BIGNUM *, BIGNUM *);
+extern DH* _dh_new_group_num(int);
+
+
 struct kex_dh_spec {
 	int	dh_group;
 };
+
 
 static int
 kex_dh_to_sshbuf(struct kex *kex, struct sshbuf **bufp) {
@@ -58,6 +72,80 @@ kex_dh_to_sshbuf(struct kex *kex, struct sshbuf **bufp) {
 }
 
 
+extern int/*internal*/
+kex_new_dh_pkey(EVP_PKEY **pkp, DH *dh);
+
+int
+kex_new_dh_pkey(EVP_PKEY **pkp, DH *dh) {
+	EVP_PKEY *pk = EVP_PKEY_new();
+
+	if (pk == NULL)
+		return SSH_ERR_ALLOC_FAIL;
+
+	if (!EVP_PKEY_set1_DH(pk, dh)) {
+		EVP_PKEY_free(pk);
+		return SSH_ERR_LIBCRYPTO_ERROR;
+	}
+
+	*pkp = pk;
+	return 0;
+}
+
+
+EVP_PKEY*
+kex_new_dh_group_bits(int min, int wantbits, int max) {
+	EVP_PKEY *pk = NULL;
+	DH *dh = NULL;
+
+	dh = _choose_dh(min, wantbits, max);
+	if (dh == NULL) return NULL;
+
+	(void)kex_new_dh_pkey(&pk, dh);
+
+	DH_free(dh);
+	return pk;
+}
+
+
+EVP_PKEY*
+kex_new_dh_group(BIGNUM *modulus, BIGNUM *gen) {
+	EVP_PKEY *pk = NULL;
+	DH *dh = NULL;
+
+	dh = _dh_new_group(modulus, gen);
+	if (dh == NULL) return NULL;
+
+	(void)kex_new_dh_pkey(&pk, dh);
+
+	DH_free(dh);
+	return pk;
+}
+
+
+static int
+kex_dh_key_init(struct kex *kex) {
+	DH *dh;
+
+{	struct kex_dh_spec *spec = kex->impl->spec;
+	dh = _dh_new_group_num(spec->dh_group);
+}
+	if (dh == NULL) return SSH_ERR_ALLOC_FAIL;
+
+{	int r = kex_new_dh_pkey(&kex->pk, dh);
+	DH_free(dh);
+	return r;
+}
+}
+
+
+static inline int
+kex_dh_pkey_keygen(struct kex *kex) {
+	int r = kex_dh_key_init(kex);
+	if (r != 0) return r;
+	return kex_dh_key_gen(kex);
+}
+
+
 /* diffie-hellman key exchange implementation */
 
 static int
@@ -68,21 +156,18 @@ kex_dh_dec(struct kex *kex, const struct sshbuf *dh_blob,
 static int
 kex_dh_keypair(struct kex *kex)
 {
-	struct sshbuf *buf = NULL;
 	int r;
 
-	if ((r = kex_dh_pkey_keygen(kex)) != 0)
-		goto out;
+	r = kex_dh_pkey_keygen(kex);
+	if (r != 0) return r;
 
 	r = kex_dh_to_sshbuf(kex, &kex->client_pub);
 #ifdef DEBUG_KEXDH
 	dump_digestb("client public keypair dh:", kex->client_pub);
 #endif
 
- out:
 	if (r != 0)
 		kex_reset_keys(kex);
-	sshbuf_free(buf);
 	return r;
 }
 
@@ -98,9 +183,11 @@ kex_dh_enc(struct kex *kex, const struct sshbuf *client_blob,
 #ifdef DEBUG_KEXDH
 	dump_digestb("client public key dh:", client_blob);
 #endif
-	if ((r = kex_dh_pkey_keygen(kex)) != 0 ||
-	    (r = kex_dh_to_sshbuf(kex, server_blobp)) != 0)
-		goto out;
+	r = kex_dh_pkey_keygen(kex);
+	if (r != 0) return r;
+
+	r = kex_dh_to_sshbuf(kex, server_blobp);
+	if (r != 0) goto out;
 
 	r = kex_dh_dec(kex, client_blob, shared_secretp);
 

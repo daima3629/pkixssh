@@ -1,7 +1,7 @@
 /* $OpenBSD: kex.c,v 1.186 2024/05/17 00:30:23 djm Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2014-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2014-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -33,11 +33,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
-#ifdef WITH_OPENSSL
-#include <openssl/crypto.h>
-#include <openssl/dh.h>
-#endif
 
 #include "xmalloc.h"
 #include "ssh.h"

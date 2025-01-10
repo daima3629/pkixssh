@@ -1,7 +1,7 @@
 /* $OpenBSD: kex.h,v 1.126 2024/09/02 12:13:56 djm Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2014-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2014-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -186,7 +186,6 @@ int	 kexgex_client(struct ssh *);
 int	 kexgex_server(struct ssh *);
 
 int	 kex_dh_key_gen(struct kex *);
-int	 kex_dh_pkey_keygen(struct kex *);
 int	 kex_dh_compute_key(struct kex *, BIGNUM *, struct sshbuf **);
 
 int	 kexgex_hash(int, const struct sshbuf *, const struct sshbuf *,
