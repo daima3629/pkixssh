@@ -24,6 +24,8 @@
 
 #include "includes.h"
 
+#include <string.h>
+
 #include <openssl/ui.h>
 
 #include "key-eng.h"
