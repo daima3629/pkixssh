@@ -52,6 +52,67 @@ struct kex_dh_spec {
 };
 
 
+#ifdef DEBUG_KEXDH
+static void
+DUMP_DH_KEY(const EVP_PKEY *pk, const BIGNUM *pub_key) {
+	fprintf(stderr, "dh pub: ");
+	BN_print_fp(stderr, pub_key);
+	fprintf(stderr, "\n");
+	fprintf(stderr, "bits %d\n", BN_num_bits(pub_key));
+{	BIO *err = BIO_new_fp(stderr, BIO_NOCLOSE);
+	EVP_PKEY_print_params(err, pk, 0, NULL);
+	BIO_free_all(err);
+}
+}
+#else
+static inline void
+DUMP_DH_KEY(const EVP_PKEY *pk, const BIGNUM *pub_key) {
+	UNUSED(pk); UNUSED(pub_key);
+}
+#endif
+
+
+int
+sshbuf_kex_write_dh_group(struct sshbuf *buf, EVP_PKEY *pk) {
+	int r;
+	DH *dh;
+
+	dh = EVP_PKEY_get1_DH(pk);
+	if (dh == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+
+{	const BIGNUM *p = NULL, *g = NULL;
+	DH_get0_pqg(dh, &p, NULL, &g);
+
+	if ((r = sshbuf_put_bignum2(buf, p)) != 0)
+		goto done;
+	r = sshbuf_put_bignum2(buf, g);
+}
+
+done:
+	DH_free(dh);
+	return r;
+}
+
+int
+sshbuf_kex_write_dh_pub(struct sshbuf *buf, EVP_PKEY *pk) {
+	int r;
+	DH *dh;
+
+	dh = EVP_PKEY_get1_DH(pk);
+	if (dh == NULL)
+		return SSH_ERR_INVALID_ARGUMENT;
+
+{	const BIGNUM *pub_key;
+	DH_get0_key(dh, &pub_key, NULL);
+	DUMP_DH_KEY(pk, pub_key);
+
+	r = sshbuf_put_bignum2(buf, pub_key);
+}
+	DH_free(dh);
+	return r;
+}
+
 static int
 kex_dh_to_sshbuf(struct kex *kex, struct sshbuf **bufp) {
 	struct sshbuf *buf;

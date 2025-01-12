@@ -391,48 +391,6 @@ done:
 #endif /*ndef USE_EVP_PKEY_KEYGEN*/
 	return r;
 }
-
-
-int
-sshbuf_kex_write_dh_group(struct sshbuf *buf, EVP_PKEY *pk) {
-	int r;
-	DH *dh;
-
-	dh = EVP_PKEY_get1_DH(pk);
-	if (dh == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
-
-{	const BIGNUM *p = NULL, *g = NULL;
-	DH_get0_pqg(dh, &p, NULL, &g);
-
-	if ((r = sshbuf_put_bignum2(buf, p)) != 0)
-		goto done;
-	r = sshbuf_put_bignum2(buf, g);
-}
-
-done:
-	DH_free(dh);
-	return r;
-}
-
-int
-sshbuf_kex_write_dh_pub(struct sshbuf *buf, EVP_PKEY *pk) {
-	int r;
-	DH *dh;
-
-	dh = EVP_PKEY_get1_DH(pk);
-	if (dh == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
-
-{	const BIGNUM *pub_key;
-	DH_get0_key(dh, &pub_key, NULL);
-	DUMP_DH_KEY(pk, pub_key);
-
-	r = sshbuf_put_bignum2(buf, pub_key);
-}
-	DH_free(dh);
-	return r;
-}
 #else
 
 typedef int kex_crypto_empty_translation_unit;
