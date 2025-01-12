@@ -48,43 +48,11 @@
 #include <openssl/dh.h>
 
 #include "dh.h"
+#include "dh-crypto.h"
 #include "pathnames.h"
 #include "log.h"
 #include "misc.h"
 #include "ssherr.h"
-
-#ifndef HAVE_DH_GET0_KEY	/* OpenSSL < 1.1 */
-/* Partial backport of opaque DH from OpenSSL >= 1.1, commits
- * "Make DH opaque", "RSA, DSA, DH: Allow some given input to be NULL
- * on already initialised keys" and etc.
- */
-static inline int
-DH_set_length(DH *dh, long length) {
-	dh->length = length;
-	return 1;
-}
-
-static inline int
-DH_set0_pqg(DH *dh, BIGNUM *p, BIGNUM *q, BIGNUM *g) {
-/* If the fields p and g in d are NULL, the corresponding input
- * parameters MUST be non-NULL.  q may remain NULL.
- *
- * It is an error to give the results from get0 on d as input
- * parameters.
- */
-	if (p == dh->p || (dh->q != NULL && q == dh->q) || g == dh->g)
-		return 0;
-
-	if (p != NULL) { BN_free(dh->p); dh->p = p; }
-	if (q != NULL) { BN_free(dh->q); dh->q = q; }
-	if (g != NULL) { BN_free(dh->g); dh->g = g; }
-
-	if (q != NULL)
-	        (void)DH_set_length(dh, BN_num_bits(q));
-
-	return 1;
-}
-#endif /*ndef HAVE_DH_GET0_KEY*/
 
 
 struct dhgroup {

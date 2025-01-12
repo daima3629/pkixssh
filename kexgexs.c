@@ -46,6 +46,7 @@
 
 #include "kex.h"
 #include "dh.h"
+#include "dh-crypto.h"
 #include "ssh2.h"
 #include "packet.h"
 #include "ssherr.h"
@@ -53,25 +54,6 @@
 #include "monitor_wrap.h"
 #include "digest.h"
 #include "misc.h"
-
-#ifndef HAVE_DH_GET0_KEY	/* OpenSSL < 1.1 */
-/* Partial backport of opaque DH from OpenSSL >= 1.1, commits
- * "Make DH opaque", "RSA, DSA, DH: Allow some given input to be NULL
- * on already initialised keys" and etc.
- */
-static inline void
-DH_get0_key(const DH *dh, const BIGNUM **pub_key, const BIGNUM **priv_key) {
-	if (pub_key  != NULL) *pub_key  = dh->pub_key;
-	if (priv_key != NULL) *priv_key = dh->priv_key;
-}
-
-static inline void
-DH_get0_pqg(const DH *dh, const BIGNUM **p, const BIGNUM **q, const BIGNUM **g) {
-	if (p != NULL) *p = dh->p;
-	if (q != NULL) *q = dh->q;
-	if (g != NULL) *g = dh->g;
-}
-#endif /*ndef HAVE_DH_GET0_KEY*/
 
 
 static int input_kex_dh_gex_request(int, u_int32_t, struct ssh *);

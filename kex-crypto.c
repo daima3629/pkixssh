@@ -39,74 +39,10 @@
 
 #include "kex.h"
 #include "dh.h"
+#include "dh-crypto.h"
 #include "ssherr.h"
 #include "misc.h"
 #include "log.h"
-
-#ifndef HAVE_BN_IS_NEGATIVE	/*macro before OpenSSL 1.1*/
-# ifndef BN_is_negative		/*not defined before OpenSSL 0.9.8*/
-#  define BN_is_negative(a) ((a)->neg != 0)
-# endif
-#endif
-
-#ifndef HAVE_DH_GET0_KEY	/* OpenSSL < 1.1 */
-/* Partial backport of opaque DH from OpenSSL >= 1.1, commits
- * "Make DH opaque", "RSA, DSA, DH: Allow some given input to be NULL
- * on already initialised keys" and etc.
- */
-static inline void
-DH_get0_key(const DH *dh, const BIGNUM **pub_key, const BIGNUM **priv_key) {
-	if (pub_key  != NULL) *pub_key  = dh->pub_key;
-	if (priv_key != NULL) *priv_key = dh->priv_key;
-}
-
-static inline int
-DH_set0_key(DH *dh, BIGNUM *pub_key, BIGNUM *priv_key) {
-	if (pub_key != NULL) {
-		BN_clear_free(dh->pub_key);
-		dh->pub_key = pub_key;
-	}
-	if (priv_key != NULL) {
-		BN_clear_free(dh->priv_key);
-		dh->priv_key = priv_key;
-	}
-	return 1;
-}
-
-static inline int
-DH_set_length(DH *dh, long length) {
-	dh->length = length;
-	return 1;
-}
-
-static inline void
-DH_get0_pqg(const DH *dh, const BIGNUM **p, const BIGNUM **q, const BIGNUM **g) {
-	if (p != NULL) *p = dh->p;
-	if (q != NULL) *q = dh->q;
-	if (g != NULL) *g = dh->g;
-}
-
-static inline int
-DH_set0_pqg(DH *dh, BIGNUM *p, BIGNUM *q, BIGNUM *g) {
-/* If the fields p and g in d are NULL, the corresponding input
- * parameters MUST be non-NULL.  q may remain NULL.
- *
- * It is an error to give the results from get0 on d as input
- * parameters.
- */
-	if (p == dh->p || (dh->q != NULL && q == dh->q) || g == dh->g)
-		return 0;
-
-	if (p != NULL) { BN_free(dh->p); dh->p = p; }
-	if (q != NULL) { BN_free(dh->q); dh->q = q; }
-	if (g != NULL) { BN_free(dh->g); dh->g = g; }
-
-	if (q != NULL)
-	        (void)DH_set_length(dh, BN_num_bits(q));
-
-	return 1;
-}
-#endif /*ndef HAVE_DH_GET0_KEY*/
 
 extern DH* dh_new_group(BIGNUM *, BIGNUM *);
 
