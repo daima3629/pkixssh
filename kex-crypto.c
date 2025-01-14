@@ -38,13 +38,9 @@
 #include "evp-compat.h"
 
 #include "kex.h"
-#include "dh.h"
-#include "dh-crypto.h"
 #include "ssherr.h"
 #include "misc.h"
 #include "log.h"
-
-extern DH* dh_new_group(BIGNUM *, BIGNUM *);
 
 
 extern void/*internal*/
@@ -123,151 +119,6 @@ kex_pkey_derive_shared_secret(struct kex *kex, EVP_PKEY *peerkey,
 	return r;
 }
 #endif /*def USE_EVP_PKEY_KEYGEN*/
-
-
-#ifdef USE_EVP_PKEY_KEYGEN
-static DH*
-_dh_new_group_pkey(EVP_PKEY *pk) {
-	BIGNUM *dh_p, *dh_g;
-	DH *dh;
-
-{	const BIGNUM *modulus, *gen;
-
-	dh = EVP_PKEY_get1_DH(pk);
-	if (dh == NULL) return NULL;
-
-	DH_get0_pqg(dh, &modulus, NULL, &gen);
-	DH_free(dh);
-
-	dh_p = BN_dup(modulus);
-	dh_g = BN_dup(gen);
-}
-
-	if (dh_p == NULL || dh_g == NULL)
-		goto err;
-
-	dh = dh_new_group(dh_p, dh_g);
-	if (dh == NULL) goto err;
-
-	return dh;
-
-err:
-	BN_free(dh_p);
-	BN_free(dh_g);
-
-	return NULL;
-}
-
-
-extern int/*internal*/
-kex_new_dh_pkey(EVP_PKEY **pkp, DH *dh);
-
-static int
-create_peer_pkey(struct kex *kex, BIGNUM *dh_pub, EVP_PKEY **peerkeyp) {
-	DH *peerdh;
-	int r;
-
-	peerdh = _dh_new_group_pkey(kex->pk);
-	if (peerdh == NULL) return SSH_ERR_ALLOC_FAIL;
-
-{	BIGNUM *pub_key = BN_dup(dh_pub);
-	if (pub_key == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto done;
-	}
-
-	(void)DH_set0_key(peerdh, pub_key, NULL);
-}
-
-	r = kex_new_dh_pkey(peerkeyp, peerdh);
-
-done:
-	DH_free(peerdh);
-	return r;
-}
-#endif /*def USE_EVP_PKEY_KEYGEN*/
-
-
-#ifdef DEBUG_KEXDH
-static void
-DUMP_DH_KEY(const EVP_PKEY *pk, const BIGNUM *pub_key) {
-	fprintf(stderr, "dh pub: ");
-	BN_print_fp(stderr, pub_key);
-	fprintf(stderr, "\n");
-	fprintf(stderr, "bits %d\n", BN_num_bits(pub_key));
-{	BIO *err = BIO_new_fp(stderr, BIO_NOCLOSE);
-	EVP_PKEY_print_params(err, pk, 0, NULL);
-	BIO_free_all(err);
-}
-}
-#else
-static inline void
-DUMP_DH_KEY(const EVP_PKEY *pk, const BIGNUM *pub_key) {
-	UNUSED(pk); UNUSED(pub_key);
-}
-#endif
-
-
-extern int/*boolean, internal*/
-dh_pub_is_valid(const DH *dh, const BIGNUM *dh_pub);
-
-int
-kex_dh_compute_key(struct kex *kex, BIGNUM *pub_key, struct sshbuf **shared_secretp)
-{
-#ifdef USE_EVP_PKEY_KEYGEN
-	EVP_PKEY *peerkey = NULL;
-	int r;
-
-	DUMP_DH_KEY(kex->pk, pub_key);
-
-	r = create_peer_pkey(kex, pub_key, &peerkey);
-	if (r != 0) return r;
-
-	r = kex_pkey_derive_shared_secret(kex, peerkey, 0, shared_secretp);
-
-	EVP_PKEY_free(peerkey);
-#else /*ndef USE_EVP_PKEY_KEYGEN*/
-	DH *dh;
-	int klen;
-	u_char *kbuf = NULL;
-	int r;
-
-	DUMP_DH_KEY(kex->pk, pub_key);
-
-	dh = EVP_PKEY_get1_DH(kex->pk);
-	if (dh == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
-
-	if (!dh_pub_is_valid(dh, pub_key))
-		return SSH_ERR_MESSAGE_INCOMPLETE;
-
-	/* NOTE EVP_PKEY_size fail for DH key if OpenSSL < 1.0.0 */
-	klen = DH_size(dh);
-
-	kbuf = malloc(klen);
-	if (kbuf == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto done;
-	}
-
-{	int kout = DH_compute_key(kbuf, pub_key, dh);
-	if (kout < 0) {
-		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto done;
-	}
-#ifdef DEBUG_KEXDH
-	dump_digest("shared secret", kbuf, kout);
-#endif
-
-	r = kex_shared_secret_to_sshbuf(kbuf, kout, 0, shared_secretp);
-}
-
-done:
-	freezero(kbuf, klen);
-	DH_free(dh);
-#endif /*ndef USE_EVP_PKEY_KEYGEN*/
-	return r;
-}
 #else
 
 typedef int kex_crypto_empty_translation_unit;
