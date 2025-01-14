@@ -3,7 +3,7 @@
 /* $OpenBSD: ssh-pkcs11.h,v 1.6 2020/01/25 00:03:36 djm Exp $ */
 /*
  * Copyright (c) 2010 Markus Friedl.  All rights reserved.
- * Copyright (c) 2018-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2018-2025 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -69,7 +69,6 @@ void ERR_load_PKCS11_strings(void);
 #include <openssl/buffer.h>	/*for BUF_strdup*/
 
 
-#ifdef USE_RSA_METHOD
 #ifndef HAVE_RSA_METH_NEW		/* OpenSSL < 1.1 */
 /* Partial backport of opaque RSA from OpenSSL >= 1.1 by commits
  * "Make the RSA_METHOD structure opaque", "RSA, DSA, DH: Allow some
@@ -206,7 +205,6 @@ RSA_meth_set_bn_mod_exp(RSA_METHOD *meth, rsa_bn_mod_exp_f bn_mod_exp) {
 	return 1;
 }
 #endif /*ndef HAVE_RSA_METH_GET_PUB_ENC*/
-#endif /*def USE_RSA_METHOD*/
 
 
 #ifdef OPENSSL_HAS_ECC

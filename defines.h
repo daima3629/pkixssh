@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1999-2003 Damien Miller.  All rights reserved.
- * Copyright (c) 2011-2023 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -1020,13 +1020,6 @@ struct winsize {
 #ifndef HAVE_EVP_SHA512
 /* check only for EVP_sha512() as build with OpenSSL is required */
 # undef ENABLE_KEX_SNTRUP761X25519
-#endif
-
-
-#undef USE_RSA_METHOD
-#ifndef OPENSSL_NO_RSA
-/* TODO: to decide at configuration time */
-# define USE_RSA_METHOD
 #endif
 
 
