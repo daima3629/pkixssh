@@ -47,132 +47,6 @@
 extern DH* dh_new_group(BIGNUM *, BIGNUM *);
 
 
-static int/*boolean*/
-dh_pub_is_valid(const DH *dh, const BIGNUM *dh_pub)
-{
-	int i;
-	int n = BN_num_bits(dh_pub);
-	int bits_set = 0;
-	BIGNUM *tmp;
-	const BIGNUM *dh_p;
-
-	DH_get0_pqg(dh, &dh_p, NULL, NULL);
-
-	if (BN_is_negative(dh_pub)) {
-		error("invalid public DH value: negative");
-		return 0;
-	}
-	if (BN_cmp(dh_pub, BN_value_one()) != 1) {	/* pub_exp <= 1 */
-		error("invalid public DH value: <= 1");
-		return 0;
-	}
-
-	if ((tmp = BN_new()) == NULL) {
-		error_f("BN_new failed");
-		return 0;
-	}
-	if (!BN_sub(tmp, dh_p, BN_value_one()) ||
-	    BN_cmp(dh_pub, tmp) != -1) {		/* pub_exp > p-2 */
-		BN_clear_free(tmp);
-		error("invalid public DH value: >= p-1");
-		return 0;
-	}
-	BN_clear_free(tmp);
-
-	for (i = 0; i <= n; i++)
-		if (BN_is_bit_set(dh_pub, i))
-			bits_set++;
-
-	/* used in dhgex regression test */
-	debug2("bits set: %d/%d", bits_set, BN_num_bits(dh_p));
-
-	/*
-	 * if g==2 and bits_set==1 then computing log_g(dh_pub) is trivial
-	 */
-	if (bits_set < 4) {
-		error("invalid public DH value (%d/%d)",
-		    bits_set, BN_num_bits(dh_p));
-		return 0;
-	}
-	return 1;
-}
-
-
-static int
-dh_calc_length(struct kex *kex, DH *dh)
-{
-	int need, pbits;
-
-	need = kex->we_need * 8; /*may overflow*/
-	if (need < 0)
-		return 0;
-
-{	const BIGNUM *dh_p;
-	DH_get0_pqg(dh, &dh_p, NULL, NULL);
-	if (dh_p == NULL)
-		return 0;
-	pbits = BN_num_bits(dh_p);
-}
-
-	if (pbits <= 0 || need > INT_MAX / 2 || (2 * need) > pbits)
-		return 0;
-
-	if (need < 256) need = 256;
-
-	/*
-	 * Pollard Rho, Big step/Little Step attacks are O(sqrt(n)),
-	 * so double requested need here.
-	 */
-	return MINIMUM(need * 2, pbits - 1);
-}
-
-
-int
-kex_dh_key_gen(struct kex *kex)
-{
-	int r;
-	DH *dh;
-
-	if (kex->pk == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
-
-	dh = EVP_PKEY_get1_DH(kex->pk);
-	if (dh == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
-
-{	int len = dh_calc_length(kex, dh);
-	if (len <= 0) {
-		r = SSH_ERR_INVALID_ARGUMENT;
-		goto done;
-	}
-	if (!DH_set_length(dh, len)) {
-		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto done;
-	}
-}
-
-	if (DH_generate_key(dh) == 0) {
-		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto done;
-	}
-
-{	const BIGNUM *pub_key;
-	DH_get0_key(dh, &pub_key, NULL);
-	if (!dh_pub_is_valid(dh, pub_key)) {
-		r = SSH_ERR_INVALID_FORMAT;
-		goto done;
-	}
-}
-
-	/* success */
-	r = 0;
-
-done:
-	DH_free(dh);
-	return r;
-}
-
-
 extern void/*internal*/
 kex_reset_crypto_keys(struct kex *kex);
 
@@ -333,6 +207,9 @@ DUMP_DH_KEY(const EVP_PKEY *pk, const BIGNUM *pub_key) {
 }
 #endif
 
+
+extern int/*boolean, internal*/
+dh_pub_is_valid(const DH *dh, const BIGNUM *dh_pub);
 
 int
 kex_dh_compute_key(struct kex *kex, BIGNUM *pub_key, struct sshbuf **shared_secretp)
