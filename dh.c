@@ -28,7 +28,7 @@
 # include "config.h"
 #endif
 
-#ifdef WITH_OPENSSL
+#ifdef ENABLE_KEX_DH
 
 #ifndef USE_OPENSSL_PROVIDER
 /* TODO: implement OpenSSL 4.0 API, as OpenSSL 3.* is quite nonfunctional */
@@ -423,8 +423,8 @@ dh_new_group_fallback(int max)
 	debug3("using 8k bit group 18");
 	return _dh_new_group_num(18);
 }
-#else
+#else /*ndef ENABLE_KEX_DH*/
 
 typedef int dh_empty_translation_unit;
 
-#endif /* WITH_OPENSSL */
+#endif /*ndef ENABLE_KEX_DH*/

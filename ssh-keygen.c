@@ -11,7 +11,7 @@
  * incompatible with the protocol description in the RFC file, it must be
  * called by a name other than "ssh" or "Secure Shell".
  *
- * Copyright (c) 2005-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2005-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -197,7 +197,7 @@ extern char *__progname;
 
 static char hostname[NI_MAXHOST];
 
-#ifdef WITH_OPENSSL
+#ifdef ENABLE_KEX_DH
 /* moduli.c */
 int gen_candidates(FILE *, u_int32_t, u_int32_t, BIGNUM *);
 int prime_test(FILE *, FILE *, u_int32_t, u_int32_t, char *, unsigned long,
@@ -2410,7 +2410,7 @@ do_check_krl(int print_krl, int argc, char **argv)
 static void
 do_moduli_gen(const char *out_file, char **opts, size_t nopts)
 {
-#ifdef WITH_OPENSSL
+#ifdef ENABLE_KEX_DH
 	/* Moduli generation/screening */
 	u_int32_t memory = 0;
 	BIGNUM *start = NULL;
@@ -2457,15 +2457,16 @@ do_moduli_gen(const char *out_file, char **opts, size_t nopts)
 		moduli_bits = DEFAULT_BITS;
 	if (gen_candidates(out, memory, moduli_bits, start) != 0)
 		fatal("modulus candidate generation failed");
-#else /* WITH_OPENSSL */
+#else /*ndef ENABLE_KEX_DH*/
+	UNUSED(out_file); UNUSED(opts); UNUSED(nopts);
 	fatal("Moduli generation is not supported");
-#endif /* WITH_OPENSSL */
+#endif /*ndef ENABLE_KEX_DH*/
 }
 
 static void
 do_moduli_screen(const char *out_file, char **opts, size_t nopts)
 {
-#ifdef WITH_OPENSSL
+#ifdef ENABLE_KEX_DH
 	/* Moduli generation/screening */
 	char *checkpoint = NULL;
 	u_int32_t generator_wanted = 0;
@@ -2524,9 +2525,10 @@ do_moduli_screen(const char *out_file, char **opts, size_t nopts)
 	    start_lineno, lines_to_process) != 0)
 		fatal("modulus screening failed");
 	free(checkpoint);
-#else /* WITH_OPENSSL */
+#else /*ndef ENABLE_KEX_DH*/
+	UNUSED(out_file); UNUSED(opts); UNUSED(nopts);
 	fatal("Moduli screening is not supported");
-#endif /* WITH_OPENSSL */
+#endif /*ndef ENABLE_KEX_DH*/
 }
 
 /* Read and confirm a passphrase */

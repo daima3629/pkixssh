@@ -2,7 +2,7 @@
 /*
  * Copyright (c) 2000 Niels Provos.  All rights reserved.
  * Copyright (c) 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2018-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2018-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -27,7 +27,7 @@
 
 #include "includes.h"
 
-#ifdef WITH_OPENSSL
+#ifdef ENABLE_KEX_DH
 
 #include <openssl/bn.h>
 
@@ -140,5 +140,8 @@ const struct kex_impl kex_dh_gex_sha256_impl = {
 	&kex_dh_gex_funcs,
 	NULL
 };
+#else /*ndef ENABLE_KEX_DH*/
 
-#endif /* WITH_OPENSSL */
+typedef int kexgex_empty_translation_unit;
+
+#endif /*ndef ENABLE_KEX_DH*/

@@ -1,10 +1,10 @@
-/* $OpenBSD: monitor.c,v 1.245 2024/09/22 12:56:21 jsg Exp $ */
+/* $OpenBSD: monitor.c,v 1.247 2024/12/03 22:30:03 jsg Exp $ */
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * Copyright 2002 Markus Friedl <markus@openbsd.org>
  * All rights reserved.
  *
- * Copyright (c) 2014-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2014-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -106,7 +106,7 @@ static struct sshbuf *child_state;
 
 /* Functions on the monitor that answer unprivileged requests */
 
-#ifdef WITH_OPENSSL
+#ifdef ENABLE_KEX_DH
 static int mm_answer_moduli(struct ssh *, int, struct sshbuf *);
 #endif
 static int mm_answer_sign(struct ssh *, int, struct sshbuf *);
@@ -179,7 +179,7 @@ static int monitor_read_log(struct monitor *);
 static void mm_get_keystate(struct monitor *);
 
 struct mon_table mon_dispatch_proto20[] = {
-#ifdef WITH_OPENSSL
+#ifdef ENABLE_KEX_DH
     {MONITOR_REQ_MODULI, MON_ONCE, mm_answer_moduli},
 #endif
     {MONITOR_REQ_SIGN, MON_ONCE, mm_answer_sign},
@@ -214,7 +214,7 @@ struct mon_table mon_dispatch_proto20[] = {
 };
 
 struct mon_table mon_dispatch_postauth20[] = {
-#ifdef WITH_OPENSSL
+#ifdef ENABLE_KEX_DH
     {MONITOR_REQ_MODULI, 0, mm_answer_moduli},
 #endif
     {MONITOR_REQ_SIGN, 0, mm_answer_sign},
@@ -560,7 +560,7 @@ monitor_reset_key_state(void)
 	hostbased_chost = NULL;
 }
 
-#ifdef WITH_OPENSSL
+#ifdef ENABLE_KEX_DH
 int
 mm_answer_moduli(struct ssh *ssh, int sock, struct sshbuf *m)
 {
@@ -600,7 +600,7 @@ mm_answer_moduli(struct ssh *ssh, int sock, struct sshbuf *m)
 	mm_request_send(sock, MONITOR_ANS_MODULI, m);
 	return 0;
 }
-#endif
+#endif /*def ENABLE_KEX_DH*/
 
 int
 mm_answer_sign(struct ssh *ssh, int sock, struct sshbuf *m)

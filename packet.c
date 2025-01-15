@@ -15,7 +15,7 @@
  *
  * SSH2 packet format added by Markus Friedl.
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2018-2023 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2018-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -2659,7 +2659,7 @@ sshpkt_put_stringb(struct ssh *ssh, const struct sshbuf *v)
 	return sshbuf_put_stringb(ssh->state->outgoing_packet, v);
 }
 
-#ifdef WITH_OPENSSL
+#ifdef ENABLE_KEX_DH
 int
 sshpkt_put_bignum2(struct ssh *ssh, const BIGNUM *v)
 {
@@ -2675,7 +2675,7 @@ int
 sshpkt_write_dh_pub(struct ssh *ssh, EVP_PKEY *pk) {
 	return sshbuf_kex_write_dh_pub(ssh->state->outgoing_packet, pk);
 }
-#endif /* WITH_OPENSSL */
+#endif /*def ENABLE_KEX_DH*/
 
 /* fetch data from the incoming packet */
 

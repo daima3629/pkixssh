@@ -39,7 +39,7 @@
 
 #include "includes.h"
 
-#ifdef WITH_OPENSSL
+#ifdef ENABLE_KEX_DH
 
 #include <sys/types.h>
 
@@ -826,5 +826,8 @@ prime_test(FILE *in, FILE *out, u_int32_t trials, u_int32_t generator_wanted,
 
 	return (res);
 }
+#else /*ndef ENABLE_KEX_DH*/
 
-#endif /* WITH_OPENSSL */
+typedef int moduli_empty_translation_unit;
+
+#endif /*ndef ENABLE_KEX_DH*/

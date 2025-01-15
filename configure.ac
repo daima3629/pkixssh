@@ -1,6 +1,6 @@
 #
 # Copyright (c) 1999-2004 Damien Miller
-# Copyright (c) 2002-2024 Roumen Petrov
+# Copyright (c) 2002-2025 Roumen Petrov
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -2832,6 +2832,10 @@ AC_ARG_WITH([sshca-dir],
 
 AC_DEFINE_UNQUOTED([SSHCADIR], ["$sshcadir"], [Specify location of ssh CA root])
 AC_SUBST([sshcadir])
+
+# TODO: deprecation reserved for future
+AC_DEFINE([ENABLE_KEX_DH], [1],
+	[Define to 1 if you want to enable diffie-hellman key exchange])
 
 # enable DSA keys
 ssh_dsa=false

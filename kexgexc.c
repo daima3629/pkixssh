@@ -29,7 +29,7 @@
 # include "config.h"
 #endif
 
-#ifdef WITH_OPENSSL
+#ifdef ENABLE_KEX_DH
 
 #ifndef USE_OPENSSL_PROVIDER
 /* TODO: implement OpenSSL 4.0 API, as OpenSSL 3.* is quite nonfunctional */
@@ -245,8 +245,8 @@ input_kex_dh_gex_reply(int type, u_int32_t seq, struct ssh *ssh)
 	free(signature);
 	return r;
 }
-#else
+#else /*ndef ENABLE_KEX_DH*/
 
 typedef int kexgexc_empty_translation_unit;
 
-#endif /* WITH_OPENSSL */
+#endif /*ndef ENABLE_KEX_DH*/

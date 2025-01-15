@@ -28,7 +28,7 @@
 # include "config.h"
 #endif
 
-#ifdef WITH_OPENSSL
+#ifdef ENABLE_KEX_DH
 
 #ifndef USE_OPENSSL_PROVIDER
 /* TODO: implement OpenSSL 4.0 API, as OpenSSL 3.* is quite nonfunctional */
@@ -595,4 +595,8 @@ const struct kex_impl kex_dh_grp18_sha512_impl = {
 	&kex_dh_funcs,
 	&kex_dh_grp18_spec
 };
-#endif /* WITH_OPENSSL */
+#else /*ndef ENABLE_KEX_DH*/
+
+typedef int kexdh_empty_translation_unit;
+
+#endif /*ndef ENABLE_KEX_DH*/

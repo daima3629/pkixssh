@@ -1,7 +1,7 @@
 /* $OpenBSD: kex-names.c,v 1.4 2024/09/09 02:39:57 djm Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2014-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2014-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -37,7 +37,7 @@
 #include "ssherr.h"
 
 /* supported key exchange implementations */
-#ifdef WITH_OPENSSL
+#ifdef ENABLE_KEX_DH
 extern const struct kex_impl kex_dh_grp1_sha1_impl;
 extern const struct kex_impl kex_dh_grp14_sha1_impl;
 extern const struct kex_impl kex_dh_grp14_sha256_impl;
@@ -45,6 +45,8 @@ extern const struct kex_impl kex_dh_grp16_sha512_impl;
 extern const struct kex_impl kex_dh_grp18_sha512_impl;
 extern const struct kex_impl kex_dh_gex_sha1_impl;
 extern const struct kex_impl kex_dh_gex_sha256_impl;
+#endif /*def ENABLE_KEX_DH*/
+#ifdef WITH_OPENSSL
 # ifdef OPENSSL_HAS_ECC
 extern const struct kex_impl kex_ecdh_p256_sha256_impl;
 extern const struct kex_impl kex_ecdh_p384_sha384_impl;
@@ -69,7 +71,7 @@ extern const struct kex_impl kex_kem_mlkem768x25519_sha256_impl;
 #endif
 
 static const struct kex_impl* const kex_impl_list[] = {
-#ifdef WITH_OPENSSL
+#ifdef ENABLE_KEX_DH
 	&kex_dh_grp1_sha1_impl,
 	&kex_dh_grp14_sha1_impl,
 	&kex_dh_grp14_sha256_impl,
@@ -77,6 +79,8 @@ static const struct kex_impl* const kex_impl_list[] = {
 	&kex_dh_grp18_sha512_impl,
 	&kex_dh_gex_sha1_impl,
 	&kex_dh_gex_sha256_impl,
+#endif /*def ENABLE_KEX_DH*/
+#ifdef WITH_OPENSSL
 # ifdef OPENSSL_HAS_ECC
 	&kex_ecdh_p256_sha256_impl,
 	&kex_ecdh_p384_sha384_impl,

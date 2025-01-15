@@ -1310,7 +1310,7 @@ main(int ac, char **av)
 	parse_server_config(&options, rexeced_flag ? "rexec" : config_file_name,
 	    cfg, &includes, NULL, rexeced_flag);
 
-#ifdef WITH_OPENSSL
+#ifdef ENABLE_KEX_DH
 	if (options.moduli_file != NULL)
 		dh_set_moduli_file(options.moduli_file);
 #endif

@@ -187,17 +187,19 @@ kex_tests(void)
 	do_kex("ecdh-sha2-nistp521");
 #endif
 #endif /* OPENSSL_HAS_ECC */
-#ifdef HAVE_EVP_SHA256
-	do_kex("diffie-hellman-group-exchange-sha256");
-#endif /*def HAVE_EVP_SHA256*/
+#endif /* WITH_OPENSSL */
 #ifdef ENABLE_KEX_SNTRUP761X25519
 	do_kex("sntrup761x25519-sha512@openssh.com");
 #endif /*def ENABLE_KEX_SNTRUP761X25519*/
 #ifdef ENABLE_KEX_MLKEM768X25519
 	do_kex("mlkem768x25519-sha256");
 #endif /*def ENABLE_KEX_MLKEM768X25519*/
+#ifdef ENABLE_KEX_DH
+#ifdef HAVE_EVP_SHA256
+	do_kex("diffie-hellman-group-exchange-sha256");
+#endif /*def HAVE_EVP_SHA256*/
 	do_kex("diffie-hellman-group-exchange-sha1");
 	do_kex("diffie-hellman-group14-sha1");
 	do_kex("diffie-hellman-group1-sha1");
-#endif /* WITH_OPENSSL */
+#endif /*def ENABLE_KEX_DH*/
 }

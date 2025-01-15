@@ -172,7 +172,7 @@ mm_request_receive_expect(int sock, enum monitor_reqtype type, struct sshbuf *m)
 		fatal_f("read: rtype %d != type %d", rtype, type);
 }
 
-#ifdef WITH_OPENSSL
+#ifdef ENABLE_KEX_DH
 EVP_PKEY*
 mm_kex_new_dh_group_bits(int min, int nbits, int max)
 {
@@ -209,7 +209,7 @@ mm_kex_new_dh_group_bits(int min, int nbits, int max)
 	return kex_new_dh_group(p, g);
 }
 }
-#endif
+#endif /*def ENABLE_KEX_DH*/
 
 int
 mm_Xkey_sign(struct ssh *ssh, ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
