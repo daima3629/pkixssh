@@ -41,7 +41,6 @@
 #include "dh-crypto.h"
 #include "digest.h"
 #include "ssherr.h"
-#include "misc.h"
 #include "log.h"
 
 extern DH* _choose_dh(int, int, int);

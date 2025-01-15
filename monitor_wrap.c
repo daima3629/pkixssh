@@ -4,7 +4,7 @@
  * Copyright 2002 Markus Friedl <markus@openbsd.org>
  * All rights reserved.
  *
- * Copyright (c) 2007-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2007-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -42,7 +42,6 @@
 
 #ifdef WITH_OPENSSL
 #include <openssl/bn.h>
-#include <openssl/dh.h>
 #include <openssl/evp.h>
 #endif
 

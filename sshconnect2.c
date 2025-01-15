@@ -1,8 +1,8 @@
-/* $OpenBSD: sshconnect2.c,v 1.370 2023/12/18 14:45:17 djm Exp $ */
+/* $OpenBSD: sshconnect2.c,v 1.376 2024/10/18 05:45:40 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Damien Miller.  All rights reserved.
- * Copyright (c) 2006-2022 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2006-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -60,7 +60,6 @@
 #include "myproposal.h"
 #include "sshconnect.h"
 #include "authfile.h"
-#include "dh.h"
 #include "authfd.h"
 #include "log.h"
 #include "misc.h"

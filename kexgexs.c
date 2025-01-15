@@ -38,11 +38,7 @@
 
 #include "includes.h"
 
-#include <stdarg.h>
-#include <stdio.h>
 #include <string.h>
-
-#include <openssl/dh.h>
 
 #include "kex.h"
 #include "dh.h"
@@ -53,7 +49,6 @@
 #include "log.h"
 #include "monitor_wrap.h"
 #include "digest.h"
-#include "misc.h"
 
 
 static int input_kex_dh_gex_request(int, u_int32_t, struct ssh *);

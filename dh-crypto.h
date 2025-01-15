@@ -28,6 +28,12 @@
 # include "config.h"
 #endif
 
+#ifdef USE_OPENSSL_PROVIDER
+/* low-level key manipulation are disabled in OpenSSL 3.0+ */
+#else /*ndef USE_OPENSSL_PROVIDER*/
+
+#include <openssl/dh.h>
+
 
 #ifndef HAVE_BN_IS_NEGATIVE	/*macro before OpenSSL 1.1*/
 # ifndef BN_is_negative		/*not defined before OpenSSL 0.9.8*/
@@ -93,5 +99,7 @@ DH_set0_pqg(DH *dh, BIGNUM *p, BIGNUM *q, BIGNUM *g) {
 	return 1;
 }
 #endif /*ndef HAVE_DH_GET0_KEY*/
+
+#endif /*ndef USE_OPENSSL_PROVIDER*/
 
 #endif /*ndef DH_CRYPTO_H*/

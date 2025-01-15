@@ -22,25 +22,13 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
-
-#ifndef USE_OPENSSL_PROVIDER
-/* TODO: implement OpenSSL 4.0 API, as OpenSSL 3.* is quite nonfunctional */
-# define OPENSSL_SUPPRESS_DEPRECATED
-#endif
-
-#define SSHKEY_INTERNAL
 #include "includes.h"
 
 #ifdef WITH_OPENSSL
-#include "evp-compat.h"
 
+#define SSHKEY_INTERNAL
 #include "kex.h"
 #include "ssherr.h"
-#include "misc.h"
-#include "log.h"
 
 
 extern void/*internal*/

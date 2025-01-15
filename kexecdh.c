@@ -2,7 +2,7 @@
 /*
  * Copyright (c) 2010 Damien Miller.  All rights reserved.
  * Copyright (c) 2019 Markus Friedl.  All rights reserved.
- * Copyright (c) 2021-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2021-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -46,7 +46,6 @@
 
 #include <openssl/ecdh.h>
 
-#include "sshkey.h"
 #include "kex.h"
 #include "sshbuf.h"
 #include "digest.h"

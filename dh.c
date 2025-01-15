@@ -45,14 +45,12 @@
 #include <limits.h>
 
 #include <openssl/bn.h>
-#include <openssl/dh.h>
 
 #include "dh.h"
 #include "dh-crypto.h"
 #include "pathnames.h"
 #include "log.h"
 #include "misc.h"
-#include "ssherr.h"
 
 
 struct dhgroup {
