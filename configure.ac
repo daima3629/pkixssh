@@ -3368,9 +3368,9 @@ fi
 
 
 # check for openssl 0.9.7+ functions ...
+dnl EVP_MD_CTX_init is macro in 1.1.0+
 AC_CHECK_FUNCS([ \
   DES_crypt \
-  EVP_MD_CTX_init \
 ])
 
 # check for openssl 0.9.8+ headers ...
