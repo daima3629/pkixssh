@@ -716,8 +716,7 @@ ssh_pkey_ctx_set_rsa_keygen_pubexp(EVP_PKEY_CTX *ctx) {
 #else
 	/*OpenSSL >= 3.0*/
 	ret = EVP_PKEY_CTX_set1_rsa_keygen_pubexp(ctx, f4);
-	if (ret > 0)
-		BN_free(f4);
+	BN_free(f4);
 #endif
 	return (ret > 0) ? SSH_ERR_SUCCESS: SSH_ERR_LIBCRYPTO_ERROR;
 }
