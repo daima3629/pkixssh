@@ -3441,6 +3441,9 @@ AC_CHECK_FUNCS([ \
   X509_STORE_get0_objects \
   X509_STORE_lock \
 ])
+AC_CHECK_FUNC([BN_get_rfc3526_prime_8192],
+  [AC_DEFINE([USE_BN_GET_RFC_PRIME], [1],
+    [Define to 1  if you have the 'BN_get_rfcNNNN_prime_MMMM' functions.])])
 dnl OpenSSL 1.1 changes X509_STORE_CTX and X509_VERIFY_PARAM to opaque structure.
 dnl Until OpenSSL 1.1.0d+ there is no function to get "check" time.
 AC_CHECK_FUNCS([X509_VERIFY_PARAM_get_time])

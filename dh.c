@@ -257,24 +257,6 @@ _choose_dh(int min, int wantbits, int max)
 }
 
 
-static DH*
-dh_new_group_asc(const char *gen, const char *modulus)
-{
-	BIGNUM *p = NULL, *g = NULL;
-
-	if (BN_hex2bn(&p, modulus) == 0 ||
-	    BN_hex2bn(&g, gen) == 0)
-		goto err;
-
-	return dh_new_group(p, g);
-
-err:
-	BN_clear_free(p);
-	BN_clear_free(g);
-	return NULL;
-}
-
-
 /*
  * This just returns the group, we still need to generate the exchange
  * value.
@@ -297,22 +279,37 @@ dh_new_group(BIGNUM *modulus, BIGNUM *gen)
 
 
 /* diffie-hellman-groupN-sha1 */
+#ifdef USE_BN_GET_RFC_PRIME	/*OpenSSL > 1.1*/
+typedef BIGNUM* (*BN_get_rfc_prime)(BIGNUM *bn);
+#endif
 
 struct dh_group {
 	int id;
 	const char *generator;
+#ifdef USE_BN_GET_RFC_PRIME
+	BN_get_rfc_prime get_modulus;
+#else
 	const char *modulus;
+#endif
 } dh_group_list[] = {
 	/* rfc2409 "Second Oakley Group" (1024 bits) */
 	{   1, "2",
+#ifdef USE_BN_GET_RFC_PRIME
+	    BN_get_rfc2409_prime_1024
+#else
 	    "FFFFFFFF" "FFFFFFFF" "C90FDAA2" "2168C234" "C4C6628B" "80DC1CD1"
 	    "29024E08" "8A67CC74" "020BBEA6" "3B139B22" "514A0879" "8E3404DD"
 	    "EF9519B3" "CD3A431B" "302B0A6D" "F25F1437" "4FE1356D" "6D51C245"
 	    "E485B576" "625E7EC6" "F44C42E9" "A637ED6B" "0BFF5CB6" "F406B7ED"
 	    "EE386BFB" "5A899FA5" "AE9F2411" "7C4B1FE6" "49286651" "ECE65381"
-	    "FFFFFFFF" "FFFFFFFF" },
+	    "FFFFFFFF" "FFFFFFFF"
+#endif
+	},
 	/* rfc3526 group 14 "2048-bit MODP Group" */
 	{   14, "2",
+#ifdef USE_BN_GET_RFC_PRIME
+	    BN_get_rfc3526_prime_2048
+#else
 	    "FFFFFFFF" "FFFFFFFF" "C90FDAA2" "2168C234" "C4C6628B" "80DC1CD1"
 	    "29024E08" "8A67CC74" "020BBEA6" "3B139B22" "514A0879" "8E3404DD"
 	    "EF9519B3" "CD3A431B" "302B0A6D" "F25F1437" "4FE1356D" "6D51C245"
@@ -323,9 +320,14 @@ struct dh_group {
 	    "670C354E" "4ABC9804" "F1746C08" "CA18217C" "32905E46" "2E36CE3B"
 	    "E39E772C" "180E8603" "9B2783A2" "EC07A28F" "B5C55DF0" "6F4C52C9"
 	    "DE2BCBF6" "95581718" "3995497C" "EA956AE5" "15D22618" "98FA0510"
-	    "15728E5A" "8AACAA68" "FFFFFFFF" "FFFFFFFF" },
+	    "15728E5A" "8AACAA68" "FFFFFFFF" "FFFFFFFF"
+#endif
+	},
 	/* rfc3526 group 16 "4096-bit MODP Group" */
 	{   16, "2",
+#ifdef USE_BN_GET_RFC_PRIME
+	    BN_get_rfc3526_prime_4096
+#else
 	    "FFFFFFFF" "FFFFFFFF" "C90FDAA2" "2168C234" "C4C6628B" "80DC1CD1"
 	    "29024E08" "8A67CC74" "020BBEA6" "3B139B22" "514A0879" "8E3404DD"
 	    "EF9519B3" "CD3A431B" "302B0A6D" "F25F1437" "4FE1356D" "6D51C245"
@@ -347,9 +349,14 @@ struct dh_group {
 	    "287C5947" "4E6BC05D" "99B2964F" "A090C3A2" "233BA186" "515BE7ED"
 	    "1F612970" "CEE2D7AF" "B81BDD76" "2170481C" "D0069127" "D5B05AA9"
 	    "93B4EA98" "8D8FDDC1" "86FFB7DC" "90A6C08F" "4DF435C9" "34063199"
-	    "FFFFFFFF" "FFFFFFFF" },
+	    "FFFFFFFF" "FFFFFFFF"
+#endif
+	},
 	/* rfc3526 group 18 "8192-bit MODP Group" */
 	{    18, "2",
+#ifdef USE_BN_GET_RFC_PRIME
+	    BN_get_rfc3526_prime_8192
+#else
 	    "FFFFFFFF" "FFFFFFFF" "C90FDAA2" "2168C234" "C4C6628B" "80DC1CD1"
 	    "29024E08" "8A67CC74" "020BBEA6" "3B139B22" "514A0879" "8E3404DD"
 	    "EF9519B3" "CD3A431B" "302B0A6D" "F25F1437" "4FE1356D" "6D51C245"
@@ -392,18 +399,40 @@ struct dh_group {
 	    "B1D510BD" "7EE74D73" "FAF36BC3" "1ECFA268" "359046F4" "EB879F92"
 	    "4009438B" "481C6CD7" "889A002E" "D5EE382B" "C9190DA6" "FC026E47"
 	    "9558E447" "5677E9AA" "9E3050E2" "765694DF" "C81F56E8" "80B96E71"
-	    "60C980DD" "98EDD3DF" "FFFFFFFF" "FFFFFFFF" }
+	    "60C980DD" "98EDD3DF" "FFFFFFFF" "FFFFFFFF"
+#endif
+	}
 };
+
+static inline DH*
+_dh_new_group_def(struct dh_group *def) {
+	BIGNUM *p, *g;
+
+#ifdef USE_BN_GET_RFC_PRIME
+	p = def->get_modulus(NULL);
+	if (p == NULL) return NULL;
+#else
+	p = NULL;
+	if (BN_hex2bn(&p, def->modulus) == 0)
+		return NULL;
+#endif
+	g = NULL;
+	if (BN_hex2bn(&g, def->generator) == 0) {
+		BN_clear_free(p);
+		return NULL;
+	}
+
+	return dh_new_group(p, g);
+}
 
 DH*
 _dh_new_group_num(int num) {
-	size_t k;
+	size_t k, len = sizeof(dh_group_list) / sizeof(*dh_group_list);
+	struct dh_group *p;
 
-	for (k = 0; k < sizeof(dh_group_list) / sizeof(*dh_group_list); k++) {
+	for (k = 0, p = dh_group_list; k < len; k++, p++) {
 		if (num == dh_group_list[k].id)
-			return dh_new_group_asc(
-			    dh_group_list[k].generator,
-			    dh_group_list[k].modulus);
+			return _dh_new_group_def(p);
 	}
 	return NULL;
 }
