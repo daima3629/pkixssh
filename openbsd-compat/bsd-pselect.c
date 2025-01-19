@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2021 Darren Tucker (dtucker at dtucker net).
- * Copyright (c) 2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2021-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -45,6 +45,13 @@
 #include "misc.h"      /* for sshsig_t */
 
 static sshsig_t saved_sighandler[NSIG];
+static int notify_pipe[2] = { -1, -1 };	/* 0 = read end, 1 = write end */
+
+/*
+ * Because the debugging for this is so noisy, we only output on the first
+ * call, and suppress it thereafter.
+ */
+static int suppress_debug = 0;
 
 static void
 pselect_set_nonblock(int fd)
@@ -57,67 +64,22 @@ pselect_set_nonblock(int fd)
 }
 
 /*
- * Set up the descriptors.  Because they are close-on-exec, in the case
- * where sshd's re-exec fails notify_pipe will still point to a descriptor
- * that was closed by the exec attempt but if that descriptor has been
- * reopened then we'll attempt to use that.  Ensure that notify_pipe is
- * outside of the range used by sshd re-exec but within NFDBITS (so we don't
- * need to expand the fd_sets).
+ * We write to this pipe if a SIGCHLD is caught in order to avoid
+ * the race between select() and child_terminated.
  */
-#define REEXEC_MIN_FREE_FD (STDERR_FILENO + 4)
 static int
-pselect_notify_setup_fd(int *fd)
-{
-	int r;
-
-	if ((r = fcntl(*fd, F_DUPFD, REEXEC_MIN_FREE_FD)) < 0 ||
-	    fcntl(r, F_SETFD, FD_CLOEXEC) < 0 || r >= FD_SETSIZE)
-		return -1;
-	(void)close(*fd);
-	return (*fd = r);
-}
-
-static pid_t notify_pid = 0;
-/*
- * we write to this pipe if a SIGCHLD is caught in order to avoid
- * the race between select() and child_terminated
- */
-static int notify_pipe[2] = { -1, -1 };
-
-static void
 pselect_notify_setup(void)
 {
-	static int initialized;
-
-	if (initialized && notify_pid == getpid())
-		return;
-	if (notify_pid == 0)
-		debug3_f("initializing");
-	else {
-		debug3_f("pid changed, reinitializing");
-		if (notify_pipe[0] != -1)
-			close(notify_pipe[0]);
-		if (notify_pipe[1] != -1)
-			close(notify_pipe[1]);
-	}
 	if (pipe(notify_pipe) == -1) {
 		error("pipe(notify_pipe) failed %s", strerror(errno));
-	} else if (pselect_notify_setup_fd(&notify_pipe[0]) == -1 ||
-	    pselect_notify_setup_fd(&notify_pipe[1]) == -1) {
-		error("fcntl(notify_pipe, ...) failed %s", strerror(errno));
-		close(notify_pipe[0]);
-		close(notify_pipe[1]);
-	} else {
-		pselect_set_nonblock(notify_pipe[0]);
-		pselect_set_nonblock(notify_pipe[1]);
-		notify_pid = getpid();
-		debug3_f("pid %d saved %d pipe0 %d pipe1 %d", getpid(),
-		    notify_pid, notify_pipe[0], notify_pipe[1]);
-		initialized = 1;
-		return;
+		notify_pipe[0] = notify_pipe[1] = -1;
+		return -1;
 	}
-	notify_pipe[0] = -1;    /* read end */
-	notify_pipe[1] = -1;    /* write end */
+	pselect_set_nonblock(notify_pipe[0]);
+	pselect_set_nonblock(notify_pipe[1]);
+	if (!suppress_debug)
+		debug3_f("pipe0 %d pipe1 %d", notify_pipe[0], notify_pipe[1]);
+	return 0;
 }
 static void
 pselect_notify_parent(void)
@@ -141,6 +103,8 @@ pselect_notify_done(fd_set *readset)
 			debug2_f("reading");
 		FD_CLR(notify_pipe[0], readset);
 	}
+	(void)close(notify_pipe[0]);
+	(void)close(notify_pipe[1]);
 }
 
 static void
@@ -175,26 +139,29 @@ pselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
 	if (mask == NULL)  /* no signal mask, just call select */
 		return select(nfds, readfds, writefds, exceptfds, tvp);
 
-	/* For each signal we're unmasking, install our handler if needed. */
-	for (sig = 0; sig < _NSIG; sig++) {
+	/* For each signal unmasked, save old handler and install ours. */
+	for (sig = 0; sig < NSIG; sig++) {
+		saved_sighandler[sig] = NULL;
 		if (sig == SIGKILL || sig == SIGSTOP || sigismember(mask, sig))
 			continue;
 		if (sigaction(sig, NULL, &sa) == 0 &&
 		    sa.sa_handler != SIG_IGN && sa.sa_handler != SIG_DFL) {
 			unmasked = 1;
-			if (sa.sa_handler == pselect_sig_handler)
-				continue;
 			sa.sa_handler = pselect_sig_handler;
 			if (sigaction(sig, &sa, &osa) == 0) {
-				debug3_f("installing signal handler for %s, "
-				    "previous %p", strsignal(sig),
-				     osa.sa_handler);
+				if (!suppress_debug)
+					debug3_f("installed signal handler for"
+					    " %s, previous 0x%p",
+					    strsignal(sig), (void*)osa.sa_handler);
 				saved_sighandler[sig] = osa.sa_handler;
 			}
 		}
 	}
 	if (unmasked) {
-		pselect_notify_setup();
+		if ((ret = pselect_notify_setup()) == -1) {
+			saved_errno = ENOMEM;
+			goto out;
+		}
 		pselect_notify_prepare(readfds);
 		nfds = MAX(nfds, notify_pipe[0] + 1);
 	}
@@ -207,6 +174,25 @@ pselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
 
 	if (unmasked)
 		pselect_notify_done(readfds);
+
+ out:
+	/* Restore signal handlers. */
+	for (sig = 0; sig < NSIG; sig++) {
+		if (saved_sighandler[sig] == NULL)
+			continue;
+		if (sigaction(sig, NULL, &sa) == 0) {
+			sa.sa_handler = saved_sighandler[sig];
+			if (sigaction(sig, &sa, NULL) == 0) {
+				if (!suppress_debug)
+					debug3_f("restored signal handler for "
+					    "%s", strsignal(sig));
+			} else {
+				error_f("failed to restore signal handler for "
+				    "%s: %s", strsignal(sig), strerror(errno));
+			}
+		}
+	}
+	suppress_debug = 1;
 	errno = saved_errno;
 	return ret;
 }
