@@ -34,7 +34,7 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: sshd_config.5,v 1.379 2024/12/05 22:45:03 naddy Exp $
+.\" $OpenBSD: sshd_config.5,v 1.380 2024/12/06 16:24:27 djm Exp $
 .\" Implement .Dd with the Mdocdate RCS keyword
 .rn Dd xD
 .de Dd
@@ -329,6 +329,7 @@ section of
 .Xr sshd 8 .
 Arguments to
 .Cm AuthorizedKeysFile
+may include wildcards and
 accept the tokens described in the
 .Sx TOKENS
 section.

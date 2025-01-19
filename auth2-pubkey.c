@@ -1,7 +1,8 @@
 /* $OpenBSD: auth2-pubkey.c,v 1.120 2024/05/17 00:30:23 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
- * Copyright (c) 2003-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2010 Damien Miller.  All rights reserved.
+ * Copyright (c) 2003-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -41,6 +42,11 @@
 #include <time.h>
 #include <unistd.h>
 #include <limits.h>
+#ifdef USE_SYSTEM_GLOB
+# include <glob.h>
+#else
+# include "openbsd-compat/glob.h"
+#endif
 
 #include "xmalloc.h"
 #include "ssh.h"
@@ -700,7 +706,7 @@ user_xkey_allowed(struct ssh *ssh, struct passwd *pw, ssh_verify_ctx *ctx,
     int auth_attempt, struct sshauthopt **authoptsp)
 {
 	struct sshkey *key = ctx->key;
-	u_int success, i;
+	u_int success = 0, i;
 	char *file, *conn_id = NULL;
 	struct sshauthopt *opts = NULL;
 	const char *rdomain, *remote_ip, *remote_host;
@@ -728,16 +734,41 @@ user_xkey_allowed(struct ssh *ssh, struct passwd *pw, ssh_verify_ctx *ctx,
 	    remote_ip, ssh_remote_port(ssh));
 
 	for (i = 0; i < options.num_authkeys_files; i++) {
+
 		if (strcasecmp(options.authorized_keys_files[i], "none") == 0)
 			continue;
 		file = expand_authorized_keys(
 		    options.authorized_keys_files[i], pw);
-		success = user_key_allowed2(pw, key, file,
-		    remote_ip, remote_host, &opts);
+
+	{	glob_t gl;
+
+		{	int r;
+			temporarily_use_uid(pw);
+			r = glob(file, 0, NULL, &gl);
+			restore_uid();
+			if (r != 0) {
+				if (r != GLOB_NOMATCH)
+					error_f("glob \"%s\" failed", file);
+				free(file);
+				continue;
+			}
+		}
+
+		if (gl.gl_pathc > INT_MAX)
+			fatal_f("too many glob results for \"%s\"", file);
+		debug3_f("glob \"%s\" returned %zu matches", file, gl.gl_pathc);
 		free(file);
-		if (success) goto out;
-		sshauthopt_free(opts);
-		opts = NULL;
+
+		{	size_t j;
+			for (j = 0; j < gl.gl_pathc; j++) {
+				success = user_key_allowed2(pw, key, gl.gl_pathv[j],
+				    remote_ip, remote_host, &opts);
+				if (success) goto out;
+				sshauthopt_free(opts);
+				opts = NULL;
+			}
+		}
+	}
 	}
 
 	success = user_cert_trusted_ca(pw, key, remote_ip, remote_host, conn_id, rdomain, &opts);
