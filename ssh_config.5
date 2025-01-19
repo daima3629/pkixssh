@@ -1275,7 +1275,12 @@ to unknown options that appear before it.
 Include the specified configuration file(s).
 Multiple pathnames may be specified and each pathname may contain
 .Xr glob 7
-wildcards and, for user configurations, shell-like
+wildcards,
+tokens as described in the
+.Sx TOKENS
+section, environment variables as described in the
+.Sx ENVIRONMENT VARIABLES
+section and, for user configurations, shell-like
 .Sq ~
 references to user home directories.
 Wildcards will be expanded and processed in lexical order.
@@ -2497,6 +2502,7 @@ The local username.
 .Cm ForwardAgent ,
 .Cm IdentityAgent ,
 .Cm IdentityFile ,
+.Cm Include ,
 .Cm KnownHostsCommand ,
 .Cm LocalForward ,
 .Cm Match exec ,
@@ -2543,6 +2549,7 @@ The keywords
 .Cm ControlPath ,
 .Cm IdentityAgent ,
 .Cm IdentityFile ,
+.Cm Include ,
 .Cm KnownHostsCommand ,
 and
 .Cm UserKnownHostsFile

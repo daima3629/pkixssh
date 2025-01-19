@@ -11,7 +11,7 @@
  * incompatible with the protocol description in the RFC file, it must be
  * called by a name other than "ssh" or "Secure Shell".
  *
- * Copyright (c) 2002-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -698,7 +698,7 @@ check_match_ifaddrs(const char *addrlist)
 static char*
 expand_tokens(const char *arg, Options *options,
     struct passwd *pw, const char *host_arg, const char *original_host,
-    int final_pass)
+    int final_pass, int is_include_path)
 {
 	char thishost[NI_MAXHOST], shorthost[NI_MAXHOST], portstr[NI_MAXSERV];
 	char uidstr[32];
@@ -731,7 +731,7 @@ expand_tokens(const char *arg, Options *options,
 	keyalias = options->host_key_alias ? options->host_key_alias : host;
 
 	/* keep synchronised with sshconnect.h */
-	ret = percent_expand(arg,
+	ret = (is_include_path ? percent_dollar_expand : percent_expand)(arg,
 	    "C", conn_hash_hex,
 	    "L", shorthost,
 	    "i", uidstr,
@@ -863,7 +863,7 @@ match_cfg_line(Options *options, char **condition, struct passwd *pw,
 				this_result = result = 0;
 		} else if (strcasecmp(attrib, "exec") == 0) {
 			char *cmd = expand_tokens(arg, options, pw, host_arg,
-			    original_host, final_pass);
+			    original_host, final_pass, 0);
 			if (cmd == NULL) {
 				fatal("%.200s line %d: failed to expand match "
 				    "exec '%.100s'", filename, linenum, arg);
@@ -2185,6 +2185,16 @@ parse_key_algorithms:
 				    filename, linenum, keyword);
 				goto out;
 			}
+			/* Expand %tokens and environment variables */
+			arg2 = arg;
+			if ((arg = expand_tokens(arg2,
+			    options, pw, host, original_host,
+			    flags & SSHCONF_FINAL, 1)) == NULL) {
+				error("%.200s line %d: Unable to expand user "
+				    "config file '%.100s'",
+				    filename, linenum, arg);
+				continue;
+			}
 			/*
 			 * Ensure all paths are anchored. User configuration
 			 * files may begin with '~/' but system configurations
@@ -2194,7 +2204,7 @@ parse_key_algorithms:
 			 */
 			if (*arg == '~' && (flags & SSHCONF_USERCONF) == 0) {
 				error("%.200s line %d: bad include path %s.",
-				    filename, linenum, arg);
+				    filename, linenum, arg2);
 				goto out;
 			}
 			if (!path_absolute(arg) && *arg != '~') {
@@ -2203,6 +2213,8 @@ parse_key_algorithms:
 				    "~/" _PATH_SSH_USER_DIR : SSHDIR, arg);
 			} else
 				arg2 = xstrdup(arg);
+			free(arg);
+
 			memset(&gl, 0, sizeof(gl));
 			r = glob(arg2, GLOB_TILDE, NULL, &gl);
 			if (r == GLOB_NOMATCH) {
@@ -2228,8 +2240,9 @@ parse_key_algorithms:
 				    (oactive ? 0 : SSHCONF_NEVERMATCH),
 				    activep, want_final_pass, depth + 1);
 				if (r != 1 && errno != ENOENT) {
-					error("Can't open user config file "
-					    "%.100s: %.100s", gl.gl_pathv[i],
+					error("%.200s line %d: Can't open user "
+					    "config file %.100s: %.100s",
+					    filename, linenum, gl.gl_pathv[i],
 					    strerror(errno));
 					globfree(&gl);
 					goto out;
