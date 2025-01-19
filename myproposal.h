@@ -1,6 +1,7 @@
 /* $OpenBSD: myproposal.h,v 1.77 2024/12/02 14:06:42 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
+ * Copyright (c) 2016-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -58,6 +59,8 @@
 	"diffie-hellman-group14-sha256," \
 	KEX_SNTRUP761X25519 \
 	KEX_MLKEM768X25519 \
+	"diffie-hellman-group15-sha512," \
+	"diffie-hellman-group17-sha512," \
 	"diffie-hellman-group14-sha1"
 
 #define KEX_CLIENT_KEX KEX_SERVER_KEX

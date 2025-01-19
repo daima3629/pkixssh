@@ -14,6 +14,7 @@ cp $OBJ/sshd_proxy $OBJ/sshd_proxy_bak
 kex='dh-gex-sha1 dh-group1-sha1'
 kex="$kex dh-group14-sha1 dh-group14-sha256"
 kex="$kex dh-group16 dh-group18" # requires PuTTY 0.78
+kex="$kex dh-group15 dh-group17" # requires PuTTY ?
 kex="$kex ecdh ecdh-256 ecdh-384 ecdh-521" # requires PuTTY 0.68
 kex="$kex curve25519-sha256" # requires PuTTY 0.68
 kex="$kex curve448-sha512" # requires PuTTY 0.75
@@ -39,6 +40,8 @@ for k in $kex ; do
 	curve448-sha512)	sk=curve448-sha512;;
 	sntrup761x25519-sha512@openssh.com)
 				sk=sntrup761x25519-sha512@openssh.com;;
+	dh-group15)		sk=diffie-hellman-group15-sha512;;
+	dh-group17)		sk=diffie-hellman-group17-sha512;;
 	*) continue;;
 	esac
 	cp $OBJ/sshd_proxy_bak $OBJ/sshd_proxy

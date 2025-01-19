@@ -292,8 +292,8 @@ struct dh_group {
 	const char *modulus;
 #endif
 } dh_group_list[] = {
-	/* rfc2409 "Second Oakley Group" (1024 bits) */
-	{   1, "2",
+/* rfc2409 "Second Oakley Group" (1024 bits) */
+	{ 1, "2",
 #ifdef USE_BN_GET_RFC_PRIME
 	    BN_get_rfc2409_prime_1024
 #else
@@ -305,8 +305,8 @@ struct dh_group {
 	    "FFFFFFFF" "FFFFFFFF"
 #endif
 	},
-	/* rfc3526 group 14 "2048-bit MODP Group" */
-	{   14, "2",
+/* rfc3526 group 14 "2048-bit MODP Group" */
+	{ 14, "2",
 #ifdef USE_BN_GET_RFC_PRIME
 	    BN_get_rfc3526_prime_2048
 #else
@@ -323,8 +323,12 @@ struct dh_group {
 	    "15728E5A" "8AACAA68" "FFFFFFFF" "FFFFFFFF"
 #endif
 	},
-	/* rfc3526 group 16 "4096-bit MODP Group" */
-	{   16, "2",
+#ifdef USE_BN_GET_RFC_PRIME
+/* rfc3526 group 15 "3072-bit MODP Group" */
+	{ 15, "2", BN_get_rfc3526_prime_3072 },
+#endif
+/* rfc3526 group 16 "4096-bit MODP Group" */
+	{ 16, "2",
 #ifdef USE_BN_GET_RFC_PRIME
 	    BN_get_rfc3526_prime_4096
 #else
@@ -352,8 +356,12 @@ struct dh_group {
 	    "FFFFFFFF" "FFFFFFFF"
 #endif
 	},
-	/* rfc3526 group 18 "8192-bit MODP Group" */
-	{    18, "2",
+#ifdef USE_BN_GET_RFC_PRIME
+/* rfc3526 group 17 "6144-bit MODP Group" */
+	{ 17, "2", BN_get_rfc3526_prime_6144 },
+#endif
+/* rfc3526 group 18 "8192-bit MODP Group" */
+	{ 18, "2",
 #ifdef USE_BN_GET_RFC_PRIME
 	    BN_get_rfc3526_prime_8192
 #else

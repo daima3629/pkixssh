@@ -37,12 +37,15 @@
 #include "ssherr.h"
 
 /* supported key exchange implementations */
-#ifdef ENABLE_KEX_DH
+/* kexdh.c */
 extern const struct kex_impl kex_dh_grp1_sha1_impl;
 extern const struct kex_impl kex_dh_grp14_sha1_impl;
 extern const struct kex_impl kex_dh_grp14_sha256_impl;
+extern const struct kex_impl kex_dh_grp15_sha512_impl;
 extern const struct kex_impl kex_dh_grp16_sha512_impl;
+extern const struct kex_impl kex_dh_grp17_sha512_impl;
 extern const struct kex_impl kex_dh_grp18_sha512_impl;
+#ifdef ENABLE_KEX_DH
 extern const struct kex_impl kex_dh_gex_sha1_impl;
 extern const struct kex_impl kex_dh_gex_sha256_impl;
 #endif /*def ENABLE_KEX_DH*/
@@ -71,12 +74,14 @@ extern const struct kex_impl kex_kem_mlkem768x25519_sha256_impl;
 #endif
 
 static const struct kex_impl* const kex_impl_list[] = {
-#ifdef ENABLE_KEX_DH
 	&kex_dh_grp1_sha1_impl,
 	&kex_dh_grp14_sha1_impl,
 	&kex_dh_grp14_sha256_impl,
+	&kex_dh_grp15_sha512_impl,
 	&kex_dh_grp16_sha512_impl,
+	&kex_dh_grp17_sha512_impl,
 	&kex_dh_grp18_sha512_impl,
+#ifdef ENABLE_KEX_DH
 	&kex_dh_gex_sha1_impl,
 	&kex_dh_gex_sha256_impl,
 #endif /*def ENABLE_KEX_DH*/

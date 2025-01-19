@@ -536,6 +536,11 @@ static int kex_dh_sha2_enabled(void) { return 1; }
 # else
 static int kex_dh_sha2_enabled(void) { return 0; }
 # endif
+# ifdef USE_BN_GET_RFC_PRIME
+static int kex_dh_gr3k_enabled(void) { return 1; }
+# else
+static int kex_dh_gr3k_enabled(void) { return 0; }
+# endif
 
 static const struct kex_impl_funcs kex_dh_funcs = {
 	kex_init_gen,
@@ -543,6 +548,15 @@ static const struct kex_impl_funcs kex_dh_funcs = {
 	kex_dh_enc,
 	kex_dh_dec
 };
+
+#else /*ndef def ENABLE_KEX_DH*/
+
+static int kex_dh_sha1_enabled(void) { return 0; }
+static int kex_dh_sha2_enabled(void) { return 0; }
+static int kex_dh_gr3k_enabled(void) { return 0; }
+static const struct kex_impl_funcs kex_dh_funcs = NULL;
+
+#endif /*ndef def ENABLE_KEX_DH*/
 
 static struct kex_dh_spec kex_dh_grp1_spec = {
 	1
@@ -595,8 +609,25 @@ const struct kex_impl kex_dh_grp18_sha512_impl = {
 	&kex_dh_funcs,
 	&kex_dh_grp18_spec
 };
-#else /*ndef ENABLE_KEX_DH*/
 
-typedef int kexdh_empty_translation_unit;
+static struct kex_dh_spec kex_dh_grp15_spec = {
+	15
+};
+const struct kex_impl kex_dh_grp15_sha512_impl = {
+	"diffie-hellman-group15-sha512",
+	SSH_DIGEST_SHA512,
+	kex_dh_gr3k_enabled,
+	&kex_dh_funcs,
+	&kex_dh_grp15_spec
+};
 
-#endif /*ndef ENABLE_KEX_DH*/
+static struct kex_dh_spec kex_dh_grp17_spec = {
+	17
+};
+const struct kex_impl kex_dh_grp17_sha512_impl = {
+	"diffie-hellman-group17-sha512",
+	SSH_DIGEST_SHA512,
+	kex_dh_gr3k_enabled,
+	&kex_dh_funcs,
+	&kex_dh_grp17_spec
+};
