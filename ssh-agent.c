@@ -1266,7 +1266,7 @@ int
 main(int ac, char **av)
 {
 	int c_flag = 0, d_flag = 0, D_flag = 0, k_flag = 0, s_flag = 0;
-	int sock, ch, result, saved_errno;
+	int sock = -1, ch, result, saved_errno;
 	char *shell, *format, *pidstr, *agentsocket = NULL;
 	extern int optind;
 	extern char *optarg;
@@ -1431,26 +1431,31 @@ main(int ac, char **av)
 
 	parent_pid = getpid();
 
-	if (agentsocket == NULL) {
-		/* Create private directory for agent socket */
-		mktemp_proto(socket_dir, sizeof(socket_dir));
-		if (mkdtemp(socket_dir) == NULL) {
-			perror("mkdtemp: private socket dir");
-			exit(1);
+	/* Has the socket been provided via socket activation? */
+	/* TODO */
+
+	/* Otherwise, create private directory for agent socket */
+	if (sock == -1) {
+		if (agentsocket == NULL) {
+			mktemp_proto(socket_dir, sizeof(socket_dir));
+			if (mkdtemp(socket_dir) == NULL) {
+				perror("mkdtemp: private socket dir");
+				exit(1);
+			}
+		{	int r = snprintf(socket_name, sizeof socket_name,
+			    "%s/agent.%ld", socket_dir, (long)parent_pid);
+			if (r < 0 || r > (int)sizeof(socket_name)) {
+				fprintf(stderr, "too long socket path\n");
+				exit(1);
+			}
 		}
-	{	int r = snprintf(socket_name, sizeof socket_name, "%s/agent.%ld",
-		    socket_dir, (long)parent_pid);
-		if (r < 0 || r > (int)sizeof(socket_name)) {
-			fprintf(stderr, "too long socket path\n");
-			exit(1);
-		}
-	}
-	} else {
-		/* Try to use specified agent socket */
-		if (strlcpy(socket_name, agentsocket, sizeof socket_name)
-		    > sizeof(socket_name)) {
-			fprintf(stderr, "too long agent socket path\n");
-			exit(1);
+		} else {
+			/* Try to use specified agent socket */
+			if (strlcpy(socket_name, agentsocket, sizeof socket_name)
+			    > sizeof(socket_name)) {
+				fprintf(stderr, "too long agent socket path\n");
+				exit(1);
+			}
 		}
 	}
 
@@ -1458,14 +1463,16 @@ main(int ac, char **av)
 	 * Create socket early so it will exist before command gets run from
 	 * the parent.
 	 */
-	prev_mask = umask(0177);
-	sock = unix_listener(socket_name, SSH_LISTEN_BACKLOG, 0);
-	if (sock < 0) {
-		/* XXX - unix_listener() calls error() not perror() */
-		*socket_name = '\0'; /* Don't unlink any existing file */
-		cleanup_exit(1);
+	if (sock == -1) {
+		prev_mask = umask(0177);
+		sock = unix_listener(socket_name, SSH_LISTEN_BACKLOG, 0);
+		if (sock < 0) {
+			/* XXX - unix_listener() calls error() not perror() */
+			*socket_name = '\0'; /* Don't unlink existing file */
+			cleanup_exit(1);
+		}
+		umask(prev_mask);
 	}
-	umask(prev_mask);
 
 	/*
 	 * Fork, and have the parent execute the command, if any, or present
@@ -1475,11 +1482,14 @@ main(int ac, char **av)
 		log_init(__progname,
 		    d_flag ? SYSLOG_LEVEL_DEBUG3 : SYSLOG_LEVEL_INFO,
 		    SYSLOG_FACILITY_AUTH, 1);
-		format = c_flag ? "setenv %s %s;\n" : "%s=%s; export %s;\n";
-		printf(format, SSH_AUTHSOCKET_ENV_NAME, socket_name,
-		    SSH_AUTHSOCKET_ENV_NAME);
-		printf("echo Agent pid %ld;\n", (long)parent_pid);
-		fflush(stdout);
+		if (socket_name[0] != '\0') {
+			format = c_flag ?
+			    "setenv %s %s;\n" : "%s=%s; export %s;\n";
+			printf(format, SSH_AUTHSOCKET_ENV_NAME, socket_name,
+			    SSH_AUTHSOCKET_ENV_NAME);
+			printf("echo Agent pid %ld;\n", (long)parent_pid);
+			fflush(stdout);
+		}
 		goto skip;
 	}
 	pid = fork();
