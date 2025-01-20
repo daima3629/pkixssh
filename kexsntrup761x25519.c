@@ -1,7 +1,7 @@
 /* $OpenBSD: kexsntrup761x25519.c,v 1.3 2024/09/15 02:20:51 djm Exp $ */
 /*
  * Copyright (c) 2019 Markus Friedl.  All rights reserved.
- * Copyright (c) 2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2024-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -25,17 +25,17 @@
  */
 
 #include "includes.h"
-#ifdef ENABLE_KEX_SNTRUP761X25519
 
 #include <sys/types.h>
 
 #include <stdio.h>
 #include <string.h>
 
-#include "sshkey.h"
 #include "kex.h"
-#include "sshbuf.h"
 #include "digest.h"
+#ifdef ENABLE_KEX_SNTRUP761X25519
+#include "sshkey.h"
+#include "sshbuf.h"
 #include "ssherr.h"
 
 volatile crypto_int16 crypto_int16_optblocker = 0;
@@ -252,9 +252,16 @@ const struct kex_impl kex_kem_sntrup761x25519_sha512_impl_ext = {
 	&kex_kem_sntrup761x25519_funcs,
 	NULL
 };
-
 #else /* ENABLE_KEX_SNTRUP761X25519 */
 
-typedef int ssh_kexsntrup761x25519_empty_translation_unit;
+static int kex_kem_sntrup761x25519_enabled(void) { return 0; }
+const struct kex_impl kex_kem_sntrup761x25519_sha512_impl = {
+	"sntrup761x25519-sha512", SSH_DIGEST_SHA512,
+	kex_kem_sntrup761x25519_enabled, NULL, NULL
+};
+const struct kex_impl kex_kem_sntrup761x25519_sha512_impl_ext = {
+	"sntrup761x25519-sha512@openssh.com", SSH_DIGEST_SHA512,
+	kex_kem_sntrup761x25519_enabled, NULL, NULL
+};
 
 #endif /* ENABLE_KEX_SNTRUP761X25519 */

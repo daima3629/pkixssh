@@ -28,8 +28,6 @@
 # include "config.h"
 #endif
 
-#ifdef ENABLE_KEX_DH
-
 #ifndef USE_OPENSSL_PROVIDER
 /* TODO: implement OpenSSL 4.0 API, as OpenSSL 3.* is quite nonfunctional */
 # define OPENSSL_SUPPRESS_DEPRECATED
@@ -38,8 +36,9 @@
 #include "includes.h"
 
 #include "kex.h"
-#include "dh-crypto.h"
 #include "digest.h"
+#ifdef ENABLE_KEX_DH
+#include "dh-crypto.h"
 #include "ssherr.h"
 #include "log.h"
 
@@ -549,15 +548,6 @@ static const struct kex_impl_funcs kex_dh_funcs = {
 	kex_dh_dec
 };
 
-#else /*ndef def ENABLE_KEX_DH*/
-
-static int kex_dh_sha1_enabled(void) { return 0; }
-static int kex_dh_sha2_enabled(void) { return 0; }
-static int kex_dh_gr3k_enabled(void) { return 0; }
-static const struct kex_impl_funcs kex_dh_funcs = NULL;
-
-#endif /*ndef def ENABLE_KEX_DH*/
-
 static struct kex_dh_spec kex_dh_grp1_spec = {
 	1
 };
@@ -631,3 +621,37 @@ const struct kex_impl kex_dh_grp17_sha512_impl = {
 	&kex_dh_funcs,
 	&kex_dh_grp17_spec
 };
+#else /*ndef ENABLE_KEX_DH*/
+
+static int kex_dh_enabled(void) { return 0; }
+
+const struct kex_impl kex_dh_grp1_sha1_impl = {
+	"diffie-hellman-group1-sha1", SSH_DIGEST_SHA1,
+	kex_dh_enabled, NULL, NULL,
+};
+const struct kex_impl kex_dh_grp14_sha1_impl = {
+	"diffie-hellman-group14-sha1", SSH_DIGEST_SHA1,
+	kex_dh_enabled, NULL, NULL,
+};
+const struct kex_impl kex_dh_grp14_sha256_impl = {
+	"diffie-hellman-group14-sha256", SSH_DIGEST_SHA256,
+	kex_dh_enabled, NULL, NULL,
+};
+const struct kex_impl kex_dh_grp16_sha512_impl = {
+	"diffie-hellman-group16-sha512", SSH_DIGEST_SHA512,
+	kex_dh_enabled, NULL, NULL,
+};
+const struct kex_impl kex_dh_grp18_sha512_impl = {
+	"diffie-hellman-group18-sha512", SSH_DIGEST_SHA512,
+	kex_dh_enabled, NULL, NULL,
+};
+const struct kex_impl kex_dh_grp15_sha512_impl = {
+	"diffie-hellman-group15-sha512", SSH_DIGEST_SHA512,
+	kex_dh_enabled, NULL, NULL,
+};
+const struct kex_impl kex_dh_grp17_sha512_impl = {
+	"diffie-hellman-group17-sha512", SSH_DIGEST_SHA512,
+	kex_dh_enabled, NULL, NULL,
+};
+
+#endif /*ndef ENABLE_KEX_DH*/

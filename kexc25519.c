@@ -33,10 +33,11 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "sshkey.h"
 #include "kex.h"
-#include "sshbuf.h"
 #include "digest.h"
+#ifdef ENABLE_ECDH_C25519
+#include "sshkey.h"
+#include "sshbuf.h"
 #include "ssherr.h"
 #include "ssh2.h"
 
@@ -313,3 +314,16 @@ const struct kex_impl kex_c25519_sha256_impl_ext = {
 	NULL
 };
 #endif /*ndef USE_ECDH_X25519*/
+#else /*ndef ENABLE_ECDH_C25519*/
+
+static int kex_c25519_enabled(void) { return 0; }
+const struct kex_impl kex_c25519_sha256_impl = {
+	"curve25519-sha256", SSH_DIGEST_SHA256,
+	kex_c25519_enabled, NULL, NULL
+};
+const struct kex_impl kex_c25519_sha256_impl_ext = {
+	"curve25519-sha256@libssh.org", SSH_DIGEST_SHA256,
+	kex_c25519_enabled, NULL, NULL
+};
+
+#endif /*ndef ENABLE_ECDH_C25519*/

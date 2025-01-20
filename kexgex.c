@@ -27,16 +27,15 @@
 
 #include "includes.h"
 
-#ifdef ENABLE_KEX_DH
-
 #include <openssl/bn.h>
 
 #include "kex.h"
+#include "digest.h"
+#ifdef ENABLE_KEX_DH
 #include "packet.h"
 #include "ssh2.h"
 #include "ssherr.h"
 #include "sshbuf.h"
-#include "digest.h"
 
 int
 kexgex_hash(
@@ -142,6 +141,14 @@ const struct kex_impl kex_dh_gex_sha256_impl = {
 };
 #else /*ndef ENABLE_KEX_DH*/
 
-typedef int kexgex_empty_translation_unit;
+static int kex_dh_gex_enabled(void) { return 0; }
+const struct kex_impl kex_dh_gex_sha1_impl = {
+	"diffie-hellman-group-exchange-sha1", SSH_DIGEST_SHA1,
+	kex_dh_gex_enabled, NULL, NULL
+};
+const struct kex_impl kex_dh_gex_sha256_impl = {
+	"diffie-hellman-group-exchange-sha256", SSH_DIGEST_SHA256,
+	kex_dh_gex_enabled, NULL, NULL
+};
 
 #endif /*ndef ENABLE_KEX_DH*/

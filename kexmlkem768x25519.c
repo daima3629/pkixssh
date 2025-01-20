@@ -1,7 +1,7 @@
 /* $OpenBSD: kexmlkem768x25519.c,v 1.2 2024/10/27 02:06:59 djm Exp $ */
 /*
  * Copyright (c) 2023 Markus Friedl.  All rights reserved.
- * Copyright (c) 2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2024-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -25,13 +25,12 @@
  */
 
 #include "includes.h"
-#ifdef ENABLE_KEX_MLKEM768X25519
 
 #include <sys/types.h>
 
 #include <stdio.h>
 #ifdef HAVE_STDINT_H
-#include <stdint.h>
+# include <stdint.h>
 #endif
 #include <stdbool.h>
 #include <string.h>
@@ -39,10 +38,11 @@
 # include <endian.h>
 #endif
 
-#include "sshkey.h"
 #include "kex.h"
-#include "sshbuf.h"
 #include "digest.h"
+#ifdef ENABLE_KEX_MLKEM768X25519
+#include "sshkey.h"
+#include "sshbuf.h"
 #include "ssherr.h"
 #include "log.h"
 
@@ -312,9 +312,12 @@ const struct kex_impl kex_kem_mlkem768x25519_sha256_impl = {
 	&kex_kem_mlkem768x25519_funcs,
 	NULL
 };
-
 #else /* ENABLE_KEX_MLKEM768X25519 */
 
-typedef int ssh_kexmlkem768x25519_empty_translation_unit;
+static int kex_kem_mlkem768x25519_enabled(void) { return 0; }
+const struct kex_impl kex_kem_mlkem768x25519_sha256_impl = {
+	"mlkem768x25519-sha256", SSH_DIGEST_SHA256,
+	kex_kem_mlkem768x25519_enabled, NULL, NULL
+};
 
 #endif /* ENABLE_KEX_MLKEM768X25519 */

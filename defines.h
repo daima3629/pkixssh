@@ -972,6 +972,13 @@ struct winsize {
 #endif
 
 
+/* Key exchange with Curvec25519 requires SHA-256. */
+#undef ENABLE_ECDH_C25519
+#ifdef HAVE_EVP_SHA256			/* OpenSSL >= 0.9.8 */
+# define ENABLE_ECDH_C25519
+#endif
+
+
 /* X.509 regression tests use "pkey" utilities if OpenSSL >= 1.1
  * regardless that genpkey functionality is available in
  * OpenSSL >= 1.0. Follow the same rule in code.

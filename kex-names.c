@@ -45,33 +45,23 @@ extern const struct kex_impl kex_dh_grp15_sha512_impl;
 extern const struct kex_impl kex_dh_grp16_sha512_impl;
 extern const struct kex_impl kex_dh_grp17_sha512_impl;
 extern const struct kex_impl kex_dh_grp18_sha512_impl;
-#ifdef ENABLE_KEX_DH
+/* kexgex.c */
 extern const struct kex_impl kex_dh_gex_sha1_impl;
 extern const struct kex_impl kex_dh_gex_sha256_impl;
-#endif /*def ENABLE_KEX_DH*/
-#ifdef WITH_OPENSSL
-# ifdef OPENSSL_HAS_ECC
+/* kexecdh.c */
 extern const struct kex_impl kex_ecdh_p256_sha256_impl;
 extern const struct kex_impl kex_ecdh_p384_sha384_impl;
-#  ifdef OPENSSL_HAS_NISTP521
 extern const struct kex_impl kex_ecdh_p521_sha512_impl;
-#  endif /* OPENSSL_HAS_NISTP521 */
-# endif /* OPENSSL_HAS_ECC */
-#endif /* WITH_OPENSSL */
-#if defined(HAVE_EVP_SHA256) || !defined(WITH_OPENSSL)
+/* kexc25519.c or kexecx.c */
 extern const struct kex_impl kex_c25519_sha256_impl;
 extern const struct kex_impl kex_c25519_sha256_impl_ext;
-#endif /* HAVE_EVP_SHA256 || !WITH_OPENSSL */
-#ifdef USE_ECDH_X448
+/* kexecx.c */
 extern const struct kex_impl kex_c448_sha512_impl;
-#endif
-#ifdef ENABLE_KEX_SNTRUP761X25519
+/* kexsntrup761x25519.c */
 extern const struct kex_impl kex_kem_sntrup761x25519_sha512_impl;
 extern const struct kex_impl kex_kem_sntrup761x25519_sha512_impl_ext;
-#endif
-#ifdef ENABLE_KEX_MLKEM768X25519
+/* kexmlkem768x25519.c */
 extern const struct kex_impl kex_kem_mlkem768x25519_sha256_impl;
-#endif
 
 static const struct kex_impl* const kex_impl_list[] = {
 	&kex_dh_grp1_sha1_impl,
@@ -81,33 +71,17 @@ static const struct kex_impl* const kex_impl_list[] = {
 	&kex_dh_grp16_sha512_impl,
 	&kex_dh_grp17_sha512_impl,
 	&kex_dh_grp18_sha512_impl,
-#ifdef ENABLE_KEX_DH
 	&kex_dh_gex_sha1_impl,
 	&kex_dh_gex_sha256_impl,
-#endif /*def ENABLE_KEX_DH*/
-#ifdef WITH_OPENSSL
-# ifdef OPENSSL_HAS_ECC
 	&kex_ecdh_p256_sha256_impl,
 	&kex_ecdh_p384_sha384_impl,
-#  ifdef OPENSSL_HAS_NISTP521
 	&kex_ecdh_p521_sha512_impl,
-#  endif /* OPENSSL_HAS_NISTP521 */
-# endif /* OPENSSL_HAS_ECC */
-#endif /* WITH_OPENSSL */
-#if defined(HAVE_EVP_SHA256) || !defined(WITH_OPENSSL)
 	&kex_c25519_sha256_impl,
 	&kex_c25519_sha256_impl_ext,
-#endif /* HAVE_EVP_SHA256 || !WITH_OPENSSL */
-#ifdef USE_ECDH_X448
 	&kex_c448_sha512_impl,
-#endif
-#ifdef ENABLE_KEX_SNTRUP761X25519
 	&kex_kem_sntrup761x25519_sha512_impl,
 	&kex_kem_sntrup761x25519_sha512_impl_ext,
-#endif
-#ifdef ENABLE_KEX_MLKEM768X25519
 	&kex_kem_mlkem768x25519_sha256_impl,
-#endif
 	NULL
 };
 

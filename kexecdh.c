@@ -37,7 +37,10 @@
 #define SSHKEY_INTERNAL
 #include "includes.h"
 
+#undef ENABLE_KEX_ECDH
 #if defined(WITH_OPENSSL) && defined(OPENSSL_HAS_ECC)
+# define ENABLE_KEX_ECDH
+#endif
 
 #include <sys/types.h>
 
@@ -47,8 +50,9 @@
 #include <openssl/ecdh.h>
 
 #include "kex.h"
-#include "sshbuf.h"
 #include "digest.h"
+#ifdef ENABLE_KEX_ECDH
+#include "sshbuf.h"
 #include "ssherr.h"
 
 struct kex_ecdh_spec {
@@ -367,6 +371,9 @@ const struct kex_impl kex_ecdh_p384_sha384_impl = {
 
 # ifdef OPENSSL_HAS_NISTP521
 static int kex_ecdh_p521_enabled(void) { return 1; }
+# else
+static int kex_ecdh_p521_enabled(void) { return 0; }
+# endif /* OPENSSL_HAS_NISTP521 */
 
 static struct kex_ecdh_spec kex_ecdh_p521_spec = {
 	NID_secp521r1
@@ -378,6 +385,20 @@ const struct kex_impl kex_ecdh_p521_sha512_impl = {
 	&kex_ecdh_funcs,
 	&kex_ecdh_p521_spec
 };
-# endif /* OPENSSL_HAS_NISTP521 */
+#else /*ndef ENABLE_KEX_ECDH*/
 
-#endif /* defined(WITH_OPENSSL) && defined(OPENSSL_HAS_ECC) */
+static int kex_ecdh_enabled(void) { return 0; }
+const struct kex_impl kex_ecdh_p256_sha256_impl = {
+	"ecdh-sha2-nistp256", SSH_DIGEST_SHA256,
+	kex_ecdh_enabled, NULL, NULL
+};
+const struct kex_impl kex_ecdh_p384_sha384_impl = {
+	"ecdh-sha2-nistp384", SSH_DIGEST_SHA384,
+	kex_ecdh_enabled, NULL, NULL
+};
+const struct kex_impl kex_ecdh_p521_sha512_impl = {
+	"ecdh-sha2-nistp521", SSH_DIGEST_SHA512,
+	kex_ecdh_enabled, NULL, NULL
+};
+
+#endif /*ndef ENABLE_KEX_ECDH*/

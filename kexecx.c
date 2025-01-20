@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2024-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -24,22 +24,20 @@
 
 #include "includes.h"
 
-#include <sys/types.h>
-
-#include <stdlib.h>
-
-#include "kex.h"
-#include "sshbuf.h"
-#include "digest.h"
-#include "ssherr.h"
-
 #undef USE_KEX_ECX
 #if defined(USE_ECDH_X448) || defined(USE_ECDH_X25519)
 # define USE_KEX_ECX
 #endif
 
+#include <sys/types.h>
 
+#include <stdlib.h>
+
+#include "kex.h"
+#include "digest.h"
 #ifdef USE_KEX_ECX
+#include "sshbuf.h"
+#include "ssherr.h"
 
 struct kex_ecx_spec {
 	int key_id;
@@ -195,9 +193,10 @@ static const struct kex_impl_funcs kex_ecx_funcs = {
 	kex_ecx_enc,
 	kex_ecx_dec
 };
-
+#endif /*ndef USE_KEX_ECX*/
 
 #ifdef USE_ECDH_X25519
+/* kexc25519.c, failback */
 static int kex_c25519_enabled(void) { return 1; }
 static struct kex_ecx_spec kex_c25519_spec = {
 	EVP_PKEY_X25519, 32
@@ -230,10 +229,10 @@ const struct kex_impl kex_c448_sha512_impl = {
 	&kex_ecx_funcs,
 	&kex_c448_spec
 };
-#endif /*def USE_ECDH_X448*/
-
-#else /*ndef USE_KEX_ECX*/
-
-typedef int kexecx_empty_translation_unit;
-
-#endif /*ndef USE_KEX_ECX*/
+#else /*ndef USE_ECDH_X448*/
+static int kex_c448_enabled(void) { return 0; }
+const struct kex_impl kex_c448_sha512_impl = {
+	"curve448-sha512", SSH_DIGEST_SHA512,
+	kex_c448_enabled, NULL, NULL
+};
+#endif /*ndef USE_ECDH_X448*/
