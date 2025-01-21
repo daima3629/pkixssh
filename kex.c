@@ -637,7 +637,9 @@ kex_reset_keys(struct kex *kex) {
 #ifdef WITH_OPENSSL
 	kex_reset_crypto_keys(kex);
 #endif
+#ifndef USE_ECDH_X25519
 	explicit_bzero(kex->c25519_key, sizeof(kex->c25519_key));
+#endif
 }
 
 void

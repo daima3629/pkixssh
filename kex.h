@@ -122,7 +122,9 @@ struct kex {
 	/* kex specific state */
 	EVP_PKEY	*pk;
 	u_int	min, max, nbits;	/* GEX */
+#ifndef USE_ECDH_X25519
 	u_char c25519_key[CURVE25519_SIZE];
+#endif
 	u_char sntrup761_client_key[crypto_kem_sntrup761_SECRETKEYBYTES]; /* KEM */
 	u_char mlkem768_client_key[crypto_kem_mlkem768_SECRETKEYBYTES]; /* KEM */
 	struct sshbuf *client_pub;

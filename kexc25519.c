@@ -67,13 +67,6 @@ kexc25519_keygen_crypto(struct kex *kex, u_char pub[CURVE25519_SIZE]) {
 		goto err;
 	}
 
-	len = CURVE25519_SIZE;
-	if (EVP_PKEY_get_raw_private_key(pk, kex->c25519_key, &len) != 1 &&
-	    len != CURVE25519_SIZE) {
-		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto err;
-	}
-
 	kex->pk = pk;
 	pk = NULL;
 err:
