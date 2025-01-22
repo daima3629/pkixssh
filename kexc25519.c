@@ -3,7 +3,7 @@
  * Copyright (c) 2019 Markus Friedl.  All rights reserved.
  * Copyright (c) 2010 Damien Miller.  All rights reserved.
  * Copyright (c) 2013 Aris Adamantiadis.  All rights reserved.
- * Copyright (c) 2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2024-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -49,44 +49,7 @@ extern int crypto_scalarmult_curve25519(u_char a[CURVE25519_SIZE],
 	__attribute__((__bounded__(__minbytes__, 3, CURVE25519_SIZE)));
 #endif
 
-#ifdef USE_ECDH_X25519
-static int
-kexc25519_keygen_crypto(struct kex *kex, u_char pub[CURVE25519_SIZE]) {
-	EVP_PKEY *pk = NULL;
-	size_t len;
-	int r;
-
-	r = ssh_pkey_keygen_simple(EVP_PKEY_X25519, &pk);
-	if (r != 0) return r;
-
-	/* compatibility: fill data used by build-in implementation */
-	len = CURVE25519_SIZE;
-	if (EVP_PKEY_get_raw_public_key(pk, pub, &len) != 1 &&
-	    len != CURVE25519_SIZE) {
-		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto err;
-	}
-
-	kex->pk = pk;
-	pk = NULL;
-err:
-	EVP_PKEY_free(pk);
-	return r;
-}
-#endif /*def USE_ECDH_X25519*/
-
 #ifndef USE_ECDH_X25519
-static int
-kexc25519_keygen_buildin(struct kex *kex, u_char pub[CURVE25519_SIZE]
-) {
-	static const u_char basepoint[CURVE25519_SIZE] = {9};
-
-	arc4random_buf(kex->c25519_key, CURVE25519_SIZE);
-	crypto_scalarmult_curve25519(pub, kex->c25519_key, basepoint);
-	return 0;
-}
-#endif /*ndef USE_ECDH_X25519*/
-
 int
 kex_c25519_keygen_to_sshbuf(struct kex *kex, struct sshbuf **bufp) {
 	struct sshbuf *buf = NULL;
@@ -99,13 +62,11 @@ kex_c25519_keygen_to_sshbuf(struct kex *kex, struct sshbuf **bufp) {
 	} else
 		buf = *bufp;
 
-#ifdef USE_ECDH_X25519
-	/*TODO: FIPS mode?*/
-	r = kexc25519_keygen_crypto(kex, pub);
-#else
-	r = kexc25519_keygen_buildin(kex, pub);
-#endif
-	if (r != 0) goto out;
+{	static const u_char basepoint[CURVE25519_SIZE] = {9};
+
+	arc4random_buf(kex->c25519_key, CURVE25519_SIZE);
+	crypto_scalarmult_curve25519(pub, kex->c25519_key, basepoint);
+}
 
 #ifdef DEBUG_KEXECDH
 	if (kex->server)
@@ -117,7 +78,6 @@ kex_c25519_keygen_to_sshbuf(struct kex *kex, struct sshbuf **bufp) {
 	if (r != 0)
 		kex_reset_keys(kex);
 
-out:
 	if (*bufp == NULL) {
 		if (r == 0)
 			*bufp = buf;
@@ -126,6 +86,12 @@ out:
 	}
 	return r;
 }
+#else /*def USE_ECDH_X25519*/
+int
+kex_c25519_keygen_to_sshbuf(struct kex *kex, struct sshbuf **bufp) {
+	return kex_ecx_keygen_to_sshbuf(kex, EVP_PKEY_X25519, CURVE25519_SIZE, bufp);
+}
+#endif /*def USE_ECDH_X25519*/
 
 #ifdef USE_ECDH_X25519
 static int
