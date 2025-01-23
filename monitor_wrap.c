@@ -78,31 +78,41 @@ extern struct monitor *pmonitor;
 extern struct sshbuf *loginmsg;
 extern ServerOptions options;
 
+static void
+mm_null_log_handler(LogLevel level, const char *msg, void *ctx) {
+	UNUSED(level); UNUSED(msg); UNUSED(ctx);
+}
+
 void
 mm_log_handler(LogLevel level, const char *msg, void *ctx)
 {
-	struct sshbuf *log_msg;
+	struct sshbuf *log_msg = NULL;
 	struct monitor *mon = (struct monitor *)ctx;
 	int r;
 	size_t len;
 
 	if (mon->m_log_sendfd == -1)
-		fatal_f("no log channel");
+		goto err;
 
 	if ((log_msg = sshbuf_new()) == NULL)
-		fatal_f("sshbuf_new failed");
+		goto err;
 
 	if ((r = sshbuf_put_u32(log_msg, 0)) != 0 || /* length; filled below */
 	    (r = sshbuf_put_u32(log_msg, level)) != 0 ||
 	    (r = sshbuf_put_cstring(log_msg, msg)) != 0)
-		fatal_fr(r, "assemble");
+		goto err;
 	if ((len = sshbuf_len(log_msg)) < 4 || len > 0xffffffff)
-		fatal_f("bad length %zu", len);
+		goto err;
 	POKE_U32(sshbuf_mutable_ptr(log_msg), len - 4);
 	if (atomicio(vwrite, mon->m_log_sendfd,
 	    sshbuf_mutable_ptr(log_msg), len) != len)
-		fatal_f("write: %s", strerror(errno));
+		goto err;
 	sshbuf_free(log_msg);
+	return;
+err:
+	sshbuf_free(log_msg);
+	set_log_handler(mm_null_log_handler, NULL);
+	cleanup_exit(255);
 }
 
 int
