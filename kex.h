@@ -211,11 +211,11 @@ int	kex_shared_secret_to_sshbuf(u_char *kbuf, size_t klen,
 #ifdef USE_EVP_PKEY_KEYGEN
 int	kex_ecx_keygen_to_sshbuf(struct kex *kex, int key_id, size_t pub_len,
     struct sshbuf **bufp);
-int	kex_pkey_derive_shared_secret_raw(struct kex *kex, EVP_PKEY *peerkey,
-    u_char **kbufp, size_t *klenp);
+int kex_ecx_shared_secret_to_sshbuf(struct kex *kex, int key_id,
+    const u_char *kbuf, size_t klen, int raw, struct sshbuf **bufp);
 int	kex_pkey_derive_shared_secret(struct kex *kex, EVP_PKEY *peerkey,
     int raw, struct sshbuf **bufp);
-#endif
+#endif /*def USE_EVP_PKEY_KEYGEN*/
 int	kex_digest_buffer(int hash_alg, struct sshbuf *buf,
     struct sshbuf **bufp);
 

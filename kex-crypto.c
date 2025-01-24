@@ -42,7 +42,7 @@ kex_reset_crypto_keys(struct kex *kex) {
 
 
 #ifdef USE_EVP_PKEY_KEYGEN
-int
+static int
 kex_pkey_derive_shared_secret_raw(struct kex *kex, EVP_PKEY *peerkey,
     u_char **kbufp, size_t *klenp
 ) {

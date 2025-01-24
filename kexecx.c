@@ -103,20 +103,18 @@ err:
 	return r;
 }
 
-static int
-kex_ecx_shared_secret_to_sshbuf(struct kex *kex,
-    const struct sshbuf *blob, struct sshbuf **bufp
+int
+kex_ecx_shared_secret_to_sshbuf(struct kex *kex, int key_id,
+    const u_char *kbuf, size_t klen, int raw, struct sshbuf **bufp
 ) {
-	struct kex_ecx_spec *spec = kex->impl->spec;
 	EVP_PKEY *peerkey = NULL;
 	int r;
 
-	peerkey = EVP_PKEY_new_raw_public_key(spec->key_id, NULL,
-	    sshbuf_ptr(blob), sshbuf_len(blob));
+	peerkey = EVP_PKEY_new_raw_public_key(key_id, NULL, kbuf, klen);
 	if (peerkey == NULL)
 		return SSH_ERR_INVALID_FORMAT;
 
-	r = kex_pkey_derive_shared_secret(kex, peerkey, 0, bufp);
+	r = kex_pkey_derive_shared_secret(kex, peerkey, raw, bufp);
 
 	EVP_PKEY_free(peerkey);
 	return r;
@@ -154,7 +152,8 @@ kex_ecx_enc(struct kex *kex, const struct sshbuf *client_blob,
 	    server_blobp);
 	if (r != 0) goto out;
 
-	r = kex_ecx_shared_secret_to_sshbuf(kex, client_blob, shared_secretp);
+	r = kex_ecx_shared_secret_to_sshbuf(kex, spec->key_id,
+	    sshbuf_ptr(client_blob), sshbuf_len(client_blob), 0, shared_secretp);
 	if (r != 0) goto out;
 #ifdef DEBUG_KEXECX
 	dump_digestb("encoded shared secret:", *shared_secretp);
@@ -186,7 +185,8 @@ kex_ecx_dec(struct kex *kex, const struct sshbuf *server_blob,
 	dump_digestb("server ecx public key:", server_blob);
 #endif
 
-	r = kex_ecx_shared_secret_to_sshbuf(kex, server_blob, shared_secretp);
+	r = kex_ecx_shared_secret_to_sshbuf(kex, spec->key_id,
+	    sshbuf_ptr(server_blob), sshbuf_len(server_blob), 0, shared_secretp);
 	if (r != 0) goto out;
 #ifdef DEBUG_KEXECX
 	dump_digestb("encoded shared secret:", *shared_secretp);

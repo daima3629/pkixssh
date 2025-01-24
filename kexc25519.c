@@ -93,26 +93,6 @@ kex_c25519_keygen_to_sshbuf(struct kex *kex, struct sshbuf **bufp) {
 }
 #endif /*def USE_ECDH_X25519*/
 
-#ifdef USE_ECDH_X25519
-static int
-kex_c25519_derive_shared_secret(struct kex *kex,
-    const u_char pub[CURVE25519_SIZE], int raw, struct sshbuf **bufp
-) {
-	EVP_PKEY *peerkey = NULL;
-	int r;
-
-	peerkey = EVP_PKEY_new_raw_public_key(EVP_PKEY_X25519, NULL,
-	    pub, CURVE25519_SIZE);
-	if (peerkey == NULL)
-		return SSH_ERR_INVALID_FORMAT;
-
-	r = kex_pkey_derive_shared_secret(kex, peerkey, raw, bufp);
-
-	EVP_PKEY_free(peerkey);
-	return r;
-}
-#endif /*def USE_ECDH_X25519*/
-
 #ifndef USE_ECDH_X25519
 static int
 kex_c25519_shared_key_ext(struct kex *kex,
@@ -154,7 +134,8 @@ kex_c25519_shared_secret_to_sshbuf(struct kex *kex, const u_char pub[CURVE25519_
 		buf = *bufp;
 
 #ifdef USE_ECDH_X25519
-	r = kex_c25519_derive_shared_secret(kex, pub, raw, &buf);
+	r = kex_ecx_shared_secret_to_sshbuf(kex, EVP_PKEY_X25519,
+	    pub, CURVE25519_SIZE, raw, bufp);
 #else
 	r = kex_c25519_shared_key_ext(kex, pub, buf, raw);
 #endif
