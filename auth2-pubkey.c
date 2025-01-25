@@ -1,4 +1,4 @@
-/* $OpenBSD: auth2-pubkey.c,v 1.120 2024/05/17 00:30:23 djm Exp $ */
+/* $OpenBSD: auth2-pubkey.c,v 1.122 2024/12/12 09:09:09 dtucker Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2010 Damien Miller.  All rights reserved.
@@ -274,21 +274,54 @@ static int
 match_principals_file(struct passwd *pw, char *file,
     struct sshkey_cert *cert, struct sshauthopt **authoptsp)
 {
-	FILE *f;
-	int success;
+	int success = 0;
+	glob_t gl;
+	struct sshauthopt *opts = NULL;
 
 	if (authoptsp != NULL)
 		*authoptsp = NULL;
 
+{	int r;
 	temporarily_use_uid(pw);
-	debug("trying authorized principals file %s", file);
-	if ((f = auth_openprincipals(file, pw, options.strict_modes)) == NULL) {
-		restore_uid();
+	r = glob(file, 0, NULL, &gl);
+	restore_uid();
+	if (r != 0) {
+		if (r != GLOB_NOMATCH)
+			error_f("glob \"%s\" failed", file);
 		return 0;
 	}
-	success = auth_process_principals(f, file, cert, authoptsp);
-	fclose(f);
-	restore_uid();
+}
+	if (gl.gl_pathc > INT_MAX)
+		fatal_f("too many glob results for \"%s\"", file);
+	debug3_f("glob \"%s\" returned %zu matches", file, gl.gl_pathc);
+
+{	size_t i;
+	for (i = 0; i < gl.gl_pathc; i++) {
+		FILE *f;
+
+		temporarily_use_uid(pw);
+		debug("trying authorized principals file %s", gl.gl_pathv[i]);
+		f = auth_openprincipals(gl.gl_pathv[i], pw, options.strict_modes);
+		if (f == NULL) {
+			restore_uid();
+			continue;
+		}
+		success = auth_process_principals(f, gl.gl_pathv[i], cert, &opts);
+		fclose(f);
+		restore_uid();
+
+		if (success) break;
+		sshauthopt_free(opts);
+		opts = NULL;
+	}
+}
+	globfree(&gl);
+
+	if (success && authoptsp != NULL) {
+		*authoptsp = opts;
+		opts = NULL;
+	}
+	sshauthopt_free(opts);
 	return success;
 }
 
