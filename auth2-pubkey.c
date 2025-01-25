@@ -706,8 +706,8 @@ user_xkey_allowed(struct ssh *ssh, struct passwd *pw, ssh_verify_ctx *ctx,
     int auth_attempt, struct sshauthopt **authoptsp)
 {
 	struct sshkey *key = ctx->key;
-	u_int success = 0, i;
-	char *file, *conn_id = NULL;
+	u_int success = 0;
+	char *conn_id = NULL;
 	struct sshauthopt *opts = NULL;
 	const char *rdomain, *remote_ip, *remote_host;
 
@@ -729,11 +729,10 @@ user_xkey_allowed(struct ssh *ssh, struct passwd *pw, ssh_verify_ctx *ctx,
 	if (rdomain == NULL) rdomain = "";
 	remote_ip = ssh_remote_ipaddr(ssh);
 	remote_host = auth_get_canonical_hostname(ssh, options.use_dns);
-	xasprintf(&conn_id, "%s %d %s %d",
-	    ssh_local_ipaddr(ssh), ssh_local_port(ssh),
-	    remote_ip, ssh_remote_port(ssh));
 
+{	u_int i;
 	for (i = 0; i < options.num_authkeys_files; i++) {
+		char *file;
 
 		if (strcasecmp(options.authorized_keys_files[i], "none") == 0)
 			continue;
@@ -770,6 +769,11 @@ user_xkey_allowed(struct ssh *ssh, struct passwd *pw, ssh_verify_ctx *ctx,
 		}
 	}
 	}
+}
+
+	xasprintf(&conn_id, "%s %d %s %d",
+	    ssh_local_ipaddr(ssh), ssh_local_port(ssh),
+	    remote_ip, ssh_remote_port(ssh));
 
 	success = user_cert_trusted_ca(pw, key, remote_ip, remote_host, conn_id, rdomain, &opts);
 	if (success) goto out;
