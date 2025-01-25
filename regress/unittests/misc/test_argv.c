@@ -143,5 +143,54 @@ test_argv(void)
 	RESET_ARGV();
 	TEST_DONE();
 
+	TEST_START("comments");
+	ASSERT_INT_EQ(argv_split("# gold", &ac, &av, 0), 0);
+	ASSERT_INT_EQ(ac, 2);
+	ASSERT_PTR_NE(av, NULL);
+	ASSERT_STRING_EQ(av[0], "#");
+	ASSERT_STRING_EQ(av[1], "gold");
+	ASSERT_PTR_EQ(av[2], NULL);
+	RESET_ARGV();
+	ASSERT_INT_EQ(argv_split("# gold", &ac, &av, 1), 0);
+	ASSERT_INT_EQ(ac, 0);
+	ASSERT_PTR_NE(av, NULL);
+	ASSERT_PTR_EQ(av[0], NULL);
+	RESET_ARGV();
+	ASSERT_INT_EQ(argv_split("leamas#gold", &ac, &av, 1), 0);
+	ASSERT_INT_EQ(ac, 2);
+	ASSERT_PTR_NE(av, NULL);
+	ASSERT_STRING_EQ(av[0], "leamas");
+	ASSERT_STRING_EQ(av[1], "gold");
+	ASSERT_PTR_EQ(av[2], NULL);
+	RESET_ARGV();
+	ASSERT_INT_EQ(argv_split("\"leamas # gold\"", &ac, &av, 1), 0);
+	ASSERT_INT_EQ(ac, 1);
+	ASSERT_PTR_NE(av, NULL);
+	ASSERT_STRING_EQ(av[0], "leamas # gold");
+	ASSERT_PTR_EQ(av[1], NULL);
+	RESET_ARGV();
+	ASSERT_INT_EQ(argv_split("leamas \"# gold\"", &ac, &av, 1), 0);
+	ASSERT_INT_EQ(ac, 2);
+	ASSERT_PTR_NE(av, NULL);
+	ASSERT_STRING_EQ(av[0], "leamas");
+	ASSERT_STRING_EQ(av[1], "# gold");
+	ASSERT_PTR_EQ(av[2], NULL);
+	RESET_ARGV();
+	ASSERT_INT_EQ(argv_split("\"leamas\"#gold", &ac, &av, 1), 0);
+	ASSERT_INT_EQ(ac, 2);
+	ASSERT_PTR_NE(av, NULL);
+	ASSERT_STRING_EQ(av[0], "leamas");
+	ASSERT_STRING_EQ(av[1], "gold");
+	ASSERT_PTR_EQ(av[2], NULL);
+	RESET_ARGV();
+	ASSERT_INT_EQ(argv_split("\"leamas\"# gold", &ac, &av, 1), 0);
+	ASSERT_INT_EQ(ac, 2);
+	ASSERT_PTR_NE(av, NULL);
+	ASSERT_STRING_EQ(av[0], "leamas");
+	ASSERT_STRING_EQ(av[1], "gold");
+	ASSERT_PTR_EQ(av[2], NULL);
+	RESET_ARGV();
+	TEST_DONE();
+
 	/* XXX test char *argv_assemble(int argc, char **argv) */
 }

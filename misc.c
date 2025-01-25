@@ -2120,7 +2120,6 @@ argv_split(const char *s, int *argcp, char ***argvp, int terminate_on_comment)
 	int argc = 0, quote, i, j;
 	char *arg, **argv = xcalloc(1, sizeof(*argv));
 
-	UNUSED(terminate_on_comment);
 	*argvp = NULL;
 	*argcp = 0;
 
@@ -2128,7 +2127,8 @@ argv_split(const char *s, int *argcp, char ***argvp, int terminate_on_comment)
 		/* Skip leading whitespace */
 		if (s[i] == ' ' || s[i] == '\t')
 			continue;
-
+		if (terminate_on_comment && s[i] == '#')
+			break;
 		/* Start of a token */
 		quote = 0;
 
@@ -2150,6 +2150,8 @@ argv_split(const char *s, int *argcp, char ***argvp, int terminate_on_comment)
 					arg[j++] = s[i];
 				}
 			} else if (quote == 0 && (s[i] == ' ' || s[i] == '\t'))
+				break; /* done */
+			else if ((quote == 0) && terminate_on_comment && s[i] == '#')
 				break; /* done */
 			else if (quote == 0 && (s[i] == '\"' || s[i] == '\''))
 				quote = s[i]; /* quote start */
