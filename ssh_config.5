@@ -1214,12 +1214,15 @@ appending
 to the path of a specified
 .Cm IdentityFile .
 .Pp
-Arguments to
+Argument to
 .Cm IdentityFile
 may use the tilde syntax to refer to a user's home directory
 or the tokens described in the
 .Sx TOKENS
 section.
+Alternately an argument of
+.Cm none
+may be used to indicate no identity file should be loaded.
 .Pp
 If file name starts with prefix
 .Sq engine:
@@ -1250,6 +1253,7 @@ Multiple
 .Cm IdentityFile
 directives will add to the list of identities tried (this behaviour
 differs from that of other configuration directives).
+Note that having at least one directive prevents default files to be loaded.
 .Pp
 .Cm IdentityFile
 may be used in conjunction with
