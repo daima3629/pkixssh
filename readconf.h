@@ -1,4 +1,4 @@
-/* $OpenBSD: readconf.h,v 1.156 2024/03/04 02:16:11 djm Exp $ */
+/* $OpenBSD: readconf.h,v 1.158 2024/12/06 16:21:48 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -226,6 +226,8 @@ typedef struct {
 
 	char	**channel_timeouts;	/* inactivity timeout by channel type */
 	u_int	num_channel_timeouts;
+
+	char	*version_addendum;
 
 	char	*ignored_unknown; /* Pattern list of unknown tokens to ignore */
 }       Options;

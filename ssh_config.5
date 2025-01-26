@@ -2304,6 +2304,11 @@ See also
 .Em VERIFYING HOST KEYS
 in
 .Xr ssh 1 .
+.It Cm VersionAddendum
+Optionally specifies additional text to append to the SSH protocol banner
+sent by the client upon connection.
+The default is
+.Cm none .
 .It Cm VisualHostKey
 If this flag is set to
 .Cm yes ,
@@ -2513,8 +2518,9 @@ The local username.
 .Cm RemoteCommand ,
 .Cm RemoteForward ,
 .Cm RevokedHostKeys ,
+.Cm UserKnownHostsFile ,
 and
-.Cm UserKnownHostsFile
+.Cm VersionAddendum
 accept the tokens %%, %C, %d, %h, %i, %j, %k, %L, %l, %n, %p, %r, and %u.
 .Pp
 .Cm KnownHostsCommand

@@ -1,4 +1,4 @@
-/* $OpenBSD: sshconnect.c,v 1.367 2024/04/23 13:34:50 jsg Exp $ */
+/* $OpenBSD: sshconnect.c,v 1.369 2024/12/06 16:21:48 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -613,8 +613,10 @@ prepare_client_banner(struct ssh *ssh)
 	 * further use in key exchange messages.
 	 */
 	r = sshbuf_putf(ssh->kex->client_version,
-	    "SSH-%d.%d-%s PKIX["PACKAGE_VERSION"]\r\n",
-	    PROTOCOL_MAJOR_2, PROTOCOL_MINOR_2, SSH_VERSION);
+	    "SSH-%d.%d-%s PKIX["PACKAGE_VERSION"]%s%s\r\n",
+	    PROTOCOL_MAJOR_2, PROTOCOL_MINOR_2, SSH_VERSION,
+	    *options.version_addendum == '\0' ? "" : " ",
+	    options.version_addendum);
 	return r;
 }
 

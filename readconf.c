@@ -1,4 +1,4 @@
-/* $OpenBSD: readconf.c,v 1.392 2024/09/26 23:55:08 djm Exp $ */
+/* $OpenBSD: readconf.c,v 1.394 2024/12/06 16:21:48 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -218,6 +218,7 @@ typedef enum {
 	oPubkeyAcceptedAlgorithms, oCASignatureAlgorithms, oProxyJump,
 	oSecurityKeyProvider, oKnownHostsCommand, oRequiredRSASize,
 	oEnableEscapeCommandline, oChannelTimeout,
+	oVersionAddendum,
 	oIgnore, oIgnoredUnknownOption, oDeprecated, oUnsupported
 } OpCodes;
 
@@ -390,6 +391,7 @@ static struct {
 	{ "requiredrsasize", oRequiredRSASize },
 	{ "enableescapecommandline", oEnableEscapeCommandline },
 	{ "channeltimeout", oChannelTimeout },
+	{ "versionaddendum", oVersionAddendum },
 
 	{ NULL, oBadOption }
 };
@@ -2541,6 +2543,22 @@ parse_key_algorithms:
 		}
 		break;
 
+	case oVersionAddendum:
+		len = strspn(str, WHITESPACE);
+		if (strchr(str + len, '\r') != NULL) {
+			error("%s line %d: keyword %s invalid argument",
+			    filename, linenum, keyword);
+			goto out;
+		}
+		if (*activep && options->version_addendum == NULL) {
+			if (strcasecmp(str + len, "none") == 0)
+				options->version_addendum = xstrdup("");
+			else
+				options->version_addendum = xstrdup(str + len);
+		}
+		argv_consume(&ac);
+		break;
+
 	case oDeprecated:
 		debug("%s line %d: Deprecated option \"%s\"",
 		    filename, linenum, keyword);
@@ -2826,6 +2844,7 @@ initialize_options(Options * options)
 	options->tag = NULL;
 	options->channel_timeouts = NULL;
 	options->num_channel_timeouts = 0;
+	options->version_addendum = NULL;
 }
 
 void
@@ -3126,6 +3145,8 @@ fill_default_options(Options * options)
 		    sizeof(*options->permitted_cnames));
 		options->num_permitted_cnames = 0;
 	}
+	if (options->version_addendum == NULL)
+		options->version_addendum = xstrdup("");
 	/* options->identity_agent distinguishes NULL from 'none' */
 	/* options->user will be set in the main program if appropriate */
 	/* options->hostname will be set in the main program if appropriate */
@@ -3753,6 +3774,8 @@ dump_client_config(Options *o, const char *host)
 	dump_cfg_string(oXAuthLocation, o->xauth_location);
 	dump_cfg_string(oKnownHostsCommand, o->known_hosts_command);
 	dump_cfg_string(oTag, o->tag);
+	dump_cfg_string(oVersionAddendum, *o->version_addendum == '\0'
+	    ? "none" : o->version_addendum);
 
 	/* Forwards */
 	dump_cfg_forwards(oDynamicForward, o->num_local_forwards, o->local_forwards);
