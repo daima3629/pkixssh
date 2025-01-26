@@ -9,7 +9,7 @@
  * incompatible with the protocol description in the RFC file, it must be
  * called by a name other than "ssh" or "Secure Shell".
  *
- * Copyright (c) 2002-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -3185,8 +3185,7 @@ dump_cfg_string(ServerOpCodes code, const char *val)
 {
 	if (val == NULL)
 		return;
-	printf("%s %s\n", lookup_opcode_name(code),
-	    val == NULL ? "none" : val);
+	printf("%s %s\n", lookup_opcode_name(code), val);
 }
 
 static void
