@@ -2524,6 +2524,10 @@ do_moduli_screen(const char *out_file, char **opts, size_t nopts)
 	    generator_wanted, checkpoint,
 	    start_lineno, lines_to_process) != 0)
 		fatal("modulus screening failed");
+	if (in != stdin)
+		(void)fclose(in);
+	if (out != stdout)
+		(void)fclose(out);
 	free(checkpoint);
 #else /*ndef ENABLE_KEX_DH*/
 	UNUSED(out_file); UNUSED(opts); UNUSED(nopts);
