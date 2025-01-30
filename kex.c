@@ -627,16 +627,19 @@ kex_free_newkeys(struct newkeys *newkeys)
 	freezero(newkeys, sizeof(*newkeys));
 }
 
+static inline void
+kex_reset_crypto_keys(struct kex *kex) {
 #ifdef WITH_OPENSSL
-extern void/*internal*/
-kex_reset_crypto_keys(struct kex *kex);
+	EVP_PKEY_free(kex->pk);
+	kex->pk = NULL;
+#
+	UNUSED(kex);
 #endif
+}
 
 void
 kex_reset_keys(struct kex *kex) {
-#ifdef WITH_OPENSSL
 	kex_reset_crypto_keys(kex);
-#endif
 #ifndef USE_ECDH_X25519
 	explicit_bzero(kex->c25519_key, sizeof(kex->c25519_key));
 #endif
@@ -1398,3 +1401,69 @@ kex_shared_secret_to_sshbuf(u_char *kbuf, size_t klen,
 	}
 	return r;
 }
+
+
+#ifdef USE_EVP_PKEY_KEYGEN
+static int
+kex_pkey_derive_shared_secret_raw(struct kex *kex, EVP_PKEY *peerkey,
+    u_char **kbufp, size_t *klenp
+) {
+	EVP_PKEY_CTX *ctx;
+	u_char *kbuf = NULL;
+	size_t klen = 0;
+	int r = SSH_ERR_LIBCRYPTO_ERROR;
+
+	ctx = EVP_PKEY_CTX_new(kex->pk, NULL);
+	if (ctx == NULL) return SSH_ERR_INTERNAL_ERROR;
+
+	if (EVP_PKEY_derive_init(ctx) != 1)
+		goto out;
+
+	if (EVP_PKEY_derive_set_peer(ctx, peerkey) != 1)
+		goto out;
+
+	if (EVP_PKEY_derive(ctx, NULL, &klen) != 1)
+		goto out;
+	kbuf = OPENSSL_malloc(klen);
+	if (kbuf == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto out;
+	}
+	if (EVP_PKEY_derive(ctx, kbuf, &klen) != 1) {
+		OPENSSL_free(kbuf);
+		goto out;
+	}
+#if defined(DEBUG_KEX) || defined(DEBUG_KEXDH) || defined(DEBUG_KEXECDH) || \
+    defined(DEBUG_KEXECX) || defined(DEBUG_KEXKEM)
+	dump_digest("shared secret", kbuf, klen);
+#endif
+
+	*klenp = klen;
+	*kbufp = kbuf;
+	r = 0;
+
+ out:
+	EVP_PKEY_CTX_free(ctx);
+	return r;
+}
+#endif /*def USE_EVP_PKEY_KEYGEN*/
+
+#ifdef USE_EVP_PKEY_KEYGEN
+int
+kex_pkey_derive_shared_secret(struct kex *kex, EVP_PKEY *peerkey,
+    int raw, struct sshbuf **bufp
+) {
+	u_char *kbuf = NULL;
+	size_t klen = 0;
+	int r = SSH_ERR_LIBCRYPTO_ERROR;
+
+	r =  kex_pkey_derive_shared_secret_raw(kex, peerkey, &kbuf, &klen);
+	if (r != 0) goto out;
+
+	r = kex_shared_secret_to_sshbuf(kbuf, klen, raw, bufp);
+
+ out:
+	OPENSSL_clear_free(kbuf, klen);
+	return r;
+}
+#endif /*def USE_EVP_PKEY_KEYGEN*/
