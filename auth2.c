@@ -1,7 +1,7 @@
 /* $OpenBSD: auth2.c,v 1.169 2024/05/17 00:30:23 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
- * Copyright (c) 2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2024-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -227,7 +227,6 @@ user_specific_delay(const char *user)
 	int digest_alg;
 	size_t len;
 	u_char *hash;
-	double delay;
 
 	digest_alg = ssh_digest_maxbytes();
 	len = ssh_digest_bytes(digest_alg);
@@ -237,11 +236,13 @@ user_specific_delay(const char *user)
 	    (unsigned long long)options.timing_secret, user);
 	if (ssh_digest_memory(digest_alg, b, strlen(b), hash, len) != 0)
 		fatal_f("ssh_digest_memory");
-	/* 0-4.2 ms of delay */
-	delay = (double)PEEK_U32(hash) / 1000 / 1000 / 1000 / 1000;
+
+{	/* 0-4.2 ms of delay */
+	double delay = (double)PEEK_U32(hash) / 1000 / 1000 / 1000; /*sec*/
 	freezero(hash, len);
-	debug3_f("user specific delay %0.3lfms", delay/1000);
-	return MIN_FAIL_DELAY_SECONDS + delay;
+	debug3_f("user specific delay %0.3lfms", delay);
+	return MIN_FAIL_DELAY_SECONDS + delay / 1000/*ms*/;
+}
 }
 
 static void
