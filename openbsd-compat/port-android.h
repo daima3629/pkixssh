@@ -1,6 +1,6 @@
 #ifdef __ANDROID__
 /*
- * Copyright (c) 2016-2024, Roumen Petrov
+ * Copyright (c) 2016-2025, Roumen Petrov
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,6 +32,9 @@ char *android_ttyname(int fd);
 #define ttyname android_ttyname
 int android_ttyname_r(int fd, char *buf, size_t buflen);
 #define ttyname_r android_ttyname_r
+
+int/*bool*/
+relocate_etcdir(const char *pathname, char *pathbuf, size_t pathlen);
 
 
 #include <pwd.h>

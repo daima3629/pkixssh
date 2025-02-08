@@ -1,6 +1,6 @@
 #ifdef __ANDROID__
 /*
- * Copyright (c) 2016-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2016-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -364,6 +364,26 @@ __wrap_rename(const char *oldpath, const char *newpath) {
 #endif
 
 
+#ifdef USE_LIBAPPWRAP
+int/*bool*/
+relocate_etcdir(const char *pathname, char *pathbuf, size_t pathlen) {
+	size_t len = strlen(SSHDIR);
+
+	if (pathlen <= len) return 0;
+	if (strncmp(pathname, SSHDIR, len) != 0) return 0;
+
+{	const char *appdir = NULL;
+	if (appdir == NULL) appdir = getenv("SSH_SYSCONFDIR");
+	if (appdir == NULL) return 0;
+
+	len = snprintf(pathbuf, pathlen, "%s%s", appdir, pathname + len);
+}
+
+	return len <= pathlen;
+}
+#endif
+
+
 /* Fake user for android */
 #include "xmalloc.h"
 #include <fcntl.h>
@@ -386,7 +406,7 @@ static char *ssh_shell = NULL;
 
 
 static void
-parse_fake_passwd() {
+parse_fake_passwd(void) {
 	char *pw_name;
 	char *pw_passwd;
 	char *pw_uid;
@@ -491,7 +511,7 @@ parse_err:
 
 
 static void
-init_fake_passwd() {
+init_fake_passwd(void) {
 
 	if (fake_passwd != NULL) return;
 

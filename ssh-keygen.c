@@ -1023,19 +1023,26 @@ do_gen_all_hostkeys(const struct passwd *pw)
 	int i, type, fd, r;
 
 	for (i = 0; key_types[i].key_type; i++) {
+		const char *key_path = key_types[i].path;
+	#if defined(__ANDROID__) && defined(USE_LIBAPPWRAP)
+		char r_key_path[PATH_MAX];
+	#endif
 		public = private = NULL;
 		prv_tmp = pub_tmp = prv_file = pub_file = NULL;
 
-		xasprintf(&prv_file, "%s%s",
-		    identity_file, key_types[i].path);
+	#if defined(__ANDROID__) && defined(USE_LIBAPPWRAP)
+		if (relocate_etcdir(key_path, r_key_path, sizeof(r_key_path)))
+			key_path = r_key_path;
+	#endif
+
+		xasprintf(&prv_file, "%s%s", identity_file, key_path);
 
 		/* Check whether private key exists and is not zero-length */
 		if (stat(prv_file, &st) != -1) {
 			if (st.st_size != 0)
 				goto next;
 		} else if (errno != ENOENT) {
-			error("Could not stat %s: %s", key_types[i].path,
-			    strerror(errno));
+			error("Could not stat %s: %s", key_path, strerror(errno));
 			goto failnext;
 		}
 
@@ -1043,12 +1050,9 @@ do_gen_all_hostkeys(const struct passwd *pw)
 		 * Private key doesn't exist or is invalid; proceed with
 		 * key generation.
 		 */
-		xasprintf(&prv_tmp, "%s%s.XXXXXXXXXX",
-		    identity_file, key_types[i].path);
-		xasprintf(&pub_tmp, "%s%s.pub.XXXXXXXXXX",
-		    identity_file, key_types[i].path);
-		xasprintf(&pub_file, "%s%s.pub",
-		    identity_file, key_types[i].path);
+		xasprintf(&prv_tmp, "%s%s.XXXXXXXXXX", identity_file, key_path);
+		xasprintf(&pub_tmp, "%s%s.pub.XXXXXXXXXX", identity_file, key_path);
+		xasprintf(&pub_file, "%s%s.pub", identity_file, key_path);
 
 		if (first == 0) {
 			first = 1;
@@ -1100,7 +1104,7 @@ do_gen_all_hostkeys(const struct passwd *pw)
 		}
 		if (rename(prv_tmp, prv_file) == -1) {
 			error("Unable to move %s into position: %s",
-			    key_types[i].path, strerror(errno));
+			    key_path, strerror(errno));
  failnext:
 			first = 0;
 			goto next;
