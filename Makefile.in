@@ -200,6 +200,7 @@ $(SSHOBJS): Makefile.in config.h
 ssh-prngd.o: openbsd-compat/port-prngd.c
 $(SSHDOBJS): Makefile.in config.h
 ssh-pselect.o: openbsd-compat/bsd-pselect.c
+kexmlkem768x25519.o: libcrux_mlkem768_sha3.h
 configure-check: $(srcdir)/configure
 
 $(srcdir)/configure: \

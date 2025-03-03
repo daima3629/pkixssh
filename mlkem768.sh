@@ -31,8 +31,6 @@ set +x
 
 cd ..
 (
-printf '/*  $Open'; printf 'BSD$ */\n'
-echo
 echo "/* Extracted from libcrux revision $LIBCRUX_REVISION */"
 echo
 echo '/*'
@@ -48,6 +46,11 @@ echo '#define KRML_HOST_EPRINTF(...)'
 echo '#define KRML_HOST_EXIT(x) fatal_f("internal error")'
 echo
 
+__builtin_popcount_replacement='#elif defined(MISSING_BUILTIN_POPCOUNT)
+  const uint8_t v[16] = { 0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4 };
+  return v[(x0) & 0xf] + v[(x0) >> 4 & 0xf];
+'
+
 for i in $FILES; do
 	echo "/* from $i */"
 	# Changes to all files:
@@ -58,6 +61,8 @@ for i in $FILES; do
 	    $i | \
 	case "$i" in
 	*/libcrux-ml-kem/cg/eurydice_glue.h)
+		# compatibility for built-in popcount.
+		perl -0777 -pe "s/\\#else(\\n\\s+return __builtin_popcount\\(x0\\);)/$__builtin_popcount_replacement\\#else\\1/s" |
 		# Replace endian functions with versions that work.
 		perl -0777 -pe 's/(static inline void core_num__u64_9__to_le_bytes.*\n)([^}]*\n)/\1  v = htole64(v);\n\2/' |
 		perl -0777 -pe 's/(static inline uint64_t core_num__u64_9__from_le_bytes.*?)return v;/\1return le64toh(v);/s' |

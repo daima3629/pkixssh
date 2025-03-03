@@ -1,5 +1,3 @@
-/*  $OpenBSD: libcrux_mlkem768_sha3.h,v 1.2 2024/10/27 02:06:01 djm Exp $ */
-
 /* Extracted from libcrux revision 84c5d87b3092c59294345aa269ceefe0eb97cc35 */
 
 /*
@@ -179,6 +177,9 @@ static inline uint32_t core_num__u32_8__from_le_bytes(uint8_t buf[4]) {
 static inline uint32_t core_num__u8_6__count_ones(uint8_t x0) {
 #ifdef _MSC_VER
   return __popcnt(x0);
+#elif defined(MISSING_BUILTIN_POPCOUNT)
+  const uint8_t v[16] = { 0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4 };
+  return v[(x0) & 0xf] + v[(x0) >> 4 & 0xf];
 #else
   return __builtin_popcount(x0);
 #endif

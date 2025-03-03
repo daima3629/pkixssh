@@ -2172,6 +2172,21 @@ AC_CHECK_FUNCS([ \
 	warn \
 ])
 
+AC_MSG_CHECKING([whether compiler supports __builtin_popcount])
+AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+#include <stdlib.h>
+	]], [[
+	int x = 123, y;
+	y = __builtin_popcount(x);
+	return y == 6 ? 0 : -1;
+	]])],
+	[ AC_MSG_RESULT([yes]) ],
+	[ AC_MSG_RESULT([no])
+	  AC_DEFINE([MISSING_BUILTIN_POPCOUNT], [1],
+		[Define to 1 if your compiler lacks __builtin_popcount])
+	]
+)
+
 dnl Note in GNU C-library memmem requires definition of _GNU_SOURCE.
 dnl It is not defined yet by configuration, but is defined in common
 dnl header "includes.h".
