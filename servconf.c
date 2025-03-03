@@ -1,4 +1,4 @@
-/* $OpenBSD: servconf.c,v 1.418 2024/09/15 03:09:44 djm Exp $ */
+/* $OpenBSD: servconf.c,v 1.423 2025/02/10 23:16:51 djm Exp $ */
 /*
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
@@ -1128,15 +1128,16 @@ match_cfg_line(char **condition, int line, struct connection_info *ci)
 	char *arg, *attrib, *cp = *condition;
 
 	if (ci == NULL)
-		debug3("checking syntax for 'Match %s'", cp);
+		debug3("checking syntax for 'Match %s' on line %d",
+		    cp, line);
 	else
 		debug3("checking match for '%s' user %s%s host %s addr %s "
-		    "laddr %s lport %d", cp,
+		    "laddr %s lport %d on line %d", cp,
 		    ci->user ? ci->user : "(null)",
 		    ci->user_invalid ? " (invalid)" : "",
 		    ci->host ? ci->host : "(null)",
 		    ci->address ? ci->address : "(null)",
-		    ci->laddress ? ci->laddress : "(null)", ci->lport);
+		    ci->laddress ? ci->laddress : "(null)", ci->lport, line);
 
 	while ((attrib = strdelim(&cp)) && *attrib != '\0') {
 		attributes++;
@@ -1292,7 +1293,7 @@ match_cfg_line(char **condition, int line, struct connection_info *ci)
 		return -1;
 	}
 	if (ci != NULL)
-		debug3("match %sfound", result ? "" : "not ");
+		debug3("match %sfound on line %d", result ? "" : "not ", line);
 	*condition = cp;
 	return result;
 }
