@@ -1,4 +1,4 @@
-.\" $OpenBSD: ssh-agent.1,v 1.81 2024/11/06 22:51:26 djm Exp $
+.\" $OpenBSD: ssh-agent.1,v 1.82 2025/02/09 18:24:08 schwarze Exp $
 .\"
 .\" Author: Tatu Ylonen <ylo@cs.hut.fi>
 .\" Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -43,7 +43,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: December 26 2024 $
+.Dd $Mdocdate: February 9 2025 $
 .Dt SSH-AGENT 1
 .Os
 .Sh NAME
@@ -88,8 +88,7 @@ socket
 The default is
 .Pa $TMPDIR/ssh-XXXXXXXXXX/agent.\*(Ltppid\*(Gt .
 .It Fl c
-Generate C-shell commands on
-.Dv stdout .
+Generate C-shell commands on standard output.
 This is the default if
 .Ev SHELL
 looks like it's a csh style of shell.
@@ -132,8 +131,7 @@ For security reasons the default pattern is
 Note the pattern-list could be redefined at build time.
 It is strongly recommended pattern to match only trusted PKCS#11 provider libraries.
 .It Fl s
-Generate Bourne shell commands on
-.Dv stdout .
+Generate Bourne shell commands on standard output.
 This is the default if
 .Ev SHELL
 does not look like it's a csh style of shell.
