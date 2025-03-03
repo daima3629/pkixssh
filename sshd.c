@@ -1289,6 +1289,9 @@ main(int ac, char **av)
 		fatal("Config test connection parameter (-C) provided without "
 		    "test mode (-T)");
 
+	if (get_log_level() >= SYSLOG_LEVEL_DEBUG1)
+		logit("%s version %s, %s", __progname, SSH_RELEASE, ssh_OpenSSL_version_text());
+
 	/* Fetch our configuration */
 	if ((cfg = sshbuf_new()) == NULL)
 		fatal_f("sshbuf_new failed");
@@ -1352,8 +1355,6 @@ main(int ac, char **av)
 		fprintf(stderr, "Extra argument %s.\n", av[optind]);
 		exit(1);
 	}
-
-	debug("sshd version %s, %s", SSH_RELEASE, ssh_OpenSSL_version_text());
 
 	if (do_dump_cfg)
 		print_config(ssh, connection_info);

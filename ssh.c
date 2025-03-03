@@ -19,7 +19,7 @@
  * Modified to work with SSLeay by Niels Provos <provos@citi.umich.edu>
  * in Canada (German citizen).
  *
- * Copyright (c) 2002-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -989,12 +989,8 @@ main(int ac, char **av)
 			if (debug_flag == 0) {
 				debug_flag = 1;
 				options.log_level = SYSLOG_LEVEL_VERBOSE;
-			} else {
-				if (options.log_level < SYSLOG_LEVEL_DEBUG3) {
-					debug_flag++;
-					options.log_level++;
-				}
-			}
+			} else if (options.log_level < SYSLOG_LEVEL_DEBUG3)
+				options.log_level++;
 			break;
 		case 'V':
 			fprintf(stderr, "%s, %s\n",
@@ -1283,8 +1279,8 @@ main(int ac, char **av)
 	    SYSLOG_FACILITY_USER : options.log_facility,
 	    !use_syslog);
 
-	if (debug_flag)
-		logit("%s, %s", SSH_RELEASE, ssh_OpenSSL_version_text());
+	if (get_log_level() >= SYSLOG_LEVEL_DEBUG1)
+		logit("%s version %s, %s", __progname, SSH_RELEASE, ssh_OpenSSL_version_text());
 
 #ifdef USE_OPENSSL_ENGINE
 	/* process per-user engine configuration file */
