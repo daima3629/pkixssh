@@ -1509,16 +1509,13 @@ verify_host_key(char *host, struct sockaddr *hostaddr,
 	struct sshkey *plain = NULL;
 
 	if (sshkey_is_x509(host_key)) {
-		if (xkey_validate_cert(host_key) != 0) {
-			r = -1;
+		if (xkey_validate_cert(host_key) != 0)
 			goto out;
-		}
 	}
 
 	if ((fp = sshkey_fingerprint(host_key,
 	    options.fingerprint_hash, SSH_FP_DEFAULT)) == NULL) {
 		error_fr(r, "fingerprint host key");
-		r = -1;
 		goto out;
 	}
 
@@ -1526,7 +1523,6 @@ verify_host_key(char *host, struct sockaddr *hostaddr,
 		if ((cafp = sshkey_fingerprint(host_key->cert->signature_key,
 		    options.fingerprint_hash, SSH_FP_DEFAULT)) == NULL) {
 			error_fr(r, "fingerprint CA key");
-			r = -1;
 			goto out;
 		}
 		sshkey_format_cert_validity(host_key->cert,
@@ -1549,27 +1545,25 @@ verify_host_key(char *host, struct sockaddr *hostaddr,
 	if (sshkey_equal(previous_host_key, host_key)) {
 		debug2_f("server host key %s %s matches cached key",
 		    sshkey_type(host_key), fp);
-		r = 0;
+		r = 0; /*success*/
 		goto out;
 	}
 
 	/* Check in RevokedHostKeys file if specified */
 	if (options.revoked_host_keys != NULL) {
-		r = sshkey_check_revoked(host_key, options.revoked_host_keys);
-		switch (r) {
+		int rr = sshkey_check_revoked(host_key, options.revoked_host_keys);
+		switch (rr) {
 		case 0:
 			break; /* not revoked */
 		case SSH_ERR_KEY_REVOKED:
 			error("Host key %s %s revoked by file %s",
 			    sshkey_type(host_key), fp,
 			    options.revoked_host_keys);
-			r = -1;
 			goto out;
 		default:
 			error_r(r, "Error checking host key %s %s in "
 			    "revoked keys file %s", sshkey_type(host_key),
 			    fp, options.revoked_host_keys);
-			r = -1;
 			goto out;
 		}
 	}
@@ -1579,7 +1573,7 @@ verify_host_key(char *host, struct sockaddr *hostaddr,
 		 * XXX certs are not yet supported for DNS, so downgrade
 		 * them and try the plain key.
 		 */
-		if ((r = sshkey_from_private(host_key, &plain)) != 0)
+		if (sshkey_from_private(host_key, &plain) != 0)
 			goto out;
 		if (sshkey_is_cert(plain))
 			sshkey_drop_cert(plain);
@@ -1588,7 +1582,7 @@ verify_host_key(char *host, struct sockaddr *hostaddr,
 				if (options.verify_host_key_dns == 1 &&
 				    flags & DNS_VERIFY_MATCH &&
 				    flags & DNS_VERIFY_SECURE) {
-					r = 0;
+					r = 0; /*success*/
 					goto out;
 				}
 				if (flags & DNS_VERIFY_MATCH) {
@@ -1615,7 +1609,8 @@ out:
 	free(cafp);
 	if (r == 0 && host_key != NULL) {
 		sshkey_free(previous_host_key);
-		r = sshkey_from_private(host_key, &previous_host_key);
+		if (sshkey_from_private(host_key, &previous_host_key) != 0)
+			r = -1;
 	}
 
 	return r;
