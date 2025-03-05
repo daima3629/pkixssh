@@ -33,6 +33,9 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <sys/un.h>
+#ifdef HAVE_SYS_UTSNAME_H
+# include <sys/utsname.h>
+#endif
 
 #include <limits.h>
 #ifdef HAVE_LIBGEN_H
@@ -3235,4 +3238,18 @@ int
 ptimeout_isset(struct timespec *pt)
 {
 	return pt->tv_sec != -1;
+}
+
+void
+debug3_uname(void) {
+#ifdef HAVE_SYS_UTSNAME_H
+	struct utsname utsname;
+
+	if (uname(&utsname) == -1) {
+		memset(&utsname, 0, sizeof(utsname));
+		strlcpy(utsname.sysname, "UNKNOWN", sizeof(utsname.sysname));
+	}
+	debug3("running on %s, release %s, version %s, machine %s",
+	    utsname.sysname, utsname.release, utsname.version, utsname.machine);
+#endif
 }

@@ -1281,6 +1281,7 @@ main(int ac, char **av)
 
 	if (get_log_level() >= SYSLOG_LEVEL_DEBUG1)
 		logit("%s version %s, %s", __progname, SSH_RELEASE, ssh_OpenSSL_version_text());
+	debug3_uname();
 
 #ifdef USE_OPENSSL_ENGINE
 	/* process per-user engine configuration file */

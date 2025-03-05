@@ -241,6 +241,8 @@ int ptimeout_get_ms(struct timespec *pt);
 struct timespec *ptimeout_get_tsp(struct timespec *pt);
 int ptimeout_isset(struct timespec *pt);
 
+void	debug3_uname(void);
+
 /* readpass.c */
 
 #define RP_ECHO			0x0001

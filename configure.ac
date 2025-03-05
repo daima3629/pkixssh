@@ -535,6 +535,7 @@ AC_CHECK_HEADERS([ \
 	sys/sysmacros.h \
 	sys/time.h \
 	sys/timers.h \
+	sys/utsname.h \
 	sys/vfs.h \
 	time.h \
 	tmpdir.h \

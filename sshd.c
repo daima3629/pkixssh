@@ -1,4 +1,4 @@
-/* $OpenBSD: sshd.c,v 1.612 2024/09/15 01:11:26 djm Exp $ */
+/* $OpenBSD: sshd.c,v 1.615 2025/02/10 23:19:26 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -1291,6 +1291,7 @@ main(int ac, char **av)
 
 	if (get_log_level() >= SYSLOG_LEVEL_DEBUG1)
 		logit("%s version %s, %s", __progname, SSH_RELEASE, ssh_OpenSSL_version_text());
+	debug3_uname();
 
 	/* Fetch our configuration */
 	if ((cfg = sshbuf_new()) == NULL)
