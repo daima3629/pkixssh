@@ -46,7 +46,9 @@
 #include "ssherr.h"
 #include "log.h"
 
-#ifndef HAVE_ENDIAN_H
+#if HAVE_DECL_LE32TOH == 0 || \
+    HAVE_DECL_LE64TOH == 0 || \
+    HAVE_DECL_HTOLE64 == 0
 # define compat_swap32(v)					\
 	(uint32_t)(((uint32_t)(v) & 0xff) << 24 |		\
 	((uint32_t)(v) & 0xff00) << 8 |				\
@@ -62,13 +64,25 @@
 	((uint64_t)(v) & 0xff000000000000ULL) >> 40 |		\
 	((uint64_t)(v) & 0xff00000000000000ULL) >> 56)
 # ifdef WORDS_BIGENDIAN
-#  define le32toh(v) (compat_swap32(v))
-#  define le64toh(v) (compat_swap64(v))
-#  define htole64(v) (compat_swap64(v))
+#  if HAVE_DECL_LE32TOH == 0
+#   define le32toh(v) (compat_swap32(v))
+#  endif
+#  if HAVE_DECL_LE64TOH == 0
+#   define le64toh(v) (compat_swap64(v))
+#  endif
+#  if HAVE_DECL_HTOLE64 == 0
+#   define htole64(v) (compat_swap64(v))
+#  endif
 # else
-#  define le32toh(v) ((uint32_t)v)
-#  define le64toh(v) ((uint64_t)v)
-#  define htole64(v) ((uint64_t)v)
+#  if HAVE_DECL_LE32TOH == 0
+#   define le32toh(v) ((uint32_t)v)
+#  endif
+#  if HAVE_DECL_LE64TOH == 0
+#   define le64toh(v) ((uint64_t)v)
+#  endif
+#  if HAVE_DECL_HTOLE64 == 0
+#   define htole64(v) ((uint64_t)v)
+#  endif
 # endif
 #endif
 
