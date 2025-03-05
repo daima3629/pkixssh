@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh.c,v 1.602 2024/12/06 16:21:48 djm Exp $ */
+/* $OpenBSD: ssh.c,v 1.605 2025/02/21 18:22:41 deraadt Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -662,7 +662,7 @@ valid_hostname(const char *s)
 	if (*s == '-')
 		return 0;
 	for (i = 0; s[i] != 0; i++) {
-		if (strchr("'`\"$\\;&<>|(){}", s[i]) != NULL ||
+		if (strchr("'`\"$\\;&<>|(){},", s[i]) != NULL ||
 		    isspace((u_char)s[i]) || iscntrl((u_char)s[i]))
 			return 0;
 	}
