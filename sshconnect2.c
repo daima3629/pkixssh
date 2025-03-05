@@ -1,4 +1,4 @@
-/* $OpenBSD: sshconnect2.c,v 1.376 2024/10/18 05:45:40 djm Exp $ */
+/* $OpenBSD: sshconnect2.c,v 1.377 2025/02/18 08:02:48 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Damien Miller.  All rights reserved.
@@ -665,6 +665,7 @@ input_userauth_pk_ok(int type, u_int32_t seq, struct ssh *ssh)
 		goto done;
 
 	if ((pktype = sshkey_type_from_name(pkalg)) == KEY_UNSPEC) {
+		r = SSH_ERR_KEY_TYPE_UNKNOWN;
 		debug_f("server sent unknown pkalg %s", pkalg);
 		goto done;
 	}
@@ -673,6 +674,7 @@ input_userauth_pk_ok(int type, u_int32_t seq, struct ssh *ssh)
 		goto done;
 	}
 	if (key->type != pktype) {
+		r = SSH_ERR_KEY_TYPE_MISMATCH;
 		error_f("type mismatch "
 		    "for decoded key (received %d, expected %d)",
 		    key->type, pktype);
@@ -693,6 +695,7 @@ input_userauth_pk_ok(int type, u_int32_t seq, struct ssh *ssh)
 	if (!found || id == NULL) {
 		char *fp = sshkey_fingerprint(key, options.fingerprint_hash,
 		    SSH_FP_DEFAULT);
+		r = SSH_ERR_KEY_NOT_FOUND;
 		error_f("server replied with unknown key: %s %s",
 		    sshkey_type(key), fp == NULL ? "<ERROR>" : fp);
 		free(fp);
