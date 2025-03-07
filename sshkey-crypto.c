@@ -187,7 +187,6 @@ ssh_EVP_PKEY_print_private_fp(FILE *fp, const EVP_PKEY *pkey) {
 		DSA_print_fp(fp, dsa, 0);
 		DSA_free(dsa);
 		} break;
-	}
 #endif
 	}
 }
