@@ -2,7 +2,7 @@
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2011 Dr. Stephen Henson.  All rights reserved.
- * Copyright (c) 2011-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -60,6 +60,15 @@
 #include "sshxkey.h"
 #include "xmalloc.h"
 #include "log.h"
+
+#ifdef USE_EVP_PKEY_KEYGEN
+/* NOTE EVP_PKEY_CTX_set_dsa_paramgen_q_bits() is OpenSSL 1.1.1e function!
+ * => Disable "keygen" functionality for all builds with OpenSSL 1.1.1*.
+ */
+# ifndef HAVE_EVP_KEYMGMT_GET0_PROVIDER		/* OpenSSL < 3.0 */
+#  undef USE_EVP_PKEY_KEYGEN
+# endif
+#endif
 
 
 #define INTBLOB_LEN	20
