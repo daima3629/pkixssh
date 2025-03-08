@@ -42,6 +42,7 @@
 # define ENABLE_KEX_ECDH
 #endif
 
+#ifdef ENABLE_KEX_ECDH
 #include <sys/types.h>
 
 #include <stdio.h>
@@ -51,7 +52,6 @@
 
 #include "kex.h"
 #include "digest.h"
-#ifdef ENABLE_KEX_ECDH
 #include "sshbuf.h"
 #include "ssherr.h"
 
@@ -387,6 +387,8 @@ const struct kex_impl kex_ecdh_p521_sha512_impl = {
 };
 #else /*ndef ENABLE_KEX_ECDH*/
 
+#include "kex.h"
+#include "digest.h"
 static int kex_ecdh_enabled(void) { return 0; }
 const struct kex_impl kex_ecdh_p256_sha256_impl = {
 	"ecdh-sha2-nistp256", SSH_DIGEST_SHA256,
