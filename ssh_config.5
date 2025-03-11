@@ -34,7 +34,7 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: ssh_config.5,v 1.407 2024/12/06 16:21:48 djm Exp $
+.\" $OpenBSD: ssh_config.5,v 1.413 2025/03/03 06:53:09 dtucker Exp $
 .\" Implement .Dd with the Mdocdate RCS keyword
 .rn Dd xD
 .de Dd
@@ -43,7 +43,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: December 27 2024 $
+.Dd $Mdocdate: March 9 2025 $
 .Dt SSH_CONFIG 5
 .Os
 .Sh NAME
@@ -1382,17 +1382,17 @@ default set.
 .Pp
 The default is:
 .Bd -literal -offset indent
-curve25519-sha256,curve25519-sha256@libssh.org,
 curve448-sha512,
+curve25519-sha256,curve25519-sha256@libssh.org,
 ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,
 diffie-hellman-group-exchange-sha256,
-diffie-hellman-group16-sha512,
 diffie-hellman-group18-sha512,
+diffie-hellman-group16-sha512,
 diffie-hellman-group14-sha256,
-sntrup761x25519-sha512,sntrup761x25519-sha512@openssh.com,
-mlkem768x25519-sha256,
-diffie-hellman-group15-sha512,
 diffie-hellman-group17-sha512,
+diffie-hellman-group15-sha512,
+mlkem768x25519-sha256,
+sntrup761x25519-sha512,sntrup761x25519-sha512@openssh.com,
 diffie-hellman-group14-sha1
 .Ed
 Note sntrup761x25519-sha512 and sntrup761x25519-sha512@openssh.com are
