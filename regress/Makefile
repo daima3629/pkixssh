@@ -19,6 +19,7 @@ clean:
 	rm -rf $(OBJ)softhsm
 	rm -rf $(OBJ).putty
 	rm -rf $(OBJ).dropbear
+	rm -rf $(OBJ).ssh
 
 distclean:	clean
 

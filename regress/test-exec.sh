@@ -1,4 +1,4 @@
-#	$OpenBSD: test-exec.sh,v 1.122 2024/12/06 07:05:54 dtucker Exp $
+#	$OpenBSD: test-exec.sh,v 1.124 2025/03/11 07:46:02 dtucker Exp $
 #	Placed in the Public Domain.
 
 #SUDO=sudo
@@ -746,6 +746,8 @@ if $REGRESS_INTEROP_DROPBEAR ; then
 		    "`$SSHKEYGEN -y -f $OBJ/.dropbear/ossh.id_$i`" \
 		    >>$OBJ/authorized_keys_$USER
 	done
+	mkdir -p $OBJ/.ssh
+	awk '{print "somehost "$2" "$3}' $OBJ/known_hosts >$OBJ/.ssh/known_hosts
 fi
 
 # create a proxy version of the client config

@@ -144,6 +144,7 @@ ssh_askpass-pkcs11
 # interoperability tests
 .putty
 .dropbear
+.ssh
 
 # TODO
 authkeys_orig
