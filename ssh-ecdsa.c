@@ -69,14 +69,6 @@ EC_POINT_get_affine_coordinates(
 #endif /*ndef HAVE_EC_POINT_GET_AFFINE_COORDINATES*/
 
 
-#ifndef HAVE_EC_GROUP_GET_FIELD_TYPE		/* OpenSSL < 3.0.0 */
-static inline int
-EC_GROUP_get_field_type(const EC_GROUP *group) {
-	return EC_METHOD_get_field_type(EC_GROUP_method_of(group));
-}
-#endif /*ndef HAVE_EC_GROUP_GET_FIELD_TYPE*/
-
-
 static const ssh_evp_md*
 ssh_ecdsa_dgst(const struct sshkey *key)
 {
@@ -203,14 +195,6 @@ sshkey_ec_validate_public(const EC_KEY *ec, const EC_POINT *public)
 	 * reachable with public points not unmarshalled using
 	 * EC_POINT_oct2point then the caller will need to explicitly check.
 	 */
-
-	/*
-	 * We shouldn't ever hit this case because bignum_get_ecpoint()
-	 * refuses to load GF2m points.
-	 */
-	if (EC_GROUP_get_field_type(group) !=
-	    NID_X9_62_prime_field)
-		goto out;
 
 	/* Q != infinity */
 	if (EC_POINT_is_at_infinity(group, public))

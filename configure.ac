@@ -3521,7 +3521,6 @@ AC_SUBST([USE_OPENSSL_STORE2])
 # check for openssl 3.0+ functions ...
 AC_CHECK_FUNCS([ \
   BN_check_prime \
-  EC_GROUP_get_field_type \
   ERR_get_error_all \
   EVP_KEYMGMT_get0_provider \
   EVP_MD_get_flags \
