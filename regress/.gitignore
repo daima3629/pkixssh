@@ -13,6 +13,7 @@ batch
 cert_host_key*
 cert_user_key*
 copy
+copy.*
 copy2
 data
 ssh-dss-agent*

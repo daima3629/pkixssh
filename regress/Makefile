@@ -15,7 +15,6 @@ extra extra-tests: t-extra
 
 clean:
 	for F in $(CLEANFILES); do rm -f $(OBJ)$$F; done
-	rm -rf $(OBJ)copy.dd $(OBJ)copy.dd2 $(OBJ)copy.dd.glob[456]
 	rm -rf $(OBJ)softhsm
 	rm -rf $(OBJ).putty
 	rm -rf $(OBJ).dropbear
@@ -130,7 +129,7 @@ CLEANFILES=	*.core actual agent-ca agent-ca.pub agent-key.* authkeys_orig \
 		authorized_keys_* \
 		authorized_principals_* \
 		banner.in banner.out cert_host_key* cert_user_key* \
-		batch copy copy2 data \
+		batch copy copy.* copy2 data \
 		ssh-dss-agent* ssh-dss ssh-dss.pub \
 		ssh-ed25519-agent* ssh-ed25519-conch* ssh-ed25519 ssh-ed25519.pub empty.in \
 		ecdsa-sha2-nistp256-agent* ecdsa-sha2-nistp256 ecdsa-sha2-nistp256.pub \
