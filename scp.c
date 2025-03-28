@@ -1,4 +1,4 @@
-/* $OpenBSD: scp.c,v 1.261 2024/06/26 23:14:14 deraadt Exp $ */
+/* $OpenBSD: scp.c,v 1.263 2025/03/28 06:04:07 dtucker Exp $ */
 /*
  * scp - secure remote copy.  This is basically patched BSD rcp which
  * uses ssh to do the data transfer (instead of using rcmd).
@@ -525,6 +525,7 @@ main(int argc, char **argv)
 	addargs(&args, "-oClearAllForwardings=yes");
 	addargs(&args, "-oRemoteCommand=none");
 	addargs(&args, "-oRequestTTY=no");
+	addargs(&args, "-oControlMaster=no");
 
 {	const char *s = getenv("SSH_SCP_MODE");
 	if (s != NULL) {
