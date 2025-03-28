@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1999-2004 Damien Miller <djm@mindrot.org>
- * Copyright (c) 2015-2022 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2015-2025 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -65,6 +65,7 @@ struct timeval {
 int utimes(const char *, const struct timeval *);
 #endif /* HAVE_UTIMES */
 
+#include <fcntl.h> /* For AT_FDCWD */
 #ifndef AT_FDCWD
 # define AT_FDCWD (-2)
 #endif
