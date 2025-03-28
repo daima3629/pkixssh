@@ -1,4 +1,4 @@
-#	$OpenBSD: test-exec.sh,v 1.124 2025/03/11 07:46:02 dtucker Exp $
+#	$OpenBSD: test-exec.sh,v 1.127 2025/03/28 05:41:15 dtucker Exp $
 #	Placed in the Public Domain.
 
 #SUDO=sudo
@@ -716,7 +716,7 @@ Protocol=ssh
 HostName=127.0.0.1
 PortNumber=$PORT
 ProxyMethod=5
-ProxyTelnetCommand=$TEST_SHELL $SRC/sshd-log-wrapper.sh $TEST_SSHD_LOGFILE $SSHD -i -f $OBJ/sshd_proxy
+ProxyTelnetCommand=env $TEST_SSH_SSHD_ENV $TEST_SHELL $SRC/sshd-log-wrapper.sh $TEST_SSHD_LOGFILE $SSHD -i -f $OBJ/sshd_proxy
 ProxyLocalhost=1
 EOF
 }
@@ -753,7 +753,7 @@ fi
 # create a proxy version of the client config
 (
 	cat $OBJ/ssh_config
-	echo proxycommand ${SUDO} sh ${SRC}/sshd-log-wrapper.sh ${TEST_SSHD_LOGFILE} ${SSHD} -i -f $OBJ/sshd_proxy
+	echo proxycommand $SUDO env $TEST_SSH_SSHD_ENV $TEST_SHELL $SRC/sshd-log-wrapper.sh $TEST_SSHD_LOGFILE $SSHD -i -f $OBJ/sshd_proxy
 ) > $OBJ/ssh_proxy
 
 if test -n "$OPENSSL_FIPS" ; then
@@ -780,8 +780,10 @@ dbclient() {
 start_sshd ()
 {
 	# start sshd
-	$SUDO $SSHD -f $OBJ/sshd_config ${1+"$@"} -t || fatal "sshd_config broken"
-	$SUDO $SSHD -f $OBJ/sshd_config ${1+"$@"} -E$TEST_SSHD_LOGFILE
+	$SUDO env $TEST_SSH_SSHD_ENV \
+	    $SSHD -f $OBJ/sshd_config ${1+"$@"} -t || fatal "sshd_config broken"
+	$SUDO env $TEST_SSH_SSHD_ENV \
+	    $SSHD -f $OBJ/sshd_config ${1+"$@"} -E$TEST_SSHD_LOGFILE
 
 	trace "wait for sshd"
 	i=0;
