@@ -1128,7 +1128,7 @@ toremote(int argc, char **argv, enum scp_mode_e mode,
 		}
 		if (host && throughlocal) {	/* extended remote to remote */
 			if (mode == MODE_SFTP) {
-				if (remin == -1) {
+				if (remin == -1 || conn == NULL) {
 					/* Connect to dest now */
 					conn = do_sftp_connect(thost, tuser,
 					    tport, ssh_program, sftp_direct,
