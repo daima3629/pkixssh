@@ -1988,7 +1988,8 @@ option) or
 (shell or command execution).
 .It Cm SetEnv
 Directly specify one or more environment variables and their contents to
-be sent to the server.
+be sent to the server in the form
+.Dq NAME=VALUE .
 Variables and their contents are specified as pattern-list.
 Lists may be separated by whitespace or spread across multiple
 .Cm SetEnv
@@ -2000,6 +2001,14 @@ Similarly to
 with the exception of the
 .Ev TERM
 variable, the server must be prepared to accept the environment variable.
+.Pp
+The
+.Dq VALUE
+may use the tokens described in the
+.Sx TOKENS
+section and environment variables as described in the
+.Sx ENVIRONMENT VARIABLES
+section.
 .It Cm StdinNull
 Redirects stdin from
 .Pa /dev/null
