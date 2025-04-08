@@ -28,7 +28,9 @@
 
 #ifdef WITH_OPENSSL
 # include <openssl/rsa.h>
-# include <openssl/dsa.h>
+# ifdef WITH_DSA
+#  include <openssl/dsa.h>
+# endif
 # ifdef HAVE_OPENSSL_EC_H
 #  include <openssl/ec.h>
 # else
