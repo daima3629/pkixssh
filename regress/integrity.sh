@@ -18,7 +18,7 @@ macs="$macs `${SSH} -Q cipher-auth`"
 #	>> $OBJ/ssh_proxy
 
 # sshd-command for proxy (see test-exec.sh)
-cmd="$SUDO env $TEST_SSH_SSHD_ENV $TEST_SHELL $SRC/sshd-log-wrapper.sh $TEST_SSHD_LOGFILE $SSHD -i -f $OBJ/sshd_proxy""
+cmd="$SUDO env $TEST_SSH_SSHD_ENV $TEST_SHELL $SRC/sshd-log-wrapper.sh $TEST_SSHD_LOGFILE $SSHD -i -f $OBJ/sshd_proxy"
 
 for m in $macs; do
 	trace "test $tid: mac $m"
