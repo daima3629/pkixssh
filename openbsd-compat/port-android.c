@@ -34,37 +34,11 @@
 #include "pathnames.h"
 extern char *__progname;
 
-#ifndef USE_LIBAPPWRAP
-/* paths to application specific directories: */
-extern char *get2_app_etcdir(const char *cmd);
-extern char *get2_app_bindir(const char *cmd);
-extern char *get2_app_libexecdir(const char *cmd);
-
-static inline char*
-get_app_etcdir(void) {
-	return get2_app_etcdir(__progname);
-}
-
-static inline char*
-get_app_bindir(void) {
-	return get2_app_bindir(__progname);
-}
-
-static inline char*
-get_app_libexecdir(void) {
-	return get2_app_libexecdir(__progname);
-}
-#endif /*ndef USE_LIBAPPWRAP*/
-
-/* Obsolete package rule:
- * Note it is expected binaries to be installed in $(prefix)/xbin.
- * In $(prefix)/bin is installed wrapper script that set custom configuration
- * like library patch and etc. and then execute real binary.
- *
- * API 29 requirement: untrusted application could execute binary
- * located only in write protected path (SELinux rule). Only
- * application library directory is write protected, so executable
- * could be installed only into this directory.
+/*
+ * Android API 29(Android 10) requirement:
+ * An untrusted application can execute binary located only in a write
+ * protected path (SELinux rule). Only the application library directory is
+ * write protected, so executable can only be be installed in that directory.
  * Also it must be renamed to libcmd-{name}.so for various reasons.
  */
 
@@ -184,94 +158,12 @@ endpwent(void) {
  * In consequence executable must be packaged into it and with
  * name is a specific pattern.
  */
-#ifndef USE_LIBAPPWRAP
-/* On old versions for some reasons application could install
- * executable outside libdir.
- * So instead to relocate executable to "lib" directory let
- * relocate "bin" and "libexec".
- */
-static int/*bool*/
-relocate_etcdir(const char *pathname, char *pathbuf, size_t pathlen) {
-	size_t len = strlen(SSHDIR);
-
-	if (pathlen <= len) return 0;
-	if (strncmp(pathname, SSHDIR, len) != 0) return 0;
-
-{	const char *appdir = NULL;
-	if (appdir == NULL) appdir = get_app_etcdir();
-	if (appdir == NULL) return 0;
-
-	len = snprintf(pathbuf, pathlen, "%s%s", appdir, pathname + len);
-}
-
-	return len <= pathlen;
-}
-
-static int/*bool*/
-relocate_bindir(const char *pathname, char *pathbuf, size_t pathlen) {
-	size_t len = strlen(SSHBINDIR);
-
-	if (pathlen <= len) return 0;
-	if (strncmp(pathname, SSHBINDIR, len) != 0) return 0;
-
-{	static const char *appdir = NULL;
-	if (appdir == NULL) appdir = get_app_bindir();
-	if (appdir == NULL) return 0;
-
-	/* in release build package manager extract only lib*.so
-	 * binaries. To distinguish executables let package them
-	 * in format "libcmd-{name}.so".
-	 */
-	len = snprintf(pathbuf, pathlen, "%s/libcmd-%s.so",
-	    appdir, pathname + len + 1/*exclude separator*/);
-}
-
-	return len <= pathlen;
-}
-
-static int/*bool*/
-relocate_libexecdir(const char *pathname, char *pathbuf, size_t pathlen) {
-	size_t len = strlen(SSHLIBEXECDIR);
-
-	if (pathlen <= len) return 0;
-	if (strncmp(pathname, SSHLIBEXECDIR, len) != 0) return 0;
-
-{	static const char *appdir = NULL;
-	if (appdir == NULL) appdir = get_app_libexecdir();
-	if (appdir == NULL) return 0;
-
-	/* same as bindir */
-	len = snprintf(pathbuf, pathlen, "%s/libcmd-%s.so",
-	    appdir, pathname + len + 1/*exclude separator*/);
-}
-
-	return len <= pathlen;
-}
-
-static const char*
-relocate_path(const char *pathname, char *pathbuf, size_t pathlen) {
-
-	if (relocate_etcdir(pathname, pathbuf, pathlen) ||
-	    relocate_bindir(pathname, pathbuf, pathlen) ||
-	    relocate_libexecdir(pathname, pathbuf, pathlen)) {
-		return pathbuf;
-	}
-
-	return pathname;
-}
-#endif /*ndef USE_LIBAPPWRAP*/
-
-
 const char*
 get_ssh_binary_path(void) {
 	const char *pathname = SSHBINDIR "/ssh";
 	static char pathbuf[PATH_MAX] = "\0";
 
 	if (*pathbuf != '\0') return pathbuf;
-#ifndef USE_LIBAPPWRAP
-	if (relocate_bindir(pathname, pathbuf, sizeof(pathbuf)))
-		return pathbuf;
-#else
 {	static const char ssh_utility[] = "libcmd-ssh.so";
 	ssize_t len;
 	char *s;
@@ -294,7 +186,6 @@ get_ssh_binary_path(void) {
 err:
 	*pathbuf = '\0';
 }
-#endif
 	return pathname;
 }
 
@@ -304,12 +195,6 @@ extern int __real_open(const char *path, int flags, mode_t mode);
 
 int
 __wrap_open(const char *path, int flags, mode_t mode) {
-#ifndef USE_LIBAPPWRAP
-	char r_path[PATH_MAX];
-
-	path = relocate_path(path, r_path, sizeof(r_path));
-	return __real_open(path, flags, mode);
-#else
 	int ret;
 	int oerrno;
 
@@ -320,7 +205,6 @@ __wrap_open(const char *path, int flags, mode_t mode) {
 		ret = __real_open(path, flags, mode);
 	}
 	return ret;
-#endif
 }
 
 
@@ -329,12 +213,6 @@ extern FILE* __real_fopen(const char *path, const char *mode);
 
 FILE*
 __wrap_fopen(const char *path, const char *mode) {
-#ifndef USE_LIBAPPWRAP
-	char r_path[PATH_MAX];
-
-	path = relocate_path(path, r_path, sizeof(r_path));
-	return  __real_fopen(path, mode);
-#else
 	FILE* ret;
 	int oerrno;
 
@@ -345,26 +223,9 @@ __wrap_fopen(const char *path, const char *mode) {
 		ret = __real_fopen(path, mode);
 	}
 	return ret;
-#endif
 }
 
 
-#ifndef USE_LIBAPPWRAP
-extern int __real_rename(const char *oldpath, const char *newpath);
-
-int
-__wrap_rename(const char *oldpath, const char *newpath) {
-	char r_oldpath[PATH_MAX], r_newpath[PATH_MAX];
-
-	oldpath = relocate_path(oldpath, r_oldpath, sizeof(r_oldpath));
-	newpath = relocate_path(newpath, r_newpath, sizeof(r_newpath));
-
-	return __real_rename(oldpath, newpath);
-}
-#endif
-
-
-#ifdef USE_LIBAPPWRAP
 int/*bool*/
 relocate_etcdir(const char *pathname, char *pathbuf, size_t pathlen) {
 	size_t len = strlen(SSHDIR);
@@ -381,7 +242,6 @@ relocate_etcdir(const char *pathname, char *pathbuf, size_t pathlen) {
 
 	return len <= pathlen;
 }
-#endif
 
 
 /* Fake user for android */

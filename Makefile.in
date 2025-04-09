@@ -224,9 +224,6 @@ libssh.a: $(LIBSSH_OBJS)
 	$(AR) rv $@ $(LIBSSH_OBJS)
 	$(RANLIB) $@
 
-libappinfo$(SHLIBEXT): appinfo.o
-	$(LD) -shared -o $@ appinfo.o
-
 libappwrap$(SHLIBEXT): appwrap.o
 	$(LD) -shared -o $@ appwrap.o
 

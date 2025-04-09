@@ -1024,13 +1024,13 @@ do_gen_all_hostkeys(const struct passwd *pw)
 
 	for (i = 0; key_types[i].key_type; i++) {
 		const char *key_path = key_types[i].path;
-	#if defined(__ANDROID__) && defined(USE_LIBAPPWRAP)
+	#if defined(__ANDROID__)
 		char r_key_path[PATH_MAX];
 	#endif
 		public = private = NULL;
 		prv_tmp = pub_tmp = prv_file = pub_file = NULL;
 
-	#if defined(__ANDROID__) && defined(USE_LIBAPPWRAP)
+	#if defined(__ANDROID__)
 		if (relocate_etcdir(key_path, r_key_path, sizeof(r_key_path)))
 			key_path = r_key_path;
 	#endif
