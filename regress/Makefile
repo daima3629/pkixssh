@@ -15,6 +15,7 @@ extra extra-tests: t-extra
 
 clean:
 	for F in $(CLEANFILES); do rm -f $(OBJ)$$F; done
+	rm -rf $(OBJ)copy.dd $(OBJ)copy.dd2 $(OBJ)copy.dd.glob[456]
 	rm -rf $(OBJ)softhsm
 	rm -rf $(OBJ).putty
 	rm -rf $(OBJ).dropbear

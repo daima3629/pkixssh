@@ -21,6 +21,7 @@ chmod 755 ${OBJ}/scp-ssh-wrapper.scp
 
 scpclean() {
 	rm -rf ${COPY} ${COPY2} ${DIR} ${DIR2} ${COPY3} ${DIR3}
+	test -z "$1" || return 0
 	mkdir ${DIR} ${DIR2} ${DIR3}
 	chmod 755 ${DIR} ${DIR2} ${DIR3}
 }
@@ -192,5 +193,5 @@ for mode in $SCP_MODES ; do
 	cmp ${COPY} ${COPY2} >/dev/null && fail "corrupt target"
 done
 
-scpclean
+scpclean yes
 rm -f ${OBJ}/scp-ssh-wrapper.scp
