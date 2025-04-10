@@ -46,6 +46,7 @@ RSA_get0_factors(const RSA *rsa, const BIGNUM **p, const BIGNUM **q) {
 }
 #endif /*ndef HAVE_RSA_GET0_KEY*/
 
+#ifdef WITH_DSA
 /* TODO: rewrite direct DSA tests */
 #ifndef HAVE_DSA_GET0_KEY
 /* opaque DSA key structure */
@@ -62,6 +63,7 @@ DSA_get0_pqg(const DSA *dsa, const BIGNUM **p, const BIGNUM **q, const BIGNUM **
 	if (g != NULL) *g = dsa->g;
 }
 #endif /*ndef HAVE_DSA_GET0_KEY*/
+#endif /*def WITH_DSA*/
 
 
 void sshkey_file_tests(void);
