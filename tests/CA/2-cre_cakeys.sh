@@ -1,5 +1,5 @@
 #! /bin/sh
-# Copyright (c) 2002-2024 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2002-2025 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -29,8 +29,7 @@ SCRIPTDIR=`echo $0 | sed 's/2-cre_cakeys.sh$//'`
 
 
 CA_LOG="$CWD/ca-2.log"
-create_empty_file .delmy &&
-update_file .delmy "$CA_LOG" > /dev/null || exit $?
+> "$CA_LOG" || exit $?
 
 rsa_bits=2048
 dsa_bits=1024   # match secsh algorithm specification
@@ -461,7 +460,7 @@ install () {
     move_as_trusted_x509 "$TMPDIR/$F" "$SSH_CAROOT/crt/$F.pem" || exit $?
   done
 
-  create_empty_file "${TMPDIR}/${CACERTFILE}" &&
+  > "$TMPDIR/$CACERTFILE" &&
   for level in 0; do
     F="$SSH_CAROOT/crt/$CAKEY_PREFIX-root${level}.crt.pem"
     crt2bundle "$SSH_DN_O level $level" "$F" >> "$TMPDIR/$CACERTFILE" || exit $?

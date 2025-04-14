@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2004-2022 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2004-2025 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -255,7 +255,7 @@ killLDAPdaemon() {
 
 
 initLDAPdb() {
-  create_empty_file "${LDAP_SETUP_LOG}" || return $?
+  > "$LDAP_SETUP_LOG" || return $?
 
   "${LDAPADD}" \
     -x -w secret -D "cn=Manager,${SSH_LDAP_DC}" \

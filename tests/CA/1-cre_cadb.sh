@@ -1,5 +1,5 @@
 #! /bin/sh
-# Copyright (c) 2002-2024 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2002-2025 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -405,10 +405,9 @@ cre_db () {
   mkdir "$var/crl" ||
   exit $?
 
-  create_empty_file "$var/index-root.txt" || exit $?
-
-  for type in ${SSH_SIGN_TYPES}; do
-    create_empty_file "$var/index-${type}.txt" || exit $?
+  > "$var/index-root.txt" || exit $?
+  for type in $SSH_SIGN_TYPES; do
+    > "$var/index-$type.txt" || exit $?
   done
 
   mkdir "$var/newcerts" &&

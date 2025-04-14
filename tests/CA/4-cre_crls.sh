@@ -1,5 +1,5 @@
 #! /bin/sh
-# Copyright (c) 2002-2023 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2002-2025 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -29,8 +29,7 @@ SCRIPTDIR=`echo $0 | sed 's/4-cre_crls.sh$//'`
 
 
 CA_LOG="$CWD/ca-4.log"
-create_empty_file .delmy &&
-update_file .delmy "$CA_LOG" > /dev/null || exit $?
+> "$CA_LOG" || exit $?
 
 
 # ===
@@ -80,7 +79,7 @@ cre_CAcrlfile () {
   # As work-around file will contain in addition
   # issuer name.
 
-  create_empty_file "$crlfile"-t &&
+  > "$crlfile"-t &&
   for type in $SSH_SIGN_TYPES; do
     (
       if test -n "$OPENSSL_NAMEOPT"; then

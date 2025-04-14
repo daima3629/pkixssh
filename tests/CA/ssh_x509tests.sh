@@ -1,5 +1,5 @@
 #! /bin/sh
-# Copyright (c) 2002-2023 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2002-2025 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -406,10 +406,10 @@ runTest () {
 
 # ===
 do_all () {
-  create_empty_file "${AUTHORIZEDKEYSFILE}" &&
-  chmod 644 "${AUTHORIZEDKEYSFILE}" || return $?
+  > "$AUTHORIZEDKEYSFILE" &&
+  chmod 644 "$AUTHORIZEDKEYSFILE" || return $?
 
-  create_empty_file "${SSHD_LOG}" || return $?
+  > "$SSHD_LOG" || return $?
 
   if test ! -f "${TEST_SSHD_HOSTKEY}.pub"; then
     echo "${warn}Public host file ${attn}$TEST_SSHD_HOSTKEY.pub${warn} not found !${norm}" >72

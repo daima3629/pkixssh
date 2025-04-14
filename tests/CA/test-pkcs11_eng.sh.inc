@@ -30,7 +30,7 @@
 . ${SCRIPTDIR}../pkcs11-env
 
 SSH_MODULE_LOG="$CWD/.ssh-module.log"
-create_empty_file "$SSH_MODULE_LOG" || exit $?
+> "$SSH_MODULE_LOG" || exit $?
 
 SSH_ENGINE="$CWD/ssh_engine"
 OPENSSL_CONF="$CWD/openssl_engine.cnf"

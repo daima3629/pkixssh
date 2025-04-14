@@ -1,5 +1,5 @@
 #! /bin/sh
-# Copyright (c) 2002-2023 Roumen Petrov, Sofia, Bulgaria
+# Copyright (c) 2002-2025 Roumen Petrov, Sofia, Bulgaria
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -94,7 +94,7 @@ test ! -r "${SSH_BASE_KEY}" && { error_file_not_readable; exit 1; }
 
 
 CA_LOG="$CWD/ca-3.$SSH_BASE_KEY.$SSH_X509V3_EXTENSIONS.log"
-create_empty_file "$CA_LOG" > /dev/null || exit $?
+> "$CA_LOG" || exit $?
 
 
 # ===
@@ -309,7 +309,7 @@ cre_all () {
   if test "$SSH_X509V3_EXTENSIONS" = "srv_cert" || \
      test "$SSH_SELFCERT" = "yes" \
   ; then
-    create_empty_file $SSH_BASE_KEY.certstamp
+    > $SSH_BASE_KEY.certstamp
     exit $?
   fi
 
@@ -319,7 +319,7 @@ cre_all () {
     revoke_crt || exit $?
   done
 
-  create_empty_file $SSH_BASE_KEY.certstamp
+  > $SSH_BASE_KEY.certstamp
 )
 }
 
