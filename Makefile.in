@@ -549,7 +549,7 @@ UNITTESTS_TEST_SSHBUF_OBJS=\
 	regress/unittests/sshbuf/test_sshbuf_fixed.o
 
 regress/unittests/sshbuf/test_sshbuf$(EXEEXT): ${UNITTESTS_TEST_SSHBUF_OBJS} \
-    regress/unittests/test_helper/libtest_helper.a libssh.a
+    regress/unittests/test_helper/libtest_helper.a $(REGRESSLIBS)
 	$(LD) -o $@ $(LDFLAGS) $(UNITTESTS_TEST_SSHBUF_OBJS) \
 	    regress/unittests/test_helper/libtest_helper.a \
 	    $(SSHLIBS) $(TESTLIBS)
@@ -562,7 +562,7 @@ UNITTESTS_TEST_SSHKEY_OBJS=\
 	regress/unittests/sshkey/test_sshkey.o
 
 regress/unittests/sshkey/test_sshkey$(EXEEXT): ${UNITTESTS_TEST_SSHKEY_OBJS} \
-    regress/unittests/test_helper/libtest_helper.a libssh.a
+    regress/unittests/test_helper/libtest_helper.a $(REGRESSLIBS)
 	$(LD) -o $@ $(LDFLAGS) $(UNITTESTS_TEST_SSHKEY_OBJS) \
 	    regress/unittests/test_helper/libtest_helper.a \
 	    $(SSHLIBS) $(TESTLIBS)
@@ -571,7 +571,7 @@ UNITTESTS_TEST_BITMAP_OBJS=\
 	regress/unittests/bitmap/tests.o
 
 regress/unittests/bitmap/test_bitmap$(EXEEXT): ${UNITTESTS_TEST_BITMAP_OBJS} \
-    regress/unittests/test_helper/libtest_helper.a libssh.a
+    regress/unittests/test_helper/libtest_helper.a $(REGRESSLIBS)
 	$(LD) -o $@ $(LDFLAGS) $(UNITTESTS_TEST_BITMAP_OBJS) \
 	    regress/unittests/test_helper/libtest_helper.a \
 	    $(SSHLIBS) $(TESTLIBS)
@@ -583,7 +583,7 @@ UNITTESTS_TEST_AUTHOPT_OBJS=\
 
 regress/unittests/authopt/test_authopt$(EXEEXT): \
     ${UNITTESTS_TEST_AUTHOPT_OBJS} \
-    regress/unittests/test_helper/libtest_helper.a libssh.a
+    regress/unittests/test_helper/libtest_helper.a $(REGRESSLIBS)
 	$(LD) -o $@ $(LDFLAGS) $(UNITTESTS_TEST_AUTHOPT_OBJS) \
 	    regress/unittests/test_helper/libtest_helper.a \
 	    $(SSHLIBS) $(TESTLIBS)
@@ -593,7 +593,7 @@ UNITTESTS_TEST_CONVERSION_OBJS=\
 
 regress/unittests/conversion/test_conversion$(EXEEXT): \
     ${UNITTESTS_TEST_CONVERSION_OBJS} \
-    regress/unittests/test_helper/libtest_helper.a libssh.a
+    regress/unittests/test_helper/libtest_helper.a $(REGRESSLIBS)
 	$(LD) -o $@ $(LDFLAGS) $(UNITTESTS_TEST_CONVERSION_OBJS) \
 	    regress/unittests/test_helper/libtest_helper.a \
 	    $(SSHLIBS) $(TESTLIBS)
@@ -604,7 +604,7 @@ UNITTESTS_TEST_KEX_OBJS=\
 	regress/unittests/kex/test_proposal.o
 
 regress/unittests/kex/test_kex$(EXEEXT): ${UNITTESTS_TEST_KEX_OBJS} \
-    regress/unittests/test_helper/libtest_helper.a libssh.a
+    regress/unittests/test_helper/libtest_helper.a $(REGRESSLIBS)
 	$(LD) -o $@ $(LDFLAGS) $(UNITTESTS_TEST_KEX_OBJS) \
 	    regress/unittests/test_helper/libtest_helper.a \
 	    $(SSHLIBS) $(TESTLIBS)
@@ -615,7 +615,7 @@ UNITTESTS_TEST_HOSTKEYS_OBJS=\
 
 regress/unittests/hostkeys/test_hostkeys$(EXEEXT): \
     ${UNITTESTS_TEST_HOSTKEYS_OBJS} \
-    regress/unittests/test_helper/libtest_helper.a libssh.a
+    regress/unittests/test_helper/libtest_helper.a $(REGRESSLIBS)
 	$(LD) -o $@ $(LDFLAGS) $(UNITTESTS_TEST_HOSTKEYS_OBJS) \
 	    regress/unittests/test_helper/libtest_helper.a \
 	    $(SSHLIBS) $(TESTLIBS)
@@ -625,7 +625,7 @@ UNITTESTS_TEST_MATCH_OBJS=\
 
 regress/unittests/match/test_match$(EXEEXT): \
     ${UNITTESTS_TEST_MATCH_OBJS} \
-    regress/unittests/test_helper/libtest_helper.a libssh.a
+    regress/unittests/test_helper/libtest_helper.a $(REGRESSLIBS)
 	$(LD) -o $@ $(LDFLAGS) $(UNITTESTS_TEST_MATCH_OBJS) \
 	    regress/unittests/test_helper/libtest_helper.a \
 	    $(SSHLIBS) $(TESTLIBS)
@@ -641,7 +641,7 @@ UNITTESTS_TEST_MISC_OBJS=\
 
 regress/unittests/misc/test_misc$(EXEEXT): \
     ${UNITTESTS_TEST_MISC_OBJS} \
-    regress/unittests/test_helper/libtest_helper.a libssh.a
+    regress/unittests/test_helper/libtest_helper.a $(REGRESSLIBS)
 	$(LD) -o $@ $(LDFLAGS) $(UNITTESTS_TEST_MISC_OBJS) \
 	    regress/unittests/test_helper/libtest_helper.a \
 	    $(SSHLIBS) $(TESTLIBS)
@@ -651,7 +651,7 @@ UNITTESTS_TEST_UTF8_OBJS=\
 
 regress/unittests/utf8/test_utf8$(EXEEXT): \
     ${UNITTESTS_TEST_UTF8_OBJS} \
-    regress/unittests/test_helper/libtest_helper.a libssh.a
+    regress/unittests/test_helper/libtest_helper.a $(REGRESSLIBS)
 	$(LD) -o $@ $(LDFLAGS) $(UNITTESTS_TEST_UTF8_OBJS) \
 	    regress/unittests/test_helper/libtest_helper.a \
 	    $(SSHLIBS) $(TESTLIBS)
