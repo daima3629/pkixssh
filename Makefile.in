@@ -661,7 +661,9 @@ regress-binaries: regress-prep \
 	regress/setuid-allowed$(EXEEXT) \
 	regress/netcat$(EXEEXT) \
 	regress/check-perm$(EXEEXT) \
-	regress/mkdtemp$(EXEEXT) \
+	regress/mkdtemp$(EXEEXT)
+
+regress-unit-binaries: regress-prep \
 	regress/unittests/authopt/test_authopt$(EXEEXT) \
 	regress/unittests/bitmap/test_bitmap$(EXEEXT) \
 	regress/unittests/conversion/test_conversion$(EXEEXT) \
@@ -681,7 +683,14 @@ check:
 # for compatibility
 tests: check
 
-check-core unit file-tests t-exec f-exec interop-tests extra-tests: regress-binaries $(TARGETS)
+unit: regress-unit-binaries
+	cd $(srcdir)/regress || exit $$?; \
+	$(MAKE) \
+		.CURDIR="$(abs_srcdir)/regress" \
+		.OBJDIR="$(BUILDDIR)/regress" \
+		$@ && echo '*** test "$@" pass'
+
+check-core file-tests t-exec f-exec interop-tests extra-tests: regress-binaries $(TARGETS)
 	TEST_SSH_SCP="$${TEST_SSH_SCP-$(BUILDDIR)/scp}"; \
 	TEST_SSH_SSH="$${TEST_SSH_SSH-$(BUILDDIR)/ssh}"; \
 	TEST_SSH_SSHD="$${TEST_SSH_SSHD-$(BUILDDIR)/sshd}"; \
@@ -714,7 +723,7 @@ check-core unit file-tests t-exec f-exec interop-tests extra-tests: regress-bina
 		TEST_SSH_SFTPSERVER="$${TEST_SSH_SFTPSERVER}" \
 		TEST_SSH_MODULI_FILE="$${TEST_SSH_MODULI_FILE}" \
 		TEST_SHELL="$(TEST_SHELL)" \
-		$@ && echo 'regress test "$@" pass'
+		$@ && echo '*** test "$@" pass'
 
 CHECKCERTSENV = \
 	TEST_SSH_SSH="$${TEST_SSH_SSH-$(BUILDDIR)/ssh}" \
