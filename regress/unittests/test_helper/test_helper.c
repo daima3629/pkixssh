@@ -1,4 +1,4 @@
-/*	$OpenBSD: test_helper.c,v 1.13 2021/12/14 21:25:27 deraadt Exp $	*/
+/*	$OpenBSD: test_helper.c,v 1.14 2025/04/15 04:00:42 djm Exp $	*/
 /*
  * Copyright (c) 2011 Damien Miller <djm@mindrot.org>
  *
@@ -21,14 +21,14 @@
 
 #include <sys/uio.h>
 
-#include <stdarg.h>
+#include <assert.h>
 #include <fcntl.h>
+#include <signal.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 #include <unistd.h>
-#include <signal.h>
 
 #ifdef WITH_OPENSSL
 #include <openssl/err.h>
@@ -39,6 +39,8 @@
 #endif
 
 #include "atomicio.h"
+#include "misc.h"
+
 typedef void (*sshsig_t)(int);
 sshsig_t ssh_signal(int, sshsig_t);
 
@@ -156,7 +158,8 @@ main(int argc, char **argv)
 			break;
 		default:
 			fprintf(stderr, "Unrecognised command line option\n");
-			fprintf(stderr, "Usage: %s [-v]\n", __progname);
+			fprintf(stderr, "Usage: %s [-Ffqv] [-d data_dir]\n",
+			    __progname);
 			exit(1);
 		}
 	}
@@ -368,23 +371,6 @@ assert_string(const char *file, int line, const char *a1, const char *a2,
 	fprintf(stderr, "%12s = %s (len %zu)\n", a1, aa1, strlen(aa1));
 	fprintf(stderr, "%12s = %s (len %zu)\n", a2, aa2, strlen(aa2));
 	test_die();
-}
-
-static char *
-tohex(const void *_s, size_t l)
-{
-	u_int8_t *s = (u_int8_t *)_s;
-	size_t i, j;
-	const char *hex = "0123456789abcdef";
-	char *r = malloc((l * 2) + 1);
-
-	assert(r != NULL);
-	for (i = j = 0; i < l; i++) {
-		r[j++] = hex[(s[i] >> 4) & 0xf];
-		r[j++] = hex[s[i] & 0xf];
-	}
-	r[j] = '\0';
-	return r;
 }
 
 void
