@@ -306,29 +306,30 @@ unit:
 		V="" ; \
 		test "x${USE_VALGRIND}" = "x" || \
 		    V=${.CURDIR}/valgrind-unit.sh ; \
+		ARGS="${UNITTEST_ARGS}"; \
 	test "x$$UNITTEST_SSHBUF" = "xskip" || \
-		$$V ${.OBJDIR}/unittests/sshbuf/test_sshbuf ; \
+		$$V ${.OBJDIR}/unittests/sshbuf/test_sshbuf $$ARGS; \
 	test "x$$UNITTEST_SSHKEY" = "xskip" || \
 		$$V ${.OBJDIR}/unittests/sshkey/test_sshkey \
-			-d ${.CURDIR}/unittests/sshkey/testdata ; \
+			-d ${.CURDIR}/unittests/sshkey/testdata $$ARGS; \
 	test "x$$UNITTEST_AUTHOPT" = "xskip" || \
 		$$V ${.OBJDIR}/unittests/authopt/test_authopt \
-			-d ${.CURDIR}/unittests/authopt/testdata ; \
+			-d ${.CURDIR}/unittests/authopt/testdata $$ARGS; \
 	test "x$$UNITTEST_BITMAP" = "xskip" || \
-		$$V ${.OBJDIR}/unittests/bitmap/test_bitmap ; \
+		$$V ${.OBJDIR}/unittests/bitmap/test_bitmap $$ARGS; \
 	test "x$$UNITTEST_CONVERSION" = "xskip" || \
-		$$V ${.OBJDIR}/unittests/conversion/test_conversion ; \
+		$$V ${.OBJDIR}/unittests/conversion/test_conversion $$ARGS; \
 	test "x$$UNITTEST_KEX" = "xskip" || \
-		$$V ${.OBJDIR}/unittests/kex/test_kex ; \
+		$$V ${.OBJDIR}/unittests/kex/test_kex $$ARGS; \
 	test "x$$UNITTEST_HOSTKEYS" = "xskip" || \
 		$$V ${.OBJDIR}/unittests/hostkeys/test_hostkeys \
-			-d ${.CURDIR}/unittests/hostkeys/testdata ; \
+			-d ${.CURDIR}/unittests/hostkeys/testdata $$ARGS; \
 	test "x$$UNITTEST_MATCH" = "xskip" || \
-		$$V ${.OBJDIR}/unittests/match/test_match ; \
+		$$V ${.OBJDIR}/unittests/match/test_match $$ARGS; \
 	test "x$$UNITTEST_MISC" = "xskip" || \
-		$$V ${.OBJDIR}/unittests/misc/test_misc ; \
+		$$V ${.OBJDIR}/unittests/misc/test_misc $$ARGS; \
 	test "x$$UNITTEST_UTF8" = "xskip" || \
 		if test "x${TEST_SSH_UTF8}" = "xyes"  ; then \
-			$$V ${.OBJDIR}/unittests/utf8/test_utf8 ; \
+			$$V ${.OBJDIR}/unittests/utf8/test_utf8 $$ARGS; \
 		fi ; \
 	fi
