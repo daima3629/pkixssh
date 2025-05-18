@@ -27,6 +27,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <limits.h>
 
 #include "addr.h"
 
@@ -421,18 +422,19 @@ int
 addr_pton_cidr(const char *p, struct xaddr *n, u_int *l)
 {
 	struct xaddr tmp;
-	long unsigned int masklen = 999;
-	char addrbuf[64], *mp, *cp;
+	u_int masklen = 999;
+	char addrbuf[64], *mp;
 
 	/* Don't modify argument */
 	if (p == NULL || strlcpy(addrbuf, p, sizeof(addrbuf)) >= sizeof(addrbuf))
 		return -1;
 
 	if ((mp = strchr(addrbuf, '/')) != NULL) {
+		const char *errstr;
 		*mp = '\0';
 		mp++;
-		masklen = strtoul(mp, &cp, 10);
-		if (*mp < '0' || *mp > '9' || *cp != '\0' || masklen > 128)
+		masklen = (u_int)strtonum(mp, 0, 128, &errstr);
+		if (errstr != NULL)
 			return -1;
 	}
 
