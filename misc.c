@@ -1934,8 +1934,7 @@ int
 parse_ipqos(const char *cp)
 {
 	u_int i;
-	char *ep;
-	long val;
+	int val;
 
 	if (cp == NULL)
 		return -1;
@@ -1944,9 +1943,11 @@ parse_ipqos(const char *cp)
 			return ipqos[i].value;
 	}
 	/* Try parsing as an integer */
-	val = strtol(cp, &ep, 0);
-	if (*cp == '\0' || *ep != '\0' || val < 0 || val > 255)
+{	const char *errstr;
+	val = (int)strtonum(cp, 0, 255, &errstr);
+	if (errstr != NULL)
 		return -1;
+}
 	return val;
 }
 
@@ -2617,13 +2618,10 @@ const char *
 atoi_err(const char *nptr, int *val)
 {
 	const char *errstr = NULL;
-	long long num;
 
 	if (nptr == NULL || *nptr == '\0')
 		return "missing";
-	num = strtonum(nptr, 0, INT_MAX, &errstr);
-	if (errstr == NULL)
-		*val = (int)num;
+	*val = (int)strtonum(nptr, 0, INT_MAX, &errstr);
 	return errstr;
 }
 
