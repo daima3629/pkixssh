@@ -1220,11 +1220,8 @@ done:
 
 int
 Xkey_write_subject(const char *pkalg, const struct sshkey *key, FILE *f) {
+	int ret;
 	BIO  *out;
-
-	if (!X509KEY_CHECK(key)) return 0;
-
-	if (pkalg == NULL) pkalg = sshkey_ssh_name(key);
 
 	out = BIO_new_fp(f, BIO_NOCLOSE);
 	if (out == NULL) return 0;
@@ -1234,12 +1231,23 @@ Xkey_write_subject(const char *pkalg, const struct sshkey *key, FILE *f) {
 		out = BIO_push(tmpbio, out);
 	}
 #endif
+	ret = Xkey_write_subject_bio(pkalg, key, out);
+
+	BIO_free_all(out);
+	return ret;
+}
+
+
+int
+Xkey_write_subject_bio(const char *pkalg, const struct sshkey *key, BIO *out) {
+	if (!X509KEY_CHECK(key)) return 0;
+
+	if (pkalg == NULL) pkalg = sshkey_ssh_name(key);
 
 	BIO_puts(out, pkalg);
 	BIO_puts(out, " Subject:");
 	ssh_X509_NAME_print(out, X509_get_subject_name(key->x509_data->cert));
 
-	BIO_free_all(out);
 	return 1;
 }
 
