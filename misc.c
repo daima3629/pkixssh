@@ -1,4 +1,4 @@
-/* $OpenBSD: misc.c,v 1.198 2024/10/24 03:14:37 djm Exp $ */
+/* $OpenBSD: misc.c,v 1.200 2025/05/22 03:53:46 dtucker Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2005,2006 Damien Miller.  All rights reserved.
@@ -2424,7 +2424,13 @@ safe_path(const char *name, struct stat *stp, const char *pw_dir,
 
 	/* for each component of the canonical path, walking upwards */
 	for (;;) {
-		if ((cp = dirname(buf)) == NULL) {
+		char buf2[PATH_MAX];
+		/*
+		 * POSIX allows dirname to modify path argument, so use
+		 * copy to avoid overlap.
+		 */
+		strlcpy(buf2, buf, sizeof(buf2));
+		if ((cp = dirname(buf2)) == NULL) {
 			snprintf(err, errlen, "dirname() failed");
 			return -1;
 		}
