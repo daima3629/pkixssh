@@ -1,4 +1,4 @@
-.\"	$OpenBSD: ssh-keygen.1,v 1.233 2024/08/17 08:35:04 djm Exp $
+.\"	$OpenBSD: ssh-keygen.1,v 1.235 2025/05/24 03:40:54 dtucker Exp $
 .\"
 .\" Author: Tatu Ylonen <ylo@cs.hut.fi>
 .\" Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -44,7 +44,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: August 17 2024 $
+.Dd $Mdocdate: May 24 2025 $
 .Dt SSH-KEYGEN 1
 .Os
 .Sh NAME
@@ -783,9 +783,6 @@ Write the last line processed to the specified file while performing DH
 candidate screening.
 This will be used to skip lines in the input file that have already been
 processed if the job is restarted.
-.It Ic memory Ns = Ns Ar mbytes
-Specify the amount of memory to use (in megabytes) when generating
-candidate moduli for DH-GEX.
 .It Ic start Ns = Ns Ar hex-value
 Specify start point (in hex) when generating candidate moduli for DH-GEX.
 .It Ic generator Ns = Ns Ar value

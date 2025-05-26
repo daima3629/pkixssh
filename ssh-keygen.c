@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keygen.c,v 1.477 2024/12/04 14:24:20 djm Exp $ */
+/* $OpenBSD: ssh-keygen.c,v 1.481 2025/05/24 03:37:40 dtucker Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1994 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -199,7 +199,7 @@ static char hostname[NI_MAXHOST];
 
 #ifdef ENABLE_KEX_DH
 /* moduli.c */
-int gen_candidates(FILE *, u_int32_t, u_int32_t, BIGNUM *);
+int gen_candidates(FILE *, u_int32_t, BIGNUM *);
 int prime_test(FILE *, FILE *, u_int32_t, u_int32_t, char *, unsigned long,
     unsigned long);
 #endif
@@ -2416,7 +2416,6 @@ do_moduli_gen(const char *out_file, char **opts, size_t nopts)
 {
 #ifdef ENABLE_KEX_DH
 	/* Moduli generation/screening */
-	u_int32_t memory = 0;
 	BIGNUM *start = NULL;
 	int moduli_bits = 0;
 	FILE *out;
@@ -2425,14 +2424,7 @@ do_moduli_gen(const char *out_file, char **opts, size_t nopts)
 
 	/* Parse options */
 	for (i = 0; i < nopts; i++) {
-		if (strncmp(opts[i], "memory=", 7) == 0) {
-			memory = (u_int32_t)strtonum(opts[i]+7, 1,
-			    UINT_MAX, &errstr);
-			if (errstr) {
-				fatal("Memory limit is %s: %s",
-				    errstr, opts[i]+7);
-			}
-		} else if (strncmp(opts[i], "start=", 6) == 0) {
+		if (strncmp(opts[i], "start=", 6) == 0) {
 			/* XXX - also compare length against bits */
 			if (BN_hex2bn(&start, opts[i]+6) == 0)
 				fatal("Invalid start point.");
@@ -2459,7 +2451,7 @@ do_moduli_gen(const char *out_file, char **opts, size_t nopts)
 
 	if (moduli_bits == 0)
 		moduli_bits = DEFAULT_BITS;
-	if (gen_candidates(out, memory, moduli_bits, start) != 0)
+	if (gen_candidates(out, moduli_bits, start) != 0)
 		fatal("modulus candidate generation failed");
 #else /*ndef ENABLE_KEX_DH*/
 	UNUSED(out_file); UNUSED(opts); UNUSED(nopts);
