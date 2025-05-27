@@ -690,6 +690,8 @@ unit: regress-unit-binaries
 		.OBJDIR="$(BUILDDIR)/regress" \
 		$@ && echo '*** test "$@" pass'
 
+check-core: regress-unit-binaries
+
 check-core file-tests t-exec f-exec interop-tests extra-tests: regress-binaries $(TARGETS)
 	TEST_SSH_SCP="$${TEST_SSH_SCP-$(BUILDDIR)/scp}"; \
 	TEST_SSH_SSH="$${TEST_SSH_SSH-$(BUILDDIR)/ssh}"; \
