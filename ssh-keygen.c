@@ -1422,8 +1422,9 @@ do_print_resource_record(char *fname, char *hname,
 	size_t i;
 
 	for (i = 0; i < nopts; i++) {
-		if (strncasecmp(opts[i], "hashalg=", 8) == 0) {
-			hash = ssh_digest_alg_by_name(opts[i] + 8);
+		const char *p = strprefix(opts[i], "hashalg=", 1);
+		if (p != NULL) {
+			hash = ssh_digest_alg_by_name(p);
 			if (hash == -1)
 				fatal("Unsupported hash algorithm");
 		} else {
@@ -1910,6 +1911,7 @@ static void
 add_cert_option(char *opt)
 {
 	char *val, *cp;
+	const char *p;
 	int iscrit = 0;
 
 	if (strcasecmp(opt, "clear") == 0)
@@ -1934,24 +1936,22 @@ add_cert_option(char *opt)
 		certflags_flags &= ~CERTOPT_USER_RC;
 	else if (strcasecmp(opt, "permit-user-rc") == 0)
 		certflags_flags |= CERTOPT_USER_RC;
-	else if (strncasecmp(opt, "force-command=", 14) == 0) {
-		val = opt + 14;
-		if (*val == '\0')
+	else if ((p = strprefix(opt, "force-command=", 1)) != NULL) {
+		if (*p == '\0')
 			fatal("Empty force-command option");
 		if (certflags_command != NULL)
 			fatal("force-command already specified");
-		certflags_command = xstrdup(val);
-	} else if (strncasecmp(opt, "source-address=", 15) == 0) {
-		val = opt + 15;
-		if (*val == '\0')
+		certflags_command = xstrdup(p);
+	} else if ((p = strprefix(opt, "source-address=", 1)) != NULL) {
+		if (*p == '\0')
 			fatal("Empty source-address option");
 		if (certflags_src_addr != NULL)
 			fatal("source-address already specified");
-		if (addr_match_cidr_list(NULL, val) != 0)
+		if (addr_match_cidr_list(NULL, p) != 0)
 			fatal("Invalid source-address list");
-		certflags_src_addr = xstrdup(val);
-	} else if (strncasecmp(opt, "extension:", 10) == 0 ||
-		    (iscrit = (strncasecmp(opt, "critical:", 9) == 0))) {
+		certflags_src_addr = xstrdup(p);
+	} else if (strprefix(opt, "extension:", 1) != NULL ||
+		    (iscrit = (strprefix(opt, "critical:", 1) != NULL))) {
 		val = xstrdup(strchr(opt, ':') + 1);
 		if ((cp = strchr(val, '=')) != NULL)
 			*cp++ = '\0';
@@ -2158,6 +2158,16 @@ hash_to_blob(const char *cp, u_char **blobp, size_t *lenp,
 	sshbuf_free(b);
 }
 
+static inline int
+strprefixtrim(char **s, const char *prefix, int ignorecase) {
+	const char *p = strprefix(*s, prefix, ignorecase);
+	if (p == NULL) return 0;
+
+	p += strspn(p, " \t");
+	*s = (char*)p;
+	return 1;
+}
+
 static void
 update_krl_from_file(const struct passwd *pw, const char *file, int wild_ca,
     const struct sshkey *ca, struct ssh_krl *krl)
@@ -2206,13 +2216,11 @@ update_krl_from_file(const struct passwd *pw, const char *file, int wild_ca,
 			cp[r] = '\0';
 		if (*cp == '\0')
 			continue;
-		if (strncasecmp(cp, "serial:", 7) == 0) {
+		if (strprefixtrim(&cp, "serial:", 1)) {
 			if (ca == NULL && !wild_ca) {
 				fatal("revoking certificates by serial number "
 				    "requires specification of a CA key");
 			}
-			cp += 7;
-			cp = cp + strspn(cp, " \t");
 			errno = 0;
 			serial = strtoull(cp, &ep, 0);
 			if (*cp == '\0' || (*ep != '\0' && *ep != '-'))
@@ -2242,26 +2250,21 @@ update_krl_from_file(const struct passwd *pw, const char *file, int wild_ca,
 			    ca, serial, serial2) != 0) {
 				fatal_f("revoke serial failed");
 			}
-		} else if (strncasecmp(cp, "id:", 3) == 0) {
+		} else if (strprefixtrim(&cp, "id:", 1)) {
 			if (ca == NULL && !wild_ca) {
 				fatal("revoking certificates by key ID "
 				    "requires specification of a CA key");
 			}
-			cp += 3;
-			cp = cp + strspn(cp, " \t");
 			if (ssh_krl_revoke_cert_by_key_id(krl, ca, cp) != 0)
 				fatal_f("revoke key ID failed");
-		} else if (strncasecmp(cp, "hash:", 5) == 0) {
-			cp += 5;
-			cp = cp + strspn(cp, " \t");
-			if (strncasecmp(cp, "SHA1:", 5) == 0) {
-				cp += 5;
-				hash_to_blob(cp, &blob, &blen, file, lnum);
+		} else if (strprefixtrim(&cp, "hash:", 1)) {
+			const char *p;
+			if ((p = strprefix(cp, "SHA1:", 0)) != NULL) {
+				hash_to_blob(p, &blob, &blen, file, lnum);
 				r = ssh_krl_revoke_key_sha1(krl, blob, blen);
 #ifdef HAVE_EVP_SHA256
-			} else if (strncmp(cp, "SHA256:", 7) == 0) {
-				cp += 7;
-				hash_to_blob(cp, &blob, &blen, file, lnum);
+			} else if ((p = strprefix(cp, "SHA256:", 0)) != NULL) {
+				hash_to_blob(p, &blob, &blen, file, lnum);
 				r = ssh_krl_revoke_key_sha256(krl, blob, blen);
 #endif /*def HAVE_EVP_SHA256*/
 			} else
@@ -2269,18 +2272,12 @@ update_krl_from_file(const struct passwd *pw, const char *file, int wild_ca,
 			if (r != 0)
 				fatal_fr(r, "revoke key failed");
 		} else {
-			if (strncasecmp(cp, "key:", 4) == 0) {
-				cp += 4;
-				cp = cp + strspn(cp, " \t");
+			if (strprefixtrim(&cp, "key:", 1)) {
 				was_explicit_key = 1;
-			} else if (strncasecmp(cp, "sha1:", 5) == 0) {
-				cp += 5;
-				cp = cp + strspn(cp, " \t");
+			} else if (strprefixtrim(&cp, "sha1:", 1)) {
 				was_sha1 = 1;
 #ifdef HAVE_EVP_SHA256
-			} else if (strncasecmp(cp, "sha256:", 7) == 0) {
-				cp += 7;
-				cp = cp + strspn(cp, " \t");
+			} else if (strprefixtrim(&cp, "sha256:", 1)) {
 				was_sha256 = 1;
 				/*
 				 * Just try to process the line as a key.
@@ -2420,20 +2417,18 @@ do_moduli_gen(const char *out_file, char **opts, size_t nopts)
 	int moduli_bits = 0;
 	FILE *out;
 	size_t i;
-	const char *errstr;
 
 	/* Parse options */
 	for (i = 0; i < nopts; i++) {
-		if (strncmp(opts[i], "start=", 6) == 0) {
+		const char *p, *errstr;
+		if ((p = strprefix(opts[i], "start=", 0)) != NULL) {
 			/* XXX - also compare length against bits */
-			if (BN_hex2bn(&start, opts[i]+6) == 0)
+			if (BN_hex2bn(&start, p) == 0)
 				fatal("Invalid start point.");
-		} else if (strncmp(opts[i], "bits=", 5) == 0) {
-			moduli_bits = (int)strtonum(opts[i]+5, 1,
-			    INT_MAX, &errstr);
+		} else if ((p = strprefix(opts[i], "bits=", 0)) != NULL) {
+			moduli_bits = (int)strtonum(p, 1, INT_MAX, &errstr);
 			if (errstr) {
-				fatal("Invalid number: %s (%s)",
-					opts[i]+12, errstr);
+				fatal("Invalid number: %s (%s)", p, errstr);
 			}
 		} else {
 			fatal("Option \"%s\" is unsupported for moduli "
@@ -2470,30 +2465,27 @@ do_moduli_screen(const char *out_file, char **opts, size_t nopts)
 	int prime_tests = 0;
 	FILE *out, *in = stdin;
 	size_t i;
-	const char *errstr;
 
 	/* Parse options */
 	for (i = 0; i < nopts; i++) {
-		if (strncmp(opts[i], "lines=", 6) == 0) {
-			lines_to_process = strtoul(opts[i]+6, NULL, 10);
-		} else if (strncmp(opts[i], "start-line=", 11) == 0) {
-			start_lineno = strtoul(opts[i]+11, NULL, 10);
-		} else if (strncmp(opts[i], "checkpoint=", 11) == 0) {
+		const char *p, *errstr;
+		if ((p = strprefix(opts[i], "lines=", 0)) != NULL) {
+			lines_to_process = strtoul(p, NULL, 10);
+		} else if ((p = strprefix(opts[i], "start-line=", 0)) != NULL) {
+			start_lineno = strtoul(p, NULL, 10);
+		} else if ((p = strprefix(opts[i], "checkpoint=", 0)) != NULL) {
 			free(checkpoint);
-			checkpoint = xstrdup(opts[i]+11);
-		} else if (strncmp(opts[i], "generator=", 10) == 0) {
-			generator_wanted = (u_int32_t)strtonum(
-			    opts[i]+10, 1, UINT_MAX, &errstr);
+			checkpoint = xstrdup(p);
+		} else if ((p = strprefix(opts[i], "generator=", 0)) != NULL) {
+			generator_wanted = (u_int32_t)strtonum(p, 1, UINT_MAX,
+			    &errstr);
 			if (errstr != NULL) {
-				fatal("Generator invalid: %s (%s)",
-				    opts[i]+10, errstr);
+				fatal("Generator invalid: %s (%s)", p, errstr);
 			}
-		} else if (strncmp(opts[i], "prime-tests=", 12) == 0) {
-			prime_tests = (int)strtonum(opts[i]+12, 1,
-			    INT_MAX, &errstr);
+		} else if ((p = strprefix(opts[i], "prime-tests=", 0)) != NULL) {
+			prime_tests = (int)strtonum(p, 1, INT_MAX, &errstr);
 			if (errstr) {
-				fatal("Invalid number: %s (%s)",
-					opts[i]+12, errstr);
+				fatal("Invalid number: %s (%s)", p, errstr);
 			}
 		} else {
 			fatal("Option \"%s\" is unsupported for moduli "
