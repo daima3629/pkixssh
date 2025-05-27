@@ -1,4 +1,4 @@
-/* $OpenBSD: channels.c,v 1.442 2024/12/05 06:49:26 dtucker Exp $ */
+/* $OpenBSD: channels.c,v 1.443 2025/05/24 08:09:32 dtucker Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -5118,7 +5118,7 @@ x11_create_display_inet(struct ssh *ssh, int x11_display_offset,
 	}
 
 	for (display_number = x11_display_offset;
-	    display_number < MAX_DISPLAYS;
+	    display_number < (u_int)(x11_display_offset + MAX_DISPLAYS);
 	    display_number++) {
 		u_int port = get_x11_port(display_number);
 		memset(&hints, 0, sizeof(hints));
@@ -5173,7 +5173,7 @@ x11_create_display_inet(struct ssh *ssh, int x11_display_offset,
 		if (num_socks > 0)
 			break;
 	}
-	if (display_number >= MAX_DISPLAYS) {
+	if (display_number >= (u_int)(x11_display_offset + MAX_DISPLAYS)) {
 		error("Failed to allocate internet-domain X11 display socket.");
 		return -1;
 	}
