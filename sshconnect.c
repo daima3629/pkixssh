@@ -1,4 +1,4 @@
-/* $OpenBSD: sshconnect.c,v 1.369 2024/12/06 16:21:48 djm Exp $ */
+/* $OpenBSD: sshconnect.c,v 1.371 2025/05/24 09:46:16 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -1167,7 +1167,7 @@ check_host_key(char *hostname, const struct ssh_conn_info *cinfo,
 			    options.fingerprint_hash, SSH_FP_RANDOMART);
 			if (fp == NULL || ra == NULL)
 				fatal_f("sshkey_fingerprint failed");
-			logit("Host key fingerprint is %s\n%s", fp, ra);
+			logit("Host key fingerprint is: %s\n%s", fp, ra);
 			free(ra);
 			free(fp);
 		}
@@ -1219,7 +1219,7 @@ check_host_key(char *hostname, const struct ssh_conn_info *cinfo,
 			    options.fingerprint_hash, SSH_FP_RANDOMART);
 			if (fp == NULL || ra == NULL)
 				fatal_f("sshkey_fingerprint failed");
-			xextendf(&msg1, "\n", "%s key fingerprint is %s.",
+			xextendf(&msg1, "\n", "%s key fingerprint is: %s",
 			    type, fp);
 			if (sshkey_is_x509(host_key)) {
 				char *subject = x509key_subject(host_key);
