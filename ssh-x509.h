@@ -62,7 +62,6 @@ int	x509key_write(const struct sshkey *key, struct sshbuf *b);
  * Method write subject of key X.509 certificate.
  */
 int	Xkey_write_subject(const char *pkalg, const struct sshkey *key, FILE *f);
-int	Xkey_write_subject_bio(const char *pkalg, const struct sshkey *key, BIO *bio);
 
 void	x509key_parse_cert(struct sshkey *key, BIO *bio);
 void	x509key_load_certs(const char *pkalg, struct sshkey *key, const char *filename);

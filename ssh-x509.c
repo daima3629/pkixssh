@@ -131,7 +131,9 @@ ssh_X509_NAME_print(BIO* bio, X509_NAME *xn) {
 	if (xn == NULL) return -1;
 
 	X509_NAME_print_ex(bio, xn, 0, print_flags);
+#if 0	/* needless for memory buffer */
 	(void)BIO_flush(bio);
+#endif
 
 	return BIO_pending(bio);
 }
@@ -1218,6 +1220,20 @@ done:
 }
 
 
+static int
+Xkey_write_subject_bio(const char *pkalg, const struct sshkey *key, BIO *out) {
+	if (!X509KEY_CHECK(key)) return 0;
+
+	if (pkalg == NULL) pkalg = sshkey_ssh_name(key);
+
+	BIO_puts(out, pkalg);
+	BIO_puts(out, " Subject:");
+	ssh_X509_NAME_print(out, X509_get_subject_name(key->x509_data->cert));
+
+	return 1;
+}
+
+
 int
 Xkey_write_subject(const char *pkalg, const struct sshkey *key, FILE *f) {
 	int ret;
@@ -1233,22 +1249,9 @@ Xkey_write_subject(const char *pkalg, const struct sshkey *key, FILE *f) {
 #endif
 	ret = Xkey_write_subject_bio(pkalg, key, out);
 
+	(void)BIO_flush(out);
 	BIO_free_all(out);
 	return ret;
-}
-
-
-int
-Xkey_write_subject_bio(const char *pkalg, const struct sshkey *key, BIO *out) {
-	if (!X509KEY_CHECK(key)) return 0;
-
-	if (pkalg == NULL) pkalg = sshkey_ssh_name(key);
-
-	BIO_puts(out, pkalg);
-	BIO_puts(out, " Subject:");
-	ssh_X509_NAME_print(out, X509_get_subject_name(key->x509_data->cert));
-
-	return 1;
 }
 
 
