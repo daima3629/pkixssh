@@ -54,7 +54,6 @@
 
 
 #ifndef HAVE_EC_POINT_GET_AFFINE_COORDINATES		/* OpenSSL < 1.1.1 */
-#ifdef OPENSSL_HAS_ECC
 /* Functions are available even in 0.9.7* but EC is not activated
  * as NIST curves are not supported yet.
  */
@@ -65,7 +64,6 @@ EC_POINT_get_affine_coordinates(
 ) {
 	return EC_POINT_get_affine_coordinates_GFp(group, p, x, y, ctx);
 }
-#endif /*def OPENSSL_HAS_ECC*/
 #endif /*ndef HAVE_EC_POINT_GET_AFFINE_COORDINATES*/
 
 
@@ -94,6 +92,59 @@ ssh_ecdsa_dgst(const struct sshkey *key)
  */
 #else
 /* management of elementary EC key */
+
+int
+ssh_EC_KEY_preserve_nid(EC_KEY *ec)
+{
+	static int nids[] = {
+		NID_X9_62_prime256v1,
+		NID_secp384r1,
+#ifdef OPENSSL_HAS_NISTP521
+		NID_secp521r1,
+#endif /* OPENSSL_HAS_NISTP521 */
+		-1
+	};
+	int k;
+	const EC_GROUP *g = EC_KEY_get0_group(ec);
+
+	/*
+	 * The group may be stored in a ASN.1 encoded private key in one of two
+	 * ways: as a "named group", which is reconstituted by ASN.1 object ID
+	 * or explicit group parameters encoded into the key blob. Only the
+	 * "named group" case sets the group NID for us, but we can figure
+	 * it out for the other case by comparing against all the groups that
+	 * are supported.
+	 */
+{	int nid = EC_GROUP_get_curve_name(g);
+	if (nid > 0) {
+		for (k = 0; nids[k] != -1; k++) {
+			if (nid == nids[k])
+				return nid;
+		}
+		return -1;
+	}
+}
+{	for (k = 0; nids[k] != -1; k++) {
+		EC_GROUP *eg = EC_GROUP_new_by_curve_name(nids[k]);
+		if (eg == NULL) continue;
+
+		if (EC_GROUP_cmp(g, eg, NULL) != 0) {
+			EC_GROUP_free(eg);
+			continue;
+		}
+
+		/* Use the group with the NID attached */
+		EC_GROUP_set_asn1_flag(eg, OPENSSL_EC_NAMED_CURVE);
+		if (EC_KEY_set_group(ec, eg) != 1) {
+			EC_GROUP_free(eg);
+			return -1;
+		}
+		EC_GROUP_free(eg);
+		return nids[k];
+	}
+}
+	return -1;
+}
 
 static inline EC_KEY*
 ssh_EC_KEY_new_by_curve_name(int nid) {
