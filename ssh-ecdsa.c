@@ -2,7 +2,7 @@
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2010 Damien Miller.  All rights reserved.
- * Copyright (c) 2020-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2020-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -43,6 +43,8 @@
 
 #include "evp-compat.h"
 #include <openssl/bn.h>
+/* for i2d_PUBKEY used in key serialisation work-around */
+#include <openssl/x509.h>
 
 #include <string.h>
 
@@ -418,19 +420,64 @@ sshbuf_put_ec(struct sshbuf *buf, const EC_POINT *v, const EC_GROUP *g)
 	return ret;
 }
 
+#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+static int
+sshbuf_write_prov_ecpub(struct sshbuf *buf, EVP_PKEY *pk) {
+	int r = SSH_ERR_ALLOC_FAIL;
+	unsigned char *data = NULL;
+	size_t len;
+
+	len = EVP_PKEY_get1_encoded_public_key(pk, &data);
+	if (len > 0) goto done;
+
+/* NOTE: "pkcs11-provider" fail on call above.
+ * Try work-arond - convert to key that uses default provider.
+ */
+{	r = SSH_ERR_LIBCRYPTO_ERROR;
+	int datalen;
+	EVP_PKEY *p;
+
+	datalen = i2d_PUBKEY(pk, &data);
+	if (datalen < 0) goto err;
+
+	{	const unsigned char *q = data;
+		p = d2i_PUBKEY(NULL, &q, datalen);
+	}
+	if (p == NULL) goto err;
+
+	len = EVP_PKEY_get1_encoded_public_key(p, &data);
+
+	EVP_PKEY_free(p);
+	if (len > 0) goto done;
+}
+
+	goto err;
+
+done:
+	r = sshbuf_put_string(buf, data, len);
+
+err:
+	OPENSSL_free(data);
+	return r;
+}
+#endif /*def HAVE_EVP_KEYMGMT_GET0_PROVIDER*/
+
 static inline int
-sshbuf_put_eckey(struct sshbuf *buf, const EC_KEY *v)
+sshbuf_put_eckey(struct sshbuf *buf, const EC_KEY *ec)
 {
-	return sshbuf_put_ec(buf, EC_KEY_get0_public_key(v),
-	    EC_KEY_get0_group(v));
+	return sshbuf_put_ec(buf,
+	    EC_KEY_get0_public_key(ec),
+	    EC_KEY_get0_group(ec));
 }
 
 int
 sshbuf_write_pkey_ecpub(struct sshbuf *buf, EVP_PKEY *pk) {
-	int r;
-	EC_KEY *ec;
-
-	ec = EVP_PKEY_get1_EC_KEY(pk);
+#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+	if (EVP_PKEY_get0_provider(pk) != NULL)
+		return sshbuf_write_prov_ecpub(buf, pk);
+#endif
+{	int r;
+	EC_KEY *ec = EVP_PKEY_get1_EC_KEY(pk);
 	if (ec == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;
 
@@ -438,6 +485,7 @@ sshbuf_write_pkey_ecpub(struct sshbuf *buf, EVP_PKEY *pk) {
 
 	EC_KEY_free(ec);
 	return r;
+}
 }
 
 static int
