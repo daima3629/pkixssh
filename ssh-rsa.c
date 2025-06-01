@@ -2,7 +2,7 @@
 /*
  * Copyright (c) 2000, 2003 Markus Friedl <markus@openbsd.org>
  * Copyright (c) 2011 Dr. Stephen Henson.  All rights reserved.
- * Copyright (c) 2011-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2025 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -34,6 +34,9 @@
 
 #include "evp-compat.h"
 #include <openssl/bn.h>
+#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+# include <openssl/core_names.h>
+#endif
 
 #include <stdarg.h>
 #include <stdlib.h>
@@ -361,24 +364,67 @@ err:
 	return r;
 }
 
+#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
 static int
-sshbuf_write_pub_rsa(struct sshbuf *buf, const struct sshkey *key) {
+sshbuf_write_prov_rsapub(struct sshbuf *buf, const EVP_PKEY *pk) {
+	int r;
+	BIGNUM *n = NULL, *e = NULL;
+
+	if (EVP_PKEY_get_bn_param(pk, OSSL_PKEY_PARAM_RSA_N, &n) != 1) {
+		r = SSH_ERR_INVALID_ARGUMENT;
+		goto err;
+	}
+	if (EVP_PKEY_get_bn_param(pk, OSSL_PKEY_PARAM_RSA_E, &e) != 1) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	r = sshbuf_put_bignum2(buf, e);
+	if (r != 0) goto err;
+	r = sshbuf_put_bignum2(buf, n);
+
+err:
+	BN_free(e);
+	BN_free(n);
+	return r;
+}
+#endif /*def HAVE_EVP_KEYMGMT_GET0_PROVIDER*/
+
+static inline int
+sshbuf_put_rsakey(struct sshbuf *buf, const RSA *rsa)
+{
 	int r;
 	const BIGNUM *n = NULL, *e = NULL;
 
-	if (key->pk == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
+	RSA_get0_key(rsa, &n, &e, NULL);
 
-{	RSA *rsa = EVP_PKEY_get1_RSA(key->pk);
+	r = sshbuf_put_bignum2(buf, e);
+	if (r != 0) return r;
+	return sshbuf_put_bignum2(buf, n);
+}
+
+static int
+sshbuf_write_pkey_rsapub(struct sshbuf *buf, EVP_PKEY *pk) {
+#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+	if (EVP_PKEY_get0_provider(pk) != NULL)
+		return sshbuf_write_prov_rsapub(buf, pk);
+#endif
+{	int r;
+	RSA *rsa = EVP_PKEY_get1_RSA(pk);
 	if (rsa == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;
-	RSA_get0_key(rsa, &n, &e, NULL);
+
+	r = sshbuf_put_rsakey(buf, rsa);
+
 	RSA_free(rsa);
+	return r;
 }
-	if ((r = sshbuf_put_bignum2(buf, e)) != 0 ||
-	    (r = sshbuf_put_bignum2(buf, n)) != 0)
-		return r;
-	return 0;
+}
+
+static int
+sshbuf_write_pub_rsa(struct sshbuf *buf, const struct sshkey *key) {
+	if (key->pk == NULL) return SSH_ERR_INVALID_ARGUMENT;
+	return sshbuf_write_pkey_rsapub(buf, key->pk);
 }
 
 static int
