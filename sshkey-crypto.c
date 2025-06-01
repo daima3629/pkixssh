@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2020-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -48,6 +48,17 @@
 #include "xmalloc.h"
 #include "log.h"
 
+
+#if 1
+/* compare "non-exportable" keys with mixed management
+ * (OpenSSL issue #26394)
+ * Function EVP_PKEY_eq() fail to compare key when private
+ * part is not exportable and one of them is manageet by provider
+ * and another one uses "classical" key method.
+ */
+# undef EVP_PKEY_EQ_MIXED_BUG
+# define EVP_PKEY_EQ_MIXED_BUG
+#endif
 
 #undef TRACE_EVP_ERROR_ENABLED
 #ifdef TRACE_EVP_ERROR
@@ -586,7 +597,42 @@ EVP_PKEY_cmp(const EVP_PKEY *a, const EVP_PKEY *b) {
 int
 ssh_EVP_PKEY_eq(const EVP_PKEY *a, const EVP_PKEY *b) {
 #ifdef HAVE_EVP_PKEY_EQ			/* OpenSSL >= 3.0 */
+#  ifdef EVP_PKEY_EQ_MIXED_BUG
+{	int ta = (EVP_PKEY_get0_provider(a) != NULL);
+
+	if (ta == (EVP_PKEY_get0_provider(b) != NULL))
+		return EVP_PKEY_eq(a, b);
+
+/* Convert to key managed by default provider and then compare.
+ * Note that some providers fail to export public part.
+ * Another point is that public public part depends on key type i.e.,
+ * it is quite complex to write "compare" for all key types.
+ * The code bellow relies on provider key-management "match.
+ */
+{	int r;
+	int len;
+	unsigned char *data = NULL;
+	EVP_PKEY *p;
+
+	len = i2d_PUBKEY((ta ? b : a), &data);
+	if (len < 0) return -2;
+
+	{
+		const unsigned char *q = data;
+		p = d2i_PUBKEY(NULL, &q, len);
+	}
+	if (p == NULL) return -2;
+
+	r = EVP_PKEY_eq((ta ? a : p), (ta ? p : b));
+
+	OPENSSL_free(data);
+	EVP_PKEY_free(p);
+	return r;
+}
+}
+#  else /*def EVP_PKEY_EQ_MIXED_BUG*/
 	return EVP_PKEY_eq(a, b);
+#  endif
 #else
 	return EVP_PKEY_cmp(a, b);
 #endif
