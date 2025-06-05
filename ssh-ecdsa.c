@@ -69,20 +69,42 @@ EC_POINT_get_affine_coordinates(
 #endif /*ndef HAVE_EC_POINT_GET_AFFINE_COORDINATES*/
 
 
-static const ssh_evp_md*
-ssh_ecdsa_dgst(const struct sshkey *key)
-{
-	int id;
-
-	switch (key->ecdsa_nid) {
-	case NID_X9_62_prime256v1: id = SSH_MD_EC_SHA256_SSH; break;
-	case NID_secp384r1:	   id = SSH_MD_EC_SHA384_SSH; break;
+static int
+nid_list[] = {
+	NID_X9_62_prime256v1,
+	NID_secp384r1,
 #ifdef OPENSSL_HAS_NISTP521
-	case NID_secp521r1:	   id = SSH_MD_EC_SHA512_SSH; break;
+	NID_secp521r1,
 #endif /* OPENSSL_HAS_NISTP521 */
-	default:
-		return NULL;
+	-1
+};
+
+/* NOTE: keep synchronised with nid_list */
+static int
+dgst_list[] = {
+	SSH_MD_EC_SHA256_SSH,
+	SSH_MD_EC_SHA384_SSH,
+	SSH_MD_EC_SHA512_SSH,
+};
+
+static int
+ssh_ecdsa_nid_dgst(int ecdsa_nid) {
+	int k;
+
+	for (k = 0; nid_list[k] != -1; k++) {
+		if (ecdsa_nid == nid_list[k])
+			return dgst_list[k];
 	}
+
+	/* NOTE: return digest not applicable for ECDSA */
+	return SSH_MD_NONE;
+}
+
+static inline const ssh_evp_md*
+ssh_ecdsa_dgst(const struct sshkey *key) {
+	int id = ssh_ecdsa_nid_dgst(key->ecdsa_nid);
+	if (id == SSH_MD_NONE) return NULL;
+
 	return ssh_evp_md_find(id);
 }
 
@@ -98,15 +120,6 @@ ssh_ecdsa_dgst(const struct sshkey *key)
 int
 ssh_EC_KEY_preserve_nid(EC_KEY *ec)
 {
-	static int nids[] = {
-		NID_X9_62_prime256v1,
-		NID_secp384r1,
-#ifdef OPENSSL_HAS_NISTP521
-		NID_secp521r1,
-#endif /* OPENSSL_HAS_NISTP521 */
-		-1
-	};
-	int k;
 	const EC_GROUP *g = EC_KEY_get0_group(ec);
 
 	/*
@@ -118,16 +131,12 @@ ssh_EC_KEY_preserve_nid(EC_KEY *ec)
 	 * are supported.
 	 */
 {	int nid = EC_GROUP_get_curve_name(g);
-	if (nid > 0) {
-		for (k = 0; nids[k] != -1; k++) {
-			if (nid == nids[k])
-				return nid;
-		}
-		return -1;
-	}
+	if (nid != NID_undef)
+		return (ssh_ecdsa_nid_dgst(nid) != SSH_MD_NONE) ? nid : -1;
 }
-{	for (k = 0; nids[k] != -1; k++) {
-		EC_GROUP *eg = EC_GROUP_new_by_curve_name(nids[k]);
+{	int k;
+	for (k = 0; nid_list[k] != -1; k++) {
+		EC_GROUP *eg = EC_GROUP_new_by_curve_name(nid_list[k]);
 		if (eg == NULL) continue;
 
 		if (EC_GROUP_cmp(g, eg, NULL) != 0) {
@@ -142,7 +151,7 @@ ssh_EC_KEY_preserve_nid(EC_KEY *ec)
 			return -1;
 		}
 		EC_GROUP_free(eg);
-		return nids[k];
+		return nid_list[k];
 	}
 }
 	return -1;
