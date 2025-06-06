@@ -230,7 +230,7 @@ kex_ecdh_compute_key(struct kex *kex, const struct sshbuf *ec_blob,
 	if (r != 0) return r;
 
 	/* ignore exact result from validation */
-	if (ssh_EVP_PKEY_validate_public_ec(kex->pk, dh_pub) != 0) {
+	if (ssh_EVP_PKEY_check_public_ec(kex->pk, dh_pub) != 0) {
 		r = SSH_ERR_MESSAGE_INCOMPLETE;
 		goto out;
 	}

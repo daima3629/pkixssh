@@ -1,7 +1,7 @@
 /* $OpenBSD: sshkey.h,v 1.65 2024/09/04 05:33:34 djm Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2002-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -357,7 +357,7 @@ int	 ssh_pkey_validate_public_dsa(EVP_PKEY *pk);
 #  ifdef OPENSSL_HAS_ECC
 int	 ssh_pkey_validate_public_ecdsa(EVP_PKEY *pk);
 int	 ssh_EC_KEY_preserve_nid(EC_KEY *);
-int	 ssh_EVP_PKEY_validate_public_ec(EVP_PKEY *pk, const EC_POINT *public);
+int	 ssh_EVP_PKEY_check_public_ec(EVP_PKEY *pk, const EC_POINT *public);
 #  endif /* OPENSSL_HAS_ECC */
 # endif /* WITH_OPENSSL */
 #endif /* SSHKEY_INTERNAL */

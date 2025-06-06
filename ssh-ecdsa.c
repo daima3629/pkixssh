@@ -240,7 +240,7 @@ sshbuf_write_ec_curve(struct sshbuf *buf, const struct sshkey *key) {
 
 
 static int
-sshkey_ecgroup_validate_public(const EC_GROUP *group, const EC_POINT *public)
+ssh_EC_GROUP_check_public(const EC_GROUP *group, const EC_POINT *public)
 {
 	EC_POINT *nq = NULL;
 	BIGNUM *order = NULL, *x = NULL, *y = NULL, *tmp = NULL;
@@ -309,16 +309,16 @@ sshkey_ecgroup_validate_public(const EC_GROUP *group, const EC_POINT *public)
 	return ret;
 }
 
-static int
-sshkey_ec_validate_public(const EC_KEY *ec, const EC_POINT *public)
-{
+static inline int
+ssh_EC_KEY_check_public(const EC_KEY *ec, const EC_POINT *public) {
 	const EC_GROUP *group = EC_KEY_get0_group(ec);
 	if (group == NULL) return SSH_ERR_INTERNAL_ERROR;
-	return sshkey_ecgroup_validate_public(group, public);
+
+	return ssh_EC_GROUP_check_public(group, public);
 }
 
 int
-ssh_EVP_PKEY_validate_public_ec(EVP_PKEY *pk, const EC_POINT *public) {
+ssh_EVP_PKEY_check_public_ec(EVP_PKEY *pk, const EC_POINT *public) {
 	EC_KEY *ec;
 	int r;
 
@@ -327,27 +327,28 @@ ssh_EVP_PKEY_validate_public_ec(EVP_PKEY *pk, const EC_POINT *public) {
 	ec = EVP_PKEY_get1_EC_KEY(pk);
 	if (ec == NULL) return SSH_ERR_INVALID_ARGUMENT;
 
-	r = sshkey_ec_validate_public(ec, public);
+	r = ssh_EC_KEY_check_public(ec, public);
 
 	EC_KEY_free(ec);
 	return r;
 }
 
 static inline int
-sshkey_validate_ec_pub(const EC_KEY *ec) {
-	return sshkey_ec_validate_public(ec, EC_KEY_get0_public_key(ec));
+ssh_EC_KEY_validate_public(const EC_KEY *ec) {
+	return ssh_EC_KEY_check_public(ec, EC_KEY_get0_public_key(ec));
 }
 
 int
 ssh_pkey_validate_public_ecdsa(EVP_PKEY *pk) {
+	EC_KEY *ec;
 	int r;
 
-{	EC_KEY *ec = EVP_PKEY_get1_EC_KEY(pk);
-	if (ec == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
-	r = sshkey_validate_ec_pub(ec);
+	ec = EVP_PKEY_get1_EC_KEY(pk);
+	if (ec == NULL) return SSH_ERR_INVALID_ARGUMENT;
+
+	r = ssh_EC_KEY_validate_public(ec);
+
 	EC_KEY_free(ec);
-}
 	return r;
 }
 
@@ -371,7 +372,7 @@ ssh_EVP_PKEY_complete_pub_ecdsa(EVP_PKEY *pk) {
 		goto err;
 	}
 
-	r = sshkey_validate_ec_pub(ec);
+	r = ssh_EC_KEY_validate_public(ec);
 
 err:
 	EC_KEY_free(ec);
@@ -398,7 +399,10 @@ sshbuf_read_pub_ecdsa(struct sshbuf *buf, struct sshkey *key) {
 	r = sshbuf_get_eckey(buf, ec);
 	if (r != 0) goto err;
 
-	r = sshkey_validate_ec_pub(ec);
+	/* do not call ..complete.. as nid is set from curve read and
+	 * does not need to be preserved
+	 */
+	r = ssh_EC_KEY_validate_public(ec);
 	if (r != 0) goto err;
 
 	/* success */
