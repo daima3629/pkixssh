@@ -263,7 +263,7 @@ err:
 
 
 static int
-sshkey_validate_dsa_pub(const DSA *dsa) {
+ssh_DSA_validate_public(const DSA *dsa) {
 	int r;
 	const BIGNUM *p = NULL;
 
@@ -278,14 +278,15 @@ sshkey_validate_dsa_pub(const DSA *dsa) {
 
 int
 ssh_pkey_validate_public_dsa(EVP_PKEY *pk) {
+	DSA *dsa;
 	int r;
 
-{	DSA *dsa = EVP_PKEY_get1_DSA(pk);
-	if (dsa == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
-	r = sshkey_validate_dsa_pub(dsa);
+	dsa = EVP_PKEY_get1_DSA(pk);
+	if (dsa == NULL) return SSH_ERR_INVALID_ARGUMENT;
+
+	r = ssh_DSA_validate_public(dsa);
+
 	DSA_free(dsa);
-}
 	return r;
 }
 
@@ -302,7 +303,7 @@ ssh_EVP_PKEY_complete_pub_dsa(EVP_PKEY *pk) {
 	if (dsa == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;
 
-	r = sshkey_validate_dsa_pub(dsa);
+	r = ssh_DSA_validate_public(dsa);
 
 	DSA_free(dsa);
 	return r;

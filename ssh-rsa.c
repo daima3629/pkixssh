@@ -281,7 +281,7 @@ err:
 
 
 static int
-sshkey_validate_rsa_pub(const RSA *rsa) {
+ssh_RSA_validate_public(const RSA *rsa) {
 	int r;
 	const BIGNUM *n = NULL;
 
@@ -296,14 +296,15 @@ sshkey_validate_rsa_pub(const RSA *rsa) {
 
 int
 ssh_pkey_validate_public_rsa(EVP_PKEY *pk) {
+	RSA *rsa;
 	int r;
 
-{	RSA *rsa = EVP_PKEY_get1_RSA(pk);
-	if (rsa == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
-	r = sshkey_validate_rsa_pub(rsa);
+	rsa = EVP_PKEY_get1_RSA(pk);
+	if (rsa == NULL) return SSH_ERR_INVALID_ARGUMENT;
+
+	r = ssh_RSA_validate_public(rsa);
+
 	RSA_free(rsa);
-}
 	return r;
 }
 
@@ -320,7 +321,7 @@ ssh_EVP_PKEY_complete_pub_rsa(EVP_PKEY *pk) {
 	if (rsa == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;
 
-	r = sshkey_validate_rsa_pub(rsa);
+	r = ssh_RSA_validate_public(rsa);
 	if (r != 0) goto err;
 
 	if (RSA_blinding_on(rsa, NULL) != 1) {
