@@ -4650,7 +4650,7 @@ AC_CACHE_CHECK(
 #include <stdio.h>
 	]], [[
 char b[5];
-snprintf(b,5,"123456789");
+snprintf(b,5,"%s","123456789");
 if (b[4] != '\0')
 	return 1;
 	]])],
@@ -4787,6 +4787,7 @@ if test "x$ssh_snprintf_broken" = xyes ; then
 		[Define to 1 if snprintf is broken or outdated (lack %zu, %ld and etc.)])
 	AC_MSG_CHECKING([whether snprintf declare const char *fmt])
 	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+#undef _FORTIFY_SOURCE
 #include <stdio.h>
 int snprintf(char *a, size_t b, const char *c, ...)
 #ifndef NO_ATTRIBUTE_ON_PROTOTYPE_ARGS
@@ -4795,7 +4796,7 @@ __attribute__ ((__format__ (__printf__, 3, 4)))
 ;
 int snprintf(char *a, size_t b, const char *c, ...) { return 0; }
 		]], [[
-snprintf(0, 0, 0);
+snprintf(0, 0, "%d", 0);
 		]])],
 	[ssh_snprintf_const_fmt=yes],
 	[ssh_snprintf_const_fmt=no]
