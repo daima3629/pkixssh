@@ -68,6 +68,41 @@ EC_POINT_get_affine_coordinates(
 }
 #endif /*ndef HAVE_EC_POINT_GET_AFFINE_COORDINATES*/
 
+#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+static size_t
+ssh_EVP_PKEY_get1_encoded_public_key(EVP_PKEY *pkey, unsigned char **ppub) {
+	size_t len;
+
+	len = EVP_PKEY_get1_encoded_public_key(pkey, ppub);
+	if (len > 0) return len;
+
+	debug3_f("try a workaround ...");
+/* NOTE: "pkcs11-provider" fail on call above.
+ * Try a workaround - convert to key that uses default provider.
+ */
+{	int datalen;
+	unsigned char *data = NULL;
+	EVP_PKEY *p;
+
+	datalen = i2d_PUBKEY(pkey, &data);
+	if (datalen <= 0) return 0;
+
+	{	const unsigned char *q = data;
+		p = d2i_PUBKEY(NULL, &q, datalen);
+	}
+	if (p == NULL) goto err;
+
+	len = EVP_PKEY_get1_encoded_public_key(p, ppub);
+
+	EVP_PKEY_free(p);
+
+err:
+	OPENSSL_free(data);
+}
+	return len;
+}
+#endif /*def HAVE_EVP_KEYMGMT_GET0_PROVIDER*/
+
 
 static int
 nid_list[] = {
@@ -436,37 +471,13 @@ sshbuf_put_ec(struct sshbuf *buf, const EC_POINT *v, const EC_GROUP *g)
 #ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
 static int
 sshbuf_write_prov_ecpub(struct sshbuf *buf, EVP_PKEY *pk) {
-	int r = SSH_ERR_ALLOC_FAIL;
 	unsigned char *data = NULL;
 	size_t len;
+	int r = SSH_ERR_LIBCRYPTO_ERROR;
 
-	len = EVP_PKEY_get1_encoded_public_key(pk, &data);
-	if (len > 0) goto done;
+	len = ssh_EVP_PKEY_get1_encoded_public_key(pk, &data);
+	if (len == 0) goto err;
 
-/* NOTE: "pkcs11-provider" fail on call above.
- * Try work-arond - convert to key that uses default provider.
- */
-{	r = SSH_ERR_LIBCRYPTO_ERROR;
-	int datalen;
-	EVP_PKEY *p;
-
-	datalen = i2d_PUBKEY(pk, &data);
-	if (datalen < 0) goto err;
-
-	{	const unsigned char *q = data;
-		p = d2i_PUBKEY(NULL, &q, datalen);
-	}
-	if (p == NULL) goto err;
-
-	len = EVP_PKEY_get1_encoded_public_key(p, &data);
-
-	EVP_PKEY_free(p);
-	if (len > 0) goto done;
-}
-
-	goto err;
-
-done:
 	r = sshbuf_put_string(buf, data, len);
 
 err:
