@@ -45,6 +45,9 @@
 #include <openssl/bn.h>
 /* for i2d_PUBKEY used in key serialisation work-around */
 #include <openssl/x509.h>
+#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#include <openssl/core_names.h>
+#endif
 
 #include <string.h>
 
@@ -344,6 +347,48 @@ ssh_EC_GROUP_check_public(const EC_GROUP *group, const EC_POINT *public)
 	return ret;
 }
 
+#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+static EC_GROUP*
+ssh_EVP_PKEY_prov_get_EC_GROUP(EVP_PKEY *pkey) {
+	char group_name[1024];
+	int order;
+
+	if (EVP_PKEY_get_utf8_string_param(pkey, OSSL_PKEY_PARAM_GROUP_NAME,
+	    group_name, sizeof(group_name), NULL) != 1) {
+		debug3_f("cannot get group parameter");
+		return NULL;
+	}
+
+	order = OBJ_txt2nid(group_name);
+	if (order == NID_undef) {
+		error_f("unknown group '%s'", group_name);
+		return NULL;
+	}
+	if (ssh_ecdsa_nid_dgst(order) == SSH_MD_NONE) {
+		error_f("unsupported group '%s'", group_name);
+		return NULL;
+	}
+
+	return EC_GROUP_new_by_curve_name(order);
+}
+#endif /*def HAVE_EVP_KEYMGMT_GET0_PROVIDER*/
+
+#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+static int
+ssh_EVP_PKEY_check_public_ecprov(EVP_PKEY *pkey, const EC_POINT *public) {
+	EC_GROUP *group;
+	int r;
+
+	group = ssh_EVP_PKEY_prov_get_EC_GROUP(pkey);
+	if (group == NULL) return SSH_ERR_ALLOC_FAIL;
+
+	r = ssh_EC_GROUP_check_public(group, public);
+
+	EC_GROUP_free(group);
+	return r;
+}
+#endif /*def HAVE_EVP_KEYMGMT_GET0_PROVIDER*/
+
 static inline int
 ssh_EC_KEY_check_public(const EC_KEY *ec, const EC_POINT *public) {
 	const EC_GROUP *group = EC_KEY_get0_group(ec);
@@ -354,10 +399,13 @@ ssh_EC_KEY_check_public(const EC_KEY *ec, const EC_POINT *public) {
 
 int
 ssh_EVP_PKEY_check_public_ec(EVP_PKEY *pk, const EC_POINT *public) {
-	EC_KEY *ec;
-	int r;
-
 	if (pk == NULL) return SSH_ERR_INVALID_ARGUMENT;
+#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+	if (EVP_PKEY_get0_provider(pk) != NULL)
+		return ssh_EVP_PKEY_check_public_ecprov(pk, public);
+#endif
+{	EC_KEY *ec;
+	int r;
 
 	ec = EVP_PKEY_get1_EC_KEY(pk);
 	if (ec == NULL) return SSH_ERR_INVALID_ARGUMENT;
@@ -366,6 +414,7 @@ ssh_EVP_PKEY_check_public_ec(EVP_PKEY *pk, const EC_POINT *public) {
 
 	EC_KEY_free(ec);
 	return r;
+}
 }
 
 static inline int
