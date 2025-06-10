@@ -417,6 +417,56 @@ ssh_EVP_PKEY_check_public_ec(EVP_PKEY *pk, const EC_POINT *public) {
 }
 }
 
+#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+static int
+ssh_EVP_PKEY_validate_public_ecprov(EVP_PKEY *pk) {
+	EC_GROUP *group = NULL;
+	EC_POINT *public = NULL;
+	int r;
+
+	group = ssh_EVP_PKEY_prov_get_EC_GROUP(pk);
+	if (group == NULL)
+		return SSH_ERR_ALLOC_FAIL;
+
+	public = EC_POINT_new(group);
+	if (public == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto err;
+	}
+
+{	unsigned char *data;
+	size_t len;
+
+	len = ssh_EVP_PKEY_get1_encoded_public_key(pk, &data);
+	if (len == 0) {
+		r = SSH_ERR_KEY_INVALID_EC_VALUE;
+		goto err;
+	}
+
+	/* Only handle uncompressed points */
+	if (*data != POINT_CONVERSION_UNCOMPRESSED) {
+		r = SSH_ERR_INVALID_FORMAT;
+		goto data_err;
+	}
+
+	if (EC_POINT_oct2point(group, public, data, len, NULL) != 1) {
+		r = SSH_ERR_INVALID_FORMAT;
+		goto data_err;
+	}
+
+	r = ssh_EVP_PKEY_check_public_ecprov(pk, public);
+
+data_err:
+	OPENSSL_free(data);
+}
+
+err:
+	EC_GROUP_free(group);
+	EC_POINT_free(public);
+	return r;
+}
+#endif /*def HAVE_EVP_KEYMGMT_GET0_PROVIDER*/
+
 static inline int
 ssh_EC_KEY_validate_public(const EC_KEY *ec) {
 	return ssh_EC_KEY_check_public(ec, EC_KEY_get0_public_key(ec));
@@ -424,7 +474,11 @@ ssh_EC_KEY_validate_public(const EC_KEY *ec) {
 
 int
 ssh_pkey_validate_public_ecdsa(EVP_PKEY *pk) {
-	EC_KEY *ec;
+#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+	if (EVP_PKEY_get0_provider(pk) != NULL)
+		return ssh_EVP_PKEY_validate_public_ecprov(pk);
+#endif /*def HAVE_EVP_KEYMGMT_GET0_PROVIDER*/
+{	EC_KEY *ec;
 	int r;
 
 	ec = EVP_PKEY_get1_EC_KEY(pk);
@@ -434,6 +488,7 @@ ssh_pkey_validate_public_ecdsa(EVP_PKEY *pk) {
 
 	EC_KEY_free(ec);
 	return r;
+}
 }
 
 
