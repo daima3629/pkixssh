@@ -280,6 +280,23 @@ err:
 }
 
 
+#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+static int
+ssh_EVP_PKEY_validate_public_rsaprov(const EVP_PKEY *pk) {
+	int bits = 0;
+	int r;
+
+	if (EVP_PKEY_get_int_param(pk, OSSL_PKEY_PARAM_BITS, &bits) != 1)
+		return SSH_ERR_INVALID_ARGUMENT;
+
+	r = sshrsa_verify_length(bits);
+	if (r != 0) return r;
+
+	/* other checks ? */
+	return 0;
+}
+#endif /*def HAVE_EVP_KEYMGMT_GET0_PROVIDER*/
+
 static int
 ssh_RSA_validate_public(const RSA *rsa) {
 	int r;
@@ -296,7 +313,11 @@ ssh_RSA_validate_public(const RSA *rsa) {
 
 int
 ssh_pkey_validate_public_rsa(EVP_PKEY *pk) {
-	RSA *rsa;
+#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+	if (EVP_PKEY_get0_provider(pk) != NULL)
+		return ssh_EVP_PKEY_validate_public_rsaprov(pk);
+#endif
+{	RSA *rsa;
 	int r;
 
 	rsa = EVP_PKEY_get1_RSA(pk);
@@ -307,6 +328,7 @@ ssh_pkey_validate_public_rsa(EVP_PKEY *pk) {
 	RSA_free(rsa);
 	return r;
 }
+}
 
 
 extern int /* see sshkey-crypto.c */
@@ -314,8 +336,13 @@ ssh_EVP_PKEY_complete_pub_rsa(EVP_PKEY *pk);
 
 int
 ssh_EVP_PKEY_complete_pub_rsa(EVP_PKEY *pk) {
+#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+	/* TODO: blinding on provider managed keys? */
+	if (EVP_PKEY_get0_provider(pk) != NULL)
+		return ssh_EVP_PKEY_validate_public_rsaprov(pk);
+#endif
+{	RSA *rsa;
 	int r;
-	RSA *rsa;
 
 	rsa = EVP_PKEY_get1_RSA(pk);
 	if (rsa == NULL)
@@ -334,6 +361,7 @@ ssh_EVP_PKEY_complete_pub_rsa(EVP_PKEY *pk) {
 err:
 	RSA_free(rsa);
 	return r;
+}
 }
 
 
