@@ -984,6 +984,12 @@ ssh_rsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 
 	dgst = ssh_evp_md_find(alg_info->id);
 
+#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+	/* work-around for tpm2-openssl(<1.3) issue #135 */
+	if (getenv("TPM2_RSA_SIZE_BUG") != NULL)
+		slen = (EVP_PKEY_bits(key->pk)+7)/8;
+	else
+#endif
 	slen = EVP_PKEY_size(key->pk);
 	debug3_f("slen=%zu", slen);
 
