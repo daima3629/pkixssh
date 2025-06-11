@@ -492,13 +492,46 @@ ssh_pkey_validate_public_ecdsa(EVP_PKEY *pk) {
 }
 
 
+#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+static int
+ssh_EVP_PKEY_complete_pub_ecprov(EVP_PKEY *pk) {
+	char encoding[1024];
+
+	if (EVP_PKEY_get_utf8_string_param(pk, OSSL_PKEY_PARAM_EC_ENCODING,
+	    encoding, sizeof(encoding), NULL) != 1) {
+		unsigned char *data;
+		size_t len;
+
+		len = ssh_EVP_PKEY_get1_encoded_public_key(pk, &data);
+		if (len == 0)
+			return SSH_ERR_KEY_INVALID_EC_VALUE;
+
+		/* Only handle uncompressed points */
+		if (*data != POINT_CONVERSION_UNCOMPRESSED) {
+			OPENSSL_free(data);
+			return SSH_ERR_EC_CURVE_INVALID;
+		}
+		OPENSSL_free(data);
+	} else {
+		if (strcmp(encoding, OSSL_PKEY_EC_ENCODING_GROUP) != 0)
+			return SSH_ERR_EC_CURVE_INVALID;
+	}
+
+	return ssh_EVP_PKEY_validate_public_ecprov(pk);
+}
+#endif /*def HAVE_EVP_KEYMGMT_GET0_PROVIDER*/
+
 extern int /* see sshkey-crypto.c */
 ssh_EVP_PKEY_complete_pub_ecdsa(EVP_PKEY *pk);
 
 int
 ssh_EVP_PKEY_complete_pub_ecdsa(EVP_PKEY *pk) {
+#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+	if (EVP_PKEY_get0_provider(pk) != NULL)
+		return ssh_EVP_PKEY_complete_pub_ecprov(pk);
+#endif
+{	EC_KEY *ec;
 	int r, nid;
-	EC_KEY *ec;
 
 	ec = EVP_PKEY_get1_EC_KEY(pk);
 	if (ec == NULL)
@@ -516,6 +549,7 @@ ssh_EVP_PKEY_complete_pub_ecdsa(EVP_PKEY *pk) {
 err:
 	EC_KEY_free(ec);
 	return r;
+}
 }
 
 
