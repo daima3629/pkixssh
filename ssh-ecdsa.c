@@ -521,10 +521,7 @@ ssh_EVP_PKEY_complete_pub_ecprov(EVP_PKEY *pk) {
 }
 #endif /*def HAVE_EVP_KEYMGMT_GET0_PROVIDER*/
 
-extern int /* see sshkey-crypto.c */
-ssh_EVP_PKEY_complete_pub_ecdsa(EVP_PKEY *pk);
-
-int
+static int
 ssh_EVP_PKEY_complete_pub_ecdsa(EVP_PKEY *pk) {
 #ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
 	if (EVP_PKEY_get0_provider(pk) != NULL)
@@ -553,8 +550,113 @@ err:
 }
 
 
-extern int /* TODO static - see sshkey-crypto.c */
-sshkey_validate_ec_priv(const EC_KEY *ec);
+static int
+sshkey_validate_ec_priv(const EC_KEY *ec) {
+	int r;
+	const BIGNUM *exponent;
+	BIGNUM *order = NULL, *tmp = NULL;
+
+	exponent = EC_KEY_get0_private_key(ec);
+	if (exponent == NULL) {
+		r = SSH_ERR_INVALID_ARGUMENT;
+		goto err;
+	}
+
+	order = BN_new();
+	if (order == NULL)  {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto err;
+	}
+
+	if (EC_GROUP_get_order(EC_KEY_get0_group(ec), order, NULL) != 1) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	/* log2(private) > log2(order)/2 */
+	if (BN_num_bits(exponent) <= BN_num_bits(order) / 2) {
+		r = SSH_ERR_KEY_INVALID_EC_VALUE;
+		goto err;
+	}
+
+	tmp = BN_new();
+	if (tmp == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto err;
+	}
+
+	/* private < order - 1 */
+	if (!BN_sub(tmp, order, BN_value_one())) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+	if (BN_cmp(exponent, tmp) >= 0) {
+		r = SSH_ERR_KEY_INVALID_EC_VALUE;
+		goto err;
+	}
+
+	/* other checks ? */
+
+	r = 0;
+
+err:
+	BN_clear_free(order);
+	BN_clear_free(tmp);
+	return r;
+}
+
+
+extern int /* see sshkey-crypto.c */
+sshkey_from_pkey_ecdsa(EVP_PKEY *pk, struct sshkey **keyp);
+
+int
+sshkey_from_pkey_ecdsa(EVP_PKEY *pk, struct sshkey **keyp) {
+	int r;
+	struct sshkey* key;
+	EC_KEY *ec;
+
+	r = ssh_EVP_PKEY_complete_pub_ecdsa(pk);
+	if (r != 0) return r;
+
+	key = sshkey_new(KEY_UNSPEC);
+	if (key == NULL)
+		return SSH_ERR_ALLOC_FAIL;
+
+	key->type = KEY_ECDSA;
+	key->pk = pk;
+
+	ec = EVP_PKEY_get1_EC_KEY(key->pk);
+	if (ec == NULL) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+{	/* indirectly set in sshkey_ecdsa_key_to_nid(if needed)
+	   when pkey is completed */
+	const EC_GROUP *g = EC_KEY_get0_group(ec);
+	key->ecdsa_nid = EC_GROUP_get_curve_name(g);
+}
+
+{	/* private part is not required */
+	const BIGNUM *exponent = EC_KEY_get0_private_key(ec);
+	if (exponent == NULL) goto skip_private;
+
+	r = sshkey_validate_ec_priv(ec);
+	if (r != 0) goto err;
+}
+skip_private:
+
+	/* success */
+	SSHKEY_DUMP(key);
+	*keyp = key;
+	EC_KEY_free(ec);
+	return 0;
+
+err:
+	EC_KEY_free(ec);
+	sshkey_free(key);
+	return r;
+}
 
 
 static int
