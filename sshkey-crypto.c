@@ -312,31 +312,8 @@ err:
 
 
 extern int sshkey_from_pkey_rsa(EVP_PKEY *pk, struct sshkey **keyp);
-
 #ifdef WITH_DSA
-extern int
-ssh_EVP_PKEY_complete_pub_dsa(EVP_PKEY *pk);
-
-static int
-sshkey_from_pkey_dsa(EVP_PKEY *pk, struct sshkey **keyp) {
-	int r;
-	struct sshkey* key;
-
-	r = ssh_EVP_PKEY_complete_pub_dsa(pk);
-	if (r != 0) return r;
-
-	key = sshkey_new(KEY_UNSPEC);
-	if (key == NULL)
-		return SSH_ERR_ALLOC_FAIL;
-
-	/* success */
-	key->type = KEY_DSA;
-	key->pk = pk;
-
-	SSHKEY_DUMP(key);
-	*keyp = key;
-	return 0;
-}
+extern int sshkey_from_pkey_dsa(EVP_PKEY *pk, struct sshkey **keyp);
 #endif /*def WITH_DSA*/
 
 #ifdef OPENSSL_HAS_ECC
