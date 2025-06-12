@@ -162,7 +162,13 @@ static inline const EVP_MD* EVP_dss1(void) { return EVP_sha1(); }
 void
 ssh_EVP_PKEY_print_private_fp(FILE *fp, const EVP_PKEY *pkey) {
 #ifdef HAVE_EVP_PKEY_PRINT_PRIVATE_FP		/* OpenSSL >= 3.0 */
+/* NOTE OpenSSL 3.0 regression - for some key types like EC and DSA,
+ * print_private fail to output key material if private part is missing.
+ * For more details see OpenSSL issue #27547.
+ * As work-around call "print_public" as well.
+ */
 	EVP_PKEY_print_private_fp(fp, pkey, 0, NULL);
+	EVP_PKEY_print_public_fp(fp, pkey, 0, NULL);
 #elif defined(HAVE_EVP_PKEY_PRINT_PARAMS)	/* OpenSSL >= 1.0.0 */
 {	/* OpenSSL lacks print to file stream */
 	BIO *bio = BIO_new_fp(fp, BIO_NOCLOSE);
@@ -211,8 +217,6 @@ sshkey_dump(const char *func, const struct sshkey *key) {
 	ssh_EVP_PKEY_print_private_fp(stderr, key->pk);
 }
 #endif /* DEBUG_PK */
-
-#define SSHKEY_DUMP(...)	sshkey_dump(__func__, __VA_ARGS__)
 
 
 #ifdef USE_EVP_PKEY_KEYGEN
