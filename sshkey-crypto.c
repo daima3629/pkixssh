@@ -311,29 +311,7 @@ err:
 #endif
 
 
-extern int
-ssh_EVP_PKEY_complete_pub_rsa(EVP_PKEY *pk);
-
-static int
-sshkey_from_pkey_rsa(EVP_PKEY *pk, struct sshkey **keyp) {
-	int r;
-	struct sshkey* key;
-
-	r = ssh_EVP_PKEY_complete_pub_rsa(pk);
-	if (r != 0) return r;
-
-	key = sshkey_new(KEY_UNSPEC);
-	if (key == NULL)
-		return SSH_ERR_ALLOC_FAIL;
-
-	key->type = KEY_RSA;
-	key->pk = pk;
-
-	/* success */
-	SSHKEY_DUMP(key);
-	*keyp = key;
-	return 0;
-}
+extern int sshkey_from_pkey_rsa(EVP_PKEY *pk, struct sshkey **keyp);
 
 #ifdef WITH_DSA
 extern int
