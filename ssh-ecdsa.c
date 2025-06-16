@@ -606,6 +606,52 @@ err:
 }
 
 
+#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+static int
+sshkey_set_prov_param_nid(const EVP_PKEY *pk, int *pnid) {
+	char param[1024];
+	size_t param_len;
+	int nid;
+
+	if (EVP_PKEY_get_utf8_string_param(pk, OSSL_PKEY_PARAM_GROUP_NAME,
+	    param, sizeof(param), &param_len) != 1)
+		return SSH_ERR_LIBCRYPTO_ERROR;
+
+	nid = OBJ_txt2nid(param);
+	if (nid == NID_undef)
+		return SSH_ERR_LIBCRYPTO_ERROR;
+
+	if (sshkey_curve_nid_to_name(nid) == NULL)
+		return SSH_ERR_EC_CURVE_INVALID;
+
+	*pnid = nid;
+	return 0;
+}
+#endif /*def HAVE_EVP_KEYMGMT_GET0_PROVIDER*/
+
+static int
+sshkey_set_nid(EVP_PKEY *pk, int *pnid) {
+#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+	if (EVP_PKEY_get0_provider(pk) != NULL)
+		return sshkey_set_prov_param_nid(pk, pnid);
+#endif
+{	EC_KEY *ec;
+	const EC_GROUP *g;
+
+	ec = EVP_PKEY_get1_EC_KEY(pk);
+	if (ec == NULL) return SSH_ERR_LIBCRYPTO_ERROR;
+
+	/* indirectly set in sshkey_ecdsa_key_to_nid(if needed)
+	   when pkey is completed */
+	g = EC_KEY_get0_group(ec);
+	if (g == NULL) return SSH_ERR_LIBCRYPTO_ERROR;
+
+	*pnid = EC_GROUP_get_curve_name(g);
+	return 0;
+}
+}
+
+
 extern int /* see sshkey-crypto.c */
 sshkey_from_pkey_ecdsa(EVP_PKEY *pk, struct sshkey **keyp);
 
@@ -613,7 +659,7 @@ int
 sshkey_from_pkey_ecdsa(EVP_PKEY *pk, struct sshkey **keyp) {
 	int r;
 	struct sshkey* key;
-	EC_KEY *ec;
+	EC_KEY *ec = NULL;
 
 	r = ssh_EVP_PKEY_complete_pub_ecdsa(pk);
 	if (r != 0) return r;
@@ -625,17 +671,14 @@ sshkey_from_pkey_ecdsa(EVP_PKEY *pk, struct sshkey **keyp) {
 	key->type = KEY_ECDSA;
 	key->pk = pk;
 
+	r = sshkey_set_nid(key->pk, &key->ecdsa_nid);
+	if (r != 0) goto err;
+
 	ec = EVP_PKEY_get1_EC_KEY(key->pk);
 	if (ec == NULL) {
 		r = SSH_ERR_LIBCRYPTO_ERROR;
 		goto err;
 	}
-
-{	/* indirectly set in sshkey_ecdsa_key_to_nid(if needed)
-	   when pkey is completed */
-	const EC_GROUP *g = EC_KEY_get0_group(ec);
-	key->ecdsa_nid = EC_GROUP_get_curve_name(g);
-}
 
 {	/* private part is not required */
 	const BIGNUM *exponent = EC_KEY_get0_private_key(ec);
@@ -653,6 +696,7 @@ skip_private:
 	return 0;
 
 err:
+	key->pk = NULL; /* transfer failed */
 	EC_KEY_free(ec);
 	sshkey_free(key);
 	return r;
