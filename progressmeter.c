@@ -1,4 +1,4 @@
-/* $OpenBSD: progressmeter.c,v 1.55 2025/05/09 02:42:03 djm Exp $ */
+/* $OpenBSD: progressmeter.c,v 1.56 2025/06/11 13:27:11 dtucker Exp $ */
 /*
  * Copyright (c) 2003 Nils Nordman.  All rights reserved.
  * Copyright (c) 2019-2023 Roumen Petrov.  All rights reserved.
@@ -102,14 +102,15 @@ format_rate(char *buf, int size, off_t bytes)
 	bytes *= 100;
 	for (i = 0; bytes >= 100*1000 && unit[i] != 'T'; i++)
 		bytes = (bytes + 512) / 1024;
+	/* Display at least KB, even when rate is low or zero. */
 	if (i == 0) {
 		i++;
 		bytes = (bytes + 512) / 1024;
 	}
-	return snprintf(buf, size, "%3lld.%1lld%c%c/s ",
+	return snprintf(buf, size, "%3lld.%1lld%cB/s ",
 	    (long long) (bytes + 5) / 100,
 	    (long long) (bytes + 5) / 10 % 10,
-	    unit[i], i > 0 ? 'B' : ' ');
+	    unit[i]);
 }
 
 static int
