@@ -22,15 +22,6 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
-
-#ifndef USE_OPENSSL_PROVIDER
-/* TODO: implement OpenSSL 4.0 API, as OpenSSL 3.* is quite nonfunctional */
-# define OPENSSL_SUPPRESS_DEPRECATED
-#endif
-
 #include "includes.h"
 
 #ifdef WITH_OPENSSL
@@ -502,6 +493,49 @@ sshkey_equal_public_pkey(const struct sshkey *ka, const struct sshkey *kb) {
 }
 
 
+static int/*bool*/
+sshkey_private_to_bio_traditional(struct sshkey *key, BIO *bio,
+    const EVP_CIPHER *cipher, u_char *_passphrase, int len
+) {
+#ifdef HAVE_PEM_WRITE_BIO_PRIVATEKEY_TRADITIONAL
+	return PEM_write_bio_PrivateKey_traditional(bio, key->pk,
+	    cipher, _passphrase, len, NULL, NULL);
+#else
+{	int res;
+
+	switch (key->type) {
+	case KEY_RSA: {
+		RSA *rsa = EVP_PKEY_get1_RSA(key->pk);
+		res = PEM_write_bio_RSAPrivateKey(bio, rsa,
+		    cipher, _passphrase, len, NULL, NULL);
+		RSA_free(rsa);
+		} break;
+#ifdef OPENSSL_HAS_ECC
+	case KEY_ECDSA: {
+		EC_KEY *ec = EVP_PKEY_get1_EC_KEY(key->pk);
+		res = PEM_write_bio_ECPrivateKey(bio, ec,
+		    cipher, _passphrase, len, NULL, NULL);
+		EC_KEY_free(ec);
+		} break;
+#endif
+#ifdef WITH_DSA
+	case KEY_DSA: {
+		DSA *dsa = EVP_PKEY_get1_DSA(key->pk);
+		res = PEM_write_bio_DSAPrivateKey(bio, dsa,
+		    cipher, _passphrase, len, NULL, NULL);
+		DSA_free(dsa);
+		} break;
+#endif
+	default:
+		debug3_f("unsupported key type: %d", key->type);
+		res = 0;
+	}
+	return res;
+}
+#endif
+}
+
+
 /* write identity in PEM formats - PKCS#8 or Traditional */
 int
 sshkey_private_to_bio(struct sshkey *key, BIO *bio,
@@ -519,34 +553,10 @@ sshkey_private_to_bio(struct sshkey *key, BIO *bio,
 	if (len > INT_MAX)
 		return SSH_ERR_INVALID_ARGUMENT;
 
-	if (format == SSHKEY_PRIVATE_PEM) {
-		switch (key->type) {
-		case KEY_RSA: {
-			RSA *rsa = EVP_PKEY_get1_RSA(key->pk);
-			res = PEM_write_bio_RSAPrivateKey(bio, rsa,
-			    cipher, _passphrase, len, NULL, NULL);
-			RSA_free(rsa);
-			} break;
-#ifdef OPENSSL_HAS_ECC
-		case KEY_ECDSA: {
-			EC_KEY *ec = EVP_PKEY_get1_EC_KEY(key->pk);
-			res = PEM_write_bio_ECPrivateKey(bio, ec,
-			    cipher, _passphrase, len, NULL, NULL);
-			EC_KEY_free(ec);
-			} break;
-#endif
-#ifdef WITH_DSA
-		case KEY_DSA: {
-			DSA *dsa = EVP_PKEY_get1_DSA(key->pk);
-			res = PEM_write_bio_DSAPrivateKey(bio, dsa,
-			    cipher, _passphrase, len, NULL, NULL);
-			DSA_free(dsa);
-			} break;
-#endif
-		default:
-			return SSH_ERR_INVALID_ARGUMENT;
-		}
-	} else
+	if (format == SSHKEY_PRIVATE_PEM)
+		res = sshkey_private_to_bio_traditional(key, bio, cipher,
+		    _passphrase, len);
+	else
 		res = PEM_write_bio_PKCS8PrivateKey(bio, key->pk, cipher,
 		    _passphrase, len, NULL, NULL);
 
@@ -565,6 +575,8 @@ extern int
 sshkey_public_from_fp(FILE *fp, int format, struct sshkey **key);
 
 
+extern int ssh_rsa_public_to_fp_traditional(struct sshkey *key, FILE *fp);
+
 int
 sshkey_public_to_fp(struct sshkey *key, FILE *fp, int format) {
 	int res;
@@ -579,15 +591,16 @@ sshkey_public_to_fp(struct sshkey *key, FILE *fp, int format) {
 	if ((format == SSHKEY_PRIVATE_PEM) &&
 	    /* Traditional PEM is available only for RSA */
 	    (key->type == KEY_RSA)
-	) {
-		RSA *rsa = EVP_PKEY_get1_RSA(key->pk);
-		res = PEM_write_RSAPublicKey(fp, rsa);
-		RSA_free(rsa);
-	} else
+	)
+		res = ssh_rsa_public_to_fp_traditional(key, fp);
+	else
 		res = PEM_write_PUBKEY(fp, key->pk);
 
 	return res ? 0 : SSH_ERR_LIBCRYPTO_ERROR;
 }
+
+
+extern int ssh_rsa_public_from_fp_traditional(FILE *fp, struct sshkey **key);
 
 int
 sshkey_public_from_fp(FILE *fp, int format, struct sshkey **key) {
@@ -608,43 +621,8 @@ sshkey_public_from_fp(FILE *fp, int format, struct sshkey **key) {
 	if (format != SSHKEY_PRIVATE_PEM)
 		return SSH_ERR_INVALID_ARGUMENT;
 
-{	/* Traditional PEM is available only for RSA */
-	RSA *rsa;
-	EVP_PKEY *pk = NULL;
-	struct sshkey *k = NULL;
-
-	rsa = PEM_read_RSAPublicKey(fp, NULL, NULL, NULL);
-	if (rsa == NULL) return SSH_ERR_INVALID_FORMAT;
-
-	pk = EVP_PKEY_new();
-	if (pk == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto err;
-	}
-	if (!EVP_PKEY_set1_RSA(pk, rsa)) {
-		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto err;
-	}
-
-	k = sshkey_new(KEY_UNSPEC);
-	if (k == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto err;
-	}
-
-	k->type = KEY_RSA;
-	k->pk = pk;
-	RSA_free(rsa);
-
-	*key = k;
-	return 0;
-
-err:
-	EVP_PKEY_free(pk);
-	RSA_free(rsa);
-	sshkey_free(k);
-	return r;
-}
+	/* Traditional PEM is available only for RSA */
+	return ssh_rsa_public_from_fp_traditional(fp, key);
 }
 
 

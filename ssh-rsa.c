@@ -33,6 +33,7 @@
 #include <sys/types.h>
 
 #include "evp-compat.h"
+#include <openssl/pem.h>
 #include <openssl/bn.h>
 #ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
 # include <openssl/core_names.h>
@@ -384,6 +385,65 @@ sshkey_from_pkey_rsa(EVP_PKEY *pk, struct sshkey **keyp) {
 	SSHKEY_DUMP(key);
 	*keyp = key;
 	return 0;
+}
+
+
+int ssh_rsa_public_to_fp_traditional(struct sshkey *key, FILE *fp);
+
+int
+ssh_rsa_public_to_fp_traditional(struct sshkey *key, FILE *fp) {
+	int res;
+	RSA *rsa;
+
+	rsa = EVP_PKEY_get1_RSA(key->pk);
+	if (rsa == NULL) return 0;
+
+	res = PEM_write_RSAPublicKey(fp, rsa);
+	RSA_free(rsa);
+	return res;
+}
+
+
+int ssh_rsa_public_from_fp_traditional(FILE *fp, struct sshkey **key);
+
+int
+ssh_rsa_public_from_fp_traditional(FILE *fp, struct sshkey **key) {
+	RSA *rsa;
+	EVP_PKEY *pk = NULL;
+	struct sshkey *k = NULL;
+	int r;
+
+	rsa = PEM_read_RSAPublicKey(fp, NULL, NULL, NULL);
+	if (rsa == NULL) return SSH_ERR_INVALID_FORMAT;
+
+	pk = EVP_PKEY_new();
+	if (pk == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto err;
+	}
+	if (!EVP_PKEY_set1_RSA(pk, rsa)) {
+		r = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	k = sshkey_new(KEY_UNSPEC);
+	if (k == NULL) {
+		r = SSH_ERR_ALLOC_FAIL;
+		goto err;
+	}
+
+	k->type = KEY_RSA;
+	k->pk = pk;
+	RSA_free(rsa);
+
+	*key = k;
+	return 0;
+
+err:
+	EVP_PKEY_free(pk);
+	RSA_free(rsa);
+	sshkey_free(k);
+	return r;
 }
 
 

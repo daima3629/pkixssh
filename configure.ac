@@ -3450,6 +3450,7 @@ AC_CHECK_FUNCS([ \
   EVP_chacha20 \
   EVP_CIPHER_CTX_iv \
   EVP_MD_CTX_new \
+  PEM_write_bio_PrivateKey_traditional \
   RSA_meth_new \
   RSA_PKCS1_OpenSSL \
   X509_CRL_get0_lastUpdate \

@@ -34,10 +34,19 @@ for fmt in RFC4716 PKCS8 PEM OpenSSH ; do
 		case "$fmt" in
 		RFC4716|PKCS8|PEM) customfmt=false ;;
 		esac
-		# ssh-ed25519 and *@openssh.com keys are stored only
-		# in custom format
 		case "$t" in
-		ssh-ed25519|*openssh.com) $customfmt || continue ;;
+		*openssh.com)
+			# *@openssh.com keys are stored only in custom format
+			$customfmt || continue ;;
+		ssh-ed25519)
+			# traditional PEM is not supported by cryptographic
+			# library for ed25519 keys
+			if config_defined OPENSSL_HAS_ED25519 ; then
+				test "$fmt" = "PEM" && continue
+			else
+				$customfmt || continue
+			fi
+			;;
 		esac
 		comment="foo bar"
 		$SSHKEYGEN -m $fmt -N '' -C "$comment" \
