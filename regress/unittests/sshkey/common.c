@@ -1,4 +1,4 @@
-/* 	$OpenBSD: common.c,v 1.5 2021/12/14 21:25:27 deraadt Exp $ */
+/* 	$OpenBSD: common.c,v 1.8 2025/06/16 08:49:27 dtucker Exp $ */
 /*
  * Helpers for key API tests
  *
@@ -35,14 +35,14 @@ struct sshbuf *
 load_text_file(const char *name)
 {
 	struct sshbuf *ret = load_file(name);
-	const u_char *p;
+	const u_char *p = sshbuf_ptr(ret);
+	size_t len;
 
 	/* Trim whitespace at EOL */
-	for (p = sshbuf_ptr(ret); sshbuf_len(ret) > 0;) {
-		if (p[sshbuf_len(ret) - 1] == '\r' ||
-		    p[sshbuf_len(ret) - 1] == '\t' ||
-		    p[sshbuf_len(ret) - 1] == ' ' ||
-		    p[sshbuf_len(ret) - 1] == '\n')
+	while ((len = sshbuf_len(ret)) > 0) {
+		const u_char c = p[--len];
+		if (c == '\r' || c == '\n' || c == '\t' ||
+		    c == ' ')
 			ASSERT_INT_EQ(sshbuf_consume_end(ret, 1), 0);
 		else
 			break;
