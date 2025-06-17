@@ -347,6 +347,53 @@ ssh_EC_GROUP_check_public(const EC_GROUP *group, const EC_POINT *public)
 	return ret;
 }
 
+
+static int
+ssh_EC_GROUP_check_private(const EC_GROUP *group, const BIGNUM *exponent) {
+	BIGNUM *order, *tmp = NULL;
+	int ret;
+
+	order = BN_new();
+	if (order == NULL) return SSH_ERR_ALLOC_FAIL;
+
+	if (EC_GROUP_get_order(group, order, NULL) != 1) {
+		ret = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+
+	/* log2(private) > log2(order)/2 */
+	if (BN_num_bits(exponent) <= BN_num_bits(order) / 2) {
+		ret = SSH_ERR_KEY_INVALID_EC_VALUE;
+		goto err;
+	}
+
+	tmp = BN_new();
+	if (tmp == NULL) {
+		ret = SSH_ERR_ALLOC_FAIL;
+		goto err;
+	}
+
+	/* private < order - 1 */
+	if (!BN_sub(tmp, order, BN_value_one())) {
+		ret = SSH_ERR_LIBCRYPTO_ERROR;
+		goto err;
+	}
+	if (BN_cmp(exponent, tmp) >= 0) {
+		ret = SSH_ERR_KEY_INVALID_EC_VALUE;
+		goto err;
+	}
+
+	/* other checks ? */
+
+	ret = 0;
+
+err:
+	BN_clear_free(order);
+	BN_clear_free(tmp);
+	return ret;
+}
+
+
 #ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
 static EC_GROUP*
 ssh_EVP_PKEY_prov_get_EC_GROUP(EVP_PKEY *pkey) {
@@ -550,62 +597,6 @@ err:
 }
 
 
-static int
-sshkey_validate_ec_priv(const EC_KEY *ec) {
-	int r;
-	const BIGNUM *exponent;
-	BIGNUM *order = NULL, *tmp = NULL;
-
-	exponent = EC_KEY_get0_private_key(ec);
-	if (exponent == NULL) {
-		r = SSH_ERR_INVALID_ARGUMENT;
-		goto err;
-	}
-
-	order = BN_new();
-	if (order == NULL)  {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto err;
-	}
-
-	if (EC_GROUP_get_order(EC_KEY_get0_group(ec), order, NULL) != 1) {
-		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto err;
-	}
-
-	/* log2(private) > log2(order)/2 */
-	if (BN_num_bits(exponent) <= BN_num_bits(order) / 2) {
-		r = SSH_ERR_KEY_INVALID_EC_VALUE;
-		goto err;
-	}
-
-	tmp = BN_new();
-	if (tmp == NULL) {
-		r = SSH_ERR_ALLOC_FAIL;
-		goto err;
-	}
-
-	/* private < order - 1 */
-	if (!BN_sub(tmp, order, BN_value_one())) {
-		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto err;
-	}
-	if (BN_cmp(exponent, tmp) >= 0) {
-		r = SSH_ERR_KEY_INVALID_EC_VALUE;
-		goto err;
-	}
-
-	/* other checks ? */
-
-	r = 0;
-
-err:
-	BN_clear_free(order);
-	BN_clear_free(tmp);
-	return r;
-}
-
-
 #ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
 static int
 sshkey_set_prov_param_nid(const EVP_PKEY *pk, int *pnid) {
@@ -652,6 +643,40 @@ sshkey_set_nid(EVP_PKEY *pk, int *pnid) {
 }
 
 
+static inline int
+ssh_EC_KEY_check_private(const EC_KEY *ec, const BIGNUM *exponent) {
+	const EC_GROUP *group = EC_KEY_get0_group(ec);
+	if (group == NULL) return SSH_ERR_INTERNAL_ERROR;
+
+	return ssh_EC_GROUP_check_private(group, exponent);
+}
+
+
+static inline int
+ssh_EC_KEY_validate_private(const EC_KEY *ec, int skip_priv) {
+	const BIGNUM *exponent = EC_KEY_get0_private_key(ec);
+	if (exponent == NULL)
+		return skip_priv ? 0 : SSH_ERR_INVALID_ARGUMENT;
+
+	return ssh_EC_KEY_check_private(ec, exponent);
+}
+
+
+static int
+ssh_pkey_validate_private_ecdsa(EVP_PKEY *pk, int skip_priv) {
+	EC_KEY *ec;
+	int r;
+
+	ec = EVP_PKEY_get1_EC_KEY(pk);
+	if (ec == NULL) return SSH_ERR_INVALID_ARGUMENT;
+
+	r = ssh_EC_KEY_validate_private(ec, skip_priv);
+
+	EC_KEY_free(ec);
+	return r;
+}
+
+
 extern int /* see sshkey-crypto.c */
 sshkey_from_pkey_ecdsa(EVP_PKEY *pk, struct sshkey **keyp);
 
@@ -659,7 +684,6 @@ int
 sshkey_from_pkey_ecdsa(EVP_PKEY *pk, struct sshkey **keyp) {
 	int r;
 	struct sshkey* key;
-	EC_KEY *ec = NULL;
 
 	r = ssh_EVP_PKEY_complete_pub_ecdsa(pk);
 	if (r != 0) return r;
@@ -674,30 +698,17 @@ sshkey_from_pkey_ecdsa(EVP_PKEY *pk, struct sshkey **keyp) {
 	r = sshkey_set_nid(key->pk, &key->ecdsa_nid);
 	if (r != 0) goto err;
 
-	ec = EVP_PKEY_get1_EC_KEY(key->pk);
-	if (ec == NULL) {
-		r = SSH_ERR_LIBCRYPTO_ERROR;
-		goto err;
-	}
-
-{	/* private part is not required */
-	const BIGNUM *exponent = EC_KEY_get0_private_key(ec);
-	if (exponent == NULL) goto skip_private;
-
-	r = sshkey_validate_ec_priv(ec);
+	/* private part is not required */
+	r = ssh_pkey_validate_private_ecdsa(key->pk, 1);
 	if (r != 0) goto err;
-}
-skip_private:
 
 	/* success */
 	SSHKEY_DUMP(key);
 	*keyp = key;
-	EC_KEY_free(ec);
 	return 0;
 
 err:
 	key->pk = NULL; /* transfer failed */
-	EC_KEY_free(ec);
 	sshkey_free(key);
 	return r;
 }
@@ -824,7 +835,7 @@ sshbuf_read_priv_ecdsa(struct sshbuf *buf, struct sshkey *key) {
 	}
 	/*no! exponent = NULL; transferred */
 
-	r = sshkey_validate_ec_priv(ec);
+	r = ssh_EC_KEY_validate_private(ec, 0);
 	if (r != 0) goto err;
 
 	SSHKEY_DUMP(key);
