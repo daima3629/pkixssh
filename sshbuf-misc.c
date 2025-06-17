@@ -1,4 +1,4 @@
-/*	$OpenBSD: sshbuf-misc.c,v 1.18 2022/01/22 00:43:43 djm Exp $	*/
+/*	$OpenBSD: sshbuf-misc.c,v 1.20 2025/06/16 09:02:19 dtucker Exp $	*/
 /*
  * Copyright (c) 2011 Damien Miller
  *
@@ -175,7 +175,7 @@ sshbuf_dup_string(struct sshbuf *buf)
 	size_t l = sshbuf_len(buf);
 	char *r;
 
-	if (s == NULL || l > SIZE_MAX)
+	if (s == NULL || l >= SIZE_MAX)
 		return NULL;
 	/* accept a nul only as the last character in the buffer */
 	if (l > 0 && (p = memchr(s, '\0', l)) != NULL) {
