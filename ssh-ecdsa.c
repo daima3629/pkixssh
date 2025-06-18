@@ -643,6 +643,22 @@ sshkey_set_nid(EVP_PKEY *pk, int *pnid) {
 }
 
 
+#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+static int
+ssh_EVP_PKEY_check_private_ecprov(EVP_PKEY *pkey, const BIGNUM *exponent) {
+	EC_GROUP *group;
+	int r;
+
+	group = ssh_EVP_PKEY_prov_get_EC_GROUP(pkey);
+	if (group == NULL) return SSH_ERR_ALLOC_FAIL;
+
+	r = ssh_EC_GROUP_check_private(group, exponent);
+
+	EC_GROUP_free(group);
+	return r;
+}
+#endif /*def HAVE_EVP_KEYMGMT_GET0_PROVIDER*/
+
 static inline int
 ssh_EC_KEY_check_private(const EC_KEY *ec, const BIGNUM *exponent) {
 	const EC_GROUP *group = EC_KEY_get0_group(ec);
@@ -651,6 +667,22 @@ ssh_EC_KEY_check_private(const EC_KEY *ec, const BIGNUM *exponent) {
 	return ssh_EC_GROUP_check_private(group, exponent);
 }
 
+
+#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+static int
+sshkey_validate_ecprov_priv(EVP_PKEY *pk, int skip_priv) {
+	BIGNUM *exponent = NULL;
+	int r;
+
+	if (EVP_PKEY_get_bn_param(pk, OSSL_PKEY_PARAM_PRIV_KEY, &exponent) != 1)
+		return skip_priv ? 0 : SSH_ERR_INVALID_ARGUMENT;
+
+	r = ssh_EVP_PKEY_check_private_ecprov(pk, exponent);
+
+	BN_free(exponent);
+	return r;
+}
+#endif /*def HAVE_EVP_KEYMGMT_GET0_PROVIDER*/
 
 static inline int
 ssh_EC_KEY_validate_private(const EC_KEY *ec, int skip_priv) {
@@ -664,7 +696,11 @@ ssh_EC_KEY_validate_private(const EC_KEY *ec, int skip_priv) {
 
 static int
 ssh_pkey_validate_private_ecdsa(EVP_PKEY *pk, int skip_priv) {
-	EC_KEY *ec;
+#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+	if (EVP_PKEY_get0_provider(pk) != NULL)
+		return sshkey_validate_ecprov_priv(pk, skip_priv);
+#endif
+{	EC_KEY *ec;
 	int r;
 
 	ec = EVP_PKEY_get1_EC_KEY(pk);
@@ -674,6 +710,7 @@ ssh_pkey_validate_private_ecdsa(EVP_PKEY *pk, int skip_priv) {
 
 	EC_KEY_free(ec);
 	return r;
+}
 }
 
 
