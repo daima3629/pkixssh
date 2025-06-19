@@ -14,3 +14,4 @@ ssh_askpass-pkcs11
 softhsm/
 ssh_engine
 openssl_engine.cnf
+openssl_provider.cnf

@@ -192,6 +192,39 @@ p11_find_engine() {
 }
 
 
+# find a PKCS#11 provider
+p11_find_provider() {
+  if test -z "$TEST_SSH_PKCS11_PROVIDER" ; then
+
+    # use command and try to extract path
+    moduledir=`$OPENSSL version -m 2>/dev/null`
+    if test -n "$moduledir" ; then
+      moduledir=`set -- $moduledir; test "x$1" = "xMODULESDIR:" && echo $2`
+    fi
+
+    test -n "$moduledir" &&
+    for D in \
+      /usr/lib64/ossl-modules \
+      /usr/lib/ossl-modules \
+    ; do
+      test -d "$D" || continue
+
+      if test -f "$D"/pkcs11.so ; then
+        TEST_SSH_PKCS11_PROVIDER="$D"/pkcs11.so
+        break
+      fi
+      if test -f "$D"/libpkcs11.so ; then
+        TEST_SSH_PKCS11_PROVIDER="$D"/libpkcs11.so
+        break
+      fi
+    done
+    test -n "$TEST_SSH_PKCS11_PROVIDER"
+  else
+    test -f "$TEST_SSH_PKCS11_PROVIDER"
+  fi
+}
+
+
 # common pkcs#11 token setup ...
 
 #env. vars:
