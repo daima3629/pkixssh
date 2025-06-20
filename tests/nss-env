@@ -1,0 +1,159 @@
+# Copyright (c) 2025 Roumen Petrov, Sofia, Bulgaria
+# All rights reserved.
+#
+# Redistribution and use of this script, with or without modification, is
+# permitted provided that the following conditions are met:
+#
+# 1. Redistributions of this script must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+#
+#  THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED
+#  WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+#  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO
+#  EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+#  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+#  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+#  OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+#  WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+#  OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+#  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# DESCRIPTION: setup NSS test environment.
+#
+
+CWD=${CWD-$OBJ}
+
+NSS_DB_DIR=$CWD/nssdb
+
+NSS_ASKPASS=$CWD/ssh_askpass-nss
+NSS_PASS="nss_test"
+
+
+# find a utility
+nss_find_utility() {
+  NSS_FIND_UTIL=
+  for D in \
+    /usr/bin \
+    /usr/local/bin \
+    /opt/local/bin \
+  ; do
+    test -d "$D" || continue
+
+    if test -x "$D/$1" ; then
+      NSS_FIND_UTIL="$D/$1"
+      break
+    fi
+  done
+}
+
+
+# find a certificate database utility
+nss_find_CERTUTIL() {
+  if test -z "$CERTUTIL" ; then
+    nss_find_utility certutil
+    CERTUTIL="$NSS_FIND_UTIL"
+    test -n "$CERTUTIL"
+  else
+    test -x "$CERTUTIL"
+  fi
+}
+
+
+# find a PKCS #12 utility
+nss_find_PK12UTIL() {
+  if test -z "$PK12UTIL" ; then
+    nss_find_utility pk12util
+    PK12UTIL="$NSS_FIND_UTIL"
+    test -n "$PK12UTIL"
+  else
+    test -x "$PK12UTIL"
+  fi
+}
+
+
+# find a NSS engine
+nss_find_engine() {
+  if test -z "$TEST_SSH_NSS_ENGINE" ; then
+
+    # use command and try to extract path
+    enginedir=`$OPENSSL version -e 2>/dev/null`
+    if test -n "$enginedir" ; then
+      enginedir=`set -- $enginedir; test "x$1" = "xENGINESDIR:" && echo $2`
+    fi
+
+    # failback to defaults
+    if test -n "$enginedir" ; then
+      case $openssl_version in
+      *"OpenSSL 3."*)  enginedir=engines-3;;
+      *"OpenSSL 1.1"*) enginedir=engines-1.1;;
+      *"OpenSSL 1."*)  enginedir=engines;;
+      esac
+    fi
+
+    test -n "$enginedir" &&
+    for D in \
+      /usr/lib64/$enginedir \
+      /usr/lib/$enginedir \
+    ; do
+      test -d "$D" || continue
+
+      if test -f "$D"/e_nss.so ; then
+        TEST_SSH_NSS_ENGINE="$D"/e_nss.so
+        break
+      fi
+      if test -f "$D"/libe_nss.so ; then
+        TEST_SSH_NSS_ENGINE="$D"/libe_nss.so
+        break
+      fi
+    done
+    test -n "$TEST_SSH_NSS_ENGINE"
+  else
+    test -f "$TEST_SSH_NSS_ENGINE"
+  fi
+}
+
+
+# prepare NSS askpass helper utility
+cre_ssh_nss_askpass() {
+if test -x "$NSS_ASKPASS" ; then :
+else
+  cat > $NSS_ASKPASS <<EOF
+#! $TEST_SHELL
+echo $NSS_PASS
+EOF
+  chmod 0700 $NSS_ASKPASS
+fi
+}
+
+
+nss_setup_db() {
+  rm -f $NSS_DB_DIR/*.db
+  test -d $NSS_DB_DIR || mkdir $NSS_DB_DIR
+
+  echo "create ${extd}nss${norm} database ..." >&2
+  echo "=== create nss database" >> $SSH_MODULE_LOG
+
+  nsspassfile=$CWD/nsspassfile
+  echo $NSS_PASS > $nsspassfile
+
+  $CERTUTIL -N -d $NSS_DB_DIR -f $nsspassfile
+
+  # stop on first rsa digest
+  for NSS_SIGN in $SSH_SIGN_TYPES; do
+    case $NSS_SIGN in
+    *rsa*);;
+    *) continue;;
+    esac
+    break;
+  done
+
+  for SSH_CLIENTKEY in $TEST_SSH_CLIENTKEYS ; do
+    F="$SSH_CLIENTKEY-$NSS_SIGN.p12"
+    echo "  importing $F ..." >> $SSH_MODULE_LOG
+    $PK12UTIL -i $F -d $NSS_DB_DIR -k $nsspassfile -W $P12_PASS >> $SSH_MODULE_LOG 2>&1
+  done
+
+  $CERTUTIL -L -d $NSS_DB_DIR
+
+  rm -f $nsspassfile
+}

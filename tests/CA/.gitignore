@@ -8,10 +8,11 @@ selfid_*
 ssh*_config-certTests
 *.log
 *.pid
-ssh_askpass-p12
+ssh_askpass-*
 pkcs11_tool-*-*.der
-ssh_askpass-pkcs11
 softhsm/
+nsspassfile
+nssdb/
 ssh_engine
 openssl_engine.cnf
 openssl_provider.cnf
