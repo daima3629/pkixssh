@@ -40,26 +40,26 @@ opts=
 
 test -z "$1" && usage
 case "$1" in
-rsa)	opts="$opts -t rsa -b $RSAKEYBITS"
-	typemsg="RSA"
+rsa) opts="$opts -t rsa -b $RSAKEYBITS"
+  typemsg="$SSH_DN_KEY_TYPE_RSA"
   ;;
-dsa)	opts="$opts -t dsa"
-	typemsg="DSA"
+dsa) opts="$opts -t dsa"
+  typemsg="$SSH_DN_KEY_TYPE_DSA"
   ;;
-ec256)	opts="$opts -t ecdsa -b 256"
-	typemsg="ECDSA(nistp256)"
+ec256) opts="$opts -t ecdsa -b 256"
+  typemsg="$SSH_DN_KEY_TYPE_EC256"
   ;;
-ec384)	opts="$opts -t ecdsa -b 384"
-	typemsg="ECDSA(nistp384)"
+ec384) opts="$opts -t ecdsa -b 384"
+  typemsg="$SSH_DN_KEY_TYPE_EC384"
   ;;
-ec521)	opts="$opts -t ecdsa -b 521"
-	typemsg="ECDSA(nistp521)"
+ec521) opts="$opts -t ecdsa -b 521"
+  typemsg="$SSH_DN_KEY_TYPE_EC521"
   ;;
-ed25519)opts="$opts -t ed25519"
-	typemsg="ED25519"
+ed25519) opts="$opts -t ed25519"
+  typemsg="$SSH_DN_KEY_TYPE_ED25519"
   ;;
-*)	echo "${warn}unsupported key type: ${attn}$1${norm}" >&2
-	exit 1
+*) echo "${warn}unsupported key type: ${attn}$1${norm}" >&2
+  exit 1
   ;;
 esac
 

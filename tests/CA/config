@@ -253,17 +253,22 @@ done
 SSH_CACERTDAYS=60
 SSH_CACRLDAYS=60
 
-SSH_DN_C="XX"
-SSH_DN_ST="World"
-SSH_DN_L="Somewhere"
-SSH_DN_O="SSH Test Team"
-SSH_DN_OU="SSH Testers"
-SSH_DN_EM="email@not.set"
+SSH_DN_SUF=' cyrillic-АБВ-Яабв-я greek-ΑΒΓ-Ωαβγ-ω'
+SSH_DN_C='XX'
+SSH_DN_ST='World'
+SSH_DN_L="Somewhere$SSH_DN_SUF"
+SSH_DN_O="SSH Test Team$SSH_DN_SUF"
+SSH_DN_OU="SSH Testers$SSH_DN_SUF"
+SSH_DN_EM='email@not.set'
 
-SSH_DN_SUF=" cyrillic-АБВ-Яабв-я greek-ΑΒΓ-Ωαβγ-ω"
-SSH_DN_L="$SSH_DN_L$SSH_DN_SUF"
-SSH_DN_O="$SSH_DN_O$SSH_DN_SUF"
-SSH_DN_OU="$SSH_DN_OU$SSH_DN_SUF"
+
+SSH_DN_KEY_TYPE_RSA='RSA'
+SSH_DN_KEY_TYPE_DSA='DSA'
+SSH_DN_KEY_TYPE_EC256='ECDSA(nistp256)'
+SSH_DN_KEY_TYPE_EC384='ECDSA(nistp384)'
+SSH_DN_KEY_TYPE_EC521='ECDSA(nistp521)'
+SSH_DN_KEY_TYPE_ED25519='ED25519'
+
 
 OPENSSL_NAMEOPT="-nameopt utf8,sep_comma_plus" #ok
 #OPENSSL_NAMEOPT="-nameopt esc_2253,esc_ctrl,esc_msb,utf8,dump_nostr,dump_der,use_quote,sep_comma_plus_space,sname" #fail - esc_msb should be removed

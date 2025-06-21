@@ -39,14 +39,14 @@ test "x$TEST_SSH_SSHKEYGEN" = "x" && { echo "${warn}Please define ${attn}TEST_SS
 
 test -z "$1" && usage
 case "$1" in
-rsa)	key_type_name="RSA";;
-dsa)	key_type_name="DSA";;
-ec256)	key_type_name="ECDSA(nistp256)";;
-ec384)	key_type_name="ECDSA(nistp384)";;
-ec521)	key_type_name="ECDSA(nistp521)";;
-ed25519)	key_type_name="ED25519";;
-*)	echo "${warn}unsupported key type: ${attn}$1${norm}" >&2
-	exit 1
+rsa) key_type_name="$SSH_DN_KEY_TYPE_RSA";;
+dsa) key_type_name="$SSH_DN_KEY_TYPE_DSA";;
+ec256) key_type_name="$SSH_DN_KEY_TYPE_EC256";;
+ec384) key_type_name="$SSH_DN_KEY_TYPE_EC384";;
+ec521) key_type_name="$SSH_DN_KEY_TYPE_EC521";;
+ed25519) key_type_name="$SSH_DN_KEY_TYPE_ED25519";;
+*) echo "${warn}unsupported key type: ${attn}$1${norm}" >&2
+  exit 1
   ;;
 esac
 msg="${extd}$key_type_name${norm}"
