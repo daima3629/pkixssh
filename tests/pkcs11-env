@@ -204,8 +204,8 @@ p11_find_provider() {
 
     test -n "$moduledir" &&
     for D in \
-      /usr/lib64/ossl-modules \
-      /usr/lib/ossl-modules \
+      /usr/lib64/$moduledir \
+      /usr/lib/$moduledir \
     ; do
       test -d "$D" || continue
 

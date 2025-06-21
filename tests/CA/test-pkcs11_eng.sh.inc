@@ -65,7 +65,7 @@ testPUBKEYautorization () {
   typemsg="$base_identity_file"
   must_fail=
 
-  SSH_EXTRA_OPTIONS="-G $SSH_ENGINE -o IdentityFile=engine:pkcs11:$key_id"
+  SSH_EXTRA_OPTIONS="-G $SSH_ENGINE"
 
 if $load_cert ; then
   case "$SSH_CLIENTKEY" in
@@ -80,7 +80,7 @@ if $load_cert ; then
 (
   SSH_EXTRA_OPTIONS="$SSH_EXTRA_OPTIONS -o PubkeyAlgorithms=$PubkeyAlgorithms"
 
-  runTest "$typemsg" "" "X.509" "$must_fail"
+  runTest "$typemsg" "engine:pkcs11:$key_id" "X.509" "$must_fail"
 ) || return $?
 fi
 
@@ -96,7 +96,7 @@ fi
 (
   SSH_EXTRA_OPTIONS="$SSH_EXTRA_OPTIONS -o PubkeyAlgorithms=$PubkeyAlgorithms"
 
-  runTest "$typemsg" "" "plain" "$must_fail"
+  runTest "$typemsg" "engine:pkcs11:$key_id" "plain" "$must_fail"
 )
 }
 

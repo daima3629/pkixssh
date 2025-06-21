@@ -65,8 +65,6 @@ testPUBKEYautorization () {
   typemsg="$base_identity_file"
   must_fail=
 
-  SSH_EXTRA_OPTIONS="-o IdentityFile=store:pkcs11:id=$key_id"
-
 if $load_cert ; then
   case "$SSH_CLIENTKEY" in
   *rsa*)         PubkeyAlgorithms='x509v3-*rsa*';;
@@ -80,7 +78,7 @@ if $load_cert ; then
 (
   SSH_EXTRA_OPTIONS="$SSH_EXTRA_OPTIONS -o PubkeyAlgorithms=$PubkeyAlgorithms"
 
-  runTest "$typemsg" "" "X.509" "$must_fail"
+  runTest "$typemsg" "store:pkcs11:id=$key_id" "X.509" "$must_fail"
 ) || return $?
 fi
 
@@ -96,7 +94,7 @@ fi
 (
   SSH_EXTRA_OPTIONS="$SSH_EXTRA_OPTIONS -o PubkeyAlgorithms=$PubkeyAlgorithms"
 
-  runTest "$typemsg" "" "plain" "$must_fail"
+  runTest "$typemsg" "store:pkcs11:id=$key_id" "plain" "$must_fail"
 )
 }
 
