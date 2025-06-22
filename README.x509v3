@@ -1,6 +1,6 @@
                                                           Roumen Petrov
                                                         Sofia, Bulgaria
-                                                        Sat Jun 20 2025
+                                                        Sun Jun 22 2025
 
 How to use X.509 certificates with SSH?
 
@@ -513,6 +513,7 @@ test-pkcs11.sh.inc,
 test-pkcs11_eng.sh.inc,
 test-pkcs11_prov.sh.inc,
 test-nss_eng.sh.inc,
+test-nss_prov.sh.inc,
 test-by_ldap.sh.inc.
 
 Note that hostbased authentication we cannot test without to install.

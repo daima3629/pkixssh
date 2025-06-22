@@ -113,6 +113,35 @@ nss_find_engine() {
 }
 
 
+# find a NSS provider
+nss_find_provider() {
+  if test -z "$TEST_SSH_NSS_PROVIDER" ; then
+
+    # use command and try to extract path
+    moduledir=`$OPENSSL version -m 2>/dev/null`
+    if test -n "$moduledir" ; then
+      moduledir=`set -- $moduledir; test "x$1" = "xMODULESDIR:" && echo $2`
+    fi
+
+    test -n "$moduledir" &&
+    for D in \
+      /usr/lib64/$moduledir \
+      /usr/lib/$moduledir \
+    ; do
+      test -d "$D" || continue
+
+      if test -f "$D"/nss_prov.so ; then
+        TEST_SSH_NSS_PROVIDER="$D"/nss_prov.so
+        break
+      fi
+    done
+    test -n "$TEST_SSH_NSS_PROVIDER"
+  else
+    test -f "$TEST_SSH_NSS_PROVIDER"
+  fi
+}
+
+
 # prepare NSS askpass helper utility
 cre_ssh_nss_askpass() {
 if test -x "$NSS_ASKPASS" ; then :
