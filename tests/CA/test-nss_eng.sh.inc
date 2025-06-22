@@ -23,6 +23,9 @@
 #  - "IdentityFile" is not used.
 #  - "PubkeyAlgorithms" selects either X.509 or plain key.
 #  - "AuthorizedKeysFile" contain encoded public key.
+#
+#  NOTE:
+#  Requires OpenSSL >= 1.1.1(Store2 API).
 
 
 # === common NSS setup:
@@ -81,7 +84,8 @@ testPUBKEYautorization () {
 (
   SSH_EXTRA_OPTIONS="$SSH_EXTRA_OPTIONS -o PubkeyAlgorithms=$PubkeyAlgorithms"
   export nss_key_id
-  runTest "$typemsg" "engine:e_nss:\${nss_key_id}" "X.509" "$must_fail"
+  runTest "$typemsg(engine)" "engine:e_nss:\${nss_key_id}" "X.509" "$must_fail"
+  runTest "$typemsg(store)" "store:nss:\${nss_key_id}" "X.509" "$must_fail"
 ) || return $?
 
   case "$SSH_CLIENTKEY" in
@@ -97,7 +101,8 @@ testPUBKEYautorization () {
 (
   SSH_EXTRA_OPTIONS="$SSH_EXTRA_OPTIONS -o PubkeyAlgorithms=$PubkeyAlgorithms"
   export nss_key_id
-  runTest "$typemsg" "engine:e_nss:\${nss_key_id}" "plain" "$must_fail"
+  runTest "$typemsg(engine)" "engine:e_nss:\${nss_key_id}" "plain" "$must_fail"
+  runTest "$typemsg(store)" "store:nss:\${nss_key_id}" "plain" "$must_fail"
 )
 }
 
@@ -130,6 +135,7 @@ EOF
       *eccnistp256*|\
       *eccnistp384*|\
       *eccnistp521*|\
+      *dsa*|\
       *rsa*);;
       *) continue;;
       esac
