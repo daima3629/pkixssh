@@ -1142,6 +1142,13 @@ ssh_pkey_sign(
 		return -1;
 	}
 
+#ifdef EVP_MD_CTX_FLAG_FINALISE
+/* This OpenSSL 1.1.0 flag is not required but allows to avoid
+ * OpenSSL 3.0-3.1 provider error: context duplication is an optional
+ * feature but if is not implemented EVP_DigestSignFinal() fails!
+ */
+	EVP_MD_CTX_set_flags(ctx, EVP_MD_CTX_FLAG_FINALISE);
+#endif
 #ifdef HAVE_EVP_DIGESTSIGNINIT
 	ret = EVP_DigestSignInit(ctx, NULL, dgst->md(), NULL, privkey);
 #else
