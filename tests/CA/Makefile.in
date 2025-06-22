@@ -14,7 +14,7 @@ clean: ldap_clean
 	-rm -f ssh_askpass-* nsspassfile
 	-rm -f pkcs11_tool-*-*.der .ssh-module.log
 	-rm -f ssh_engine openssl_engine.cnf openssl_provider.cnf
-	-rm -rf softhsm nssdb
+	-rm -rf softhsm nssdb tpm2
 
 
 distclean: clean

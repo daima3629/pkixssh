@@ -514,6 +514,7 @@ test-pkcs11_eng.sh.inc,
 test-pkcs11_prov.sh.inc,
 test-nss_eng.sh.inc,
 test-nss_prov.sh.inc,
+test-tpm2_prov.sh.inc,
 test-by_ldap.sh.inc.
 
 Note that hostbased authentication we cannot test without to install.

@@ -13,6 +13,7 @@ pkcs11_tool-*-*.der
 softhsm/
 nsspassfile
 nssdb/
+tpm2/
 ssh_engine
 openssl_engine.cnf
 openssl_provider.cnf
