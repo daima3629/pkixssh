@@ -149,6 +149,21 @@ BuildRequires:	openldap2-devel openldap2-client
 %if %{enable_ldap_test}
 BuildRequires:	openldap2
 %endif
+%if %{enable_openssl_fips}
+# Actually check-sum files for OpenSSL libraries are is separate package!
+%if 0%{?suse_version} == 1500 && 0%{?sle_version} < 150600
+BuildRequires:	libopenssl1_1-hmac
+Requires:	libopenssl1_1-hmac
+%endif
+%if 0%{?suse_version} == 1315
+BuildRequires:	libopenssl1_0_0-hmac
+Requires:	libopenssl1_0_0-hmac
+%endif
+%if 0%{?suse_version} == 1110
+BuildRequires:	libopenssl0_9_8-hmac
+Requires:	libopenssl0_9_8-hmac
+%endif
+%endif
 %if %{use_fipscheck}
 BuildRequires:	fipscheck-devel fipscheck
 %endif
