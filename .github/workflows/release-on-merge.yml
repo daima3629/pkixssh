@@ -1,0 +1,70 @@
+name: Create Release on PR Merge
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  release:
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'sync/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Get Tag Name from Branch
+        id: get_tag
+        run: |
+          BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
+          TAG_NAME=${BRANCH_NAME#sync/}
+          echo "Extracted tag name: $TAG_NAME"
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+
+      - name: Checkout merged commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y autoconf automake libtool
+
+      - name: Build with autoreconf
+        run: |
+          autoreconf
+
+      - name: Create tarball
+        id: create_tarball
+        run: |
+          REPO_NAME=${{ github.event.repository.name }}
+          TAG_NAME=${{ steps.get_tag.outputs.tag_name }}
+          ARCHIVE_DIR="${REPO_NAME}-${TAG_NAME}"
+          TARBALL_NAME="${ARCHIVE_DIR}.tar.gz"
+
+          mkdir -p $ARCHIVE_DIR
+          # Gitで追跡中のファイルとビルドで生成されたファイルをコピー
+          git ls-files | xargs -I {} cp -a --parents {} $ARCHIVE_DIR
+          if [ -f "configure" ]; then
+            cp configure $ARCHIVE_DIR/
+          fi
+          
+          tar -czvf $TARBALL_NAME $ARCHIVE_DIR
+          echo "tarball_name=$TARBALL_NAME" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        run: |
+          TAG_NAME=${{ steps.get_tag.outputs.tag_name }}
+          TARBALL_NAME=${{ steps.create_tarball.outputs.tarball_name }}
+          
+          gh release create $TAG_NAME \
+            --title "Release $TAG_NAME" \
+            --notes "This release was created automatically after merging PR #${{ github.event.pull_request.number }}." \
+            "$TARBALL_NAME"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Delete sync branch
+        run: |
+          BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
+          git push origin --delete $BRANCH_NAME
