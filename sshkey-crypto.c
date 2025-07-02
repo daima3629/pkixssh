@@ -1129,6 +1129,27 @@ ssh_xkalg_dgst_compat(ssh_evp_md *dest, const ssh_evp_md *src, ssh_compat *compa
 
 
 int
+ssh_pkey_allowed(int base_id) {
+#ifdef OPENSSL_FIPS
+#if defined(EVP_PKEY_FLAG_FIPS) && defined(HAVE_EVP_PKEY_METH_FIND)
+{	/* NOTE EVP_PKEY_meth...() are deprecated in OpenSSL 3.0 */
+	const EVP_PKEY_METHOD *pmeth = EVP_PKEY_meth_find(base_id);
+	if (pmeth == NULL) return 0;
+
+	if (FIPS_mode()) {
+		int pkey_id, flags;
+		EVP_PKEY_meth_get0_info(&pkey_id, &flags, pmeth);
+		/* vendor specific FIPS implementation */
+		if ((flags & EVP_PKEY_FLAG_FIPS) == 0)
+			return 0;
+	}
+}
+#endif
+#endif /*def OPENSSL_FIPS*/
+	return 1;
+}
+
+int
 ssh_pkey_sign(
 	const ssh_evp_md *dgst, EVP_PKEY *privkey,
 	u_char *sig, size_t *siglen, const u_char *data, size_t datalen

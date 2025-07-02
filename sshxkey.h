@@ -87,6 +87,7 @@ ssh_evp_md*	ssh_evp_md_find(int id);
 
 void	ssh_xkalg_dgst_compat(ssh_evp_md *dest, const ssh_evp_md *src, ssh_compat *compat);
 
+int	ssh_pkey_allowed(int base_id);
 
 int	ssh_pkey_sign(const ssh_evp_md *dgst, EVP_PKEY *privkey,
 	    u_char *sig, size_t *siglen, const u_char *data, size_t datalen);
