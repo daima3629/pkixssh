@@ -48,7 +48,7 @@ jobs:
           fi
           
           # 既に同じ名前のリリースがGitHubに存在しないか確認
-          TAG_EXISTS=$(gh release list --json tagName --jq --arg tag "$LATEST_UPSTREAM_TAG" '.[] | select(.tagName == $tag) | .tagName' || echo "")
+          TAG_EXISTS=$(gh release list --json tagName | jq --arg tag "$LATEST_UPSTREAM_TAG" -r '.[] | select(.tagName == $tag) | .tagName' || echo "")
           if [[ -n "$TAG_EXISTS" ]]; then
               echo "Release for tag ${LATEST_UPSTREAM_TAG} already exists on GitHub. Exiting."
               echo "new_release=false" >> $GITHUB_OUTPUT
@@ -70,7 +70,7 @@ jobs:
           
           git fetch upstream --tags
           git checkout -b $BRANCH_NAME ${{ env.MAIN_BRANCH }}
-          git merge $TAG_NAME --no-edit
+          git merge $TAG_NAME --no-edit --allow-unrelated-histories
           git push -u origin $BRANCH_NAME
           
           echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
