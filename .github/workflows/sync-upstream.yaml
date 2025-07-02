@@ -97,7 +97,7 @@ jobs:
             --base "${{ env.MAIN_BRANCH }}" \
             --head "$BRANCH_NAME" \
             --title "$PR_TITLE" \
-            --body "$PR_BODY" # 定義した複数行変数を使用
+            --body "$PR_BODY" >> $GITHUB_OUTPUT
         env:
           GH_TOKEN: ${{ github.token }}
           UPSTREAM_REPO_URL: ${{ env.UPSTREAM_REPO_URL }}
