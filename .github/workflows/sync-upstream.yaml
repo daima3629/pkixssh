@@ -83,15 +83,15 @@ jobs:
           GITLAB_TAG_URL="${UPSTREAM_REPO_URL%.git}/-/tree/${TAG_NAME}"
 
           PR_TITLE="Sync: Release ${TAG_NAME} from upstream"
-          read -r -d '' PR_BODY <<-EOF
-          	This PR syncs the repository with the upstream release.
+          read -r -d '' PR_BODY <<EOF
+          This PR syncs the repository with the upstream release.
 
-          	**Upstream Release Tag:** [${TAG_NAME}](${GITLAB_TAG_URL})
+          **Upstream Release Tag:** [${TAG_NAME}](${GITLAB_TAG_URL})
 
-          	**News:** [Official version ${TAG_NAME#v}](https://roumenpetrov.info/secsh/#news)
+          **News:** [Official version ${TAG_NAME#v}](https://roumenpetrov.info/secsh/#news)
 
-          	Please review the changes before merging.
-          	EOF
+          Please review the changes before merging.
+          EOF
 
           gh pr create \
             --base "${{ env.MAIN_BRANCH }}" \
