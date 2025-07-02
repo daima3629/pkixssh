@@ -208,7 +208,10 @@ static const struct kex_impl_funcs kex_ecx_funcs = {
 
 #ifdef USE_ECDH_X25519
 /* kexc25519.c, failback */
-static int kex_c25519_enabled(void) { return 1; }
+static int kex_c25519_enabled(void) {
+	return ssh_pkey_allowed(EVP_PKEY_X25519);
+}
+
 static struct kex_ecx_spec kex_c25519_spec = {
 	EVP_PKEY_X25519, 32
 };
@@ -229,7 +232,10 @@ const struct kex_impl kex_c25519_sha256_impl_ext = {
 #endif /*def USE_ECDH_X25519*/
 
 #ifdef USE_ECDH_X448
-static int kex_c448_enabled(void) { return 1; }
+static int kex_c448_enabled(void) {
+	return ssh_pkey_allowed(EVP_PKEY_X448);
+}
+
 static struct kex_ecx_spec kex_c448_spec = {
 	EVP_PKEY_X448, 56
 };
