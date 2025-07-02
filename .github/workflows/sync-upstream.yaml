@@ -83,7 +83,7 @@ jobs:
           GITLAB_TAG_URL="${UPSTREAM_REPO_URL%.git}/-/tree/${TAG_NAME}"
 
           PR_TITLE="Sync: Release ${TAG_NAME} from upstream"
-          read -r -d '' PR_BODY <<EOF
+          read -d '' PR_BODY << EOF
           This PR syncs the repository with the upstream release.
 
           **Upstream Release Tag:** [${TAG_NAME}](${GITLAB_TAG_URL})
@@ -97,7 +97,7 @@ jobs:
             --base "${{ env.MAIN_BRANCH }}" \
             --head "$BRANCH_NAME" \
             --title "$PR_TITLE" \
-            --body "$PR_BODY" >> $GITHUB_OUTPUT
+            --body "$PR_BODY" &>> $GITHUB_OUTPUT
         env:
           GH_TOKEN: ${{ github.token }}
           UPSTREAM_REPO_URL: ${{ env.UPSTREAM_REPO_URL }}
