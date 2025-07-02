@@ -229,7 +229,12 @@ kex_c25519_dec(struct kex *kex, const struct sshbuf *server_blob,
 	return r;
 }
 
-static int kex_c25519_enabled(void) { return 1; }
+static int kex_c25519_enabled(void) {
+#ifdef OPENSSL_FIPS
+	if (FIPS_mode()) return 0;
+#endif
+	return 1;
+}
 
 static const struct kex_impl_funcs kex_c25519_funcs = {
 	kex_init_gen,
