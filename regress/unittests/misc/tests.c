@@ -1,4 +1,4 @@
-/* 	$OpenBSD: tests.c,v 1.10 2023/01/06 02:59:50 djm Exp $ */
+/* 	$OpenBSD: tests.c,v 1.11 2025/04/15 04:00:42 djm Exp $ */
 /*
  * Regress test for misc helper functions.
  *
@@ -6,6 +6,8 @@
  */
 
 #include "../test_helper/test_helper.h"
+
+#include <stdio.h>
 
 void test_parse(void);
 void test_expand(void);
@@ -24,4 +26,10 @@ tests(void)
 		test_strdelim();
 	test_hpdelim();
 	test_ptimeout();
+}
+
+void
+benchmarks(void)
+{
+	printf("no benchmarks\n");
 }
