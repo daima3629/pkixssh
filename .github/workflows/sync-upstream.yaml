@@ -70,7 +70,7 @@ jobs:
           
           git fetch upstream --tags
           git checkout -b $BRANCH_NAME ${{ env.MAIN_BRANCH }}
-          git merge $TAG_NAME --no-edit --allow-unrelated-histories
+          git merge $TAG_NAME -X theirs --no-edit --allow-unrelated-histories
           git push -u origin $BRANCH_NAME
           
           echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
