@@ -1,7 +1,7 @@
-/* $OpenBSD: mux.c,v 1.102 2024/07/25 22:40:08 djm Exp $ */
+/* $OpenBSD: mux.c,v 1.104 2025/07/04 00:17:55 djm Exp $ */
 /*
  * Copyright (c) 2002-2008 Damien Miller <djm@openbsd.org>
- * Copyright (c) 2018-2023 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2018-2025 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -938,7 +938,7 @@ mux_master_process_close_fwd(struct ssh *ssh, u_int rid,
 	} else {	/* local and dynamic forwards */
 		/* Ditto */
 		if (channel_cancel_lport_listener(ssh, &fwd, fwd.connect_port,
-		    &options.fwd_opts) == -1)
+		    &options.fwd_opts) == 0)
 			error_reason = "port not found";
 	}
 
