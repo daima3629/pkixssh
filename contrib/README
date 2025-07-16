@@ -11,7 +11,8 @@ which allows the use of outbound SSH from behind a SOCKS4, SOCKS5 or
 https CONNECT style proxy server. His page for connect.c has extensive
 documentation on its use as well as compiled versions for Win32.
 
-https://bitbucket.org/gotoh/connect/wiki/Home
+https://bitbucket.org/gotoh/connect/wiki/Home (error 404)
+Search on github.com for archived repositories.
 
 
 In this directory
@@ -26,10 +27,21 @@ ssh-askpass-kdialog:
 
 A born shell passphrase requester that wraps KDialog.
 
-gnome-ssh-askpass[12].c:
+ssh-askpass-xdialog:
 
-A GNOME and GTK+ passphrase requesters. Use "make ssh-askpass-gnome" or
-"make ssh-askpass-gtk+2" or "make ssh-askpass2-gtk+3" to build.
+A born shell passphrase requester that wraps Xdialog.
+
+ssh-askpass-zenity
+
+A born shell passphrase requester that wraps zenity.
+Note zenity functionality cannot compete with KDialog or Xdialog.
+
+gnome-ssh-askpass[12].c:
+ssh-askpass2-gtk+3:
+
+Ancient GNOME and GTK+ passphrase requesters replaced by ssh-askpass-zenity.
+Use "make ssh-askpass-gnome", or "make ssh-askpass-gtk+2",
+or "make ssh-askpass-gtk+3", or "make ssh-askpass2-gtk+3" to build.
 For compatibility with existing installations you could use
 "make gnome-ssh-askpass1" or "make gnome-ssh-askpass2".
 
