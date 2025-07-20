@@ -1,4 +1,4 @@
-/*	$OpenBSD: test_helper.h,v 1.9 2018/10/17 23:28:05 djm Exp $	*/
+/*	$OpenBSD: test_helper.h,v 1.10 2025/04/15 04:00:42 djm Exp $	*/
 /*
  * Copyright (c) 2011 Damien Miller <djm@mindrot.org>
  *
@@ -41,6 +41,7 @@ typedef void (test_onerror_func_t)(void *);
 
 /* Supplied by test suite */
 void tests(void);
+void benchmarks(void);
 
 const char *test_data_file(const char *name);
 void test_start(const char *n);

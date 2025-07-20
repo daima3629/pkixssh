@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh.c,v 1.609 2025/03/03 06:53:09 dtucker Exp $ */
+/* $OpenBSD: ssh.c,v 1.614 2025/06/19 05:49:05 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -554,18 +554,27 @@ check_load(int r, struct sshkey **k, const char *path, const char *message)
 {
 	switch (r) {
 	case 0:
+		if (k == NULL || *k == NULL)
+			return;
 	#if 0
 		/* NOTE: key size is validated on read, sign and verify */
-		/* Check keys size and discard if undersized */
-		if (k != NULL && *k != NULL &&
-		    (r = sshkey_check_length(*k)) != 0) {
+		if ((r = sshkey_check_length(*k)) != 0) {
 			error_r(r, "load %s \"%s\"", message, path);
 			free(*k);
 			*k = NULL;
+			break;
 		}
-	#else
-		UNUSED(k);
 	#endif
+	{	char *fp = sshkey_fingerprint(*k, options.fingerprint_hash,
+		    SSH_FP_DEFAULT);
+		if (fp == NULL) {
+			fatal_f("failed to fingerprint %s %s from \"%s\"",
+			    sshkey_ssh_name(*k), message, path);
+		}
+		debug("loaded %s(%s) from \"%s\" %s", message,
+		    sshkey_ssh_name(*k), path, fp);
+		free(fp);
+	}
 		break;
 	case SSH_ERR_INTERNAL_ERROR:
 	case SSH_ERR_ALLOC_FAIL:
@@ -579,6 +588,8 @@ check_load(int r, struct sshkey **k, const char *path, const char *message)
 		error_r(r, "load %s \"%s\"", message, path);
 		break;
 	}
+	if (k != NULL && *k == NULL)
+		debug("no %s loaded from \"%s\"", message, path);
 }
 
 /*
@@ -1790,10 +1801,9 @@ main(int ac, char **av)
 	if ((o) >= sensitive_data.nkeys) \
 		fatal_f("pubkey out of array bounds"); \
 	check_load(sshkey_load_public(p, &(sensitive_data.keys[o]), NULL), \
-	    &(sensitive_data.keys[o]), p, "pubkey"); \
+	    &(sensitive_data.keys[o]), p, "hostbased pubkey"); \
 	if (sensitive_data.keys[o] != NULL) { \
-		debug3("hostbased key %d: %s key from \"%s\"", o, \
-		    sshkey_ssh_name(sensitive_data.keys[o]), p); \
+		debug3("hostbased pubkey %d from \"%s\"", o, p); \
 		loaded++; \
 	} \
 } while (0)
@@ -1801,10 +1811,9 @@ main(int ac, char **av)
 	if ((o) >= sensitive_data.nkeys) \
 		fatal_f("cert out of array bounds"); \
 	check_load(sshkey_load_cert(p, &(sensitive_data.keys[o])), \
-	    &(sensitive_data.keys[o]), p, "cert"); \
+	    &(sensitive_data.keys[o]), p, "hostbased cert"); \
 	if (sensitive_data.keys[o] != NULL) { \
-		debug3("hostbased key %d: %s cert from \"%s\"", o, \
-		    sshkey_ssh_name(sensitive_data.keys[o]), p); \
+		debug3("hostbased cert %d from \"%s\"", o, p); \
 		loaded++; \
 	} \
 } while (0)
@@ -2559,9 +2568,7 @@ load_public_identity_files(const struct ssh_conn_info *cinfo)
 		filename = default_client_percent_dollar_expand(cp, cinfo);
 		free(cp);
 		check_load(sshkey_load_public(filename, &public, NULL),
-		    &public, filename, "pubkey");
-		debug("identity file %s type %d", filename,
-		    public ? public->type : -1);
+		    &public, filename, "identity pubkey");
 		free(options.identity_files[i]);
 		identity_files[n_ids] = filename;
 		identity_keys[n_ids] = public;
@@ -2578,9 +2585,7 @@ load_public_identity_files(const struct ssh_conn_info *cinfo)
 			continue;
 		xasprintf(&cp, "%s-cert", filename);
 		check_load(sshkey_load_public(cp, &public, NULL),
-		    &public, filename, "pubkey");
-		debug("identity file %s type %d", cp,
-		    public ? public->type : -1);
+		    &public, filename, "identity cert");
 		if (public == NULL) {
 			free(cp);
 			continue;
@@ -2609,9 +2614,7 @@ load_public_identity_files(const struct ssh_conn_info *cinfo)
 		free(cp);
 
 		check_load(sshkey_load_public(filename, &public, NULL),
-		    &public, filename, "certificate");
-		debug("certificate file %s type %d", filename,
-		    public ? public->type : -1);
+		    &public, filename, "custom cert");
 		free(options.certificate_files[i]);
 		options.certificate_files[i] = NULL;
 		if (public == NULL) {

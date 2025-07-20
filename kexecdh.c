@@ -338,7 +338,9 @@ kex_ecdh_dec(struct kex *kex, const struct sshbuf *server_blob,
 	return r;
 }
 
-static int kex_ecdh_enabled(void) { return 1; }
+static int kex_ecdh_enabled(void) {
+	return ssh_pkey_allowed(EVP_PKEY_EC);
+}
 
 static const struct kex_impl_funcs kex_ecdh_funcs = {
 	kex_init_gen,

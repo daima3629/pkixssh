@@ -228,7 +228,12 @@ kex_kem_sntrup761x25519_dec(struct kex *kex,
 	return r;
 }
 
-static int kex_kem_sntrup761x25519_enabled(void) { return 1; }
+static int kex_kem_sntrup761x25519_enabled(void) {
+#ifdef OPENSSL_FIPS
+	if (FIPS_mode()) return 0;
+#endif
+	return 1;
+}
 
 static const struct kex_impl_funcs kex_kem_sntrup761x25519_funcs = {
 	kex_init_gen,
