@@ -75,8 +75,6 @@ kex_c25519_keygen_to_sshbuf(struct kex *kex, struct sshbuf **bufp) {
 		dump_digest("client public key 25519:", pub, CURVE25519_SIZE);
 #endif
 	r = sshbuf_put(buf, pub, CURVE25519_SIZE);
-	if (r != 0)
-		kex_reset_keys(kex);
 
 	if (*bufp == NULL) {
 		if (r == 0)
@@ -195,7 +193,6 @@ kex_c25519_enc(struct kex *kex, const struct sshbuf *client_blob,
 #endif
 
  out:
-	kex_reset_keys(kex);
 	if (r != 0) {
 		sshbuf_free(*server_blobp);
 		*server_blobp = NULL;
@@ -225,7 +222,6 @@ kex_c25519_dec(struct kex *kex, const struct sshbuf *server_blob,
 #endif
 
  out:
-	kex_reset_keys(kex);
 	return r;
 }
 

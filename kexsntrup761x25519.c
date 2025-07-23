@@ -156,7 +156,6 @@ kex_kem_sntrup761x25519_enc(struct kex *kex,
 		server_blob = NULL;
 	}
  out:
-	kex_reset_keys(kex);
 	sshbuf_free(server_blob);
 	sshbuf_free(buf);
 	return r;
@@ -223,7 +222,6 @@ kex_kem_sntrup761x25519_dec(struct kex *kex,
 		r = SSH_ERR_SIGNATURE_INVALID;
 	}
  out:
-	kex_reset_keys(kex);
 	sshbuf_free(buf);
 	return r;
 }

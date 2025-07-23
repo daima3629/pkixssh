@@ -233,7 +233,6 @@ kex_kem_mlkem768x25519_enc(struct kex *kex,
 		server_blob = NULL;
 	}
  out:
-	kex_reset_keys(kex);
 	explicit_bzero(&enc, sizeof(enc));
 	sshbuf_free(server_blob);
 	sshbuf_free(buf);
@@ -303,7 +302,6 @@ kex_kem_mlkem768x25519_dec(struct kex *kex,
 		fprintf(stderr, "shared secret error: %s\n", ssh_err(r));
 #endif
  out:
-	kex_reset_keys(kex);
 	explicit_bzero(&mlkem_priv, sizeof(mlkem_priv));
 	explicit_bzero(&mlkem_ciphertext, sizeof(mlkem_ciphertext));
 	sshbuf_free(buf);

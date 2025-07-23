@@ -160,7 +160,6 @@ kex_ecx_enc(struct kex *kex, const struct sshbuf *client_blob,
 #endif
 
  out:
-	kex_reset_keys(kex);
 	if (r != 0) {
 		sshbuf_free(*server_blobp);
 		*server_blobp = NULL;
@@ -193,7 +192,6 @@ kex_ecx_dec(struct kex *kex, const struct sshbuf *server_blob,
 #endif
 
  out:
-	kex_reset_keys(kex);
 	return r;
 }
 

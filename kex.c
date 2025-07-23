@@ -643,6 +643,10 @@ kex_reset_keys(struct kex *kex) {
 #ifndef USE_ECDH_X25519
 	explicit_bzero(kex->c25519_key, sizeof(kex->c25519_key));
 #endif
+	explicit_bzero(kex->sntrup761_client_key,
+	    sizeof(kex->sntrup761_client_key));
+	explicit_bzero(kex->mlkem768_client_key,
+	    sizeof(kex->mlkem768_client_key));
 }
 
 void
