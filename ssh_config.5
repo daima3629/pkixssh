@@ -34,7 +34,7 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: ssh_config.5,v 1.413 2025/03/03 06:53:09 dtucker Exp $
+.\" $OpenBSD: ssh_config.5,v 1.414 2025/07/23 05:07:19 djm Exp $
 .\" Implement .Dd with the Mdocdate RCS keyword
 .rn Dd xD
 .de Dd
@@ -43,7 +43,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: March 9 2025 $
+.Dd $Mdocdate: July 23 2025 $
 .Dt SSH_CONFIG 5
 .Os
 .Sh NAME
@@ -1772,6 +1772,15 @@ The argument to this keyword must be
 (the default)
 or
 .Cm no .
+.It Cm RefuseConnection
+Allows a connection to be refused by the configuration file.
+If this option is specified, then
+.Xr ssh 1
+will terminate immediately before attempting to connect to the remote
+host, display an error message that contains the argument to this keyword
+and return a non-zero exit status.
+This option may be useful to express reminders or warnings to the user via
+.Nm .
 .It Cm RekeyLimit
 Specifies the maximum amount of data that may be transmitted or received
 before the session key is renegotiated, optionally followed by a maximum

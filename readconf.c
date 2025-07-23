@@ -1,4 +1,4 @@
-/* $OpenBSD: readconf.c,v 1.400 2025/06/24 09:22:03 djm Exp $ */
+/* $OpenBSD: readconf.c,v 1.401 2025/07/23 05:07:19 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -218,7 +218,7 @@ typedef enum {
 	oPubkeyAcceptedAlgorithms, oCASignatureAlgorithms, oProxyJump,
 	oSecurityKeyProvider, oKnownHostsCommand, oRequiredRSASize,
 	oEnableEscapeCommandline, oChannelTimeout,
-	oVersionAddendum,
+	oVersionAddendum, oRefuseConnection,
 	oIgnore, oIgnoredUnknownOption, oDeprecated, oUnsupported
 } OpCodes;
 
@@ -392,6 +392,7 @@ static struct {
 	{ "enableescapecommandline", oEnableEscapeCommandline },
 	{ "channeltimeout", oChannelTimeout },
 	{ "versionaddendum", oVersionAddendum },
+	{ "refuseconnection", oRefuseConnection },
 
 	{ NULL, oBadOption }
 };
@@ -2558,6 +2559,19 @@ parse_key_algorithms:
 				options->version_addendum = xstrdup(str + len);
 		}
 		argv_consume(&ac);
+		break;
+
+	case oRefuseConnection:
+		arg = argv_next(&ac, &av);
+		if (arg == NULL || *arg == '\0') {
+			error("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
+			goto out;
+		}
+		if (*activep) {
+			fatal("%s line %d: %s: %s",
+			    filename, linenum, keyword, arg);
+		}
 		break;
 
 	case oDeprecated:
