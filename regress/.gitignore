@@ -72,6 +72,7 @@ remote_pid
 revoked-*
 ssh-agent.log
 ssh-add.log
+.ssh-module.log
 ssh-rsa-agent*
 ssh-rsa
 ssh-rsa.pub
