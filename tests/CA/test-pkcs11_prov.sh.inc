@@ -46,6 +46,7 @@ testPUBKEYautorization () {
   *eccnistp256*) key_id='%%00%%02';;
   *eccnistp384*) key_id='%%00%%03';;
   *eccnistp521*) key_id='%%00%%04';;
+  *ed25519*)     key_id='%%00%%05';;
   *)
     echo "error: unknown key $SSH_CLIENTKEY" >&2
     exit 33;;
@@ -71,6 +72,7 @@ if $load_cert ; then
   *eccnistp256*) PubkeyAlgorithms='x509v3-ecdsa*256';;
   *eccnistp384*) PubkeyAlgorithms='x509v3-ecdsa*384';;
   *eccnistp521*) PubkeyAlgorithms='x509v3-ecdsa*521';;
+  *ed25519*)     PubkeyAlgorithms='x509v3-*ed25519';;
   *)
     echo "error: unknown key $SSH_CLIENTKEY" >&2
     exit 33;;
@@ -87,6 +89,7 @@ fi
   *eccnistp256*) PubkeyAlgorithms='ecdsa*256';;
   *eccnistp384*) PubkeyAlgorithms='ecdsa*384';;
   *eccnistp521*) PubkeyAlgorithms='ecdsa*521';;
+  *ed25519*)     PubkeyAlgorithms='*ed25519';;
   *)
     echo "error: unknown key $SSH_CLIENTKEY" >&2
     exit 33;;
@@ -127,6 +130,7 @@ EOF
       *eccnistp256*|\
       *eccnistp384*|\
       *eccnistp521*|\
+      *ed25519*|\
       *rsa*);;
       *) continue;;
       esac
