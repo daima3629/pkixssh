@@ -114,7 +114,7 @@ kex_ecx_shared_secret_to_sshbuf(struct kex *kex, int key_id,
 	if (peerkey == NULL)
 		return SSH_ERR_INVALID_FORMAT;
 
-	r = kex_pkey_derive_shared_secret(kex, peerkey, raw, bufp);
+	r = kex_pkey_derive_shared_secret(kex->pk, peerkey, raw, bufp);
 
 	EVP_PKEY_free(peerkey);
 	return r;

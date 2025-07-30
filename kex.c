@@ -1409,7 +1409,7 @@ kex_shared_secret_to_sshbuf(u_char *kbuf, size_t klen,
 
 #ifdef USE_EVP_PKEY_KEYGEN
 static int
-kex_pkey_derive_shared_secret_raw(struct kex *kex, EVP_PKEY *peerkey,
+kex_pkey_derive_shared_secret_raw(EVP_PKEY *pk, EVP_PKEY *peerkey,
     u_char **kbufp, size_t *klenp
 ) {
 	EVP_PKEY_CTX *ctx;
@@ -1417,7 +1417,7 @@ kex_pkey_derive_shared_secret_raw(struct kex *kex, EVP_PKEY *peerkey,
 	size_t klen = 0;
 	int r = SSH_ERR_LIBCRYPTO_ERROR;
 
-	ctx = EVP_PKEY_CTX_new(kex->pk, NULL);
+	ctx = EVP_PKEY_CTX_new(pk, NULL);
 	if (ctx == NULL) return SSH_ERR_INTERNAL_ERROR;
 
 	if (EVP_PKEY_derive_init(ctx) != 1)
@@ -1454,14 +1454,14 @@ kex_pkey_derive_shared_secret_raw(struct kex *kex, EVP_PKEY *peerkey,
 
 #ifdef USE_EVP_PKEY_KEYGEN
 int
-kex_pkey_derive_shared_secret(struct kex *kex, EVP_PKEY *peerkey,
+kex_pkey_derive_shared_secret(EVP_PKEY *pk, EVP_PKEY *peerkey,
     int raw, struct sshbuf **bufp
 ) {
 	u_char *kbuf = NULL;
 	size_t klen = 0;
 	int r = SSH_ERR_LIBCRYPTO_ERROR;
 
-	r =  kex_pkey_derive_shared_secret_raw(kex, peerkey, &kbuf, &klen);
+	r =  kex_pkey_derive_shared_secret_raw(pk, peerkey, &kbuf, &klen);
 	if (r != 0) goto out;
 
 	r = kex_shared_secret_to_sshbuf(kbuf, klen, raw, bufp);

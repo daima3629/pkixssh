@@ -402,7 +402,7 @@ kex_dh_compute_key(struct kex *kex, BIGNUM *pub_key, struct sshbuf **shared_secr
 	r = create_peer_pkey(kex, pub_key, &peerkey);
 	if (r != 0) return r;
 
-	r = kex_pkey_derive_shared_secret(kex, peerkey, 0, shared_secretp);
+	r = kex_pkey_derive_shared_secret(kex->pk, peerkey, 0, shared_secretp);
 
 	EVP_PKEY_free(peerkey);
 #else /*ndef USE_EVP_PKEY_KEYGEN*/
