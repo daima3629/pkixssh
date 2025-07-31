@@ -87,7 +87,7 @@ kex_c25519_keygen_to_sshbuf(struct kex *kex, struct sshbuf **bufp) {
 #else /*def USE_ECDH_X25519*/
 int
 kex_c25519_keygen_to_sshbuf(struct kex *kex, struct sshbuf **bufp) {
-	return kex_ecx_keygen_to_sshbuf(kex, EVP_PKEY_X25519, CURVE25519_SIZE, bufp);
+	return kex_ecx_keygen_to_sshbuf(EVP_PKEY_X25519, CURVE25519_SIZE, &kex->pk, bufp);
 }
 #endif /*def USE_ECDH_X25519*/
 

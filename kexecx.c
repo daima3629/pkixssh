@@ -46,8 +46,8 @@ struct kex_ecx_spec {
 
 /* generate key and store public part to buffer */
 int
-kex_ecx_keygen_to_sshbuf(struct kex *kex, int key_id, size_t pub_len,
-    struct sshbuf **bufp
+kex_ecx_keygen_to_sshbuf(int key_id, size_t pub_len,
+    EVP_PKEY **pkp, struct sshbuf **bufp
 ) {
 	EVP_PKEY *pk = NULL;
 	u_char *pub = NULL;
@@ -78,17 +78,11 @@ kex_ecx_keygen_to_sshbuf(struct kex *kex, int key_id, size_t pub_len,
 		goto err;
 	}
 }
-#ifdef DEBUG_KEXECX
-	if (kex->server)
-		dump_digest("server ecx public key:", pub, pub_len);
-	else
-		dump_digest("client ecx public key:", pub, pub_len);
-#endif
 
 	r = sshbuf_put(buf, pub, pub_len);
 	if (r != 0) goto err;
 
-	kex->pk = pk;
+	*pkp = pk;
 	pk = NULL;
 
 err:
@@ -126,8 +120,23 @@ static int
 kex_ecx_keypair(struct kex *kex)
 {
 	struct kex_ecx_spec *spec = kex->impl->spec;
-	return kex_ecx_keygen_to_sshbuf(kex, spec->key_id, spec->pub_len,
-	    &kex->client_pub);
+	int r;
+
+	r = kex_ecx_keygen_to_sshbuf(spec->key_id, spec->pub_len,
+	    &kex->pk, &kex->client_pub);
+#ifdef DEBUG_KEXECX
+	if (r == 0) {
+		const char *msg;
+		if (kex->server)
+			msg = "server ecx public key:";
+		else
+			msg = "client ecx public key:";
+		dump_digestb(msg, kex->client_pub);
+	} else
+		fprintf(stderr, "ecx keypair error: %s\n", ssh_err(r));
+#endif
+
+	return r;
 }
 
 static int
@@ -148,8 +157,8 @@ kex_ecx_enc(struct kex *kex, const struct sshbuf *client_blob,
 	dump_digestb("client ecx public key:", client_blob);
 #endif
 
-	r = kex_ecx_keygen_to_sshbuf(kex, spec->key_id, spec->pub_len,
-	    server_blobp);
+	r = kex_ecx_keygen_to_sshbuf(spec->key_id, spec->pub_len,
+	    &kex->pk, server_blobp);
 	if (r != 0) goto out;
 
 	r = kex_ecx_shared_secret_to_sshbuf(kex, spec->key_id,

@@ -209,8 +209,8 @@ EVP_PKEY*	kex_new_dh_group(BIGNUM *modulus, BIGNUM *gen);
 int	kex_shared_secret_to_sshbuf(u_char *kbuf, size_t klen,
     int raw, struct sshbuf **bufp);
 #ifdef USE_EVP_PKEY_KEYGEN
-int	kex_ecx_keygen_to_sshbuf(struct kex *kex, int key_id, size_t pub_len,
-    struct sshbuf **bufp);
+int	kex_ecx_keygen_to_sshbuf(int key_id, size_t pub_len,
+    EVP_PKEY **pkp, struct sshbuf **bufp);
 int kex_ecx_shared_secret_to_sshbuf(struct kex *kex, int key_id,
     const u_char *kbuf, size_t klen, int raw, struct sshbuf **bufp);
 int	kex_pkey_derive_shared_secret(EVP_PKEY *pk, EVP_PKEY *peerkey,

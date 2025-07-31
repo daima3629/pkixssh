@@ -64,17 +64,15 @@ extern int /* see ssh-ecdsa.c */
 ssh_pkey_keygen_ec(int nid, EVP_PKEY **ret);
 
 static inline int
-kex_ecdh_pkey_keygen(struct kex *kex) {
-	struct kex_ecdh_spec *spec = kex->impl->spec;
-	return ssh_pkey_keygen_ec(spec->ec_nid, &kex->pk);
+kex_ecdh_pkey_keygen(int ec_nid, EVP_PKEY **pkp) {
+	return ssh_pkey_keygen_ec(ec_nid, pkp);
 }
 #else /*ndef USE_EVP_PKEY_KEYGEN*/
 static int
-kex_ecdh_key_init(struct kex *kex) {
-	struct kex_ecdh_spec *spec = kex->impl->spec;
+kex_ecdh_key_init(int ec_nid, EVP_PKEY **pkp) {
 	EC_KEY *ec = NULL;
 
-	ec = EC_KEY_new_by_curve_name(spec->ec_nid);
+	ec = EC_KEY_new_by_curve_name(ec_nid);
 	if (ec == NULL) return SSH_ERR_ALLOC_FAIL;
 
 #if defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x10100000L) || \
@@ -94,21 +92,21 @@ kex_ecdh_key_init(struct kex *kex) {
 		return SSH_ERR_LIBCRYPTO_ERROR;
 	}
 	EC_KEY_free(ec);
-	kex->pk = pk;
+	*pkp = pk;
 }
 
 	return 0;
 }
 
 static int
-kex_ecdh_key_gen(struct kex *kex) {
+kex_ecdh_key_gen(EVP_PKEY *pk) {
 	int r;
 	EC_KEY *ec;
 
-	if (kex->pk == NULL)
+	if (pk == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;
 
-	ec = EVP_PKEY_get1_EC_KEY(kex->pk);
+	ec = EVP_PKEY_get1_EC_KEY(pk);
 	if (ec == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;
 
@@ -126,10 +124,13 @@ done:
 }
 
 static inline int
-kex_ecdh_pkey_keygen(struct kex *kex) {
-	int r = kex_ecdh_key_init(kex);
+kex_ecdh_pkey_keygen(int ec_nid, EVP_PKEY **pkp) {
+	int r;
+
+	r = kex_ecdh_key_init(ec_nid, pkp);
 	if (r != 0) return r;
-	return kex_ecdh_key_gen(kex);
+
+	return kex_ecdh_key_gen(*pkp);
 }
 #endif /*ndef USE_EVP_PKEY_KEYGEN*/
 
@@ -243,7 +244,7 @@ kex_ecdh_compute_key(struct kex *kex, const struct sshbuf *ec_blob,
 }
 
 static int
-kex_ecdh_to_sshbuf(struct kex *kex, struct sshbuf **bufp) {
+kex_ecdh_to_sshbuf(EVP_PKEY *pk, struct sshbuf **bufp) {
 	struct sshbuf *buf;
 	int r;
 
@@ -251,12 +252,12 @@ kex_ecdh_to_sshbuf(struct kex *kex, struct sshbuf **bufp) {
 
 #ifdef DEBUG_KEXECDH
 	fputs("ecdh private key:\n", stderr);
-	ssh_EVP_PKEY_print_private_fp(stderr, kex->pk);
+	ssh_EVP_PKEY_print_private_fp(stderr, pk);
 #endif
 	if ((buf = sshbuf_new()) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
 
-	if ((r = sshbuf_write_pkey_ecpub(buf, kex->pk)) != 0 ||
+	if ((r = sshbuf_write_pkey_ecpub(buf, pk)) != 0 ||
 	    (r = sshbuf_get_u32(buf, NULL)) != 0)
 		goto out;
 
@@ -268,20 +269,40 @@ kex_ecdh_to_sshbuf(struct kex *kex, struct sshbuf **bufp) {
 	return r;
 }
 
+/* generate key and store public part to buffer */
+static inline int
+kex_ecdh_keygen_to_sshbuf(int ec_nid,
+    EVP_PKEY **pkp, struct sshbuf **bufp
+) {
+	int r;
+
+	r = kex_ecdh_pkey_keygen(ec_nid, pkp);
+	if (r != 0) return r;
+
+	return kex_ecdh_to_sshbuf(*pkp, bufp);
+}
+
 
 /* elliptic-curve diffie-hellman key exchange implementation */
 
 static int
 kex_ecdh_keypair(struct kex *kex)
 {
+	struct kex_ecdh_spec *spec = kex->impl->spec;
 	int r;
 
-	r = kex_ecdh_pkey_keygen(kex);
-	if (r != 0) return r;
-
-	r = kex_ecdh_to_sshbuf(kex, &kex->client_pub);
+	r = kex_ecdh_keygen_to_sshbuf(spec->ec_nid,
+	    &kex->pk, &kex->client_pub);
 #ifdef DEBUG_KEXECDH
-	dump_digestb("client public keypair ecdh:", kex->client_pub);
+	if (r == 0) {
+		const char *msg;
+		if (kex->server)
+			msg = "server ecdh public key:";
+		else
+			msg = "client ecdh public key:";
+		dump_digestb(msg, kex->client_pub);
+	} else
+		fprintf(stderr, "ecdh keypair error: %s\n", ssh_err(r));
 #endif
 	return r;
 }
@@ -290,6 +311,7 @@ static int
 kex_ecdh_enc(struct kex *kex, const struct sshbuf *client_blob,
     struct sshbuf **server_blobp, struct sshbuf **shared_secretp)
 {
+	struct kex_ecdh_spec *spec = kex->impl->spec;
 	int r;
 
 	*server_blobp = NULL;
@@ -298,9 +320,9 @@ kex_ecdh_enc(struct kex *kex, const struct sshbuf *client_blob,
 #ifdef DEBUG_KEXECDH
 	dump_digestb("client public key ecdh:", client_blob);
 #endif
-	if ((r = kex_ecdh_pkey_keygen(kex)) != 0 ||
-	    (r = kex_ecdh_to_sshbuf(kex, server_blobp)) != 0)
-		goto out;
+	r = kex_ecdh_keygen_to_sshbuf(spec->ec_nid,
+	    &kex->pk, server_blobp);
+	if (r != 0) goto out;
 
 	r = kex_ecdh_compute_key(kex, client_blob, shared_secretp);
 
