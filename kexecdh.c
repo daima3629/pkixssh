@@ -137,13 +137,12 @@ kex_ecdh_pkey_keygen(int ec_nid, EVP_PKEY **pkp) {
 
 #ifdef USE_EVP_PKEY_KEYGEN
 static int
-create_peer_pkey(struct kex *kex, const EC_POINT *dh_pub, EVP_PKEY **peerkeyp) {
-	struct kex_ecdh_spec *spec = kex->impl->spec;
+create_peer_pkey(int ec_nid, const EC_POINT *dh_pub, EVP_PKEY **peerkeyp) {
 	EVP_PKEY *peerkey = NULL;
 	EC_KEY *ec;
 	int r = SSH_ERR_LIBCRYPTO_ERROR;
 
-	ec = EC_KEY_new_by_curve_name(spec->ec_nid);
+	ec = EC_KEY_new_by_curve_name(ec_nid);
 	if (ec == NULL) return SSH_ERR_ALLOC_FAIL;
 	/* NOTE: named curve flag is not required */
 
@@ -171,15 +170,17 @@ create_peer_pkey(struct kex *kex, const EC_POINT *dh_pub, EVP_PKEY **peerkeyp) {
 #endif /*def USE_EVP_PKEY_KEYGEN*/
 
 static int
-kex_ecdh_derive_shared_secret(struct kex *kex, const EC_POINT *dh_pub, struct sshbuf **bufp) {
+kex_pkey_ecpub_derive_shared_secret(EVP_PKEY *pk, int ec_nid,
+    const EC_POINT *dh_pub, struct sshbuf **bufp
+) {
 #ifdef USE_EVP_PKEY_KEYGEN
 	EVP_PKEY *peerkey = NULL;
 	int r;
 
-	r = create_peer_pkey(kex, dh_pub, &peerkey);
+	r = create_peer_pkey(ec_nid, dh_pub, &peerkey);
 	if (r != 0) return r;
 
-	r = kex_pkey_derive_shared_secret(kex->pk, peerkey, 0, bufp);
+	r = kex_pkey_derive_shared_secret(pk, peerkey, 0, bufp);
 
 	EVP_PKEY_free(peerkey);
 #else /*ndef USE_EVP_PKEY_KEYGEN*/
@@ -189,7 +190,8 @@ kex_ecdh_derive_shared_secret(struct kex *kex, const EC_POINT *dh_pub, struct ss
 	size_t klen = 0;
 	int r;
 
-	if ((key = EVP_PKEY_get1_EC_KEY(kex->pk)) == NULL)
+	UNUSED(ec_nid);
+	if ((key = EVP_PKEY_get1_EC_KEY(pk)) == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;
 
 	if ((group = EC_KEY_get0_group(key)) == NULL) {
@@ -221,22 +223,23 @@ kex_ecdh_derive_shared_secret(struct kex *kex, const EC_POINT *dh_pub, struct ss
 }
 
 static int
-kex_ecdh_compute_key(struct kex *kex, const struct sshbuf *ec_blob,
-    struct sshbuf **shared_secretp)
+kex_pkey_sshbuf_derive_shared_secret(EVP_PKEY *pk, int ec_nid,
+    const struct sshbuf *ec_blob, struct sshbuf **shared_secretp)
 {
 	EC_POINT *dh_pub = NULL;
 	int r;
 
-	r = sshbuf_to_ecpub(ec_blob, kex->pk, &dh_pub);
+	r = sshbuf_to_ecpub(ec_blob, pk, &dh_pub);
 	if (r != 0) return r;
 
 	/* ignore exact result from validation */
-	if (ssh_EVP_PKEY_check_public_ec(kex->pk, dh_pub) != 0) {
+	if (ssh_EVP_PKEY_check_public_ec(pk, dh_pub) != 0) {
 		r = SSH_ERR_MESSAGE_INCOMPLETE;
 		goto out;
 	}
 
-	r = kex_ecdh_derive_shared_secret(kex, dh_pub, shared_secretp);
+	r = kex_pkey_ecpub_derive_shared_secret(pk, ec_nid,
+	    dh_pub, shared_secretp);
 
  out:
 	EC_POINT_clear_free(dh_pub);
@@ -324,7 +327,8 @@ kex_ecdh_enc(struct kex *kex, const struct sshbuf *client_blob,
 	    &kex->pk, server_blobp);
 	if (r != 0) goto out;
 
-	r = kex_ecdh_compute_key(kex, client_blob, shared_secretp);
+	r = kex_pkey_sshbuf_derive_shared_secret(kex->pk, spec->ec_nid,
+	    client_blob, shared_secretp);
 
  out:
 	if (r != 0) {
@@ -338,6 +342,7 @@ static int
 kex_ecdh_dec(struct kex *kex, const struct sshbuf *server_blob,
     struct sshbuf **shared_secretp)
 {
+	struct kex_ecdh_spec *spec = kex->impl->spec;
 	int r;
 
 	*shared_secretp = NULL;
@@ -345,7 +350,8 @@ kex_ecdh_dec(struct kex *kex, const struct sshbuf *server_blob,
 	dump_digestb("server public key ecdh:", server_blob);
 #endif
 
-	r = kex_ecdh_compute_key(kex, server_blob, shared_secretp);
+	r = kex_pkey_sshbuf_derive_shared_secret(kex->pk, spec->ec_nid,
+	    server_blob, shared_secretp);
 #ifdef DEBUG_KEXECDH
 	if (r == 0)
 		dump_digestb("encoded shared secret:", *shared_secretp);
