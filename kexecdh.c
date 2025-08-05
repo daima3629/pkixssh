@@ -55,10 +55,6 @@
 #include "sshbuf.h"
 #include "ssherr.h"
 
-struct kex_ecdh_spec {
-	int	ec_nid;
-};
-
 #ifdef USE_EVP_PKEY_KEYGEN
 extern int /* see ssh-ecdsa.c */
 ssh_pkey_keygen_ec(int nid, EVP_PKEY **ret);
@@ -288,49 +284,46 @@ kex_ecdh_keygen_to_sshbuf(int ec_nid,
 
 /* elliptic-curve diffie-hellman key exchange implementation */
 
+struct kex_ecdh_spec {
+	int ec_nid;
+};
+
 static int
-kex_ecdh_keypair(struct kex *kex)
+kexkey_ecdh_keypair(struct kexkey *key)
 {
-	struct kex_ecdh_spec *spec = kex->impl->spec;
+	struct kex_ecdh_spec *spec = key->spec;
 	int r;
 
-	r = kex_ecdh_keygen_to_sshbuf(spec->ec_nid,
-	    &kex->pk, &kex->client_pub);
+	r = kex_ecdh_keygen_to_sshbuf(spec->ec_nid, key->pk, key->client_pub);
 #ifdef DEBUG_KEXECDH
-	if (r == 0) {
-		const char *msg;
-		if (kex->server)
-			msg = "server ecdh public key:";
-		else
-			msg = "client ecdh public key:";
-		dump_digestb(msg, kex->client_pub);
-	} else
+	if (r == 0)
+		dump_digestb("ecdh public key:", *key->client_pub);
+	else
 		fprintf(stderr, "ecdh keypair error: %s\n", ssh_err(r));
 #endif
 	return r;
 }
 
 static int
-kex_ecdh_enc(struct kex *kex, const struct sshbuf *client_blob,
+kexkey_ecdh_enc(struct kexkey *key, const struct sshbuf *client_blob,
     struct sshbuf **server_blobp, struct sshbuf **shared_secretp)
 {
-	struct kex_ecdh_spec *spec = kex->impl->spec;
+	struct kex_ecdh_spec *spec = key->spec;
 	int r;
 
 	*server_blobp = NULL;
 	*shared_secretp = NULL;
-
 #ifdef DEBUG_KEXECDH
 	dump_digestb("client public key ecdh:", client_blob);
 #endif
-	r = kex_ecdh_keygen_to_sshbuf(spec->ec_nid,
-	    &kex->pk, server_blobp);
+
+	r = kex_ecdh_keygen_to_sshbuf(spec->ec_nid, key->pk, server_blobp);
 	if (r != 0) goto out;
 
-	r = kex_pkey_sshbuf_derive_shared_secret(kex->pk, spec->ec_nid,
+	r = kex_pkey_sshbuf_derive_shared_secret(*key->pk, spec->ec_nid,
 	    client_blob, shared_secretp);
 
- out:
+out:
 	if (r != 0) {
 		sshbuf_free(*server_blobp);
 		*server_blobp = NULL;
@@ -339,10 +332,10 @@ kex_ecdh_enc(struct kex *kex, const struct sshbuf *client_blob,
 }
 
 static int
-kex_ecdh_dec(struct kex *kex, const struct sshbuf *server_blob,
+kexkey_ecdh_dec(struct kexkey *key, const struct sshbuf *server_blob,
     struct sshbuf **shared_secretp)
 {
-	struct kex_ecdh_spec *spec = kex->impl->spec;
+	struct kex_ecdh_spec *spec = key->spec;
 	int r;
 
 	*shared_secretp = NULL;
@@ -350,13 +343,41 @@ kex_ecdh_dec(struct kex *kex, const struct sshbuf *server_blob,
 	dump_digestb("server public key ecdh:", server_blob);
 #endif
 
-	r = kex_pkey_sshbuf_derive_shared_secret(kex->pk, spec->ec_nid,
+	r = kex_pkey_sshbuf_derive_shared_secret(*key->pk, spec->ec_nid,
 	    server_blob, shared_secretp);
 #ifdef DEBUG_KEXECDH
 	if (r == 0)
 		dump_digestb("encoded shared secret:", *shared_secretp);
 #endif
 	return r;
+}
+
+
+static int
+kex_ecdh_keypair(struct kex *kex)
+{
+	struct kexkey key = { &kex->pk, &kex->client_pub, kex->impl->spec };
+
+	return kexkey_ecdh_keypair(&key);
+}
+
+static int
+kex_ecdh_enc(struct kex *kex, const struct sshbuf *client_blob,
+    struct sshbuf **server_blobp, struct sshbuf **shared_secretp)
+{
+	struct kexkey key = { &kex->pk, &kex->client_pub, kex->impl->spec };
+
+	return kexkey_ecdh_enc(&key, client_blob,
+	    server_blobp, shared_secretp);
+}
+
+static int
+kex_ecdh_dec(struct kex *kex, const struct sshbuf *server_blob,
+    struct sshbuf **shared_secretp)
+{
+	struct kexkey key = { &kex->pk, &kex->client_pub, kex->impl->spec };
+
+	return kexkey_ecdh_dec(&key, server_blob, shared_secretp);
 }
 
 static int kex_ecdh_enabled(void) {

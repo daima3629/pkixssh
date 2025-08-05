@@ -147,6 +147,13 @@ struct kex_impl {
 	void *spec;
 };
 
+struct kexkey {
+	EVP_PKEY **pk;
+	struct sshbuf **client_pub;
+
+	void *spec;
+};
+
 const struct kex_impl
 	*kex_find_impl(const char *);
 int	 kex_names_valid(const char *);

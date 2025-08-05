@@ -39,11 +39,6 @@
 #include "sshbuf.h"
 #include "ssherr.h"
 
-struct kex_ecx_spec {
-	int key_id;
-	size_t pub_len;
-};
-
 /* generate key and store public part to buffer */
 int
 kex_ecx_keygen_to_sshbuf(int key_id, size_t pub_len,
@@ -114,25 +109,26 @@ kex_pkey_ecx_shared_secret_to_sshbuf(EVP_PKEY *pk, int key_id,
 	return r;
 }
 
-/* ECDH X... key exchange implementation */
+
+/* edwards curve diffie-hellman key exchange implementation */
+
+struct kex_ecx_spec {
+	int key_id;
+	size_t pub_len;
+};
 
 static int
-kex_ecx_keypair(struct kex *kex)
+kexkey_ecx_keypair(struct kexkey *key)
 {
-	struct kex_ecx_spec *spec = kex->impl->spec;
+	struct kex_ecx_spec *spec = key->spec;
 	int r;
 
 	r = kex_ecx_keygen_to_sshbuf(spec->key_id, spec->pub_len,
-	    &kex->pk, &kex->client_pub);
+	    key->pk, key->client_pub);
 #ifdef DEBUG_KEXECX
-	if (r == 0) {
-		const char *msg;
-		if (kex->server)
-			msg = "server ecx public key:";
-		else
-			msg = "client ecx public key:";
-		dump_digestb(msg, kex->client_pub);
-	} else
+	if (r == 0)
+		dump_digestb("ecx public key:", key->client_pub);
+	else
 		fprintf(stderr, "ecx keypair error: %s\n", ssh_err(r));
 #endif
 
@@ -140,10 +136,10 @@ kex_ecx_keypair(struct kex *kex)
 }
 
 static int
-kex_ecx_enc(struct kex *kex, const struct sshbuf *client_blob,
+kexkey_ecx_enc(struct kexkey *key, const struct sshbuf *client_blob,
    struct sshbuf **server_blobp, struct sshbuf **shared_secretp)
 {
-	struct kex_ecx_spec *spec = kex->impl->spec;
+	struct kex_ecx_spec *spec = key->spec;
 	int r;
 
 	*server_blobp = NULL;
@@ -158,17 +154,17 @@ kex_ecx_enc(struct kex *kex, const struct sshbuf *client_blob,
 #endif
 
 	r = kex_ecx_keygen_to_sshbuf(spec->key_id, spec->pub_len,
-	    &kex->pk, server_blobp);
+	    key->pk, server_blobp);
 	if (r != 0) goto out;
 
-	r = kex_pkey_ecx_shared_secret_to_sshbuf(kex->pk, spec->key_id,
+	r = kex_pkey_ecx_shared_secret_to_sshbuf(*key->pk, spec->key_id,
 	    sshbuf_ptr(client_blob), sshbuf_len(client_blob), 0, shared_secretp);
 	if (r != 0) goto out;
 #ifdef DEBUG_KEXECX
 	dump_digestb("encoded shared secret:", *shared_secretp);
 #endif
 
- out:
+out:
 	if (r != 0) {
 		sshbuf_free(*server_blobp);
 		*server_blobp = NULL;
@@ -177,10 +173,10 @@ kex_ecx_enc(struct kex *kex, const struct sshbuf *client_blob,
 }
 
 static int
-kex_ecx_dec(struct kex *kex, const struct sshbuf *server_blob,
+kexkey_ecx_dec(struct kexkey *key, const struct sshbuf *server_blob,
     struct sshbuf **shared_secretp)
 {
-	struct kex_ecx_spec *spec = kex->impl->spec;
+	struct kex_ecx_spec *spec = key->spec;
 	int r;
 
 	*shared_secretp = NULL;
@@ -193,15 +189,42 @@ kex_ecx_dec(struct kex *kex, const struct sshbuf *server_blob,
 	dump_digestb("server ecx public key:", server_blob);
 #endif
 
-	r = kex_pkey_ecx_shared_secret_to_sshbuf(kex->pk, spec->key_id,
+	r = kex_pkey_ecx_shared_secret_to_sshbuf(*key->pk, spec->key_id,
 	    sshbuf_ptr(server_blob), sshbuf_len(server_blob), 0, shared_secretp);
 	if (r != 0) goto out;
 #ifdef DEBUG_KEXECX
 	dump_digestb("encoded shared secret:", *shared_secretp);
 #endif
 
- out:
+out:
 	return r;
+}
+
+
+static int
+kex_ecx_keypair(struct kex *kex)
+{
+	struct kexkey key = { &kex->pk, &kex->client_pub, kex->impl->spec };
+
+	return kexkey_ecx_keypair(&key);
+}
+
+static int
+kex_ecx_enc(struct kex *kex, const struct sshbuf *client_blob,
+   struct sshbuf **server_blobp, struct sshbuf **shared_secretp)
+{
+	struct kexkey key = { &kex->pk, &kex->client_pub, kex->impl->spec };
+
+	return kexkey_ecx_enc(&key, client_blob, server_blobp, shared_secretp);
+}
+
+static int
+kex_ecx_dec(struct kex *kex, const struct sshbuf *server_blob,
+    struct sshbuf **shared_secretp)
+{
+	struct kexkey key = { &kex->pk, &kex->client_pub, kex->impl->spec };
+
+	return kexkey_ecx_dec(&key, server_blob, shared_secretp);
 }
 
 
