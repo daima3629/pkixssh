@@ -1380,7 +1380,7 @@ kex_exchange_identification(struct ssh *ssh, int timeout_ms)
 }
 
 int
-kex_shared_secret_to_sshbuf(u_char *kbuf, size_t klen,
+kex_shared_secret_to_sshbuf(const u_char *kbuf, size_t klen,
     int raw, struct sshbuf **bufp
 ) {
 	struct sshbuf *buf;

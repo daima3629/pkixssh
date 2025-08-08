@@ -213,7 +213,7 @@ int	kex_c25519_shared_secret_to_sshbuf(struct kex *kex,
 EVP_PKEY*	kex_new_dh_group_bits(int min, int wantbits, int max);
 EVP_PKEY*	kex_new_dh_group(BIGNUM *modulus, BIGNUM *gen);
 
-int	kex_shared_secret_to_sshbuf(u_char *kbuf, size_t klen,
+int	kex_shared_secret_to_sshbuf(const u_char *kbuf, size_t klen,
     int raw, struct sshbuf **bufp);
 #ifdef USE_EVP_PKEY_KEYGEN
 int	kex_ecx_keygen_to_sshbuf(int key_id, size_t pub_len,
