@@ -109,6 +109,14 @@ kex_pkey_ecx_shared_secret_to_sshbuf(EVP_PKEY *pk, int key_id,
 	return r;
 }
 
+static inline int
+kex_ecx_shared_secret_to_sshbuf(EVP_PKEY *pk, int key_id,
+    const struct sshbuf *pub_blob, struct sshbuf **bufp
+) {
+	return kex_pkey_ecx_shared_secret_to_sshbuf(pk, key_id,
+	    sshbuf_ptr(pub_blob), sshbuf_len(pub_blob), 0, bufp);
+}
+
 
 /* edwards curve diffie-hellman key exchange implementation */
 
@@ -157,8 +165,8 @@ kexkey_ecx_enc(struct kexkey *key, const struct sshbuf *client_blob,
 	    key->pk, server_blobp);
 	if (r != 0) goto out;
 
-	r = kex_pkey_ecx_shared_secret_to_sshbuf(*key->pk, spec->key_id,
-	    sshbuf_ptr(client_blob), sshbuf_len(client_blob), 0, shared_secretp);
+	r = kex_ecx_shared_secret_to_sshbuf(*key->pk, spec->key_id,
+	    client_blob, shared_secretp);
 	if (r != 0) goto out;
 #ifdef DEBUG_KEXECX
 	dump_digestb("encoded shared secret:", *shared_secretp);
@@ -189,8 +197,8 @@ kexkey_ecx_dec(struct kexkey *key, const struct sshbuf *server_blob,
 	dump_digestb("server ecx public key:", server_blob);
 #endif
 
-	r = kex_pkey_ecx_shared_secret_to_sshbuf(*key->pk, spec->key_id,
-	    sshbuf_ptr(server_blob), sshbuf_len(server_blob), 0, shared_secretp);
+	r = kex_ecx_shared_secret_to_sshbuf(*key->pk, spec->key_id,
+	    server_blob, shared_secretp);
 	if (r != 0) goto out;
 #ifdef DEBUG_KEXECX
 	dump_digestb("encoded shared secret:", *shared_secretp);
