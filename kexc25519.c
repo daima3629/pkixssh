@@ -125,8 +125,8 @@ kex_c25519_shared_secret_to_sshbuf(struct kex *kex, const u_char pub[CURVE25519_
 	int r;
 
 #ifdef USE_ECDH_X25519
-	r = kex_pkey_ecx_shared_secret_to_sshbuf(kex->pk, EVP_PKEY_X25519,
-	    pub, CURVE25519_SIZE, raw, bufp);
+	r = kex_pkey_ecx_shared_secret_to_sshbuf(kex->pk, EVP_PKEY_X25519, raw,
+	    pub, CURVE25519_SIZE, bufp);
 #else
 	r = kex_c25519_shared_key_ext(kex, pub, raw, bufp);
 #endif

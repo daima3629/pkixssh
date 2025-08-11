@@ -166,7 +166,7 @@ create_peer_pkey(int ec_nid, const EC_POINT *dh_pub, EVP_PKEY **peerkeyp) {
 #endif /*def USE_EVP_PKEY_KEYGEN*/
 
 static int
-kex_pkey_ecpub_derive_shared_secret(EVP_PKEY *pk, int ec_nid,
+kex_pkey_ecpub_derive_shared_secret(EVP_PKEY *pk, int ec_nid, int raw,
     const EC_POINT *dh_pub, struct sshbuf **bufp
 ) {
 #ifdef USE_EVP_PKEY_KEYGEN
@@ -176,7 +176,7 @@ kex_pkey_ecpub_derive_shared_secret(EVP_PKEY *pk, int ec_nid,
 	r = create_peer_pkey(ec_nid, dh_pub, &peerkey);
 	if (r != 0) return r;
 
-	r = kex_pkey_derive_shared_secret(pk, peerkey, 0, bufp);
+	r = kex_pkey_derive_shared_secret(pk, peerkey, raw, bufp);
 
 	EVP_PKEY_free(peerkey);
 #else /*ndef USE_EVP_PKEY_KEYGEN*/
@@ -219,9 +219,9 @@ kex_pkey_ecpub_derive_shared_secret(EVP_PKEY *pk, int ec_nid,
 }
 
 static int
-kex_pkey_sshbuf_derive_shared_secret(EVP_PKEY *pk, int ec_nid,
-    const struct sshbuf *ec_blob, struct sshbuf **shared_secretp)
-{
+kex_pkey_sshbuf_derive_shared_secret(EVP_PKEY *pk, struct kex_ecdh_spec *spec,
+    const struct sshbuf *ec_blob, struct sshbuf **shared_secretp
+) {
 	EC_POINT *dh_pub = NULL;
 	int r;
 
@@ -234,7 +234,7 @@ kex_pkey_sshbuf_derive_shared_secret(EVP_PKEY *pk, int ec_nid,
 		goto out;
 	}
 
-	r = kex_pkey_ecpub_derive_shared_secret(pk, ec_nid,
+	r = kex_pkey_ecpub_derive_shared_secret(pk, spec->ec_nid, spec->raw,
 	    dh_pub, shared_secretp);
 
  out:
@@ -284,10 +284,6 @@ kex_ecdh_keygen_to_sshbuf(int ec_nid,
 
 /* elliptic-curve diffie-hellman key exchange implementation */
 
-struct kex_ecdh_spec {
-	int ec_nid;
-};
-
 static int
 kexkey_ecdh_keypair(struct kexkey *key)
 {
@@ -320,7 +316,7 @@ kexkey_ecdh_enc(struct kexkey *key, const struct sshbuf *client_blob,
 	r = kex_ecdh_keygen_to_sshbuf(spec->ec_nid, key->pk, server_blobp);
 	if (r != 0) goto out;
 
-	r = kex_pkey_sshbuf_derive_shared_secret(*key->pk, spec->ec_nid,
+	r = kex_pkey_sshbuf_derive_shared_secret(*key->pk, spec,
 	    client_blob, shared_secretp);
 
 out:
@@ -343,7 +339,7 @@ kexkey_ecdh_dec(struct kexkey *key, const struct sshbuf *server_blob,
 	dump_digestb("server public key ecdh:", server_blob);
 #endif
 
-	r = kex_pkey_sshbuf_derive_shared_secret(*key->pk, spec->ec_nid,
+	r = kex_pkey_sshbuf_derive_shared_secret(*key->pk, spec,
 	    server_blob, shared_secretp);
 #ifdef DEBUG_KEXECDH
 	if (r == 0)
@@ -392,7 +388,7 @@ static const struct kex_impl_funcs kex_ecdh_funcs = {
 };
 
 static struct kex_ecdh_spec kex_ecdh_p256_spec = {
-	NID_X9_62_prime256v1
+	NID_X9_62_prime256v1, 0
 };
 const struct kex_impl kex_ecdh_p256_sha256_impl = {
 	"ecdh-sha2-nistp256",
@@ -403,7 +399,7 @@ const struct kex_impl kex_ecdh_p256_sha256_impl = {
 };
 
 static struct kex_ecdh_spec kex_ecdh_p384_spec = {
-	NID_secp384r1
+	NID_secp384r1, 0
 };
 const struct kex_impl kex_ecdh_p384_sha384_impl = {
 	"ecdh-sha2-nistp384",
@@ -420,7 +416,7 @@ static int kex_ecdh_p521_enabled(void) { return 0; }
 # endif /* OPENSSL_HAS_NISTP521 */
 
 static struct kex_ecdh_spec kex_ecdh_p521_spec = {
-	NID_secp521r1
+	NID_secp521r1, 0
 };
 const struct kex_impl kex_ecdh_p521_sha512_impl = {
 	"ecdh-sha2-nistp521",

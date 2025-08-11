@@ -93,8 +93,8 @@ err:
 }
 
 int
-kex_pkey_ecx_shared_secret_to_sshbuf(EVP_PKEY *pk, int key_id,
-    const u_char *kbuf, size_t klen, int raw, struct sshbuf **bufp
+kex_pkey_ecx_shared_secret_to_sshbuf(EVP_PKEY *pk, int key_id, int raw,
+    const u_char *kbuf, size_t klen, struct sshbuf **bufp
 ) {
 	EVP_PKEY *peerkey = NULL;
 	int r;
@@ -110,20 +110,15 @@ kex_pkey_ecx_shared_secret_to_sshbuf(EVP_PKEY *pk, int key_id,
 }
 
 static inline int
-kex_ecx_shared_secret_to_sshbuf(EVP_PKEY *pk, int key_id,
+kex_ecx_shared_secret_to_sshbuf(EVP_PKEY *pk, struct kex_ecx_spec *spec,
     const struct sshbuf *pub_blob, struct sshbuf **bufp
 ) {
-	return kex_pkey_ecx_shared_secret_to_sshbuf(pk, key_id,
-	    sshbuf_ptr(pub_blob), sshbuf_len(pub_blob), 0, bufp);
+	return kex_pkey_ecx_shared_secret_to_sshbuf(pk, spec->key_id, spec->raw,
+	    sshbuf_ptr(pub_blob), sshbuf_len(pub_blob), bufp);
 }
 
 
 /* edwards curve diffie-hellman key exchange implementation */
-
-struct kex_ecx_spec {
-	int key_id;
-	size_t pub_len;
-};
 
 static int
 kexkey_ecx_keypair(struct kexkey *key)
@@ -165,7 +160,7 @@ kexkey_ecx_enc(struct kexkey *key, const struct sshbuf *client_blob,
 	    key->pk, server_blobp);
 	if (r != 0) goto out;
 
-	r = kex_ecx_shared_secret_to_sshbuf(*key->pk, spec->key_id,
+	r = kex_ecx_shared_secret_to_sshbuf(*key->pk, spec,
 	    client_blob, shared_secretp);
 	if (r != 0) goto out;
 #ifdef DEBUG_KEXECX
@@ -197,7 +192,7 @@ kexkey_ecx_dec(struct kexkey *key, const struct sshbuf *server_blob,
 	dump_digestb("server ecx public key:", server_blob);
 #endif
 
-	r = kex_ecx_shared_secret_to_sshbuf(*key->pk, spec->key_id,
+	r = kex_ecx_shared_secret_to_sshbuf(*key->pk, spec,
 	    server_blob, shared_secretp);
 	if (r != 0) goto out;
 #ifdef DEBUG_KEXECX
@@ -251,7 +246,7 @@ static int kex_c25519_enabled(void) {
 }
 
 static struct kex_ecx_spec kex_c25519_spec = {
-	EVP_PKEY_X25519, 32
+	EVP_PKEY_X25519, 32, 0
 };
 const struct kex_impl kex_c25519_sha256_impl = {
 	"curve25519-sha256",
@@ -275,7 +270,7 @@ static int kex_c448_enabled(void) {
 }
 
 static struct kex_ecx_spec kex_c448_spec = {
-	EVP_PKEY_X448, 56
+	EVP_PKEY_X448, 56, 0
 };
 const struct kex_impl kex_c448_sha512_impl = {
 	"curve448-sha512",
