@@ -177,9 +177,11 @@ void
 kex_tests(void)
 {
 #ifdef HAVE_EVP_SHA256
-	do_kex("curve25519-sha256@libssh.org");
+	do_kex("curve25519-sha256");
 #endif /*def HAVE_EVP_SHA256*/
-#ifdef WITH_OPENSSL
+#ifdef USE_ECDH_X448
+	do_kex("curve448-sha512");
+#endif
 #ifdef OPENSSL_HAS_ECC
 	do_kex("ecdh-sha2-nistp256");
 	do_kex("ecdh-sha2-nistp384");
@@ -187,9 +189,8 @@ kex_tests(void)
 	do_kex("ecdh-sha2-nistp521");
 #endif
 #endif /* OPENSSL_HAS_ECC */
-#endif /* WITH_OPENSSL */
 #ifdef ENABLE_KEX_SNTRUP761X25519
-	do_kex("sntrup761x25519-sha512@openssh.com");
+	do_kex("sntrup761x25519-sha512");
 #endif /*def ENABLE_KEX_SNTRUP761X25519*/
 #ifdef ENABLE_KEX_MLKEM768X25519
 	do_kex("mlkem768x25519-sha256");
