@@ -34,7 +34,7 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: ssh_config.5,v 1.414 2025/07/23 05:07:19 djm Exp $
+.\" $OpenBSD: ssh_config.5,v 1.418 2025/08/11 10:55:38 djm Exp $
 .\" Implement .Dd with the Mdocdate RCS keyword
 .rn Dd xD
 .de Dd
@@ -43,7 +43,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: July 23 2025 $
+.Dd $Mdocdate: August 11 2025 $
 .Dt SSH_CONFIG 5
 .Os
 .Sh NAME
@@ -1335,11 +1335,11 @@ If one argument is specified, it is used as the packet class unconditionally.
 If two values are specified, the first is automatically selected for
 interactive sessions and the second for non-interactive sessions.
 The default is
-.Cm af21
-(Low-Latency Data)
+.Cm ef
+(Expedited Forwarding)
 for interactive sessions and
-.Cm cs1
-(Lower Effort)
+.Cm none
+(the operating system default)
 for non-interactive sessions.
 .It Cm KbdInteractiveAuthentication
 Specifies whether to use keyboard-interactive authentication.
