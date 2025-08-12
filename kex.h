@@ -1,4 +1,4 @@
-/* $OpenBSD: kex.h,v 1.126 2024/09/02 12:13:56 djm Exp $ */
+/* $OpenBSD: kex.h,v 1.127 2025/08/11 10:55:38 djm Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2014-2025 Roumen Petrov.  All rights reserved.
@@ -149,8 +149,6 @@ struct kex_impl {
 
 struct kexkey {
 	EVP_PKEY **pk;
-	struct sshbuf **client_pub;
-
 	void *spec;
 };
 
