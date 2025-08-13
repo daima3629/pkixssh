@@ -1902,6 +1902,11 @@ static const struct {
 	int value;
 } ipqos[] = {
 	{ "none", INT_MAX },		/* can't use 0 here; that's CS0 */
+	/* obsolete IPv4 type-of-service */
+	{ "lowdelay", INT_MAX /*IPTOS_LOWDELAY*/ },
+	{ "throughput", INT_MAX /*IPTOS_THROUGHPUT*/ },
+	{ "reliability", INT_MAX /*IPTOS_RELIABILITY*/ },
+	/* Differentiated Services Field Codepoint */
 	{ "af11", IPTOS_DSCP_AF11 },
 	{ "af12", IPTOS_DSCP_AF12 },
 	{ "af13", IPTOS_DSCP_AF13 },
@@ -1924,9 +1929,6 @@ static const struct {
 	{ "cs7", IPTOS_DSCP_CS7 },
 	{ "ef", IPTOS_DSCP_EF },
 	{ "le", IPTOS_DSCP_LE },
-	{ "lowdelay", IPTOS_LOWDELAY },
-	{ "throughput", IPTOS_THROUGHPUT },
-	{ "reliability", IPTOS_RELIABILITY },
 	{ NULL, -1 }
 };
 

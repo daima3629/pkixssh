@@ -1015,7 +1015,9 @@ directive may appear inside a
 block
 to perform conditional inclusion.
 .It Cm IPQoS
-Specifies the IPv4 type-of-service or DSCP class for the connection.
+Specifies the
+.Em Differentiated Services Field Codepoint Pq DSCP
+value for the connection.
 Accepted values are
 .Cm af11 ,
 .Cm af12 ,
@@ -1039,9 +1041,6 @@ Accepted values are
 .Cm cs7 ,
 .Cm ef ,
 .Cm le ,
-.Cm lowdelay ,
-.Cm throughput ,
-.Cm reliability ,
 a numeric value, or
 .Cm none
 to use the operating system default.
@@ -1056,6 +1055,13 @@ for interactive sessions and
 .Cm none
 (the operating system default)
 for non-interactive sessions.
+.Pp
+Note support for IPv4 type-of-service values of
+.Cm lowdelay ,
+.Cm throughput ,
+or
+.Cm reliability
+is removed after 16.2.1 release and system default is used instead.
 .It Cm KbdInteractiveAuthentication
 Specifies whether to allow keyboard-interactive authentication.
 All authentication styles from
