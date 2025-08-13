@@ -62,6 +62,9 @@ extern const struct kex_impl kex_kem_sntrup761x25519_sha512_impl;
 extern const struct kex_impl kex_kem_sntrup761x25519_sha512_impl_ext;
 /* kexmlkem768x25519.c */
 extern const struct kex_impl kex_kem_mlkem768x25519_sha256_impl;
+/* kexkem.c */
+extern const struct kex_impl kex_mlkem768_sha256_testimpl;
+extern const struct kex_impl kex_mlkem1024_sha384_testimpl;
 
 static const struct kex_impl* const kex_impl_list[] = {
 	&kex_dh_grp1_sha1_impl,
@@ -82,6 +85,8 @@ static const struct kex_impl* const kex_impl_list[] = {
 	&kex_kem_sntrup761x25519_sha512_impl,
 	&kex_kem_sntrup761x25519_sha512_impl_ext,
 	&kex_kem_mlkem768x25519_sha256_impl,
+	&kex_mlkem768_sha256_testimpl,
+	&kex_mlkem1024_sha384_testimpl,
 	NULL
 };
 

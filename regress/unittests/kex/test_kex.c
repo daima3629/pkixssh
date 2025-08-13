@@ -173,6 +173,11 @@ do_kex(char *kex)
 #endif /*def HAVE_EVP_SHA256*/
 }
 
+#ifdef ENABLE_KEM_PROVIDERS
+extern const struct kex_impl kex_mlkem768_sha256_testimpl;
+extern const struct kex_impl kex_mlkem1024_sha384_testimpl;
+#endif
+
 void
 kex_tests(void)
 {
@@ -195,6 +200,12 @@ kex_tests(void)
 #ifdef ENABLE_KEX_MLKEM768X25519
 	do_kex("mlkem768x25519-sha256");
 #endif /*def ENABLE_KEX_MLKEM768X25519*/
+#ifdef ENABLE_KEM_PROVIDERS
+	if (kex_mlkem768_sha256_testimpl.enabled())
+	do_kex("mlkem768-sha256");
+	if (kex_mlkem1024_sha384_testimpl.enabled())
+	do_kex("mlkem1024-sha384");
+#endif /*def ENABLE_KEM_PROVIDERS*/
 #ifdef ENABLE_KEX_DH
 #ifdef HAVE_EVP_SHA256
 	do_kex("diffie-hellman-group-exchange-sha256");

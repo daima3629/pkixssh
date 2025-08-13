@@ -120,7 +120,8 @@ struct kex {
 	int	(*xsign)(struct ssh *ssh, ssh_sign_ctx *ctx, struct sshkey *pub,
 	    u_char **sigp, size_t *lenp, const u_char *data, size_t datalen);
 	/* kex specific state */
-	EVP_PKEY	*pk;
+	EVP_PKEY	*pk;		/* traditional */
+	EVP_PKEY	*pkem;		/* post-quantum KEM */
 	u_int	min, max, nbits;	/* GEX */
 #ifndef USE_ECDH_X25519
 	u_char c25519_key[CURVE25519_SIZE];
@@ -161,6 +162,13 @@ struct kex_ecx_spec {
 	int key_id;
 	size_t pub_len;
 	int raw;
+};
+
+struct kex_kem_spec {
+	const char *name;
+	size_t pub_len;
+	size_t cipher_len;
+	size_t secret_len;
 };
 
 const struct kex_impl

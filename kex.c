@@ -632,7 +632,9 @@ kex_reset_crypto_keys(struct kex *kex) {
 #ifdef WITH_OPENSSL
 	EVP_PKEY_free(kex->pk);
 	kex->pk = NULL;
-#
+	EVP_PKEY_free(kex->pkem);
+	kex->pkem = NULL;
+#else
 	UNUSED(kex);
 #endif
 }
