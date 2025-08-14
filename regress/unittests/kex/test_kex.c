@@ -173,7 +173,13 @@ do_kex(char *kex)
 #endif /*def HAVE_EVP_SHA256*/
 }
 
+#ifdef ENABLE_KEX_MLKEM768X25519
+extern const struct kex_impl kex_kem_mlkem768x25519_sha256_impl;
+#endif
 #ifdef ENABLE_KEM_PROVIDERS
+extern const struct kex_impl kex_pkem_mlkem768nistp256_sha256_impl;
+extern const struct kex_impl kex_pkem_mlkem1024nistp384_sha384_impl;
+extern const struct kex_impl kex_pkem_mlkem768x25519_sha256_impl;
 extern const struct kex_impl kex_mlkem768_sha256_testimpl;
 extern const struct kex_impl kex_mlkem1024_sha384_testimpl;
 #endif
@@ -198,9 +204,16 @@ kex_tests(void)
 	do_kex("sntrup761x25519-sha512");
 #endif /*def ENABLE_KEX_SNTRUP761X25519*/
 #ifdef ENABLE_KEX_MLKEM768X25519
+	if (kex_kem_mlkem768x25519_sha256_impl.enabled())
 	do_kex("mlkem768x25519-sha256");
 #endif /*def ENABLE_KEX_MLKEM768X25519*/
 #ifdef ENABLE_KEM_PROVIDERS
+	if (kex_pkem_mlkem768nistp256_sha256_impl.enabled())
+	do_kex("mlkem768nistp256-sha256");
+	if (kex_pkem_mlkem1024nistp384_sha384_impl.enabled())
+	do_kex("mlkem1024nistp384-sha384");
+	if (kex_pkem_mlkem768x25519_sha256_impl.enabled())
+	do_kex("mlkem768x25519-sha256");
 	if (kex_mlkem768_sha256_testimpl.enabled())
 	do_kex("mlkem768-sha256");
 	if (kex_mlkem1024_sha384_testimpl.enabled())

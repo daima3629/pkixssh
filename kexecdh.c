@@ -247,8 +247,6 @@ kex_ecdh_to_sshbuf(EVP_PKEY *pk, struct sshbuf **bufp) {
 	struct sshbuf *buf;
 	int r;
 
-	*bufp = NULL;
-
 #ifdef DEBUG_KEXECDH
 	fputs("ecdh private key:\n", stderr);
 	ssh_EVP_PKEY_print_private_fp(stderr, pk);
@@ -260,8 +258,11 @@ kex_ecdh_to_sshbuf(EVP_PKEY *pk, struct sshbuf **bufp) {
 	    (r = sshbuf_get_u32(buf, NULL)) != 0)
 		goto out;
 
-	*bufp = buf;
-	buf = NULL;
+	if (*bufp == NULL) {
+		*bufp = buf;
+		buf = NULL;
+	} else
+		r = sshbuf_putb(*bufp, buf);
 
  out:
 	sshbuf_free(buf);

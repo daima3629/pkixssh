@@ -39,6 +39,16 @@
 #else
 # define KEX_MLKEM768X25519
 #endif
+#ifdef ENABLE_KEM_PROVIDERS
+# undef KEX_MLKEM768X25519
+# define KEX_MLKEM768X25519
+# define KEX_PKEM	\
+	"mlkem768nistp256-sha256," \
+	"mlkem1024nistp384-sha384," \
+	"mlkem768x25519-sha256,"
+#else
+# define KEX_PKEM
+#endif
 #if 0
 /* OpenSSH EtM modes are subject of prefix truncation i.e.,
  * "Terrapin Attack: Breaking SSH Channel Integrity By Sequence Number Manipulation".
@@ -47,6 +57,7 @@
 #endif
 
 #define KEX_SERVER_KEX \
+	KEX_PKEM \
 	"curve448-sha512," \
 	"curve25519-sha256," \
 	"curve25519-sha256@libssh.org," \

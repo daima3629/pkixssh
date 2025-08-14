@@ -125,6 +125,9 @@ kex_kem_mlkem768x25519_keypair(struct kex *kex)
 
 	r = kex_c25519_keygen_to_sshbuf(kex, &buf);
 	if (r != 0) goto out;
+#ifdef DEBUG_KEXKEM
+	dump_digestb("client public keypair mlkem768+c25519:", buf);
+#endif
 
 	/* success */
 	kex->client_pub = buf;
@@ -308,7 +311,15 @@ kex_kem_mlkem768x25519_dec(struct kex *kex,
 	return r;
 }
 
+#ifdef ENABLE_KEM_PROVIDERS
+extern const struct kex_impl kex_pkem_mlkem768x25519_sha256_impl;
+#endif
+
 static int kex_kem_mlkem768x25519_enabled(void) {
+#ifdef ENABLE_KEM_PROVIDERS
+	if (kex_pkem_mlkem768x25519_sha256_impl.enabled())
+		return 0;
+#endif
 #ifdef OPENSSL_FIPS
 	if (FIPS_mode()) return 0;
 #endif
