@@ -3516,6 +3516,7 @@ AC_SUBST([USE_OPENSSL_STORE2])
 AC_CHECK_FUNCS([ \
   BN_check_prime \
   ERR_get_error_all \
+  EVP_KEM_fetch \
   EVP_KEYMGMT_get0_provider \
   EVP_MD_get_flags \
   EVP_PKEY_eq \

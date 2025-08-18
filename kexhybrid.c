@@ -30,7 +30,7 @@
 #include "ssherr.h"
 #include "log.h"
 
-/* see kexkem.c */
+/* see sshkey-crypto.c */
 extern OSSL_LIB_CTX *pkixssh_libctx;
 extern char *pkixssh_propq;
 
@@ -344,11 +344,27 @@ out:
 }
 
 
-static int kex_pkem_enabled(void) {
-	/* TODO: dynamic check */
-	int flag = getenv("USE_KEM_PROVIDER") != NULL ? 1 : 0;
-	return flag;
+static inline int
+kex_pkem_enabled(const char *algorithm, int *flag) {
+	if (*flag >= 0) return *flag;
+	*flag = ssh_kem_allowed(algorithm);
+	return *flag;
 }
+
+static const char KEX_SSH_MLKEM768[] = "MLKEM768";
+static int
+kex_pkem_mlkem768_enabled(void) {
+	static int flag_pkem_mlkem768 = -1;
+	return kex_pkem_enabled(KEX_SSH_MLKEM768, &flag_pkem_mlkem768);
+}
+
+static const char KEX_SSH_MLKEM1024[] = "MLKEM1024";
+static int
+kex_pkem_mlkem1024_enabled(void) {
+	static int flag_pkem_mlkem1024 = -1;
+	return kex_pkem_enabled(KEX_SSH_MLKEM1024, &flag_pkem_mlkem1024);
+}
+
 
 static const struct kex_impl_funcs kex_pkem_funcs = {
 	kex_init_gen,
@@ -359,7 +375,7 @@ static const struct kex_impl_funcs kex_pkem_funcs = {
 
 
 static struct kex_pkem_spec kex_pkem_mlkem768nistp256_spec = {
-	{ "MLKEM768", 1184, 1088, 32},
+	{ KEX_SSH_MLKEM768, 1184, 1088, 32},
 	{ NID_X9_62_prime256v1, 1 },
 	{ -1, 0, 0 },
 	65, 65, 32
@@ -367,13 +383,13 @@ static struct kex_pkem_spec kex_pkem_mlkem768nistp256_spec = {
 const struct kex_impl kex_pkem_mlkem768nistp256_sha256_impl = {
 	"mlkem768nistp256-sha256",
 	SSH_DIGEST_SHA256,
-	kex_pkem_enabled,
+	kex_pkem_mlkem768_enabled,
 	&kex_pkem_funcs,
 	&kex_pkem_mlkem768nistp256_spec
 };
 
 static struct kex_pkem_spec kex_pkem_mlkem1024nistp384_spec = {
-	{ "MLKEM1024", 1568, 1568, 32},
+	{ KEX_SSH_MLKEM1024, 1568, 1568, 32},
 	{ NID_secp384r1, 1 },
 	{ -1, 0, 0 },
 	97, 97, 48
@@ -381,13 +397,13 @@ static struct kex_pkem_spec kex_pkem_mlkem1024nistp384_spec = {
 const struct kex_impl kex_pkem_mlkem1024nistp384_sha384_impl = {
 	"mlkem1024nistp384-sha384",
 	SSH_DIGEST_SHA384,
-	kex_pkem_enabled,
+	kex_pkem_mlkem1024_enabled,
 	&kex_pkem_funcs,
 	&kex_pkem_mlkem1024nistp384_spec
 };
 
 static struct kex_pkem_spec kex_pkem_mlkem768x25519_spec = {
-	{ "MLKEM768", 1184, 1088, 32},
+	{ KEX_SSH_MLKEM768, 1184, 1088, 32},
 	{ -1, 0 },
 	{ EVP_PKEY_X25519, 32, 1 },
 	32, 32, 32
@@ -396,7 +412,7 @@ static struct kex_pkem_spec kex_pkem_mlkem768x25519_spec = {
 const struct kex_impl kex_pkem_mlkem768x25519_sha256_impl = {
 	"mlkem768x25519-sha256",
 	SSH_DIGEST_SHA256,
-	kex_pkem_enabled,
+	kex_pkem_mlkem768_enabled,
 	&kex_pkem_funcs,
 	&kex_pkem_mlkem768x25519_spec
 };

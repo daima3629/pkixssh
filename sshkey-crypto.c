@@ -40,6 +40,13 @@
 #include "log.h"
 
 
+#ifdef HAVE_EVP_KEM_FETCH
+/* TODO: move to cryptographic library initialisation */
+OSSL_LIB_CTX *pkixssh_libctx = NULL;
+char *pkixssh_propq = NULL;
+#endif
+
+
 #if 1
 /* compare "non-exportable" keys with mixed management
  * (OpenSSL issue #26394)
@@ -1144,10 +1151,28 @@ ssh_pkey_allowed(int base_id) {
 			return 0;
 	}
 }
+#else
+	UNUSED(base_id);
 #endif
+#else
+	UNUSED(base_id);
 #endif /*def OPENSSL_FIPS*/
 	return 1;
 }
+
+#ifdef HAVE_EVP_KEM_FETCH
+int
+ssh_kem_allowed(const char *algorithm) {
+	int ret;
+	EVP_KEM *kem;
+
+	kem = EVP_KEM_fetch(pkixssh_libctx, algorithm, pkixssh_propq);
+	ret = (kem != NULL) ? 1 : 0;
+	EVP_KEM_free(kem);
+
+	return ret;
+}
+#endif
 
 int
 ssh_pkey_sign(

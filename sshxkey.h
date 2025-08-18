@@ -1,7 +1,7 @@
 #ifndef SSHXKEY_H
 #define SSHXKEY_H
 /*
- * Copyright (c) 2017-2022 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2017-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -88,6 +88,9 @@ ssh_evp_md*	ssh_evp_md_find(int id);
 void	ssh_xkalg_dgst_compat(ssh_evp_md *dest, const ssh_evp_md *src, ssh_compat *compat);
 
 int	ssh_pkey_allowed(int base_id);
+#ifdef HAVE_EVP_KEM_FETCH
+int	ssh_kem_allowed(const char *algorithm);
+#endif
 
 int	ssh_pkey_sign(const ssh_evp_md *dgst, EVP_PKEY *privkey,
 	    u_char *sig, size_t *siglen, const u_char *data, size_t datalen);

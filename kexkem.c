@@ -31,9 +31,9 @@
 #include "ssherr.h"
 #include "log.h"
 
-/* TODO: move to cryptographic library initialisation */
-OSSL_LIB_CTX *pkixssh_libctx = NULL;
-char *pkixssh_propq = NULL;
+/* see sshkey-crypto.c */
+extern OSSL_LIB_CTX *pkixssh_libctx;
+extern char *pkixssh_propq;
 
 /* generate key and store public part to buffer */
 
