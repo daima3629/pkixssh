@@ -1,12 +1,12 @@
-#	$OpenBSD: integrity.sh,v 1.24 2020/01/21 08:06:27 djm Exp $
+#	$OpenBSD: integrity.sh,v 1.25 2023/03/01 09:29:32 dtucker Exp $
 #	Placed in the Public Domain.
 
 tid="integrity"
 cp $OBJ/sshd_proxy $OBJ/sshd_proxy_bak
 
-# start at byte 2900 (i.e. after kex) and corrupt at different offsets
+# start at byte 2950 (i.e. after kex) and corrupt at different offsets
 tries=10
-startoffset=2900
+startoffset=2950
 macs=`${SSH} -Q mac`
 # The following are not MACs, but ciphers with integrated integrity. They are
 # handled specially below.
