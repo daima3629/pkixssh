@@ -97,15 +97,7 @@ as described in:
 
 https://datatracker.ietf.org/doc/draft-ietf-sshm-chacha20-poly1305/
 
-1.8 transport: curve25519-sha256@libssh.org key exchange algorithm
-
-OpenSSH supports the use of ECDH in Curve25519 for key exchange as
-described at:
-http://git.libssh.org/users/aris/libssh.git/plain/doc/curve25519-sha256@libssh.org.txt?h=curve25519
-
-This is identical to curve25519-sha256 as later published in RFC8731.
-
-1.9 transport: strict key exchange extension
+1.8 transport: strict key exchange extension
 
 OpenSSH supports a number of transport-layer hardening measures under
 a "strict KEX" feature. This feature is signalled similarly to the
