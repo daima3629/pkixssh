@@ -3,10 +3,13 @@
 
 tid="integrity"
 cp $OBJ/sshd_proxy $OBJ/sshd_proxy_bak
+if config_defined HAVE_EVP_SHA256 ; then
+	echo "KexAlgorithms curve25519-sha256" >> $OBJ/ssh_proxy
+fi
 
-# start at byte 2950 (i.e. after kex) and corrupt at different offsets
+# start at byte 2900 (i.e. after kex) and corrupt at different offsets
 tries=10
-startoffset=2950
+startoffset=2900
 macs=`${SSH} -Q mac`
 # The following are not MACs, but ciphers with integrated integrity. They are
 # handled specially below.
