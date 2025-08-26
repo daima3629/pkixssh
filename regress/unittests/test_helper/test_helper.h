@@ -288,6 +288,26 @@ void assert_u64(const char *file, int line,
 #define ASSERT_U64_GE(a1, a2) \
 	assert_u64(__FILE__, __LINE__, #a1, #a2, a1, a2, TEST_GE)
 
+/* Benchmarking support */
+#define BENCH_START(name)	\
+	do { \
+		bench_start(__FILE__, __LINE__, name); \
+		while (!bench_done()) { \
+			bench_case_start(); \
+			do {
+#define BENCH_FINISH(unit) \
+			} while (0); \
+			bench_case_finish(); \
+		} \
+		bench_finish(__FILE__, __LINE__, unit); \
+	} while (0)
+
+void bench_start(const char *file, int line, const char *name);
+void bench_case_start(void);
+void bench_case_finish(void);
+void bench_finish(const char *file, int line, const char *unit);
+int bench_done(void);
+
 /* Fuzzing support */
 
 struct fuzz;

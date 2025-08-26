@@ -47,6 +47,8 @@ LIBWTMPDB=@LIBWTMPDB@
 LIBOCSP=@LIBOCSP@
 LIBLDAP=@LDAP_LDFLAGS@ @LDAP_LIBS@
 FIPSLIBS=@FIPSLIBS@
+TESTLIBS=@TESTLIBS@
+
 AR=@AR@
 AWK=@AWK@
 RANLIB=@RANLIB@
@@ -534,7 +536,7 @@ regress/mkdtemp$(EXEEXT): regress/mkdtemp.o $(REGRESSDEPLIBS)
 UNITTESTSDEPLIBS = regress/unittests/test_helper/libtest_helper.a \
 	$(REGRESSDEPLIBS)
 UNITTESTSLIBS = regress/unittests/test_helper/libtest_helper.a \
-	$(REGRESSLIBS)
+	$(REGRESSLIBS) $(TESTLIBS)
 
 UNITTESTS_TEST_HELPER_OBJS=\
 	regress/unittests/test_helper/test_helper.o \
