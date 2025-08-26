@@ -46,10 +46,18 @@
 # "Rawhide" ....
 %endif
 
+# reference /usr/lib/rpm/macros.d/macros.dist
+#   or /etc/rpm/macros.dist (obsolete)
+# some cross-verdor compatibility version scheme
+%if !0%{?rhel}
+%if 0%{?rhel_version} >= 800
+%global rhel %{expr:%{?rhel_version}/100}
+%endif
+%endif
 
 # Disable non-working configurations
-%if 0%{?centos_version} >= 800
-# No more openldap server package on CentOS 8
+%if 0%{?rhel} >= 8
+# No more openldap server package on RHEL 8
 %undefine enable_ldap_test
 %global enable_ldap_test 0
 %endif
@@ -58,9 +66,17 @@
 %undefine enable_ssl_engine
 %global enable_ssl_engine 0
 %endif
+%if 0%{?rhel} >= 10
+%undefine enable_ssl_engine
+%global enable_ssl_engine 0
+%endif
 
 %if 0%{?fedora} >= 36
 # OpenSSL 3+ FIPS model is not supported yet
+%undefine enable_openssl_fips
+%global enable_openssl_fips 0
+%endif
+%if 0%{?rhel} >= 9
 %undefine enable_openssl_fips
 %global enable_openssl_fips 0
 %endif
@@ -73,7 +89,7 @@
 %undefine use_fipscheck
 %global use_fipscheck 0
 %endif
-%if 0%{?rhel_version} && 0%{?rhel_version} > 500
+%if 0%{?rhel_version} > 500
 %undefine use_fipscheck
 %global use_fipscheck 0
 %endif
