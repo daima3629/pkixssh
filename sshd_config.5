@@ -1120,64 +1120,28 @@ If the specified list begins with a
 character, then the specified algorithms will be placed at the head of the
 default set.
 .Pp
-The supported algorithms are:
-.Pp
-.Bl -item -compact -offset indent
-.It
-curve25519-sha256
-.It
-curve25519-sha256@libssh.org
-.It
-curve448-sha512
-.It
-diffie-hellman-group1-sha1
-.It
-diffie-hellman-group14-sha1
-.It
-diffie-hellman-group14-sha256
-.It
-diffie-hellman-group15-sha512
-.It
-diffie-hellman-group16-sha512
-.It
-diffie-hellman-group17-sha512
-.It
-diffie-hellman-group18-sha512
-.It
-diffie-hellman-group-exchange-sha1
-.It
-diffie-hellman-group-exchange-sha256
-.It
-ecdh-sha2-nistp256
-.It
-ecdh-sha2-nistp384
-.It
-ecdh-sha2-nistp521
-.It
-sntrup761x25519-sha512 (if build)
-.It
-sntrup761x25519-sha512@openssh.com (if build)
-.It
-mlkem768x25519-sha256 (if build)
-.El
-.Pp
 The default is:
 .Bd -literal -offset indent
-curve25519-sha256,curve25519-sha256@libssh.org,
-curve448-sha512,
-ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,
-diffie-hellman-group-exchange-sha256,
-diffie-hellman-group16-sha512,
-diffie-hellman-group18-sha512,
-diffie-hellman-group14-sha256,
-sntrup761x25519-sha512,sntrup761x25519-sha512@openssh.com,
+mlkem768nistp256-sha256,
+mlkem1024nistp384-sha384,
 mlkem768x25519-sha256,
-diffie-hellman-group15-sha512,
+curve448-sha512,
+curve25519-sha256,curve25519-sha256@libssh.org,
+ecdh-sha2-nistp256,
+ecdh-sha2-nistp384,
+ecdh-sha2-nistp521,
+diffie-hellman-group-exchange-sha256,
+diffie-hellman-group18-sha512,
+diffie-hellman-group16-sha512,
+diffie-hellman-group14-sha256,
 diffie-hellman-group17-sha512,
-diffie-hellman-group14-sha1
+diffie-hellman-group15-sha512,
+diffie-hellman-group14-sha1,
+sntrup761x25519-sha512,sntrup761x25519-sha512@openssh.com
 .Ed
 .Pp
-The list of supported key exchange algorithms may also be obtained using
+The list of supported key exchange algorithms depends on cryptographic
+library, build flags and may also be obtained using
 .Qq ssh -Q kex .
 .It Cm KeyAllowSelfIssued
 Specifies whether only encoded public key or X.509 certificate listed in

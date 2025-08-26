@@ -26,13 +26,6 @@
 
 #include "includes.h"
 
-#ifdef ENABLE_KEX_SNTRUP761X25519
-# define KEX_SNTRUP761X25519	\
-	"sntrup761x25519-sha512," \
-	"sntrup761x25519-sha512@openssh.com,"
-#else
-# define KEX_SNTRUP761X25519
-#endif
 #ifdef ENABLE_KEX_MLKEM768X25519
 # define KEX_MLKEM768X25519	\
 	"mlkem768x25519-sha256,"
@@ -49,15 +42,18 @@
 #else
 # define KEX_PKEM
 #endif
-#if 0
-/* OpenSSH EtM modes are subject of prefix truncation i.e.,
- * "Terrapin Attack: Breaking SSH Channel Integrity By Sequence Number Manipulation".
- */
-# define WITHOUT_ETM_FUNCTIONALITY
+
+#ifdef ENABLE_KEX_SNTRUP761X25519
+# define KEX_SNTRUP761X25519	\
+	",sntrup761x25519-sha512" \
+	",sntrup761x25519-sha512@openssh.com"
+#else
+# define KEX_SNTRUP761X25519
 #endif
 
 #define KEX_SERVER_KEX \
 	KEX_PKEM \
+	KEX_MLKEM768X25519 \
 	"curve448-sha512," \
 	"curve25519-sha256," \
 	"curve25519-sha256@libssh.org," \
@@ -70,9 +66,8 @@
 	"diffie-hellman-group14-sha256," \
 	"diffie-hellman-group17-sha512," \
 	"diffie-hellman-group15-sha512," \
-	KEX_MLKEM768X25519 \
-	KEX_SNTRUP761X25519 \
-	"diffie-hellman-group14-sha1"
+	"diffie-hellman-group14-sha1," \
+	KEX_SNTRUP761X25519
 
 #define KEX_CLIENT_KEX KEX_SERVER_KEX
 
@@ -91,6 +86,13 @@
 	"rsa-sha2-512," \
 	"ssh-rsa"
 
+
+#if 0
+/* OpenSSH EtM modes are subject of prefix truncation i.e.,
+ * "Terrapin Attack: Breaking SSH Channel Integrity By Sequence Number Manipulation".
+ */
+# define WITHOUT_ETM_FUNCTIONALITY
+#endif
 
 #ifdef WITHOUT_ETM_FUNCTIONALITY
 # define KEX_CHACHA20_POLY1305
