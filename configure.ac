@@ -2890,9 +2890,15 @@ AC_ARG_WITH([sshca-dir],
 AC_DEFINE_UNQUOTED([SSHCADIR], ["$sshcadir"], [Specify location of ssh CA root])
 AC_SUBST([sshcadir])
 
-# TODO: deprecation reserved for future
-AC_DEFINE([ENABLE_KEX_DH], [1],
-	[Define to 1 if you want to enable diffie-hellman key exchange])
+# disable Diffie-Hellman key exchange
+ssh_kex_dh=:
+AC_ARG_ENABLE([kex_dh],
+	[AS_HELP_STRING([--disable-kex-dh], [Disable Diffie-Hellman key exchange algorithms])],
+	[AS_IF([test "x$enableval" = "xno"], [ssh_kex_dh=false])])
+AS_IF([$ssh_kex_dh], [
+	AC_DEFINE([ENABLE_KEX_DH], [1],
+		[Define to 1 if you want to enable diffie-hellman key exchange])
+])
 
 # enable DSA keys
 ssh_dsa=false
@@ -3427,6 +3433,10 @@ if test "x$openssl" = "xyes" ; then
 	)
 fi
 
+# Diffie-Hellman key exchange is the only one that uses SHA1.
+AS_IF([! $ssh_kex_dh && test "x$ac_cv_func_EVP_sha256" != "xyes"], [
+	AC_MSG_ERROR([Diffie-Hellman is disabled but crypgographic library lack SHA-256 support])
+])
 
 # check for openssl 0.9.7+ functions ...
 dnl EVP_MD_CTX_init is macro in 1.1.0+

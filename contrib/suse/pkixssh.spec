@@ -28,6 +28,9 @@
 # Do we want to enable Kerberos 5 support? (1=yes 0=no)
 %global enable_kerberos5 1
 
+# Do we want to enable Diffie-Hellman key exchange? (1=yes 0=no)
+%global enable_kex_dh 1
+
 # Do we want to enable DSA publickey algorithms? (1=yes 0=no)
 %global enable_dsa 0
 
@@ -246,6 +249,11 @@ two untrusted hosts over an insecure network.
   --with-kerberos5 \
 %else
   --without-kerberos5 \
+%endif
+%if %{enable_kex_dh}
+  --enable-kex-dh \
+%else
+  --disable-kex-dh \
 %endif
 %if %{enable_dsa}
   --enable-dsa \
