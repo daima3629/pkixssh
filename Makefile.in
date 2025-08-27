@@ -688,10 +688,12 @@ check:
 tests: check
 
 unit: regress-unit-binaries
+	TEST_SSH_MODULI_FILE="$(abs_srcdir)/moduli"; \
 	cd $(srcdir)/regress || exit $$?; \
 	$(MAKE) \
 		.CURDIR="$(abs_srcdir)/regress" \
 		.OBJDIR="$(BUILDDIR)/regress" \
+		TEST_SSH_MODULI_FILE="$${TEST_SSH_MODULI_FILE}" \
 		$@ && echo '*** test "$@" pass'
 
 check-core: regress-unit-binaries

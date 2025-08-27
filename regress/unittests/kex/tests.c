@@ -38,5 +38,15 @@ tests(void)
 void
 benchmarks(void)
 {
-	printf("no benchmarks\n");
+	ssh_crypto_init();
+
+#ifdef ENABLE_KEX_DH
+{	char *name = getenv("TEST_SSH_MODULI_FILE");
+	if (name != NULL)
+		dh_set_moduli_file(name);
+}
+#endif
+	kex_tests();
+
+	ssh_crypto_fini();
 }

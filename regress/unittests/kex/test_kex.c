@@ -20,6 +20,11 @@
 void kex_tests(void);
 static int do_debug = 0;
 
+extern int benchmark;
+static char *bench_cipher = NULL;
+static char *bench_mac = NULL;
+static struct sshkey *bench_key = NULL;
+
 static int
 do_send_and_receive(struct ssh *from, struct ssh *to)
 {
@@ -78,9 +83,13 @@ do_kex_with_key(char *kex, int keytype, int bits)
 	char *myproposal[PROPOSAL_MAX] = { KEX_CLIENT };
 	char *keyname = NULL;
 
-	TEST_START("sshkey_generate");
-	ASSERT_INT_EQ(sshkey_generate(keytype, bits, &private), 0);
-	TEST_DONE();
+	if (bench_key != NULL)
+		private = bench_key;
+	else {
+		TEST_START("sshkey_generate");
+		ASSERT_INT_EQ(sshkey_generate(keytype, bits, &private), 0);
+		TEST_DONE();
+	}
 
 	TEST_START("sshkey_from_private");
 	ASSERT_INT_EQ(sshkey_from_private(private, &public), 0);
@@ -90,6 +99,14 @@ do_kex_with_key(char *kex, int keytype, int bits)
 	memcpy(kex_params.proposal, myproposal, sizeof(myproposal));
 	if (kex != NULL)
 		kex_params.proposal[PROPOSAL_KEX_ALGS] = kex;
+	if (bench_cipher != NULL) {
+		kex_params.proposal[PROPOSAL_ENC_ALGS_CTOS] = bench_cipher;
+		kex_params.proposal[PROPOSAL_ENC_ALGS_STOC] = bench_cipher;
+	}
+	if (bench_mac != NULL) {
+		kex_params.proposal[PROPOSAL_MAC_ALGS_CTOS] = bench_mac;
+		kex_params.proposal[PROPOSAL_MAC_ALGS_STOC] = bench_mac;
+	}
 	keyname = strdup(sshkey_ssh_name(private));
 	ASSERT_PTR_NE(keyname, NULL);
 	kex_params.proposal[PROPOSAL_SERVER_HOST_KEY_ALGS] = keyname;
@@ -147,7 +164,8 @@ do_kex_with_key(char *kex, int keytype, int bits)
 	TEST_DONE();
 
 	TEST_START("cleanup");
-	sshkey_free(private);
+	if (bench_key == NULL)
+		sshkey_free(private);
 	sshkey_free(public);
 	ssh_free(client);
 	ssh_free(server);
@@ -157,8 +175,46 @@ do_kex_with_key(char *kex, int keytype, int bits)
 }
 
 static void
+do_bench_kex(char *kex)
+{
+	struct sshkey *key = NULL;
+	char name[256];
+	int keytype = KEY_ED25519;
+	int bits = 256;
+
+	TEST_START("sshkey_generate");
+	ASSERT_INT_EQ(sshkey_generate(keytype, bits, &key), 0);
+	TEST_DONE();
+
+/*
+ * NOTE: Use a cipher/MAC here that requires minimal bits from the key exchange
+ * to avoid Diffie-Hellman using generated MODP groups taking forever.
+ */
+	bench_cipher = "aes128-ctr";
+#ifdef HAVE_EVP_SHA256
+	bench_mac = "hmac-sha2-256";
+#else
+	bench_mac = "hmac-sha1";
+#endif
+
+	bench_key = key;
+
+	snprintf(name, sizeof(name), "KEX %s", kex);
+	BENCH_START(name);
+	do_kex_with_key(kex, keytype, bits);
+	BENCH_FINISH("kex");
+
+	bench_key = NULL;
+	sshkey_free(key);
+}
+
+static void
 do_kex(char *kex)
 {
+	if (benchmark) {
+		do_bench_kex(kex);
+		return;
+	}
 #ifdef WITH_OPENSSL
 	do_kex_with_key(kex, KEY_RSA, 2048);
 #ifdef WITH_DSA
@@ -220,11 +276,28 @@ kex_tests(void)
 	do_kex("mlkem1024-sha384");
 #endif /*def ENABLE_KEM_PROVIDERS*/
 #ifdef ENABLE_KEX_DH
+#ifdef HAVE_EVP_SHA512
+	if (benchmark) {
+		do_kex("diffie-hellman-group18-sha512");
+# ifdef USE_BN_GET_RFC_PRIME
+		do_kex("diffie-hellman-group17-sha512");
+# endif
+		do_kex("diffie-hellman-group16-sha512");
+# ifdef USE_BN_GET_RFC_PRIME
+		do_kex("diffie-hellman-group15-sha512");
+# endif
+	}
+#endif /*def HAVE_EVP_SHA512*/
+#ifdef HAVE_EVP_SHA256
+	do_kex("diffie-hellman-group14-sha256");
+#endif /*def HAVE_EVP_SHA256*/
+	do_kex("diffie-hellman-group14-sha1");
+	if (benchmark)
+		do_kex("diffie-hellman-group1-sha1");
 #ifdef HAVE_EVP_SHA256
 	do_kex("diffie-hellman-group-exchange-sha256");
 #endif /*def HAVE_EVP_SHA256*/
-	do_kex("diffie-hellman-group-exchange-sha1");
-	do_kex("diffie-hellman-group14-sha1");
-	do_kex("diffie-hellman-group1-sha1");
+	if (benchmark)
+		do_kex("diffie-hellman-group-exchange-sha1");
 #endif /*def ENABLE_KEX_DH*/
 }
