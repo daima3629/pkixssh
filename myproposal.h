@@ -32,6 +32,7 @@
 #else
 # define KEX_MLKEM768X25519
 #endif
+
 #ifdef ENABLE_KEM_PROVIDERS
 # undef KEX_MLKEM768X25519
 # define KEX_MLKEM768X25519
@@ -51,7 +52,26 @@
 # define KEX_SNTRUP761X25519
 #endif
 
-#define KEX_SERVER_KEX \
+#ifdef HAVE_EVP_SHA256
+/* without diffie-hellman */
+# define KEX_SERVER_DH
+#else
+/* use at least one *-sha1 algorithm */
+# define KEX_SERVER_DH	\
+	",diffie-hellman-group14-sha1"
+#endif
+
+#ifdef ENABLE_KEX_DH
+# define KEX_CLIENT_DH	\
+	",diffie-hellman-group14-sha256" \
+	",diffie-hellman-group16-sha512" \
+	",diffie-hellman-group14-sha1" \
+	",diffie-hellman-group-exchange-sha256"
+#else
+# define KEX_CLIENT_DH
+#endif
+
+#define KEX_BASE_KEX \
 	KEX_PKEM \
 	KEX_MLKEM768X25519 \
 	"curve448-sha512," \
@@ -59,17 +79,17 @@
 	"curve25519-sha256@libssh.org," \
 	"ecdh-sha2-nistp256," \
 	"ecdh-sha2-nistp384," \
-	"ecdh-sha2-nistp521," \
-	"diffie-hellman-group-exchange-sha256," \
-	"diffie-hellman-group18-sha512," \
-	"diffie-hellman-group16-sha512," \
-	"diffie-hellman-group14-sha256," \
-	"diffie-hellman-group17-sha512," \
-	"diffie-hellman-group15-sha512," \
-	"diffie-hellman-group14-sha1," \
+	"ecdh-sha2-nistp521" \
+
+#define KEX_SERVER_KEX \
+	KEX_BASE_KEX \
+	KEX_SERVER_DH \
 	KEX_SNTRUP761X25519
 
-#define KEX_CLIENT_KEX KEX_SERVER_KEX
+#define KEX_CLIENT_KEX \
+	KEX_BASE_KEX \
+	KEX_CLIENT_DH \
+	KEX_SNTRUP761X25519
 
 #define	KEX_DEFAULT_PK_ALG	\
 	"ssh-ed25519-cert-v01@openssh.com," \

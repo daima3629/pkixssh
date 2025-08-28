@@ -3202,18 +3202,15 @@ if test "x$openssl" = "xyes" ; then
 	)
 
 	# Check for SHA256, SHA384 and SHA512 support in OpenSSL
-	AC_CHECK_FUNCS([EVP_sha256 EVP_sha384 EVP_sha512], ,
+	AC_CHECK_FUNCS([EVP_sha256], [],
 	    [unsupported_algorithms="$unsupported_algorithms \
 		hmac-sha2-256 \
+		hmac-sha2-256-etm@openssh.com"])
+	AC_CHECK_FUNCS([EVP_sha384], [], [])
+	AC_CHECK_FUNCS([EVP_sha512], [],
+	    [unsupported_algorithms="$unsupported_algorithms \
 		hmac-sha2-512 \
-		diffie-hellman-group14-sha256 \
-		diffie-hellman-group16-sha512 \
-		diffie-hellman-group18-sha512 \
-		diffie-hellman-group-exchange-sha256 \
-		hmac-sha2-256-etm@openssh.com \
-		hmac-sha2-512-etm@openssh.com"
-	     ]
-	)
+		hmac-sha2-512-etm@openssh.com"])
 
 	# Check complete ECC support in OpenSSL
 	AC_MSG_CHECKING([whether OpenSSL has NID_X9_62_prime256v1])
@@ -3341,7 +3338,6 @@ if test "x$openssl" = "xyes" ; then
 	else
 		unsupported_algorithms="$unsupported_algorithms \
 			ecdsa-sha2-nistp256 \
-			ecdh-sha2-nistp256 \
 			ecdsa-sha2-nistp256-cert-v01@openssh.com"
 	fi
 	if test x$enable_nistp384 = x1; then
@@ -3351,7 +3347,6 @@ if test "x$openssl" = "xyes" ; then
 	else
 		unsupported_algorithms="$unsupported_algorithms \
 			ecdsa-sha2-nistp384 \
-			ecdh-sha2-nistp384 \
 			ecdsa-sha2-nistp384-cert-v01@openssh.com"
 	fi
 	if test x$enable_nistp521 = x1; then
@@ -3360,7 +3355,6 @@ if test "x$openssl" = "xyes" ; then
 		COMMENT_OUT_ECC521=
 	else
 		unsupported_algorithms="$unsupported_algorithms \
-			ecdh-sha2-nistp521 \
 			ecdsa-sha2-nistp521 \
 			ecdsa-sha2-nistp521-cert-v01@openssh.com"
 	fi
