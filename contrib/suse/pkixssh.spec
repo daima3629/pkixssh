@@ -4,7 +4,7 @@
 # This is free software; see Copyright file in the source
 # distribution for precise wording.
 #
-# Copyright (c) 2019-2024 Roumen Petrov
+# Copyright (c) 2019-2025 Roumen Petrov
 #
 
 # Do we want to enable building with ldap? (1=yes 0=no)
@@ -48,6 +48,13 @@
 # Development builds
 %if 0%{?suse_version} >= 1699
 # Tumbleweed ...
+# OpenSSL 3+ FIPS model is not supported yet
+%undefine enable_openssl_fips
+%global enable_openssl_fips 0
+%endif
+
+%if 0%{?suse_version} >= 1600
+# SUSE SLE-16 (in development)
 # OpenSSL 3+ FIPS model is not supported yet
 %undefine enable_openssl_fips
 %global enable_openssl_fips 0
