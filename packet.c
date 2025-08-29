@@ -1,4 +1,4 @@
-/* $OpenBSD: packet.c,v 1.319 2025/08/06 23:44:09 djm Exp $ */
+/* $OpenBSD: packet.c,v 1.322 2025/08/18 09:16:36 job Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -2243,14 +2243,6 @@ ssh_packet_set_interactive(struct ssh *ssh, int interactive, int qos_interactive
 		return;
 	set_nodelay(state->connection_in);
 	ssh_packet_set_tos(ssh, interactive ? qos_interactive : qos_bulk);
-}
-
-/* Returns true if the current connection is interactive. */
-
-int
-ssh_packet_is_interactive(struct ssh *ssh)
-{
-	return ssh->state->interactive_mode;
 }
 
 int
