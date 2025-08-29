@@ -4,7 +4,7 @@
 # This is free software; see Copyright file in the source
 # distribution for precise wording.
 #
-# Copyright (c) 2019-2024 Roumen Petrov
+# Copyright (c) 2019-2025 Roumen Petrov
 #
 
 # Do we want to enable building with ldap? (1=yes 0=no)
@@ -119,7 +119,7 @@ Url:		https://roumenpetrov.info/secsh/
 
 Name:		pkixssh
 Summary:	PKIX-SSH, Advanced secure shell implementation
-Version:	16.2.1
+Version:	17.0
 Release:	1
 License:	BSD
 Group:		Productivity/Networking/SSH
