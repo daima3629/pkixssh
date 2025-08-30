@@ -1,4 +1,4 @@
-/* $OpenBSD: readconf.c,v 1.394 2024/12/06 16:21:48 djm Exp $ */
+/* $OpenBSD: readconf.c,v 1.405 2025/08/11 10:55:38 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -218,7 +218,7 @@ typedef enum {
 	oPubkeyAcceptedAlgorithms, oCASignatureAlgorithms, oProxyJump,
 	oSecurityKeyProvider, oKnownHostsCommand, oRequiredRSASize,
 	oEnableEscapeCommandline, oChannelTimeout,
-	oVersionAddendum,
+	oVersionAddendum, oRefuseConnection,
 	oIgnore, oIgnoredUnknownOption, oDeprecated, oUnsupported
 } OpCodes;
 
@@ -392,6 +392,7 @@ static struct {
 	{ "enableescapecommandline", oEnableEscapeCommandline },
 	{ "channeltimeout", oChannelTimeout },
 	{ "versionaddendum", oVersionAddendum },
+	{ "refuseconnection", oRefuseConnection },
 
 	{ NULL, oBadOption }
 };
@@ -807,12 +808,13 @@ match_cfg_line(Options *options, char **condition, struct passwd *pw,
 		if (strcasecmp(attrib, "canonical") == 0 ||
 		    strcasecmp(attrib, "final") == 0) {
 			/*
-			 * If the config requests "Match final" then remember
-			 * this so we can perform a second pass later.
+			 * If the config requests "Match final" without
+			 * negation then remember this so we can perform a
+			 * second pass later.
 			 */
 			if (strcasecmp(attrib, "final") == 0 &&
 			    want_final_pass != NULL)
-				*want_final_pass = 1;
+				*want_final_pass |= !negate;
 			r = !!final_pass;  /* force bitmask member to boolean */
 			if (r == (negate ? 1 : 0))
 				this_result = result = 0;
@@ -2559,6 +2561,19 @@ parse_key_algorithms:
 		argv_consume(&ac);
 		break;
 
+	case oRefuseConnection:
+		arg = argv_next(&ac, &av);
+		if (arg == NULL || *arg == '\0') {
+			error("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
+			goto out;
+		}
+		if (*activep) {
+			fatal("%s line %d: %s: %s",
+			    filename, linenum, keyword, arg);
+		}
+		break;
+
 	case oDeprecated:
 		debug("%s line %d: Deprecated option \"%s\"",
 		    filename, linenum, keyword);
@@ -3023,9 +3038,9 @@ fill_default_options(Options * options)
 	if (options->visual_host_key == -1)
 		options->visual_host_key = 0;
 	if (options->ip_qos_interactive == -1)
-		options->ip_qos_interactive = IPTOS_DSCP_AF21;
+		options->ip_qos_interactive = IPTOS_DSCP_EF;
 	if (options->ip_qos_bulk == -1)
-		options->ip_qos_bulk = IPTOS_DSCP_CS1;
+		options->ip_qos_bulk = IPTOS_DSCP_CS0;
 	if (options->request_tty == -1)
 		options->request_tty = REQUEST_TTY_AUTO;
 	if (options->session_type == -1)

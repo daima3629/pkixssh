@@ -1,4 +1,4 @@
-/* $OpenBSD: channels.c,v 1.444 2025/05/24 11:41:51 djm Exp $ */
+/* $OpenBSD: channels.c,v 1.446 2025/06/02 14:09:34 dtucker Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -17,7 +17,7 @@
  * Copyright (c) 1999, 2000, 2001, 2002 Markus Friedl.  All rights reserved.
  * Copyright (c) 1999 Dug Song.  All rights reserved.
  * Copyright (c) 1999 Theo de Raadt.  All rights reserved.
- * Copyright (c) 2015-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2015-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -4177,7 +4177,7 @@ channel_cancel_rport_listener(struct ssh *ssh, struct Forward *fwd)
 	}
 }
 
-static int
+static int/*bool*/
 channel_cancel_lport_listener_tcpip(struct ssh *ssh,
     const char *lhost, u_short lport, int cport,
     struct ForwardOptions *fwd_opts)
@@ -4213,7 +4213,7 @@ channel_cancel_lport_listener_tcpip(struct ssh *ssh,
 	return found;
 }
 
-static int
+static int/*bool*/
 channel_cancel_lport_listener_streamlocal(struct ssh *ssh, const char *path)
 {
 	u_int i;
@@ -4240,7 +4240,7 @@ channel_cancel_lport_listener_streamlocal(struct ssh *ssh, const char *path)
 	return found;
 }
 
-int
+int/*bool*/
 channel_cancel_lport_listener(struct ssh *ssh,
     struct Forward *fwd, int cport, struct ForwardOptions *fwd_opts)
 {

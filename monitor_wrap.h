@@ -1,6 +1,6 @@
 #ifndef _MM_WRAP_H_
 #define _MM_WRAP_H_
-/* $OpenBSD: monitor_wrap.h,v 1.51 2024/05/17 06:42:04 jsg Exp $ */
+/* $OpenBSD: monitor_wrap.h,v 1.53 2025/07/04 07:47:35 djm Exp $ */
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * All rights reserved.
@@ -34,6 +34,8 @@
 #ifdef GSSAPI
 #include "ssh-gss.h"
 #endif
+
+#define MONITOR_MAX_MSGLEN		(4 * 1024 * 1024)
 
 extern int use_privsep;
 #define PRIVSEP(x)	(use_privsep ? mm_##x : x)

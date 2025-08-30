@@ -1,4 +1,4 @@
-/* $OpenBSD: packet.c,v 1.316 2024/08/15 00:51:51 djm Exp $ */
+/* $OpenBSD: packet.c,v 1.322 2025/08/18 09:16:36 job Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -223,6 +223,12 @@ struct session_state {
 
 	/* One-off warning about weak ciphers */
 	int cipher_warning_done;
+
+	/*
+	 * Disconnect in progress. Used to prevent reentry in
+	 * ssh_packet_disconnect()
+	 */
+	int disconnecting;
 
 	/* Hook for fuzzing inbound packets */
 	ssh_packet_hook_fn *hook_in;
@@ -2073,12 +2079,12 @@ ssh_packet_disconnect(struct ssh *ssh, const char *fmt,...)
 {
 	char buf[1024], remote_id[512];
 	va_list args;
-	static int disconnecting = 0;
 	int r;
 
-	if (disconnecting)	/* Guard against recursive invocations. */
+	/* Guard against recursive invocations. */
+	if (ssh->state->disconnecting)
 		fatal("packet_disconnect called recursively.");
-	disconnecting = 1;
+	ssh->state->disconnecting = 1;
 
 	/*
 	 * Format the message.  Note that the caller must make sure the
@@ -2237,14 +2243,6 @@ ssh_packet_set_interactive(struct ssh *ssh, int interactive, int qos_interactive
 		return;
 	set_nodelay(state->connection_in);
 	ssh_packet_set_tos(ssh, interactive ? qos_interactive : qos_bulk);
-}
-
-/* Returns true if the current connection is interactive. */
-
-int
-ssh_packet_is_interactive(struct ssh *ssh)
-{
-	return ssh->state->interactive_mode;
 }
 
 int

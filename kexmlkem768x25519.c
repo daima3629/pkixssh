@@ -125,6 +125,9 @@ kex_kem_mlkem768x25519_keypair(struct kex *kex)
 
 	r = kex_c25519_keygen_to_sshbuf(kex, &buf);
 	if (r != 0) goto out;
+#ifdef DEBUG_KEXKEM
+	dump_digestb("client public keypair mlkem768+c25519:", buf);
+#endif
 
 	/* success */
 	kex->client_pub = buf;
@@ -233,7 +236,6 @@ kex_kem_mlkem768x25519_enc(struct kex *kex,
 		server_blob = NULL;
 	}
  out:
-	kex_reset_keys(kex);
 	explicit_bzero(&enc, sizeof(enc));
 	sshbuf_free(server_blob);
 	sshbuf_free(buf);
@@ -303,14 +305,26 @@ kex_kem_mlkem768x25519_dec(struct kex *kex,
 		fprintf(stderr, "shared secret error: %s\n", ssh_err(r));
 #endif
  out:
-	kex_reset_keys(kex);
 	explicit_bzero(&mlkem_priv, sizeof(mlkem_priv));
 	explicit_bzero(&mlkem_ciphertext, sizeof(mlkem_ciphertext));
 	sshbuf_free(buf);
 	return r;
 }
 
-static int kex_kem_mlkem768x25519_enabled(void) { return 1; }
+#ifdef ENABLE_KEM_PROVIDERS
+extern const struct kex_impl kex_pkem_mlkem768x25519_sha256_impl;
+#endif
+
+static int kex_kem_mlkem768x25519_enabled(void) {
+#ifdef ENABLE_KEM_PROVIDERS
+	if (kex_pkem_mlkem768x25519_sha256_impl.enabled())
+		return 0;
+#endif
+#ifdef OPENSSL_FIPS
+	if (FIPS_mode()) return 0;
+#endif
+	return 1;
+}
 
 static const struct kex_impl_funcs kex_kem_mlkem768x25519_funcs = {
 	kex_init_gen,

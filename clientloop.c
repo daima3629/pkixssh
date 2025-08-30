@@ -13,7 +13,7 @@
  *
  *
  * Copyright (c) 1999 Theo de Raadt.  All rights reserved.
- * Copyright (c) 2017-2023 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2017-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -136,6 +136,12 @@ buffer:	0.165	0.080	0.100	0.074	0.124	0.160
 */
 #if 0
 # define USE_DIRECT_READ
+#endif
+
+#ifdef USE_PLEDGE_INET
+# define PLEDGE_EXTRA_INET	""
+#else
+# define PLEDGE_EXTRA_INET	"inet "
 #endif
 
 /* import options */
@@ -850,11 +856,11 @@ client_repledge(void)
 	} else if (options.forward_agent != 0) {
 		/* agent forwarding needs to open $SSH_AUTH_SOCK at will */
 		debug("pledge: agent");
-		if (pledge("stdio unix proc tty", NULL) == -1)
+		if (pledge(PLEDGE_EXTRA_INET "stdio unix proc tty", NULL) == -1)
 			fatal_f("pledge(): %s", strerror(errno));
 	} else {
 		debug("pledge: fork");
-		if (pledge("stdio proc tty", NULL) == -1)
+		if (pledge(PLEDGE_EXTRA_INET "stdio proc tty", NULL) == -1)
 			fatal_f("pledge(): %s", strerror(errno));
 	}
 	/* XXX further things to do:

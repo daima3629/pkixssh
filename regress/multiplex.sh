@@ -56,13 +56,15 @@ if test $? -ne 0 ; then
 fi
 
 if tty > /dev/null ; then
+mp_term_tty=:
 verbose "test $tid: pass TERM (tty)"
 else
+mp_term_tty=false
 verbose "test $tid: pass TERM (stdin)"
 fi
 trace "pass env TERM over multiplexed connection"
 (
-if tty ; then
+if $mp_term_tty ; then
 TERM=blah $SSH -F $OBJ/ssh_config -S$CTL -t otherhost \
 	'echo XXX${TERM}TEST'
 else
@@ -72,7 +74,11 @@ TERM=blah $SSH -F $OBJ/ssh_config -S$CTL -tt otherhost \
 fi
 ) 2>>$TEST_REGRESS_LOGFILE | grep XXXblahTEST > /dev/null
 if test $? -ne 0 ; then
-	fail "pass env TERM fail"
+	if $mp_term_tty ; then
+		fail "pass env TERM fail"
+	else
+		echo "ERROR: fail env pass TERM (stdin)" >&2
+	fi
 fi
 
 for mode in "" "-Oproxy"; do

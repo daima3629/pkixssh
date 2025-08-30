@@ -1,4 +1,4 @@
-/* 	$OpenBSD: tests.c,v 1.1 2014/04/30 05:32:00 djm Exp $ */
+/* 	$OpenBSD: tests.c,v 1.2 2025/04/15 04:00:42 djm Exp $ */
 /*
  * Regress test for sshbuf.h buffer API
  *
@@ -6,6 +6,8 @@
  */
 
 #include "../test_helper/test_helper.h"
+
+#include <stdio.h>
 
 void sshbuf_tests(void);
 void sshbuf_getput_basic_tests(void);
@@ -27,4 +29,10 @@ tests(void)
 	sshbuf_fuzz_tests();
 	sshbuf_getput_fuzz_tests();
 	sshbuf_fixed();
+}
+
+void
+benchmarks(void)
+{
+	printf("no benchmarks\n");
 }

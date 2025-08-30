@@ -669,6 +669,9 @@ SOLARIS_PRIVS="no"
 AC_SUBST([SHLIBEXT])
 SHLIBEXT=".so"
 
+# See OpenBSD section in target-specific case below.
+need_pledge_inet=false
+
 # Check for some target-specific stuff
 AC_SUBST([XLDFLAGS])
 AC_SUBST([XDEPLIBS])
@@ -1149,6 +1152,28 @@ mips-sony-bsd|mips-sony-newsos4)
 	AC_DEFINE([SYSLOG_R_SAFE_IN_SIGHAND], [1],
 	    [syslog_r function is safe to use in in a signal handler])
 	TEST_MALLOC_OPTIONS="SJRU"
+	AC_MSG_CHECKING([whether pledge(2) allows IP_TOS])
+	AC_RUN_IFELSE(
+	    [AC_LANG_PROGRAM([[
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <err.h>
+	    ]], [[
+int s, one = 1;
+if ((s = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+	err(1, "socket");
+if (pledge("stdio", NULL) == -1)
+	err(1, "pledge");
+if (setsockopt(s, IPPROTO_IP, IP_TOS, &one, sizeof(one)) == -1)
+	err(1, "setsockopt");
+	    ]])],
+	    [ AC_MSG_RESULT([yes]) ], [
+		AC_MSG_RESULT([no])
+		need_pledge_inet=:
+	    ],
+	    [ AC_MSG_WARN([cross compiling: cannot test]) ])
 	;;
 *-*-solaris*)
 	AC_DEFINE([PAM_SUN_CODEBASE])
@@ -1412,6 +1437,12 @@ AC_RUN_IFELSE([AC_LANG_PROGRAM([[]], [[]])],
 	[	AC_MSG_WARN([cross compiling: not checking compiler sanity]) ]
 )
 
+dnl Finish up special pledge(2) handling from above.
+AS_IF([$need_pledge_inet], [
+	AC_DEFINE([USE_PLEDGE_INET], [1],
+		[Define to 1 if your system need inet in pledge for setsockopt IP_TOS])
+])
+
 dnl Checks for header files.
 # Checks for libraries.
 AC_CHECK_FUNC([setsockopt], , [AC_CHECK_LIB([socket], [setsockopt])])
@@ -1453,6 +1484,12 @@ AC_CHECK_FUNC([getspnam], ,
 	[AC_CHECK_LIB([gen], [getspnam], [LIBS="$LIBS -lgen"])])
 AC_SEARCH_LIBS([basename], [gen], [AC_DEFINE([HAVE_BASENAME], [1],
 	[Define if you have the basename function.])])
+
+dnl sqrt() only used in unit tests.
+TESTLIBS=
+AC_CHECK_FUNC([sqrt], ,
+	[AC_CHECK_LIB([m], [sqrt], [TESTLIBS="$TESTLIBS -lm"])])
+AC_SUBST([TESTLIBS])
 
 dnl zlib defaults to enabled
 ZLIB_MSG=yes
@@ -2853,9 +2890,15 @@ AC_ARG_WITH([sshca-dir],
 AC_DEFINE_UNQUOTED([SSHCADIR], ["$sshcadir"], [Specify location of ssh CA root])
 AC_SUBST([sshcadir])
 
-# TODO: deprecation reserved for future
-AC_DEFINE([ENABLE_KEX_DH], [1],
-	[Define to 1 if you want to enable diffie-hellman key exchange])
+# disable Diffie-Hellman key exchange
+ssh_kex_dh=:
+AC_ARG_ENABLE([kex_dh],
+	[AS_HELP_STRING([--disable-kex-dh], [Disable Diffie-Hellman key exchange algorithms])],
+	[AS_IF([test "x$enableval" = "xno"], [ssh_kex_dh=false])])
+AS_IF([$ssh_kex_dh], [
+	AC_DEFINE([ENABLE_KEX_DH], [1],
+		[Define to 1 if you want to enable diffie-hellman key exchange])
+])
 
 # enable DSA keys
 ssh_dsa=false
@@ -3159,18 +3202,15 @@ if test "x$openssl" = "xyes" ; then
 	)
 
 	# Check for SHA256, SHA384 and SHA512 support in OpenSSL
-	AC_CHECK_FUNCS([EVP_sha256 EVP_sha384 EVP_sha512], ,
+	AC_CHECK_FUNCS([EVP_sha256], [],
 	    [unsupported_algorithms="$unsupported_algorithms \
 		hmac-sha2-256 \
+		hmac-sha2-256-etm@openssh.com"])
+	AC_CHECK_FUNCS([EVP_sha384], [], [])
+	AC_CHECK_FUNCS([EVP_sha512], [],
+	    [unsupported_algorithms="$unsupported_algorithms \
 		hmac-sha2-512 \
-		diffie-hellman-group14-sha256 \
-		diffie-hellman-group16-sha512 \
-		diffie-hellman-group18-sha512 \
-		diffie-hellman-group-exchange-sha256 \
-		hmac-sha2-256-etm@openssh.com \
-		hmac-sha2-512-etm@openssh.com"
-	     ]
-	)
+		hmac-sha2-512-etm@openssh.com"])
 
 	# Check complete ECC support in OpenSSL
 	AC_MSG_CHECKING([whether OpenSSL has NID_X9_62_prime256v1])
@@ -3298,7 +3338,6 @@ if test "x$openssl" = "xyes" ; then
 	else
 		unsupported_algorithms="$unsupported_algorithms \
 			ecdsa-sha2-nistp256 \
-			ecdh-sha2-nistp256 \
 			ecdsa-sha2-nistp256-cert-v01@openssh.com"
 	fi
 	if test x$enable_nistp384 = x1; then
@@ -3308,7 +3347,6 @@ if test "x$openssl" = "xyes" ; then
 	else
 		unsupported_algorithms="$unsupported_algorithms \
 			ecdsa-sha2-nistp384 \
-			ecdh-sha2-nistp384 \
 			ecdsa-sha2-nistp384-cert-v01@openssh.com"
 	fi
 	if test x$enable_nistp521 = x1; then
@@ -3317,7 +3355,6 @@ if test "x$openssl" = "xyes" ; then
 		COMMENT_OUT_ECC521=
 	else
 		unsupported_algorithms="$unsupported_algorithms \
-			ecdh-sha2-nistp521 \
 			ecdsa-sha2-nistp521 \
 			ecdsa-sha2-nistp521-cert-v01@openssh.com"
 	fi
@@ -3390,6 +3427,10 @@ if test "x$openssl" = "xyes" ; then
 	)
 fi
 
+# Diffie-Hellman key exchange is the only one that uses SHA1.
+AS_IF([! $ssh_kex_dh && test "x$ac_cv_func_EVP_sha256" != "xyes"], [
+	AC_MSG_ERROR([Diffie-Hellman is disabled but crypgographic library lack SHA-256 support])
+])
 
 # check for openssl 0.9.7+ functions ...
 dnl EVP_MD_CTX_init is macro in 1.1.0+
@@ -3423,6 +3464,7 @@ AC_CHECK_FUNCS([ \
   EVP_MD_flags \
   EVP_PKEY_base_id \
   EVP_PKEY_keygen \
+  EVP_PKEY_meth_find \
   EVP_PKEY_print_params \
   X509_STORE_set_verify_cb \
 ])
@@ -3515,6 +3557,7 @@ AC_SUBST([USE_OPENSSL_STORE2])
 AC_CHECK_FUNCS([ \
   BN_check_prime \
   ERR_get_error_all \
+  EVP_KEM_fetch \
   EVP_KEYMGMT_get0_provider \
   EVP_MD_get_flags \
   EVP_PKEY_eq \

@@ -219,9 +219,10 @@ if [ "x$USE_VALGRIND" != "x" ]; then
 	esac
 
 	if [ x"$VG_SKIP" = "x" ]; then
-		VG_LEAK="--leak-check=no"
-		if [ x"$VALGRIND_CHECK_LEAKS" != "x" ]; then
-			VG_LEAK="--leak-check=full"
+		if test x"$VALGRIND_CHECK_LEAKS" = "x" ; then
+			VG_LEAK="--leak-check=no"
+		else
+			VG_LEAK="--leak-check=full --show-leak-kinds=all"
 		fi
 		VG_IGNORE="/bin/*,/sbin/*,/usr/*,/var/*"
 		VG_LOG="$OBJ/valgrind-out/${VG_TEST}."

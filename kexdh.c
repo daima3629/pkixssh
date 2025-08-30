@@ -402,7 +402,7 @@ kex_dh_compute_key(struct kex *kex, BIGNUM *pub_key, struct sshbuf **shared_secr
 	r = create_peer_pkey(kex, pub_key, &peerkey);
 	if (r != 0) return r;
 
-	r = kex_pkey_derive_shared_secret(kex, peerkey, 0, shared_secretp);
+	r = kex_pkey_derive_shared_secret(kex->pk, peerkey, 0, shared_secretp);
 
 	EVP_PKEY_free(peerkey);
 #else /*ndef USE_EVP_PKEY_KEYGEN*/
@@ -468,9 +468,6 @@ kex_dh_keypair(struct kex *kex)
 #ifdef DEBUG_KEXDH
 	dump_digestb("client public keypair dh:", kex->client_pub);
 #endif
-
-	if (r != 0)
-		kex_reset_keys(kex);
 	return r;
 }
 
@@ -495,7 +492,6 @@ kex_dh_enc(struct kex *kex, const struct sshbuf *client_blob,
 	r = kex_dh_dec(kex, client_blob, shared_secretp);
 
  out:
-	kex_reset_keys(kex);
 	if (r != 0) {
 		sshbuf_free(*server_blobp);
 		*server_blobp = NULL;
@@ -524,7 +520,6 @@ kex_dh_dec(struct kex *kex, const struct sshbuf *dh_blob,
 		dump_digestb("encoded shared secret:", *shared_secretp);
 #endif
 
-	kex_reset_keys(kex);
 	BN_free(dh_pub);
 	return r;
 }
