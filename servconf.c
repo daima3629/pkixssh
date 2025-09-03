@@ -1,4 +1,4 @@
-/* $OpenBSD: servconf.c,v 1.430 2025/08/05 09:08:16 job Exp $ */
+/* $OpenBSD: servconf.c,v 1.433 2025/09/02 01:03:43 djm Exp $ */
 /*
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
@@ -1391,7 +1391,7 @@ process_server_config_line_depth(ServerOptions *options, char *line,
 	char *str, ***chararrayptr, **charptr, *arg, *arg2, *p, *keyword;
 	char **oav = NULL, **av;
 	int oac = 0, ac;
-	int cmdline = 0, *intptr, value, value2, n, port, oactive, r, found;
+	int cmdline = 0, *intptr, value, value2, value3, n, port, oactive, r, found;
 	int ca_only;
 	SyslogFacility *log_facility_ptr;
 	LogLevel *log_level_ptr;
@@ -2196,24 +2196,26 @@ parse_string:
 		if (arg == NULL || *arg == '\0')
 			fatal("%s line %d: %s missing argument.",
 			    filename, linenum, keyword);
+		/* begin:rate:max */
 		if ((n = sscanf(arg, "%d:%d:%d",
-		    &options->max_startups_begin,
-		    &options->max_startups_rate,
-		    &options->max_startups)) == 3) {
-			if (options->max_startups_begin >
-			    options->max_startups ||
-			    options->max_startups_rate > 100 ||
-			    options->max_startups_rate < 1)
+		    &value, &value2, &value3)) == 3) {
+			if (value > value3 || value2 > 100 || value2 < 1)
 				fatal("%s line %d: Invalid %s spec.",
 				    filename, linenum, keyword);
-		} else if (n != 1)
+		} else if (n == 1) {
+			value3 = value;
+			value = value2 = -1;
+		} else
 			fatal("%s line %d: Invalid %s spec.",
 			    filename, linenum, keyword);
-		else
-			options->max_startups = options->max_startups_begin;
-		if (options->max_startups_begin <= 0)
+		if (value3 <= 0 || (value2 != -1 && value <= 0))
 			fatal("%s line %d: Invalid %s spec.",
 			    filename, linenum, keyword);
+		if (*activep && options->max_startups == -1) {
+			options->max_startups_begin = value;
+			options->max_startups_rate = value2;
+			options->max_startups = value3;
+		}
 		break;
 
 	case sPerSourceNetBlockSize:
