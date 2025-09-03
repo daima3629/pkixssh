@@ -1,9 +1,9 @@
-/* $OpenBSD: ssh-pkcs11.c,v 1.59 2023/07/27 22:26:49 djm Exp $ */
+/* $OpenBSD: ssh-pkcs11.c,v 1.64 2024/09/20 02:00:46 jsg Exp $ */
 /*
  * Copyright (c) 2010 Markus Friedl.  All rights reserved.
  * Copyright (c) 2011 Kenneth Robinette.  All rights reserved.
  * Copyright (c) 2013 Andrew Cooke.  All rights reserved.
- * Copyright (c) 2016-2023 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2016-2025 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -1040,8 +1040,6 @@ note_key(struct pkcs11_provider *p, CK_ULONG slotidx,
 {
 	char *fp;
 
-	if (key == NULL) return;
-
 	fp = sshkey_fingerprint(key, SSH_FP_HASH_DEFAULT, SSH_FP_DEFAULT);
 	if (fp == NULL) {
 		error_f("sshkey_fingerprint failed");
@@ -1056,8 +1054,6 @@ static void
 pkcs11_push_key(struct sshkey *key, char *label,
     struct sshkey ***keysp, char ***labelsp, int *nkeys)
 {
-	if (key == NULL) return;
-
 {	struct sshkey **sp = *keysp;
 	int i;
 	for (i = 0; i < *nkeys; i++, sp++)
@@ -1132,10 +1128,8 @@ pkcs11_fetch_certs(struct pkcs11_provider *p, CK_ULONG slotidx,
 			break;
 
 		key = pkcs11_get_x509key(p, slotidx, obj);
-		if (key == NULL) {
-			error_f("pkcs11_get_x509key failed");
-			continue;
-		}
+		if (key == NULL) continue;
+
 		label = x509key_subject(key);
 		note_key(p, slotidx, key);
 		pkcs11_push_key(key, label, keysp, labelsp, nkeys);
@@ -1484,6 +1478,8 @@ pkcs11_fetch_keys(struct pkcs11_provider *p, CK_ULONG slotidx,
 			break;
 
 		key = pkcs11_get_pubkey(p, slotidx, obj, &label);
+		if (key == NULL) continue;
+
 		note_key(p, slotidx, key);
 		pkcs11_push_key(key, label, keysp, labelsp, nkeys);
 	}
