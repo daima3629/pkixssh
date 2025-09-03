@@ -1,4 +1,4 @@
-/* $OpenBSD: kex-names.c,v 1.4 2024/09/09 02:39:57 djm Exp $ */
+/* $OpenBSD: kex-names.c,v 1.6 2025/09/02 11:08:34 djm Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2014-2025 Roumen Petrov.  All rights reserved.
@@ -31,8 +31,8 @@
 
 #include "kex.h"
 #include "log.h"
-#include "digest.h"
 #include "match.h"
+#include "misc.h"
 
 #include "ssherr.h"
 
@@ -113,22 +113,13 @@ kex_find_impl(const char *name)
 char *
 kex_alg_list(char sep)
 {
-	char *ret = NULL, *tmp;
-	size_t nlen, rlen = 0;
+	char *ret = NULL;
 	const struct kex_impl* const *p;
+	char sep_str[2] = {sep, '\0'};
 
 	for (p = kex_impl_list; *p != NULL; p++) {
 		if (!(*p)->enabled()) continue;
-		if (ret != NULL)
-			ret[rlen++] = sep;
-		nlen = strlen((*p)->name);
-		if ((tmp = realloc(ret, rlen + nlen + 2)) == NULL) {
-			free(ret);
-			return NULL;
-		}
-		ret = tmp;
-		memcpy(ret + rlen, (*p)->name, nlen + 1);
-		rlen += nlen;
+		xextendf(&ret, sep_str, "%s", (*p)->name);
 	}
 	return ret;
 }
