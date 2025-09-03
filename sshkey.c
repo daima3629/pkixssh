@@ -1,9 +1,9 @@
-/* $OpenBSD: sshkey.c,v 1.148 2024/12/03 15:53:51 tb Exp $ */
+/* $OpenBSD: sshkey.c,v 1.153 2025/09/02 11:08:34 djm Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Alexander von Gernler.  All rights reserved.
  * Copyright (c) 2010,2011 Damien Miller.  All rights reserved.
- * Copyright (c) 2002-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -327,7 +327,7 @@ char *
 sshkey_alg_list(int certs_only, int plain_only, int include_sigonly, char sep)
 {
 	char *ret = NULL;
-	size_t rlen = 0;
+	char sep_s[2] = { sep, '\0' };
 
 	if (!certs_only || plain_only) {
 		struct sshbuf *b;
@@ -335,35 +335,21 @@ sshkey_alg_list(int certs_only, int plain_only, int include_sigonly, char sep)
 		fill_default_xkalg();
 		if ((b = sshbuf_new()) == NULL)
 			fatal_f("sshbuf_new failed");
-	{	char sep_s[2] = { sep, '\0' };
+
 		ssh_xkalg_listall(b, sep_s);
-	}
+
 		ret = xstrdup(sshbuf_ptr(b));
-		rlen = sshbuf_len(b);
 		sshbuf_free(b);
 	}
 {
 	const struct sshkey_impl *const* p;
 
 	for (p = keyimpls; *p != NULL; p++) {
-		size_t nlen;
-
 		if (!include_sigonly && (*p)->sigonly)
 			continue;
 		if ((certs_only && !(*p)->cert) || (plain_only && (*p)->cert))
 			continue;
-		if (ret != NULL)
-			ret[rlen++] = sep;
-		nlen = strlen((*p)->name);
-	{	char *tmp = realloc(ret, rlen + nlen + 2);
-		if (tmp == NULL) {
-			free(ret);
-			return NULL;
-		}
-		ret = tmp;
-	}
-		memcpy(ret + rlen, (*p)->name, nlen + 1);
-		rlen += nlen;
+		xextendf(&ret, sep_s, "%s", (*p)->name);
 	}
 }
 	return ret;
