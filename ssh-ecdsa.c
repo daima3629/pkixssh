@@ -635,6 +635,7 @@ sshkey_set_nid(EVP_PKEY *pk, int *pnid) {
 	/* indirectly set in sshkey_ecdsa_key_to_nid(if needed)
 	   when pkey is completed */
 	g = EC_KEY_get0_group(ec);
+	EC_KEY_free(ec);
 	if (g == NULL) return SSH_ERR_LIBCRYPTO_ERROR;
 
 	*pnid = EC_GROUP_get_curve_name(g);
