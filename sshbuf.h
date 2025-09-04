@@ -1,4 +1,4 @@
-/*	$OpenBSD: sshbuf.h,v 1.29 2024/08/15 00:51:51 djm Exp $	*/
+/*	$OpenBSD: sshbuf.h,v 1.32 2025/09/02 09:41:23 djm Exp $	*/
 /*
  * Copyright (c) 2011 Damien Miller
  * Copyright (c) 2020-2024 Roumen Petrov
@@ -61,7 +61,8 @@ struct sshbuf *sshbuf_fromb(struct sshbuf *buf);
  * an existing buffer (the string is consumed in the process).
  * The contents of "buf" must not change in the lifetime of the resultant
  * buffer.
- * Returns pointer to buffer on success, or NULL on allocation failure.
+ * On success, a pointer to the newly allocated buffer is placed in *bufp.
+ * Returns 0 on success, or a negative SSH_ERR_* error code on failure.
  */
 int	sshbuf_froms(struct sshbuf *buf, struct sshbuf **bufp);
 
