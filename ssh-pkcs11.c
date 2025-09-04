@@ -380,6 +380,8 @@ pkcs11_provider_finalize(struct pkcs11_provider *p)
 	if (!p->valid)
 		return;
 	for (i = 0; i < p->nslots; i++) {
+		debug3_f("provider slot %ld session %ld",
+		    (long)i, (long)p->slotinfo[i].session);
 		if (p->slotinfo[i].session &&
 		    (rv = p->function_list->C_CloseSession(
 		    p->slotinfo[i].session)) != CKR_OK)
@@ -399,7 +401,8 @@ pkcs11_provider_finalize(struct pkcs11_provider *p)
 static void
 pkcs11_provider_unref(struct pkcs11_provider *p)
 {
-	debug_f("provider \"%s\" refcount %d", p->name, p->refcount);
+	debug_f("provider \"%s\" refcount %d valid %d",
+	    p->name, p->refcount, p->valid);
 	if (--p->refcount <= 0) {
 		if (p->valid)
 			error_f("provider \"%s\" still valid", p->name);
@@ -935,6 +938,16 @@ set_ssh_pkcs11_pkey_method(EVP_PKEY *pk) {
 #ifdef OPENSSL_HAS_ECC
 	case EVP_PKEY_EC:
 		return set_ssh_pkcs11_pkey_ec_method(pk);
+#endif
+#ifdef USE_PKEY_ED25519
+	case EVP_PKEY_ED25519:
+		error_f("SSH PKCS#11 does not support ED25519 keys");
+		return 0;
+#endif
+#ifdef USE_ECDH_X448	/* assume ED448 */
+	case EVP_PKEY_ED448:
+		error_f("SSH PKCS#11 does not support ED2448 keys");
+		return 0;
 #endif
 	}
 	return 0;
