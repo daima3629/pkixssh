@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-agent.c,v 1.308 2024/10/24 03:15:47 djm Exp $ */
+/* $OpenBSD: ssh-agent.c,v 1.311 2025/04/15 09:22:25 dtucker Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -12,7 +12,7 @@
  * called by a name other than "ssh" or "Secure Shell".
  *
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2002-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -1266,6 +1266,9 @@ int
 main(int ac, char **av)
 {
 	int c_flag = 0, d_flag = 0, D_flag = 0, k_flag = 0, s_flag = 0;
+	SyslogFacility log_facility = SYSLOG_FACILITY_AUTH;
+	LogLevel log_level = SYSLOG_LEVEL_INFO;
+	int log_stderr = 0;
 	int sock = -1, ch, result, saved_errno;
 	char *shell, *format, *pidstr, *agentsocket = NULL;
 	extern int optind;
@@ -1340,11 +1343,14 @@ main(int ac, char **av)
 			if (d_flag || D_flag)
 				usage();
 			d_flag++;
+			log_level = SYSLOG_LEVEL_DEBUG3;
+			log_stderr = 1;
 			break;
 		case 'D':
 			if (d_flag || D_flag)
 				usage();
 			D_flag++;
+			log_stderr = 1;
 			break;
 		case 'a':
 			agentsocket = optarg;
@@ -1479,9 +1485,7 @@ main(int ac, char **av)
 	 * the socket data.  The child continues as the authentication agent.
 	 */
 	if (D_flag || d_flag) {
-		log_init(__progname,
-		    d_flag ? SYSLOG_LEVEL_DEBUG3 : SYSLOG_LEVEL_INFO,
-		    SYSLOG_FACILITY_AUTH, 1);
+		log_init(__progname, log_level, log_facility, log_stderr);
 		if (socket_name[0] != '\0') {
 			format = c_flag ?
 			    "setenv %s %s;\n" : "%s=%s; export %s;\n";
@@ -1519,7 +1523,14 @@ main(int ac, char **av)
 		exit(1);
 	}
 	/* child */
-	log_init(__progname, SYSLOG_LEVEL_INFO, SYSLOG_FACILITY_AUTH, 0);
+{	const char *logfile = getenv("SSH_AGENT_LOGFILE");
+	if (logfile != NULL) {
+		log_redirect_stderr_to(logfile);
+		log_stderr = 1;
+		log_level = SYSLOG_LEVEL_DEBUG3;
+	}
+}
+	log_init(__progname, log_level, log_facility, log_stderr);
 
 	if (setsid() == -1) {
 		error_f("setsid: %s", strerror(errno));
