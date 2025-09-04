@@ -1,8 +1,8 @@
-/* $OpenBSD: ssh-pkcs11-helper.c,v 1.26 2021/11/18 03:31:44 djm Exp $ */
+/* $OpenBSD: ssh-pkcs11-helper.c,v 1.27 2024/08/15 00:51:51 djm Exp $ */
 /*
  * Copyright (c) 2010 Markus Friedl.  All rights reserved.
  * Copyright (c) 2011 Kenneth Robinette.  All rights reserved.
- * Copyright (c) 2016-2023 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2016-2025 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -355,6 +355,7 @@ main(int argc, char **argv)
 	ssize_t len;
 	SyslogFacility log_facility = SYSLOG_FACILITY_AUTH;
 	LogLevel log_level = SYSLOG_LEVEL_ERROR;
+	int log_stderr = 0;
 	char buf[4*4096];
 	extern char *__progname;
 	struct pollfd pfd[2];
@@ -365,7 +366,14 @@ main(int argc, char **argv)
 	seed_rng();
 	TAILQ_INIT(&pkcs11_keylist);
 
-	log_init(__progname, log_level, log_facility, 0);
+{	const char *logfile = getenv("SSH_PKCS11_HELPER_LOGFILE");
+	if (logfile != NULL) {
+		log_redirect_stderr_to(logfile);
+		log_stderr = 1;
+		log_level = SYSLOG_LEVEL_DEBUG3;
+	}
+}
+	log_init(__progname, log_level, log_facility, log_stderr);
 
 	while ((ch = getopt(argc, argv, "v")) != -1) {
 		switch (ch) {
@@ -383,7 +391,7 @@ main(int argc, char **argv)
 
 	ERR_load_PKCS11_strings();
 
-	log_init(__progname, log_level, log_facility, 0);
+	log_init(__progname, log_level, log_facility, log_stderr);
 
 	pkcs11_init(0);
 
