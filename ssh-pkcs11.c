@@ -209,15 +209,13 @@ pkcs11_key_free(struct pkcs11_key *k11) {
 	free(k11);
 }
 
-static void
+static inline void
 CRYPTO_EX_pkcs11_key_free(
     void *parent, void *ptr, CRYPTO_EX_DATA *ad, long argl, void *argp
 ) {
-	(void)parent;
+	UNUSED(parent); UNUSED(ad);
+	UNUSED(argl); UNUSED(argp);
 	pkcs11_key_free(ptr);
-	(void)ad;
-	(void)argl;
-	(void)argp;
 }
 
 static void
@@ -225,8 +223,8 @@ CRYPTO_EX_pkcs11_rsa_free(
     void *parent, void *ptr, CRYPTO_EX_DATA *ad,
     int idx, long argl, void *argp
 ) {
-	if (idx == ssh_pkcs11_rsa_ctx_index)
-		CRYPTO_EX_pkcs11_key_free(parent, ptr, ad, argl, argp);
+	if (idx != ssh_pkcs11_rsa_ctx_index) return;
+	CRYPTO_EX_pkcs11_key_free(parent, ptr, ad, argl, argp);
 }
 
 #ifdef OPENSSL_HAS_ECC
@@ -235,8 +233,8 @@ CRYPTO_EX_pkcs11_ec_free(
     void *parent, void *ptr, CRYPTO_EX_DATA *ad,
     int idx, long argl, void *argp
 ) {
-	if (idx == ssh_pkcs11_ec_ctx_index)
-		CRYPTO_EX_pkcs11_key_free(parent, ptr, ad, argl, argp);
+	if (idx != ssh_pkcs11_ec_ctx_index) return;
+	CRYPTO_EX_pkcs11_key_free(parent, ptr, ad, argl, argp);
 }
 #endif /*def OPENSSL_HAS_ECC*/
 
