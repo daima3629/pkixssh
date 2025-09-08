@@ -1,8 +1,8 @@
-/* $OpenBSD: misc.c,v 1.202 2025/08/11 14:37:43 deraadt Exp $ */
+/* $OpenBSD: misc.c,v 1.206 2025/09/04 00:31:49 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2005,2006 Damien Miller.  All rights reserved.
- * Copyright (c) 2012-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2012-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -1018,7 +1018,7 @@ urldecode(const char *src)
 
 {	size_t srclen = strlen(src);
 	if (srclen >= SIZE_MAX)
-		fatal_f("input too large");
+		return NULL;
 	ret = xmalloc(srclen + 1);
 }
 	for (dst = ret; *src != '\0'; src++) {
@@ -1029,9 +1029,9 @@ urldecode(const char *src)
 			break;
 #endif
 		case '%':
-			if (!isxdigit((unsigned char)src[1]) ||
-			    !isxdigit((unsigned char)src[2]) ||
-			    (ch = hexchar(src + 1)) == -1) {
+			ch = hexchar(src + 1);
+			/* NOTE: do not allow NUL character */
+			if (ch == -1 || ch == 0) {
 				free(ret);
 				return NULL;
 			}
