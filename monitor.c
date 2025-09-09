@@ -41,9 +41,6 @@
 #endif
 #include <pwd.h>
 #include <signal.h>
-#ifdef HAVE_STDINT_H
-# include <stdint.h>
-#endif
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>

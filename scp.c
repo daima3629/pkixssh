@@ -1,4 +1,4 @@
-/* $OpenBSD: scp.c,v 1.264 2025/05/23 09:26:25 dtucker Exp $ */
+/* $OpenBSD: scp.c,v 1.265 2025/09/02 09:34:48 djm Exp $ */
 /*
  * scp - secure remote copy.  This is basically patched BSD rcp which
  * uses ssh to do the data transfer (instead of using rcmd).
@@ -17,7 +17,7 @@
 /*
  * Copyright (c) 1999 Theo de Raadt.  All rights reserved.
  * Copyright (c) 1999 Aaron Campbell.  All rights reserved.
- * Copyright (c) 2022-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2022-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -114,9 +114,6 @@
 #include <pwd.h>
 #include <signal.h>
 #include <stdarg.h>
-#ifdef HAVE_STDINT_H
-# include <stdint.h>
-#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

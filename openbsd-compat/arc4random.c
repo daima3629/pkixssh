@@ -4,7 +4,7 @@
  * Copyright (c) 2008, Damien Miller <djm@openbsd.org>
  * Copyright (c) 2013, Markus Friedl <markus@openbsd.org>
  * Copyright (c) 2014, Theo de Raadt <deraadt@openbsd.org>
- * Copyright (c) 2014-2023, Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2014-2025, Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -25,9 +25,6 @@
 
 #include <fcntl.h>
 #include <signal.h>
-#ifdef HAVE_STDINT_H
-# include <stdint.h>
-#endif
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>

@@ -66,9 +66,6 @@
 # endif
 #endif
 #include <stdarg.h>
-#ifdef HAVE_STDINT_H
-# include <stdint.h>
-#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
