@@ -946,7 +946,7 @@ set_ssh_pkcs11_pkey_method(EVP_PKEY *pk) {
 #endif
 #ifdef USE_ECDH_X448	/* assume ED448 */
 	case EVP_PKEY_ED448:
-		error_f("SSH PKCS#11 does not support ED2448 keys");
+		error_f("SSH PKCS#11 does not support ED448 keys");
 		return 0;
 #endif
 	}
