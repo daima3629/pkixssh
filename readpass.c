@@ -1,7 +1,7 @@
 /* $OpenBSD: readpass.c,v 1.72 2025/06/11 13:24:05 dtucker Exp $ */
 /*
  * Copyright (c) 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2019-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2019-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,9 +31,6 @@
 
 #include <errno.h>
 #include <fcntl.h>
-#ifdef HAVE_PATHS_H
-# include <paths.h>
-#endif
 #include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>

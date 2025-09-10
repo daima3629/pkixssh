@@ -1,7 +1,7 @@
 /* $OpenBSD: auth.c,v 1.162 2024/09/15 01:18:26 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
- * Copyright (c) 2016-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2016-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -36,9 +36,6 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <fcntl.h>
-#ifdef HAVE_PATHS_H
-# include <paths.h>
-#endif
 #include <pwd.h>
 #ifdef HAVE_LOGIN_H
 #include <login.h>

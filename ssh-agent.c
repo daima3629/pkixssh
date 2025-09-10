@@ -59,9 +59,6 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
-#ifdef HAVE_PATHS_H
-# include <paths.h>
-#endif
 #include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>

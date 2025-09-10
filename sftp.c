@@ -1,7 +1,7 @@
 /* $OpenBSD: sftp.c,v 1.240 2025/03/28 06:04:07 dtucker Exp $ */
 /*
  * Copyright (c) 2001-2004 Damien Miller <djm@openbsd.org>
- * Copyright (c) 2013-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2013-2025 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -31,9 +31,6 @@
 #include <ctype.h>
 #include <errno.h>
 
-#ifdef HAVE_PATHS_H
-# include <paths.h>
-#endif
 #ifdef HAVE_LIBGEN_H
 #include <libgen.h>
 #endif

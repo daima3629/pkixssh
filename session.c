@@ -11,7 +11,7 @@
  *
  * SSH2 support by Markus Friedl.
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2012-2023 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2012-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -50,9 +50,6 @@
 #include <fcntl.h>
 #include <grp.h>
 #include <netdb.h>
-#ifdef HAVE_PATHS_H
-#include <paths.h>
-#endif
 #include <pwd.h>
 #include <signal.h>
 #include <stdio.h>

@@ -35,9 +35,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#ifdef HAVE_PATHS_H
-#include <paths.h>
-#endif
 
 #ifdef HAVE_UTIL_H
 # include <util.h>

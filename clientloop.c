@@ -74,9 +74,6 @@
 
 #include <ctype.h>
 #include <errno.h>
-#ifdef HAVE_PATHS_H
-#include <paths.h>
-#endif
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>

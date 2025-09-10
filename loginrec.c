@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2012-2025 Roumen Petrov.  All rights reserved.
  * Copyright (c) 2000 Andre Lucas.  All rights reserved.
  * Portions copyright (c) 1998 Todd C. Miller
  * Portions copyright (c) 1996 Jason Downs
@@ -139,9 +139,6 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <fcntl.h>
-#ifdef HAVE_PATHS_H
-# include <paths.h>
-#endif
 #include <pwd.h>
 #include <stdarg.h>
 #include <stdio.h>

@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh.c,v 1.614 2025/06/19 05:49:05 djm Exp $ */
+/* $OpenBSD: ssh.c,v 1.617 2025/09/04 00:29:09 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -57,9 +57,6 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <netdb.h>
-#ifdef HAVE_PATHS_H
-#include <paths.h>
-#endif
 #include <pwd.h>
 #include <signal.h>
 #include <stdarg.h>

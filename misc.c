@@ -59,9 +59,6 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <netdb.h>
-#ifdef HAVE_PATHS_H
-# include <paths.h>
-#endif
 #include <pwd.h>
 #include <grp.h>
 #ifdef SSH_TUN_OPENBSD
