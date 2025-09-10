@@ -511,31 +511,20 @@ pkcs11_get_key(
 
 /* openssl callback doing the actual signing operation */
 static int
-pkcs11_rsa_private_encrypt(int flen, const u_char *from, u_char *to, RSA *rsa,
-    int padding)
-{
-	struct pkcs11_key	*k11;
+pkcs11_key_sign_rsa(struct pkcs11_key *k11,
+    const u_char *from, int flen, u_char *to, CK_ULONG *tlen
+) {
 	struct pkcs11_slotinfo	*si;
 	CK_FUNCTION_LIST	*f;
 	CK_OBJECT_HANDLE	obj;
-	CK_ULONG		tlen = 0;
 	CK_RV			rv;
 	CK_MECHANISM		mech = {
 		CKM_RSA_PKCS, NULL_PTR, 0
 	};
 	int			rval = -1;
 
-	UNUSED(padding);
+	debug3_f("provider->name: %s", k11->provider->name);
 
-	k11 = RSA_get_ex_data(rsa, ssh_pkcs11_rsa_ctx_index);
-	if (k11 == NULL) {
-		error("RSA_get_ex_data failed");
-		return (-1);
-	}
-	if (!k11->provider || !k11->provider->valid) {
-		error_f("no pkcs11 (valid) provider");
-		return (-1);
-	}
 	f = k11->provider->function_list;
 	si = &k11->provider->slotinfo[k11->slotidx];
 
@@ -548,16 +537,38 @@ pkcs11_rsa_private_encrypt(int flen, const u_char *from, u_char *to, RSA *rsa,
 	} else {
 		(void)pkcs11_reauthenticate(si, f, obj);
 		/* XXX handle CKR_BUFFER_TOO_SMALL */
-		tlen = RSA_size(rsa);
-		rv = f->C_Sign(si->session, (CK_BYTE *)from, flen, to, &tlen);
+		rv = f->C_Sign(si->session, (CK_BYTE *)from, flen, to, tlen);
 		if (rv == CKR_OK)
-			rval = tlen;
+			rval = *tlen;
 		else {
 			PKCS11err(PKCS11_RSA_PRIVATE_ENCRYPT, PKCS11_C_SIGN_FAIL);
 			crypto_pkcs11_error(rv);
 		}
 	}
 	return (rval);
+}
+
+static int
+pkcs11_rsa_private_encrypt(int flen, const u_char *from, u_char *to, RSA *rsa,
+    int padding)
+{
+	struct pkcs11_key *k11;
+
+	UNUSED(padding);
+
+	k11 = RSA_get_ex_data(rsa, ssh_pkcs11_rsa_ctx_index);
+	if (k11 == NULL) {
+		error("RSA_get_ex_data failed");
+		return (-1);
+	}
+	if (!k11->provider || !k11->provider->valid) {
+		error_f("no pkcs11 (valid) provider");
+		return (-1);
+	}
+
+{	CK_ULONG tlen = RSA_size(rsa);
+	return pkcs11_key_sign_rsa(k11, from, flen, to, &tlen);
+}
 }
 
 static int
@@ -670,12 +681,9 @@ parse_err:
 
 /* redirect private key operations for ec key to pkcs11 token */
 static ECDSA_SIG*
-pkcs11_ecdsa_do_sign(
-	const unsigned char *dgst, int dlen,
-	const BIGNUM *inv, const BIGNUM *rp,
-	EC_KEY *ec
+pkcs11_key_sign_ecdsa(struct pkcs11_key *k11,
+	const unsigned char *dgst, int dlen
 ) {
-	struct pkcs11_key	*k11;
 	struct pkcs11_slotinfo	*si;
 	CK_FUNCTION_LIST	*f;
 	CK_OBJECT_HANDLE	obj;
@@ -686,20 +694,8 @@ pkcs11_ecdsa_do_sign(
 	};
 	ECDSA_SIG		*sig = NULL;
 
-	debug3_f("...");
+	debug3_f("provider->name: %s", k11->provider->name);
 
-	UNUSED(inv);
-	UNUSED(rp);
-
-	k11 = EC_KEY_get_ex_data(ec, ssh_pkcs11_ec_ctx_index);
-	if (k11 == NULL) {
-		error("EC_KEY_get_ex_data failed");
-		return NULL;
-	}
-	if (!k11->provider || !k11->provider->valid) {
-		error_f("no pkcs11 (valid) provider");
-		return NULL;
-	}
 	f = k11->provider->function_list;
 	si = &k11->provider->slotinfo[k11->slotidx];
 
@@ -722,6 +718,32 @@ pkcs11_ecdsa_do_sign(
 		}
 	}
 	return (sig);
+}
+
+static ECDSA_SIG*
+pkcs11_ecdsa_do_sign(
+	const unsigned char *dgst, int dlen,
+	const BIGNUM *inv, const BIGNUM *rp,
+	EC_KEY *ec
+) {
+	struct pkcs11_key *k11;
+
+	debug3_f("...");
+
+	UNUSED(inv);
+	UNUSED(rp);
+
+	k11 = EC_KEY_get_ex_data(ec, ssh_pkcs11_ec_ctx_index);
+	if (k11 == NULL) {
+		error("EC_KEY_get_ex_data failed");
+		return NULL;
+	}
+	if (!k11->provider || !k11->provider->valid) {
+		error_f("no pkcs11 (valid) provider");
+		return NULL;
+	}
+
+	return pkcs11_key_sign_ecdsa(k11, dgst, dlen);
 }
 
 
