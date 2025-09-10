@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-add.c,v 1.172 2024/01/11 01:45:36 djm Exp $ */
+/* $OpenBSD: ssh-add.c,v 1.175 2025/08/29 03:50:38 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -13,7 +13,7 @@
  *
  * SSH2 implementation,
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2002-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -56,9 +56,6 @@
 #include "log.h"
 #include "ssh-x509.h"
 #include "ssh-xkalg.h"
-#ifdef WITH_XMSS
-# include "sshkey-xmss.h"
-#endif
 #include "compat.h"
 #include "sshbuf.h"
 #include "authfd.h"
@@ -85,9 +82,6 @@ static char *default_files[] = {
 	_PATH_SSH_CLIENT_ID_DSA,
 #endif
 #endif /* WITH_OPENSSL */
-#ifdef WITH_XMSS
-	_PATH_SSH_CLIENT_ID_XMSS,
-#endif
 	NULL
 };
 
@@ -116,27 +110,6 @@ set_lifetime(const char *val)
 
 /* User has to confirm key use */
 static int confirm = 0;
-
-#ifdef WITH_XMSS
-/* Maximum number of signatures (XMSS) */
-static u_int maxsign = 0;
-static u_int minleft = 0;
-#else
-
-# define maxsign	0
-#endif
-
-static inline u_int32_t
-sshkey_signatures_left(const struct sshkey *k)
-{
-#ifdef WITH_XMSS
-	if (sshkey_type_plain(k->type) == KEY_XMSS)
-		return sshkey_xmss_signatures_left(k);
-#else
-	UNUSED(k);
-#endif
-	return 0;
-}
 
 /* we keep a cache of one passphrase */
 static char *pass = NULL;
@@ -350,48 +323,8 @@ add_file(int agent_fd, const char *filename, int key_only, int qflag,
 		comment = xstrdup(filename);
 	sshbuf_free(keyblob);
 
-	/* For XMSS */
-	if ((r = sshkey_set_filename(private, filename)) != 0) {
-		fprintf(stderr, "Could not add filename to private key: %s (%s)\n",
-		    filename, comment);
-		goto out;
-	}
-#ifdef WITH_XMSS
-{
-	struct ssh_identitylist *idlist;
-
-	if (maxsign && minleft &&
-	    (r = ssh_fetch_identitylist(agent_fd, &idlist)) == 0) {
-		size_t i;
-		for (i = 0; i < idlist->nkeys; i++) {
-			u_int left;
-			if (!sshkey_equal_public(idlist->keys[i], private))
-				continue;
-			left = sshkey_signatures_left(idlist->keys[i]);
-			if (left < minleft) {
-				fprintf(stderr,
-				    "Only %u signatures left.\n", left);
-				break;
-			}
-			fprintf(stderr, "Skipping update: ");
-			if (left == minleft) {
-				fprintf(stderr,
-				    "required signatures left (%u).\n", left);
-			} else {
-				fprintf(stderr,
-				    "more signatures left (%u) than"
-				    " required (%u).\n", left, minleft);
-			}
-			ssh_free_identitylist(idlist);
-			goto out;
-		}
-		ssh_free_identitylist(idlist);
-	}
-}
-#endif /*def WITH_XMSS*/
-
 	if ((r = ssh_add_identity_constrained(agent_fd, private, comment,
-	    lifetime, confirm, maxsign, skprovider)) == 0) {
+	    lifetime, confirm, skprovider)) == 0) {
 		ret = 0;
 		if (!qflag) {
 			fprintf(stderr, "Identity added: %s (%s)\n",
@@ -443,7 +376,7 @@ add_file(int agent_fd, const char *filename, int key_only, int qflag,
 	sshkey_free(cert);
 
 	if ((r = ssh_add_identity_constrained(agent_fd, private, comment,
-	    lifetime, confirm, maxsign, skprovider)) != 0) {
+	    lifetime, confirm, skprovider)) != 0) {
 		error_r(r, "Certificate %s (%s) add failed", certpath,
 		    private->cert->key_id);
 		goto out;
@@ -551,7 +484,6 @@ list_identities(int agent_fd, int do_fp, int key_only)
 	char *fp;
 	int r;
 	struct ssh_identitylist *idlist;
-	u_int32_t left;
 	size_t i;
 
 	if ((r = ssh_fetch_identitylist(agent_fd, &idlist)) != 0) {
@@ -587,10 +519,6 @@ list_identities(int agent_fd, int do_fp, int key_only)
 			}
 			if (!print_dn)
 				fprintf(stdout, " %s", idlist->comments[i]);
-			left = sshkey_signatures_left(idlist->keys[i]);
-			if (left > 0)
-				fprintf(stdout,
-				    " [signatures left %d]", left);
 			fprintf(stdout, "\n");
 		}
 	}
@@ -646,12 +574,7 @@ static void
 usage(void)
 {
 	fprintf(stderr,
-"usage: ssh-add [-cDdkLlqvXx] [-E fingerprint_hash] [-t life]\n");
-#ifdef WITH_XMSS
-	fprintf(stderr,
-"               [-M maxsign] [-m minleft]\n");
-#endif
-	fprintf(stderr,
+"usage: ssh-add [-cDdkLlqvXx] [-E fingerprint_hash] [-t life]\n"
 "               [file ...]\n"
 "       ssh-add -s pkcs11 -v\n"
 "       ssh-add -e pkcs11 -v\n"
@@ -731,24 +654,6 @@ main(int argc, char **argv)
 		case 'c':
 			confirm = 1;
 			break;
-	#ifdef WITH_XMSS
-		case 'm':
-			minleft = (u_int)strtonum(optarg, 1, UINT_MAX, NULL);
-			if (minleft == 0) {
-				usage();
-				ret = 1;
-				goto done;
-			}
-			break;
-		case 'M':
-			maxsign = (u_int)strtonum(optarg, 1, UINT_MAX, NULL);
-			if (maxsign == 0) {
-				usage();
-				ret = 1;
-				goto done;
-			}
-			break;
-	#endif /*def WITH_XMSS*/
 		case 'd':
 			deleting = 1;
 			break;

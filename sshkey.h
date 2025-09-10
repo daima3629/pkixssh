@@ -1,4 +1,4 @@
-/* $OpenBSD: sshkey.h,v 1.65 2024/09/04 05:33:34 djm Exp $ */
+/* $OpenBSD: sshkey.h,v 1.70 2025/08/29 03:50:38 djm Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2002-2025 Roumen Petrov.  All rights reserved.
@@ -50,10 +50,6 @@ enum sshkey_types {
 	KEY_DSA,
 	KEY_DSA_CERT,
 #endif
-#ifdef WITH_XMSS
-	KEY_XMSS,
-	KEY_XMSS_CERT,
-#endif
 	KEY_UNSPEC
 };
 
@@ -76,10 +72,6 @@ enum sshkey_fp_rep {
 /* Private key serialisation formats, used on the wire */
 enum sshkey_serialize_rep {
 	SSHKEY_SERIALIZE_DEFAULT = 0,
-	SSHKEY_SERIALIZE_STATE = 1,	/* only state is serialized */
-	SSHKEY_SERIALIZE_FULL = 2,	/* include keys for saving to disk */
-	SSHKEY_SERIALIZE_SHIELD = 3,	/* everything, for encrypting in ram */
-	SSHKEY_SERIALIZE_INFO = 254,	/* minimal information */
 };
 
 /* Private key disk formats */
@@ -120,11 +112,6 @@ struct sshkey {
 	u_char	*ed25519_sk;
 	u_char	*ed25519_pk;
 	SSH_X509 *x509_data;
-	char	*xmss_name;
-	char	*xmss_filename;	/* for state file updates */
-	void	*xmss_state;	/* depends on xmss_name, opaque */
-	u_char	*xmss_sk;
-	u_char	*xmss_pk;
 	struct sshkey_cert *cert;
 #ifdef USE_SSHKEY_SHIELDING
 	u_char	*shielded_private;
@@ -297,8 +284,6 @@ int	 sshkey_check_sigtype(const u_char *, size_t, const char *);
 
 /* private key parsing and serialisation */
 int	sshkey_private_serialize(struct sshkey *key, struct sshbuf *buf);
-int	sshkey_private_serialize_opt(struct sshkey *key, struct sshbuf *buf,
-    enum sshkey_serialize_rep);
 int	sshkey_private_deserialize(struct sshbuf *buf,  struct sshkey **keyp);
 
 /* private key file format parsing and serialisation */
@@ -318,9 +303,6 @@ int	sshkey_private_to_bio(struct sshkey *key, BIO *bio,
     const char *passphrase, int format);
 
 int	sshkey_check_length(const struct sshkey *);
-
-/* For XMSS */
-int	sshkey_set_filename(struct sshkey *, const char *);
 
 int	ssh_encode_signature(u_char **, size_t *, const u_char *,
     const u_char *, size_t);

@@ -1,4 +1,4 @@
-/* $OpenBSD: sshconnect.c,v 1.371 2025/05/24 09:46:16 djm Exp $ */
+/* $OpenBSD: sshconnect.c,v 1.374 2025/08/29 03:50:38 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -12,7 +12,7 @@
  * incompatible with the protocol description in the RFC file, it must be
  * called by a name other than "ssh" or "Secure Shell".
  *
- * Copyright (c) 2002-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -1672,9 +1672,6 @@ show_other_keys(struct hostkeys *hostkeys, struct sshkey *key)
 	#endif
 		KEY_ECDSA,
 		KEY_ED25519,
-	#ifdef WITH_XMSS
-		KEY_XMSS,
-	#endif
 		-1
 	};
 	int subtype[] = {
@@ -1823,7 +1820,7 @@ maybe_add_key_to_agent(const char *authfile, struct sshkey *private,
 	if ((r = ssh_add_identity_constrained(auth_sock, private,
 	    comment == NULL ? authfile : comment,
 	    options.add_keys_to_agent_lifespan,
-	    (options.add_keys_to_agent == 3), 0, skprovider)) == 0)
+	    (options.add_keys_to_agent == 3), skprovider)) == 0)
 		debug("identity added to agent: %s", authfile);
 	else
 		debug("could not add identity to agent: %s (%d)", authfile, r);

@@ -1,4 +1,4 @@
-#	$OpenBSD: Makefile,v 1.136 2025/03/11 07:50:20 dtucker Exp $
+#	$OpenBSD: Makefile,v 1.140 2025/07/04 07:52:17 djm Exp $
 
 tests: unit file-tests t-exec
 check-core: tests
@@ -141,15 +141,13 @@ CLEANFILES=	*.core actual agent-ca agent-ca.pub agent-key.* authkeys_orig \
 		finished.* \
 		hkr.* host.ecdsa-sha2-nistp256 host.ecdsa-sha2-nistp384 \
 		host.ecdsa-sha2-nistp521 host.ssh-dss host.ssh-ed25519 \
-		host.ssh-rsa host.ssh-xmss@openssh.com* \
-		host_ca_key* host_krl_* host_revoked_* key.* \
+		host.ssh-rsa host_ca_key* host_krl_* host_revoked_* key.* \
 		key.dsa-* key.ecdsa-* key.ed25519-512 \
 		key.ed25519-512.pub key.rsa-* keys-command-args kh.* askpass \
 		known_hosts known_hosts.old known_hosts-cert knownhosts_command \
 		krl-* ls.copy no_identity_config \
 		pidfile putty.rsa2 ready regress.log remote_pid \
 		revoked-* ssh-rsa-agent* ssh-rsa ssh-rsa.pub ssh-rsa_pem ssh-rsa_pem.pub \
-		ssh-xmss@openssh.com ssh-xmss@openssh.com.pub \
 		rsa_ssh2_cr.prv rsa_ssh2_crnl.prv scp-ssh-wrapper.exe \
 		scp-ssh-wrapper.scp sftp-server.log \
 		sftp-server.sh sftp.log ssh-log-wrapper.sh ssh.log \

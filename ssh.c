@@ -1835,10 +1835,6 @@ main(int ac, char **av)
 #ifdef WITH_DSA
 			L_PUBKEY(_PATH_HOST_DSA_KEY_FILE, 7);
 #endif
-#ifdef WITH_XMSS
-			L_CERT(_PATH_HOST_XMSS_KEY_FILE, 8);
-			L_PUBKEY(_PATH_HOST_XMSS_KEY_FILE, 9);
-#endif
 			if (loaded == 0)
 				verbose("HostbasedAuthentication enabled but no "
 				   "local public host keys could be loaded.");

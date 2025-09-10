@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-agent.c,v 1.311 2025/04/15 09:22:25 dtucker Exp $ */
+/* $OpenBSD: ssh-agent.c,v 1.313 2025/08/29 03:50:38 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -85,9 +85,6 @@
 #include "sshbuf.h"
 #include "ssh-x509.h"
 #include "ssh-xkalg.h"
-#ifdef WITH_XMSS
-# include "sshkey-xmss.h"
-#endif
 #include "authfd.h"
 #include "compat.h"
 #include "log.h"
@@ -192,19 +189,6 @@ set_lifetime(const char *val)
 
 static int fingerprint_hash = SSH_FP_HASH_DEFAULT;
 
-static inline int
-sshkey_enable_maxsign(struct sshkey *k, u_int32_t maxsign)
-{
-#ifdef WITH_XMSS
-	if (sshkey_type_plain(k->type) == KEY_XMSS)
-		return sshkey_xmss_enable_maxsign(k, maxsign);
-#else
-	UNUSED(k);
-	UNUSED(maxsign);
-#endif
-	return SSH_ERR_INVALID_ARGUMENT;
-}
-
 static void
 close_socket(SocketEntry *e)
 {
@@ -297,7 +281,7 @@ process_request_identities(SocketEntry *e)
 	    (r = sshbuf_put_u32(msg, idtab->nentries)) != 0)
 		fatal_fr(r, "compose");
 	TAILQ_FOREACH(id, &idtab->idlist, next) {
-		if ((r = Akey_puts_opts(id->key, msg, SSHKEY_SERIALIZE_INFO)) != 0 ||
+		if ((r = Akey_puts_opts(id->key, msg, SSHKEY_SERIALIZE_DEFAULT)) != 0 ||
 		    (r = sshbuf_put_cstring(msg, id->comment)) != 0) {
 			error_fr(r, "compose key/comment");
 			continue;
@@ -511,9 +495,9 @@ parse_key_constraints(struct sshbuf *m, struct sshkey *k,
     u_int *secondsp, int *confirmp, char **sk_providerp)
 {
 	int r;
-	int lifetime_set = 0, confirm_set = 0;
-	int maxsign_set = 0, sk_provider_set = 0;
+	int lifetime_set = 0, confirm_set = 0, sk_provider_set = 0;
 
+	UNUSED(k);
 	while (sshbuf_len(m)) {
 		u_char ctype;
 		if ((r = sshbuf_get_u8(m, &ctype)) != 0) {
@@ -550,35 +534,6 @@ parse_key_constraints(struct sshbuf *m, struct sshkey *k,
 			confirm_set = 1;
 			*confirmp = 1;
 			break;
-		case SSH_AGENT_CONSTRAIN_MAXSIGN: {
-			u_int32_t maxsign;
-
-			if (k == NULL) {
-				error_f("maxsign not valid here");
-				r = SSH_ERR_INVALID_ARGUMENT;
-				goto out;
-			}
-			if (maxsign_set) {
-				error_f("maxsign already set");
-				r = SSH_ERR_INVALID_ARGUMENT;
-				goto out;
-			}
-			if ((r = sshbuf_get_u32(m, &maxsign)) != 0) {
-				error_fr(r, "parse maxsign constraint");
-				goto out;
-			}
-			maxsign_set = 1;
-			/* same as ssh-add */
-			if (maxsign == 0) {
-				error_f("non alloved maxsign value");
-				r = SSH_ERR_INVALID_ARGUMENT;
-				goto out;
-			}
-			if ((r = sshkey_enable_maxsign(k, maxsign)) != 0) {
-				error_fr(r, "enable maxsign");
-				goto out;
-			}
-			} break;
 		case SSH_AGENT_CONSTRAIN_EXTENSION: {
 			char *ext_name;
 

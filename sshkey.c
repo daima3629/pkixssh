@@ -78,8 +78,6 @@
 #define SSHKEY_SHIELD_PREKEY_HASH	SSH_DIGEST_SHA512
 #endif /*def USE_SSHKEY_SHIELDING*/
 
-int	sshkey_private_serialize_opt(struct sshkey *key,
-    struct sshbuf *buf, enum sshkey_serialize_rep);
 static int sshkey_from_blob_internal(struct sshbuf *buf,
     struct sshkey **keyp, int allow_cert);
 
@@ -110,10 +108,6 @@ extern const struct sshkey_impl sshkey_dss_impl;
 extern const struct sshkey_impl sshkey_dsa_cert_impl;
 # endif
 #endif /* WITH_OPENSSL */
-#ifdef WITH_XMSS
-extern const struct sshkey_impl sshkey_xmss_impl;
-extern const struct sshkey_impl sshkey_xmss_cert_impl;
-#endif /* WITH_XMSS */
 
 static const struct sshkey_impl * const keyimpls[] = {
 	&sshkey_ed25519_impl,
@@ -142,10 +136,6 @@ static const struct sshkey_impl * const keyimpls[] = {
 	&sshkey_dsa_cert_impl,
 #endif
 #endif /* WITH_OPENSSL */
-#ifdef WITH_XMSS
-	&sshkey_xmss_impl,
-	&sshkey_xmss_cert_impl,
-#endif /* WITH_XMSS */
 	NULL
 };
 
@@ -488,10 +478,6 @@ sshkey_type_plain(int type)
 		return KEY_ECDSA;
 	case KEY_ED25519_CERT:
 		return KEY_ED25519;
-#ifdef WITH_XMSS
-	case KEY_XMSS_CERT:
-		return KEY_XMSS;
-#endif /* WITH_XMSS */
 	default:
 		return type;
 	}
@@ -516,10 +502,6 @@ sshkey_type_certified(int type)
 #endif /* WITH_OPENSSL */
 	case KEY_ED25519:
 		return KEY_ED25519_CERT;
-#ifdef WITH_XMSS
-	case KEY_XMSS:
-		return KEY_XMSS_CERT;
-#endif /* WITH_XMSS */
 	default:
 		return -1;
 	}
@@ -679,8 +661,6 @@ sshkey_new(int type)
 	k->cert = NULL;
 	k->ed25519_sk = NULL;
 	k->ed25519_pk = NULL;
-	k->xmss_sk = NULL;
-	k->xmss_pk = NULL;
 #if 0	/* reserved */
 	if (impl != NULL && impl->funcs->alloc != NULL) {
 		if (impl->funcs->alloc(k) != 0) {
@@ -1294,10 +1274,6 @@ sshkey_read_pkalg(struct sshkey *ret, char **cpp, char **pkalg)
 	case KEY_DSA:
 	case KEY_DSA_CERT:
 #endif
-#ifdef WITH_XMSS
-	case KEY_XMSS:
-	case KEY_XMSS_CERT:
-#endif /* WITH_XMSS */
 		break; /* ok */
 	default:
 		return SSH_ERR_INVALID_ARGUMENT;
@@ -1697,8 +1673,7 @@ sshkey_shield_private(struct sshkey *k)
 	}
 	if (sshkey_is_shielded(k) && (r = sshkey_unshield_private(k)) != 0)
 		goto out;
-	if ((r = sshkey_private_serialize_opt(k, prvbuf,
-	    SSHKEY_SERIALIZE_SHIELD)) != 0)
+	if ((r = sshkey_private_serialize(k, prvbuf)) != 0)
 		goto out;
 	/* pad to cipher blocksize */
 	i = 0;
@@ -2556,7 +2531,7 @@ sshkey_format_cert_validity(const struct sshkey_cert *cert, char *s, size_t l)
 	return strlcpy(s, ret, l);
 }
 
-int
+static int
 sshkey_private_serialize_opt(struct sshkey *key, struct sshbuf *buf,
     enum sshkey_serialize_rep opts)
 {
@@ -2574,12 +2549,6 @@ sshkey_private_serialize_opt(struct sshkey *key, struct sshbuf *buf,
 		    sshbuf_len(key->cert->certblob) == 0)
 			return SSH_ERR_INVALID_ARGUMENT;
 	}
-#ifdef WITH_XMSS
-	if (sshkey_type_plain(key->type) == KEY_XMSS) {
-		if (key->xmss_name == NULL)
-			return SSH_ERR_INVALID_ARGUMENT;
-	}
-#endif /* WITH_XMSS */
 	if ((b = sshbuf_new()) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
 
@@ -2760,8 +2729,7 @@ sshkey_private_to_blob2(struct sshkey *prv, struct sshbuf *blob,
 		goto out;
 
 	/* append private key and comment*/
-	if ((r = sshkey_private_serialize_opt(prv, encrypted,
-	    SSHKEY_SERIALIZE_FULL)) != 0 ||
+	if ((r = sshkey_private_serialize(prv, encrypted)) != 0 ||
 	    (r = sshbuf_put_cstring(encrypted, comment)) != 0)
 		goto out;
 
@@ -3228,22 +3196,4 @@ sshkey_parse_pubkey_from_private_fileblob(struct sshbuf *blob,
 
 	/* custom-format private keys bundle a public key inside */
 	return sshkey_parse_private2_pubkey(blob, pubkeyp);
-}
-
-int
-sshkey_set_filename(struct sshkey *k, const char *filename)
-{
-	if (k == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
-#ifdef WITH_XMSS
-	if (sshkey_type_plain(k->type) != KEY_XMSS)
-		return 0;
-	if (filename == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
-	if ((k->xmss_filename = strdup(filename)) == NULL)
-		return SSH_ERR_ALLOC_FAIL;
-#else
-	UNUSED(filename);
-#endif
-	return 0;
 }

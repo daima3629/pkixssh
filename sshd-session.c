@@ -1,11 +1,11 @@
-/* $OpenBSD: sshd-session.c,v 1.9 2024/09/09 02:39:57 djm Exp $ */
+/* $OpenBSD: sshd-session.c,v 1.15 2025/08/29 03:50:38 djm Exp $ */
 /*
  * SSH2 implementation:
  * Privilege Separation:
  *
  * Copyright (c) 2000, 2001, 2002 Markus Friedl.  All rights reserved.
  * Copyright (c) 2002 Niels Provos.  All rights reserved.
- * Copyright (c) 2002-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -366,9 +366,6 @@ get_hostkey_by_type(int type, int subtype, int need_private, struct ssh *ssh)
 	#endif
 		case KEY_ECDSA_CERT:
 		case KEY_ED25519_CERT:
-	#ifdef WITH_XMSS
-		case KEY_XMSS_CERT:
-	#endif
 			key = sensitive_data.host_certificates[i];
 			break;
 		default:

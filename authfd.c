@@ -1,4 +1,4 @@
-/* $OpenBSD: authfd.c,v 1.133 2023/03/09 21:06:24 jcs Exp $ */
+/* $OpenBSD: authfd.c,v 1.136 2025/08/29 03:50:38 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -13,7 +13,7 @@
  *
  * SSH2 implementation,
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
- * Copyright (c) 2002-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -53,9 +53,6 @@
 #include "xmalloc.h"
 #include "ssh.h"
 #include "sshxkey.h"
-#ifdef WITH_XMSS
-# include "sshkey-xmss.h"
-#endif
 #include "authfd.h"
 #include "cipher.h"
 #include "compat.h"
@@ -84,45 +81,6 @@ decode_reply(u_char type)
 	else
 		return SSH_ERR_INVALID_FORMAT;
 }
-
-#ifdef WITH_XMSS
-/*
- * serialize the key with the current state and forward the state
- * maxsign times.
- */
-static int
-sshkey_private_serialize_maxsign(struct sshkey *k, struct sshbuf *b,
-    u_int32_t maxsign, int printerror)
-{
-	int r, rupdate;
-
-	if (maxsign == 0 ||
-	    sshkey_type_plain(k->type) != KEY_XMSS)
-		return sshkey_private_serialize_opt(k, b,
-		    SSHKEY_SERIALIZE_DEFAULT);
-	if ((r = sshkey_xmss_get_state(k, printerror)) != 0 ||
-	    (r = sshkey_private_serialize_opt(k, b,
-	    SSHKEY_SERIALIZE_STATE)) != 0 ||
-	    (r = sshkey_xmss_forward_state(k, maxsign)) != 0)
-		goto out;
-	r = 0;
-out:
-	if ((rupdate = sshkey_xmss_update_state(k, printerror)) != 0) {
-		if (r == 0)
-			r = rupdate;
-	}
-	return r;
-}
-#else /*ndef WITH_XMSS*/
-static inline int
-sshkey_private_serialize_maxsign(struct sshkey *k, struct sshbuf *b,
-    u_int32_t maxsign, int printerror)
-{
-	UNUSED(maxsign);
-	UNUSED(printerror);
-	return sshkey_private_serialize_opt(k, b, SSHKEY_SERIALIZE_DEFAULT);
-}
-#endif /*ndef WITH_XMSS*/
 
 /*
  * Opens an authentication socket at the provided path and stores the file
@@ -476,7 +434,7 @@ Xssh_agent_sign(int sock, ssh_sign_ctx *ctx,
 
 
 static int
-encode_constraints(struct sshbuf *m, u_int life, u_int confirm, u_int maxsign,
+encode_constraints(struct sshbuf *m, u_int life, u_int confirm,
     const char *provider)
 {
 	int r;
@@ -488,11 +446,6 @@ encode_constraints(struct sshbuf *m, u_int life, u_int confirm, u_int maxsign,
 	}
 	if (confirm != 0) {
 		if ((r = sshbuf_put_u8(m, SSH_AGENT_CONSTRAIN_CONFIRM)) != 0)
-			goto out;
-	}
-	if (maxsign != 0) {
-		if ((r = sshbuf_put_u8(m, SSH_AGENT_CONSTRAIN_MAXSIGN)) != 0 ||
-		    (r = sshbuf_put_u32(m, maxsign)) != 0)
 			goto out;
 	}
 	if (provider != NULL) {
@@ -512,11 +465,11 @@ encode_constraints(struct sshbuf *m, u_int life, u_int confirm, u_int maxsign,
  */
 int
 ssh_add_identity_constrained(int sock, struct sshkey *key,
-    const char *comment, u_int life, u_int confirm, u_int maxsign,
+    const char *comment, u_int life, u_int confirm,
     const char *provider)
 {
 	struct sshbuf *msg;
-	int r, constrained = (life || confirm || maxsign || provider);
+	int r, constrained = (life || confirm || provider);
 	u_char type;
 
 	if ((msg = sshbuf_new()) == NULL)
@@ -535,16 +488,11 @@ ssh_add_identity_constrained(int sock, struct sshkey *key,
 #endif
 	case KEY_ED25519:
 	case KEY_ED25519_CERT:
-#ifdef WITH_XMSS
-	case KEY_XMSS:
-	case KEY_XMSS_CERT:
-#endif
 		type = constrained ?
 		    SSH2_AGENTC_ADD_ID_CONSTRAINED :
 		    SSH2_AGENTC_ADD_IDENTITY;
 		if ((r = sshbuf_put_u8(msg, type)) != 0 ||
-		    (r = sshkey_private_serialize_maxsign(key, msg, maxsign,
-		    0)) != 0 ||
+		    (r = sshkey_private_serialize(key, msg)) != 0 ||
 		    (r = sshbuf_put_cstring(msg, comment)) != 0)
 			goto out;
 		break;
@@ -553,8 +501,7 @@ ssh_add_identity_constrained(int sock, struct sshkey *key,
 		goto out;
 	}
 	if (constrained &&
-	    (r = encode_constraints(msg, life, confirm, maxsign,
-	    provider)) != 0)
+	    (r = encode_constraints(msg, life, confirm, provider)) != 0)
 		goto out;
 	r = ssh_request_reply_decode(sock, msg);
  out:
@@ -622,7 +569,7 @@ ssh_update_card(int sock, int add, const char *reader_id, const char *pin,
 	    (r = sshbuf_put_cstring(msg, pin)) != 0)
 		goto out;
 	if (constrained &&
-	    (r = encode_constraints(msg, life, confirm, 0, NULL)) != 0)
+	    (r = encode_constraints(msg, life, confirm, NULL)) != 0)
 		goto out;
 	r = ssh_request_reply_decode(sock, msg);
  out:

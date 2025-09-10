@@ -383,6 +383,4 @@ sshkey_fuzz_tests(void)
 	TEST_DONE();
 
 /* XXX fuzz decoded new-format blobs too */
-/* XXX fuzz XMSS too */
-
 }

@@ -1,4 +1,4 @@
-/* $OpenBSD: sshd.c,v 1.615 2025/02/10 23:19:26 djm Exp $ */
+/* $OpenBSD: sshd.c,v 1.622 2025/08/29 03:50:38 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -1460,9 +1460,6 @@ main(int ac, char **av)
 	#endif
 		case KEY_ECDSA:
 		case KEY_ED25519:
-	#ifdef WITH_XMSS
-		case KEY_XMSS:
-	#endif
 			if (have_agent || key != NULL)
 				sensitive_data.have_ssh2_key = 1;
 			break;
