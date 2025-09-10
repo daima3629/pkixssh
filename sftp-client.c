@@ -1,7 +1,7 @@
-/* $OpenBSD: sftp-client.c,v 1.177 2025/03/11 07:48:51 dtucker Exp $ */
+/* $OpenBSD: sftp-client.c,v 1.178 2025/09/02 09:26:21 djm Exp $ */
 /*
  * Copyright (c) 2001-2004 Damien Miller <djm@openbsd.org>
- * Copyright (c) 2018-2022 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2018-2025 Roumen Petrov.  All rights reserved.
  * Copyright (c) 2021 Mike Frysinger.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
@@ -39,13 +39,6 @@
 
 #include <dirent.h>
 #include <errno.h>
-#ifdef HAVE_POLL_H
-# include <poll.h>
-#else
-# ifdef HAVE_SYS_POLL_H
-#  include <sys/poll.h>
-# endif
-#endif
 #include <fcntl.h>
 #include <signal.h>
 #include <stdarg.h>

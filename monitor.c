@@ -46,13 +46,6 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <unistd.h>
-#ifdef HAVE_POLL_H
-# include <poll.h>
-#else
-# ifdef HAVE_SYS_POLL_H
-#  include <sys/poll.h>
-# endif
-#endif
 
 #include "openbsd-compat/sys-tree.h"
 #include "openbsd-compat/sys-queue.h"

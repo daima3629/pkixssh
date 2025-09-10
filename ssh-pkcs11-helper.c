@@ -43,13 +43,6 @@
 
 #include <stdlib.h>
 #include <errno.h>
-#ifdef HAVE_POLL_H
-# include <poll.h>
-#else
-# ifdef HAVE_SYS_POLL_H
-#  include <sys/poll.h>
-# endif
-#endif
 #include <stdarg.h>
 #include <string.h>
 #include <unistd.h>

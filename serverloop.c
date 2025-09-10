@@ -13,7 +13,7 @@
  *
  * SSH2 support by Markus Friedl.
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2017-2023 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2017-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -51,13 +51,6 @@
 #include <fcntl.h>
 #include <pwd.h>
 #include <limits.h>
-#ifdef HAVE_POLL_H
-# include <poll.h>
-#else
-# ifdef HAVE_SYS_POLL_H
-#  include <sys/poll.h>
-# endif
-#endif
 #include <signal.h>
 #include <string.h>
 #include <termios.h>

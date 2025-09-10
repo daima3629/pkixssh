@@ -41,13 +41,6 @@
 #ifdef HAVE_LIBGEN_H
 # include <libgen.h>
 #endif
-#ifdef HAVE_POLL_H
-# include <poll.h>
-#else
-# ifdef HAVE_SYS_POLL_H
-#  include <sys/poll.h>
-# endif
-#endif
 #include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>

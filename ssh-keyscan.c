@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keyscan.c,v 1.165 2024/12/06 15:17:15 djm Exp $ */
+/* $OpenBSD: ssh-keyscan.c,v 1.167 2025/08/29 03:50:38 djm Exp $ */
 /*
  * Copyright 1995, 1996 by David Mazieres <dm@lcs.mit.edu>.
  *
@@ -6,7 +6,7 @@
  * permitted provided that due credit is given to the author and the
  * OpenBSD project by leaving this copyright notice intact.
  *
- * Copyright (c) 2002-2022 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -49,13 +49,6 @@
 #include <limits.h>
 #include <netdb.h>
 #include <errno.h>
-#ifdef HAVE_POLL_H
-# include <poll.h>
-#else
-# ifdef HAVE_SYS_POLL_H
-#  include <sys/poll.h>
-# endif
-#endif
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
