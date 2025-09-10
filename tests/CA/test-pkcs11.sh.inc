@@ -66,35 +66,39 @@ testPUBKEYautorization () {
 
 if $load_cert ; then
   case "$SSH_CLIENTKEY" in
-  *rsa*)         PubkeyAlgorithms='x509v3-*rsa*';;
-  *eccnistp256*) PubkeyAlgorithms='x509v3-ecdsa*256';;
-  *eccnistp384*) PubkeyAlgorithms='x509v3-ecdsa*384';;
-  *eccnistp521*) PubkeyAlgorithms='x509v3-ecdsa*521';;
+  *rsa*)         algs='x509v3-rsa2048-sha256 x509v3-ssh-rsa x509v3-sign-rsa';;
+  *eccnistp256*) algs='x509v3-ecdsa-sha2-nistp256';;
+  *eccnistp384*) algs='x509v3-ecdsa-sha2-nistp384';;
+  *eccnistp521*) algs='x509v3-ecdsa-sha2-nistp521';;
   *)
     echo "error: unknown key $SSH_CLIENTKEY" >&2
     exit 33;;
   esac
+  for PubkeyAlgorithms in $algs ; do
 (
   SSH_EXTRA_OPTIONS="$SSH_EXTRA_OPTIONS -o PubkeyAlgorithms=$PubkeyAlgorithms"
 
-  runTest "$typemsg" "" "X.509" "$must_fail"
+  runTest "$typemsg" "" "X.509 - $PubkeyAlgorithms" "$must_fail"
 ) || return $?
+  done
 fi
 
   case "$SSH_CLIENTKEY" in
-  *rsa*)         PubkeyAlgorithms='rsa-sha2*,ssh-rsa';;
-  *eccnistp256*) PubkeyAlgorithms='ecdsa*256';;
-  *eccnistp384*) PubkeyAlgorithms='ecdsa*384';;
-  *eccnistp521*) PubkeyAlgorithms='ecdsa*521';;
+  *rsa*)         algs='rsa-sha2-256 rsa-sha2-512 ssh-rsa';;
+  *eccnistp256*) algs='ecdsa-sha2-nistp256';;
+  *eccnistp384*) algs='ecdsa-sha2-nistp384';;
+  *eccnistp521*) algs='ecdsa-sha2-nistp521';;
   *)
     echo "error: unknown key $SSH_CLIENTKEY" >&2
     exit 33;;
   esac
+  for PubkeyAlgorithms in $algs ; do
 (
   SSH_EXTRA_OPTIONS="$SSH_EXTRA_OPTIONS -o PubkeyAlgorithms=$PubkeyAlgorithms"
 
-  runTest "$typemsg" "" "plain" "$must_fail"
-)
+  runTest "$typemsg" "" "plain - $PubkeyAlgorithms" "$must_fail"
+) || return $?
+  done
 }
 
 
