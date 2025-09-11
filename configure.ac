@@ -537,7 +537,6 @@ AC_CHECK_HEADERS([ \
 	sys/timers.h \
 	sys/utsname.h \
 	sys/vfs.h \
-	time.h \
 	tmpdir.h \
 	ttyent.h \
 	ucred.h \
@@ -1983,9 +1982,7 @@ AC_ARG_WITH([audit],
 		AC_CHECK_HEADERS([bsm/audit.h], [],
 		    [AC_MSG_ERROR([BSM enabled and bsm/audit.h not found])],
 		    [
-#ifdef HAVE_TIME_H
-# include <time.h>
-#endif
+#include <time.h>
 		    ]
 )
 		AC_CHECK_LIB([bsm], [getaudit], [],
@@ -4176,9 +4173,7 @@ AC_CHECK_SIZEOF([time_t], [], [[
 #ifdef HAVE_SYS_TIME_H
 # include <sys/time.h>
 #endif
-#ifdef HAVE_TIME_H
-# include <time.h>
-#endif
+#include <time.h>
 ]])
 
 # Sanity check long long for some platforms (AIX)
