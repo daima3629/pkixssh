@@ -512,7 +512,7 @@ pkcs11_get_key(
 /* openssl callback doing the actual signing operation */
 static int
 pkcs11_key_sign_rsa(struct pkcs11_key *k11,
-    const u_char *from, int flen, u_char *to, CK_ULONG *tlen
+    u_char *data, long dlen, u_char *sig, long *slen
 ) {
 	struct pkcs11_slotinfo	*si;
 	CK_FUNCTION_LIST	*f;
@@ -537,9 +537,9 @@ pkcs11_key_sign_rsa(struct pkcs11_key *k11,
 	} else {
 		(void)pkcs11_reauthenticate(si, f, obj);
 		/* XXX handle CKR_BUFFER_TOO_SMALL */
-		rv = f->C_Sign(si->session, (CK_BYTE *)from, flen, to, tlen);
+		rv = f->C_Sign(si->session, data, dlen, sig, slen);
 		if (rv == CKR_OK)
-			rval = *tlen;
+			rval = *slen;
 		else {
 			PKCS11err(PKCS11_RSA_PRIVATE_ENCRYPT, PKCS11_C_SIGN_FAIL);
 			crypto_pkcs11_error(rv);
@@ -567,7 +567,7 @@ pkcs11_rsa_private_encrypt(int flen, const u_char *from, u_char *to, RSA *rsa,
 	}
 
 {	CK_ULONG tlen = RSA_size(rsa);
-	return pkcs11_key_sign_rsa(k11, from, flen, to, &tlen);
+	return pkcs11_key_sign_rsa(k11, (u_char*)from, flen, to, &tlen);
 }
 }
 
@@ -680,44 +680,41 @@ parse_err:
 
 
 /* redirect private key operations for ec key to pkcs11 token */
-static ECDSA_SIG*
+static int
 pkcs11_key_sign_ecdsa(struct pkcs11_key *k11,
-	const unsigned char *dgst, int dlen
+	u_char *data, long dlen, u_char *sig, long *slen
 ) {
 	struct pkcs11_slotinfo	*si;
 	CK_FUNCTION_LIST	*f;
 	CK_OBJECT_HANDLE	obj;
-	CK_ULONG		tlen = 0;
 	CK_RV			rv;
 	CK_MECHANISM		mech = {
 		CKM_ECDSA, NULL_PTR, 0
 	};
-	ECDSA_SIG		*sig = NULL;
+	int			rval = -1;
 
 	debug3_f("provider->name: %s", k11->provider->name);
 
 	f = k11->provider->function_list;
 	si = &k11->provider->slotinfo[k11->slotidx];
 
-	if (!pkcs11_login(si, f)) return NULL;
-	if (!pkcs11_get_key(k11, &obj)) return NULL;
+	if (!pkcs11_login(si, f)) return -1;
+	if (!pkcs11_get_key(k11, &obj)) return -1;
 
 	if ((rv = f->C_SignInit(si->session, &mech, obj)) != CKR_OK) {
 		PKCS11err(PKCS11_ECDSA_DO_SIGN, PKCS11_C_SIGNINIT_FAIL);
 		crypto_pkcs11_error(rv);
 	} else {
-		char rs[(1024>>2)/*> 2*[521/8]=2*66 */];
 		(void)pkcs11_reauthenticate(si, f, obj);
-		tlen = sizeof(rs);
-		rv = f->C_Sign(si->session, (CK_BYTE *)dgst, dlen, rs, &tlen);
+		rv = f->C_Sign(si->session, data, dlen, sig, slen);
 		if (rv == CKR_OK)
-			sig = parse_ECDSA_SIG(rs, tlen);
+			rval = *slen;
 		else {
 			PKCS11err(PKCS11_ECDSA_DO_SIGN, PKCS11_C_SIGN_FAIL);
 			crypto_pkcs11_error(rv);
 		}
 	}
-	return (sig);
+	return rval;
 }
 
 static ECDSA_SIG*
@@ -743,7 +740,13 @@ pkcs11_ecdsa_do_sign(
 		return NULL;
 	}
 
-	return pkcs11_key_sign_ecdsa(k11, dgst, dlen);
+{	u_char sig[(1024>>2)/*> 2*[521/8]=2*66 */];
+	long slen;
+
+	slen = (long)sizeof(sig);
+	slen = pkcs11_key_sign_ecdsa(k11, (u_char *)dgst, dlen, sig, &slen);
+	return (slen >= 0) ? parse_ECDSA_SIG(sig, slen) : NULL;
+}
 }
 
 
