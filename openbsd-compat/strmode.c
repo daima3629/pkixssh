@@ -34,7 +34,6 @@
 #ifndef HAVE_STRMODE
 
 #include <sys/types.h>
-#include <sys/stat.h>
 #include <string.h>
 
 /* XXX mode should be mode_t */

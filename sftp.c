@@ -1,4 +1,4 @@
-/* $OpenBSD: sftp.c,v 1.240 2025/03/28 06:04:07 dtucker Exp $ */
+/* $OpenBSD: sftp.c,v 1.241 2025/09/02 09:34:48 djm Exp $ */
 /*
  * Copyright (c) 2001-2004 Damien Miller <djm@openbsd.org>
  * Copyright (c) 2013-2025 Roumen Petrov.  All rights reserved.
@@ -19,9 +19,6 @@
 #include "includes.h"
 
 #include <sys/ioctl.h>
-#ifdef HAVE_SYS_STAT_H
-# include <sys/stat.h>
-#endif
 #include <sys/socket.h>
 #include <sys/wait.h>
 #ifdef HAVE_SYS_STATVFS_H

@@ -19,7 +19,6 @@
 #include "includes.h"
 
 #include <sys/types.h>
-#include <sys/stat.h>
 #include <sys/resource.h>
 #ifdef HAVE_SYS_MOUNT_H
 #include <sys/mount.h>

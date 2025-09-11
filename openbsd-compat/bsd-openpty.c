@@ -5,7 +5,7 @@
 
 /*
  * Copyright (c) 2004 Damien Miller <djm@mindrot.org>
- * Copyright (c) 2016-2022 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2016-2025 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -39,10 +39,6 @@
 #include <sys/types.h>
 
 #include <stdlib.h>
-
-#ifdef HAVE_SYS_STAT_H
-# include <sys/stat.h>
-#endif
 
 #include <sys/ioctl.h>
 

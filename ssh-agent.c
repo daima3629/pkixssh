@@ -38,7 +38,6 @@
 #include "includes.h"
 
 #include <sys/resource.h>
-#include <sys/stat.h>
 #include <sys/socket.h>
 #ifdef HAVE_SYS_UN_H
 # include <sys/un.h>

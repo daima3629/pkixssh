@@ -16,7 +16,6 @@
 
 #include <sys/types.h>
 #include <sys/ioctl.h>
-#include <sys/stat.h>
 #include <signal.h>
 
 #include <errno.h>

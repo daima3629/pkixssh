@@ -34,7 +34,6 @@
 
 #if !defined(HAVE_GETCWD)
 
-#include <sys/stat.h>
 #include <errno.h>
 #include <dirent.h>
 #include <sys/dir.h>

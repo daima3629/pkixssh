@@ -28,7 +28,6 @@
 #include "includes.h"
 
 #include <sys/types.h>
-#include <sys/stat.h>
 
 #include <stdlib.h>
 #include <errno.h>

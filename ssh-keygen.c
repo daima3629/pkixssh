@@ -39,7 +39,6 @@
 
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <sys/stat.h>
 
 #ifdef WITH_OPENSSL
 #include <openssl/evp.h>
