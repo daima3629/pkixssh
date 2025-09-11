@@ -31,9 +31,6 @@
 #ifdef ENABLE_PKCS11 /* implies WITH_OPENSSL */
 
 #include <sys/types.h>
-#ifdef HAVE_SYS_TIME_H
-# include <sys/time.h>
-#endif
 
 #ifdef OPENSSL_HAS_ECC
 # include <openssl/ecdsa.h>

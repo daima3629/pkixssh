@@ -67,9 +67,6 @@
 #ifdef HAVE_SYS_STAT_H
 # include <sys/stat.h>
 #endif
-#ifdef HAVE_SYS_TIME_H
-# include <sys/time.h>
-#endif
 #include <sys/socket.h>
 
 #include <ctype.h>
