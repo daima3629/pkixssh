@@ -42,7 +42,6 @@
 
 #include <sys/types.h>
 #include "openbsd-compat/sys-queue.h"
-#include <sys/socket.h>
 
 #include <netinet/in.h>
 #include <netinet/ip.h>

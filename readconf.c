@@ -37,9 +37,7 @@
 #include "includes.h"
 
 #include <sys/types.h>
-#include <sys/socket.h>
 #include <sys/wait.h>
-#include <sys/un.h>
 
 #include <net/if.h>
 #include <netinet/in.h>
@@ -87,6 +85,8 @@
 #include "mac.h"
 #include "myproposal.h"
 #include "digest.h"
+
+#define PATH_MAX_SUN		(sizeof((struct sockaddr_un *)0)->sun_path)
 
 /* Format of the configuration file:
 

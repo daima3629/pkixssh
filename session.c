@@ -36,8 +36,6 @@
 
 #include "includes.h"
 
-#include <sys/socket.h>
-#include <sys/un.h>
 #include <sys/wait.h>
 
 #include <arpa/inet.h>

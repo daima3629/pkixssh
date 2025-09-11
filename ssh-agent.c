@@ -38,10 +38,6 @@
 #include "includes.h"
 
 #include <sys/resource.h>
-#include <sys/socket.h>
-#ifdef HAVE_SYS_UN_H
-# include <sys/un.h>
-#endif
 #include "openbsd-compat/sys-queue.h"
 
 #ifdef WITH_OPENSSL

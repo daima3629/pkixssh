@@ -19,7 +19,6 @@
 #if !defined(HAVE_GETPEEREID)
 
 #include <sys/types.h>
-#include <sys/socket.h>
 
 #include <unistd.h>
 

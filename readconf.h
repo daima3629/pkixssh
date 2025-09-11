@@ -11,7 +11,7 @@
  * incompatible with the protocol description in the RFC file, it must be
  * called by a name other than "ssh" or "Secure Shell".
  *
- * Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -41,7 +41,6 @@
 /* Data structure for representing option data. */
 
 #define SSH_MAX_HOSTS_FILES	32
-#define PATH_MAX_SUN		(sizeof((struct sockaddr_un *)0)->sun_path)
 
 struct allowed_cname {
 	char *source_list;

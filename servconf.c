@@ -41,7 +41,6 @@
 #endif
 
 #include <sys/types.h>
-#include <sys/socket.h>
 #ifdef USE_SYSCTL_NET
 #include <sys/sysctl.h>
 #endif

@@ -19,7 +19,6 @@
 #include "includes.h"
 
 #include <sys/ioctl.h>
-#include <sys/socket.h>
 #include <sys/wait.h>
 #ifdef HAVE_SYS_STATVFS_H
 #include <sys/statvfs.h>

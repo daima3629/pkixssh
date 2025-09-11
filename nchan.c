@@ -1,7 +1,7 @@
 /* $OpenBSD: nchan.c,v 1.76 2024/07/25 22:40:08 djm Exp $ */
 /*
  * Copyright (c) 1999, 2000, 2001, 2002 Markus Friedl.  All rights reserved.
- * Copyright (c) 2019-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2019-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -27,7 +27,6 @@
 #include "includes.h"
 
 #include <sys/types.h>
-#include <sys/socket.h>
 
 #include <errno.h>
 #include <string.h>

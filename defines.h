@@ -425,6 +425,9 @@ struct	sockaddr_un {
 	short	sun_family;		/* AF_UNIX */
 	char	sun_path[108];		/* path name (gag) */
 };
+#else
+/* NOTE Android requires to include sys/socket.h before sys/un.h */
+# include <sys/un.h>
 #endif /* HAVE_SYS_UN_H */
 
 #ifndef HAVE_IN_ADDR_T

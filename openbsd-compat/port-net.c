@@ -203,7 +203,6 @@ sys_tun_open(int tun, int mode, char **ifname)
 #endif /* SSH_TUN_LINUX */
 
 #ifdef SSH_TUN_FREEBSD
-#include <sys/socket.h>
 #include <net/if.h>
 
 #ifdef HAVE_NET_IF_TUN_H

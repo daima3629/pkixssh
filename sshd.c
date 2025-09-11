@@ -47,7 +47,6 @@
 
 #include <sys/types.h>
 #include <sys/ioctl.h>
-#include <sys/socket.h>
 #include "openbsd-compat/sys-tree.h"
 #include "openbsd-compat/sys-queue.h"
 #include <sys/wait.h>
