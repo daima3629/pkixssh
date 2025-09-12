@@ -2897,6 +2897,16 @@ AS_IF([$ssh_kex_dh], [
 		[Define to 1 if you want to enable diffie-hellman key exchange])
 ])
 
+# enable build-in ML-KEM key exchange
+ssh_kex_mlkem_int=false
+AC_ARG_ENABLE([kex_mlkem],
+	[AS_HELP_STRING([--enable-kex-mlkem], [Enable build-in ML-KEM key exchange algorithms])],
+	[AS_IF([test "x$enableval" = "xyes"], [ssh_kex_mlkem_int=:])])
+AS_IF([$ssh_kex_mlkem_int], [
+	AC_DEFINE([ENABLE_KEX_MLKEM768X25519], [1],
+		[Define to 1 if you want to enable  build-in ML-KEM key exchange])
+])
+
 # enable DSA keys
 ssh_dsa=false
 AC_ARG_ENABLE([dsa],
