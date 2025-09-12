@@ -653,6 +653,10 @@ AH_TEMPLATE([BROKEN_GLOB], [Define to 1 if system glob(3) does not do what we ex
 AH_TEMPLATE([SSHD_ACQUIRES_CTTY],
     [Define to 1 if sshd somehow reacquires a controlling TTY after setsid()])
 AH_TEMPLATE([GSSAPI], [Define this if you want GSSAPI support])
+AH_TEMPLATE([SSH_TUN_PREPEND_AF],
+    [Define to 1 to prepend the address family in IP tunnel traffic])
+AH_TEMPLATE([SSH_TUN_COMPAT_AF],
+    [Define to 1 to support address family compatible IP tunnel])
 
 # Messages for features tested for in target-specific section
 SIA_MSG="no"
@@ -822,10 +826,8 @@ case "$host" in
 	else
 		AC_DEFINE([SSH_TUN_FREEBSD], [1],
 		    [Open tunnel devices the FreeBSD way])
-		AC_DEFINE([SSH_TUN_PREPEND_AF], [1],
-		    [Prepend the address family to IP tunnel traffic])
-		AC_DEFINE([SSH_TUN_COMPAT_AF], [1],
-		    [Use tunnel device compatibility to OpenBSD])
+		AC_DEFINE([SSH_TUN_PREPEND_AF], [1])
+		AC_DEFINE([SSH_TUN_COMPAT_AF], [1])
 	fi
 	m4_pattern_allow([AU_IPv])
 	AC_CHECK_DECL([AU_IPv4], [],
@@ -996,10 +998,8 @@ case "$host" in
 	if test "x$ac_cv_header_linux_if_tun_h" = "xyes" ; then
 		AC_DEFINE([SSH_TUN_LINUX], [1],
 		    [Open tunnel devices the Linux tun/tap way])
-		AC_DEFINE([SSH_TUN_COMPAT_AF], [1],
-		    [Use tunnel device compatibility to OpenBSD])
-		AC_DEFINE([SSH_TUN_PREPEND_AF], [1],
-		    [Prepend the address family to IP tunnel traffic])
+		AC_DEFINE([SSH_TUN_PREPEND_AF], [1])
+		AC_DEFINE([SSH_TUN_COMPAT_AF], [1])
 	fi
 	AC_CHECK_HEADER([linux/if.h],
 	    AC_DEFINE([SYS_RDOMAIN_LINUX], [1],
@@ -1110,8 +1110,7 @@ mips-sony-bsd|mips-sony-newsos4)
 	AC_DEFINE([SSH_TUN_FREEBSD], [1], [Open tunnel devices the FreeBSD way])
 	AC_CHECK_HEADER([net/if_tap.h], ,
 	    AC_DEFINE([SSH_TUN_NO_L2], [1], [No layer 2 tunnel support]))
-	AC_DEFINE([SSH_TUN_PREPEND_AF], [1],
-	    [Prepend the address family to IP tunnel traffic])
+	AC_DEFINE([SSH_TUN_PREPEND_AF], [1])
 	TEST_MALLOC_OPTIONS="AJRX"
 	AC_DEFINE([BROKEN_READ_COMPARISON], [1],
 	    [NetBSD read function is sometimes redirected, breaking atomicio comparisons against it])
@@ -1121,6 +1120,7 @@ mips-sony-bsd|mips-sony-newsos4)
 	AC_DEFINE([SSH_TUN_FREEBSD], [1], [Open tunnel devices the FreeBSD way])
 	AC_CHECK_HEADER([net/if_tap.h], ,
 	    AC_DEFINE([SSH_TUN_NO_L2], [1], [No layer 2 tunnel support]))
+	AC_DEFINE([SSH_TUN_COMPAT_AF], [1])
 	AC_DEFINE([BROKEN_GLOB], [1])
 	TEST_MALLOC_OPTIONS="AJRX"
 	case "$host" in
