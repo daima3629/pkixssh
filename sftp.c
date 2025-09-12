@@ -28,7 +28,7 @@
 #include <errno.h>
 
 #ifdef HAVE_LIBGEN_H
-#include <libgen.h>
+# include <libgen.h>
 #endif
 #ifdef HAVE_LOCALE_H
 # include <locale.h>

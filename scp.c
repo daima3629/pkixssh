@@ -91,7 +91,7 @@
 # include "openbsd-compat/glob.h"
 #endif
 #ifdef HAVE_LIBGEN_H
-#include <libgen.h>
+# include <libgen.h>
 #endif
 #include <limits.h>
 #ifdef HAVE_UTIL_H

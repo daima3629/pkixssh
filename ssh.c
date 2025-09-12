@@ -114,7 +114,7 @@ extern void ERR_load_SSHLDAP_strings(void);
 #include "utf8.h"
 
 #ifdef ENABLE_PKCS11
-#include "ssh-pkcs11.h"
+# include "ssh-pkcs11.h"
 #endif
 
 extern char *__progname;

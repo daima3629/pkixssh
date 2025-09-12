@@ -65,9 +65,6 @@
 #include "uidswap.h"
 #include "channels.h"
 #include "cipher.h"
-#ifdef GSSAPI
-#include "ssh-gss.h"
-#endif
 #include "hostfile.h"
 #include "auth.h"
 #include "auth-options.h"
@@ -80,17 +77,19 @@
 #include "serverloop.h"
 #include "canohost.h"
 #include "session.h"
-#include "kex.h"
+#ifdef GSSAPI
+# include "ssh-gss.h"
+#endif
 #include "monitor_wrap.h"
 #include "sftp.h"
 #include "atomicio.h"
 
 #if defined(KRB5) && defined(USE_AFS)
-#include <kafs.h>
+# include <kafs.h>
 #endif
 
 #ifdef WITH_SELINUX
-#include <selinux/selinux.h>
+# include <selinux/selinux.h>
 #endif
 
 #define IS_INTERNAL_SFTP(c) \

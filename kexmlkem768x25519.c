@@ -31,9 +31,6 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
-#ifdef HAVE_ENDIAN_H
-# include <endian.h>
-#endif
 
 #include "kex.h"
 #include "digest.h"

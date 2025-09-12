@@ -74,7 +74,10 @@
 #include "digest.h"
 #include "ssherr.h"
 #include "match.h"
-#include "ssh-pkcs11.h"
+
+#ifdef ENABLE_PKCS11
+# include "ssh-pkcs11.h"
+#endif
 
 #ifndef DEFAULT_ALLOWED_PROVIDERS
 # define DEFAULT_ALLOWED_PROVIDERS "!*"

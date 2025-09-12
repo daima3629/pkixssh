@@ -77,13 +77,16 @@
 #include "ssh.h"
 #include "ssh2.h"
 #include "ssherr.h"
-#include "ssh-pkcs11.h"
 #include "atomicio.h"
 #include "krl.h"
 #include "digest.h"
 #include "utf8.h"
 #include "authfd.h"
 #include "cipher.h"
+
+#ifdef ENABLE_PKCS11
+# include "ssh-pkcs11.h"
+#endif
 
 static char*
 default_key_type_name(void) {

@@ -15,7 +15,7 @@
 #include <errno.h>
 #include <pwd.h>
 #ifdef HAVE_LIBGEN_H
-#include <libgen.h>
+# include <libgen.h>
 #endif
 
 /* misc.c */
