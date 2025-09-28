@@ -468,36 +468,18 @@ ssh_add_identity_constrained(int sock, struct sshkey *key,
 {
 	struct sshbuf *msg;
 	int r, constrained = (life || confirm || provider);
-	u_char type;
 
 	if ((msg = sshbuf_new()) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
 
-	switch (key->type) {
-#ifdef WITH_OPENSSL
-	case KEY_RSA:
-	case KEY_RSA_CERT:
-#ifdef WITH_DSA
-	case KEY_DSA:
-	case KEY_DSA_CERT:
-#endif
-	case KEY_ECDSA:
-	case KEY_ECDSA_CERT:
-#endif
-	case KEY_ED25519:
-	case KEY_ED25519_CERT:
-		type = constrained ?
-		    SSH2_AGENTC_ADD_ID_CONSTRAINED :
-		    SSH2_AGENTC_ADD_IDENTITY;
-		if ((r = sshbuf_put_u8(msg, type)) != 0 ||
-		    (r = sshkey_private_serialize(key, msg)) != 0 ||
-		    (r = sshbuf_put_cstring(msg, comment)) != 0)
-			goto out;
-		break;
-	default:
-		r = SSH_ERR_INVALID_ARGUMENT;
+{	u_char type = constrained ?
+	    SSH2_AGENTC_ADD_ID_CONSTRAINED :
+	    SSH2_AGENTC_ADD_IDENTITY;
+	if ((r = sshbuf_put_u8(msg, type)) != 0 ||
+	    (r = sshkey_private_serialize(key, msg)) != 0 ||
+	    (r = sshbuf_put_cstring(msg, comment)) != 0)
 		goto out;
-	}
+}
 	if (constrained &&
 	    (r = encode_constraints(msg, life, confirm, provider)) != 0)
 		goto out;

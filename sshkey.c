@@ -1248,23 +1248,6 @@ sshkey_read_pkalg(struct sshkey *ret, char **cpp, char **pkalg)
 	/* caller is responsible to free memory allocated for pkalg */
 	if (pkalg) *pkalg = NULL;
 
-	switch (ret->type) {
-	case KEY_UNSPEC:
-	case KEY_RSA:
-	case KEY_ECDSA:
-	case KEY_ED25519:
-	case KEY_ECDSA_CERT:
-	case KEY_RSA_CERT:
-	case KEY_ED25519_CERT:
-#ifdef WITH_DSA
-	case KEY_DSA:
-	case KEY_DSA_CERT:
-#endif
-		break; /* ok */
-	default:
-		return SSH_ERR_INVALID_ARGUMENT;
-	}
-
 	/* Decode type */
 	cp = *cpp;
 	space = strcspn(cp, " \t");
