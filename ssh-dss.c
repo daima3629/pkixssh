@@ -840,6 +840,21 @@ static const struct sshkey_impl_funcs sshkey_dss_funcs = {
 	/* .verify = */		ssh_dss_verify
 };
 
+static int sshkey_dss_enabled(void) { return 1; }
+#define SSHKEY_DSS_FUNCS	&sshkey_dss_funcs
+
+#else
+
+#include "sshkey.h"
+
+#define KEY_DSA KEY_UNSPEC
+#define KEY_DSA_CERT KEY_UNSPEC
+
+static int sshkey_dss_enabled(void) { return 0; }
+#define SSHKEY_DSS_FUNCS	NULL
+
+#endif /* WITH_DSA */
+
 const struct sshkey_impl sshkey_dss_impl = {
 	/* .name = */		"ssh-dss",
 	/* .shortname = */	"DSA",
@@ -849,7 +864,8 @@ const struct sshkey_impl sshkey_dss_impl = {
 	/* .cert = */		0,
 	/* .sigonly = */	0,
 	/* .keybits = */	0,
-	/* .funcs = */		&sshkey_dss_funcs
+	/* .enabled = */	sshkey_dss_enabled,
+	/* .funcs = */		SSHKEY_DSS_FUNCS
 };
 
 const struct sshkey_impl sshkey_dsa_cert_impl = {
@@ -861,10 +877,6 @@ const struct sshkey_impl sshkey_dsa_cert_impl = {
 	/* .cert = */		1,
 	/* .sigonly = */	0,
 	/* .keybits = */	0,
-	/* .funcs = */		&sshkey_dss_funcs
+	/* .enabled = */	sshkey_dss_enabled,
+	/* .funcs = */		SSHKEY_DSS_FUNCS
 };
-#else
-
-typedef int ssh_dss_empty_translation_unit;
-
-#endif /* WITH_DSA */

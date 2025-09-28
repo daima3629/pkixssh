@@ -1222,6 +1222,24 @@ static const struct sshkey_impl_funcs sshkey_rsa_funcs = {
 	/* .verify = */		ssh_rsa_verify
 };
 
+static int sshkey_rsa_enabled(void) { return 1; }
+static int sshkey_rsa_sha256_enabled(void) {
+#ifdef HAVE_EVP_SHA256
+	return 1;
+#else
+	return 0;
+#endif
+}
+#define SSHKEY_RSA_FUNCS	&sshkey_rsa_funcs
+
+#else
+
+static int sshkey_rsa_enabled(void) { return 0; }
+static int sshkey_rsa_sha256_enabled(void) { return 0; }
+#define SSHKEY_RSA_FUNCS	NULL
+
+#endif /* WITH_OPENSSL */
+
 const struct sshkey_impl sshkey_rsa_impl = {
 	/* .name = */		"ssh-rsa",
 	/* .shortname = */	"RSA",
@@ -1231,7 +1249,8 @@ const struct sshkey_impl sshkey_rsa_impl = {
 	/* .cert = */		0,
 	/* .sigonly = */	0,
 	/* .keybits = */	0,
-	/* .funcs = */		&sshkey_rsa_funcs
+	/* .enabled = */	sshkey_rsa_enabled,
+	/* .funcs = */		SSHKEY_RSA_FUNCS
 };
 
 const struct sshkey_impl sshkey_rsa_cert_impl = {
@@ -1243,10 +1262,10 @@ const struct sshkey_impl sshkey_rsa_cert_impl = {
 	/* .cert = */		1,
 	/* .sigonly = */	0,
 	/* .keybits = */	0,
-	/* .funcs = */		&sshkey_rsa_funcs
+	/* .enabled = */	sshkey_rsa_enabled,
+	/* .funcs = */		SSHKEY_RSA_FUNCS
 };
 
-#ifdef HAVE_EVP_SHA256
 const struct sshkey_impl sshkey_rsa_sha256_impl = {
 	/* .name = */		"rsa-sha2-256",
 	/* .shortname = */	"RSA",
@@ -1256,7 +1275,8 @@ const struct sshkey_impl sshkey_rsa_sha256_impl = {
 	/* .cert = */		0,
 	/* .sigonly = */	1,
 	/* .keybits = */	0,
-	/* .funcs = */		&sshkey_rsa_funcs
+	/* .enabled = */	sshkey_rsa_sha256_enabled,
+	/* .funcs = */		SSHKEY_RSA_FUNCS
 };
 
 const struct sshkey_impl sshkey_rsa_sha512_impl = {
@@ -1268,7 +1288,8 @@ const struct sshkey_impl sshkey_rsa_sha512_impl = {
 	/* .cert = */		0,
 	/* .sigonly = */	1,
 	/* .keybits = */	0,
-	/* .funcs = */		&sshkey_rsa_funcs
+	/* .enabled = */	sshkey_rsa_sha256_enabled,
+	/* .funcs = */		SSHKEY_RSA_FUNCS
 };
 
 const struct sshkey_impl sshkey_rsa_sha256_cert_impl = {
@@ -1280,7 +1301,8 @@ const struct sshkey_impl sshkey_rsa_sha256_cert_impl = {
 	/* .cert = */		1,
 	/* .sigonly = */	1,
 	/* .keybits = */	0,
-	/* .funcs = */		&sshkey_rsa_funcs
+	/* .enabled = */	sshkey_rsa_sha256_enabled,
+	/* .funcs = */		SSHKEY_RSA_FUNCS
 };
 
 const struct sshkey_impl sshkey_rsa_sha512_cert_impl = {
@@ -1292,11 +1314,6 @@ const struct sshkey_impl sshkey_rsa_sha512_cert_impl = {
 	/* .cert = */		1,
 	/* .sigonly = */	1,
 	/* .keybits = */	0,
-	/* .funcs = */		&sshkey_rsa_funcs
+	/* .enabled = */	sshkey_rsa_sha256_enabled,
+	/* .funcs = */		SSHKEY_RSA_FUNCS
 };
-#endif /*def HAVE_EVP_SHA256*/
-#else
-
-typedef int ssh_rsa_empty_translation_unit;
-
-#endif /* WITH_OPENSSL */

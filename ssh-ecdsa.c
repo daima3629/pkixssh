@@ -1208,6 +1208,33 @@ static const struct sshkey_impl_funcs sshkey_ecdsa_funcs = {
 	/* .verify = */		ssh_ecdsa_verify
 };
 
+static int sshkey_ecdsa_enabled(void) { return 1; }
+static int sshkey_ecdsa_nistp521_enabled(void) {
+#ifdef OPENSSL_HAS_NISTP521
+	return 1;
+#else
+	return 0;
+#endif
+}
+#define SSHKEY_ECDSA_FUNCS	&sshkey_ecdsa_funcs
+
+#else
+
+#include "sshkey.h"
+
+#undef NID_X9_62_prime256v1
+#define NID_X9_62_prime256v1	NID_undef
+#undef NID_secp384r1
+#define NID_secp384r1		NID_undef
+#undef NID_secp521r1
+#define NID_secp521r1		NID_undef
+
+static int sshkey_ecdsa_enabled(void) { return 0; }
+static int sshkey_ecdsa_nistp521_enabled(void) { return 0; }
+#define SSHKEY_ECDSA_FUNCS	NULL
+
+#endif /* WITH_OPENSSL && OPENSSL_HAS_ECC */
+
 const struct sshkey_impl sshkey_ecdsa_nistp256_impl = {
 	/* .name = */		"ecdsa-sha2-nistp256",
 	/* .shortname = */	"ECDSA",
@@ -1217,7 +1244,8 @@ const struct sshkey_impl sshkey_ecdsa_nistp256_impl = {
 	/* .cert = */		0,
 	/* .sigonly = */	0,
 	/* .keybits = */	0,
-	/* .funcs = */		&sshkey_ecdsa_funcs
+	/* .enabled = */	sshkey_ecdsa_enabled,
+	/* .funcs = */		SSHKEY_ECDSA_FUNCS
 };
 
 const struct sshkey_impl sshkey_ecdsa_nistp256_cert_impl = {
@@ -1229,7 +1257,8 @@ const struct sshkey_impl sshkey_ecdsa_nistp256_cert_impl = {
 	/* .cert = */		1,
 	/* .sigonly = */	0,
 	/* .keybits = */	0,
-	/* .funcs = */		&sshkey_ecdsa_funcs
+	/* .enabled = */	sshkey_ecdsa_enabled,
+	/* .funcs = */		SSHKEY_ECDSA_FUNCS
 };
 
 const struct sshkey_impl sshkey_ecdsa_nistp384_impl = {
@@ -1241,7 +1270,8 @@ const struct sshkey_impl sshkey_ecdsa_nistp384_impl = {
 	/* .cert = */		0,
 	/* .sigonly = */	0,
 	/* .keybits = */	0,
-	/* .funcs = */		&sshkey_ecdsa_funcs
+	/* .enabled = */	sshkey_ecdsa_enabled,
+	/* .funcs = */		SSHKEY_ECDSA_FUNCS
 };
 
 const struct sshkey_impl sshkey_ecdsa_nistp384_cert_impl = {
@@ -1253,10 +1283,10 @@ const struct sshkey_impl sshkey_ecdsa_nistp384_cert_impl = {
 	/* .cert = */		1,
 	/* .sigonly = */	0,
 	/* .keybits = */	0,
-	/* .funcs = */		&sshkey_ecdsa_funcs
+	/* .enabled = */	sshkey_ecdsa_enabled,
+	/* .funcs = */		SSHKEY_ECDSA_FUNCS
 };
 
-#ifdef OPENSSL_HAS_NISTP521
 const struct sshkey_impl sshkey_ecdsa_nistp521_impl = {
 	/* .name = */		"ecdsa-sha2-nistp521",
 	/* .shortname = */	"ECDSA",
@@ -1266,7 +1296,8 @@ const struct sshkey_impl sshkey_ecdsa_nistp521_impl = {
 	/* .cert = */		0,
 	/* .sigonly = */	0,
 	/* .keybits = */	0,
-	/* .funcs = */		&sshkey_ecdsa_funcs
+	/* .enabled = */	sshkey_ecdsa_nistp521_enabled,
+	/* .funcs = */		SSHKEY_ECDSA_FUNCS
 };
 
 const struct sshkey_impl sshkey_ecdsa_nistp521_cert_impl = {
@@ -1278,11 +1309,6 @@ const struct sshkey_impl sshkey_ecdsa_nistp521_cert_impl = {
 	/* .cert = */		1,
 	/* .sigonly = */	0,
 	/* .keybits = */	0,
-	/* .funcs = */		&sshkey_ecdsa_funcs
+	/* .enabled = */	sshkey_ecdsa_nistp521_enabled,
+	/* .funcs = */		SSHKEY_ECDSA_FUNCS
 };
-#endif /* OPENSSL_HAS_NISTP521 */
-#else
-
-typedef int ssh_ecdsa_empty_translation_unit;
-
-#endif /* WITH_OPENSSL && OPENSSL_HAS_ECC */

@@ -172,6 +172,7 @@ struct sshkey_impl {
 	int cert;
 	int sigonly;
 	int keybits;
+	int (*enabled)(void);
 	const struct sshkey_impl_funcs *funcs;
 };
 
