@@ -1,4 +1,4 @@
-/* $OpenBSD: sshd-session.c,v 1.15 2025/08/29 03:50:38 djm Exp $ */
+/* $OpenBSD: sshd-session.c,v 1.16 2025/09/25 06:45:50 djm Exp $ */
 /*
  * SSH2 implementation:
  * Privilege Separation:
@@ -233,7 +233,7 @@ privsep_preauth_child(void)
 static int
 privsep_preauth(struct ssh *ssh)
 {
-	int status, r;
+	int r;
 	pid_t pid;
 	struct ssh_sandbox *box = NULL;
 
@@ -261,23 +261,7 @@ privsep_preauth(struct ssh *ssh)
 		if (box != NULL)
 			ssh_sandbox_parent_preauth(box, pid);
 		monitor_child_preauth(ssh, pmonitor);
-
-		/* Wait for the child's exit status */
-		while (waitpid(pid, &status, 0) == -1) {
-			if (errno == EINTR)
-				continue;
-			pmonitor->m_pid = -1;
-			fatal_f("waitpid: %s", strerror(errno));
-		}
 		privsep_is_preauth = 0;
-		pmonitor->m_pid = -1;
-		if (WIFEXITED(status)) {
-			if (WEXITSTATUS(status) != 0)
-				fatal_f("preauth child exited with status %d",
-				    WEXITSTATUS(status));
-		} else if (WIFSIGNALED(status))
-			fatal_f("preauth child terminated by signal %d",
-			    WTERMSIG(status));
 		if (box != NULL)
 			ssh_sandbox_parent_finish(box);
 		return 1;
