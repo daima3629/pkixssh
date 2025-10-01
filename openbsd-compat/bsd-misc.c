@@ -371,10 +371,10 @@ getpgid(pid_t pid)
 
 #ifndef HAVE_PLEDGE
 int
-pledge(const char *promises, const char *paths[])
+pledge(const char *promises, const char *execpromises)
 {
 	UNUSED(promises);
-	UNUSED(paths);
+	UNUSED(execpromises);
 	return 0;
 }
 #endif
