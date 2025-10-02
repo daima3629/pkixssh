@@ -1,4 +1,4 @@
-/* $OpenBSD: sftp-client.c,v 1.178 2025/09/02 09:26:21 djm Exp $ */
+/* $OpenBSD: sftp-client.c,v 1.180 2025/09/30 00:10:42 djm Exp $ */
 /*
  * Copyright (c) 2001-2004 Damien Miller <djm@openbsd.org>
  * Copyright (c) 2018-2025 Roumen Petrov.  All rights reserved.
@@ -2094,9 +2094,13 @@ sftp_upload(struct sftp_conn *conn, const char *local_path,
 				fatal("Expected SSH2_FXP_STATUS(%d) packet, "
 				    "got %d", SSH2_FXP_STATUS, type);
 
-			if ((r = sshbuf_get_u32(msg, &status)) != 0)
+		{	u_int32_t status2;
+			if ((r = sshbuf_get_u32(msg, &status2)) != 0)
 				fatal_fr(r, "parse status");
-			debug3("SSH2_FXP_STATUS %u", status);
+			debug3("SSH2_FXP_STATUS %u", status2);
+			if (status2 != SSH2_FX_OK)
+				status = status2; /* remember errors */
+		}
 
 			/* Find the request in our queue */
 			if ((ack = request_find(&acks, rid)) == NULL)
