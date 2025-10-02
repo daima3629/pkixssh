@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh.c,v 1.617 2025/09/04 00:29:09 djm Exp $ */
+/* $OpenBSD: ssh.c,v 1.619 2025/09/25 07:05:11 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -1924,6 +1924,9 @@ main(int ac, char **av)
  skip_connect:
 	exit_status = ssh_session2(ssh, cinfo);
 	ssh_conn_info_free(cinfo);
+
+	channel_fini_channels(ssh);
+
 	(void)ssh_packet_close(ssh);
 	free(ssh);
 
