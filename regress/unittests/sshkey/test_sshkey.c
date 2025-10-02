@@ -1,4 +1,4 @@
-/* 	$OpenBSD: test_sshkey.c,v 1.30 2025/05/24 06:50:28 dtucker Exp $ */
+/* 	$OpenBSD: test_sshkey.c,v 1.32 2025/10/01 00:33:37 dtucker Exp $ */
 /*
  * Regress test for sshkey.h key management API
  *
@@ -309,6 +309,7 @@ sshkey_tests(void)
 	k1 = sshkey_new(KEY_UNSPEC);
 	ASSERT_PTR_NE(k1, NULL);
 	sshkey_free(k1);
+	k1 = NULL;
 	TEST_DONE();
 
 #ifdef WITH_OPENSSL
@@ -317,6 +318,7 @@ sshkey_tests(void)
 	ASSERT_PTR_NE(k1, NULL);
 	ASSERT_PTR_EQ(k1->pk, NULL);
 	sshkey_free(k1);
+	k1 = NULL;
 	TEST_DONE();
 
 #ifdef WITH_DSA
@@ -325,6 +327,7 @@ sshkey_tests(void)
 	ASSERT_PTR_NE(k1, NULL);
 	ASSERT_PTR_EQ(k1->pk, NULL);
 	sshkey_free(k1);
+	k1 = NULL;
 	TEST_DONE();
 #endif
 
@@ -334,6 +337,7 @@ sshkey_tests(void)
 	ASSERT_PTR_NE(k1, NULL);
 	ASSERT_PTR_EQ(k1->pk, NULL);
 	sshkey_free(k1);
+	k1 = NULL;
 	TEST_DONE();
 #endif
 
@@ -344,6 +348,7 @@ sshkey_tests(void)
 	ASSERT_PTR_EQ(k1->ed25519_sk, NULL);
 	ASSERT_PTR_EQ(k1->ed25519_pk, NULL);
 	sshkey_free(k1);
+	k1 = NULL;
 	TEST_DONE();
 
 	TEST_START("generate KEY_RSA too small modulus");
@@ -364,6 +369,7 @@ sshkey_tests(void)
 	    SSH_ERR_KEY_LENGTH);
 	ASSERT_PTR_EQ(k1, NULL);
 	sshkey_free(k1);
+	k1 = NULL;
 	TEST_DONE();
 #endif
 
@@ -373,6 +379,7 @@ sshkey_tests(void)
 	    SSH_ERR_KEY_LENGTH);
 	ASSERT_PTR_EQ(k1, NULL);
 	sshkey_free(k1);
+	k1 = NULL;
 	TEST_DONE();
 #endif
 
@@ -477,6 +484,7 @@ sshkey_tests(void)
 	TEST_START("equal KEY_RSA/demoted KEY_RSA");
 	ASSERT_INT_EQ(sshkey_equal(kr, k1), 1);
 	sshkey_free(k1);
+	k1 = NULL;
 	TEST_DONE();
 
 #ifdef WITH_DSA
@@ -504,6 +512,7 @@ sshkey_tests(void)
 	TEST_START("equal KEY_DSA/demoted KEY_DSA");
 	ASSERT_INT_EQ(sshkey_equal(kd, k1), 1);
 	sshkey_free(k1);
+	k1 = NULL;
 	TEST_DONE();
 #endif
 
@@ -534,6 +543,7 @@ sshkey_tests(void)
 	TEST_START("equal KEY_ECDSA/demoted KEY_ECDSA");
 	ASSERT_INT_EQ(sshkey_equal(ke, k1), 1);
 	sshkey_free(k1);
+	k1 = NULL;
 	TEST_DONE();
 #endif /* OPENSSL_HAS_ECC */
 #endif /* WITH_OPENSSL */
@@ -550,6 +560,7 @@ sshkey_tests(void)
 	TEST_START("equal KEY_ED25519/demoted KEY_ED25519");
 	ASSERT_INT_EQ(sshkey_equal(kf, k1), 1);
 	sshkey_free(k1);
+	k1 = NULL;
 	TEST_DONE();
 
 #ifdef WITH_OPENSSL
@@ -568,20 +579,24 @@ sshkey_tests(void)
 	ASSERT_INT_EQ(sshkey_generate(KEY_RSA, 1024, &k1), 0);
 	ASSERT_INT_EQ(sshkey_equal(kr, k1), 0);
 	sshkey_free(k1);
+	k1 = NULL;
 #ifdef WITH_DSA
 	ASSERT_INT_EQ(sshkey_generate(KEY_DSA, 1024, &k1), 0);
 	ASSERT_INT_EQ(sshkey_equal(kd, k1), 0);
 	sshkey_free(k1);
+	k1 = NULL;
 #endif
 #ifdef OPENSSL_HAS_ECC
 	ASSERT_INT_EQ(sshkey_generate(KEY_ECDSA, 256, &k1), 0);
 	ASSERT_INT_EQ(sshkey_equal(ke, k1), 0);
 	sshkey_free(k1);
+	k1 = NULL;
 #endif /* OPENSSL_HAS_ECC */
 #endif /* WITH_OPENSSL */
 	ASSERT_INT_EQ(sshkey_generate(KEY_ED25519, 256, &k1), 0);
 	ASSERT_INT_EQ(sshkey_equal(kf, k1), 0);
 	sshkey_free(k1);
+	k1 = NULL;
 	TEST_DONE();
 
 #ifdef WITH_OPENSSL
@@ -636,6 +651,7 @@ sshkey_tests(void)
 
 	sshkey_free(k1);
 	sshkey_free(k2);
+	k1 = k2 = NULL;
 	sshbuf_reset(b);
 	TEST_DONE();
 
@@ -647,6 +663,7 @@ sshkey_tests(void)
 	signature_tests(k1, k2, "ssh-rsa");
 	sshkey_free(k1);
 	sshkey_free(k2);
+	k1 = k2 = NULL;
 	TEST_DONE();
 
 #ifdef HAVE_EVP_SHA256
@@ -657,6 +674,7 @@ sshkey_tests(void)
 	signature_tests(k1, k2, "rsa-sha2-256");
 	sshkey_free(k1);
 	sshkey_free(k2);
+	k1 = k2 = NULL;
 	TEST_DONE();
 #endif /*def HAVE_EVP_SHA256*/
 
@@ -668,6 +686,7 @@ sshkey_tests(void)
 	signature_tests(k1, k2, "rsa-sha2-512");
 	sshkey_free(k1);
 	sshkey_free(k2);
+	k1 = k2 = NULL;
 	TEST_DONE();
 #endif /*def HAVE_EVP_SHA256*/
 
@@ -679,6 +698,7 @@ sshkey_tests(void)
 	signature_tests(k1, k2, NULL);
 	sshkey_free(k1);
 	sshkey_free(k2);
+	k1 = k2 = NULL;
 	TEST_DONE();
 #endif
 
@@ -691,6 +711,7 @@ sshkey_tests(void)
 	signature_tests(k1, k2, NULL);
 	sshkey_free(k1);
 	sshkey_free(k2);
+	k1 = k2 = NULL;
 	TEST_DONE();
 #endif /* OPENSSL_HAS_NISTP521 */
 #endif /* WITH_OPENSSL */
@@ -702,6 +723,7 @@ sshkey_tests(void)
 	signature_tests(k1, k2, NULL);
 	sshkey_free(k1);
 	sshkey_free(k2);
+	k1 = k2 = NULL;
 	TEST_DONE();
 
 #ifdef WITH_OPENSSL
@@ -722,6 +744,7 @@ sshkey_tests(void)
 
 	sshkey_free(k1);
 	sshkey_free(k2);
+	k1 = k2 = NULL;
 	TEST_DONE();
 #endif /* WITH_OPENSSL */
 
