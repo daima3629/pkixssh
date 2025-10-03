@@ -1,4 +1,4 @@
-/* $OpenBSD: session.c,v 1.341 2025/04/09 07:00:03 djm Exp $ */
+/* $OpenBSD: session.c,v 1.344 2025/09/25 02:15:39 jsg Exp $ */
 /*
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
@@ -116,14 +116,13 @@ extern char *__progname;
 extern int log_stderr;
 extern int debug_flag;
 extern u_int utmp_len;
-extern int startup_pipe;
 extern void destroy_sensitive_data(void);
 extern struct sshbuf *loginmsg;
 extern struct sshauthopt *auth_opts;
 extern char *tun_fwd_ifnames; /* serverloop.c */
 
 /* original command from peer. */
-const char *original_command = NULL;
+static const char *original_command = NULL;
 
 /* data */
 static int sessions_first_unused = -1;
