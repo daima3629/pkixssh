@@ -673,6 +673,7 @@ mux_confirm_remote_forward(struct ssh *ssh, int type, u_int32_t seq, void *ctxt)
 	if (c->mux_pause <= 0)
 		fatal_f("mux_pause %d", c->mux_pause);
 	c->mux_pause = 0; /* start processing messages again */
+	free(fctx);
 }
 
 static int
@@ -820,7 +821,6 @@ mux_master_process_open_fwd(struct ssh *ssh, u_int rid,
 		fctx->fid = options.num_remote_forwards - 1;
 		client_register_global_confirm(mux_confirm_remote_forward,
 		    fctx);
-		free(fctx);
 		freefwd = 0;
 		c->mux_pause = 1; /* wait for mux_confirm_remote_forward */
 		/* delayed reply in mux_confirm_remote_forward */
