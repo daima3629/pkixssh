@@ -1,4 +1,4 @@
-/* $OpenBSD: sftp.c,v 1.241 2025/09/02 09:34:48 djm Exp $ */
+/* $OpenBSD: sftp.c,v 1.245 2025/10/02 04:23:11 djm Exp $ */
 /*
  * Copyright (c) 2001-2004 Damien Miller <djm@openbsd.org>
  * Copyright (c) 2013-2025 Roumen Petrov.  All rights reserved.
@@ -2671,7 +2671,7 @@ parse_num_requests:
 		int tmp;
 		if ((r = argv_split(sftp_direct, &tmp, &cpp, 1)) != 0)
 			fatal_r(r, "Parse -D arguments");
-		if (cpp[0] == 0)
+		if (cpp[0] == NULL)
 			fatal("No sftp server specified via -D");
 		connect_to_server(cpp[0], cpp, &in, &out);
 		argv_free(cpp, tmp);
