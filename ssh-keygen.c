@@ -2596,10 +2596,11 @@ usage(void)
 int
 main(int argc, char **argv)
 {
-	char comment[1024], *passphrase;
+	char comment[1024];
 	char *rr_hostname = NULL, *ep, *fp, *ra;
-	struct sshkey *private, *public;
+	struct sshkey *private = NULL, *public = NULL;
 	const struct passwd *pw;
+	int exit_status = 0;
 	int r, opt, type;
 	int change_passphrase = 0, change_comment = 0, show_cert = 0;
 	int find_host = 0, delete_host = 0, hash_hosts = 0;
@@ -3009,11 +3010,13 @@ main(int argc, char **argv)
 	hostfile_create_user_ssh_dir(identity_file, !quiet);
 
 	/* If the file already exists, ask the user to confirm. */
-	if (!confirm_overwrite(identity_file))
-		exit(1);
+	if (!confirm_overwrite(identity_file)) {
+		exit_status = 1;
+		goto done;
+	}
 
 	/* Determine the passphrase for the private key */
-	passphrase = private_key_new_passphrase(identity_file,
+{	char *passphrase = private_key_new_passphrase(identity_file,
 	    (u_int)-1/*practically unlimited*/);
 
 	if (identity_comment) {
@@ -3028,11 +3031,12 @@ main(int argc, char **argv)
 	    comment, private_key_format, openssh_format_cipher, rounds)) != 0) {
 		error_r(r, "Saving key \"%s\" failed", identity_file);
 		freezero(passphrase, strlen(passphrase));
-		exit(1);
+		exit_status = 1;
+		goto done;
 	}
 
 	freezero(passphrase, strlen(passphrase));
-	sshkey_free(private);
+}
 
 	if (!quiet)
 		printf("Your identification has been saved in '%s'.\n",
@@ -3059,6 +3063,15 @@ main(int argc, char **argv)
 		free(fp);
 	}
 
+ done:
+	sshkey_free(private);
 	sshkey_free(public);
-	exit(0);
+	pwfree((void*)pw);
+
+	ssh_xkalg_cleanup();
+
+	ssh_module_shutdown();
+	ssh_OpenSSL_shuthdown();
+
+	return exit_status;
 }
