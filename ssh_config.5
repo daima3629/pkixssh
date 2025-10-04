@@ -34,7 +34,7 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: ssh_config.5,v 1.418 2025/08/11 10:55:38 djm Exp $
+.\" $OpenBSD: ssh_config.5,v 1.419 2025/08/18 18:39:33 caspar Exp $
 .\" Implement .Dd with the Mdocdate RCS keyword
 .rn Dd xD
 .de Dd
@@ -43,7 +43,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: August 11 2025 $
+.Dd $Mdocdate: October 4 2025 $
 .Dt SSH_CONFIG 5
 .Os
 .Sh NAME
@@ -501,6 +501,11 @@ from the default set instead of replacing them.
 .Xr ssh 1
 will not accept custom host certificates signed using algorithms other than those
 specified.
+.It Cm CAStoreURI
+.Dq X509 store
+option: URI as a store of certificates of certificate signers.
+Available is cryptographic library supports
+.Xr ossl_store 7 .
 .It Cm CertificateFile
 Specifies a file from which the user's OpenSSH custom certificate is read.
 A corresponding private key must be provided separately in order

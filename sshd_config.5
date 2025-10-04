@@ -43,7 +43,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: August 5 2025 $
+.Dd $Mdocdate: October 4 2025 $
 .Dt SSHD_CONFIG 5
 .Os
 .Sh NAME
@@ -505,6 +505,11 @@ from the default set instead of replacing them.
 .Pp
 Custom certificates signed using other algorithms will not be accepted for
 public key or host-based authentication.
+.It Cm CAStoreURI
+.Dq X509 store
+option: URI as a store of certificates of certificate signers.
+Available is cryptographic library supports
+.Xr ossl_store 7 .
 .It Cm ChannelTimeout
 Specifies whether and how quickly
 .Xr sshd 8
