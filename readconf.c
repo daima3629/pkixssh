@@ -2876,6 +2876,16 @@ cleanup_options(Options *options) {
 	FREENULL(options->macs);
 	FREENULL(options->kex_algorithms);
 	FREENULL(options->ca_sign_algorithms);
+
+	/* other */
+	FREENULL(options->version_addendum);
+	FREENULL(options->xauth_location);
+	FREENULL(options->pkcs11_provider);
+	FREENULL(options->sk_provider);
+
+	FREENULL(options->hostname);
+	FREENULL(options->host_key_alias);
+	FREENULL(options->host_arg);
 }
 
 /*

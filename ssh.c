@@ -700,7 +700,7 @@ int
 main(int ac, char **av)
 {
 	struct ssh *ssh = NULL;
-	int i, r, opt, exit_status, use_syslog, direct, timeout_ms;
+	int i, r, opt, exit_status = 0, use_syslog, direct, timeout_ms;
 	int was_addr, config_test = 0, opt_terminated = 0, want_final_pass = 0;
 	char *p, *cp, *line, *argv0, *logfile;
 #ifdef USE_OPENSSL_ENGINE
@@ -716,6 +716,7 @@ main(int ac, char **av)
 	struct ssh_conn_info *cinfo = NULL;
 
 	ssh_malloc_init();	/* must be called before any mallocs */
+
 	/* Ensure that fds 0, 1 and 2 are open or directed to /dev/null */
 	sanitise_stdfd();
 
@@ -925,7 +926,7 @@ main(int ac, char **av)
 				fatal("Unsupported query \"%s\"", optarg);
 			printf("%s\n", cp);
 			free(cp);
-			exit(0);
+			goto done;
 			break;
 		case 'a':
 			options.forward_agent = 0;
@@ -1923,6 +1924,8 @@ main(int ac, char **av)
 
  skip_connect:
 	exit_status = ssh_session2(ssh, cinfo);
+
+ done:
 	ssh_conn_info_free(cinfo);
 
 	channel_fini_channels(ssh);
@@ -1966,7 +1969,6 @@ main(int ac, char **av)
 }
 	/* cleanup host name */
 	free(host);
-	free(options.hostname);
 
 	return exit_status;
 }
@@ -2575,6 +2577,7 @@ load_public_identity_files(const struct ssh_conn_info *cinfo)
 		 */
 		if (options.num_certificate_files != 0)
 			continue;
+
 		xasprintf(&cp, "%s-cert", filename);
 		check_load(sshkey_load_public(cp, &public, NULL),
 		    &public, filename, "identity cert");
@@ -2589,6 +2592,8 @@ load_public_identity_files(const struct ssh_conn_info *cinfo)
 			free(cp);
 			continue;
 		}
+		free(cp);
+
 		/* NB. leave filename pointing to private key */
 		identity_files[n_ids] = xstrdup(filename);
 		identity_keys[n_ids] = public;

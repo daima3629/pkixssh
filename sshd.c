@@ -874,6 +874,7 @@ server_accept_loop(int *sock_in, int *sock_out, int *newsock, int *config_s)
 					close(config_s[0]);
 				}
 				free(pfd);
+				free(startup_pollfd);
 				return;
 			}
 
@@ -917,6 +918,7 @@ server_accept_loop(int *sock_in, int *sock_out, int *newsock, int *config_s)
 					    "\0", 1);
 				}
 				free(pfd);
+				free(startup_pollfd);
 				return;
 			}
 

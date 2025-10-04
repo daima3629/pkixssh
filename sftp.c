@@ -2352,6 +2352,8 @@ interactive_loop(struct sftp_conn *conn, char *file1, char *file2)
 	free(conn);
 
 #ifdef USE_LIBEDIT
+	if (hl != NULL)
+		history_end(hl);
 	if (el != NULL)
 		el_end(el);
 #endif /* USE_LIBEDIT */
