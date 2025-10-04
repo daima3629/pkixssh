@@ -690,7 +690,7 @@ mm_start_pam(struct ssh *ssh)
 	UNUSED(ssh);
 	debug3_f("entering");
 	if (!options.use_pam)
-		fatal("UsePAM=no, but ended up in %s anyway", __func__);
+		fatal_f("UsePAM=no and ended here");
 	if ((m = sshbuf_new()) == NULL)
 		fatal_f("sshbuf_new failed");
 	mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_PAM_START, m);
@@ -709,7 +709,7 @@ mm_do_pam_account(void)
 
 	debug3_f("entering");
 	if (!options.use_pam)
-		fatal("UsePAM=no, but ended up in %s anyway", __func__);
+		fatal_f("UsePAM=no and ended here");
 
 	if ((m = sshbuf_new()) == NULL)
 		fatal_f("sshbuf_new failed");

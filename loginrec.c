@@ -1467,7 +1467,7 @@ wtmpdb_write_entry(struct logininfo *li)
 	case LTYPE_LOGOUT:
 		return (wtmpdb_perform_logout(li));
 	default:
-		logit("%s: invalid type field", __func__);
+		error_f("invalid type field");
 		return (0);
 	}
 }
