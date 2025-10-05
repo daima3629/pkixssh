@@ -17,7 +17,7 @@
 AC_PREREQ([2.59])
 m4_include([version.m4])
 
-AC_INIT([SSH_PACKAGE], [SSH_VERSION], [SSH_BUGREPORT], [openssh], [SSH_URL])
+AC_INIT([SSH_PACKAGE], [SSH_VERSION], [SSH_BUGREPORT], [SSH_TARNAME], [SSH_URL])
 AC_CONFIG_SRCDIR([ssh.c])
 
 dnl check for stale configure as early as possible
