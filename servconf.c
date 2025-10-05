@@ -1278,8 +1278,9 @@ match_cfg_line(char **condition, int line, struct connection_info *ci)
 			if (match_pattern_list(ci->rdomain, arg, 0) != 1)
 				result = 0;
 			else
-				debug("user %.100s matched 'RDomain %.100s' at "
-				    "line %d", ci->rdomain, arg, line);
+				debug("connection RDomain %.100s matched "
+				    "'RDomain %.100s' at line %d",
+				    ci->rdomain, arg, line);
 		} else {
 			error("Unsupported Match attribute %s", attrib);
 			return -1;
