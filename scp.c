@@ -1114,6 +1114,7 @@ toremote(int argc, char **argv, enum scp_mode_e mode,
 			if (mode == MODE_SFTP) {
 				if (remin == -1 || conn == NULL) {
 					/* Connect to dest now */
+					free(conn);
 					conn = do_sftp_connect(thost, tuser,
 					    tport, ssh_program, sftp_direct,
 					    &remin, &remout, &do_cmd_pid);
@@ -1131,6 +1132,7 @@ toremote(int argc, char **argv, enum scp_mode_e mode,
 				 * scp -3 hosta:/foo hosta:/bar hostb:
 				 */
 				/* Connect to origin now */
+				free(conn2);
 				conn2 = do_sftp_connect(host, suser,
 				    sport, ssh_program, sftp_direct,
 				    &remin2, &remout2, &do_cmd_pid2);
@@ -1223,6 +1225,7 @@ toremote(int argc, char **argv, enum scp_mode_e mode,
 			}
 				if (remin == -1) {
 					/* Connect to remote now */
+					free(conn);
 					conn = do_sftp_connect(thost, tuser,
 					    tport, ssh_program, sftp_direct,
 					    &remin, &remout, &do_cmd_pid);
@@ -1251,8 +1254,6 @@ toremote(int argc, char **argv, enum scp_mode_e mode,
 		}
 	}
 out:
-	if (mode == MODE_SFTP)
-		free(conn);
 	freeargs(&alist);
 	free(tuser);
 	free(thost);
@@ -1260,6 +1261,8 @@ out:
 	free(suser);
 	free(host);
 	free(src);
+	free(conn);
+	free(conn2);
 }
 
 void
