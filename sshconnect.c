@@ -604,9 +604,9 @@ prepare_client_banner(struct ssh *ssh)
 	 * After identification exchange trailing <CR><LF> is removed for
 	 * further use in key exchange messages.
 	 */
-	r = sshbuf_putf(ssh->kex->client_version,
-	    "SSH-%d.%d-%s PKIX["PACKAGE_VERSION"]%s%s\r\n",
-	    PROTOCOL_MAJOR_2, PROTOCOL_MINOR_2, SSH_VERSION,
+	r = sshbuf_putf(ssh->kex->client_version, "SSH-%d.%d-%s[%s] %s%s\r\n",
+	    PROTOCOL_MAJOR_2, PROTOCOL_MINOR_2,
+	    PACKAGE_NAME, PACKAGE_VERSION, OPENSSH_RELEASE,
 	    *options.version_addendum == '\0' ? "" : " ",
 	    options.version_addendum);
 	return r;

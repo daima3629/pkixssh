@@ -435,8 +435,9 @@ congreet(int s)
 	con *c = &fdcon[s];
 
 	/* send client banner */
-	n = snprintf(buf, sizeof buf, "SSH-%d.%d-%s %s\r\n",
-	    PROTOCOL_MAJOR_2, PROTOCOL_MINOR_2, SSH_VERSION, "PKIX["PACKAGE_VERSION"] keyscan");
+	n = snprintf(buf, sizeof buf, "SSH-%d.%d-%s[%s] keyscan\r\n",
+	    PROTOCOL_MAJOR_2, PROTOCOL_MINOR_2,
+	    PACKAGE_NAME, PACKAGE_VERSION);
 	if (n < 0 || (size_t)n >= sizeof(buf)) {
 		error("snprintf: buffer too small");
 		confree(s);

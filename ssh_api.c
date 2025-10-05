@@ -1,7 +1,7 @@
 /* $OpenBSD: ssh_api.c,v 1.32 2024/10/18 05:14:51 djm Exp $ */
 /*
  * Copyright (c) 2012 Markus Friedl.  All rights reserved.
- * Copyright (c) 2014-2023 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2014-2025 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -404,7 +404,9 @@ _ssh_send_banner(struct ssh *ssh, struct sshbuf *banner)
 	char *cp;
 	int r;
 
-	if ((r = sshbuf_putf(banner, "SSH-2.0-%.100s\r\n", SSH_VERSION)) != 0)
+	if ((r = sshbuf_putf(banner, "SSH-%d.%d-%s[%s]\r\n",
+	    PROTOCOL_MAJOR_2, PROTOCOL_MINOR_2,
+	    PACKAGE_NAME, PACKAGE_VERSION)) != 0)
 		return r;
 	if ((r = sshbuf_putb(ssh_packet_get_output(ssh), banner)) != 0)
 		return r;
