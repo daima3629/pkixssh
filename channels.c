@@ -1137,6 +1137,25 @@ channel_open_message(struct ssh *ssh)
 	return ret;
 }
 
+void
+channel_report_open(struct ssh *ssh)
+{
+{	char ident[256];
+	sshpkt_fmt_connection_id(ssh, ident, sizeof(ident));
+	logit("Connection info: %s (pid %ld) ...", ident, (long)getpid());
+}
+{	char *open, *oopen;
+	open = oopen = channel_open_message(ssh);
+	do {
+		char *cp = strsep(&open, "\r\n");
+		if (cp == NULL) break;
+		if (*cp == '\0') continue;
+		logit("  %s", cp);
+	} while (1);
+	free(oopen);
+}
+}
+
 static void
 open_preamble(const char *file, const char *func, int line,
     struct ssh *ssh, Channel *c, const char *type)

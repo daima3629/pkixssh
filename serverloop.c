@@ -103,6 +103,7 @@ extern int use_privsep;
 static int no_more_sessions = 0; /* Disallow further sessions. */
 
 static volatile sig_atomic_t child_terminated = 0;	/* The child has terminated. */
+static volatile sig_atomic_t request_channel_report_open = 0;
 
 /* Cleanup on signals (!use_privsep case only) */
 static volatile sig_atomic_t received_sigterm = 0;
@@ -130,6 +131,22 @@ sigchld_handler(int sig)
 	UNUSED(sig);
 	child_terminated = 1;
 }
+
+static void
+sigusr1_handler(int sig)
+{
+	UNUSED(sig);
+	request_channel_report_open = 1;
+}
+
+#ifdef SIGINFO
+static void
+siginfo_handler(int sig)
+{
+	UNUSED(sig);
+	request_channel_report_open = 1;
+}
+#endif
 
 static void
 sigterm_handler(int sig)
@@ -390,9 +407,18 @@ server_loop2(struct ssh *ssh, Authctxt *authctxt)
 	UNUSED(authctxt);
 	debug("Entering interactive session for SSH2.");
 
-	if (sigemptyset(&bsigset) == -1 || sigaddset(&bsigset, SIGCHLD) == -1)
+	if (sigemptyset(&bsigset) == -1 ||
+	    sigaddset(&bsigset, SIGCHLD) == -1)
 		error_f("bsigset setup: %s", strerror(errno));
 	ssh_signal(SIGCHLD, sigchld_handler);
+	if (sigaddset(&bsigset, SIGUSR1) == -1)
+		error_f("bsigset setup: %s", strerror(errno));
+	ssh_signal(SIGUSR1, sigusr1_handler);
+#ifdef SIGINFO
+	if (sigaddset(&bsigset, SIGINFO) == -1)
+		error_f("bsigset setup: %s", strerror(errno));
+	ssh_signal(SIGINFO, siginfo_handler);
+#endif
 	child_terminated = 0;
 
 	if (!use_privsep) {
@@ -420,6 +446,10 @@ server_loop2(struct ssh *ssh, Authctxt *authctxt)
 		if (sigprocmask(SIG_BLOCK, &bsigset, &osigset) == -1)
 			error_f("bsigset sigprocmask: %s", strerror(errno));
 		collect_children(ssh);
+		if (request_channel_report_open) {
+			request_channel_report_open = 0;
+			channel_report_open(ssh);
+		}
 		wait_until_can_do_something(ssh,
 		    &pfd, &npfd_alloc, &npfd_active, &osigset,
 		    &conn_in_ready, &conn_out_ready);

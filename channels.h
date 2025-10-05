@@ -341,6 +341,7 @@ void     channel_close_all(struct ssh *);
 int      channel_still_open(struct ssh *);
 const char *channel_format_extended_usage(const Channel *);
 char	*channel_open_message(struct ssh *);
+void	 channel_report_open(struct ssh *);
 int	 channel_find_open(struct ssh *);
 
 /* tcp forwarding */
