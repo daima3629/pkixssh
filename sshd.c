@@ -492,10 +492,23 @@ drop_connection(int sock, int startups, int notify_pipe)
 	return 1;
 }
 
+static inline void
+log_program_version(void) {
+	if (get_log_level() < SYSLOG_LEVEL_DEBUG1) return;
+
+	logit("%s version %s, %s", __progname, SSH_RELEASE,
+	    ssh_OpenSSL_version_text());
+}
+
+static inline void
+print_program_version(void) {
+	fprintf(stderr, "%s, %s\n", SSH_RELEASE, ssh_OpenSSL_version_text());
+}
+
 static void
 usage(void)
 {
-	fprintf(stderr, "%s, %s\n", SSH_RELEASE, ssh_OpenSSL_version_text());
+	print_program_version();
 	fprintf(stderr,
 "usage: sshd [-46DdeGiqTtV] [-C connection_spec] [-c host_cert_file]\n"
 "            [-E log_file] [-f config_file] [-g login_grace_time]\n"
@@ -1218,8 +1231,7 @@ main(int ac, char **av)
 			free(line);
 			break;
 		case 'V':
-			fprintf(stderr, "%s, %s\n",
-			    SSH_RELEASE, ssh_OpenSSL_version_text());
+			print_program_version();
 			exit(0);
 		default:
 			usage();
@@ -1274,8 +1286,7 @@ main(int ac, char **av)
 		fatal("Config test connection parameter (-C) provided without "
 		    "test mode (-T)");
 
-	if (get_log_level() >= SYSLOG_LEVEL_DEBUG1)
-		logit("%s version %s, %s", __progname, SSH_RELEASE, ssh_OpenSSL_version_text());
+	log_program_version();
 	debug3_uname();
 
 	/* Fetch our configuration */

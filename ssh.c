@@ -183,6 +183,18 @@ static int forward_confirms_pending = -1;
 extern int muxserver_sock;
 extern u_int muxclient_command;
 
+static inline void
+print_program_version(void) {
+	fprintf(stderr, "%s, %s\n", SSH_RELEASE, ssh_OpenSSL_version_text());
+}
+
+static inline void
+log_program_version(void) {
+	if (get_log_level() < SYSLOG_LEVEL_DEBUG1) return;
+	logit("%s version %s, %s", __progname, SSH_RELEASE,
+	    ssh_OpenSSL_version_text());
+}
+
 /* Prints a help message to the user.  This function never returns. */
 
 static void
@@ -208,6 +220,7 @@ USAGE_OPENSSL_ENGINE
 "           destination [command [argument ...]]\n"
 "       ssh [-Q query_option]\n"
 	);
+#undef USAGE_OPENSSL_ENGINE
 	exit(255);
 }
 
@@ -998,8 +1011,7 @@ main(int ac, char **av)
 				options.log_level++;
 			break;
 		case 'V':
-			fprintf(stderr, "%s, %s\n",
-			    SSH_RELEASE, ssh_OpenSSL_version_text());
+			print_program_version();
 			exit(0);
 			break;
 		case 'w':
@@ -1284,8 +1296,7 @@ main(int ac, char **av)
 	    SYSLOG_FACILITY_USER : options.log_facility,
 	    !use_syslog);
 
-	if (get_log_level() >= SYSLOG_LEVEL_DEBUG1)
-		logit("%s version %s, %s", __progname, SSH_RELEASE, ssh_OpenSSL_version_text());
+	log_program_version();
 	debug3_uname();
 
 #ifdef USE_OPENSSL_ENGINE
