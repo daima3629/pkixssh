@@ -1,4 +1,4 @@
-/* $OpenBSD: monitor_wrap.c,v 1.140 2025/07/04 07:47:35 djm Exp $ */
+/* $OpenBSD: monitor_wrap.c,v 1.142 2025/09/25 06:31:42 djm Exp $ */
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * Copyright 2002 Markus Friedl <markus@openbsd.org>
@@ -306,8 +306,22 @@ mm_decode_activate_server_options(struct ssh *ssh, struct sshbuf *m)
 #undef M_CP_STRARRAYOPT
 
 	copy_set_server_options(&options, newopts, 1);
+
 	log_change_level(options.log_level);
 	log_verbose_init(options.log_verbose, options.num_log_verbose);
+
+	free(newopts->hostbased_algorithms);
+	free(newopts->pubkey_algorithms);
+	/* use the macro to clean up too */
+#define M_CP_STROPT(x) free(newopts->x)
+#define M_CP_STRARRAYOPT(x, nx) do { \
+		for (i = 0; i < newopts->nx; i++) \
+			free(newopts->x[i]); \
+		free(newopts->x); \
+	} while (0)
+	COPY_MATCH_STRING_OPTS();
+#undef M_CP_STROPT
+#undef M_CP_STRARRAYOPT
 	free(newopts);
 }
 
