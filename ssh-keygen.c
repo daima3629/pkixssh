@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keygen.c,v 1.482 2025/08/29 03:50:38 djm Exp $ */
+/* $OpenBSD: ssh-keygen.c,v 1.484 2025/09/25 12:52:21 jsg Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1994 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -451,7 +451,6 @@ do_convert_to_ssh2(const struct passwd *pw, struct sshkey *k)
 	fprintf(stdout, "Comment: \"%s\"\n%s", comment, b64);
 	fprintf(stdout, "%s\n", SSH_COM_PUBLIC_END);
 	free(b64);
-	exit(0);
 }
 
 
@@ -487,7 +486,6 @@ do_convert_to(const struct passwd *pw)
 	default:
 		fatal_f("unknown key format %d", convert_format);
 	}
-	exit(0);
 }
 
 
@@ -742,7 +740,6 @@ done:
 	if (!ok)
 		fatal("key write failed");
 	sshkey_free(k);
-	exit(0);
 }
 #endif
 
@@ -767,7 +764,6 @@ do_print_public(const struct passwd *pw)
 
 	sshkey_free(prv);
 	free(comment);
-	exit(0);
 }
 
 static void
@@ -800,7 +796,6 @@ do_download(void)
 	free(comments);
 	free(keys);
 	pkcs11_terminate();
-	exit(0);
 #else
 	fatal("no pkcs11 support");
 #endif /* ENABLE_PKCS11 */
@@ -933,7 +928,7 @@ do_fingerprint(const struct passwd *pw)
 			free(line);
 			fclose(f);
 			fingerprint_private(path);
-			exit(0);
+			return;
 		}
 
 		/*
@@ -976,12 +971,12 @@ do_fingerprint(const struct passwd *pw)
 		sshkey_free(public);
 		invalid = 0; /* One good key in the file is sufficient */
 	}
-	fclose(f);
+	if (f != stdin)
+		(void)fclose(f);
 	free(line);
 
 	if (invalid)
 		fatal("%s is not a public key file.", path);
-	exit(0);
 }
 
 static void
@@ -1231,7 +1226,7 @@ known_hosts_find_delete(struct hostkey_foreach_line *l, void *_ctx)
 	return 0;
 }
 
-static void
+static int
 do_known_hosts(const struct passwd *pw, const char *name, int find_host,
     int delete_host, int hash_hosts)
 {
@@ -1304,7 +1299,7 @@ do_known_hosts(const struct passwd *pw, const char *name, int find_host,
 			    "file because of errors");
 			unlink(tmp);
 		}
-		exit(1);
+		return 1;
 	} else if (delete_host && !ctx.found_key) {
 		logit("Host %s not found in %s", name, identity_file);
 		if (inplace)
@@ -1322,7 +1317,7 @@ do_known_hosts(const struct passwd *pw, const char *name, int find_host,
 			    strerror(errno));
 			unlink(tmp);
 			unlink(old);
-			exit(1);
+			return 1;
 		}
 
 		printf("%s updated.\n", identity_file);
@@ -1334,14 +1329,14 @@ do_known_hosts(const struct passwd *pw, const char *name, int find_host,
 		}
 	}
 
-	exit (find_host && !ctx.found_key);
+	return find_host && !ctx.found_key ? 1 : 0;
 }
 
 /*
  * Perform changing a passphrase.  The argument is the passwd structure
  * for the current user.
  */
-static void
+static int
 do_change_passphrase(const struct passwd *pw)
 {
 	char *comment;
@@ -1388,10 +1383,10 @@ do_change_passphrase(const struct passwd *pw)
 
 	if (r != 0) {
 		error_r(r, "Saving key \"%s\" failed", identity_file);
-		exit(1);
+		return  1;
 	}
 	printf("Your identification has been saved with the new passphrase.\n");
-	exit(0);
+	return 0;
 }
 
 /*
@@ -1436,7 +1431,7 @@ do_print_resource_record(char *fname, char *hname,
 /*
  * Change the comment of a private key file.
  */
-static void
+static int
 do_change_comment(const struct passwd *pw, const char *identity_comment)
 {
 	char new_comment[1024], *comment, *passphrase;
@@ -1471,7 +1466,7 @@ do_change_comment(const struct passwd *pw, const char *identity_comment)
 		    "the OpenSSH proprietary format.");
 		freezero(passphrase, strlen(passphrase));
 		sshkey_free(private);
-		exit(1);
+		return 1;
 	}
 	if (comment)
 		printf("Old comment: %s\n", comment);
@@ -1524,7 +1519,7 @@ do_change_comment(const struct passwd *pw, const char *identity_comment)
 	else
 		printf("Comment removed\n");
 
-	exit(0);
+	return 0;
 }
 
 static void
@@ -1798,13 +1793,14 @@ do_ca_sign(const struct passwd *pw, const char *ca_key_path, int prefer_agent,
 
 		sshkey_free(public);
 		free(out);
+		free(comment);
 		if (cert_serial_autoinc)
 			cert_serial++;
 	}
+	sshkey_free(ca);
 #ifdef ENABLE_PKCS11
 	pkcs11_terminate();
 #endif
-	exit(0);
 }
 
 static u_int64_t
@@ -2035,9 +2031,11 @@ print_cert(struct sshkey *key)
 		printf("\n");
 		show_options(key->cert->extensions, 0);
 	}
+	free(key_fp);
+	free(ca_fp);
 }
 
-static void
+static int
 do_show_cert(const struct passwd *pw)
 {
 	struct sshkey *key = NULL;
@@ -2089,8 +2087,9 @@ do_show_cert(const struct passwd *pw)
 	}
 	free(line);
 	sshkey_free(key);
-	fclose(f);
-	exit(ok ? 0 : 1);
+	if (f != stdin)
+		(void)fclose(f);
+	return ok ? 0 : 1;
 }
 
 static void
@@ -2254,6 +2253,9 @@ update_krl_from_file(const struct passwd *pw, const char *file, int wild_ca,
 				fatal("%s:%lu: unsupported hash algorithm", file, lnum);
 			if (r != 0)
 				fatal_fr(r, "revoke key failed");
+			free(blob);
+			blob = NULL;
+			blen = 0;
 		} else {
 			if (strprefixtrim(&cp, "key:", 1)) {
 				was_explicit_key = 1;
@@ -2647,8 +2649,6 @@ main(int argc, char **argv)
 	pw = getpwuid(getuid());
 	if (!pw)
 		fatal("No user exists for uid %lu", (u_long)getuid());
-	/* take a copy of the returned structure! */
-	pw = pwcopy(pw);
 
 	if (gethostname(hostname, sizeof(hostname)) == -1)
 		fatal("gethostname: %s", strerror(errno));
@@ -2858,22 +2858,6 @@ main(int argc, char **argv)
 	/* reinit */
 	log_init(__progname, log_level, SYSLOG_FACILITY_USER, 1);
 
-#ifdef USE_OPENSSL_ENGINE
-{	char *filename = NULL, *engconfig;
-
-	engconfig = getenv(SSH_ENGINE_CONF_ENV);
-	if (engconfig == NULL)
-		xasprintf(&filename, "%s/%s", pw->pw_dir,
-		    _PATH_SSH_ENGINE_CONFFILE); /*fatal on error*/
-	else
-		filename = engconfig;
-
-	(void)process_engconfig_file(filename);
-	if (filename != engconfig)
-		free(filename);
-}
-#endif
-
 	argv += optind;
 	argc -= optind;
 
@@ -2895,14 +2879,34 @@ main(int argc, char **argv)
 		error("Cannot use -l with -H or -R.");
 		usage();
 	}
+
+	/* processing */
+#ifdef USE_OPENSSL_ENGINE
+{	char *filename = NULL, *engconfig;
+
+	engconfig = getenv(SSH_ENGINE_CONF_ENV);
+	if (engconfig == NULL)
+		xasprintf(&filename, "%s/%s", pw->pw_dir,
+		    _PATH_SSH_ENGINE_CONFFILE); /*fatal on error*/
+	else
+		filename = engconfig;
+
+	(void)process_engconfig_file(filename);
+	if (filename != engconfig)
+		free(filename);
+}
+#endif
+	/* take a copy of the returned structure! */
+	pw = pwcopy(pw);
+
 	if (gen_krl) {
 		do_gen_krl(pw, update_krl, ca_key_path,
 		    cert_serial, identity_comment, argc, argv);
-		return (0);
+		goto done;
 	}
 	if (check_krl) {
 		do_check_krl(print_fingerprint, argc, argv);
-		return (0);
+		goto done;
 	}
 	if (ca_key_path != NULL) {
 		size_t i;
@@ -2912,32 +2916,50 @@ main(int argc, char **argv)
 			add_cert_option(opts[i]);
 		do_ca_sign(pw, ca_key_path, prefer_agent,
 		    cert_serial, cert_serial_autoinc, argc, argv);
+		goto done;
 	}
-	if (show_cert)
-		do_show_cert(pw);
+	if (show_cert) {
+		exit_status = do_show_cert(pw);
+		goto done;
+	}
 	if (delete_host || hash_hosts || find_host) {
-		do_known_hosts(pw, rr_hostname, find_host,
+		exit_status = do_known_hosts(pw, rr_hostname, find_host,
 		    delete_host, hash_hosts);
+		goto done;
 	}
-	if (pkcs11provider != NULL)
+	if (pkcs11provider != NULL) {
 		do_download();
-	if (print_fingerprint || print_bubblebabble)
+		goto done;
+	}
+	if (print_fingerprint || print_bubblebabble) {
 		do_fingerprint(pw);
-	if (change_passphrase)
-		do_change_passphrase(pw);
-	if (change_comment)
-		do_change_comment(pw, identity_comment);
+		goto done;
+	}
+	if (change_passphrase) {
+		exit_status = do_change_passphrase(pw);
+		goto done;
+	}
+	if (change_comment) {
+		exit_status = do_change_comment(pw, identity_comment);
+		goto done;
+	}
 #ifdef WITH_OPENSSL
-	if (convert_to)
+	if (convert_to) {
 		do_convert_to(pw);
-	if (convert_from)
+		goto done;
+	}
+	if (convert_from) {
 		do_convert_from(pw);
+		goto done;
+	}
 #else /* WITH_OPENSSL */
 	if (convert_to || convert_from)
 		fatal("key conversion disabled at compile time");
 #endif /* WITH_OPENSSL */
-	if (print_public)
+	if (print_public) {
 		do_print_public(pw);
+		goto done;
+	}
 	if (rr_hostname != NULL) {
 		unsigned int n = 0;
 
@@ -2977,16 +2999,16 @@ main(int argc, char **argv)
 	}
 	if (do_gen_candidates) {
 		do_moduli_gen(argv[0], opts, nopts);
-		return 0;
+		goto done;
 	}
 	if (do_screen_candidates) {
 		do_moduli_screen(argv[0], opts, nopts);
-		return 0;
+		goto done;
 	}
 
 	if (gen_all_hostkeys) {
 		do_gen_all_hostkeys(pw);
-		return (0);
+		goto done;
 	}
 
 	if (key_type_name == NULL)
