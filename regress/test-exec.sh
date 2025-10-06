@@ -317,7 +317,7 @@ REAL_SSH="$SSH"
 REAL_SSHD="$SSHD"
 SSH="$SSHLOGWRAP"
 
-if "$REAL_SSHD" -? 2>&1 | grep 'PKIX-SSH' > /dev/null; then
+if "$REAL_SSHD" -? 2>&1 | grep 'PKIX_SSH' > /dev/null; then
   sshd_type=pkix
 else
   sshd_type=other
