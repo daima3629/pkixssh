@@ -739,11 +739,7 @@ sshpam_init(struct ssh *ssh, Authctxt *authctxt)
 	    &store_conv, &sshpam_handle);
 	sshpam_authctxt = authctxt;
 
-	if (sshpam_err != PAM_SUCCESS) {
-		pam_end(sshpam_handle, sshpam_err);
-		sshpam_handle = NULL;
-		return (-1);
-	}
+	if (sshpam_err != PAM_SUCCESS) goto pam_err;
 
 	if (ssh != NULL && sshpam_rhost == NULL) {
 		/*
@@ -759,21 +755,19 @@ sshpam_init(struct ssh *ssh, Authctxt *authctxt)
 		debug("PAM: setting PAM_RHOST to \"%s\"", sshpam_rhost);
 		sshpam_err = pam_set_item(sshpam_handle, PAM_RHOST,
 		    sshpam_rhost);
-		if (sshpam_err != PAM_SUCCESS) {
-			pam_end(sshpam_handle, sshpam_err);
-			sshpam_handle = NULL;
-			return (-1);
-		}
+		if (sshpam_err != PAM_SUCCESS) goto pam_err;
 	}
 	if (ssh != NULL && sshpam_laddr != NULL) {
 		char *conninfo;
-
 		/* Put SSH_CONNECTION in the PAM environment too */
 		xasprintf(&conninfo, "SSH_CONNECTION=%.50s %d %.50s %d",
 		    ssh_remote_ipaddr(ssh), ssh_remote_port(ssh),
 		    sshpam_laddr, ssh_local_port(ssh));
-		if ((sshpam_err = pam_putenv(sshpam_handle, conninfo)) != PAM_SUCCESS)
-			logit("pam_putenv: %s", pam_strerror(sshpam_handle, sshpam_err));
+	{	int r = pam_putenv(sshpam_handle, conninfo);
+		/* harmless error */
+		if (r != PAM_SUCCESS)
+			logit("pam_putenv: %s", pam_strerror(sshpam_handle, r));
+	}
 		free(conninfo); /* TODO, NOTE
 		- import_environments() does not free "environment" string
 		- do_pam_putenv free "compound" string
@@ -788,13 +782,15 @@ sshpam_init(struct ssh *ssh, Authctxt *authctxt)
 	 */
 	debug("PAM: setting PAM_TTY to \"ssh\"");
 	sshpam_err = pam_set_item(sshpam_handle, PAM_TTY, "ssh");
-	if (sshpam_err != PAM_SUCCESS) {
-		pam_end(sshpam_handle, sshpam_err);
-		sshpam_handle = NULL;
-		return (-1);
-	}
+	if (sshpam_err != PAM_SUCCESS) goto pam_err;
 #endif
-	return (0);
+
+	return 0;
+
+pam_err:
+	pam_end(sshpam_handle, sshpam_err);
+	sshpam_handle = NULL;
+	return -1;
 }
 
 #define export_authinfo()	sshpam_put_authinfo(__FILE__, __func__, __LINE__)
