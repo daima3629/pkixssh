@@ -50,7 +50,6 @@
 #include "includes.h"
 
 #include <sys/types.h>
-#include <sys/stat.h>
 #include <sys/wait.h>
 
 #include <errno.h>
@@ -380,7 +379,7 @@ import_environments(struct sshbuf *b)
 		/*
 		 * XXX this possibly leaks env because it is not documented
 		 * what pam_putenv() does with it. Does it copy it? Does it
-		 * take ownweship? We don't know, so it's safest just to leak.
+		 * take ownership? We don't know, so it's safest just to leak.
 		 */
 	}
 #endif
@@ -463,6 +462,32 @@ sshpam_thread_conv(int n, sshpam_const struct pam_message **msg,
 	return (PAM_CONV_ERR);
 }
 
+static int
+check_pam_user(Authctxt *authctxt)
+{
+	const char *pam_user;
+
+	if (authctxt == NULL || authctxt->pw == NULL ||
+	    authctxt->pw->pw_name == NULL)
+		fatal_f("PAM authctxt user not initialized");
+
+	if ((sshpam_err = pam_get_item(sshpam_handle, PAM_USER,
+	    (sshpam_const void **) &pam_user)) != PAM_SUCCESS)
+		return sshpam_err;
+
+	if (pam_user == NULL) {
+		debug("PAM error: PAM_USER is NULL");
+		return PAM_USER_UNKNOWN;
+	}
+
+	if (strcmp(authctxt->pw->pw_name, pam_user) != 0) {
+		debug("PAM user \"%s\" does not match expected \"%s\"",
+		      pam_user, authctxt->pw->pw_name);
+		return PAM_USER_UNKNOWN;
+	}
+	return PAM_SUCCESS;
+}
+
 /*
  * Authentication thread.
  */
@@ -515,6 +540,9 @@ sshpam_thread(void *ctxtp)
 	sshpam_err = pam_authenticate(sshpam_handle, flags);
 	if (sshpam_err == PAM_MAXTRIES)
 		sshpam_set_maxtries_reached(1);
+	if (sshpam_err != PAM_SUCCESS)
+		goto auth_fail;
+	sshpam_err = check_pam_user(sshpam_authctxt);
 	if (sshpam_err != PAM_SUCCESS)
 		goto auth_fail;
 
@@ -685,8 +713,7 @@ sshpam_cleanup(void)
 static int
 sshpam_init(struct ssh *ssh, Authctxt *authctxt)
 {
-	const char *pam_user, *user = authctxt->user;
-	const char **ptr_pam_user = &pam_user;
+	const char *user = authctxt->user;
 
 	if (options.pam_service_name == NULL)
 		fatal_f("internal error: NULL PAM service name");
@@ -702,12 +729,9 @@ sshpam_init(struct ssh *ssh, Authctxt *authctxt)
 		}
 	} if (sshpam_handle != NULL) {
 		/* We already have a PAM context; check if the user matches */
-		sshpam_err = pam_get_item(sshpam_handle,
-		    PAM_USER, (sshpam_const void **)ptr_pam_user);
-		if (sshpam_err == PAM_SUCCESS && strcmp(user, pam_user) == 0)
-			return (0);
-		pam_end(sshpam_handle, sshpam_err);
-		sshpam_handle = NULL;
+		sshpam_err = check_pam_user(authctxt);
+		if (sshpam_err != PAM_SUCCESS)
+			fatal("PAM user mismatch");
 	}
 	debug("PAM: initializing for \"%s\" with service \"%s\"", user,
 	    options.pam_service_name);
@@ -715,11 +739,7 @@ sshpam_init(struct ssh *ssh, Authctxt *authctxt)
 	    &store_conv, &sshpam_handle);
 	sshpam_authctxt = authctxt;
 
-	if (sshpam_err != PAM_SUCCESS) {
-		pam_end(sshpam_handle, sshpam_err);
-		sshpam_handle = NULL;
-		return (-1);
-	}
+	if (sshpam_err != PAM_SUCCESS) goto pam_err;
 
 	if (ssh != NULL && sshpam_rhost == NULL) {
 		/*
@@ -735,21 +755,19 @@ sshpam_init(struct ssh *ssh, Authctxt *authctxt)
 		debug("PAM: setting PAM_RHOST to \"%s\"", sshpam_rhost);
 		sshpam_err = pam_set_item(sshpam_handle, PAM_RHOST,
 		    sshpam_rhost);
-		if (sshpam_err != PAM_SUCCESS) {
-			pam_end(sshpam_handle, sshpam_err);
-			sshpam_handle = NULL;
-			return (-1);
-		}
+		if (sshpam_err != PAM_SUCCESS) goto pam_err;
 	}
 	if (ssh != NULL && sshpam_laddr != NULL) {
 		char *conninfo;
-
 		/* Put SSH_CONNECTION in the PAM environment too */
 		xasprintf(&conninfo, "SSH_CONNECTION=%.50s %d %.50s %d",
 		    ssh_remote_ipaddr(ssh), ssh_remote_port(ssh),
 		    sshpam_laddr, ssh_local_port(ssh));
-		if ((sshpam_err = pam_putenv(sshpam_handle, conninfo)) != PAM_SUCCESS)
-			logit("pam_putenv: %s", pam_strerror(sshpam_handle, sshpam_err));
+	{	int r = pam_putenv(sshpam_handle, conninfo);
+		/* harmless error */
+		if (r != PAM_SUCCESS)
+			logit("pam_putenv: %s", pam_strerror(sshpam_handle, r));
+	}
 		free(conninfo); /* TODO, NOTE
 		- import_environments() does not free "environment" string
 		- do_pam_putenv free "compound" string
@@ -764,13 +782,15 @@ sshpam_init(struct ssh *ssh, Authctxt *authctxt)
 	 */
 	debug("PAM: setting PAM_TTY to \"ssh\"");
 	sshpam_err = pam_set_item(sshpam_handle, PAM_TTY, "ssh");
-	if (sshpam_err != PAM_SUCCESS) {
-		pam_end(sshpam_handle, sshpam_err);
-		sshpam_handle = NULL;
-		return (-1);
-	}
+	if (sshpam_err != PAM_SUCCESS) goto pam_err;
 #endif
-	return (0);
+
+	return 0;
+
+pam_err:
+	pam_end(sshpam_handle, sshpam_err);
+	sshpam_handle = NULL;
+	return -1;
 }
 
 #define export_authinfo()	sshpam_put_authinfo(__FILE__, __func__, __LINE__)
@@ -1382,6 +1402,8 @@ sshpam_auth_passwd(Authctxt *authctxt, const char *password)
 	sshpam_err = pam_authenticate(sshpam_handle, flags);
 	sshpam_password = NULL;
 	free(fake);
+	if (sshpam_err == PAM_SUCCESS)
+		sshpam_err = check_pam_user(authctxt);
 	if (sshpam_err == PAM_MAXTRIES)
 		sshpam_set_maxtries_reached(1);
 	if (sshpam_err == PAM_SUCCESS && authctxt->valid) {

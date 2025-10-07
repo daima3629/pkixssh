@@ -1,9 +1,9 @@
-/* $OpenBSD: ssh-pkcs11.c,v 1.59 2023/07/27 22:26:49 djm Exp $ */
+/* $OpenBSD: ssh-pkcs11.c,v 1.64 2024/09/20 02:00:46 jsg Exp $ */
 /*
  * Copyright (c) 2010 Markus Friedl.  All rights reserved.
  * Copyright (c) 2011 Kenneth Robinette.  All rights reserved.
  * Copyright (c) 2013 Andrew Cooke.  All rights reserved.
- * Copyright (c) 2016-2023 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2016-2025 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -38,9 +38,6 @@
 #endif
 
 #include <sys/types.h>
-#ifdef HAVE_SYS_TIME_H
-# include <sys/time.h>
-#endif
 #include <stdarg.h>
 #include <stdio.h>
 
@@ -209,15 +206,13 @@ pkcs11_key_free(struct pkcs11_key *k11) {
 	free(k11);
 }
 
-static void
+static inline void
 CRYPTO_EX_pkcs11_key_free(
     void *parent, void *ptr, CRYPTO_EX_DATA *ad, long argl, void *argp
 ) {
-	(void)parent;
+	UNUSED(parent); UNUSED(ad);
+	UNUSED(argl); UNUSED(argp);
 	pkcs11_key_free(ptr);
-	(void)ad;
-	(void)argl;
-	(void)argp;
 }
 
 static void
@@ -225,8 +220,8 @@ CRYPTO_EX_pkcs11_rsa_free(
     void *parent, void *ptr, CRYPTO_EX_DATA *ad,
     int idx, long argl, void *argp
 ) {
-	if (idx == ssh_pkcs11_rsa_ctx_index)
-		CRYPTO_EX_pkcs11_key_free(parent, ptr, ad, argl, argp);
+	if (idx != ssh_pkcs11_rsa_ctx_index) return;
+	CRYPTO_EX_pkcs11_key_free(parent, ptr, ad, argl, argp);
 }
 
 #ifdef OPENSSL_HAS_ECC
@@ -235,8 +230,8 @@ CRYPTO_EX_pkcs11_ec_free(
     void *parent, void *ptr, CRYPTO_EX_DATA *ad,
     int idx, long argl, void *argp
 ) {
-	if (idx == ssh_pkcs11_ec_ctx_index)
-		CRYPTO_EX_pkcs11_key_free(parent, ptr, ad, argl, argp);
+	if (idx != ssh_pkcs11_ec_ctx_index) return;
+	CRYPTO_EX_pkcs11_key_free(parent, ptr, ad, argl, argp);
 }
 #endif /*def OPENSSL_HAS_ECC*/
 
@@ -382,6 +377,8 @@ pkcs11_provider_finalize(struct pkcs11_provider *p)
 	if (!p->valid)
 		return;
 	for (i = 0; i < p->nslots; i++) {
+		debug3_f("provider slot %ld session %ld",
+		    (long)i, (long)p->slotinfo[i].session);
 		if (p->slotinfo[i].session &&
 		    (rv = p->function_list->C_CloseSession(
 		    p->slotinfo[i].session)) != CKR_OK)
@@ -401,7 +398,8 @@ pkcs11_provider_finalize(struct pkcs11_provider *p)
 static void
 pkcs11_provider_unref(struct pkcs11_provider *p)
 {
-	debug_f("provider \"%s\" refcount %d", p->name, p->refcount);
+	debug_f("provider \"%s\" refcount %d valid %d",
+	    p->name, p->refcount, p->valid);
 	if (--p->refcount <= 0) {
 		if (p->valid)
 			error_f("provider \"%s\" still valid", p->name);
@@ -508,21 +506,57 @@ pkcs11_get_key(
 	return 1;
 }
 
+static int
+pkcs11_key_sign(struct pkcs11_key *k11, CK_MECHANISM *mech,
+    u_char *data, long dlen, u_char *sig, long *slen
+) {
+	struct pkcs11_slotinfo	*si;
+	CK_FUNCTION_LIST	*f;
+	CK_OBJECT_HANDLE	obj;
+	CK_RV			rv;
+	int			rval = -1;
+
+	debug3_f("provider->name: %s", k11->provider->name);
+
+	f = k11->provider->function_list;
+	si = &k11->provider->slotinfo[k11->slotidx];
+
+	if (!pkcs11_login(si, f)) return -1;
+	if (!pkcs11_get_key(k11, &obj)) return -1;
+
+	if ((rv = f->C_SignInit(si->session, mech, obj)) != CKR_OK) {
+		PKCS11err(PKCS11_KEY_SIGN, PKCS11_C_SIGNINIT_FAIL);
+		crypto_pkcs11_error(rv);
+	} else {
+		(void)pkcs11_reauthenticate(si, f, obj);
+		/* XXX handle CKR_BUFFER_TOO_SMALL */
+		rv = f->C_Sign(si->session, data, dlen, sig, slen);
+		if (rv == CKR_OK)
+			rval = *slen;
+		else {
+			PKCS11err(PKCS11_KEY_SIGN, PKCS11_C_SIGN_FAIL);
+			crypto_pkcs11_error(rv);
+		}
+	}
+	return (rval);
+}
+
+
 /* openssl callback doing the actual signing operation */
+static int
+pkcs11_key_sign_rsa(struct pkcs11_key *k11,
+    u_char *data, long dlen, u_char *sig, long *slen
+) {
+	CK_MECHANISM mech = { CKM_RSA_PKCS, NULL_PTR, 0 };
+
+	return pkcs11_key_sign(k11, &mech, data, dlen, sig, slen);
+}
+
 static int
 pkcs11_rsa_private_encrypt(int flen, const u_char *from, u_char *to, RSA *rsa,
     int padding)
 {
-	struct pkcs11_key	*k11;
-	struct pkcs11_slotinfo	*si;
-	CK_FUNCTION_LIST	*f;
-	CK_OBJECT_HANDLE	obj;
-	CK_ULONG		tlen = 0;
-	CK_RV			rv;
-	CK_MECHANISM		mech = {
-		CKM_RSA_PKCS, NULL_PTR, 0
-	};
-	int			rval = -1;
+	struct pkcs11_key *k11;
 
 	UNUSED(padding);
 
@@ -535,28 +569,10 @@ pkcs11_rsa_private_encrypt(int flen, const u_char *from, u_char *to, RSA *rsa,
 		error_f("no pkcs11 (valid) provider");
 		return (-1);
 	}
-	f = k11->provider->function_list;
-	si = &k11->provider->slotinfo[k11->slotidx];
 
-	if (!pkcs11_login(si, f)) return -1;
-	if (!pkcs11_get_key(k11, &obj)) return -1;
-
-	if ((rv = f->C_SignInit(si->session, &mech, obj)) != CKR_OK) {
-		PKCS11err(PKCS11_RSA_PRIVATE_ENCRYPT, PKCS11_C_SIGNINIT_FAIL);
-		crypto_pkcs11_error(rv);
-	} else {
-		(void)pkcs11_reauthenticate(si, f, obj);
-		/* XXX handle CKR_BUFFER_TOO_SMALL */
-		tlen = RSA_size(rsa);
-		rv = f->C_Sign(si->session, (CK_BYTE *)from, flen, to, &tlen);
-		if (rv == CKR_OK)
-			rval = tlen;
-		else {
-			PKCS11err(PKCS11_RSA_PRIVATE_ENCRYPT, PKCS11_C_SIGN_FAIL);
-			crypto_pkcs11_error(rv);
-		}
-	}
-	return (rval);
+{	CK_ULONG tlen = RSA_size(rsa);
+	return pkcs11_key_sign_rsa(k11, (u_char*)from, flen, to, &tlen);
+}
 }
 
 static int
@@ -668,22 +684,22 @@ parse_err:
 
 
 /* redirect private key operations for ec key to pkcs11 token */
+static int
+pkcs11_key_sign_ecdsa(struct pkcs11_key *k11,
+	u_char *data, long dlen, u_char *sig, long *slen
+) {
+	CK_MECHANISM mech = { CKM_ECDSA, NULL_PTR, 0 };
+
+	return pkcs11_key_sign(k11, &mech, data, dlen, sig, slen);
+}
+
 static ECDSA_SIG*
 pkcs11_ecdsa_do_sign(
 	const unsigned char *dgst, int dlen,
 	const BIGNUM *inv, const BIGNUM *rp,
 	EC_KEY *ec
 ) {
-	struct pkcs11_key	*k11;
-	struct pkcs11_slotinfo	*si;
-	CK_FUNCTION_LIST	*f;
-	CK_OBJECT_HANDLE	obj;
-	CK_ULONG		tlen = 0;
-	CK_RV			rv;
-	CK_MECHANISM		mech = {
-		CKM_ECDSA, NULL_PTR, 0
-	};
-	ECDSA_SIG		*sig = NULL;
+	struct pkcs11_key *k11;
 
 	debug3_f("...");
 
@@ -699,28 +715,14 @@ pkcs11_ecdsa_do_sign(
 		error_f("no pkcs11 (valid) provider");
 		return NULL;
 	}
-	f = k11->provider->function_list;
-	si = &k11->provider->slotinfo[k11->slotidx];
 
-	if (!pkcs11_login(si, f)) return NULL;
-	if (!pkcs11_get_key(k11, &obj)) return NULL;
+{	u_char sig[(1024>>2)/*> 2*[521/8]=2*66 */];
+	long slen;
 
-	if ((rv = f->C_SignInit(si->session, &mech, obj)) != CKR_OK) {
-		PKCS11err(PKCS11_ECDSA_DO_SIGN, PKCS11_C_SIGNINIT_FAIL);
-		crypto_pkcs11_error(rv);
-	} else {
-		char rs[(1024>>2)/*> 2*[521/8]=2*66 */];
-		(void)pkcs11_reauthenticate(si, f, obj);
-		tlen = sizeof(rs);
-		rv = f->C_Sign(si->session, (CK_BYTE *)dgst, dlen, rs, &tlen);
-		if (rv == CKR_OK)
-			sig = parse_ECDSA_SIG(rs, tlen);
-		else {
-			PKCS11err(PKCS11_ECDSA_DO_SIGN, PKCS11_C_SIGN_FAIL);
-			crypto_pkcs11_error(rv);
-		}
-	}
-	return (sig);
+	slen = (long)sizeof(sig);
+	slen = pkcs11_key_sign_ecdsa(k11, (u_char *)dgst, dlen, sig, &slen);
+	return (slen >= 0) ? parse_ECDSA_SIG(sig, slen) : NULL;
+}
 }
 
 
@@ -938,6 +940,16 @@ set_ssh_pkcs11_pkey_method(EVP_PKEY *pk) {
 	case EVP_PKEY_EC:
 		return set_ssh_pkcs11_pkey_ec_method(pk);
 #endif
+#ifdef USE_PKEY_ED25519
+	case EVP_PKEY_ED25519:
+		error_f("SSH PKCS#11 does not support ED25519 keys");
+		return 0;
+#endif
+#ifdef USE_ECDH_X448	/* assume ED448 */
+	case EVP_PKEY_ED448:
+		error_f("SSH PKCS#11 does not support ED448 keys");
+		return 0;
+#endif
 	}
 	return 0;
 }
@@ -1040,8 +1052,6 @@ note_key(struct pkcs11_provider *p, CK_ULONG slotidx,
 {
 	char *fp;
 
-	if (key == NULL) return;
-
 	fp = sshkey_fingerprint(key, SSH_FP_HASH_DEFAULT, SSH_FP_DEFAULT);
 	if (fp == NULL) {
 		error_f("sshkey_fingerprint failed");
@@ -1056,8 +1066,6 @@ static void
 pkcs11_push_key(struct sshkey *key, char *label,
     struct sshkey ***keysp, char ***labelsp, int *nkeys)
 {
-	if (key == NULL) return;
-
 {	struct sshkey **sp = *keysp;
 	int i;
 	for (i = 0; i < *nkeys; i++, sp++)
@@ -1132,10 +1140,8 @@ pkcs11_fetch_certs(struct pkcs11_provider *p, CK_ULONG slotidx,
 			break;
 
 		key = pkcs11_get_x509key(p, slotidx, obj);
-		if (key == NULL) {
-			error_f("pkcs11_get_x509key failed");
-			continue;
-		}
+		if (key == NULL) continue;
+
 		label = x509key_subject(key);
 		note_key(p, slotidx, key);
 		pkcs11_push_key(key, label, keysp, labelsp, nkeys);
@@ -1484,6 +1490,8 @@ pkcs11_fetch_keys(struct pkcs11_provider *p, CK_ULONG slotidx,
 			break;
 
 		key = pkcs11_get_pubkey(p, slotidx, obj, &label);
+		if (key == NULL) continue;
+
 		note_key(p, slotidx, key);
 		pkcs11_push_key(key, label, keysp, labelsp, nkeys);
 	}

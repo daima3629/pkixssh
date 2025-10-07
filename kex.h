@@ -1,4 +1,4 @@
-/* $OpenBSD: kex.h,v 1.126 2024/09/02 12:13:56 djm Exp $ */
+/* $OpenBSD: kex.h,v 1.127 2025/08/11 10:55:38 djm Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2014-2025 Roumen Petrov.  All rights reserved.
@@ -120,7 +120,8 @@ struct kex {
 	int	(*xsign)(struct ssh *ssh, ssh_sign_ctx *ctx, struct sshkey *pub,
 	    u_char **sigp, size_t *lenp, const u_char *data, size_t datalen);
 	/* kex specific state */
-	EVP_PKEY	*pk;
+	EVP_PKEY	*pk;		/* traditional */
+	EVP_PKEY	*pkem;		/* post-quantum KEM */
 	u_int	min, max, nbits;	/* GEX */
 #ifndef USE_ECDH_X25519
 	u_char c25519_key[CURVE25519_SIZE];
@@ -145,6 +146,29 @@ struct kex_impl {
 	const struct kex_impl_funcs *funcs;
 
 	void *spec;
+};
+
+struct kexkey {
+	EVP_PKEY **pk;
+	void *spec;
+};
+
+struct kex_ecdh_spec {
+	int ec_nid;
+	int raw;
+};
+
+struct kex_ecx_spec {
+	int key_id;
+	size_t pub_len;
+	int raw;
+};
+
+struct kex_kem_spec {
+	const char *name;
+	size_t pub_len;
+	size_t cipher_len;
+	size_t secret_len;
 };
 
 const struct kex_impl
@@ -206,14 +230,14 @@ int	kex_c25519_shared_secret_to_sshbuf(struct kex *kex,
 EVP_PKEY*	kex_new_dh_group_bits(int min, int wantbits, int max);
 EVP_PKEY*	kex_new_dh_group(BIGNUM *modulus, BIGNUM *gen);
 
-int	kex_shared_secret_to_sshbuf(u_char *kbuf, size_t klen,
+int	kex_shared_secret_to_sshbuf(const u_char *kbuf, size_t klen,
     int raw, struct sshbuf **bufp);
 #ifdef USE_EVP_PKEY_KEYGEN
-int	kex_ecx_keygen_to_sshbuf(struct kex *kex, int key_id, size_t pub_len,
-    struct sshbuf **bufp);
-int kex_ecx_shared_secret_to_sshbuf(struct kex *kex, int key_id,
-    const u_char *kbuf, size_t klen, int raw, struct sshbuf **bufp);
-int	kex_pkey_derive_shared_secret(struct kex *kex, EVP_PKEY *peerkey,
+int	kex_ecx_keygen_to_sshbuf(int key_id, size_t pub_len,
+    EVP_PKEY **pkp, struct sshbuf **bufp);
+int	kex_pkey_ecx_shared_secret_to_sshbuf(EVP_PKEY *pk, int key_id, int raw,
+    const u_char *kbuf, size_t klen, struct sshbuf **bufp);
+int	kex_pkey_derive_shared_secret(EVP_PKEY *pk, EVP_PKEY *peerkey,
     int raw, struct sshbuf **bufp);
 #endif /*def USE_EVP_PKEY_KEYGEN*/
 int	kex_digest_buffer(int hash_alg, struct sshbuf *buf,

@@ -1,4 +1,4 @@
-/*	$OpenBSD: sshbuf-misc.c,v 1.20 2025/06/16 09:02:19 dtucker Exp $	*/
+/*	$OpenBSD: sshbuf-misc.c,v 1.22 2025/09/04 00:32:31 djm Exp $	*/
 /*
  * Copyright (c) 2011 Damien Miller
  *
@@ -18,13 +18,9 @@
 #include "includes.h"
 
 #include <sys/types.h>
-#include <sys/socket.h>
 #include <netinet/in.h>
 #include <errno.h>
 #include <stdlib.h>
-#ifdef HAVE_STDINT_H
-# include <stdint.h>
-#endif
 #include <stdio.h>
 #include <limits.h>
 #include <string.h>

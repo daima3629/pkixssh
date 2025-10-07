@@ -16,10 +16,11 @@
 
 /* Address handling routines */
 
+#include "includes.h"
+
 #ifndef _ADDR_H
 #define _ADDR_H
 
-#include <sys/socket.h>
 #include <netinet/in.h>
 
 struct xaddr {

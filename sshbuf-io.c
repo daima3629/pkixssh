@@ -1,7 +1,7 @@
 /*	$OpenBSD: sshbuf-io.c,v 1.2 2020/01/25 23:28:06 djm Exp $ */
 /*
  * Copyright (c) 2011 Damien Miller
- * Copyright (c) 2020 Roumen Petrov
+ * Copyright (c) 2020-2025 Roumen Petrov
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -19,7 +19,6 @@
 #include "includes.h"
 
 #include <sys/types.h>
-#include <sys/stat.h>
 
 #include <errno.h>
 #include <fcntl.h>

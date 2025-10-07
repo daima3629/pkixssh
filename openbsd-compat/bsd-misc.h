@@ -154,7 +154,7 @@ void endpwent(void);
 #endif /*def KRB5*/
 
 #ifndef HAVE_PLEDGE
-int pledge(const char *promises, const char *paths[]);
+int pledge(const char *promises, const char *execpromises);
 #endif
 
 /* bsd-err.h */

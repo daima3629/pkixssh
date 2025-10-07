@@ -1,11 +1,11 @@
-/* $OpenBSD: sshd-auth.c,v 1.2 2024/12/03 22:30:03 jsg Exp $ */
+/* $OpenBSD: sshd-auth.c,v 1.8 2025/08/29 03:50:38 djm Exp $ */
 /*
  * SSH2 implementation:
  * Privilege Separation:
  *
  * Copyright (c) 2000, 2001, 2002 Markus Friedl.  All rights reserved.
  * Copyright (c) 2002 Niels Provos.  All rights reserved.
- * Copyright (c) 2002-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -117,9 +117,6 @@ list_hostkey_types(void)
 	#endif
 		case KEY_ECDSA_CERT:
 		case KEY_ED25519_CERT:
-	#ifdef WITH_XMSS
-		case KEY_XMSS_CERT:
-	#endif
 			append_hostkey_type(b, sshkey_ssh_name(key));
 			break;
 		}

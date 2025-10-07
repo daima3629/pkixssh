@@ -134,13 +134,14 @@ kex_gen_client(struct ssh *ssh)
 	struct kex *kex = ssh->kex;
 	int r;
 
-{	if (kex->impl != NULL)
+	if (kex->impl != NULL) {
 		r = kex->impl->funcs->keypair(kex);
-	else
+		if (r != 0)
+			kex_reset_keys(kex);
+	} else
 		r = SSH_ERR_INVALID_ARGUMENT;
-}
-	if (r != 0)
-		return r;
+	if (r != 0) return r;
+
 	if ((r = sshpkt_start(ssh, SSH2_MSG_KEX_ECDH_INIT)) != 0 ||
 	    (r = sshpkt_put_stringb(ssh, kex->client_pub)) != 0 ||
 	    (r = sshpkt_send(ssh)) != 0)
@@ -189,13 +190,11 @@ input_kex_gen_reply(int type, u_int32_t seq, struct ssh *ssh)
 		goto out;
 
 	/* compute shared secret */
-{	if (kex->impl != NULL)
+	if (kex->impl != NULL)
 		r = kex->impl->funcs->dec(kex, server_blob, &shared_secret);
 	else
 		r = SSH_ERR_INVALID_ARGUMENT;
-}
-	if (r != 0)
-		goto out;
+	if (r != 0) goto out;
 
 	/* calc and verify H */
 	hashlen = sizeof(hash);
@@ -222,10 +221,7 @@ input_kex_gen_reply(int type, u_int32_t seq, struct ssh *ssh)
 		r = kex_send_newkeys(ssh);
 out:
 	explicit_bzero(hash, sizeof(hash));
-	explicit_bzero(kex->sntrup761_client_key,
-	    sizeof(kex->sntrup761_client_key));
-	explicit_bzero(kex->mlkem768_client_key,
-	    sizeof(kex->mlkem768_client_key));
+	kex_reset_keys(kex);
 	sshbuf_free(server_host_key_blob);
 	free(signature);
 	sshkey_free(server_host_key);
@@ -272,14 +268,12 @@ input_kex_gen_init(int type, u_int32_t seq, struct ssh *ssh)
 		goto out;
 
 	/* compute shared secret */
-{	if (kex->impl != NULL)
+	if (kex->impl != NULL)
 		r = kex->impl->funcs->enc(kex, client_pubkey, &server_pubkey,
 		    &shared_secret);
 	else
 		r = SSH_ERR_INVALID_ARGUMENT;
-}
-	if (r != 0)
-		goto out;
+	if (r != 0) goto out;
 
 	/* calc H */
 	if ((server_host_key_blob = sshbuf_new()) == NULL) {
@@ -322,6 +316,7 @@ input_kex_gen_init(int type, u_int32_t seq, struct ssh *ssh)
 		r = kex_send_newkeys(ssh);
 out:
 	explicit_bzero(hash, sizeof(hash));
+	kex_reset_keys(kex);
 	sshbuf_free(server_host_key_blob);
 	free(signature);
 	sshbuf_free(shared_secret);

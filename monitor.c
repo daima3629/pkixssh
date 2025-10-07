@@ -1,4 +1,4 @@
-/* $OpenBSD: monitor.c,v 1.247 2024/12/03 22:30:03 jsg Exp $ */
+/* $OpenBSD: monitor.c,v 1.249 2025/09/25 06:45:50 djm Exp $ */
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * Copyright 2002 Markus Friedl <markus@openbsd.org>
@@ -30,32 +30,18 @@
 #include "includes.h"
 
 #include <sys/types.h>
-#include <sys/socket.h>
 #include <sys/wait.h>
 
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
-#ifdef HAVE_PATHS_H
-#include <paths.h>
-#endif
 #include <pwd.h>
 #include <signal.h>
-#ifdef HAVE_STDINT_H
-# include <stdint.h>
-#endif
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <unistd.h>
-#ifdef HAVE_POLL_H
-# include <poll.h>
-#else
-# ifdef HAVE_SYS_POLL_H
-#  include <sys/poll.h>
-# endif
-#endif
 
 #include "openbsd-compat/sys-tree.h"
 #include "openbsd-compat/sys-queue.h"
@@ -358,11 +344,29 @@ monitor_child_preauth(struct ssh *ssh, struct monitor *pmonitor)
 	while (pmonitor->m_log_recvfd != -1 && monitor_read_log(pmonitor) == 0)
 		;
 
+	/* Wait for the child's exit status */
+{	int status;
+	while (waitpid(pmonitor->m_pid, &status, 0) == -1) {
+		if (errno == EINTR)
+			continue;
+		fatal_f("waitpid: %s", strerror(errno));
+	}
+	if (WIFEXITED(status)) {
+		if (WEXITSTATUS(status) != 0)
+			fatal_f("preauth child %ld exited with status %d",
+			    (long)pmonitor->m_pid, WEXITSTATUS(status));
+	} else if (WIFSIGNALED(status))
+		fatal_f("preauth child %ld terminated by signal %d",
+		    (long)pmonitor->m_pid, WTERMSIG(status));
+	debug3_f("preauth child %ld terminated successfully",
+	    (long)pmonitor->m_pid);
+}
 	if (pmonitor->m_recvfd >= 0)
 		close(pmonitor->m_recvfd);
 	if (pmonitor->m_log_sendfd >= 0)
 		close(pmonitor->m_log_sendfd);
 	pmonitor->m_sendfd = pmonitor->m_log_recvfd = -1;
+	pmonitor->m_pid = -1;
 }
 
 static void

@@ -309,7 +309,6 @@ cre_all () {
   if test "$SSH_X509V3_EXTENSIONS" = "srv_cert" || \
      test "$SSH_SELFCERT" = "yes" \
   ; then
-    > $SSH_BASE_KEY.certstamp
     exit $?
   fi
 
@@ -318,8 +317,6 @@ cre_all () {
     cre_all2 &&
     revoke_crt || exit $?
   done
-
-  > $SSH_BASE_KEY.certstamp
 )
 }
 

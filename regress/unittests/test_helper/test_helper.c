@@ -23,11 +23,14 @@
 
 #include <assert.h>
 #include <fcntl.h>
+#include <limits.h>
+#include <math.h>
 #include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
 #ifdef WITH_OPENSSL
@@ -40,9 +43,12 @@
 
 #include "atomicio.h"
 #include "misc.h"
+#include "xmalloc.h"
 
-typedef void (*sshsig_t)(int);
-sshsig_t ssh_signal(int, sshsig_t);
+#define BENCH_FAST_DEADLINE	1
+#define BENCH_NORMAL_DEADLINE	10
+#define BENCH_SLOW_DEADLINE	60
+#define BENCH_SAMPLES_ALLOC	8192
 
 #define TEST_CHECK_INT(r, pred) do {		\
 		switch (pred) {			\
@@ -119,6 +125,15 @@ static char subtest_info[512];
 static int fast = 0;
 static int slow = 0;
 
+int benchmark = 0;
+static int benchmark_detail_statistics = 0;
+static const char *bench_name = NULL;
+static struct timespec bench_start_time, bench_finish_time;
+static int bench_nalloc;
+static struct timespec *bench_samples = NULL;
+static int bench_nruns;
+static double bench_accum_secs;
+
 int
 main(int argc, char **argv)
 {
@@ -137,8 +152,17 @@ main(int argc, char **argv)
 		}
 	}
 
-	while ((ch = getopt(argc, argv, "Ffvqd:")) != -1) {
+	while ((ch = getopt(argc, argv, "bBFfvqd:")) != -1) {
 		switch (ch) {
+		case 'b':
+			benchmark = 1;
+			quiet_mode = 1;
+			break;
+		case 'B':
+			benchmark = 1;
+			benchmark_detail_statistics = 1;
+			quiet_mode = 1;
+			break;
 		case 'F':
 			slow = 1;
 			break;
@@ -158,7 +182,7 @@ main(int argc, char **argv)
 			break;
 		default:
 			fprintf(stderr, "Unrecognised command line option\n");
-			fprintf(stderr, "Usage: %s [-Ffqv] [-d data_dir]\n",
+			fprintf(stderr, "Usage: %s [-BbFfqv] [-d data_dir]\n",
 			    __progname);
 			exit(1);
 		}
@@ -169,7 +193,10 @@ main(int argc, char **argv)
 	if (verbose_mode)
 		printf("\n");
 
-	tests();
+	if (benchmark)
+		benchmarks();
+	else
+		tests();
 
 	if (!quiet_mode)
 		printf(" %u tests ok\n", test_number);
@@ -567,3 +594,117 @@ assert_ptr(const char *file, int line, const char *a1, const char *a2,
 	test_die();
 }
 
+static inline double
+tstod(const struct timespec *ts)
+{
+	return (double)ts->tv_sec + ((double)ts->tv_nsec / 1000000000.0);
+}
+
+void
+bench_start(const char *file, int line, const char *name)
+{
+	if (bench_name != NULL) {
+		fprintf(stderr, "\n%s:%d internal error: BENCH_START() called "
+		    "while previous benchmark \"%s\" incomplete",
+		    file, line, bench_name);
+		abort();
+	}
+
+	bench_name = name;
+	free(bench_samples);
+	bench_nalloc = BENCH_SAMPLES_ALLOC;
+	bench_samples = xcalloc(sizeof(*bench_samples), bench_nalloc);
+	bench_nruns = 0;
+	bench_accum_secs = 0;
+}
+
+int
+bench_done(void)
+{
+	return bench_accum_secs >= (fast ? BENCH_FAST_DEADLINE :
+	    (slow ? BENCH_SLOW_DEADLINE : BENCH_NORMAL_DEADLINE));
+}
+
+void
+bench_case_start()
+{
+	clock_gettime(CLOCK_REALTIME, &bench_start_time);
+}
+
+void
+bench_case_finish()
+{
+	struct timespec ts;
+
+	clock_gettime(CLOCK_REALTIME, &bench_finish_time);
+	timespecsub(&bench_finish_time, &bench_start_time, &ts);
+	if (bench_nruns >= bench_nalloc) {
+		if (bench_nalloc >= INT_MAX / 2) {
+			fprintf(stderr, "\n%s:%d benchmark %s too many samples",
+			    __FILE__, __LINE__, bench_name);
+			abort();
+		}
+		bench_samples = xrecallocarray(bench_samples, bench_nalloc,
+		    bench_nalloc * 2, sizeof(*bench_samples));
+		bench_nalloc *= 2;
+	}
+	bench_samples[bench_nruns++] = ts;
+	bench_accum_secs += tstod(&ts);
+}
+
+static int
+tscmp(const void *aa, const void *bb)
+{
+	const struct timespec *a = (const struct timespec *)aa;
+	const struct timespec *b = (const struct timespec *)bb;
+
+	if (timespeccmp(a, b, ==))
+		return 0;
+	return timespeccmp(a, b, <) ? -1 : 1;
+}
+
+void
+bench_finish(const char *file, int line, const char *unit)
+{
+	double std_dev = 0, mean_spr, mean_rps, med_spr, med_rps;
+	int i;
+
+	if (bench_nruns < 1) {
+		fprintf(stderr, "\n%s:%d benchmark %s never ran", file, line,
+		    bench_name);
+		abort();
+	}
+	/* median */
+	qsort(bench_samples, bench_nruns, sizeof(*bench_samples), tscmp);
+	i = bench_nruns / 2;
+	med_spr = tstod(&bench_samples[i]);
+	if (bench_nruns > 1 && bench_nruns & 1)
+		med_spr = (med_spr + tstod(&bench_samples[i - 1])) / 2.0;
+	med_rps = (med_spr == 0.0) ? INFINITY : 1.0/med_spr;
+	/* mean */
+	mean_spr = bench_accum_secs / (double)bench_nruns;
+	mean_rps = (mean_spr == 0.0) ? INFINITY : 1.0/mean_spr;
+	/* std. dev */
+	std_dev = 0;
+	for (i = 0; i < bench_nruns; i++) {
+		std_dev = tstod(&bench_samples[i]) - mean_spr;
+		std_dev *= std_dev;
+	}
+	std_dev /= (double)bench_nruns;
+	std_dev = sqrt(std_dev);
+
+	if (benchmark_detail_statistics)
+		printf("%s: %d runs in %0.3fs, %0.03f/%0.03f ms/%s "
+		    "(mean/median), std.dev %0.03f ms, "
+		    "%0.2f/%0.2f %s/s (mean/median)\n",
+		    bench_name, bench_nruns, bench_accum_secs,
+		    mean_spr * 1000, med_spr * 1000, unit, std_dev * 1000,
+		    mean_rps, med_rps, unit);
+	else
+		printf("%-40s %0.2f %s/s\n", bench_name, med_rps, unit);
+
+	bench_name = NULL;
+	bench_nruns = 0;
+	free(bench_samples);
+	bench_samples = NULL;
+}

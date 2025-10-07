@@ -2,7 +2,7 @@
  * Copyright (c) 1999-2003 Damien Miller.  All rights reserved.
  * Copyright (c) 2003 Ben Lindstrom. All rights reserved.
  * Copyright (c) 2002 Tim Rice.  All rights reserved.
- * Copyright (c) 2013-2022 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2013-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,8 +32,6 @@
 
 #include <sys/types.h>
 #include <pwd.h>
-
-#include <sys/socket.h>
 
 #include <stddef.h>  /* for wchar_t */
 
@@ -365,7 +363,6 @@ char *shadow_pw(struct passwd *pw);
 # include <features.h>
 # if defined(__GNU_LIBRARY__) && defined(__GLIBC_PREREQ)
 #  if __GLIBC_PREREQ(2, 15) && (_FORTIFY_SOURCE > 0)
-#   include <sys/socket.h>  /* Ensure include guard is defined */
 #   undef FD_SET
 #   undef FD_ISSET
 #   define FD_SET(n, set)	kludge_FD_SET(n, set)

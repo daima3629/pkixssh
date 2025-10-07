@@ -5,7 +5,7 @@
 
 /*
  * Copyright (c) 2004 Damien Miller <djm@mindrot.org>
- * Copyright (c) 2016-2022 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2016-2025 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -40,10 +40,6 @@
 
 #include <stdlib.h>
 
-#ifdef HAVE_SYS_STAT_H
-# include <sys/stat.h>
-#endif
-
 #include <sys/ioctl.h>
 
 #ifdef HAVE_FCNTL_H
@@ -52,7 +48,7 @@
 
 #ifdef HAVE_UTIL_H
 # include <util.h>
-#endif /* HAVE_UTIL_H */
+#endif
 
 #ifdef HAVE_PTY_H
 # include <pty.h>

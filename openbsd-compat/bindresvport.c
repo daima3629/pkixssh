@@ -34,7 +34,6 @@
 
 #ifndef HAVE_BINDRESVPORT_SA
 #include <sys/types.h>
-#include <sys/socket.h>
 
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -98,17 +97,17 @@ bindresvport_sa(int sd, struct sockaddr *sa)
 
 	for(i = 0; i < NPORTS; i++) {
 		*portp = htons(port);
-		
+
 		error = bind(sd, sa, salen);
 
 		/* Terminate on success */
 		if (error != -1)
 			break;
-			
+
 		/* Terminate on errors, except "address already in use" */
 		if (!((errno == EADDRINUSE) || (errno == EINVAL)))
 			break;
-			
+
 		port++;
 		if (port > ENDPORT)
 			port = STARTPORT;

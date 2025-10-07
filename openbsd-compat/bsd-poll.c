@@ -18,7 +18,6 @@
 #if !defined(HAVE_PPOLL) || !defined(HAVE_POLL) || defined(BROKEN_POLL)
 
 #include <sys/types.h>
-#include <sys/time.h>
 #ifdef HAVE_SYS_SELECT_H
 # include <sys/select.h>
 #endif

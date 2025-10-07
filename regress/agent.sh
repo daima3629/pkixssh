@@ -1,8 +1,7 @@
-#	$OpenBSD: agent.sh,v 1.22 2024/10/24 03:28:34 djm Exp $
+#	$OpenBSD: agent.sh,v 1.23 2025/05/06 06:05:48 djm Exp $
 #	Placed in the Public Domain.
 
 tid="simple agent test"
-PLAIN_TYPES=`echo "$SSH_KEYTYPES" | sed 's/ssh-xmss@openssh.com//'` # TODO
 
 # cross-project configuration
 if test "$sshd_type" != "pkix" ; then
@@ -46,7 +45,7 @@ ${SSHKEYGEN} -q -N '' -t ed25519 -f $OBJ/user_ca_key \
 trace "overwrite authorized keys"
 printf '' > $OBJ/authorized_keys_$USER
 
-for t in $PLAIN_TYPES ; do
+for t in $SSH_KEYTYPES ; do
 	# generate user key for agent
 	rm -f $OBJ/$t-agent $OBJ/$t-agent.pub*
 	${SSHKEYGEN} -q -N '' -t $t -f $OBJ/$t-agent ||\
@@ -99,7 +98,7 @@ if [ $r -ne 52 ]; then
 	fail "ssh connect with failed (exit code $r)"
 fi
 
-for t in $PLAIN_TYPES; do
+for t in $SSH_KEYTYPES ; do
 	trace "connect via agent using $t key"
 	${SSH} -F $OBJ/ssh_proxy -i $OBJ/$t-agent.pub -oIdentitiesOnly=yes \
 		somehost exit 52
@@ -153,7 +152,7 @@ fi
 
 (printf 'cert-authority,principals="estragon" '; cat $OBJ/user_ca_key.pub) \
 	> $OBJ/authorized_keys_$USER
-for t in $PLAIN_TYPES; do
+for t in $SSH_KEYTYPES ; do
 	trace "connect via agent using $t key"
 	${SSH} -F $OBJ/ssh_proxy -i $OBJ/$t-agent.pub \
 		-oCertificateFile=$OBJ/$t-agent-cert.pub \
@@ -180,7 +179,7 @@ if [ $r -ne 1 ]; then
 fi
 trace "readd keys"
 # re-add keys/certs to agent
-for t in $PLAIN_TYPES; do
+for t in $SSH_KEYTYPES ; do
 	${SSHADD} $OBJ/$t-agent-private >/dev/null 2>&1 || \
 		fail "ssh-add failed exit code $?"
 done
@@ -204,7 +203,7 @@ if [ $r -ne 1 ]; then
 	fail "ssh-add -l returned unexpected exit code: $r"
 fi
 # re-add keys/certs to agent
-for t in $PLAIN_TYPES; do
+for t in $SSH_KEYTYPES ; do
 	${SSHADD} $OBJ/$t-agent-private >/dev/null 2>&1 || \
 		fail "ssh-add failed exit code $?"
 done

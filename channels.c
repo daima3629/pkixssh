@@ -1,4 +1,4 @@
-/* $OpenBSD: channels.c,v 1.444 2025/05/24 11:41:51 djm Exp $ */
+/* $OpenBSD: channels.c,v 1.451 2025/09/25 06:33:19 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -17,7 +17,7 @@
  * Copyright (c) 1999, 2000, 2001, 2002 Markus Friedl.  All rights reserved.
  * Copyright (c) 1999 Dug Song.  All rights reserved.
  * Copyright (c) 1999 Theo de Raadt.  All rights reserved.
- * Copyright (c) 2015-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2015-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -43,13 +43,7 @@
 #include "includes.h"
 
 #include <sys/types.h>
-#include <sys/stat.h>
 #include <sys/ioctl.h>
-#include <sys/un.h>
-#include <sys/socket.h>
-#ifdef HAVE_SYS_TIME_H
-# include <sys/time.h>
-#endif
 
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -58,17 +52,7 @@
 #include <fcntl.h>
 #include <limits.h>
 #include <netdb.h>
-#ifdef HAVE_POLL_H
-# include <poll.h>
-#else
-# ifdef HAVE_SYS_POLL_H
-#  include <sys/poll.h>
-# endif
-#endif
 #include <stdarg.h>
-#ifdef HAVE_STDINT_H
-# include <stdint.h>
-#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -876,6 +860,28 @@ channel_free_all(struct ssh *ssh)
 	sc->x11_fake_data_len = 0;
 }
 
+void
+channel_fini_channels(struct ssh *ssh)
+{
+	if (ssh == NULL || ssh->chanctxt == NULL)
+		return;
+
+	channel_free_all(ssh);
+
+	channel_clear_permission(ssh, FORWARD_USER, FORWARD_LOCAL);
+	channel_clear_permission(ssh, FORWARD_USER, FORWARD_REMOTE);
+	channel_clear_permission(ssh, FORWARD_ADM, FORWARD_LOCAL);
+	channel_clear_permission(ssh, FORWARD_ADM, FORWARD_REMOTE);
+
+{	struct ssh_channels *sc = ssh->chanctxt;
+
+	free(sc->channel_pre);
+	free(sc->channel_post);
+	freezero(sc, sizeof(*sc));
+}
+	ssh->chanctxt = NULL;
+}
+
 /*
  * Closes the sockets/fds of all channels.  This is used to close extra file
  * descriptors after a fork.
@@ -1129,6 +1135,25 @@ channel_open_message(struct ssh *ssh)
 		fatal_f("sshbuf_dup_string");
 	sshbuf_free(buf);
 	return ret;
+}
+
+void
+channel_report_open(struct ssh *ssh)
+{
+{	char ident[256];
+	sshpkt_fmt_connection_id(ssh, ident, sizeof(ident));
+	logit("Connection info: %s (pid %ld) ...", ident, (long)getpid());
+}
+{	char *open, *oopen;
+	open = oopen = channel_open_message(ssh);
+	do {
+		char *cp = strsep(&open, "\r\n");
+		if (cp == NULL) break;
+		if (*cp == '\0') continue;
+		logit("  %s", cp);
+	} while (1);
+	free(oopen);
+}
 }
 
 static void
@@ -4177,7 +4202,7 @@ channel_cancel_rport_listener(struct ssh *ssh, struct Forward *fwd)
 	}
 }
 
-static int
+static int/*bool*/
 channel_cancel_lport_listener_tcpip(struct ssh *ssh,
     const char *lhost, u_short lport, int cport,
     struct ForwardOptions *fwd_opts)
@@ -4213,7 +4238,7 @@ channel_cancel_lport_listener_tcpip(struct ssh *ssh,
 	return found;
 }
 
-static int
+static int/*bool*/
 channel_cancel_lport_listener_streamlocal(struct ssh *ssh, const char *path)
 {
 	u_int i;
@@ -4240,7 +4265,7 @@ channel_cancel_lport_listener_streamlocal(struct ssh *ssh, const char *path)
 	return found;
 }
 
-int
+int/*bool*/
 channel_cancel_lport_listener(struct ssh *ssh,
     struct Forward *fwd, int cport, struct ForwardOptions *fwd_opts)
 {
@@ -4619,7 +4644,7 @@ channel_add_permission(struct ssh *ssh, int who, int where,
 	 * host/port_to_connect.
 	 */
 	permission_set_add(ssh, who, where,
-	    local ? host : 0, local ? port : 0,
+	    local ? host : NULL, local ? port : 0,
 	    local ? NULL : host, NULL, local ? 0 : port, NULL);
 	pset->all_permitted = 0;
 }
@@ -4642,10 +4667,13 @@ void
 channel_clear_permission(struct ssh *ssh, int who, int where)
 {
 	struct permission **permp;
-	u_int *npermp;
+	u_int i, *npermp;
 
 	permission_set_get_array(ssh, who, where, &permp, &npermp);
-	*permp = xrecallocarray(*permp, *npermp, 0, sizeof(**permp));
+	for (i = 0; i < *npermp; i++)
+		fwd_perm_clear((*permp) + i);
+	free(*permp);
+	*permp = NULL;
 	*npermp = 0;
 }
 

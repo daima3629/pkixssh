@@ -1,5 +1,5 @@
-/* $OpenBSD: version.h,v 1.105 2025/04/09 07:00:21 djm Exp $ */
+/* $OpenBSD: version.h,v 1.106 2025/10/06 01:45:22 djm Exp $ */
 
-#define SSH_VERSION	"OpenSSH_10.0"
+#define OPENSSH_RELEASE	"OpenSSH 10.1p1"
 
-#define SSH_RELEASE	PACKAGE_STRING ", " SSH_VERSION "p2"
+#define SSH_RELEASE	PACKAGE_STRING ", " OPENSSH_RELEASE

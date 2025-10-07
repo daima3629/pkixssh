@@ -1,7 +1,7 @@
-/* $OpenBSD: mux.c,v 1.102 2024/07/25 22:40:08 djm Exp $ */
+/* $OpenBSD: mux.c,v 1.107 2025/09/30 00:03:09 djm Exp $ */
 /*
  * Copyright (c) 2002-2008 Damien Miller <djm@openbsd.org>
- * Copyright (c) 2018-2023 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2018-2025 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -21,9 +21,6 @@
 #include "includes.h"
 
 #include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/socket.h>
-#include <sys/un.h>
 
 #include <errno.h>
 #include <fcntl.h>
@@ -35,18 +32,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#ifdef HAVE_PATHS_H
-#include <paths.h>
-#endif
-
-#ifdef HAVE_POLL_H
-# include <poll.h>
-#else
-# ifdef HAVE_SYS_POLL_H
-#  include <sys/poll.h>
-# endif
-#endif
-
 #ifdef HAVE_UTIL_H
 # include <util.h>
 #endif
@@ -688,6 +673,7 @@ mux_confirm_remote_forward(struct ssh *ssh, int type, u_int32_t seq, void *ctxt)
 	if (c->mux_pause <= 0)
 		fatal_f("mux_pause %d", c->mux_pause);
 	c->mux_pause = 0; /* start processing messages again */
+	free(fctx);
 }
 
 static int
@@ -938,7 +924,7 @@ mux_master_process_close_fwd(struct ssh *ssh, u_int rid,
 	} else {	/* local and dynamic forwards */
 		/* Ditto */
 		if (channel_cancel_lport_listener(ssh, &fwd, fwd.connect_port,
-		    &options.fwd_opts) == -1)
+		    &options.fwd_opts) == 0)
 			error_reason = "port not found";
 	}
 
@@ -2217,8 +2203,10 @@ mux_client_request_stdio_fwd(int fd)
 	sshbuf_reset(m);
 	if (mux_client_read_packet(fd, m) != 0) {
 		if (errno == EPIPE ||
-		    (errno == EINTR && muxclient_terminate != 0))
+		    (errno == EINTR && muxclient_terminate != 0)) {
+			sshbuf_free(m);
 			return 0;
+		}
 		fatal_f("mux_client_read_packet: %s", strerror(errno));
 	}
 	fatal_f("master returned unexpected message %u", type);

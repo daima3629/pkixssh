@@ -4,7 +4,7 @@
 # This is free software; see Copyright file in the source
 # distribution for precise wording.
 #
-# Copyright (c) 2019-2024 Roumen Petrov
+# Copyright (c) 2019-2025 Roumen Petrov
 #
 
 # Do we want to enable building with ldap? (1=yes 0=no)
@@ -28,6 +28,9 @@
 # Do we want to enable Kerberos 5 support? (1=yes 0=no)
 %global enable_kerberos5 1
 
+# Do we want to enable Diffie-Hellman key exchange? (1=yes 0=no)
+%global enable_kex_dh 1
+
 # Do we want to enable DSA publickey algorithms? (1=yes 0=no)
 %global enable_dsa 0
 
@@ -45,6 +48,13 @@
 # Development builds
 %if 0%{?suse_version} >= 1699
 # Tumbleweed ...
+# OpenSSL 3+ FIPS model is not supported yet
+%undefine enable_openssl_fips
+%global enable_openssl_fips 0
+%endif
+
+%if 0%{?suse_version} >= 1600
+# SUSE SLE-16 (in development)
 # OpenSSL 3+ FIPS model is not supported yet
 %undefine enable_openssl_fips
 %global enable_openssl_fips 0
@@ -127,7 +137,7 @@ Url:		https://roumenpetrov.info/secsh/
 
 Name:		pkixssh
 Summary:	PKIX-SSH, Advanced secure shell implementation
-Version:	16.1.1
+Version:	17.1.1
 Release:	1
 License:	BSD-2-Clause
 Group:		Productivity/Networking/SSH
@@ -246,6 +256,11 @@ two untrusted hosts over an insecure network.
   --with-kerberos5 \
 %else
   --without-kerberos5 \
+%endif
+%if %{enable_kex_dh}
+  --enable-kex-dh \
+%else
+  --disable-kex-dh \
 %endif
 %if %{enable_dsa}
   --enable-dsa \

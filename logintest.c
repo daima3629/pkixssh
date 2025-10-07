@@ -31,7 +31,6 @@
 
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <sys/socket.h>
 
 #include <netinet/in.h>
 
@@ -41,9 +40,7 @@
 #include <string.h>
 #include <pwd.h>
 #include <netdb.h>
-#ifdef HAVE_TIME_H
 #include <time.h>
-#endif
 
 #include "loginrec.h"
 
@@ -89,11 +86,9 @@ testAPI()
 	struct sockaddr_in sa_in4;
 	char cmdstring[256], stripline[8];
 	char username[32];
-#ifdef HAVE_TIME_H
 	time_t t0, t1, t2, logintime, logouttime;
 	char s_t0[64],s_t1[64],s_t2[64];
 	char s_logintime[64], s_logouttime[64]; /* ctime() strings */
-#endif
 
 	printf("**\n** Testing the API...\n**\n");
 
@@ -139,7 +134,6 @@ testAPI()
 	login_write(li1);
 	printf("--\n(Should have written errors to stderr)\n");
 
-#ifdef HAVE_TIME_H
 	(void)time(&t0);
 	strlcpy(s_t0, ctime(&t0), sizeof(s_t0));
 	t1 = login_get_lastlog_time(getuid());
@@ -147,14 +141,12 @@ testAPI()
 	printf("Before logging in:\n\tcurrent time is %d - %s\t"
 	    "lastlog time is %d - %s\n",
 	    (int)t0, s_t0, (int)t1, s_t1);
-#endif
 
 	printf("Performing a login on line %s ", stripline);
-#ifdef HAVE_TIME_H
 	(void)time(&logintime);
 	strlcpy(s_logintime, ctime(&logintime), sizeof(s_logintime));
 	printf("at %d - %s", (int)logintime, s_logintime);
-#endif
+
 	printf("--\n");
 	login_login(li1);
 
@@ -166,11 +158,10 @@ testAPI()
 	sleep(PAUSE_BEFORE_LOGOUT);
 
 	printf("Performing a logout ");
-#ifdef HAVE_TIME_H
 	(void)time(&logouttime);
 	strlcpy(s_logouttime, ctime(&logouttime), sizeof(s_logouttime));
 	printf("at %d - %s", (int)logouttime, s_logouttime);
-#endif
+
 	printf("\nThe root login shown above should be gone.\n"
 	    "If the root login hasn't gone, but another user on the same\n"
 	    "pty has, this is OK - we're hacking it here, and there\n"
@@ -181,7 +172,6 @@ testAPI()
 	system(cmdstring);
 	printf("-- ('who' output ends)\n");
 
-#ifdef HAVE_TIME_H
 	t2 = login_get_lastlog_time(getuid());
 	strlcpy(s_t2, ctime(&t2), sizeof(s_t2));
 	printf("After logging in, lastlog time is %d - %s\n", (int)t2, s_t2);
@@ -199,8 +189,6 @@ testAPI()
 		    "run the test again.\n", PAUSE_BEFORE_LOGOUT);
 	else
 		printf("lastlog agrees with the login time. This is a good thing.\n");
-
-#endif
 
 	printf("--\nThe output of 'last' shown next should have "
 	    "an entry for root \n  on %s for the time shown above:\n--\n",

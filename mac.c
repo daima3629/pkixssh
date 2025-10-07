@@ -1,7 +1,7 @@
-/* $OpenBSD: mac.c,v 1.35 2019/09/06 04:53:27 djm Exp $ */
+/* $OpenBSD: mac.c,v 1.36 2025/09/02 11:08:34 djm Exp $ */
 /*
  * Copyright (c) 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2011-2022 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -93,37 +93,28 @@ macalg_allowed(const struct macalg *m) {
 #ifdef OPENSSL_FIPS
 	if (FIPS_mode()) {
 		if (m->type != SSH_DIGEST)
-			return(0);
+			return 0;
 		if (ssh_digest_bytes(m->alg) == 0)
-			return(0);
+			return 0;
 	}
 #else
 	UNUSED(m);
 #endif
-	return(1);
+	return 1;
 }
 
 /* Returns a list of supported MACs separated by the specified char. */
 char *
 mac_alg_list(char sep)
 {
-	char *ret = NULL, *tmp;
-	size_t nlen, rlen = 0;
+	char *ret = NULL;
 	const struct macalg *m;
+	char sep_str[2] = {sep, '\0'};
 
 	for (m = macs; m->name != NULL; m++) {
 		if (!macalg_allowed(m))
 			continue;
-		if (ret != NULL)
-			ret[rlen++] = sep;
-		nlen = strlen(m->name);
-		if ((tmp = realloc(ret, rlen + nlen + 2)) == NULL) {
-			free(ret);
-			return NULL;
-		}
-		ret = tmp;
-		memcpy(ret + rlen, m->name, nlen + 1);
-		rlen += nlen;
+		xextendf(&ret, sep_str, "%s", m->name);
 	}
 	return ret;
 }

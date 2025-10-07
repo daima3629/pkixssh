@@ -43,10 +43,10 @@ int	pkcs11_del_provider(char *);
 /* Function codes. */
 #define PKCS11_LOGIN			100
 #define PKCS11_REAUTHENTICATE		101
+#define PKCS11_GET_KEY			102
+#define PKCS11_KEY_SIGN			103
 #define PKCS11_RSA_PRIVATE_ENCRYPT	110
-#define PKCS11_DSA_DO_SIGN		111
-#define PKCS11_ECDSA_DO_SIGN		112
-#define PKCS11_GET_KEY			113
+#define PKCS11_ECDSA_DO_SIGN		111
 /* Reason codes. */
 #define PKCS11_SIGNREQ_FAIL		100
 #define PKCS11_C_SIGNINIT_FAIL		101

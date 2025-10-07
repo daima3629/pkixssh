@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-agent.c,v 1.308 2024/10/24 03:15:47 djm Exp $ */
+/* $OpenBSD: ssh-agent.c,v 1.313 2025/08/29 03:50:38 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -12,7 +12,7 @@
  * called by a name other than "ssh" or "Secure Shell".
  *
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2002-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -38,14 +38,6 @@
 #include "includes.h"
 
 #include <sys/resource.h>
-#include <sys/stat.h>
-#include <sys/socket.h>
-#ifdef HAVE_SYS_TIME_H
-# include <sys/time.h>
-#endif
-#ifdef HAVE_SYS_UN_H
-# include <sys/un.h>
-#endif
 #include "openbsd-compat/sys-queue.h"
 
 #ifdef WITH_OPENSSL
@@ -59,16 +51,6 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
-#ifdef HAVE_PATHS_H
-# include <paths.h>
-#endif
-#ifdef HAVE_POLL_H
-# include <poll.h>
-#else
-# ifdef HAVE_SYS_POLL_H
-#  include <sys/poll.h>
-# endif
-#endif
 #include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -85,9 +67,6 @@
 #include "sshbuf.h"
 #include "ssh-x509.h"
 #include "ssh-xkalg.h"
-#ifdef WITH_XMSS
-# include "sshkey-xmss.h"
-#endif
 #include "authfd.h"
 #include "compat.h"
 #include "log.h"
@@ -95,7 +74,10 @@
 #include "digest.h"
 #include "ssherr.h"
 #include "match.h"
-#include "ssh-pkcs11.h"
+
+#ifdef ENABLE_PKCS11
+# include "ssh-pkcs11.h"
+#endif
 
 #ifndef DEFAULT_ALLOWED_PROVIDERS
 # define DEFAULT_ALLOWED_PROVIDERS "!*"
@@ -192,19 +174,6 @@ set_lifetime(const char *val)
 
 static int fingerprint_hash = SSH_FP_HASH_DEFAULT;
 
-static inline int
-sshkey_enable_maxsign(struct sshkey *k, u_int32_t maxsign)
-{
-#ifdef WITH_XMSS
-	if (sshkey_type_plain(k->type) == KEY_XMSS)
-		return sshkey_xmss_enable_maxsign(k, maxsign);
-#else
-	UNUSED(k);
-	UNUSED(maxsign);
-#endif
-	return SSH_ERR_INVALID_ARGUMENT;
-}
-
 static void
 close_socket(SocketEntry *e)
 {
@@ -297,7 +266,7 @@ process_request_identities(SocketEntry *e)
 	    (r = sshbuf_put_u32(msg, idtab->nentries)) != 0)
 		fatal_fr(r, "compose");
 	TAILQ_FOREACH(id, &idtab->idlist, next) {
-		if ((r = Akey_puts_opts(id->key, msg, SSHKEY_SERIALIZE_INFO)) != 0 ||
+		if ((r = Akey_puts_opts(id->key, msg, SSHKEY_SERIALIZE_DEFAULT)) != 0 ||
 		    (r = sshbuf_put_cstring(msg, id->comment)) != 0) {
 			error_fr(r, "compose key/comment");
 			continue;
@@ -511,9 +480,9 @@ parse_key_constraints(struct sshbuf *m, struct sshkey *k,
     u_int *secondsp, int *confirmp, char **sk_providerp)
 {
 	int r;
-	int lifetime_set = 0, confirm_set = 0;
-	int maxsign_set = 0, sk_provider_set = 0;
+	int lifetime_set = 0, confirm_set = 0, sk_provider_set = 0;
 
+	UNUSED(k);
 	while (sshbuf_len(m)) {
 		u_char ctype;
 		if ((r = sshbuf_get_u8(m, &ctype)) != 0) {
@@ -550,35 +519,6 @@ parse_key_constraints(struct sshbuf *m, struct sshkey *k,
 			confirm_set = 1;
 			*confirmp = 1;
 			break;
-		case SSH_AGENT_CONSTRAIN_MAXSIGN: {
-			u_int32_t maxsign;
-
-			if (k == NULL) {
-				error_f("maxsign not valid here");
-				r = SSH_ERR_INVALID_ARGUMENT;
-				goto out;
-			}
-			if (maxsign_set) {
-				error_f("maxsign already set");
-				r = SSH_ERR_INVALID_ARGUMENT;
-				goto out;
-			}
-			if ((r = sshbuf_get_u32(m, &maxsign)) != 0) {
-				error_fr(r, "parse maxsign constraint");
-				goto out;
-			}
-			maxsign_set = 1;
-			/* same as ssh-add */
-			if (maxsign == 0) {
-				error_f("non alloved maxsign value");
-				r = SSH_ERR_INVALID_ARGUMENT;
-				goto out;
-			}
-			if ((r = sshkey_enable_maxsign(k, maxsign)) != 0) {
-				error_fr(r, "enable maxsign");
-				goto out;
-			}
-			} break;
 		case SSH_AGENT_CONSTRAIN_EXTENSION: {
 			char *ext_name;
 
@@ -1266,6 +1206,9 @@ int
 main(int ac, char **av)
 {
 	int c_flag = 0, d_flag = 0, D_flag = 0, k_flag = 0, s_flag = 0;
+	SyslogFacility log_facility = SYSLOG_FACILITY_AUTH;
+	LogLevel log_level = SYSLOG_LEVEL_INFO;
+	int log_stderr = 0;
 	int sock = -1, ch, result, saved_errno;
 	char *shell, *format, *pidstr, *agentsocket = NULL;
 	extern int optind;
@@ -1340,11 +1283,14 @@ main(int ac, char **av)
 			if (d_flag || D_flag)
 				usage();
 			d_flag++;
+			log_level = SYSLOG_LEVEL_DEBUG3;
+			log_stderr = 1;
 			break;
 		case 'D':
 			if (d_flag || D_flag)
 				usage();
 			D_flag++;
+			log_stderr = 1;
 			break;
 		case 'a':
 			agentsocket = optarg;
@@ -1479,9 +1425,7 @@ main(int ac, char **av)
 	 * the socket data.  The child continues as the authentication agent.
 	 */
 	if (D_flag || d_flag) {
-		log_init(__progname,
-		    d_flag ? SYSLOG_LEVEL_DEBUG3 : SYSLOG_LEVEL_INFO,
-		    SYSLOG_FACILITY_AUTH, 1);
+		log_init(__progname, log_level, log_facility, log_stderr);
 		if (socket_name[0] != '\0') {
 			format = c_flag ?
 			    "setenv %s %s;\n" : "%s=%s; export %s;\n";
@@ -1519,7 +1463,14 @@ main(int ac, char **av)
 		exit(1);
 	}
 	/* child */
-	log_init(__progname, SYSLOG_LEVEL_INFO, SYSLOG_FACILITY_AUTH, 0);
+{	const char *logfile = getenv("SSH_AGENT_LOGFILE");
+	if (logfile != NULL) {
+		log_redirect_stderr_to(logfile);
+		log_stderr = 1;
+		log_level = SYSLOG_LEVEL_DEBUG3;
+	}
+}
+	log_init(__progname, log_level, log_facility, log_stderr);
 
 	if (setsid() == -1) {
 		error_f("setsid: %s", strerror(errno));

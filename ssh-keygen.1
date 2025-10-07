@@ -1,4 +1,4 @@
-.\"	$OpenBSD: ssh-keygen.1,v 1.235 2025/05/24 03:40:54 dtucker Exp $
+.\"	$OpenBSD: ssh-keygen.1,v 1.236 2025/10/04 21:41:35 naddy Exp $
 .\"
 .\" Author: Tatu Ylonen <ylo@cs.hut.fi>
 .\" Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -44,7 +44,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: May 24 2025 $
+.Dd $Mdocdate: October 4 2025 $
 .Dt SSH-KEYGEN 1
 .Os
 .Sh NAME
@@ -591,7 +591,7 @@ The available RSA signature variants are
 .It Fl U
 When used in combination with
 .Fl s ,
-this option indicates that a CA key resides in a
+this option indicates that a CA key resides in an
 .Xr ssh-agent 1 .
 See the
 .Sx CERTIFICATES
@@ -987,7 +987,7 @@ Revokes the specified key by including its SHA256 hash in the KRL.
 KRLs that revoke keys by SHA256 hash are not supported by OpenSSH versions
 prior to 7.9.
 .It Cm hash : Ar fingerprint
-Revokes a key using a fingerprint hash, as obtained from a
+Revokes a key using a fingerprint hash, as obtained from an
 .Xr sshd 8
 authentication log message or the
 .Nm

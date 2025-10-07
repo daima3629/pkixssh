@@ -22,7 +22,6 @@
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <sys/syscall.h>
-#include <sys/socket.h>
 #include <sys/wait.h>
 
 #include <dev/systrace.h>

@@ -33,15 +33,14 @@ The method is documented in:
 
 https://www.openssh.com/txt/draft-miller-secsh-compression-delayed-00.txt
 
-1.3. transport: New public key algorithms "ssh-rsa-cert-v01@openssh.com",
-     "ssh-dsa-cert-v01@openssh.com",
-     "ecdsa-sha2-nistp256-cert-v01@openssh.com",
-     "ecdsa-sha2-nistp384-cert-v01@openssh.com" and
-     "ecdsa-sha2-nistp521-cert-v01@openssh.com"
+1.3. transport: Custom certificate key algorithms
 
-OpenSSH introduces new public key algorithms to support certificate
-authentication for users and host keys. These methods are documented
-in at https://datatracker.ietf.org/doc/draft-miller-ssh-cert/
+For compatibility with other SSH implementations PKIX-SSH support public key
+algorithms with custom certificate for user identity and host-keys.
+
+These methods are documented in:
+
+https://datatracker.ietf.org/doc/draft-miller-ssh-cert/
 
 1.4. transport: Elliptic Curve cryptography
 
@@ -94,17 +93,11 @@ a matching MAC.
 1.7 transport: chacha20-poly1305@openssh.com authenticated encryption
 
 OpenSSH supports authenticated encryption using ChaCha20 and Poly1305
-as described in PROTOCOL.chacha20poly1305.
+as described in:
 
-1.8 transport: curve25519-sha256@libssh.org key exchange algorithm
+https://datatracker.ietf.org/doc/draft-ietf-sshm-chacha20-poly1305/
 
-OpenSSH supports the use of ECDH in Curve25519 for key exchange as
-described at:
-http://git.libssh.org/users/aris/libssh.git/plain/doc/curve25519-sha256@libssh.org.txt?h=curve25519
-
-This is identical to curve25519-sha256 as later published in RFC8731.
-
-1.9 transport: strict key exchange extension
+1.8 transport: strict key exchange extension
 
 OpenSSH supports a number of transport-layer hardening measures under
 a "strict KEX" feature. This feature is signalled similarly to the

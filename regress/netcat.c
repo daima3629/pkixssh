@@ -34,10 +34,7 @@
 #include "includes.h"
 
 #include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/time.h>
 #include <sys/uio.h>
-#include <sys/un.h>
 
 #include <netinet/in.h>
 #include <netinet/tcp.h>
@@ -55,13 +52,6 @@
 #include <unistd.h>
 #include "atomicio.h"
 
-#ifdef HAVE_POLL_H
-# include <poll.h>
-#else
-# ifdef HAVE_SYS_POLL_H
-#  include <sys/poll.h>
-# endif
-#endif
 #ifdef HAVE_ERR_H
 # include <err.h>
 #endif
@@ -1135,7 +1125,7 @@ build_ports(char *p)
 			char *c;
 
 			for (x = 0; x <= (hi - lo); x++) {
-				y = (arc4random() & 0xFFFF) % (hi - lo);
+				y = arc4random_uniform(hi - lo);
 				c = portlist[x];
 				portlist[x] = portlist[y];
 				portlist[y] = c;
@@ -1371,7 +1361,6 @@ usage(int ret)
  */
 
 #include <sys/types.h>
-#include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 

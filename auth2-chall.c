@@ -1,4 +1,4 @@
-/* $OpenBSD: auth2-chall.c,v 1.54 2020/10/18 11:32:01 djm Exp $ */
+/* $OpenBSD: auth2-chall.c,v 1.57 2025/10/02 08:38:43 dtucker Exp $ */
 /*
  * Copyright (c) 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2001 Per Allansson.  All rights reserved.
@@ -111,7 +111,7 @@ kbdint_alloc(const char *devs)
 	if (strcmp(devs, "") == 0) {
 		if ((b = sshbuf_new()) == NULL)
 			fatal_f("sshbuf_new failed");
-		for (i = 0; devices[i]; i++) {
+		for (i = 0; devices[i] != NULL; i++) {
 			if ((r = sshbuf_putf(b, "%s%s",
 			    sshbuf_len(b) ? "," : "", devices[i]->name)) != 0)
 				fatal_fr(r, "buffer error");
@@ -152,7 +152,7 @@ kbdint_next_device(Authctxt *authctxt, KbdintAuthctxt *kbdintctxt)
 {
 	size_t len;
 	char *t;
-	int i;
+	size_t i;
 
 	if (kbdintctxt->device)
 		kbdint_reset_device(kbdintctxt);
@@ -162,13 +162,14 @@ kbdint_next_device(Authctxt *authctxt, KbdintAuthctxt *kbdintctxt)
 
 		if (len == 0)
 			break;
-		for (i = 0; devices[i]; i++) {
+		for (i = 0; devices[i] != NULL; i++) {
+			if (i >= sizeof(kbdintctxt->devices_done) * 8)
+				fatal_f("internal error: too may devices");
 			if ((kbdintctxt->devices_done & (1 << i)) != 0 ||
 			    !auth2_method_allowed(authctxt,
 			    "keyboard-interactive", devices[i]->name))
 				continue;
-			if (strncmp(kbdintctxt->devices, devices[i]->name,
-			    len) == 0) {
+			if (strcmp(kbdintctxt->devices, devices[i]->name) == 0) {
 				kbdintctxt->device = devices[i];
 				kbdintctxt->devices_done |= 1 << i;
 			}

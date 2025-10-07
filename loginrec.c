@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2018 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2012-2025 Roumen Petrov.  All rights reserved.
  * Copyright (c) 2000 Andre Lucas.  All rights reserved.
  * Portions copyright (c) 1998 Todd C. Miller
  * Portions copyright (c) 1996 Jason Downs
@@ -128,27 +128,18 @@
 #include "includes.h"
 
 #include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/socket.h>
-#ifdef HAVE_SYS_TIME_H
-# include <sys/time.h>
-#endif
 
 #include <netinet/in.h>
 
 #include <stdlib.h>
 #include <errno.h>
 #include <fcntl.h>
-#ifdef HAVE_PATHS_H
-# include <paths.h>
-#endif
 #include <pwd.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
-
 #ifdef HAVE_UTIL_H
 # include <util.h>
 #endif
@@ -1476,7 +1467,7 @@ wtmpdb_write_entry(struct logininfo *li)
 	case LTYPE_LOGOUT:
 		return (wtmpdb_perform_logout(li));
 	default:
-		logit("%s: invalid type field", __func__);
+		error_f("invalid type field");
 		return (0);
 	}
 }
@@ -1727,7 +1718,7 @@ utmpx_get_entry(struct logininfo *li)
 /*
  * Logs failed login attempts in _PATH_BTMP if that exists.
  * The most common login failure is to give password instead of username.
- * So the _PATH_BTMP file checked for the correct permission, so that only
+ * So the _PATH_BTMP file is checked for the correct permission, so that only
  * root can read it.
  */
 void

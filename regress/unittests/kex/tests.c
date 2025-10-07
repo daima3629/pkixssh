@@ -1,9 +1,12 @@
-/* 	$OpenBSD: tests.c,v 1.3 2023/03/06 12:15:47 dtucker Exp $ */
+/* 	$OpenBSD: tests.c,v 1.4 2025/04/15 04:00:42 djm Exp $ */
 /*
  * Placed in the public domain
  */
 
 #include "../test_helper/test_helper.h"
+
+#include <stdio.h>
+
 #include "ssh_api.h"
 
 #ifdef ENABLE_KEX_DH
@@ -28,6 +31,22 @@ tests(void)
 	kex_tests();
 	kex_proposal_tests();
 	kex_proposal_populate_tests();
+
+	ssh_crypto_fini();
+}
+
+void
+benchmarks(void)
+{
+	ssh_crypto_init();
+
+#ifdef ENABLE_KEX_DH
+{	char *name = getenv("TEST_SSH_MODULI_FILE");
+	if (name != NULL)
+		dh_set_moduli_file(name);
+}
+#endif
+	kex_tests();
 
 	ssh_crypto_fini();
 }

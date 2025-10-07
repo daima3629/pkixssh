@@ -94,7 +94,7 @@ err:
  * Usable only if OS loader does not support symbol versioning.
  */
 /*
- * OpenSSL version numbers: MNNFFPPS: major minor fix patch status
+ * OpenSSL version numbers: MNNFFPPS: major minor fix patch status.
  * Versions >= 3.0 require only major versions to match.
  * For versions < 3.0, accept compatible fix versions, i.e. allow 1.0.1
  * to work with 1.0.0.
@@ -112,9 +112,9 @@ ssh_compatible_openssl(long headerver, long libver)
 	if (headerver == libver)
 		return 1;
 
-	/* for versions >= 3.0, only the major,status must match */
-	if (headerver >= 0x3000000f) {
-		mask = 0xf000000fL; /* major,status */
+	/* for versions >= 3.0, only the major must match */
+	if (headerver >= 0x30000000) {
+		mask = 0xf0000000L; /* major */
 		return (headerver & mask) == (libver & mask);
 	}
 

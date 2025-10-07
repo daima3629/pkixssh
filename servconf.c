@@ -1,4 +1,4 @@
-/* $OpenBSD: servconf.c,v 1.425 2025/02/25 06:25:30 djm Exp $ */
+/* $OpenBSD: servconf.c,v 1.435 2025/09/25 06:31:42 djm Exp $ */
 /*
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
@@ -41,7 +41,6 @@
 #endif
 
 #include <sys/types.h>
-#include <sys/socket.h>
 #ifdef USE_SYSCTL_NET
 #include <sys/sysctl.h>
 #endif
@@ -65,7 +64,7 @@
 #include <stdarg.h>
 #include <errno.h>
 #ifdef HAVE_UTIL_H
-#include <util.h>
+# include <util.h>
 #endif
 #ifdef USE_SYSTEM_GLOB
 # include <glob.h>
@@ -361,10 +360,6 @@ fill_default_server_options(ServerOptions *options)
 #endif
 		servconf_add_hostkey("[default]", 0, options,
 		    _PATH_HOST_ED25519_KEY_FILE, 0);
-#ifdef WITH_XMSS
-		servconf_add_hostkey("[default]", 0, options,
-		    _PATH_HOST_XMSS_KEY_FILE, 0);
-#endif /* WITH_XMSS */
 	}
 	/* No certificates by default */
 	if (options->num_ports == 0)
@@ -492,9 +487,9 @@ fill_default_server_options(ServerOptions *options)
 	if (options->permit_tun == -1)
 		options->permit_tun = SSH_TUNMODE_NO;
 	if (options->ip_qos_interactive == -1)
-		options->ip_qos_interactive = IPTOS_DSCP_AF21;
+		options->ip_qos_interactive = IPTOS_DSCP_EF;
 	if (options->ip_qos_bulk == -1)
-		options->ip_qos_bulk = IPTOS_DSCP_CS1;
+		options->ip_qos_bulk = IPTOS_DSCP_CS0;
 	if (options->version_addendum == NULL)
 		options->version_addendum = xstrdup("");
 	if (options->fwd_opts.streamlocal_bind_mask == (mode_t)-1)
@@ -1283,8 +1278,9 @@ match_cfg_line(char **condition, int line, struct connection_info *ci)
 			if (match_pattern_list(ci->rdomain, arg, 0) != 1)
 				result = 0;
 			else
-				debug("user %.100s matched 'RDomain %.100s' at "
-				    "line %d", ci->rdomain, arg, line);
+				debug("connection RDomain %.100s matched "
+				    "'RDomain %.100s' at line %d",
+				    ci->rdomain, arg, line);
 		} else {
 			error("Unsupported Match attribute %s", attrib);
 			return -1;
@@ -1391,7 +1387,7 @@ process_server_config_line_depth(ServerOptions *options, char *line,
 	char *str, ***chararrayptr, **charptr, *arg, *arg2, *p, *keyword;
 	char **oav = NULL, **av;
 	int oac = 0, ac;
-	int cmdline = 0, *intptr, value, value2, n, port, oactive, r, found;
+	int cmdline = 0, *intptr, value, value2, value3, n, port, oactive, r, found;
 	int ca_only;
 	SyslogFacility *log_facility_ptr;
 	LogLevel *log_level_ptr;
@@ -2196,24 +2192,26 @@ parse_string:
 		if (arg == NULL || *arg == '\0')
 			fatal("%s line %d: %s missing argument.",
 			    filename, linenum, keyword);
+		/* begin:rate:max */
 		if ((n = sscanf(arg, "%d:%d:%d",
-		    &options->max_startups_begin,
-		    &options->max_startups_rate,
-		    &options->max_startups)) == 3) {
-			if (options->max_startups_begin >
-			    options->max_startups ||
-			    options->max_startups_rate > 100 ||
-			    options->max_startups_rate < 1)
+		    &value, &value2, &value3)) == 3) {
+			if (value > value3 || value2 > 100 || value2 < 1)
 				fatal("%s line %d: Invalid %s spec.",
 				    filename, linenum, keyword);
-		} else if (n != 1)
+		} else if (n == 1) {
+			value3 = value;
+			value = value2 = -1;
+		} else
 			fatal("%s line %d: Invalid %s spec.",
 			    filename, linenum, keyword);
-		else
-			options->max_startups = options->max_startups_begin;
-		if (options->max_startups_begin <= 0)
+		if (value3 <= 0 || (value2 != -1 && value <= 0))
 			fatal("%s line %d: Invalid %s spec.",
 			    filename, linenum, keyword);
+		if (*activep && options->max_startups == -1) {
+			options->max_startups_begin = value;
+			options->max_startups_rate = value2;
+			options->max_startups = value3;
+		}
 		break;
 
 	case sPerSourceNetBlockSize:
@@ -2872,6 +2870,7 @@ parse_server_match_config(ServerOptions *options,
 	initialize_server_options(&mo);
 	parse_server_config(&mo, "reprocess config", cfg, includes,
 	    connectinfo, 0);
+	/* TODO free ServerOptions ... */
 	copy_set_server_options(options, &mo, 0);
 }
 
@@ -3017,7 +3016,7 @@ copy_set_server_options(ServerOptions *dst, ServerOptions *src, int preauth)
 #define M_CP_STROPT(n) do {\
 	if (src->n != NULL && dst->n != src->n) { \
 		free(dst->n); \
-		dst->n = src->n; \
+		dst->n = xstrdup(src->n); \
 	} \
 } while(0)
 #define M_CP_STRARRAYOPT(s, num_s) do {\
@@ -3346,6 +3345,7 @@ dump_config(ServerOptions *o)
 #ifdef GSSAPI
 	dump_cfg_fmtint(sGssAuthentication, o->gss_authentication);
 	dump_cfg_fmtint(sGssCleanupCreds, o->gss_cleanup_creds);
+	dump_cfg_fmtint(sGssStrictAcceptor, o->gss_strict_acceptor);
 #endif
 	dump_cfg_fmtint(sPasswordAuthentication, o->password_authentication);
 	dump_cfg_fmtint(sKbdInteractiveAuthentication,

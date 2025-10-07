@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2005 Daniel Walsh <dwalsh@redhat.com>
  * Copyright (c) 2006 Damien Miller <djm@openbsd.org>
- * Copyright (c) 2023-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2023-2025 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -24,8 +24,6 @@
 
 #if defined(WITH_SELINUX) || defined(LINUX_OOM_ADJUST) || \
     defined(SYSTEMD_NOTIFY)
-#include <sys/socket.h>
-#include <sys/un.h>
 
 #include <errno.h>
 #include <inttypes.h>

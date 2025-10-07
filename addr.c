@@ -1,7 +1,7 @@
-/* $OpenBSD: addr.c,v 1.6 2022/10/28 02:29:34 djm Exp $ */
+/* $OpenBSD: addr.c,v 1.9 2024/10/18 04:30:09 djm Exp $ */
 /*
  * Copyright (c) 2004-2008 Damien Miller <djm@mindrot.org>
- * Copyright (c) 2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2021-2025 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -19,7 +19,6 @@
 #include "includes.h"
 
 #include <sys/types.h>
-#include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 

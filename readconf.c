@@ -1,4 +1,4 @@
-/* $OpenBSD: readconf.c,v 1.394 2024/12/06 16:21:48 djm Exp $ */
+/* $OpenBSD: readconf.c,v 1.406 2025/08/29 03:50:38 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -37,10 +37,7 @@
 #include "includes.h"
 
 #include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/socket.h>
 #include <sys/wait.h>
-#include <sys/un.h>
 
 #include <net/if.h>
 #include <netinet/in.h>
@@ -56,9 +53,6 @@
 #endif
 #include <limits.h>
 #include <netdb.h>
-#ifdef HAVE_PATHS_H
-# include <paths.h>
-#endif
 #include <pwd.h>
 #include <signal.h>
 #include <stdio.h>
@@ -71,7 +65,7 @@
 # include "openbsd-compat/glob.h"
 #endif
 #ifdef HAVE_UTIL_H
-#include <util.h>
+# include <util.h>
 #endif
 #if defined(HAVE_STRNVIS) && defined(HAVE_VIS_H) && !defined(BROKEN_STRNVIS)
 # include <vis.h>
@@ -91,6 +85,8 @@
 #include "mac.h"
 #include "myproposal.h"
 #include "digest.h"
+
+#define PATH_MAX_SUN		(sizeof((struct sockaddr_un *)0)->sun_path)
 
 /* Format of the configuration file:
 
@@ -218,7 +214,7 @@ typedef enum {
 	oPubkeyAcceptedAlgorithms, oCASignatureAlgorithms, oProxyJump,
 	oSecurityKeyProvider, oKnownHostsCommand, oRequiredRSASize,
 	oEnableEscapeCommandline, oChannelTimeout,
-	oVersionAddendum,
+	oVersionAddendum, oRefuseConnection,
 	oIgnore, oIgnoredUnknownOption, oDeprecated, oUnsupported
 } OpCodes;
 
@@ -392,6 +388,7 @@ static struct {
 	{ "enableescapecommandline", oEnableEscapeCommandline },
 	{ "channeltimeout", oChannelTimeout },
 	{ "versionaddendum", oVersionAddendum },
+	{ "refuseconnection", oRefuseConnection },
 
 	{ NULL, oBadOption }
 };
@@ -807,12 +804,13 @@ match_cfg_line(Options *options, char **condition, struct passwd *pw,
 		if (strcasecmp(attrib, "canonical") == 0 ||
 		    strcasecmp(attrib, "final") == 0) {
 			/*
-			 * If the config requests "Match final" then remember
-			 * this so we can perform a second pass later.
+			 * If the config requests "Match final" without
+			 * negation then remember this so we can perform a
+			 * second pass later.
 			 */
 			if (strcasecmp(attrib, "final") == 0 &&
 			    want_final_pass != NULL)
-				*want_final_pass = 1;
+				*want_final_pass |= !negate;
 			r = !!final_pass;  /* force bitmask member to boolean */
 			if (r == (negate ? 1 : 0))
 				this_result = result = 0;
@@ -2559,6 +2557,19 @@ parse_key_algorithms:
 		argv_consume(&ac);
 		break;
 
+	case oRefuseConnection:
+		arg = argv_next(&ac, &av);
+		if (arg == NULL || *arg == '\0') {
+			error("%s line %d: %s missing argument.",
+			    filename, linenum, keyword);
+			goto out;
+		}
+		if (*activep) {
+			fatal("%s line %d: %s: %s",
+			    filename, linenum, keyword, arg);
+		}
+		break;
+
 	case oDeprecated:
 		debug("%s line %d: Deprecated option \"%s\"",
 		    filename, linenum, keyword);
@@ -2865,6 +2876,16 @@ cleanup_options(Options *options) {
 	FREENULL(options->macs);
 	FREENULL(options->kex_algorithms);
 	FREENULL(options->ca_sign_algorithms);
+
+	/* other */
+	FREENULL(options->version_addendum);
+	FREENULL(options->xauth_location);
+	FREENULL(options->pkcs11_provider);
+	FREENULL(options->sk_provider);
+
+	FREENULL(options->hostname);
+	FREENULL(options->host_key_alias);
+	FREENULL(options->host_arg);
 }
 
 /*
@@ -2966,9 +2987,6 @@ fill_default_options(Options * options)
 #ifdef WITH_DSA
 		add_identity_file(options, "~/", _PATH_SSH_CLIENT_ID_DSA, 0);
 #endif
-#ifdef WITH_XMSS
-		add_identity_file(options, "~/", _PATH_SSH_CLIENT_ID_XMSS, 0);
-#endif
 	}
 	if (options->escape_char == -1)
 		options->escape_char = '~';
@@ -3023,9 +3041,9 @@ fill_default_options(Options * options)
 	if (options->visual_host_key == -1)
 		options->visual_host_key = 0;
 	if (options->ip_qos_interactive == -1)
-		options->ip_qos_interactive = IPTOS_DSCP_AF21;
+		options->ip_qos_interactive = IPTOS_DSCP_EF;
 	if (options->ip_qos_bulk == -1)
-		options->ip_qos_bulk = IPTOS_DSCP_CS1;
+		options->ip_qos_bulk = IPTOS_DSCP_CS0;
 	if (options->request_tty == -1)
 		options->request_tty = REQUEST_TTY_AUTO;
 	if (options->session_type == -1)

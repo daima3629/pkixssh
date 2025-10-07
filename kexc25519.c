@@ -75,8 +75,6 @@ kex_c25519_keygen_to_sshbuf(struct kex *kex, struct sshbuf **bufp) {
 		dump_digest("client public key 25519:", pub, CURVE25519_SIZE);
 #endif
 	r = sshbuf_put(buf, pub, CURVE25519_SIZE);
-	if (r != 0)
-		kex_reset_keys(kex);
 
 	if (*bufp == NULL) {
 		if (r == 0)
@@ -89,14 +87,14 @@ kex_c25519_keygen_to_sshbuf(struct kex *kex, struct sshbuf **bufp) {
 #else /*def USE_ECDH_X25519*/
 int
 kex_c25519_keygen_to_sshbuf(struct kex *kex, struct sshbuf **bufp) {
-	return kex_ecx_keygen_to_sshbuf(kex, EVP_PKEY_X25519, CURVE25519_SIZE, bufp);
+	return kex_ecx_keygen_to_sshbuf(EVP_PKEY_X25519, CURVE25519_SIZE, &kex->pk, bufp);
 }
 #endif /*def USE_ECDH_X25519*/
 
 #ifndef USE_ECDH_X25519
 static int
 kex_c25519_shared_key_ext(struct kex *kex,
-    const u_char pub[CURVE25519_SIZE], struct sshbuf *out, int raw)
+    const u_char pub[CURVE25519_SIZE], int raw, struct sshbuf **bufp)
 {
 	const u_char *key = kex->c25519_key;
 	u_char shared_key[CURVE25519_SIZE];
@@ -114,7 +112,7 @@ kex_c25519_shared_key_ext(struct kex *kex,
 	dump_digest("shared secret", shared_key, CURVE25519_SIZE);
 #endif
 
-	r = kex_shared_secret_to_sshbuf(shared_key, CURVE25519_SIZE, raw, &out);
+	r = kex_shared_secret_to_sshbuf(shared_key, CURVE25519_SIZE, raw, bufp);
 
 	explicit_bzero(shared_key, CURVE25519_SIZE);
 	return r;
@@ -124,28 +122,15 @@ kex_c25519_shared_key_ext(struct kex *kex,
 int
 kex_c25519_shared_secret_to_sshbuf(struct kex *kex, const u_char pub[CURVE25519_SIZE],
     int raw, struct sshbuf **bufp) {
-	struct sshbuf *buf;
 	int r;
 
-	if (*bufp == NULL) {
-		buf = sshbuf_new();
-		if (buf == NULL) return SSH_ERR_ALLOC_FAIL;
-	} else
-		buf = *bufp;
-
 #ifdef USE_ECDH_X25519
-	r = kex_ecx_shared_secret_to_sshbuf(kex, EVP_PKEY_X25519,
-	    pub, CURVE25519_SIZE, raw, bufp);
+	r = kex_pkey_ecx_shared_secret_to_sshbuf(kex->pk, EVP_PKEY_X25519, raw,
+	    pub, CURVE25519_SIZE, bufp);
 #else
-	r = kex_c25519_shared_key_ext(kex, pub, buf, raw);
+	r = kex_c25519_shared_key_ext(kex, pub, raw, bufp);
 #endif
 
-	if (*bufp == NULL) {
-		if (r == 0)
-			*bufp = buf;
-		else
-			sshbuf_free(buf);
-	}
 	return r;
 }
 
@@ -195,7 +180,6 @@ kex_c25519_enc(struct kex *kex, const struct sshbuf *client_blob,
 #endif
 
  out:
-	kex_reset_keys(kex);
 	if (r != 0) {
 		sshbuf_free(*server_blobp);
 		*server_blobp = NULL;
@@ -225,11 +209,15 @@ kex_c25519_dec(struct kex *kex, const struct sshbuf *server_blob,
 #endif
 
  out:
-	kex_reset_keys(kex);
 	return r;
 }
 
-static int kex_c25519_enabled(void) { return 1; }
+static int kex_c25519_enabled(void) {
+#ifdef OPENSSL_FIPS
+	if (FIPS_mode()) return 0;
+#endif
+	return 1;
+}
 
 static const struct kex_impl_funcs kex_c25519_funcs = {
 	kex_init_gen,

@@ -1,8 +1,8 @@
-/* $OpenBSD: dns.c,v 1.43 2023/02/10 04:56:30 djm Exp $ */
+/* $OpenBSD: dns.c,v 1.46 2025/08/29 03:50:38 djm Exp $ */
 /*
  * Copyright (c) 2003 Wesley Griffin. All rights reserved.
  * Copyright (c) 2003 Jakob Schlyter. All rights reserved.
- * Copyright (c) 2005-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2005-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -28,7 +28,6 @@
 #include "includes.h"
 
 #include <sys/types.h>
-#include <sys/socket.h>
 
 #include <netdb.h>
 #include <stdarg.h>
@@ -115,11 +114,6 @@ dns_read_key(u_int8_t *algorithm, u_int8_t *digest_type,
 	case KEY_ED25519:
 		*algorithm = SSHFP_KEY_ED25519;
 		break;
-#ifdef WITH_XMSS
-	case KEY_XMSS:
-		*algorithm = SSHFP_KEY_XMSS;
-		break;
-#endif
 	default:
 		*algorithm = SSHFP_KEY_RESERVED; /* 0 */
 	}

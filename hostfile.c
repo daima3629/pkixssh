@@ -14,7 +14,7 @@
  *
  * Copyright (c) 1999, 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 1999 Niels Provos.  All rights reserved.
- * Copyright (c) 2002-2023 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -40,7 +40,6 @@
 #include "includes.h"
 
 #include <sys/types.h>
-#include <sys/stat.h>
 
 #include <netinet/in.h>
 

@@ -7,7 +7,6 @@
 
 #include "../test_helper/test_helper.h"
 
-#include <sys/stat.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -383,6 +382,4 @@ sshkey_fuzz_tests(void)
 	TEST_DONE();
 
 /* XXX fuzz decoded new-format blobs too */
-/* XXX fuzz XMSS too */
-
 }

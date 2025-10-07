@@ -1,4 +1,4 @@
-/* $OpenBSD: channels.h,v 1.157 2024/07/25 22:40:08 djm Exp $ */
+/* $OpenBSD: channels.h,v 1.161 2025/09/25 06:33:19 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -12,7 +12,7 @@
  */
 /*
  * Copyright (c) 1999, 2000, 2001, 2002 Markus Friedl.  All rights reserved.
- * Copyright (c) 2021-2023 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2021-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -274,8 +274,9 @@ struct Channel {
 	c->efd != -1 && (!(c->flags & (CHAN_EOF_RCVD|CHAN_CLOSE_RCVD)) || \
 	sshbuf_len(c->extended) > 0))
 
-/* Add channel management structures to SSH transport instance */
+/* Add/remove channel management structures to/from SSH transport instance */
 void channel_init_channels(struct ssh *ssh);
+void channel_fini_channels(struct ssh *ssh);
 
 /* channel management */
 
@@ -340,6 +341,7 @@ void     channel_close_all(struct ssh *);
 int      channel_still_open(struct ssh *);
 const char *channel_format_extended_usage(const Channel *);
 char	*channel_open_message(struct ssh *);
+void	 channel_report_open(struct ssh *);
 int	 channel_find_open(struct ssh *);
 
 /* tcp forwarding */

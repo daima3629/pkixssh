@@ -1,8 +1,8 @@
-/* $OpenBSD: misc.c,v 1.200 2025/05/22 03:53:46 dtucker Exp $ */
+/* $OpenBSD: misc.c,v 1.208 2025/09/25 06:33:19 djm Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  * Copyright (c) 2005,2006 Damien Miller.  All rights reserved.
- * Copyright (c) 2012-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2012-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,10 +29,7 @@
 
 #include <sys/types.h>
 #include <sys/ioctl.h>
-#include <sys/socket.h>
-#include <sys/stat.h>
 #include <sys/wait.h>
-#include <sys/un.h>
 #ifdef HAVE_SYS_UTSNAME_H
 # include <sys/utsname.h>
 #endif
@@ -40,13 +37,6 @@
 #include <limits.h>
 #ifdef HAVE_LIBGEN_H
 # include <libgen.h>
-#endif
-#ifdef HAVE_POLL_H
-# include <poll.h>
-#else
-# ifdef HAVE_SYS_POLL_H
-#  include <sys/poll.h>
-# endif
 #endif
 #include <signal.h>
 #include <stdarg.h>
@@ -66,9 +56,6 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <netdb.h>
-#ifdef HAVE_PATHS_H
-# include <paths.h>
-#endif
 #include <pwd.h>
 #include <grp.h>
 #ifdef SSH_TUN_OPENBSD
@@ -499,7 +486,7 @@ strdelim_internal(char **s, int split_equals)
 }
 
 /*
- * Return next token in configuration line; splts on whitespace or a
+ * Return next token in configuration line; splits on whitespace or a
  * single '=' character.
  */
 char *
@@ -509,7 +496,7 @@ strdelim(char **s)
 }
 
 /*
- * Return next token in configuration line; splts on whitespace only.
+ * Return next token in configuration line; splits on whitespace only.
  */
 char *
 strdelimw(char **s)
@@ -525,7 +512,7 @@ pwcopy(const struct passwd *pw)
 	copy->pw_name = xstrdup(pw->pw_name);
 #if defined(__ANDROID__)
 	/* NOTE: password is NULL on Android */
-	copy->pw_passwd = xstrdup(pw->pw_passwd ? pw->pw_passwd :
+	copy->pw_passwd = xstrdup(pw->pw_passwd != NULL ? pw->pw_passwd :
 	/* fake password from auth.c */
 	"$2a$10$xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
 #else
@@ -533,7 +520,7 @@ pwcopy(const struct passwd *pw)
 #endif
 #ifdef HAVE_STRUCT_PASSWD_PW_GECOS
 	/* NOTE: gecos is NULL on Android */
-	copy->pw_gecos = xstrdup(pw->pw_gecos ? pw->pw_gecos :
+	copy->pw_gecos = xstrdup(pw->pw_gecos != NULL ? pw->pw_gecos :
 	/* fake user information from auth.c */
 	"NOUSER");
 #endif
@@ -546,10 +533,10 @@ pwcopy(const struct passwd *pw)
 	copy->pw_change = pw->pw_change;
 #endif
 #ifdef HAVE_STRUCT_PASSWD_PW_CLASS
-	copy->pw_class = xstrdup(pw->pw_class);
+	copy->pw_class = xstrdup(pw->pw_class != NULL ? pw->pw_class : "");
 #endif
-	copy->pw_dir = xstrdup(pw->pw_dir);
-	copy->pw_shell = xstrdup(pw->pw_shell);
+	copy->pw_dir = xstrdup(pw->pw_dir != NULL ? pw->pw_dir : "");
+	copy->pw_shell = xstrdup(pw->pw_shell != NULL ? pw->pw_shell : "");
 	return copy;
 }
 
@@ -1018,7 +1005,7 @@ urldecode(const char *src)
 
 {	size_t srclen = strlen(src);
 	if (srclen >= SIZE_MAX)
-		fatal_f("input too large");
+		return NULL;
 	ret = xmalloc(srclen + 1);
 }
 	for (dst = ret; *src != '\0'; src++) {
@@ -1029,9 +1016,9 @@ urldecode(const char *src)
 			break;
 #endif
 		case '%':
-			if (!isxdigit((unsigned char)src[1]) ||
-			    !isxdigit((unsigned char)src[2]) ||
-			    (ch = hexchar(src + 1)) == -1) {
+			ch = hexchar(src + 1);
+			/* NOTE: do not allow NUL character */
+			if (ch == -1 || ch == 0) {
 				free(ret);
 				return NULL;
 			}
@@ -1902,6 +1889,11 @@ static const struct {
 	int value;
 } ipqos[] = {
 	{ "none", INT_MAX },		/* can't use 0 here; that's CS0 */
+	/* obsolete IPv4 type-of-service */
+	{ "lowdelay", INT_MAX /*IPTOS_LOWDELAY*/ },
+	{ "throughput", INT_MAX /*IPTOS_THROUGHPUT*/ },
+	{ "reliability", INT_MAX /*IPTOS_RELIABILITY*/ },
+	/* Differentiated Services Field Codepoint */
 	{ "af11", IPTOS_DSCP_AF11 },
 	{ "af12", IPTOS_DSCP_AF12 },
 	{ "af13", IPTOS_DSCP_AF13 },
@@ -1924,9 +1916,6 @@ static const struct {
 	{ "cs7", IPTOS_DSCP_CS7 },
 	{ "ef", IPTOS_DSCP_EF },
 	{ "le", IPTOS_DSCP_LE },
-	{ "lowdelay", IPTOS_LOWDELAY },
-	{ "throughput", IPTOS_THROUGHPUT },
-	{ "reliability", IPTOS_RELIABILITY },
 	{ NULL, -1 }
 };
 
@@ -2696,8 +2685,10 @@ format_absolute_time(uint64_t t, char *buf, size_t len)
 	time_t tt = t > SSH_TIME_T_MAX ? SSH_TIME_T_MAX : t;
 	struct tm tm;
 
-	localtime_r(&tt, &tm);
-	strftime(buf, len, "%Y-%m-%dT%H:%M:%S", &tm);
+	if (localtime_r(&tt, &tm) == NULL)
+		strlcpy(buf, "UNKNOWN-TIME", len);
+	else
+		strftime(buf, len, "%Y-%m-%dT%H:%M:%S", &tm);
 }
 
 /*

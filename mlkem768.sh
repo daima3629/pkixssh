@@ -91,7 +91,6 @@ cd $abs_builddir
 cat > libcrux_mlkem768_sha3_check.c << _EOF
 #include <sys/types.h>
 #include <stdio.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
