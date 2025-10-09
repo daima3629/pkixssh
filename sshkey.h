@@ -163,12 +163,22 @@ struct sshkey_impl_funcs {
 	    const u_char *data, size_t dlen);
 };
 
+
+struct sshkey_id_s {
+	/* local identification */
+	int type;
+	int subtype;
+	/* external identificaton */
+	int evp_id;
+	char *const*typename;
+};
+typedef struct sshkey_id_s sshkey_id;
+
 struct sshkey_impl {
+	sshkey_id id;
 	const char *name;
 	const char *shortname;
 	const char *sigalg;
-	int type;
-	int nid;
 	int cert;
 	int sigonly;
 	int keybits;

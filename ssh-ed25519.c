@@ -473,12 +473,14 @@ static const struct sshkey_impl_funcs sshkey_ed25519_funcs = {
 
 static int sshkey_ed25519_enabled(void) { return 1; }
 
+static char *pkey_ed25519_typename[] = { "ED25519", NULL };
+
 const struct sshkey_impl sshkey_ed25519_impl = {
+	/* .id = */		{ KEY_ED25519, 0,
+				  EVP_PKEY_ED25519, pkey_ed25519_typename },
 	/* .name = */		"ssh-ed25519",
 	/* .shortname = */	"ED25519",
 	/* .sigalg = */		NULL,
-	/* .type = */		KEY_ED25519,
-	/* .nid = */		0,
 	/* .cert = */		0,
 	/* .sigonly = */	0,
 	/* .keybits = */	256,
@@ -487,11 +489,11 @@ const struct sshkey_impl sshkey_ed25519_impl = {
 };
 
 const struct sshkey_impl sshkey_ed25519_cert_impl = {
+	/* .id = */		{ KEY_ED25519_CERT, 0,
+				  EVP_PKEY_ED25519, pkey_ed25519_typename },
 	/* .name = */		"ssh-ed25519-cert-v01@openssh.com",
 	/* .shortname = */	"ED25519-CERT",
 	/* .sigalg = */		NULL,
-	/* .type = */		KEY_ED25519_CERT,
-	/* .nid = */		0,
 	/* .cert = */		1,
 	/* .sigonly = */	0,
 	/* .keybits = */	256,

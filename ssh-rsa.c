@@ -1240,12 +1240,14 @@ static int sshkey_rsa_sha256_enabled(void) { return 0; }
 
 #endif /* WITH_OPENSSL */
 
+static char *pkey_rsa_typename[] = { "RSA", NULL };
+
 const struct sshkey_impl sshkey_rsa_impl = {
+	/* .id = */		{ KEY_RSA, 0,
+				  EVP_PKEY_RSA, pkey_rsa_typename },
 	/* .name = */		"ssh-rsa",
 	/* .shortname = */	"RSA",
 	/* .sigalg = */		NULL,
-	/* .type = */		KEY_RSA,
-	/* .nid = */		0,
 	/* .cert = */		0,
 	/* .sigonly = */	0,
 	/* .keybits = */	0,
@@ -1254,11 +1256,11 @@ const struct sshkey_impl sshkey_rsa_impl = {
 };
 
 const struct sshkey_impl sshkey_rsa_cert_impl = {
+	/* .id = */		{ KEY_RSA_CERT, 0,
+				  EVP_PKEY_RSA, pkey_rsa_typename },
 	/* .name = */		"ssh-rsa-cert-v01@openssh.com",
 	/* .shortname = */	"RSA-CERT",
 	/* .sigalg = */		NULL,
-	/* .type = */		KEY_RSA_CERT,
-	/* .nid = */		0,
 	/* .cert = */		1,
 	/* .sigonly = */	0,
 	/* .keybits = */	0,
@@ -1267,11 +1269,11 @@ const struct sshkey_impl sshkey_rsa_cert_impl = {
 };
 
 const struct sshkey_impl sshkey_rsa_sha256_impl = {
+	/* .id = */		{ KEY_RSA, 0,
+				  EVP_PKEY_RSA, pkey_rsa_typename },
 	/* .name = */		"rsa-sha2-256",
 	/* .shortname = */	"RSA",
 	/* .sigalg = */		NULL,
-	/* .type = */		KEY_RSA,
-	/* .nid = */		0,
 	/* .cert = */		0,
 	/* .sigonly = */	1,
 	/* .keybits = */	0,
@@ -1280,11 +1282,11 @@ const struct sshkey_impl sshkey_rsa_sha256_impl = {
 };
 
 const struct sshkey_impl sshkey_rsa_sha512_impl = {
+	/* .id = */		{ KEY_RSA, 0,
+				  EVP_PKEY_RSA, pkey_rsa_typename },
 	/* .name = */		"rsa-sha2-512",
 	/* .shortname = */	"RSA",
 	/* .sigalg = */		NULL,
-	/* .type = */		KEY_RSA,
-	/* .nid = */		0,
 	/* .cert = */		0,
 	/* .sigonly = */	1,
 	/* .keybits = */	0,
@@ -1293,11 +1295,11 @@ const struct sshkey_impl sshkey_rsa_sha512_impl = {
 };
 
 const struct sshkey_impl sshkey_rsa_sha256_cert_impl = {
+	/* .id = */		{ KEY_RSA_CERT, 0,
+				  EVP_PKEY_RSA, pkey_rsa_typename },
 	/* .name = */		"rsa-sha2-256-cert-v01@openssh.com",
 	/* .shortname = */	"RSA-CERT",
 	/* .sigalg = */		"rsa-sha2-256",
-	/* .type = */		KEY_RSA_CERT,
-	/* .nid = */		0,
 	/* .cert = */		1,
 	/* .sigonly = */	1,
 	/* .keybits = */	0,
@@ -1306,11 +1308,11 @@ const struct sshkey_impl sshkey_rsa_sha256_cert_impl = {
 };
 
 const struct sshkey_impl sshkey_rsa_sha512_cert_impl = {
+	/* .id = */		{ KEY_RSA_CERT, 0,
+				  EVP_PKEY_RSA, pkey_rsa_typename },
 	/* .name = */		"rsa-sha2-512-cert-v01@openssh.com",
 	/* .shortname = */	"RSA-CERT",
 	/* .sigalg = */		"rsa-sha2-512",
-	/* .type = */		KEY_RSA_CERT,
-	/* .nid = */		0,
 	/* .cert = */		1,
 	/* .sigonly = */	1,
 	/* .keybits = */	0,

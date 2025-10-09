@@ -130,7 +130,7 @@ sshkey_impl_from_type(int type)
 
 	for (p = keyimpls; *p != NULL; p++) {
 		if (!(*p)->enabled()) continue;
-		if ((*p)->type == type)
+		if ((*p)->id.type == type)
 			return *p;
 	}
 	return NULL;
@@ -143,8 +143,8 @@ sshkey_impl_from_type_nid(int type, int nid)
 
 	for (p = keyimpls; *p != NULL; p++) {
 		if (!(*p)->enabled()) continue;
-		if ((*p)->type == type &&
-		    ((*p)->nid == 0 || (*p)->nid == nid))
+		if ((*p)->id.type == type &&
+		    ((*p)->id.subtype == 0 || (*p)->id.subtype == nid))
 			return *p;
 	}
 	return NULL;
@@ -234,7 +234,7 @@ type_from_name(const char *name, int allow_short)
 		if ((strcmp((*p)->name, name) == 0) ||
 		    (allow_short && !(*p)->cert &&
 		    strcasecmp((*p)->shortname, name) == 0))
-			return (*p)->type;
+			return (*p)->id.type;
 	}
 }
 	return KEY_UNSPEC;
@@ -291,10 +291,10 @@ sshkey_ecdsa_nid_from_name(const char *name)
 
 	for (p = keyimpls; *p != NULL; p++) {
 		if (!(*p)->enabled()) continue;
-		if (!key_type_is_ecdsa_variant((*p)->type))
+		if (!key_type_is_ecdsa_variant((*p)->id.type))
 			continue;
 		if (strcmp((*p)->name, name) == 0)
-			return (*p)->nid;
+			return (*p)->id.subtype;
 	}
 }
 	return -1;
@@ -2108,7 +2108,7 @@ sshkey_sigalg_by_name(const char *name)
 		if (!(*p)->cert)
 			return (*p)->name;
 		return sshkey_ssh_name_from_type_nid(
-		    sshkey_type_plain((*p)->type), (*p)->nid);
+		    sshkey_type_plain((*p)->id.type), (*p)->id.subtype);
 	}
 	return NULL;
 }

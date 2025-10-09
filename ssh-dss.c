@@ -855,12 +855,14 @@ static int sshkey_dss_enabled(void) { return 0; }
 
 #endif /* WITH_DSA */
 
+static char *pkey_dsa_typename[] = { "DSA", NULL };
+
 const struct sshkey_impl sshkey_dss_impl = {
+	/* .id = */		{ KEY_DSA, 0,
+				  EVP_PKEY_DSA, pkey_dsa_typename },
 	/* .name = */		"ssh-dss",
 	/* .shortname = */	"DSA",
 	/* .sigalg = */		NULL,
-	/* .type = */		KEY_DSA,
-	/* .nid = */		0,
 	/* .cert = */		0,
 	/* .sigonly = */	0,
 	/* .keybits = */	0,
@@ -869,11 +871,11 @@ const struct sshkey_impl sshkey_dss_impl = {
 };
 
 const struct sshkey_impl sshkey_dsa_cert_impl = {
+	/* .id = */		{ KEY_DSA_CERT, 0,
+				  EVP_PKEY_DSA, pkey_dsa_typename },
 	/* .name = */		"ssh-dss-cert-v01@openssh.com",
 	/* .shortname = */	"DSA-CERT",
 	/* .sigalg = */		NULL,
-	/* .type = */		KEY_DSA_CERT,
-	/* .nid = */		0,
 	/* .cert = */		1,
 	/* .sigonly = */	0,
 	/* .keybits = */	0,
