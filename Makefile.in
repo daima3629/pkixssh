@@ -770,3 +770,12 @@ package: $(CONFIGFILES) $(MANPAGES) $(TARGETS)
 depend:
 	(cd openbsd-compat && $(MAKE) $@)
 	makedepend -- $(CPPFLAGS) $(CFLAGS) -- $(srcdir)/*.c
+
+
+.SUFFIXES: .i .d
+
+.c.i:
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@ -E
+
+.c.d:
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@ -MM
