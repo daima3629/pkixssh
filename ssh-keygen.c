@@ -462,12 +462,11 @@ static void
 do_convert_to(const struct passwd *pw)
 {
 	struct sshkey *k;
-	struct stat st;
 	int r;
 
 	if (!have_identity)
 		ask_filename(pw, "Enter file in which the key is");
-	if (stat(identity_file, &st) == -1)
+	if (Xstat(identity_file) == -1)
 		fatal("%s: %s: %s", __progname, identity_file, strerror(errno));
 	if ((r = sshkey_load_public(identity_file, &k, NULL)) != 0)
 		k = load_identity(identity_file, NULL);
