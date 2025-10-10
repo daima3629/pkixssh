@@ -99,13 +99,13 @@ echo "get \"${GLOBMETACOPY}\" ${COPY}" | \
 cmp ${COPY} "$GLOBMETACOPY" || \
 	fail "corrupted copy after get with glob metacharacters"
 
-rm -f ${COPY}.dd/*
+rm -rf ${COPY}.dd/*
 verbose "$tid: get to directory"
 echo "get $DATA ${COPY}.dd" | ${SFTP} -D ${SFTPSERVER} >/dev/null 2>&1 \
         || fail "get failed"
 cmp $DATA ${COPY}.dd/$DATANAME || fail "corrupted copy after get"
 
-rm -f ${COPY}.dd/*
+rm -rf ${COPY}.dd/*
 verbose "$tid: glob get to directory"
 echo "get /bin/l* ${COPY}.dd" | ${SFTP} -D ${SFTPSERVER} >/dev/null 2>&1 \
         || fail "get failed"
@@ -113,13 +113,13 @@ for x in $GLOBFILES; do
         cmp /bin/$x ${COPY}.dd/$x || fail "corrupted copy after get"
 done
 
-rm -f ${COPY}.dd/*
+rm -rf ${COPY}.dd/*
 verbose "$tid: get to local dir"
 printf "lcd ${COPY}.dd\nget $DATA\n" | ${SFTP} -D ${SFTPSERVER} >/dev/null 2>&1 \
         || fail "get failed"
 cmp $DATA ${COPY}.dd/$DATANAME || fail "corrupted copy after get"
 
-rm -f ${COPY}.dd/*
+rm -rf ${COPY}.dd/*
 verbose "$tid: glob get to local dir"
 printf "lcd ${COPY}.dd\nget /bin/l*\n" | ${SFTP} -D ${SFTPSERVER} >/dev/null 2>&1 \
         || fail "get failed"
@@ -145,13 +145,13 @@ echo "put $DATA ${SPACECOPY_ARG}" | \
 	${SFTP} -D ${SFTPSERVER} >/dev/null 2>&1 || fail "put failed"
 cmp $DATA "$SPACECOPY" || fail "corrupted copy after put with spaces"
 
-rm -f ${COPY}.dd/*
+rm -rf ${COPY}.dd/*
 verbose "$tid: put to directory"
 echo "put $DATA ${COPY}.dd" | ${SFTP} -D ${SFTPSERVER} >/dev/null 2>&1 \
 	|| fail "put failed"
 cmp $DATA ${COPY}.dd/$DATANAME || fail "corrupted copy after put"
 
-rm -f ${COPY}.dd/*
+rm -rf ${COPY}.dd/*
 verbose "$tid: glob put to directory"
 echo "put /bin/l? ${COPY}.dd" | ${SFTP} -D ${SFTPSERVER} >/dev/null 2>&1 \
 	|| fail "put failed"
@@ -159,13 +159,13 @@ for x in $GLOBFILES; do
 	cmp /bin/$x ${COPY}.dd/$x || fail "corrupted copy after put"
 done
 
-rm -f ${COPY}.dd/*
+rm -rf ${COPY}.dd/*
 verbose "$tid: put to local dir"
 printf "cd ${COPY}.dd\nput $DATA\n" | ${SFTP} -D ${SFTPSERVER} >/dev/null 2>&1 \
 	|| fail "put failed"
 cmp $DATA ${COPY}.dd/$DATANAME || fail "corrupted copy after put"
 
-rm -f ${COPY}.dd/*
+rm -rf ${COPY}.dd/*
 verbose "$tid: glob put to local dir"
 printf "cd ${COPY}.dd\nput /bin/l*\n" | ${SFTP} -D ${SFTPSERVER} >/dev/null 2>&1 \
 	|| fail "put failed"
