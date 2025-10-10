@@ -1055,6 +1055,11 @@ struct winsize {
 #endif
 
 
+#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER	/* OpenSSL >= 3.0.0 */
+# define ENABLE_KEY_PROVIDERS
+#endif
+
+
 #ifdef HAVE_EVP_KEM_FETCH		/* OpenSSL >= 3.0.0 */
 # define ENABLE_KEM_PROVIDERS
 #endif

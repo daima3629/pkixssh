@@ -45,7 +45,7 @@
 #include <openssl/bn.h>
 /* for i2d_PUBKEY used in key serialisation work-around */
 #include <openssl/x509.h>
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 #include <openssl/core_names.h>
 #endif
 
@@ -71,7 +71,7 @@ EC_POINT_get_affine_coordinates(
 }
 #endif /*ndef HAVE_EC_POINT_GET_AFFINE_COORDINATES*/
 
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 static size_t
 ssh_EVP_PKEY_get1_encoded_public_key(EVP_PKEY *pkey, unsigned char **ppub) {
 	size_t len;
@@ -104,7 +104,7 @@ err:
 }
 	return len;
 }
-#endif /*def HAVE_EVP_KEYMGMT_GET0_PROVIDER*/
+#endif /*def ENABLE_KEY_PROVIDERS*/
 
 
 static int
@@ -394,7 +394,7 @@ err:
 }
 
 
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 static EC_GROUP*
 ssh_EVP_PKEY_prov_get_EC_GROUP(EVP_PKEY *pkey) {
 	char group_name[1024];
@@ -418,9 +418,9 @@ ssh_EVP_PKEY_prov_get_EC_GROUP(EVP_PKEY *pkey) {
 
 	return EC_GROUP_new_by_curve_name(order);
 }
-#endif /*def HAVE_EVP_KEYMGMT_GET0_PROVIDER*/
+#endif /*def ENABLE_KEY_PROVIDERS*/
 
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 static int
 ssh_EVP_PKEY_check_public_ecprov(EVP_PKEY *pkey, const EC_POINT *public) {
 	EC_GROUP *group;
@@ -434,7 +434,7 @@ ssh_EVP_PKEY_check_public_ecprov(EVP_PKEY *pkey, const EC_POINT *public) {
 	EC_GROUP_free(group);
 	return r;
 }
-#endif /*def HAVE_EVP_KEYMGMT_GET0_PROVIDER*/
+#endif /*def ENABLE_KEY_PROVIDERS*/
 
 static inline int
 ssh_EC_KEY_check_public(const EC_KEY *ec, const EC_POINT *public) {
@@ -447,7 +447,7 @@ ssh_EC_KEY_check_public(const EC_KEY *ec, const EC_POINT *public) {
 int
 ssh_EVP_PKEY_check_public_ec(EVP_PKEY *pk, const EC_POINT *public) {
 	if (pk == NULL) return SSH_ERR_INVALID_ARGUMENT;
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 	if (EVP_PKEY_get0_provider(pk) != NULL)
 		return ssh_EVP_PKEY_check_public_ecprov(pk, public);
 #endif
@@ -464,7 +464,7 @@ ssh_EVP_PKEY_check_public_ec(EVP_PKEY *pk, const EC_POINT *public) {
 }
 }
 
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 static int
 ssh_EVP_PKEY_validate_public_ecprov(EVP_PKEY *pk) {
 	EC_GROUP *group = NULL;
@@ -512,7 +512,7 @@ err:
 	EC_POINT_free(public);
 	return r;
 }
-#endif /*def HAVE_EVP_KEYMGMT_GET0_PROVIDER*/
+#endif /*def ENABLE_KEY_PROVIDERS*/
 
 static inline int
 ssh_EC_KEY_validate_public(const EC_KEY *ec) {
@@ -521,10 +521,10 @@ ssh_EC_KEY_validate_public(const EC_KEY *ec) {
 
 int
 ssh_pkey_validate_public_ecdsa(EVP_PKEY *pk) {
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 	if (EVP_PKEY_get0_provider(pk) != NULL)
 		return ssh_EVP_PKEY_validate_public_ecprov(pk);
-#endif /*def HAVE_EVP_KEYMGMT_GET0_PROVIDER*/
+#endif
 {	EC_KEY *ec;
 	int r;
 
@@ -539,7 +539,7 @@ ssh_pkey_validate_public_ecdsa(EVP_PKEY *pk) {
 }
 
 
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 static int
 ssh_EVP_PKEY_complete_pub_ecprov(EVP_PKEY *pk) {
 	char encoding[1024];
@@ -566,11 +566,11 @@ ssh_EVP_PKEY_complete_pub_ecprov(EVP_PKEY *pk) {
 
 	return ssh_EVP_PKEY_validate_public_ecprov(pk);
 }
-#endif /*def HAVE_EVP_KEYMGMT_GET0_PROVIDER*/
+#endif /*def ENABLE_KEY_PROVIDERS*/
 
 static int
 ssh_EVP_PKEY_complete_pub_ecdsa(EVP_PKEY *pk) {
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 	if (EVP_PKEY_get0_provider(pk) != NULL)
 		return ssh_EVP_PKEY_complete_pub_ecprov(pk);
 #endif
@@ -597,7 +597,7 @@ err:
 }
 
 
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 static int
 sshkey_set_prov_param_nid(const EVP_PKEY *pk, int *pnid) {
 	char param[1024];
@@ -618,11 +618,11 @@ sshkey_set_prov_param_nid(const EVP_PKEY *pk, int *pnid) {
 	*pnid = nid;
 	return 0;
 }
-#endif /*def HAVE_EVP_KEYMGMT_GET0_PROVIDER*/
+#endif /*def ENABLE_KEY_PROVIDERS*/
 
 static int
 sshkey_set_nid(EVP_PKEY *pk, int *pnid) {
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 	if (EVP_PKEY_get0_provider(pk) != NULL)
 		return sshkey_set_prov_param_nid(pk, pnid);
 #endif
@@ -644,7 +644,7 @@ sshkey_set_nid(EVP_PKEY *pk, int *pnid) {
 }
 
 
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 static int
 ssh_EVP_PKEY_check_private_ecprov(EVP_PKEY *pkey, const BIGNUM *exponent) {
 	EC_GROUP *group;
@@ -658,7 +658,7 @@ ssh_EVP_PKEY_check_private_ecprov(EVP_PKEY *pkey, const BIGNUM *exponent) {
 	EC_GROUP_free(group);
 	return r;
 }
-#endif /*def HAVE_EVP_KEYMGMT_GET0_PROVIDER*/
+#endif /*def ENABLE_KEY_PROVIDERS*/
 
 static inline int
 ssh_EC_KEY_check_private(const EC_KEY *ec, const BIGNUM *exponent) {
@@ -669,7 +669,7 @@ ssh_EC_KEY_check_private(const EC_KEY *ec, const BIGNUM *exponent) {
 }
 
 
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 static int
 sshkey_validate_ecprov_priv(EVP_PKEY *pk, int skip_priv) {
 	BIGNUM *exponent = NULL;
@@ -683,7 +683,7 @@ sshkey_validate_ecprov_priv(EVP_PKEY *pk, int skip_priv) {
 	BN_free(exponent);
 	return r;
 }
-#endif /*def HAVE_EVP_KEYMGMT_GET0_PROVIDER*/
+#endif /*def ENABLE_KEY_PROVIDERS*/
 
 static inline int
 ssh_EC_KEY_validate_private(const EC_KEY *ec, int skip_priv) {
@@ -697,7 +697,7 @@ ssh_EC_KEY_validate_private(const EC_KEY *ec, int skip_priv) {
 
 static int
 ssh_pkey_validate_private_ecdsa(EVP_PKEY *pk, int skip_priv) {
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 	if (EVP_PKEY_get0_provider(pk) != NULL)
 		return sshkey_validate_ecprov_priv(pk, skip_priv);
 #endif
@@ -801,7 +801,7 @@ sshbuf_put_ec(struct sshbuf *buf, const EC_POINT *v, const EC_GROUP *g)
 	return ret;
 }
 
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 static int
 sshbuf_write_prov_ecpub(struct sshbuf *buf, EVP_PKEY *pk) {
 	unsigned char *data = NULL;
@@ -817,7 +817,7 @@ err:
 	OPENSSL_free(data);
 	return r;
 }
-#endif /*def HAVE_EVP_KEYMGMT_GET0_PROVIDER*/
+#endif /*def ENABLE_KEY_PROVIDERS*/
 
 static inline int
 sshbuf_put_eckey(struct sshbuf *buf, const EC_KEY *ec)
@@ -829,7 +829,7 @@ sshbuf_put_eckey(struct sshbuf *buf, const EC_KEY *ec)
 
 int
 sshbuf_write_pkey_ecpub(struct sshbuf *buf, EVP_PKEY *pk) {
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 	if (EVP_PKEY_get0_provider(pk) != NULL)
 		return sshbuf_write_prov_ecpub(buf, pk);
 #endif

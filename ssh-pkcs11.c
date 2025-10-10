@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-pkcs11.c,v 1.64 2024/09/20 02:00:46 jsg Exp $ */
+/* $OpenBSD: ssh-pkcs11.c,v 1.74 2025/10/09 23:25:23 djm Exp $ */
 /*
  * Copyright (c) 2010 Markus Friedl.  All rights reserved.
  * Copyright (c) 2011 Kenneth Robinette.  All rights reserved.
@@ -900,7 +900,7 @@ set_ssh_pkcs11_pkey_rsa_method(EVP_PKEY *pk) {
 	if (rsa == NULL) return 0;
 
 	ret = set_ssh_pkcs11_rsa_method(rsa);
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER /* OpenSSL 3+ */
+#ifdef ENABLE_KEY_PROVIDERS
 	/* Implicitly throw out "key manager" in OpenSSL 3+,
 	 * i.e. make non-provider key.
 	 */
@@ -920,7 +920,7 @@ set_ssh_pkcs11_pkey_ec_method(EVP_PKEY *pk) {
 	if (ec == NULL) return 0;
 
 	ret = set_ssh_pkcs11_ec_method(ec);
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER /* OpenSSL 3+ */
+#ifdef ENABLE_KEY_PROVIDERS
 	/* Implicitly throw out "key manager" in OpenSSL 3+,
 	 * i.e. make non-provider key.
 	 */

@@ -571,7 +571,7 @@ wrap_key_rsa(const char *provider, struct sshkey *key)
 
 {	RSA *rsa = EVP_PKEY_get1_RSA(key->pk);
 	ret = RSA_set_method(rsa, meth) ? 0 : -1;
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER /* OpenSSL 3+ */
+#ifdef ENABLE_KEY_PROVIDERS
 	/* Throw out misfunctional "key manager" in OpenSSL 3+,
 	 * i.e. make non-provider key.
 	 */
@@ -598,7 +598,7 @@ wrap_key_ecdsa(const char *provider, struct sshkey *key)
 
 {	EC_KEY *ec = EVP_PKEY_get1_EC_KEY(key->pk);
 	ret = EC_KEY_set_method(ec, meth) ? 0 : -1;
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER /* OpenSSL 3+ */
+#ifdef ENABLE_KEY_PROVIDERS
 	/* Throw out misfunctional "key manager" in OpenSSL 3+,
 	 * i.e. make non-provider key.
 	 */

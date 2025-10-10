@@ -65,7 +65,7 @@
 /* NOTE EVP_PKEY_CTX_set_dsa_paramgen_q_bits() is OpenSSL 1.1.1e function!
  * => Disable "keygen" functionality for all builds with OpenSSL 1.1.1*.
  */
-# ifndef HAVE_EVP_KEYMGMT_GET0_PROVIDER		/* OpenSSL < 3.0 */
+# ifndef ENABLE_KEY_PROVIDERS		/* OpenSSL < 3.0 */
 #  undef USE_EVP_PKEY_KEYGEN
 # endif
 #endif
