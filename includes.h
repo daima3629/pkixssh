@@ -97,7 +97,7 @@
 # include <sys/time.h> /* for struct timeval if present */
 #endif
 #ifdef HAVE_SYS_MMAN_H
-#include <sys/mman.h> /* for MAP_ANONYMOUS */
+# include <sys/mman.h> /* for memory mapped pages */
 #endif
 #ifdef HAVE_SYS_STRTIO_H
 #include <sys/strtio.h>	/* for TIOCCBRK on HP-UX */

@@ -2139,6 +2139,7 @@ AC_CHECK_FUNCS([ \
 	memmove \
 	memset_s \
 	mkdtemp \
+	mmap \
 	ngetaddrinfo \
 	nsleep \
 	ogetaddrinfo \

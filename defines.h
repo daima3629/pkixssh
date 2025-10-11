@@ -198,11 +198,15 @@ enum
 #endif /* S_IXUSR */
 
 #if !defined(MAP_ANON) && defined(MAP_ANONYMOUS)
-#define MAP_ANON MAP_ANONYMOUS
+# define MAP_ANON MAP_ANONYMOUS
 #endif
 
 #ifndef MAP_FAILED
 # define MAP_FAILED ((void *)-1)
+#endif
+
+#if defined(HAVE_MMAP) && defined(MAP_ANON) && defined(MAP_PRIVATE)
+# define ENABLE_MMAP
 #endif
 
 /*

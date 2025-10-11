@@ -45,7 +45,6 @@
 #include <sys/types.h>
 #include <sys/resource.h>
 #include <sys/prctl.h>
-#include <sys/mman.h>
 #include <sys/syscall.h>
 
 #include <linux/net.h>
