@@ -384,22 +384,23 @@ main_sigchld_handler(int sig)
 static int
 prepare_server_banner(struct ssh *ssh)
 {
-	const char *fips = "";
 	int r;
-
-#ifdef OPENSSL_FIPS
-	if (FIPS_mode()) fips= " FIPS";
-#endif
 
 	/* NOTE: Version string is prepared and sent with <CR><LF> at end.
 	 * After identification exchange trailing <CR><LF> is removed for
 	 * further use in key exchange messages.
 	 */
-	r = sshbuf_putf(ssh->kex->server_version, "SSH-%d.%d-%s[%s]%s %s\r\n",
+{	const char *fips = "";
+#ifdef OPENSSL_FIPS
+	if (FIPS_mode()) fips= " FIPS";
+#endif
+	r = sshbuf_putf(ssh->kex->server_version, "SSH-%d.%d-%s[%s]%s %s%s%s\r\n",
 	    PROTOCOL_MAJOR_2, PROTOCOL_MINOR_2,
-	    PACKAGE_NAME, PACKAGE_VERSION, fips, OPENSSH_RELEASE,
+	    PACKAGE_NAME, PACKAGE_VERSION, fips,
+	    OPENSSH_RELEASE,
 	    *options.version_addendum == '\0' ? "" : " ",
 	    options.version_addendum);
+}
 	return r;
 }
 
