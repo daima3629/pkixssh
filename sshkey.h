@@ -170,7 +170,7 @@ struct sshkey_id_s {
 	int subtype;
 	/* external identificaton */
 	int evp_id;
-	char *const*typename;
+	char *const*type_name;
 };
 typedef struct sshkey_id_s sshkey_id;
 
