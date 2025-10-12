@@ -1,4 +1,4 @@
-/* $OpenBSD: session.c,v 1.341 2025/04/09 07:00:03 djm Exp $ */
+/* $OpenBSD: session.c,v 1.344 2025/09/25 02:15:39 jsg Exp $ */
 /*
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
  *                    All rights reserved
@@ -11,7 +11,7 @@
  *
  * SSH2 support by Markus Friedl.
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
- * Copyright (c) 2012-2023 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2012-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -36,11 +36,6 @@
 
 #include "includes.h"
 
-#ifdef HAVE_SYS_STAT_H
-# include <sys/stat.h>
-#endif
-#include <sys/socket.h>
-#include <sys/un.h>
 #include <sys/wait.h>
 
 #include <arpa/inet.h>
@@ -50,9 +45,6 @@
 #include <fcntl.h>
 #include <grp.h>
 #include <netdb.h>
-#ifdef HAVE_PATHS_H
-#include <paths.h>
-#endif
 #include <pwd.h>
 #include <signal.h>
 #include <stdio.h>
@@ -73,9 +65,6 @@
 #include "uidswap.h"
 #include "channels.h"
 #include "cipher.h"
-#ifdef GSSAPI
-#include "ssh-gss.h"
-#endif
 #include "hostfile.h"
 #include "auth.h"
 #include "auth-options.h"
@@ -88,17 +77,19 @@
 #include "serverloop.h"
 #include "canohost.h"
 #include "session.h"
-#include "kex.h"
+#ifdef GSSAPI
+# include "ssh-gss.h"
+#endif
 #include "monitor_wrap.h"
 #include "sftp.h"
 #include "atomicio.h"
 
 #if defined(KRB5) && defined(USE_AFS)
-#include <kafs.h>
+# include <kafs.h>
 #endif
 
 #ifdef WITH_SELINUX
-#include <selinux/selinux.h>
+# include <selinux/selinux.h>
 #endif
 
 #define IS_INTERNAL_SFTP(c) \
@@ -125,14 +116,13 @@ extern char *__progname;
 extern int log_stderr;
 extern int debug_flag;
 extern u_int utmp_len;
-extern int startup_pipe;
 extern void destroy_sensitive_data(void);
 extern struct sshbuf *loginmsg;
 extern struct sshauthopt *auth_opts;
 extern char *tun_fwd_ifnames; /* serverloop.c */
 
 /* original command from peer. */
-const char *original_command = NULL;
+static const char *original_command = NULL;
 
 /* data */
 static int sessions_first_unused = -1;

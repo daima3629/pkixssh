@@ -1,4 +1,4 @@
-/* $OpenBSD: readconf.h,v 1.158 2024/12/06 16:21:48 djm Exp $ */
+/* $OpenBSD: readconf.h,v 1.161 2025/08/11 10:55:38 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -11,7 +11,7 @@
  * incompatible with the protocol description in the RFC file, it must be
  * called by a name other than "ssh" or "Secure Shell".
  *
- * Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -41,7 +41,6 @@
 /* Data structure for representing option data. */
 
 #define SSH_MAX_HOSTS_FILES	32
-#define PATH_MAX_SUN		(sizeof((struct sockaddr_un *)0)->sun_path)
 
 struct allowed_cname {
 	char *source_list;
@@ -71,8 +70,8 @@ typedef struct {
 	int     strict_host_key_checking;	/* Strict host key checking. */
 	int     compression;	/* Compress packets in both directions. */
 	int     tcp_keep_alive;	/* Set SO_KEEPALIVE. */
-	int	ip_qos_interactive;	/* IP ToS/DSCP/class for interactive */
-	int	ip_qos_bulk;		/* IP ToS/DSCP/class for bulk traffic */
+	int	ip_qos_interactive;	/* DSCP value for interactive */
+	int	ip_qos_bulk;		/* DSCP value for bulk traffic */
 	SyslogFacility log_facility;	/* Facility for system logging. */
 	LogLevel log_level;	/* Level for logging. */
 	u_int   num_log_verbose;	/* Verbose log overrides */

@@ -1,4 +1,4 @@
-/* 	$OpenBSD: tests.c,v 1.2 2021/12/14 21:25:27 deraadt Exp $ */
+/* 	$OpenBSD: tests.c,v 1.3 2025/04/15 04:00:42 djm Exp $ */
 /*
  * Regress test for bitmap.h bitmap API
  *
@@ -133,3 +133,8 @@ tests(void)
 #endif
 }
 
+void
+benchmarks(void)
+{
+	printf("no benchmarks\n");
+}

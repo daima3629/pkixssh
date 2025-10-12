@@ -65,7 +65,7 @@
 /* NOTE EVP_PKEY_CTX_set_dsa_paramgen_q_bits() is OpenSSL 1.1.1e function!
  * => Disable "keygen" functionality for all builds with OpenSSL 1.1.1*.
  */
-# ifndef HAVE_EVP_KEYMGMT_GET0_PROVIDER		/* OpenSSL < 3.0 */
+# ifndef ENABLE_KEY_PROVIDERS		/* OpenSSL < 3.0 */
 #  undef USE_EVP_PKEY_KEYGEN
 # endif
 #endif
@@ -840,31 +840,45 @@ static const struct sshkey_impl_funcs sshkey_dss_funcs = {
 	/* .verify = */		ssh_dss_verify
 };
 
+static int sshkey_dss_enabled(void) { return 1; }
+#define SSHKEY_DSS_FUNCS	&sshkey_dss_funcs
+
+#else
+
+#include "sshkey.h"
+
+#define KEY_DSA KEY_UNSPEC
+#define KEY_DSA_CERT KEY_UNSPEC
+
+static int sshkey_dss_enabled(void) { return 0; }
+#define SSHKEY_DSS_FUNCS	NULL
+
+#endif /* WITH_DSA */
+
+static char *pkey_dsa_typename[] = { "DSA", NULL };
+
 const struct sshkey_impl sshkey_dss_impl = {
+	/* .id = */		{ KEY_DSA, 0,
+				  EVP_PKEY_DSA, pkey_dsa_typename },
 	/* .name = */		"ssh-dss",
 	/* .shortname = */	"DSA",
 	/* .sigalg = */		NULL,
-	/* .type = */		KEY_DSA,
-	/* .nid = */		0,
 	/* .cert = */		0,
 	/* .sigonly = */	0,
 	/* .keybits = */	0,
-	/* .funcs = */		&sshkey_dss_funcs
+	/* .enabled = */	sshkey_dss_enabled,
+	/* .funcs = */		SSHKEY_DSS_FUNCS
 };
 
 const struct sshkey_impl sshkey_dsa_cert_impl = {
+	/* .id = */		{ KEY_DSA_CERT, 0,
+				  EVP_PKEY_DSA, pkey_dsa_typename },
 	/* .name = */		"ssh-dss-cert-v01@openssh.com",
 	/* .shortname = */	"DSA-CERT",
 	/* .sigalg = */		NULL,
-	/* .type = */		KEY_DSA_CERT,
-	/* .nid = */		0,
 	/* .cert = */		1,
 	/* .sigonly = */	0,
 	/* .keybits = */	0,
-	/* .funcs = */		&sshkey_dss_funcs
+	/* .enabled = */	sshkey_dss_enabled,
+	/* .funcs = */		SSHKEY_DSS_FUNCS
 };
-#else
-
-typedef int ssh_dss_empty_translation_unit;
-
-#endif /* WITH_DSA */

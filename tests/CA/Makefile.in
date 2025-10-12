@@ -40,172 +40,121 @@ ca-test/catest-bundle.crt: ca-test/catest.config
 	$(SHELL) $(srcdir)/2-cre_cakeys.sh
 
 # ===
+GENTYPE =
+GENCAT =
+GENFILE =
+
+gen_cert:
+	@test -n "$(GENFILE)"
+	@rm -f $(GENFILE).certstamp
+	@$(SHELL) $(srcdir)/2-cre_key.sh $(GENTYPE) $(GENCAT) $(GENFILE)
+	@$(SHELL) $(srcdir)/3-cre_certs.sh $(GENTYPE) $(GENCAT) $(GENFILE)
+	@> $(GENFILE).certstamp
+
+# ===
 hostkeys: testhostkey_rsa.certstamp
-
-testhostkey_rsa:
-	@$(SHELL) $(srcdir)/2-cre_key.sh rsa server $@
-
-testhostkey_rsa.certstamp: testhostkey_rsa ca-test/catest-bundle.crt
-	@$(SHELL) $(srcdir)/3-cre_certs.sh rsa server testhostkey_rsa
-
 @COMMENT_OUT_DSA@hostkeys: testhostkey_dsa.certstamp
-
-testhostkey_dsa:
-	@$(SHELL) $(srcdir)/2-cre_key.sh dsa server $@
-
-testhostkey_dsa.certstamp: testhostkey_dsa ca-test/catest-bundle.crt
-	@$(SHELL) $(srcdir)/3-cre_certs.sh dsa server testhostkey_dsa
-
 @COMMENT_OUT_ECC256@hostkeys: testhostkey_eccnistp256.certstamp
 @COMMENT_OUT_ECC384@hostkeys: testhostkey_eccnistp384.certstamp
 @COMMENT_OUT_ECC521@hostkeys: testhostkey_eccnistp521.certstamp
-
-testhostkey_eccnistp256:
-	@$(SHELL) $(srcdir)/2-cre_key.sh ec256 server $@
-
-testhostkey_eccnistp256.certstamp: testhostkey_eccnistp256 ca-test/catest-bundle.crt
-	@$(SHELL) $(srcdir)/3-cre_certs.sh ec256 server testhostkey_eccnistp256
-
-testhostkey_eccnistp384:
-	@$(SHELL) $(srcdir)/2-cre_key.sh ec384 server $@
-
-testhostkey_eccnistp384.certstamp: testhostkey_eccnistp384 ca-test/catest-bundle.crt
-	@$(SHELL) $(srcdir)/3-cre_certs.sh ec384 server testhostkey_eccnistp384
-
-testhostkey_eccnistp521:
-	@$(SHELL) $(srcdir)/2-cre_key.sh ec521 server $@
-
-testhostkey_eccnistp521.certstamp: testhostkey_eccnistp521 ca-test/catest-bundle.crt
-	@$(SHELL) $(srcdir)/3-cre_certs.sh ec521 server testhostkey_eccnistp521
-
 @COMMENT_OUT_ED25519@hostkeys: testhostkey_ed25519.certstamp
 
-testhostkey_ed25519:
-	@$(SHELL) $(srcdir)/2-cre_key.sh ed25519 server $@
+testhost_gen:
+	@GENCAT=server $(MAKE) -e gen_cert
 
-testhostkey_ed25519.certstamp: testhostkey_ed25519 ca-test/catest-bundle.crt
-	@$(SHELL) $(srcdir)/3-cre_certs.sh ed25519 server testhostkey_ed25519
+testhostkey_rsa.certstamp: ca-test/catest-bundle.crt
+	@GENTYPE=rsa GENFILE=testhostkey_rsa $(MAKE) -e testhost_gen
+
+testhostkey_dsa.certstamp: ca-test/catest-bundle.crt
+	@GENTYPE=dsa GENFILE=testhostkey_dsa $(MAKE) -e testhost_gen
+
+testhostkey_eccnistp256.certstamp: ca-test/catest-bundle.crt
+	@GENTYPE=ec256 GENFILE=testhostkey_eccnistp256 $(MAKE) -e testhost_gen
+
+testhostkey_eccnistp384.certstamp: ca-test/catest-bundle.crt
+	@GENTYPE=ec384 GENFILE=testhostkey_eccnistp384 $(MAKE) -e testhost_gen
+
+testhostkey_eccnistp521.certstamp: ca-test/catest-bundle.crt
+	@GENTYPE=ec521 GENFILE=testhostkey_eccnistp521 $(MAKE) -e testhost_gen
+
+testhostkey_ed25519.certstamp: ca-test/catest-bundle.crt
+	@GENTYPE=ed25519 GENFILE=testhostkey_ed25519 $(MAKE) -e testhost_gen
 
 # ===
 identities: testid_rsa.certstamp
-
-testid_rsa:
-	@$(SHELL) $(srcdir)/2-cre_key.sh rsa client $@
-
-testid_rsa.certstamp: testid_rsa ca-test/catest-bundle.crt
-	@$(SHELL) $(srcdir)/3-cre_certs.sh rsa client testid_rsa
-
 @COMMENT_OUT_DSA@identities: testid_dsa.certstamp
-
-testid_dsa:
-	@$(SHELL) $(srcdir)/2-cre_key.sh dsa client $@
-
-testid_dsa.certstamp: testid_dsa ca-test/catest-bundle.crt
-	@$(SHELL) $(srcdir)/3-cre_certs.sh dsa client testid_dsa
-
 @COMMENT_OUT_ECC256@identities: testid_eccnistp256.certstamp
 @COMMENT_OUT_ECC384@identities: testid_eccnistp384.certstamp
 @COMMENT_OUT_ECC521@identities: testid_eccnistp521.certstamp
-
-testid_eccnistp256:
-	@$(SHELL) $(srcdir)/2-cre_key.sh ec256 client $@
-
-testid_eccnistp256.certstamp: testid_eccnistp256 ca-test/catest-bundle.crt
-	@$(SHELL) $(srcdir)/3-cre_certs.sh ec256 client testid_eccnistp256
-
-testid_eccnistp384:
-	@$(SHELL) $(srcdir)/2-cre_key.sh ec384 client $@
-
-testid_eccnistp384.certstamp: testid_eccnistp384 ca-test/catest-bundle.crt
-	@$(SHELL) $(srcdir)/3-cre_certs.sh ec384 client testid_eccnistp384
-
-testid_eccnistp521:
-	@$(SHELL) $(srcdir)/2-cre_key.sh ec521 client $@
-
-testid_eccnistp521.certstamp: testid_eccnistp521 ca-test/catest-bundle.crt
-	@$(SHELL) $(srcdir)/3-cre_certs.sh ec521 client testid_eccnistp521
-
 @COMMENT_OUT_ED25519@identities: testid_ed25519.certstamp
 
-testid_ed25519:
-	@$(SHELL) $(srcdir)/2-cre_key.sh ed25519 client $@
+testid_gen:
+	@GENCAT=client $(MAKE) -e gen_cert
 
-testid_ed25519.certstamp: testid_ed25519 ca-test/catest-bundle.crt
-	@$(SHELL) $(srcdir)/3-cre_certs.sh ed25519 client testid_ed25519
+testid_rsa.certstamp: ca-test/catest-bundle.crt
+	@GENTYPE=rsa GENFILE=testid_rsa $(MAKE) -e testid_gen
+
+testid_dsa.certstamp: ca-test/catest-bundle.crt
+	@GENTYPE=dsa GENFILE=testid_dsa $(MAKE) -e testid_gen
+
+testid_eccnistp256.certstamp: ca-test/catest-bundle.crt
+	@GENTYPE=ec256 GENFILE=testid_eccnistp256 $(MAKE) -e testid_gen
+
+testid_eccnistp384.certstamp: ca-test/catest-bundle.crt
+	@GENTYPE=ec384 GENFILE=testid_eccnistp384 $(MAKE) -e testid_gen
+
+testid_eccnistp521.certstamp: ca-test/catest-bundle.crt
+	@GENTYPE=ec521 GENFILE=testid_eccnistp521 $(MAKE) -e testid_gen
+
+testid_ed25519.certstamp: ca-test/catest-bundle.crt
+	@GENTYPE=ed25519 GENFILE=testid_ed25519 $(MAKE) -e testid_gen
 
 # ===
 selfidentities: selfid_rsa.certstamp
-
-selfid_rsa.certstamp: selfid_rsa
-	@$(SHELL) $(srcdir)/3-cre_certs.sh rsa self selfid_rsa
-
-selfid_rsa:
-	@$(SHELL) $(srcdir)/2-cre_key.sh rsa self $@
-
 @COMMENT_OUT_DSA@selfidentities: selfid_dsa.certstamp
-
-selfid_dsa.certstamp: selfid_dsa
-	@$(SHELL) $(srcdir)/3-cre_certs.sh dsa self selfid_dsa
-
-selfid_dsa:
-	@$(SHELL) $(srcdir)/2-cre_key.sh dsa self $@
-
 @COMMENT_OUT_ECC256@selfidentities: selfid_eccnistp256.certstamp
 
-selfid_eccnistp256.certstamp: selfid_eccnistp256
-	@$(SHELL) $(srcdir)/3-cre_certs.sh ec256 self selfid_eccnistp256
+testself_gen:
+	@GENCAT=self $(MAKE) -e gen_cert
 
-selfid_eccnistp256:
-	@$(SHELL) $(srcdir)/2-cre_key.sh ec256 self $@
+selfid_rsa.certstamp:
+	@GENTYPE=rsa GENFILE=selfid_rsa $(MAKE) -e testself_gen
 
+selfid_dsa.certstamp:
+	@GENTYPE=dsa GENFILE=selfid_dsa $(MAKE) -e testself_gen
+
+selfid_eccnistp256.certstamp:
+	@GENTYPE=ec256 GENFILE=selfid_eccnistp256 $(MAKE) -e testself_gen
 
 # ===
 @OCSP_OFF@ocsp_certs:
 @OCSP_ON@ocsp_certs: testocsp_rsa.certstamp
-
-testocsp_rsa.certstamp: testocsp_rsa ca-test/catest-bundle.crt
-	@$(SHELL) $(srcdir)/3-cre_certs.sh rsa ocsp testocsp_rsa
-
-testocsp_rsa:
-	@$(SHELL) $(srcdir)/2-cre_key.sh rsa ocsp $@
-
 @OCSP_ON@@COMMENT_OUT_DSA@ocsp_certs: testocsp_dsa.certstamp
-
-testocsp_dsa.certstamp: testocsp_dsa ca-test/catest-bundle.crt
-	@$(SHELL) $(srcdir)/3-cre_certs.sh dsa ocsp testocsp_dsa
-
-testocsp_dsa:
-	@$(SHELL) $(srcdir)/2-cre_key.sh dsa ocsp $@
-
 @OCSP_ON@@COMMENT_OUT_ECC256@ocsp_certs: testocsp_eccnistp256.certstamp
 @OCSP_ON@@COMMENT_OUT_ECC384@ocsp_certs: testocsp_eccnistp384.certstamp
 @OCSP_ON@@COMMENT_OUT_ECC521@ocsp_certs: testocsp_eccnistp521.certstamp
-
-testocsp_eccnistp256.certstamp: testocsp_eccnistp256 ca-test/catest-bundle.crt
-	@$(SHELL) $(srcdir)/3-cre_certs.sh ec256 ocsp testocsp_eccnistp256
-
-testocsp_eccnistp256:
-	@$(SHELL) $(srcdir)/2-cre_key.sh ec256 ocsp $@
-
-testocsp_eccnistp384.certstamp: testocsp_eccnistp384 ca-test/catest-bundle.crt
-	@$(SHELL) $(srcdir)/3-cre_certs.sh ec384 ocsp testocsp_eccnistp384
-
-testocsp_eccnistp384:
-	@$(SHELL) $(srcdir)/2-cre_key.sh ec384 ocsp $@
-
-testocsp_eccnistp521.certstamp: testocsp_eccnistp521 ca-test/catest-bundle.crt
-	@$(SHELL) $(srcdir)/3-cre_certs.sh ec521 ocsp testocsp_eccnistp521
-
-testocsp_eccnistp521:
-	@$(SHELL) $(srcdir)/2-cre_key.sh ec521 ocsp $@
-
 @OCSP_ON@@COMMENT_OUT_ED25519@ocsp_certs: testocsp_ed25519.certstamp
 
-testocsp_ed25519.certstamp: testocsp_ed25519 ca-test/catest-bundle.crt
-	@$(SHELL) $(srcdir)/3-cre_certs.sh ed25519 ocsp testocsp_ed25519
+testocsp_gen:
+	@GENCAT=ocsp $(MAKE) -e gen_cert
 
-testocsp_ed25519:
-	@$(SHELL) $(srcdir)/2-cre_key.sh ed25519 ocsp $@
+testocsp_rsa.certstamp: ca-test/catest-bundle.crt
+	@GENTYPE=rsa GENFILE=testocsp_rsa $(MAKE) -e testocsp_gen
+
+testocsp_dsa.certstamp: ca-test/catest-bundle.crt
+	@GENTYPE=dsa GENFILE=testocsp_dsa $(MAKE) -e testocsp_gen
+
+testocsp_eccnistp256.certstamp: ca-test/catest-bundle.crt
+	@GENTYPE=ec256 GENFILE=testocsp_eccnistp256 $(MAKE) -e testocsp_gen
+
+testocsp_eccnistp384.certstamp: ca-test/catest-bundle.crt
+	@GENTYPE=ec384 GENFILE=testocsp_eccnistp384 $(MAKE) -e testocsp_gen
+
+testocsp_eccnistp521.certstamp: ca-test/catest-bundle.crt
+	@GENTYPE=ec521 GENFILE=testocsp_eccnistp521 $(MAKE) -e testocsp_gen
+
+testocsp_ed25519.certstamp: ca-test/catest-bundle.crt
+	@GENTYPE=ed25519 GENFILE=testocsp_ed25519 $(MAKE) -e testocsp_gen
 
 # ===
 crl_files: ca-test/catest-bundle.crl

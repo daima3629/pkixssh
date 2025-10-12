@@ -1,7 +1,7 @@
-/* $OpenBSD: ssh-pkcs11-client.c,v 1.18 2023/07/19 14:03:45 djm Exp $ */
+/* $OpenBSD: ssh-pkcs11-client.c,v 1.20 2024/08/15 00:51:51 djm Exp $ */
 /*
  * Copyright (c) 2010 Markus Friedl.  All rights reserved.
- * Copyright (c) 2016-2023 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2016-2025 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -36,10 +36,6 @@
 #endif
 
 #include <sys/types.h>
-#ifdef HAVE_SYS_TIME_H
-# include <sys/time.h>
-#endif
-#include <sys/socket.h>
 #include <sys/wait.h>
 
 #include <stdarg.h>
@@ -575,7 +571,7 @@ wrap_key_rsa(const char *provider, struct sshkey *key)
 
 {	RSA *rsa = EVP_PKEY_get1_RSA(key->pk);
 	ret = RSA_set_method(rsa, meth) ? 0 : -1;
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER /* OpenSSL 3+ */
+#ifdef ENABLE_KEY_PROVIDERS
 	/* Throw out misfunctional "key manager" in OpenSSL 3+,
 	 * i.e. make non-provider key.
 	 */
@@ -602,7 +598,7 @@ wrap_key_ecdsa(const char *provider, struct sshkey *key)
 
 {	EC_KEY *ec = EVP_PKEY_get1_EC_KEY(key->pk);
 	ret = EC_KEY_set_method(ec, meth) ? 0 : -1;
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER /* OpenSSL 3+ */
+#ifdef ENABLE_KEY_PROVIDERS
 	/* Throw out misfunctional "key manager" in OpenSSL 3+,
 	 * i.e. make non-provider key.
 	 */

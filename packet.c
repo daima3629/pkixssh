@@ -1,4 +1,4 @@
-/* $OpenBSD: packet.c,v 1.316 2024/08/15 00:51:51 djm Exp $ */
+/* $OpenBSD: packet.c,v 1.323 2025/09/25 06:33:19 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -42,10 +42,6 @@
 
 #include <sys/types.h>
 #include "openbsd-compat/sys-queue.h"
-#include <sys/socket.h>
-#ifdef HAVE_SYS_TIME_H
-# include <sys/time.h>
-#endif
 
 #include <netinet/in.h>
 #include <netinet/ip.h>
@@ -59,13 +55,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <limits.h>
-#ifdef HAVE_POLL_H
-# include <poll.h>
-#else
-# ifdef HAVE_SYS_POLL_H
-#  include <sys/poll.h>
-# endif
-#endif
 #include <signal.h>
 #include <time.h>
 
@@ -223,6 +212,12 @@ struct session_state {
 
 	/* One-off warning about weak ciphers */
 	int cipher_warning_done;
+
+	/*
+	 * Disconnect in progress. Used to prevent reentry in
+	 * ssh_packet_disconnect()
+	 */
+	int disconnecting;
 
 	/* Hook for fuzzing inbound packets */
 	ssh_packet_hook_fn *hook_in;
@@ -713,6 +708,13 @@ ssh_packet_close_internal(struct ssh *ssh, int do_close)
 	sshbuf_free(state->output);
 	sshbuf_free(state->outgoing_packet);
 	sshbuf_free(state->incoming_packet);
+	do {
+		struct packet *p = TAILQ_FIRST(&state->outgoing);
+		if (p == NULL) break;
+		sshbuf_free(p->payload);
+		TAILQ_REMOVE(&state->outgoing, p, next);
+		free(p);
+	} while (1);
 	for (mode = 0; mode < MODE_MAX; mode++) {
 		kex_free_newkeys(state->newkeys[mode]);	/* current keys */
 		state->newkeys[mode] = NULL;
@@ -2073,12 +2075,12 @@ ssh_packet_disconnect(struct ssh *ssh, const char *fmt,...)
 {
 	char buf[1024], remote_id[512];
 	va_list args;
-	static int disconnecting = 0;
 	int r;
 
-	if (disconnecting)	/* Guard against recursive invocations. */
+	/* Guard against recursive invocations. */
+	if (ssh->state->disconnecting)
 		fatal("packet_disconnect called recursively.");
-	disconnecting = 1;
+	ssh->state->disconnecting = 1;
 
 	/*
 	 * Format the message.  Note that the caller must make sure the
@@ -2237,14 +2239,6 @@ ssh_packet_set_interactive(struct ssh *ssh, int interactive, int qos_interactive
 		return;
 	set_nodelay(state->connection_in);
 	ssh_packet_set_tos(ssh, interactive ? qos_interactive : qos_bulk);
-}
-
-/* Returns true if the current connection is interactive. */
-
-int
-ssh_packet_is_interactive(struct ssh *ssh)
-{
-	return ssh->state->interactive_mode;
 }
 
 int

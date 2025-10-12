@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-rsa.c,v 1.80 2024/08/15 00:51:51 djm Exp $ */
+/* $OpenBSD: ssh-rsa.c,v 1.82 2025/10/03 00:08:02 djm Exp $ */
 /*
  * Copyright (c) 2000, 2003 Markus Friedl <markus@openbsd.org>
  * Copyright (c) 2011 Dr. Stephen Henson.  All rights reserved.
@@ -35,7 +35,7 @@
 #include "evp-compat.h"
 #include <openssl/pem.h>
 #include <openssl/bn.h>
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 # include <openssl/core_names.h>
 #endif
 
@@ -281,7 +281,7 @@ err:
 }
 
 
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 static int
 ssh_EVP_PKEY_validate_public_rsaprov(const EVP_PKEY *pk) {
 	int bits = 0;
@@ -296,7 +296,7 @@ ssh_EVP_PKEY_validate_public_rsaprov(const EVP_PKEY *pk) {
 	/* other checks ? */
 	return 0;
 }
-#endif /*def HAVE_EVP_KEYMGMT_GET0_PROVIDER*/
+#endif /*def ENABLE_KEY_PROVIDERS*/
 
 static int
 ssh_RSA_validate_public(const RSA *rsa) {
@@ -314,7 +314,7 @@ ssh_RSA_validate_public(const RSA *rsa) {
 
 int
 ssh_pkey_validate_public_rsa(EVP_PKEY *pk) {
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 	if (EVP_PKEY_get0_provider(pk) != NULL)
 		return ssh_EVP_PKEY_validate_public_rsaprov(pk);
 #endif
@@ -334,7 +334,7 @@ ssh_pkey_validate_public_rsa(EVP_PKEY *pk) {
 
 static int
 ssh_EVP_PKEY_complete_pub_rsa(EVP_PKEY *pk) {
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 	/* TODO: blinding on provider managed keys? */
 	if (EVP_PKEY_get0_provider(pk) != NULL)
 		return ssh_EVP_PKEY_validate_public_rsaprov(pk);
@@ -475,7 +475,7 @@ err:
 	return r;
 }
 
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 static int
 sshbuf_write_prov_rsapub(struct sshbuf *buf, const EVP_PKEY *pk) {
 	int r;
@@ -499,7 +499,7 @@ err:
 	BN_free(n);
 	return r;
 }
-#endif /*def HAVE_EVP_KEYMGMT_GET0_PROVIDER*/
+#endif /*def ENABLE_KEY_PROVIDERS*/
 
 static inline int
 sshbuf_put_rsakey(struct sshbuf *buf, const RSA *rsa)
@@ -516,7 +516,7 @@ sshbuf_put_rsakey(struct sshbuf *buf, const RSA *rsa)
 
 static int
 sshbuf_write_pkey_rsapub(struct sshbuf *buf, EVP_PKEY *pk) {
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 	if (EVP_PKEY_get0_provider(pk) != NULL)
 		return sshbuf_write_prov_rsapub(buf, pk);
 #endif
@@ -1066,7 +1066,7 @@ ssh_rsa_sign(const ssh_sign_ctx *ctx, u_char **sigp, size_t *lenp,
 
 	dgst = ssh_evp_md_find(alg_info->id);
 
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 	/* work-around for tpm2-openssl(<1.3) issue #135 */
 	if (getenv("TPM2_RSA_SIZE_BUG") != NULL)
 		slen = (EVP_PKEY_bits(key->pk)+7)/8;
@@ -1222,81 +1222,100 @@ static const struct sshkey_impl_funcs sshkey_rsa_funcs = {
 	/* .verify = */		ssh_rsa_verify
 };
 
+static int sshkey_rsa_enabled(void) { return 1; }
+static int sshkey_rsa_sha256_enabled(void) {
+#ifdef HAVE_EVP_SHA256
+	return 1;
+#else
+	return 0;
+#endif
+}
+#define SSHKEY_RSA_FUNCS	&sshkey_rsa_funcs
+
+#else
+
+static int sshkey_rsa_enabled(void) { return 0; }
+static int sshkey_rsa_sha256_enabled(void) { return 0; }
+#define SSHKEY_RSA_FUNCS	NULL
+
+#endif /* WITH_OPENSSL */
+
+static char *pkey_rsa_typename[] = { "RSA", NULL };
+
 const struct sshkey_impl sshkey_rsa_impl = {
+	/* .id = */		{ KEY_RSA, 0,
+				  EVP_PKEY_RSA, pkey_rsa_typename },
 	/* .name = */		"ssh-rsa",
 	/* .shortname = */	"RSA",
 	/* .sigalg = */		NULL,
-	/* .type = */		KEY_RSA,
-	/* .nid = */		0,
 	/* .cert = */		0,
 	/* .sigonly = */	0,
 	/* .keybits = */	0,
-	/* .funcs = */		&sshkey_rsa_funcs
+	/* .enabled = */	sshkey_rsa_enabled,
+	/* .funcs = */		SSHKEY_RSA_FUNCS
 };
 
 const struct sshkey_impl sshkey_rsa_cert_impl = {
+	/* .id = */		{ KEY_RSA_CERT, 0,
+				  EVP_PKEY_RSA, pkey_rsa_typename },
 	/* .name = */		"ssh-rsa-cert-v01@openssh.com",
 	/* .shortname = */	"RSA-CERT",
 	/* .sigalg = */		NULL,
-	/* .type = */		KEY_RSA_CERT,
-	/* .nid = */		0,
 	/* .cert = */		1,
 	/* .sigonly = */	0,
 	/* .keybits = */	0,
-	/* .funcs = */		&sshkey_rsa_funcs
+	/* .enabled = */	sshkey_rsa_enabled,
+	/* .funcs = */		SSHKEY_RSA_FUNCS
 };
 
-#ifdef HAVE_EVP_SHA256
 const struct sshkey_impl sshkey_rsa_sha256_impl = {
+	/* .id = */		{ KEY_RSA, 0,
+				  EVP_PKEY_RSA, pkey_rsa_typename },
 	/* .name = */		"rsa-sha2-256",
 	/* .shortname = */	"RSA",
 	/* .sigalg = */		NULL,
-	/* .type = */		KEY_RSA,
-	/* .nid = */		0,
 	/* .cert = */		0,
 	/* .sigonly = */	1,
 	/* .keybits = */	0,
-	/* .funcs = */		&sshkey_rsa_funcs
+	/* .enabled = */	sshkey_rsa_sha256_enabled,
+	/* .funcs = */		SSHKEY_RSA_FUNCS
 };
 
 const struct sshkey_impl sshkey_rsa_sha512_impl = {
+	/* .id = */		{ KEY_RSA, 0,
+				  EVP_PKEY_RSA, pkey_rsa_typename },
 	/* .name = */		"rsa-sha2-512",
 	/* .shortname = */	"RSA",
 	/* .sigalg = */		NULL,
-	/* .type = */		KEY_RSA,
-	/* .nid = */		0,
 	/* .cert = */		0,
 	/* .sigonly = */	1,
 	/* .keybits = */	0,
-	/* .funcs = */		&sshkey_rsa_funcs
+	/* .enabled = */	sshkey_rsa_sha256_enabled,
+	/* .funcs = */		SSHKEY_RSA_FUNCS
 };
 
 const struct sshkey_impl sshkey_rsa_sha256_cert_impl = {
+	/* .id = */		{ KEY_RSA_CERT, 0,
+				  EVP_PKEY_RSA, pkey_rsa_typename },
 	/* .name = */		"rsa-sha2-256-cert-v01@openssh.com",
 	/* .shortname = */	"RSA-CERT",
 	/* .sigalg = */		"rsa-sha2-256",
-	/* .type = */		KEY_RSA_CERT,
-	/* .nid = */		0,
 	/* .cert = */		1,
 	/* .sigonly = */	1,
 	/* .keybits = */	0,
-	/* .funcs = */		&sshkey_rsa_funcs
+	/* .enabled = */	sshkey_rsa_sha256_enabled,
+	/* .funcs = */		SSHKEY_RSA_FUNCS
 };
 
 const struct sshkey_impl sshkey_rsa_sha512_cert_impl = {
+	/* .id = */		{ KEY_RSA_CERT, 0,
+				  EVP_PKEY_RSA, pkey_rsa_typename },
 	/* .name = */		"rsa-sha2-512-cert-v01@openssh.com",
 	/* .shortname = */	"RSA-CERT",
 	/* .sigalg = */		"rsa-sha2-512",
-	/* .type = */		KEY_RSA_CERT,
-	/* .nid = */		0,
 	/* .cert = */		1,
 	/* .sigonly = */	1,
 	/* .keybits = */	0,
-	/* .funcs = */		&sshkey_rsa_funcs
+	/* .enabled = */	sshkey_rsa_sha256_enabled,
+	/* .funcs = */		SSHKEY_RSA_FUNCS
 };
-#endif /*def HAVE_EVP_SHA256*/
-#else
-
-typedef int ssh_rsa_empty_translation_unit;
-
-#endif /* WITH_OPENSSL */

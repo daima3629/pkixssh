@@ -1,4 +1,4 @@
-/* $OpenBSD: sshconnect.c,v 1.371 2025/05/24 09:46:16 djm Exp $ */
+/* $OpenBSD: sshconnect.c,v 1.376 2025/09/25 06:23:19 jsg Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -12,7 +12,7 @@
  * incompatible with the protocol description in the RFC file, it must be
  * called by a name other than "ssh" or "Secure Shell".
  *
- * Copyright (c) 2002-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -39,11 +39,6 @@
 
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <sys/stat.h>
-#include <sys/socket.h>
-#ifdef HAVE_SYS_TIME_H
-# include <sys/time.h>
-#endif
 
 #include <net/if.h>
 #include <netinet/in.h>
@@ -54,9 +49,6 @@
 #include <fcntl.h>
 #include <limits.h>
 #include <netdb.h>
-#ifdef HAVE_PATHS_H
-#include <paths.h>
-#endif
 #include <pwd.h>
 #include <signal.h>
 #include <stdio.h>
@@ -612,9 +604,10 @@ prepare_client_banner(struct ssh *ssh)
 	 * After identification exchange trailing <CR><LF> is removed for
 	 * further use in key exchange messages.
 	 */
-	r = sshbuf_putf(ssh->kex->client_version,
-	    "SSH-%d.%d-%s PKIX["PACKAGE_VERSION"]%s%s\r\n",
-	    PROTOCOL_MAJOR_2, PROTOCOL_MINOR_2, SSH_VERSION,
+	r = sshbuf_putf(ssh->kex->client_version, "SSH-%d.%d-%s[%s] %s%s%s\r\n",
+	    PROTOCOL_MAJOR_2, PROTOCOL_MINOR_2,
+	    PACKAGE_NAME, PACKAGE_VERSION,
+	    OPENSSH_RELEASE,
 	    *options.version_addendum == '\0' ? "" : " ",
 	    options.version_addendum);
 	return r;
@@ -825,7 +818,7 @@ hostkeys_find_by_key(const char *host, const char *ip, const struct sshkey *key,
     char **system_hostfiles, u_int num_system_hostfiles,
     char ***names, u_int *nnames)
 {
-	struct find_by_key_ctx ctx = {0, 0, 0, 0, 0};
+	struct find_by_key_ctx ctx = {NULL, NULL, NULL, NULL, 0};
 	u_int i;
 
 	*names = NULL;
@@ -1465,6 +1458,7 @@ check_host_key(char *hostname, const struct ssh_conn_info *cinfo,
 		options.update_hostkeys = 0;
 	}
 
+	sshkey_free(raw_key);
 	free(ip);
 	free(host);
 	if (host_hostkeys != NULL)
@@ -1672,9 +1666,6 @@ show_other_keys(struct hostkeys *hostkeys, struct sshkey *key)
 	#endif
 		KEY_ECDSA,
 		KEY_ED25519,
-	#ifdef WITH_XMSS
-		KEY_XMSS,
-	#endif
 		-1
 	};
 	int subtype[] = {
@@ -1823,7 +1814,7 @@ maybe_add_key_to_agent(const char *authfile, struct sshkey *private,
 	if ((r = ssh_add_identity_constrained(auth_sock, private,
 	    comment == NULL ? authfile : comment,
 	    options.add_keys_to_agent_lifespan,
-	    (options.add_keys_to_agent == 3), 0, skprovider)) == 0)
+	    (options.add_keys_to_agent == 3), skprovider)) == 0)
 		debug("identity added to agent: %s", authfile);
 	else
 		debug("could not add identity to agent: %s (%d)", authfile, r);

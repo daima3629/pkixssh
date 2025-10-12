@@ -1,7 +1,7 @@
-/* $OpenBSD: ssh-keysign.c,v 1.74 2024/04/30 05:53:03 djm Exp $ */
+/* $OpenBSD: ssh-keysign.c,v 1.78 2025/09/25 06:25:38 djm Exp $ */
 /*
  * Copyright (c) 2002 Markus Friedl.  All rights reserved.
- * Copyright (c) 2011-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -27,9 +27,6 @@
 #include "includes.h"
 
 #include <fcntl.h>
-#ifdef HAVE_PATHS_H
-#include <paths.h>
-#endif
 #include <pwd.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -197,8 +194,10 @@ valid_request(struct passwd *pw, char *host, struct sshkey **retkey, char **reta
 	/* client host name, handle trailing dot */
 	if ((r = sshbuf_get_cstring(b, &p, &len)) != 0)
 		fatal_fr(r, "parse hostname");
-	debug2_f("check expect chost %s got %s", host, p);
-	if (strlen(host) != len - 1)
+	debug2_f("check expect chost \"%s\" got \"%s\"", host, p);
+	if (len == 0)
+		fail++;
+	else if (strlen(host) != len - 1)
 		fail++;
 	else if (p[len - 1] != '.')
 		fail++;
@@ -288,9 +287,6 @@ main(int argc, char **argv)
 	key_fd[i++] = open(_PATH_HOST_RSA_KEY_FILE, O_RDONLY);
 #ifdef WITH_DSA
 	key_fd[i++] = open(_PATH_HOST_DSA_KEY_FILE, O_RDONLY);
-#endif
-#ifdef WITH_XMSS
-	key_fd[i++] = open(_PATH_HOST_XMSS_KEY_FILE, O_RDONLY);
 #endif
 
 	if ((pw = getpwuid(getuid())) == NULL)

@@ -4,9 +4,13 @@
 tid="pkcs11 agent test"
 
 . ../tests/pkcs11-env
+
+SSH_MODULE_LOG="$OBJ/.ssh-module.log"
+> "$SSH_MODULE_LOG" || exit $?
+
 p11_find_module || skip "SoftHSM module not found"
 p11_find_SOFTHSM2_TOOL || skip "SoftHSM tool not found"
-p11_setup
+p11_setup_token || skip "fail to setup pkcs#11 token"
 
 # generate keys and loads them into the virtual token
 # NOTE: require OpenSSL 1.0+ utility genpkey

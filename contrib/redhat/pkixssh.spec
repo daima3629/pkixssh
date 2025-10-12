@@ -4,7 +4,7 @@
 # This is free software; see Copyright file in the source
 # distribution for precise wording.
 #
-# Copyright (c) 2019-2024 Roumen Petrov
+# Copyright (c) 2019-2025 Roumen Petrov
 #
 
 # Do we want to enable building with ldap? (1=yes 0=no)
@@ -28,6 +28,9 @@
 # Do we want to enable Kerberos 5 support? (1=yes 0=no)
 %global enable_kerberos5 1
 
+# Do we want to enable Diffie-Hellman key exchange? (1=yes 0=no)
+%global enable_kex_dh 1
+
 # Do we want to enable DSA publickey algorithms? (1=yes 0=no)
 %global enable_dsa 0
 
@@ -46,10 +49,18 @@
 # "Rawhide" ....
 %endif
 
+# reference /usr/lib/rpm/macros.d/macros.dist
+#   or /etc/rpm/macros.dist (obsolete)
+# some cross-verdor compatibility version scheme
+%if !0%{?rhel}
+%if 0%{?rhel_version} >= 800
+%global rhel %{expr:%{?rhel_version}/100}
+%endif
+%endif
 
 # Disable non-working configurations
-%if 0%{?centos_version} >= 800
-# No more openldap server package on CentOS 8
+%if 0%{?rhel} >= 8
+# No more openldap server package on RHEL 8
 %undefine enable_ldap_test
 %global enable_ldap_test 0
 %endif
@@ -58,9 +69,17 @@
 %undefine enable_ssl_engine
 %global enable_ssl_engine 0
 %endif
+%if 0%{?rhel} >= 10
+%undefine enable_ssl_engine
+%global enable_ssl_engine 0
+%endif
 
 %if 0%{?fedora} >= 36
 # OpenSSL 3+ FIPS model is not supported yet
+%undefine enable_openssl_fips
+%global enable_openssl_fips 0
+%endif
+%if 0%{?rhel} >= 9
 %undefine enable_openssl_fips
 %global enable_openssl_fips 0
 %endif
@@ -73,7 +92,7 @@
 %undefine use_fipscheck
 %global use_fipscheck 0
 %endif
-%if 0%{?rhel_version} && 0%{?rhel_version} > 500
+%if 0%{?rhel_version} > 500
 %undefine use_fipscheck
 %global use_fipscheck 0
 %endif
@@ -100,7 +119,7 @@ Url:		https://roumenpetrov.info/secsh/
 
 Name:		pkixssh
 Summary:	PKIX-SSH, Advanced secure shell implementation
-Version:	16.1.1
+Version:	17.1.2
 Release:	1
 License:	BSD
 Group:		Productivity/Networking/SSH
@@ -194,6 +213,11 @@ two untrusted hosts over an insecure network.
   --with-kerberos5 \
 %else
   --without-kerberos5 \
+%endif
+%if %{enable_kex_dh}
+  --enable-kex-dh \
+%else
+  --disable-kex-dh \
 %endif
 %if %{enable_dsa}
   --enable-dsa \

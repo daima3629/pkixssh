@@ -36,7 +36,6 @@
 #ifndef HAVE_RRESVPORT_AF
 
 #include <sys/types.h>
-#include <sys/socket.h>
 
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -80,7 +79,7 @@ rresvport_af(int *alport, sa_family_t af)
 		return (-1);
 	}
 	sa->sa_family = af;
-	
+
 	s = socket(af, SOCK_STREAM, 0);
 	if (s == -1)
 		return (-1);

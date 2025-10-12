@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2001 Damien Miller.  All rights reserved.
- * Copyright (c) 2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2021-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -26,10 +26,6 @@
 #include "includes.h"
 
 #include <sys/types.h>
-#include <sys/socket.h>
-#ifdef HAVE_SYS_UN_H
-# include <sys/un.h>
-#endif
 
 #include <netinet/in.h>
 #include <arpa/inet.h>

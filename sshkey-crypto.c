@@ -40,6 +40,13 @@
 #include "log.h"
 
 
+#ifdef HAVE_EVP_KEM_FETCH
+/* TODO: move to cryptographic library initialisation */
+OSSL_LIB_CTX *pkixssh_libctx = NULL;
+char *pkixssh_propq = NULL;
+#endif
+
+
 #if 1
 /* compare "non-exportable" keys with mixed management
  * (OpenSSL issue #26394)
@@ -1127,6 +1134,45 @@ ssh_xkalg_dgst_compat(ssh_evp_md *dest, const ssh_evp_md *src, ssh_compat *compa
 	dest->VerifyFinal = src->VerifyFinal;
 }
 
+
+int
+ssh_pkey_allowed(int base_id) {
+#ifdef OPENSSL_FIPS
+#if defined(EVP_PKEY_FLAG_FIPS) && defined(HAVE_EVP_PKEY_METH_FIND)
+{	/* NOTE EVP_PKEY_meth...() are deprecated in OpenSSL 3.0 */
+	const EVP_PKEY_METHOD *pmeth = EVP_PKEY_meth_find(base_id);
+	if (pmeth == NULL) return 0;
+
+	if (FIPS_mode()) {
+		int pkey_id, flags;
+		EVP_PKEY_meth_get0_info(&pkey_id, &flags, pmeth);
+		/* vendor specific FIPS implementation */
+		if ((flags & EVP_PKEY_FLAG_FIPS) == 0)
+			return 0;
+	}
+}
+#else
+	UNUSED(base_id);
+#endif
+#else
+	UNUSED(base_id);
+#endif /*def OPENSSL_FIPS*/
+	return 1;
+}
+
+#ifdef HAVE_EVP_KEM_FETCH
+int
+ssh_kem_allowed(const char *algorithm) {
+	int ret;
+	EVP_KEM *kem;
+
+	kem = EVP_KEM_fetch(pkixssh_libctx, algorithm, pkixssh_propq);
+	ret = (kem != NULL) ? 1 : 0;
+	EVP_KEM_free(kem);
+
+	return ret;
+}
+#endif
 
 int
 ssh_pkey_sign(

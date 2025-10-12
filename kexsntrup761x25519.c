@@ -156,7 +156,6 @@ kex_kem_sntrup761x25519_enc(struct kex *kex,
 		server_blob = NULL;
 	}
  out:
-	kex_reset_keys(kex);
 	sshbuf_free(server_blob);
 	sshbuf_free(buf);
 	return r;
@@ -223,12 +222,16 @@ kex_kem_sntrup761x25519_dec(struct kex *kex,
 		r = SSH_ERR_SIGNATURE_INVALID;
 	}
  out:
-	kex_reset_keys(kex);
 	sshbuf_free(buf);
 	return r;
 }
 
-static int kex_kem_sntrup761x25519_enabled(void) { return 1; }
+static int kex_kem_sntrup761x25519_enabled(void) {
+#ifdef OPENSSL_FIPS
+	if (FIPS_mode()) return 0;
+#endif
+	return 1;
+}
 
 static const struct kex_impl_funcs kex_kem_sntrup761x25519_funcs = {
 	kex_init_gen,

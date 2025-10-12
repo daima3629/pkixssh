@@ -1,4 +1,4 @@
-.\"	$OpenBSD: ssh-keygen.1,v 1.235 2025/05/24 03:40:54 dtucker Exp $
+.\"	$OpenBSD: ssh-keygen.1,v 1.236 2025/10/04 21:41:35 naddy Exp $
 .\"
 .\" Author: Tatu Ylonen <ylo@cs.hut.fi>
 .\" Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -14,7 +14,7 @@
 .\" Copyright (c) 1999,2000 Markus Friedl.  All rights reserved.
 .\" Copyright (c) 1999 Aaron Campbell.  All rights reserved.
 .\" Copyright (c) 1999 Theo de Raadt.  All rights reserved.
-.\" Copyright (c) 2002-2024 Roumen Petrov.  All rights reserved.
+.\" Copyright (c) 2002-2025 Roumen Petrov.  All rights reserved.
 .\"
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions
@@ -44,7 +44,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: May 24 2025 $
+.Dd $Mdocdate: October 10 2025 $
 .Dt SSH-KEYGEN 1
 .Os
 .Sh NAME
@@ -308,6 +308,12 @@ This option will read a private or public key file and
 print to stdout a public key in one of the formats specified by the
 .Fl m
 option.
+For this option file name could use prefixes
+.Dq store:
+or
+.Dq engine:
+to load keys using store or engine functionality
+provided by cryptographic library.
 The default export format is
 .Dq RFC4716 .
 This option allows exporting keys for use by other programs, including
@@ -591,7 +597,7 @@ The available RSA signature variants are
 .It Fl U
 When used in combination with
 .Fl s ,
-this option indicates that a CA key resides in a
+this option indicates that a CA key resides in an
 .Xr ssh-agent 1 .
 See the
 .Sx CERTIFICATES
@@ -683,10 +689,10 @@ The maximum is 3.
 This option will read a private
 key file and print to stdout an public key in OpenSSH format.
 For this option keyfile name could use prefixes
-.Dq engine:
-or
 .Dq store:
-to load identifies using engine or store functionality
+or
+.Dq engine:
+to load identifies using store or engine functionality
 provided by cryptographic library.
 For more details see configuration option
 .Cm IdentityFile
@@ -987,7 +993,7 @@ Revokes the specified key by including its SHA256 hash in the KRL.
 KRLs that revoke keys by SHA256 hash are not supported by OpenSSH versions
 prior to 7.9.
 .It Cm hash : Ar fingerprint
-Revokes a key using a fingerprint hash, as obtained from a
+Revokes a key using a fingerprint hash, as obtained from an
 .Xr sshd 8
 authentication log message or the
 .Nm

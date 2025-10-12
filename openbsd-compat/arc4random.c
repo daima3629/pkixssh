@@ -4,7 +4,7 @@
  * Copyright (c) 2008, Damien Miller <djm@openbsd.org>
  * Copyright (c) 2013, Markus Friedl <markus@openbsd.org>
  * Copyright (c) 2014, Theo de Raadt <deraadt@openbsd.org>
- * Copyright (c) 2014-2023, Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2014-2025, Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -25,9 +25,6 @@
 
 #include <fcntl.h>
 #include <signal.h>
-#ifdef HAVE_STDINT_H
-# include <stdint.h>
-#endif
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -163,7 +160,7 @@ _rs_forkdetect(void)
 static inline int
 _rs_allocate(struct _rs **rsp, struct _rsx **rsxp)
 {
-#if defined(MAP_ANON) && defined(MAP_PRIVATE)
+#ifdef ENABLE_MMAP
 	if ((*rsp = mmap(NULL, sizeof(**rsp), PROT_READ|PROT_WRITE,
 	    MAP_ANON|MAP_PRIVATE, -1, 0)) == MAP_FAILED)
 		return (-1);

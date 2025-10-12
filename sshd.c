@@ -1,4 +1,4 @@
-/* $OpenBSD: sshd.c,v 1.615 2025/02/10 23:19:26 djm Exp $ */
+/* $OpenBSD: sshd.c,v 1.622 2025/08/29 03:50:38 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -47,13 +47,6 @@
 
 #include <sys/types.h>
 #include <sys/ioctl.h>
-#include <sys/socket.h>
-#ifdef HAVE_SYS_STAT_H
-# include <sys/stat.h>
-#endif
-#ifdef HAVE_SYS_TIME_H
-# include <sys/time.h>
-#endif
 #include "openbsd-compat/sys-tree.h"
 #include "openbsd-compat/sys-queue.h"
 #include <sys/wait.h>
@@ -61,17 +54,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <netdb.h>
-#ifdef HAVE_PATHS_H
-#include <paths.h>
-#endif
 #include <grp.h>
-#ifdef HAVE_POLL_H
-# include <poll.h>
-#else
-# ifdef HAVE_SYS_POLL_H
-#  include <sys/poll.h>
-# endif
-#endif
 #include <pwd.h>
 #include <signal.h>
 #include <stdarg.h>
@@ -401,22 +384,23 @@ main_sigchld_handler(int sig)
 static int
 prepare_server_banner(struct ssh *ssh)
 {
-	const char *fips = "";
 	int r;
-
-#ifdef OPENSSL_FIPS
-	if (FIPS_mode()) fips= " FIPS";
-#endif
 
 	/* NOTE: Version string is prepared and sent with <CR><LF> at end.
 	 * After identification exchange trailing <CR><LF> is removed for
 	 * further use in key exchange messages.
 	 */
-	r = sshbuf_putf(ssh->kex->server_version,
-	    "SSH-%d.%d-%s PKIX["PACKAGE_VERSION"%s]%s%s\r\n",
-	    PROTOCOL_MAJOR_2, PROTOCOL_MINOR_2, SSH_VERSION, fips,
+{	const char *fips = "";
+#ifdef OPENSSL_FIPS
+	if (FIPS_mode()) fips= " FIPS";
+#endif
+	r = sshbuf_putf(ssh->kex->server_version, "SSH-%d.%d-%s[%s]%s %s%s%s\r\n",
+	    PROTOCOL_MAJOR_2, PROTOCOL_MINOR_2,
+	    PACKAGE_NAME, PACKAGE_VERSION, fips,
+	    OPENSSH_RELEASE,
 	    *options.version_addendum == '\0' ? "" : " ",
 	    options.version_addendum);
+}
 	return r;
 }
 
@@ -509,10 +493,23 @@ drop_connection(int sock, int startups, int notify_pipe)
 	return 1;
 }
 
+static inline void
+log_program_version(void) {
+	if (get_log_level() < SYSLOG_LEVEL_DEBUG1) return;
+
+	logit("%s version %s, %s", __progname, SSH_RELEASE,
+	    ssh_OpenSSL_version_text());
+}
+
+static inline void
+print_program_version(void) {
+	fprintf(stderr, "%s, %s\n", SSH_RELEASE, ssh_OpenSSL_version_text());
+}
+
 static void
 usage(void)
 {
-	fprintf(stderr, "%s, %s\n", SSH_RELEASE, ssh_OpenSSL_version_text());
+	print_program_version();
 	fprintf(stderr,
 "usage: sshd [-46DdeGiqTtV] [-C connection_spec] [-c host_cert_file]\n"
 "            [-E log_file] [-f config_file] [-g login_grace_time]\n"
@@ -891,6 +888,7 @@ server_accept_loop(int *sock_in, int *sock_out, int *newsock, int *config_s)
 					close(config_s[0]);
 				}
 				free(pfd);
+				free(startup_pollfd);
 				return;
 			}
 
@@ -934,6 +932,7 @@ server_accept_loop(int *sock_in, int *sock_out, int *newsock, int *config_s)
 					    "\0", 1);
 				}
 				free(pfd);
+				free(startup_pollfd);
 				return;
 			}
 
@@ -1233,8 +1232,7 @@ main(int ac, char **av)
 			free(line);
 			break;
 		case 'V':
-			fprintf(stderr, "%s, %s\n",
-			    SSH_RELEASE, ssh_OpenSSL_version_text());
+			print_program_version();
 			exit(0);
 		default:
 			usage();
@@ -1289,8 +1287,7 @@ main(int ac, char **av)
 		fatal("Config test connection parameter (-C) provided without "
 		    "test mode (-T)");
 
-	if (get_log_level() >= SYSLOG_LEVEL_DEBUG1)
-		logit("%s version %s, %s", __progname, SSH_RELEASE, ssh_OpenSSL_version_text());
+	log_program_version();
 	debug3_uname();
 
 	/* Fetch our configuration */
@@ -1460,9 +1457,6 @@ main(int ac, char **av)
 	#endif
 		case KEY_ECDSA:
 		case KEY_ED25519:
-	#ifdef WITH_XMSS
-		case KEY_XMSS:
-	#endif
 			if (have_agent || key != NULL)
 				sensitive_data.have_ssh2_key = 1;
 			break;

@@ -1,4 +1,4 @@
-/* 	$OpenBSD: test_sshbuf_misc.c,v 1.5 2021/12/14 21:25:27 deraadt Exp $ */
+/* 	$OpenBSD: test_sshbuf_misc.c,v 1.6 2025/09/04 00:37:10 djm Exp $ */
 /*
  * Regress test for sshbuf.h buffer API
  *
@@ -16,11 +16,11 @@
 
 void sshbuf_misc_tests(void);
 
-void
-sshbuf_misc_tests(void)
+static void
+test_sshbuf_dump(void)
 {
 	struct sshbuf *p1;
-	char tmp[512], msg[] = "imploring ping silence ping over", *p;
+	char tmp[512];
 	FILE *out;
 	size_t sz;
 
@@ -42,6 +42,13 @@ sshbuf_misc_tests(void)
 	fclose(out);
 	sshbuf_free(p1);
 	TEST_DONE();
+}
+
+static void
+test_sshbuf_dtob16(void)
+{
+	struct sshbuf *p1;
+	char *p;
 
 	TEST_START("sshbuf_dtob16");
 	p1 = sshbuf_new();
@@ -53,6 +60,13 @@ sshbuf_misc_tests(void)
 	free(p);
 	sshbuf_free(p1);
 	TEST_DONE();
+}
+
+static void
+test_sshbuf_dtob64_string(void)
+{
+	struct sshbuf *p1;
+	char *p;
 
 	TEST_START("sshbuf_dtob64_string len 1");
 	p1 = sshbuf_new();
@@ -101,6 +115,12 @@ sshbuf_misc_tests(void)
 	free(p);
 	sshbuf_free(p1);
 	TEST_DONE();
+}
+
+static void
+test_sshbuf_b64tod(void)
+{
+	struct sshbuf *p1;
 
 	TEST_START("sshbuf_b64tod len 1");
 	p1 = sshbuf_new();
@@ -128,6 +148,13 @@ sshbuf_misc_tests(void)
 	ASSERT_U32_EQ(PEEK_U32(sshbuf_ptr(p1)), 0xd00fd00f);
 	sshbuf_free(p1);
 	TEST_DONE();
+}
+
+static void
+test_sshbuf_dup_string(void)
+{
+	struct sshbuf *p1;
+	char *p;
 
 	TEST_START("sshbuf_dup_string");
 	p1 = sshbuf_new();
@@ -157,6 +184,13 @@ sshbuf_misc_tests(void)
 	ASSERT_PTR_EQ(p, NULL);
 	sshbuf_free(p1);
 	TEST_DONE();
+}
+
+static void
+test_sshbuf_cmp(void)
+{
+	struct sshbuf *p1;
+	char msg[] = "imploring ping silence ping over";
 
 	TEST_START("sshbuf_cmp");
 	p1 = sshbuf_from(msg, sizeof(msg) - 1);
@@ -178,6 +212,14 @@ sshbuf_misc_tests(void)
 	ASSERT_INT_EQ(sshbuf_cmp(p1, 0, msg, sizeof(msg) - 1), 0);
 	sshbuf_free(p1);
 	TEST_DONE();
+}
+
+static void
+test_sshbuf_find(void)
+{
+	struct sshbuf *p1;
+	char msg[] = "imploring ping silence ping over";
+	size_t sz;
 
 	TEST_START("sshbuf_find");
 	p1 = sshbuf_from(msg, sizeof(msg) - 1);
@@ -211,3 +253,14 @@ sshbuf_misc_tests(void)
 	TEST_DONE();
 }
 
+void
+sshbuf_misc_tests(void)
+{
+	test_sshbuf_dump();
+	test_sshbuf_dtob16();
+	test_sshbuf_dtob64_string();
+	test_sshbuf_b64tod();
+	test_sshbuf_dup_string();
+	test_sshbuf_cmp();
+	test_sshbuf_find();
+}

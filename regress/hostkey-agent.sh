@@ -1,8 +1,7 @@
-#	$OpenBSD: hostkey-agent.sh,v 1.14 2024/11/26 22:02:28 djm Exp $
+#	$OpenBSD: hostkey-agent.sh,v 1.15 2024/12/04 10:51:13 dtucker Exp $
 #	Placed in the Public Domain.
 
 tid="hostkey agent"
-PLAIN_TYPES=`echo "$SSH_HOSTKEY_TYPES" | sed 's/ssh-xmss@openssh.com//'` # TODO
 
 rm -f $OBJ/agent-key.* $OBJ/ssh_proxy.orig $OBJ/agent-ca $OBJ/agent-ca.pub
 
@@ -19,7 +18,7 @@ trace "make CA key"
 ${SSHKEYGEN} -qt ed25519 -f $OBJ/agent-ca -N '' || fatal "ssh-keygen CA"
 
 trace "load hostkeys"
-for k in $PLAIN_TYPES ; do
+for k in $SSH_HOSTKEY_TYPES ; do
 	${SSHKEYGEN} -qt $k -f $OBJ/agent-key.$k -N '' || fatal "ssh-keygen $k"
 	${SSHKEYGEN} -s $OBJ/agent-ca -qh -n localhost-with-alias \
 		-I localhost-with-alias $OBJ/agent-key.$k.pub || \
@@ -34,7 +33,7 @@ rm $OBJ/agent-ca # Don't need CA private any more either
 unset SSH_AUTH_SOCK
 
 for ps in $SSHD_PRIVSEP ; do
-for k in $PLAIN_TYPES ; do
+for k in $SSH_HOSTKEY_TYPES ; do
 	verbose "key type $k privsep=$ps"
 	cp $OBJ/sshd_proxy.orig $OBJ/sshd_proxy
 	echo "UsePrivilegeSeparation $ps" >> $OBJ/sshd_proxy
@@ -54,7 +53,6 @@ done
 done
 
 SSH_CERTTYPES=`$SSH -Q key | grep 'cert-v01@openssh.com'`
-SSH_CERTTYPES=`echo "$SSH_CERTTYPES" | sed 's/ssh-xmss-cert-v01@openssh.com//'` # TODO
 
 # Prepare sshd_proxy for certificates.
 cp $OBJ/sshd_proxy.orig $OBJ/sshd_proxy
@@ -66,7 +64,7 @@ for k in $SSH_CERTTYPES ; do
 		HOSTKEYALGS="$HOSTKEYALGS,$k"
 	fi
 done
-for k in $PLAIN_TYPES ; do
+for k in $SSH_HOSTKEY_TYPES ; do
 	echo "Hostkey $OBJ/agent-key.${k}" >> $OBJ/sshd_proxy
 	echo "HostCertificate $OBJ/agent-key.${k}-cert.pub" >> $OBJ/sshd_proxy
 	test -f $OBJ/agent-key.${k}.pub || fatal "no $k key"
@@ -103,7 +101,7 @@ echo "UpdateHostkeys=yes" >> $OBJ/ssh_proxy
 echo "GlobalKnownHostsFile=none" >> $OBJ/ssh_proxy
 
 > $OBJ/known_hosts
-for k in $PLAIN_TYPES ; do
+for k in $SSH_HOSTKEY_TYPES ; do
 	verbose "  add key type $k"
 	echo "Hostkey $OBJ/agent-key.${k}" >> $OBJ/sshd_proxy
 

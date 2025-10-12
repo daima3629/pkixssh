@@ -1,4 +1,4 @@
-/* $OpenBSD: cipher.c,v 1.124 2025/03/14 09:49:49 tb Exp $ */
+/* $OpenBSD: cipher.c,v 1.125 2025/09/02 11:08:34 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -13,7 +13,7 @@
  *
  * Copyright (c) 1999 Niels Provos.  All rights reserved.
  * Copyright (c) 1999, 2000 Markus Friedl.  All rights reserved.
- * Copyright (c) 2011-2022 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2011-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -139,25 +139,25 @@ cipher_allowed(const struct sshcipher *c) {
 #ifdef OPENSSL_FIPS
 	if (FIPS_mode()) {
 		const EVP_CIPHER *evp = NULL;
-		if (c->evptype == NULL) return(0);
+		if (c->evptype == NULL) return 0;
 		evp = c->evptype();
-		if (evp == NULL) return(0);
+		if (evp == NULL) return 0;
 		if ((EVP_CIPHER_flags(evp) & EVP_CIPH_FLAG_FIPS) == 0)
-			return(0);
+			return 0;
 	}
 #else
-	(void) c;
+	UNUSED(c);
 #endif
-	return(1);
+	return 1;
 }
 
 /* Returns a comma-separated list of supported ciphers. */
 char *
 cipher_alg_list(char sep, int auth_only)
 {
-	char *tmp, *ret = NULL;
-	size_t nlen, rlen = 0;
+	char *ret = NULL;
 	const struct sshcipher *c;
+	char sep_str[2] = {sep, '\0'};
 
 	for (c = ciphers; c->name != NULL; c++) {
 		if ((c->flags & CFLAG_INTERNAL) != 0)
@@ -166,16 +166,7 @@ cipher_alg_list(char sep, int auth_only)
 			continue;
 		if (!cipher_allowed(c))
 			continue;
-		if (ret != NULL)
-			ret[rlen++] = sep;
-		nlen = strlen(c->name);
-		if ((tmp = realloc(ret, rlen + nlen + 2)) == NULL) {
-			free(ret);
-			return NULL;
-		}
-		ret = tmp;
-		memcpy(ret + rlen, c->name, nlen + 1);
-		rlen += nlen;
+		xextendf(&ret, sep_str, "%s", c->name);
 	}
 	return ret;
 }

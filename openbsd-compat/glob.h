@@ -37,6 +37,8 @@
 
 /* OPENBSD ORIGINAL: include/glob.h */
 
+#include "includes.h"
+
 #if !defined(HAVE_GLOB_H) || !defined(GLOB_HAS_ALTDIRFUNC) || \
     !defined(GLOB_HAS_GL_MATCHC) || !defined(GLOB_HAS_GL_STATV) || \
     !defined(HAVE_DECL_GLOB_NOMATCH) || HAVE_DECL_GLOB_NOMATCH == 0 || \
@@ -45,7 +47,6 @@
 #ifndef _COMPAT_GLOB_H_
 #define	_COMPAT_GLOB_H_
 
-#include <sys/stat.h>
 #include <sys/types.h>
 
 # define glob_t _ssh_compat_glob_t

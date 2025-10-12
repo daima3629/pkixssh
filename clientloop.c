@@ -1,4 +1,4 @@
-/* $OpenBSD: clientloop.c,v 1.411 2025/06/16 08:53:04 dtucker Exp $ */
+/* $OpenBSD: clientloop.c,v 1.415 2025/09/25 06:23:19 jsg Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -13,7 +13,7 @@
  *
  *
  * Copyright (c) 1999 Theo de Raadt.  All rights reserved.
- * Copyright (c) 2017-2023 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2017-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -64,26 +64,9 @@
 
 #include <sys/types.h>
 #include <sys/ioctl.h>
-#ifdef HAVE_SYS_STAT_H
-# include <sys/stat.h>
-#endif
-#ifdef HAVE_SYS_TIME_H
-# include <sys/time.h>
-#endif
-#include <sys/socket.h>
 
 #include <ctype.h>
 #include <errno.h>
-#ifdef HAVE_PATHS_H
-#include <paths.h>
-#endif
-#ifdef HAVE_POLL_H
-# include <poll.h>
-#else
-# ifdef HAVE_SYS_POLL_H
-#  include <sys/poll.h>
-# endif
-#endif
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -138,6 +121,12 @@ buffer:	0.165	0.080	0.100	0.074	0.124	0.160
 # define USE_DIRECT_READ
 #endif
 
+#ifdef USE_PLEDGE_INET
+# define PLEDGE_EXTRA_INET	""
+#else
+# define PLEDGE_EXTRA_INET	"inet "
+#endif
+
 /* import options */
 extern Options options;
 
@@ -164,6 +153,7 @@ extern char *forward_agent_sock_path;
  * because this is updated in a signal handler.
  */
 static volatile sig_atomic_t received_window_change_signal = 0;
+static volatile sig_atomic_t request_channel_report_open = 0;
 static volatile sig_atomic_t received_signal = 0;
 
 /* Time when backgrounded control master using ControlPersist should exit */
@@ -243,6 +233,23 @@ window_change_handler(int sig)
 	UNUSED(sig);
 	received_window_change_signal = 1;
 }
+
+static void
+sigusr1_handler(int sig)
+{
+	UNUSED(sig);
+	request_channel_report_open = 1;
+}
+
+#ifdef SIGINFO
+/* Signal handler for SIGINFO */
+static void
+siginfo_handler(int sig)
+{
+	UNUSED(sig);
+	request_channel_report_open = 1;
+}
+#endif
 
 /*
  * Signal handler for signals that cause the program to terminate.  These
@@ -850,11 +857,11 @@ client_repledge(void)
 	} else if (options.forward_agent != 0) {
 		/* agent forwarding needs to open $SSH_AUTH_SOCK at will */
 		debug("pledge: agent");
-		if (pledge("stdio unix proc tty", NULL) == -1)
+		if (pledge(PLEDGE_EXTRA_INET "stdio unix proc tty", NULL) == -1)
 			fatal_f("pledge(): %s", strerror(errno));
 	} else {
 		debug("pledge: fork");
-		if (pledge("stdio proc tty", NULL) == -1)
+		if (pledge(PLEDGE_EXTRA_INET "stdio proc tty", NULL) == -1)
 			fatal_f("pledge(): %s", strerror(errno));
 	}
 	/* XXX further things to do:
@@ -1402,6 +1409,10 @@ client_loop(struct ssh *ssh, int have_pty, int escape_char_arg,
 	if (ssh_signal(SIGTERM, SIG_IGN) != SIG_IGN)
 		ssh_signal(SIGTERM, signal_handler);
 	ssh_signal(SIGWINCH, window_change_handler);
+	ssh_signal(SIGUSR1, sigusr1_handler);
+#ifdef SIGINFO
+	ssh_signal(SIGINFO, siginfo_handler);
+#endif
 
 	if (have_pty)
 		enter_raw_mode(options.request_tty == REQUEST_TTY_FORCE);
@@ -1426,6 +1437,10 @@ client_loop(struct ssh *ssh, int have_pty, int escape_char_arg,
 	    sigaddset(&bsigset, SIGQUIT) == -1 ||
 	    sigaddset(&bsigset, SIGTERM) == -1)
 		error_f("bsigset setup: %s", strerror(errno));
+#ifdef SIGINFO
+	if (sigaddset(&bsigset, SIGINFO) == -1)
+		error_f("bsigset setup: %s", strerror(errno));
+#endif
 
 	/* Main loop of the client for the interactive session mode. */
 	while (!quit_pending) {
@@ -1467,6 +1482,10 @@ client_loop(struct ssh *ssh, int have_pty, int escape_char_arg,
 			error_f("bsigset sigprocmask: %s", strerror(errno));
 		if (quit_pending)
 			break;
+		if (request_channel_report_open) {
+			request_channel_report_open = 0;
+			channel_report_open(ssh);
+		}
 		client_wait_until_can_do_something(ssh, &pfd, &npfd_alloc,
 		    &npfd_active, &osigset,
 		    &conn_in_ready, &conn_out_ready);
@@ -1738,7 +1757,7 @@ client_request_tun_fwd(struct ssh *ssh, int tun_mode,
 	char *ifname = NULL;
 
 	if (tun_mode == SSH_TUNMODE_NO)
-		return 0;
+		return NULL;
 
 	debug("Requesting tun unit %d in mode %d", local_tun, tun_mode);
 
@@ -2372,7 +2391,7 @@ client_global_hostkeys_prove_confirm(struct ssh *ssh, int type,
 	/* Make the edits to known_hosts */
 	update_known_hosts(ctx);
  out:
- 	sshbuf_free(signdata);
+	sshbuf_free(signdata);
 	free(rsa_keyalg);
 	hostkeys_update_ctx_free(ctx);
 	hostkeys_update_complete = 1;

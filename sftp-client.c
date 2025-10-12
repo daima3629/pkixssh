@@ -1,7 +1,7 @@
-/* $OpenBSD: sftp-client.c,v 1.177 2025/03/11 07:48:51 dtucker Exp $ */
+/* $OpenBSD: sftp-client.c,v 1.180 2025/09/30 00:10:42 djm Exp $ */
 /*
  * Copyright (c) 2001-2004 Damien Miller <djm@openbsd.org>
- * Copyright (c) 2018-2022 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2018-2025 Roumen Petrov.  All rights reserved.
  * Copyright (c) 2021 Mike Frysinger.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
@@ -29,23 +29,10 @@
 #include <sys/statvfs.h>
 #endif
 #include "openbsd-compat/sys-queue.h"
-#ifdef HAVE_SYS_STAT_H
-# include <sys/stat.h>
-#endif
-#ifdef HAVE_SYS_TIME_H
-# include <sys/time.h>
-#endif
 #include <sys/uio.h>
 
 #include <dirent.h>
 #include <errno.h>
-#ifdef HAVE_POLL_H
-# include <poll.h>
-#else
-# ifdef HAVE_SYS_POLL_H
-#  include <sys/poll.h>
-# endif
-#endif
 #include <fcntl.h>
 #include <signal.h>
 #include <stdarg.h>
@@ -2107,9 +2094,13 @@ sftp_upload(struct sftp_conn *conn, const char *local_path,
 				fatal("Expected SSH2_FXP_STATUS(%d) packet, "
 				    "got %d", SSH2_FXP_STATUS, type);
 
-			if ((r = sshbuf_get_u32(msg, &status)) != 0)
+		{	u_int32_t status2;
+			if ((r = sshbuf_get_u32(msg, &status2)) != 0)
 				fatal_fr(r, "parse status");
-			debug3("SSH2_FXP_STATUS %u", status);
+			debug3("SSH2_FXP_STATUS %u", status2);
+			if (status2 != SSH2_FX_OK)
+				status = status2; /* remember errors */
+		}
 
 			/* Find the request in our queue */
 			if ((ack = request_find(&acks, rid)) == NULL)

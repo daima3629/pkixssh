@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh.c,v 1.609 2025/03/03 06:53:09 dtucker Exp $ */
+/* $OpenBSD: ssh.c,v 1.619 2025/09/25 07:05:11 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -45,21 +45,14 @@
 #include "includes.h"
 
 #include <sys/types.h>
-#ifdef HAVE_SYS_STAT_H
-# include <sys/stat.h>
-#endif
 #include <sys/resource.h>
 #include <sys/ioctl.h>
-#include <sys/socket.h>
 #include <sys/wait.h>
 
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <netdb.h>
-#ifdef HAVE_PATHS_H
-#include <paths.h>
-#endif
 #include <pwd.h>
 #include <signal.h>
 #include <stdarg.h>
@@ -121,7 +114,7 @@ extern void ERR_load_SSHLDAP_strings(void);
 #include "utf8.h"
 
 #ifdef ENABLE_PKCS11
-#include "ssh-pkcs11.h"
+# include "ssh-pkcs11.h"
 #endif
 
 extern char *__progname;
@@ -190,6 +183,18 @@ static int forward_confirms_pending = -1;
 extern int muxserver_sock;
 extern u_int muxclient_command;
 
+static inline void
+print_program_version(void) {
+	fprintf(stderr, "%s, %s\n", SSH_RELEASE, ssh_OpenSSL_version_text());
+}
+
+static inline void
+log_program_version(void) {
+	if (get_log_level() < SYSLOG_LEVEL_DEBUG1) return;
+	logit("%s version %s, %s", __progname, SSH_RELEASE,
+	    ssh_OpenSSL_version_text());
+}
+
 /* Prints a help message to the user.  This function never returns. */
 
 static void
@@ -215,6 +220,7 @@ USAGE_OPENSSL_ENGINE
 "           destination [command [argument ...]]\n"
 "       ssh [-Q query_option]\n"
 	);
+#undef USAGE_OPENSSL_ENGINE
 	exit(255);
 }
 
@@ -554,18 +560,27 @@ check_load(int r, struct sshkey **k, const char *path, const char *message)
 {
 	switch (r) {
 	case 0:
+		if (k == NULL || *k == NULL)
+			return;
 	#if 0
 		/* NOTE: key size is validated on read, sign and verify */
-		/* Check keys size and discard if undersized */
-		if (k != NULL && *k != NULL &&
-		    (r = sshkey_check_length(*k)) != 0) {
+		if ((r = sshkey_check_length(*k)) != 0) {
 			error_r(r, "load %s \"%s\"", message, path);
 			free(*k);
 			*k = NULL;
+			break;
 		}
-	#else
-		UNUSED(k);
 	#endif
+	{	char *fp = sshkey_fingerprint(*k, options.fingerprint_hash,
+		    SSH_FP_DEFAULT);
+		if (fp == NULL) {
+			fatal_f("failed to fingerprint %s %s from \"%s\"",
+			    sshkey_ssh_name(*k), message, path);
+		}
+		debug("loaded %s(%s) from \"%s\" %s", message,
+		    sshkey_ssh_name(*k), path, fp);
+		free(fp);
+	}
 		break;
 	case SSH_ERR_INTERNAL_ERROR:
 	case SSH_ERR_ALLOC_FAIL:
@@ -579,6 +594,8 @@ check_load(int r, struct sshkey **k, const char *path, const char *message)
 		error_r(r, "load %s \"%s\"", message, path);
 		break;
 	}
+	if (k != NULL && *k == NULL)
+		debug("no %s loaded from \"%s\"", message, path);
 }
 
 /*
@@ -696,7 +713,7 @@ int
 main(int ac, char **av)
 {
 	struct ssh *ssh = NULL;
-	int i, r, opt, exit_status, use_syslog, direct, timeout_ms;
+	int i, r, opt, exit_status = 0, use_syslog, direct, timeout_ms;
 	int was_addr, config_test = 0, opt_terminated = 0, want_final_pass = 0;
 	char *p, *cp, *line, *argv0, *logfile;
 #ifdef USE_OPENSSL_ENGINE
@@ -712,6 +729,7 @@ main(int ac, char **av)
 	struct ssh_conn_info *cinfo = NULL;
 
 	ssh_malloc_init();	/* must be called before any mallocs */
+
 	/* Ensure that fds 0, 1 and 2 are open or directed to /dev/null */
 	sanitise_stdfd();
 
@@ -921,7 +939,7 @@ main(int ac, char **av)
 				fatal("Unsupported query \"%s\"", optarg);
 			printf("%s\n", cp);
 			free(cp);
-			exit(0);
+			goto done;
 			break;
 		case 'a':
 			options.forward_agent = 0;
@@ -993,8 +1011,7 @@ main(int ac, char **av)
 				options.log_level++;
 			break;
 		case 'V':
-			fprintf(stderr, "%s, %s\n",
-			    SSH_RELEASE, ssh_OpenSSL_version_text());
+			print_program_version();
 			exit(0);
 			break;
 		case 'w':
@@ -1279,8 +1296,7 @@ main(int ac, char **av)
 	    SYSLOG_FACILITY_USER : options.log_facility,
 	    !use_syslog);
 
-	if (get_log_level() >= SYSLOG_LEVEL_DEBUG1)
-		logit("%s version %s, %s", __progname, SSH_RELEASE, ssh_OpenSSL_version_text());
+	log_program_version();
 	debug3_uname();
 
 #ifdef USE_OPENSSL_ENGINE
@@ -1790,10 +1806,9 @@ main(int ac, char **av)
 	if ((o) >= sensitive_data.nkeys) \
 		fatal_f("pubkey out of array bounds"); \
 	check_load(sshkey_load_public(p, &(sensitive_data.keys[o]), NULL), \
-	    &(sensitive_data.keys[o]), p, "pubkey"); \
+	    &(sensitive_data.keys[o]), p, "hostbased pubkey"); \
 	if (sensitive_data.keys[o] != NULL) { \
-		debug3("hostbased key %d: %s key from \"%s\"", o, \
-		    sshkey_ssh_name(sensitive_data.keys[o]), p); \
+		debug3("hostbased pubkey %d from \"%s\"", o, p); \
 		loaded++; \
 	} \
 } while (0)
@@ -1801,10 +1816,9 @@ main(int ac, char **av)
 	if ((o) >= sensitive_data.nkeys) \
 		fatal_f("cert out of array bounds"); \
 	check_load(sshkey_load_cert(p, &(sensitive_data.keys[o])), \
-	    &(sensitive_data.keys[o]), p, "cert"); \
+	    &(sensitive_data.keys[o]), p, "hostbased cert"); \
 	if (sensitive_data.keys[o] != NULL) { \
-		debug3("hostbased key %d: %s cert from \"%s\"", o, \
-		    sshkey_ssh_name(sensitive_data.keys[o]), p); \
+		debug3("hostbased cert %d from \"%s\"", o, p); \
 		loaded++; \
 	} \
 } while (0)
@@ -1825,10 +1839,6 @@ main(int ac, char **av)
 			L_PUBKEY(_PATH_HOST_RSA_KEY_FILE, 6);
 #ifdef WITH_DSA
 			L_PUBKEY(_PATH_HOST_DSA_KEY_FILE, 7);
-#endif
-#ifdef WITH_XMSS
-			L_CERT(_PATH_HOST_XMSS_KEY_FILE, 8);
-			L_PUBKEY(_PATH_HOST_XMSS_KEY_FILE, 9);
 #endif
 			if (loaded == 0)
 				verbose("HostbasedAuthentication enabled but no "
@@ -1925,7 +1935,12 @@ main(int ac, char **av)
 
  skip_connect:
 	exit_status = ssh_session2(ssh, cinfo);
+
+ done:
 	ssh_conn_info_free(cinfo);
+
+	channel_fini_channels(ssh);
+
 	(void)ssh_packet_close(ssh);
 	free(ssh);
 
@@ -1965,7 +1980,6 @@ main(int ac, char **av)
 }
 	/* cleanup host name */
 	free(host);
-	free(options.hostname);
 
 	return exit_status;
 }
@@ -2559,9 +2573,7 @@ load_public_identity_files(const struct ssh_conn_info *cinfo)
 		filename = default_client_percent_dollar_expand(cp, cinfo);
 		free(cp);
 		check_load(sshkey_load_public(filename, &public, NULL),
-		    &public, filename, "pubkey");
-		debug("identity file %s type %d", filename,
-		    public ? public->type : -1);
+		    &public, filename, "identity pubkey");
 		free(options.identity_files[i]);
 		identity_files[n_ids] = filename;
 		identity_keys[n_ids] = public;
@@ -2576,11 +2588,10 @@ load_public_identity_files(const struct ssh_conn_info *cinfo)
 		 */
 		if (options.num_certificate_files != 0)
 			continue;
+
 		xasprintf(&cp, "%s-cert", filename);
 		check_load(sshkey_load_public(cp, &public, NULL),
-		    &public, filename, "pubkey");
-		debug("identity file %s type %d", cp,
-		    public ? public->type : -1);
+		    &public, filename, "identity cert");
 		if (public == NULL) {
 			free(cp);
 			continue;
@@ -2592,6 +2603,8 @@ load_public_identity_files(const struct ssh_conn_info *cinfo)
 			free(cp);
 			continue;
 		}
+		free(cp);
+
 		/* NB. leave filename pointing to private key */
 		identity_files[n_ids] = xstrdup(filename);
 		identity_keys[n_ids] = public;
@@ -2609,9 +2622,7 @@ load_public_identity_files(const struct ssh_conn_info *cinfo)
 		free(cp);
 
 		check_load(sshkey_load_public(filename, &public, NULL),
-		    &public, filename, "certificate");
-		debug("certificate file %s type %d", filename,
-		    public ? public->type : -1);
+		    &public, filename, "custom cert");
 		free(options.certificate_files[i]);
 		options.certificate_files[i] = NULL;
 		if (public == NULL) {

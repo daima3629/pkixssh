@@ -1,7 +1,7 @@
-/* $OpenBSD: authfile.c,v 1.145 2024/09/22 12:56:21 jsg Exp $ */
+/* $OpenBSD: authfile.c,v 1.147 2025/08/29 03:50:38 djm Exp $ */
 /*
  * Copyright (c) 2000, 2013 Markus Friedl.  All rights reserved.
- * Copyright (c) 2002-2021 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -27,7 +27,6 @@
 #include "includes.h"
 
 #include <sys/types.h>
-#include <sys/stat.h>
 #include <sys/uio.h>
 
 #include <errno.h>
@@ -141,10 +140,6 @@ sshkey_load_private_file(const char *filename,
 	if (r != 0) goto out;
 
 	r = sshkey_load_private_fd(fd, passphrase, keyp, commentp);
-	if (r != 0) goto out;
-
-	if (keyp && *keyp)
-		r = sshkey_set_filename(*keyp, filename);
 
 out:
 	close(fd);
@@ -210,8 +205,7 @@ sshkey_load_pubkey_from_private(const char *filename, struct sshkey **pubkeyp)
 
 	if ((r = sshbuf_load_fd(fd, &buffer)) != 0 ||
 	    (r = sshkey_parse_pubkey_from_private_fileblob(buffer,
-		&pubkey)) != 0 ||
-	    (r = sshkey_set_filename(pubkey, filename)) != 0)
+		&pubkey)) != 0)
 		goto out;
 
 	/* success */

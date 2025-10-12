@@ -1,9 +1,9 @@
-/* $OpenBSD: sshkey.c,v 1.148 2024/12/03 15:53:51 tb Exp $ */
+/* $OpenBSD: sshkey.c,v 1.154 2025/09/05 10:23:55 dtucker Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2008 Alexander von Gernler.  All rights reserved.
  * Copyright (c) 2010,2011 Damien Miller.  All rights reserved.
- * Copyright (c) 2002-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,7 +29,6 @@
 #include "includes.h"
 
 #include <sys/types.h>
-#include <sys/mman.h>
 #include <netinet/in.h>
 
 #include <errno.h>
@@ -40,8 +39,8 @@
 #include <resolv.h>
 #include <time.h>
 #ifdef HAVE_UTIL_H
-#include <util.h>
-#endif /* HAVE_UTIL_H */
+# include <util.h>
+#endif
 
 #include "ssh2.h"
 #include "ssherr.h"
@@ -78,74 +77,47 @@
 #define SSHKEY_SHIELD_PREKEY_HASH	SSH_DIGEST_SHA512
 #endif /*def USE_SSHKEY_SHIELDING*/
 
-int	sshkey_private_serialize_opt(struct sshkey *key,
-    struct sshbuf *buf, enum sshkey_serialize_rep);
 static int sshkey_from_blob_internal(struct sshbuf *buf,
     struct sshkey **keyp, int allow_cert);
 
 /* Supported key types */
 extern const struct sshkey_impl sshkey_ed25519_impl;
 extern const struct sshkey_impl sshkey_ed25519_cert_impl;
-#ifdef WITH_OPENSSL
-# ifdef OPENSSL_HAS_ECC
+
 extern const struct sshkey_impl sshkey_ecdsa_nistp256_impl;
 extern const struct sshkey_impl sshkey_ecdsa_nistp256_cert_impl;
 extern const struct sshkey_impl sshkey_ecdsa_nistp384_impl;
 extern const struct sshkey_impl sshkey_ecdsa_nistp384_cert_impl;
-#  ifdef OPENSSL_HAS_NISTP521
 extern const struct sshkey_impl sshkey_ecdsa_nistp521_impl;
 extern const struct sshkey_impl sshkey_ecdsa_nistp521_cert_impl;
-#  endif /* OPENSSL_HAS_NISTP521 */
-# endif /* OPENSSL_HAS_ECC */
+
 extern const struct sshkey_impl sshkey_rsa_impl;
 extern const struct sshkey_impl sshkey_rsa_cert_impl;
-#ifdef HAVE_EVP_SHA256
 extern const struct sshkey_impl sshkey_rsa_sha256_impl;
 extern const struct sshkey_impl sshkey_rsa_sha256_cert_impl;
 extern const struct sshkey_impl sshkey_rsa_sha512_impl;
 extern const struct sshkey_impl sshkey_rsa_sha512_cert_impl;
-#endif /*def HAVE_EVP_SHA256*/
-# ifdef WITH_DSA
+
 extern const struct sshkey_impl sshkey_dss_impl;
 extern const struct sshkey_impl sshkey_dsa_cert_impl;
-# endif
-#endif /* WITH_OPENSSL */
-#ifdef WITH_XMSS
-extern const struct sshkey_impl sshkey_xmss_impl;
-extern const struct sshkey_impl sshkey_xmss_cert_impl;
-#endif /* WITH_XMSS */
 
 static const struct sshkey_impl * const keyimpls[] = {
 	&sshkey_ed25519_impl,
 	&sshkey_ed25519_cert_impl,
-#ifdef WITH_OPENSSL
-# ifdef OPENSSL_HAS_ECC
 	&sshkey_ecdsa_nistp256_impl,
 	&sshkey_ecdsa_nistp256_cert_impl,
 	&sshkey_ecdsa_nistp384_impl,
 	&sshkey_ecdsa_nistp384_cert_impl,
-#  ifdef OPENSSL_HAS_NISTP521
 	&sshkey_ecdsa_nistp521_impl,
 	&sshkey_ecdsa_nistp521_cert_impl,
-#  endif /* OPENSSL_HAS_NISTP521 */
-# endif /* OPENSSL_HAS_ECC */
 	&sshkey_rsa_impl,
 	&sshkey_rsa_cert_impl,
-#ifdef HAVE_EVP_SHA256
 	&sshkey_rsa_sha256_impl,
 	&sshkey_rsa_sha256_cert_impl,
 	&sshkey_rsa_sha512_impl,
 	&sshkey_rsa_sha512_cert_impl,
-#endif /*def HAVE_EVP_SHA256*/
-#ifdef WITH_DSA
 	&sshkey_dss_impl,
 	&sshkey_dsa_cert_impl,
-#endif
-#endif /* WITH_OPENSSL */
-#ifdef WITH_XMSS
-	&sshkey_xmss_impl,
-	&sshkey_xmss_cert_impl,
-#endif /* WITH_XMSS */
 	NULL
 };
 
@@ -156,7 +128,8 @@ sshkey_impl_from_type(int type)
 	const struct sshkey_impl *const* p;
 
 	for (p = keyimpls; *p != NULL; p++) {
-		if ((*p)->type == type)
+		if (!(*p)->enabled()) continue;
+		if ((*p)->id.type == type)
 			return *p;
 	}
 	return NULL;
@@ -168,8 +141,9 @@ sshkey_impl_from_type_nid(int type, int nid)
 	const struct sshkey_impl *const* p;
 
 	for (p = keyimpls; *p != NULL; p++) {
-		if ((*p)->type == type &&
-		    ((*p)->nid == 0 || (*p)->nid == nid))
+		if (!(*p)->enabled()) continue;
+		if ((*p)->id.type == type &&
+		    ((*p)->id.subtype == 0 || (*p)->id.subtype == nid))
 			return *p;
 	}
 	return NULL;
@@ -254,11 +228,12 @@ type_from_name(const char *name, int allow_short)
 	const struct sshkey_impl *const* p;
 
 	for (p = keyimpls; *p != NULL; p++) {
+		if (!(*p)->enabled()) continue;
 		/* only plain key type could match shortname */
 		if ((strcmp((*p)->name, name) == 0) ||
 		    (allow_short && !(*p)->cert &&
 		    strcasecmp((*p)->shortname, name) == 0))
-			return (*p)->type;
+			return (*p)->id.type;
 	}
 }
 	return KEY_UNSPEC;
@@ -314,10 +289,11 @@ sshkey_ecdsa_nid_from_name(const char *name)
 	const struct sshkey_impl *const* p;
 
 	for (p = keyimpls; *p != NULL; p++) {
-		if (!key_type_is_ecdsa_variant((*p)->type))
+		if (!(*p)->enabled()) continue;
+		if (!key_type_is_ecdsa_variant((*p)->id.type))
 			continue;
 		if (strcmp((*p)->name, name) == 0)
-			return (*p)->nid;
+			return (*p)->id.subtype;
 	}
 }
 	return -1;
@@ -327,7 +303,7 @@ char *
 sshkey_alg_list(int certs_only, int plain_only, int include_sigonly, char sep)
 {
 	char *ret = NULL;
-	size_t rlen = 0;
+	char sep_s[2] = { sep, '\0' };
 
 	if (!certs_only || plain_only) {
 		struct sshbuf *b;
@@ -335,35 +311,22 @@ sshkey_alg_list(int certs_only, int plain_only, int include_sigonly, char sep)
 		fill_default_xkalg();
 		if ((b = sshbuf_new()) == NULL)
 			fatal_f("sshbuf_new failed");
-	{	char sep_s[2] = { sep, '\0' };
+
 		ssh_xkalg_listall(b, sep_s);
-	}
+
 		ret = xstrdup(sshbuf_ptr(b));
-		rlen = sshbuf_len(b);
 		sshbuf_free(b);
 	}
 {
 	const struct sshkey_impl *const* p;
 
 	for (p = keyimpls; *p != NULL; p++) {
-		size_t nlen;
-
+		if (!(*p)->enabled()) continue;
 		if (!include_sigonly && (*p)->sigonly)
 			continue;
 		if ((certs_only && !(*p)->cert) || (plain_only && (*p)->cert))
 			continue;
-		if (ret != NULL)
-			ret[rlen++] = sep;
-		nlen = strlen((*p)->name);
-	{	char *tmp = realloc(ret, rlen + nlen + 2);
-		if (tmp == NULL) {
-			free(ret);
-			return NULL;
-		}
-		ret = tmp;
-	}
-		memcpy(ret + rlen, (*p)->name, nlen + 1);
-		rlen += nlen;
+		xextendf(&ret, sep_s, "%s", (*p)->name);
 	}
 }
 	return ret;
@@ -435,6 +398,7 @@ sshkey_names_valid2(const char *names, int allow_wildcard, int plain_only)
 				const struct sshkey_impl *const* q;
 
 				for (q = keyimpls; *q != NULL; q++) {
+					if (!(*q)->enabled()) continue;
 					if (match_pattern_list(
 					    (*q)->name, p, 0) == 1) {
 						break;
@@ -472,8 +436,9 @@ sshkey_type_is_valid_ca(int type)
 {
 	const struct sshkey_impl *impl;
 
-	if ((impl = sshkey_impl_from_type(type)) == NULL)
-		return 0;
+	impl = sshkey_impl_from_type(type);
+	if (impl == NULL) return 0;
+
 	/* All non-certificate types may act as CAs */
 	return !impl->cert;
 }
@@ -481,8 +446,8 @@ sshkey_type_is_valid_ca(int type)
 int
 sshkey_is_cert(const struct sshkey *k)
 {
-	if (k == NULL)
-		return 0;
+	if (k == NULL) return 0;
+
 	return sshkey_type_is_cert(k->type);
 }
 
@@ -502,10 +467,6 @@ sshkey_type_plain(int type)
 		return KEY_ECDSA;
 	case KEY_ED25519_CERT:
 		return KEY_ED25519;
-#ifdef WITH_XMSS
-	case KEY_XMSS_CERT:
-		return KEY_XMSS;
-#endif /* WITH_XMSS */
 	default:
 		return type;
 	}
@@ -530,10 +491,6 @@ sshkey_type_certified(int type)
 #endif /* WITH_OPENSSL */
 	case KEY_ED25519:
 		return KEY_ED25519_CERT;
-#ifdef WITH_XMSS
-	case KEY_XMSS:
-		return KEY_XMSS_CERT;
-#endif /* WITH_XMSS */
 	default:
 		return -1;
 	}
@@ -693,8 +650,6 @@ sshkey_new(int type)
 	k->cert = NULL;
 	k->ed25519_sk = NULL;
 	k->ed25519_pk = NULL;
-	k->xmss_sk = NULL;
-	k->xmss_pk = NULL;
 #if 0	/* reserved */
 	if (impl != NULL && impl->funcs->alloc != NULL) {
 		if (impl->funcs->alloc(k) != 0) {
@@ -726,6 +681,7 @@ sshkey_new(int type)
 static int
 sshkey_prekey_alloc(u_char **prekeyp, size_t len)
 {
+#ifdef ENABLE_MMAP
 	u_char *prekey;
 
 	*prekeyp = NULL;
@@ -738,15 +694,23 @@ sshkey_prekey_alloc(u_char **prekeyp, size_t len)
 #  endif
 #endif
 	*prekeyp = prekey;
+#else
+	*prekeyp = calloc(1, len);
+#endif /* HAVE_MMAP et al */
 	return 0;
 }
 
 static void
 sshkey_prekey_free(void *prekey, size_t len)
 {
+#if defined(HAVE_MMAP) && defined(MAP_ANON) && defined(MAP_PRIVATE)
 	if (prekey == NULL)
 		return;
 	munmap(prekey, len);
+#else
+	UNUSED(len);
+	free(prekey);
+#endif /* HAVE_MMAP et al */
 }
 #endif /*def USE_SSHKEY_SHIELDING*/
 
@@ -796,8 +760,6 @@ cert_compare(struct sshkey_cert *a, struct sshkey_cert *b)
 int
 sshkey_equal_public(const struct sshkey *a, const struct sshkey *b)
 {
-	const struct sshkey_impl *impl;
-
 	if (a == NULL || b == NULL ||
 	    sshkey_type_plain(a->type) != sshkey_type_plain(b->type))
 		return 0;
@@ -810,10 +772,11 @@ sshkey_equal_public(const struct sshkey *a, const struct sshkey *b)
   case public key is extracted from X.509 certificate and stored
   into 'key'(rsa,dsa,..) member of key structure.
 */
+{	const struct sshkey_impl *impl = sshkey_impl_from_key(a);
+	if (impl == NULL) return 0;
 
-	if ((impl = sshkey_impl_from_type(a->type)) == NULL)
-		return 0;
 	return impl->funcs->equal(a, b);
+}
 }
 
 int
@@ -846,15 +809,16 @@ static int
 to_blob_buf(const struct sshkey *key, struct sshbuf *b, int force_plain,
   enum sshkey_serialize_rep opts)
 {
-	int type, ret;
+	int type;
 	const struct sshkey_impl *impl;
 
 	if (key == NULL)
 		return SSH_ERR_INVALID_ARGUMENT;
 
 	type = force_plain ? sshkey_type_plain(key->type) : key->type;
-	if ((impl = sshkey_impl_from_type(type)) == NULL)
-		return SSH_ERR_KEY_TYPE_UNKNOWN;
+
+	impl = sshkey_impl_from_type_nid(type, key->ecdsa_nid);
+	if (impl == NULL) return SSH_ERR_KEY_TYPE_UNKNOWN;
 
 	if (sshkey_type_is_cert(type)) {
 		if (key->cert == NULL)
@@ -862,15 +826,11 @@ to_blob_buf(const struct sshkey *key, struct sshbuf *b, int force_plain,
 		if (sshbuf_len(key->cert->certblob) == 0)
 			return SSH_ERR_KEY_LACKS_CERTBLOB;
 		/* Use the existing blob */
-		if ((ret = sshbuf_putb(b, key->cert->certblob)) != 0)
-			return ret;
-		return 0;
+		return sshbuf_putb(b, key->cert->certblob);
 	}
 
-{	const char *typename;
-	typename = sshkey_ssh_name_from_type_nid(type, key->ecdsa_nid);
-	if ((ret = sshbuf_put_cstring(b, typename)) != 0)
-		return ret;
+{	int r = sshbuf_put_cstring(b, impl->name);
+	if (r != 0) return r;
 }
 	return impl->funcs->serialize_public(key, b, opts);
 }
@@ -1296,27 +1256,6 @@ sshkey_read_pkalg(struct sshkey *ret, char **cpp, char **pkalg)
 	/* caller is responsible to free memory allocated for pkalg */
 	if (pkalg) *pkalg = NULL;
 
-	switch (ret->type) {
-	case KEY_UNSPEC:
-	case KEY_RSA:
-	case KEY_ECDSA:
-	case KEY_ED25519:
-	case KEY_ECDSA_CERT:
-	case KEY_RSA_CERT:
-	case KEY_ED25519_CERT:
-#ifdef WITH_DSA
-	case KEY_DSA:
-	case KEY_DSA_CERT:
-#endif
-#ifdef WITH_XMSS
-	case KEY_XMSS:
-	case KEY_XMSS_CERT:
-#endif /* WITH_XMSS */
-		break; /* ok */
-	default:
-		return SSH_ERR_INVALID_ARGUMENT;
-	}
-
 	/* Decode type */
 	cp = *cpp;
 	space = strcspn(cp, " \t");
@@ -1516,8 +1455,10 @@ sshkey_generate(int type, u_int bits, struct sshkey **keyp)
 	if (keyp == NULL || type != sshkey_type_plain(type))
 		return SSH_ERR_INVALID_ARGUMENT;
 	*keyp = NULL;
-	if ((impl = sshkey_impl_from_type(type)) == NULL)
-		return SSH_ERR_KEY_TYPE_UNKNOWN;
+
+	impl = sshkey_impl_from_type(type);
+	if (impl == NULL) return SSH_ERR_KEY_TYPE_UNKNOWN;
+
 	if (impl->funcs->generate == NULL)
 		return SSH_ERR_FEATURE_UNSUPPORTED;
 	if ((k = sshkey_new(type)) == NULL)
@@ -1611,8 +1552,10 @@ sshkey_from_private(const struct sshkey *k, struct sshkey **pkp)
 	const struct sshkey_impl *impl;
 
 	*pkp = NULL;
-	if ((impl = sshkey_impl_from_key(k)) == NULL)
-		return SSH_ERR_KEY_TYPE_UNKNOWN;
+
+	impl = sshkey_impl_from_key(k);
+	if (impl == NULL) return SSH_ERR_KEY_TYPE_UNKNOWN;
+
 	if ((n = sshkey_new(k->type)) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
 	if ((r = impl->funcs->copy_public(k, n)) != 0)
@@ -1711,8 +1654,7 @@ sshkey_shield_private(struct sshkey *k)
 	}
 	if (sshkey_is_shielded(k) && (r = sshkey_unshield_private(k)) != 0)
 		goto out;
-	if ((r = sshkey_private_serialize_opt(k, prvbuf,
-	    SSHKEY_SERIALIZE_SHIELD)) != 0)
+	if ((r = sshkey_private_serialize(k, prvbuf)) != 0)
 		goto out;
 	/* pad to cipher blocksize */
 	i = 0;
@@ -2166,6 +2108,7 @@ sshkey_sigalg_by_name(const char *name)
 	const struct sshkey_impl *const* p;
 
 	for (p = keyimpls; *p != NULL; p++) {
+		if (!(*p)->enabled()) continue;
 		if (strcmp((*p)->name, name) != 0)
 			continue;
 		if ((*p)->sigalg != NULL)
@@ -2173,7 +2116,7 @@ sshkey_sigalg_by_name(const char *name)
 		if (!(*p)->cert)
 			return (*p)->name;
 		return sshkey_ssh_name_from_type_nid(
-		    sshkey_type_plain((*p)->type), (*p)->nid);
+		    sshkey_type_plain((*p)->id.type), (*p)->id.subtype);
 	}
 	return NULL;
 }
@@ -2251,8 +2194,10 @@ sshkey_sign(const ssh_sign_ctx *ctx,
 		*lenp = 0;
 	if (dlen > SSH_KEY_MAX_SIGN_DATA_SIZE)
 		return SSH_ERR_INVALID_ARGUMENT;
-	if ((impl = sshkey_impl_from_key(key)) == NULL)
-		return SSH_ERR_KEY_TYPE_UNKNOWN;
+
+	impl = sshkey_impl_from_key(key);
+	if (impl == NULL) return SSH_ERR_KEY_TYPE_UNKNOWN;
+
 	was_shielded = sshkey_is_shielded(key);
 	if ((r = sshkey_unshield_private(key)) != 0)
 		return r;
@@ -2278,8 +2223,10 @@ sshkey_verify(const ssh_verify_ctx *ctx,
 
 	if (siglen == 0 || dlen > SSH_KEY_MAX_SIGN_DATA_SIZE)
 		return SSH_ERR_INVALID_ARGUMENT;
-	if ((impl = sshkey_impl_from_key(key)) == NULL)
-		return SSH_ERR_KEY_TYPE_UNKNOWN;
+
+	impl = sshkey_impl_from_key(key);
+	if (impl == NULL) return SSH_ERR_KEY_TYPE_UNKNOWN;
+
 	return impl->funcs->verify(ctx, sig, siglen, data, dlen);
 }
 
@@ -2330,8 +2277,9 @@ sshkey_certify_custom(struct sshkey *k, struct sshkey *ca, const char *alg,
 		return SSH_ERR_KEY_TYPE_UNKNOWN;
 	if (!sshkey_type_is_valid_ca(ca->type))
 		return SSH_ERR_KEY_CERT_INVALID_SIGN_KEY;
-	if ((impl = sshkey_impl_from_key(k)) == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
+
+	impl = sshkey_impl_from_key(k);
+	if (impl == NULL) return SSH_ERR_INVALID_ARGUMENT;
 
 	/*
 	 * If no alg specified as argument but a signature_type was set,
@@ -2570,7 +2518,7 @@ sshkey_format_cert_validity(const struct sshkey_cert *cert, char *s, size_t l)
 	return strlcpy(s, ret, l);
 }
 
-int
+static int
 sshkey_private_serialize_opt(struct sshkey *key, struct sshbuf *buf,
     enum sshkey_serialize_rep opts)
 {
@@ -2581,19 +2529,13 @@ sshkey_private_serialize_opt(struct sshkey *key, struct sshbuf *buf,
 	struct sshbuf *b;
 
 	impl = sshkey_impl_from_key(key);
-	if (impl == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
+	if (impl == NULL) return SSH_ERR_INVALID_ARGUMENT;
+
 	if (sshkey_type_is_cert(key->type)) {
 		if (key->cert == NULL ||
 		    sshbuf_len(key->cert->certblob) == 0)
 			return SSH_ERR_INVALID_ARGUMENT;
 	}
-#ifdef WITH_XMSS
-	if (sshkey_type_plain(key->type) == KEY_XMSS) {
-		if (key->xmss_name == NULL)
-			return SSH_ERR_INVALID_ARGUMENT;
-	}
-#endif /* WITH_XMSS */
 	if ((b = sshbuf_new()) == NULL)
 		return SSH_ERR_ALLOC_FAIL;
 
@@ -2774,8 +2716,7 @@ sshkey_private_to_blob2(struct sshkey *prv, struct sshbuf *blob,
 		goto out;
 
 	/* append private key and comment*/
-	if ((r = sshkey_private_serialize_opt(prv, encrypted,
-	    SSHKEY_SERIALIZE_FULL)) != 0 ||
+	if ((r = sshkey_private_serialize(prv, encrypted)) != 0 ||
 	    (r = sshbuf_put_cstring(encrypted, comment)) != 0)
 		goto out;
 
@@ -3242,22 +3183,4 @@ sshkey_parse_pubkey_from_private_fileblob(struct sshbuf *blob,
 
 	/* custom-format private keys bundle a public key inside */
 	return sshkey_parse_private2_pubkey(blob, pubkeyp);
-}
-
-int
-sshkey_set_filename(struct sshkey *k, const char *filename)
-{
-	if (k == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
-#ifdef WITH_XMSS
-	if (sshkey_type_plain(k->type) != KEY_XMSS)
-		return 0;
-	if (filename == NULL)
-		return SSH_ERR_INVALID_ARGUMENT;
-	if ((k->xmss_filename = strdup(filename)) == NULL)
-		return SSH_ERR_ALLOC_FAIL;
-#else
-	UNUSED(filename);
-#endif
-	return 0;
 }

@@ -15,11 +15,8 @@
 #define _MISC_H
 
 #include "includes.h"
-#ifdef HAVE_SYS_TIME_H
-# include <sys/time.h>
-#endif
+
 #include <sys/types.h>
-#include <sys/socket.h>
 #include <stdio.h>
 #include <signal.h>
 

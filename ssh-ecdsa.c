@@ -45,7 +45,7 @@
 #include <openssl/bn.h>
 /* for i2d_PUBKEY used in key serialisation work-around */
 #include <openssl/x509.h>
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 #include <openssl/core_names.h>
 #endif
 
@@ -71,7 +71,7 @@ EC_POINT_get_affine_coordinates(
 }
 #endif /*ndef HAVE_EC_POINT_GET_AFFINE_COORDINATES*/
 
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 static size_t
 ssh_EVP_PKEY_get1_encoded_public_key(EVP_PKEY *pkey, unsigned char **ppub) {
 	size_t len;
@@ -104,7 +104,7 @@ err:
 }
 	return len;
 }
-#endif /*def HAVE_EVP_KEYMGMT_GET0_PROVIDER*/
+#endif /*def ENABLE_KEY_PROVIDERS*/
 
 
 static int
@@ -394,7 +394,7 @@ err:
 }
 
 
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 static EC_GROUP*
 ssh_EVP_PKEY_prov_get_EC_GROUP(EVP_PKEY *pkey) {
 	char group_name[1024];
@@ -418,9 +418,9 @@ ssh_EVP_PKEY_prov_get_EC_GROUP(EVP_PKEY *pkey) {
 
 	return EC_GROUP_new_by_curve_name(order);
 }
-#endif /*def HAVE_EVP_KEYMGMT_GET0_PROVIDER*/
+#endif /*def ENABLE_KEY_PROVIDERS*/
 
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 static int
 ssh_EVP_PKEY_check_public_ecprov(EVP_PKEY *pkey, const EC_POINT *public) {
 	EC_GROUP *group;
@@ -434,7 +434,7 @@ ssh_EVP_PKEY_check_public_ecprov(EVP_PKEY *pkey, const EC_POINT *public) {
 	EC_GROUP_free(group);
 	return r;
 }
-#endif /*def HAVE_EVP_KEYMGMT_GET0_PROVIDER*/
+#endif /*def ENABLE_KEY_PROVIDERS*/
 
 static inline int
 ssh_EC_KEY_check_public(const EC_KEY *ec, const EC_POINT *public) {
@@ -447,7 +447,7 @@ ssh_EC_KEY_check_public(const EC_KEY *ec, const EC_POINT *public) {
 int
 ssh_EVP_PKEY_check_public_ec(EVP_PKEY *pk, const EC_POINT *public) {
 	if (pk == NULL) return SSH_ERR_INVALID_ARGUMENT;
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 	if (EVP_PKEY_get0_provider(pk) != NULL)
 		return ssh_EVP_PKEY_check_public_ecprov(pk, public);
 #endif
@@ -464,7 +464,7 @@ ssh_EVP_PKEY_check_public_ec(EVP_PKEY *pk, const EC_POINT *public) {
 }
 }
 
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 static int
 ssh_EVP_PKEY_validate_public_ecprov(EVP_PKEY *pk) {
 	EC_GROUP *group = NULL;
@@ -512,7 +512,7 @@ err:
 	EC_POINT_free(public);
 	return r;
 }
-#endif /*def HAVE_EVP_KEYMGMT_GET0_PROVIDER*/
+#endif /*def ENABLE_KEY_PROVIDERS*/
 
 static inline int
 ssh_EC_KEY_validate_public(const EC_KEY *ec) {
@@ -521,10 +521,10 @@ ssh_EC_KEY_validate_public(const EC_KEY *ec) {
 
 int
 ssh_pkey_validate_public_ecdsa(EVP_PKEY *pk) {
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 	if (EVP_PKEY_get0_provider(pk) != NULL)
 		return ssh_EVP_PKEY_validate_public_ecprov(pk);
-#endif /*def HAVE_EVP_KEYMGMT_GET0_PROVIDER*/
+#endif
 {	EC_KEY *ec;
 	int r;
 
@@ -539,7 +539,7 @@ ssh_pkey_validate_public_ecdsa(EVP_PKEY *pk) {
 }
 
 
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 static int
 ssh_EVP_PKEY_complete_pub_ecprov(EVP_PKEY *pk) {
 	char encoding[1024];
@@ -566,11 +566,11 @@ ssh_EVP_PKEY_complete_pub_ecprov(EVP_PKEY *pk) {
 
 	return ssh_EVP_PKEY_validate_public_ecprov(pk);
 }
-#endif /*def HAVE_EVP_KEYMGMT_GET0_PROVIDER*/
+#endif /*def ENABLE_KEY_PROVIDERS*/
 
 static int
 ssh_EVP_PKEY_complete_pub_ecdsa(EVP_PKEY *pk) {
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 	if (EVP_PKEY_get0_provider(pk) != NULL)
 		return ssh_EVP_PKEY_complete_pub_ecprov(pk);
 #endif
@@ -597,7 +597,7 @@ err:
 }
 
 
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 static int
 sshkey_set_prov_param_nid(const EVP_PKEY *pk, int *pnid) {
 	char param[1024];
@@ -618,11 +618,11 @@ sshkey_set_prov_param_nid(const EVP_PKEY *pk, int *pnid) {
 	*pnid = nid;
 	return 0;
 }
-#endif /*def HAVE_EVP_KEYMGMT_GET0_PROVIDER*/
+#endif /*def ENABLE_KEY_PROVIDERS*/
 
 static int
 sshkey_set_nid(EVP_PKEY *pk, int *pnid) {
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 	if (EVP_PKEY_get0_provider(pk) != NULL)
 		return sshkey_set_prov_param_nid(pk, pnid);
 #endif
@@ -635,6 +635,7 @@ sshkey_set_nid(EVP_PKEY *pk, int *pnid) {
 	/* indirectly set in sshkey_ecdsa_key_to_nid(if needed)
 	   when pkey is completed */
 	g = EC_KEY_get0_group(ec);
+	EC_KEY_free(ec);
 	if (g == NULL) return SSH_ERR_LIBCRYPTO_ERROR;
 
 	*pnid = EC_GROUP_get_curve_name(g);
@@ -643,7 +644,7 @@ sshkey_set_nid(EVP_PKEY *pk, int *pnid) {
 }
 
 
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 static int
 ssh_EVP_PKEY_check_private_ecprov(EVP_PKEY *pkey, const BIGNUM *exponent) {
 	EC_GROUP *group;
@@ -657,7 +658,7 @@ ssh_EVP_PKEY_check_private_ecprov(EVP_PKEY *pkey, const BIGNUM *exponent) {
 	EC_GROUP_free(group);
 	return r;
 }
-#endif /*def HAVE_EVP_KEYMGMT_GET0_PROVIDER*/
+#endif /*def ENABLE_KEY_PROVIDERS*/
 
 static inline int
 ssh_EC_KEY_check_private(const EC_KEY *ec, const BIGNUM *exponent) {
@@ -668,7 +669,7 @@ ssh_EC_KEY_check_private(const EC_KEY *ec, const BIGNUM *exponent) {
 }
 
 
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 static int
 sshkey_validate_ecprov_priv(EVP_PKEY *pk, int skip_priv) {
 	BIGNUM *exponent = NULL;
@@ -682,7 +683,7 @@ sshkey_validate_ecprov_priv(EVP_PKEY *pk, int skip_priv) {
 	BN_free(exponent);
 	return r;
 }
-#endif /*def HAVE_EVP_KEYMGMT_GET0_PROVIDER*/
+#endif /*def ENABLE_KEY_PROVIDERS*/
 
 static inline int
 ssh_EC_KEY_validate_private(const EC_KEY *ec, int skip_priv) {
@@ -696,7 +697,7 @@ ssh_EC_KEY_validate_private(const EC_KEY *ec, int skip_priv) {
 
 static int
 ssh_pkey_validate_private_ecdsa(EVP_PKEY *pk, int skip_priv) {
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 	if (EVP_PKEY_get0_provider(pk) != NULL)
 		return sshkey_validate_ecprov_priv(pk, skip_priv);
 #endif
@@ -800,7 +801,7 @@ sshbuf_put_ec(struct sshbuf *buf, const EC_POINT *v, const EC_GROUP *g)
 	return ret;
 }
 
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 static int
 sshbuf_write_prov_ecpub(struct sshbuf *buf, EVP_PKEY *pk) {
 	unsigned char *data = NULL;
@@ -816,7 +817,7 @@ err:
 	OPENSSL_free(data);
 	return r;
 }
-#endif /*def HAVE_EVP_KEYMGMT_GET0_PROVIDER*/
+#endif /*def ENABLE_KEY_PROVIDERS*/
 
 static inline int
 sshbuf_put_eckey(struct sshbuf *buf, const EC_KEY *ec)
@@ -828,7 +829,7 @@ sshbuf_put_eckey(struct sshbuf *buf, const EC_KEY *ec)
 
 int
 sshbuf_write_pkey_ecpub(struct sshbuf *buf, EVP_PKEY *pk) {
-#ifdef HAVE_EVP_KEYMGMT_GET0_PROVIDER
+#ifdef ENABLE_KEY_PROVIDERS
 	if (EVP_PKEY_get0_provider(pk) != NULL)
 		return sshbuf_write_prov_ecpub(buf, pk);
 #endif
@@ -1207,81 +1208,109 @@ static const struct sshkey_impl_funcs sshkey_ecdsa_funcs = {
 	/* .verify = */		ssh_ecdsa_verify
 };
 
+static int sshkey_ecdsa_enabled(void) { return 1; }
+static int sshkey_ecdsa_nistp521_enabled(void) {
+#ifdef OPENSSL_HAS_NISTP521
+	return 1;
+#else
+	return 0;
+#endif
+}
+#define SSHKEY_ECDSA_FUNCS	&sshkey_ecdsa_funcs
+
+#else
+
+#include "sshkey.h"
+
+#undef NID_X9_62_prime256v1
+#define NID_X9_62_prime256v1	NID_undef
+#undef NID_secp384r1
+#define NID_secp384r1		NID_undef
+#undef NID_secp521r1
+#define NID_secp521r1		NID_undef
+
+static int sshkey_ecdsa_enabled(void) { return 0; }
+static int sshkey_ecdsa_nistp521_enabled(void) { return 0; }
+#define SSHKEY_ECDSA_FUNCS	NULL
+
+#endif /* WITH_OPENSSL && OPENSSL_HAS_ECC */
+
+static char *pkey_ec_typename[] = { "EC", NULL };
+
 const struct sshkey_impl sshkey_ecdsa_nistp256_impl = {
+	/* .id = */		{ KEY_ECDSA, NID_X9_62_prime256v1,
+				  EVP_PKEY_EC, pkey_ec_typename },
 	/* .name = */		"ecdsa-sha2-nistp256",
 	/* .shortname = */	"ECDSA",
 	/* .sigalg = */		NULL,
-	/* .type = */		KEY_ECDSA,
-	/* .nid = */		NID_X9_62_prime256v1,
 	/* .cert = */		0,
 	/* .sigonly = */	0,
 	/* .keybits = */	0,
-	/* .funcs = */		&sshkey_ecdsa_funcs
+	/* .enabled = */	sshkey_ecdsa_enabled,
+	/* .funcs = */		SSHKEY_ECDSA_FUNCS
 };
 
 const struct sshkey_impl sshkey_ecdsa_nistp256_cert_impl = {
+	/* .id = */		{ KEY_ECDSA_CERT, NID_X9_62_prime256v1,
+				  EVP_PKEY_EC, pkey_ec_typename },
 	/* .name = */		"ecdsa-sha2-nistp256-cert-v01@openssh.com",
 	/* .shortname = */	"ECDSA-CERT",
 	/* .sigalg = */		NULL,
-	/* .type = */		KEY_ECDSA_CERT,
-	/* .nid = */		NID_X9_62_prime256v1,
 	/* .cert = */		1,
 	/* .sigonly = */	0,
 	/* .keybits = */	0,
-	/* .funcs = */		&sshkey_ecdsa_funcs
+	/* .enabled = */	sshkey_ecdsa_enabled,
+	/* .funcs = */		SSHKEY_ECDSA_FUNCS
 };
 
 const struct sshkey_impl sshkey_ecdsa_nistp384_impl = {
+	/* .id = */		{ KEY_ECDSA, NID_secp384r1,
+				  EVP_PKEY_EC, pkey_ec_typename },
 	/* .name = */		"ecdsa-sha2-nistp384",
 	/* .shortname = */	"ECDSA",
 	/* .sigalg = */		NULL,
-	/* .type = */		KEY_ECDSA,
-	/* .nid = */		NID_secp384r1,
 	/* .cert = */		0,
 	/* .sigonly = */	0,
 	/* .keybits = */	0,
-	/* .funcs = */		&sshkey_ecdsa_funcs
+	/* .enabled = */	sshkey_ecdsa_enabled,
+	/* .funcs = */		SSHKEY_ECDSA_FUNCS
 };
 
 const struct sshkey_impl sshkey_ecdsa_nistp384_cert_impl = {
+	/* .id = */		{ KEY_ECDSA_CERT, NID_secp384r1,
+				  EVP_PKEY_EC, pkey_ec_typename },
 	/* .name = */		"ecdsa-sha2-nistp384-cert-v01@openssh.com",
 	/* .shortname = */	"ECDSA-CERT",
 	/* .sigalg = */		NULL,
-	/* .type = */		KEY_ECDSA_CERT,
-	/* .nid = */		NID_secp384r1,
 	/* .cert = */		1,
 	/* .sigonly = */	0,
 	/* .keybits = */	0,
-	/* .funcs = */		&sshkey_ecdsa_funcs
+	/* .enabled = */	sshkey_ecdsa_enabled,
+	/* .funcs = */		SSHKEY_ECDSA_FUNCS
 };
 
-#ifdef OPENSSL_HAS_NISTP521
 const struct sshkey_impl sshkey_ecdsa_nistp521_impl = {
+	/* .id = */		{ KEY_ECDSA, NID_secp521r1,
+				  EVP_PKEY_EC, pkey_ec_typename },
 	/* .name = */		"ecdsa-sha2-nistp521",
 	/* .shortname = */	"ECDSA",
 	/* .sigalg = */		NULL,
-	/* .type = */		KEY_ECDSA,
-	/* .nid = */		NID_secp521r1,
 	/* .cert = */		0,
 	/* .sigonly = */	0,
 	/* .keybits = */	0,
-	/* .funcs = */		&sshkey_ecdsa_funcs
+	/* .enabled = */	sshkey_ecdsa_nistp521_enabled,
+	/* .funcs = */		SSHKEY_ECDSA_FUNCS
 };
 
 const struct sshkey_impl sshkey_ecdsa_nistp521_cert_impl = {
+	/* .id = */		{ KEY_ECDSA_CERT, NID_secp521r1,
+				  EVP_PKEY_EC, pkey_ec_typename },
 	/* .name = */		"ecdsa-sha2-nistp521-cert-v01@openssh.com",
 	/* .shortname = */	"ECDSA-CERT",
 	/* .sigalg = */		NULL,
-	/* .type = */		KEY_ECDSA_CERT,
-	/* .nid = */		NID_secp521r1,
 	/* .cert = */		1,
 	/* .sigonly = */	0,
 	/* .keybits = */	0,
-	/* .funcs = */		&sshkey_ecdsa_funcs
+	/* .enabled = */	sshkey_ecdsa_nistp521_enabled,
+	/* .funcs = */		SSHKEY_ECDSA_FUNCS
 };
-#endif /* OPENSSL_HAS_NISTP521 */
-#else
-
-typedef int ssh_ecdsa_empty_translation_unit;
-
-#endif /* WITH_OPENSSL && OPENSSL_HAS_ECC */

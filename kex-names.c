@@ -1,4 +1,4 @@
-/* $OpenBSD: kex-names.c,v 1.4 2024/09/09 02:39:57 djm Exp $ */
+/* $OpenBSD: kex-names.c,v 1.6 2025/09/02 11:08:34 djm Exp $ */
 /*
  * Copyright (c) 2000, 2001 Markus Friedl.  All rights reserved.
  * Copyright (c) 2014-2025 Roumen Petrov.  All rights reserved.
@@ -31,8 +31,8 @@
 
 #include "kex.h"
 #include "log.h"
-#include "digest.h"
 #include "match.h"
+#include "misc.h"
 
 #include "ssherr.h"
 
@@ -57,11 +57,18 @@ extern const struct kex_impl kex_c25519_sha256_impl;
 extern const struct kex_impl kex_c25519_sha256_impl_ext;
 /* kexecx.c */
 extern const struct kex_impl kex_c448_sha512_impl;
+/* kexhybrid.c */
+extern const struct kex_impl kex_pkem_mlkem768nistp256_sha256_impl;
+extern const struct kex_impl kex_pkem_mlkem1024nistp384_sha384_impl;
+extern const struct kex_impl kex_pkem_mlkem768x25519_sha256_impl;
 /* kexsntrup761x25519.c */
 extern const struct kex_impl kex_kem_sntrup761x25519_sha512_impl;
 extern const struct kex_impl kex_kem_sntrup761x25519_sha512_impl_ext;
 /* kexmlkem768x25519.c */
 extern const struct kex_impl kex_kem_mlkem768x25519_sha256_impl;
+/* kexkem.c */
+extern const struct kex_impl kex_mlkem768_sha256_testimpl;
+extern const struct kex_impl kex_mlkem1024_sha384_testimpl;
 
 static const struct kex_impl* const kex_impl_list[] = {
 	&kex_dh_grp1_sha1_impl,
@@ -79,9 +86,14 @@ static const struct kex_impl* const kex_impl_list[] = {
 	&kex_c25519_sha256_impl,
 	&kex_c25519_sha256_impl_ext,
 	&kex_c448_sha512_impl,
+	&kex_pkem_mlkem768nistp256_sha256_impl,
+	&kex_pkem_mlkem1024nistp384_sha384_impl,
+	&kex_pkem_mlkem768x25519_sha256_impl,
 	&kex_kem_sntrup761x25519_sha512_impl,
 	&kex_kem_sntrup761x25519_sha512_impl_ext,
 	&kex_kem_mlkem768x25519_sha256_impl,
+	&kex_mlkem768_sha256_testimpl,
+	&kex_mlkem1024_sha384_testimpl,
 	NULL
 };
 
@@ -101,22 +113,13 @@ kex_find_impl(const char *name)
 char *
 kex_alg_list(char sep)
 {
-	char *ret = NULL, *tmp;
-	size_t nlen, rlen = 0;
+	char *ret = NULL;
 	const struct kex_impl* const *p;
+	char sep_str[2] = {sep, '\0'};
 
 	for (p = kex_impl_list; *p != NULL; p++) {
 		if (!(*p)->enabled()) continue;
-		if (ret != NULL)
-			ret[rlen++] = sep;
-		nlen = strlen((*p)->name);
-		if ((tmp = realloc(ret, rlen + nlen + 2)) == NULL) {
-			free(ret);
-			return NULL;
-		}
-		ret = tmp;
-		memcpy(ret + rlen, (*p)->name, nlen + 1);
-		rlen += nlen;
+		xextendf(&ret, sep_str, "%s", (*p)->name);
 	}
 	return ret;
 }

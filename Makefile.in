@@ -47,6 +47,8 @@ LIBWTMPDB=@LIBWTMPDB@
 LIBOCSP=@LIBOCSP@
 LIBLDAP=@LDAP_LDFLAGS@ @LDAP_LIBS@
 FIPSLIBS=@FIPSLIBS@
+TESTLIBS=@TESTLIBS@
+
 AR=@AR@
 AWK=@AWK@
 RANLIB=@RANLIB@
@@ -71,15 +73,6 @@ X509STORE_OBJS=x509store.o x509_by_store.o $(LDAP_OBJS)
 
 TARGETS=ssh$(EXEEXT) sshd$(EXEEXT) ssh-add$(EXEEXT) ssh-keygen$(EXEEXT) ssh-keyscan${EXEEXT} ssh-keysign${EXEEXT} ssh-pkcs11-helper$(EXEEXT) ssh-agent$(EXEEXT) scp$(EXEEXT) sftp-server$(EXEEXT) sftp$(EXEEXT)
 
-XMSS_OBJS=\
-	ssh-xmss.o \
-	sshkey-xmss.o \
-	xmss_commons.o \
-	xmss_fast.o \
-	xmss_hash.o \
-	xmss_hash_address.o \
-	xmss_wots.o
-
 LIBOPENSSH_OBJS=\
 	ssh_api.o \
 	ssherr.o \
@@ -90,8 +83,7 @@ LIBOPENSSH_OBJS=\
 	sshbuf-misc.o \
 	sshbuf-getput-crypto.o \
 	krl.o \
-	bitmap.o \
-	${XMSS_OBJS}
+	bitmap.o
 
 LIBSSH_OBJS=${LIBOPENSSH_OBJS} \
 	authfd.o authfile.o \
@@ -108,8 +100,8 @@ LIBSSH_OBJS=${LIBOPENSSH_OBJS} \
 	poly1305.o chacha.o cipher-chachapoly.o cipher-chachapoly-libcrypto.o \
 	ssh-ed25519.o digest-openssl.o digest-libc.o hmac.o \
 	ed25519.o hash.o blocks.o \
-	kex.o kex-names.o kexdh.o kexgex.o kexecdh.o \
-	kexc25519.o kexecx.o \
+	kex.o kex-names.o kexdh.o kexgex.o kexc25519.o \
+	kexhybrid.o kexkem.o kexecdh.o kexecx.o \
 	kexgen.o kexgexc.o kexgexs.o \
 	kexsntrup761x25519.o sntrup761.o kexmlkem768x25519.o \
 	platform-pledge.o platform-tracing.o platform-misc.o \
@@ -507,34 +499,41 @@ regress-prep:
 	    ln -s $(abs_srcdir)/regress/Makefile regress/Makefile
 
 
-REGRESSLIBS = $(LIBCOMPAT) libssh.a
-TESTLIBS = $(LIBS)
+REGRESSDEPLIBS = $(LIBCOMPAT) libssh.a
+REGRESSLIBS = $(SSHLIBS) $(LIBS)
 
-regress/modpipe$(EXEEXT): regress/modpipe.o $(REGRESSLIBS)
+regress/modpipe$(EXEEXT): regress/modpipe.o $(REGRESSDEPLIBS)
 	$(LD) -o $@ regress/modpipe.o \
-	$(LDFLAGS) $(SSHLIBS) $(TESTLIBS)
+	$(LDFLAGS) $(REGRESSLIBS)
 
-regress/setuid-allowed$(EXEEXT): regress/setuid-allowed.o $(REGRESSLIBS)
+regress/setuid-allowed$(EXEEXT): regress/setuid-allowed.o $(REGRESSDEPLIBS)
 	$(LD) -o $@ regress/setuid-allowed.o \
-	$(LDFLAGS) $(SSHLIBS) $(TESTLIBS)
+	$(LDFLAGS) $(REGRESSLIBS)
 
-regress/netcat$(EXEEXT): regress/netcat.o $(REGRESSLIBS)
+regress/netcat$(EXEEXT): regress/netcat.o $(REGRESSDEPLIBS)
 	$(LD) -o $@ regress/netcat.o \
-	$(LDFLAGS) $(SSHLIBS) $(TESTLIBS)
+	$(LDFLAGS) $(REGRESSLIBS)
 
-regress/check-perm$(EXEEXT): regress/check-perm.o $(REGRESSLIBS)
+regress/check-perm$(EXEEXT): regress/check-perm.o $(REGRESSDEPLIBS)
 	$(LD) -o $@ regress/check-perm.o \
-	$(LDFLAGS) $(SSHLIBS) $(TESTLIBS)
+	$(LDFLAGS) $(REGRESSLIBS)
 
-regress/mkdtemp$(EXEEXT): regress/mkdtemp.o $(REGRESSLIBS)
+regress/mkdtemp$(EXEEXT): regress/mkdtemp.o $(REGRESSDEPLIBS)
 	$(LD) -o $@ regress/mkdtemp.o \
-	$(LDFLAGS) $(SSHLIBS) $(TESTLIBS)
+	$(LDFLAGS) $(REGRESSLIBS)
+
+
+UNITTESTSDEPLIBS = regress/unittests/test_helper/libtest_helper.a \
+	$(REGRESSDEPLIBS)
+UNITTESTSLIBS = regress/unittests/test_helper/libtest_helper.a \
+	$(REGRESSLIBS) $(TESTLIBS)
 
 UNITTESTS_TEST_HELPER_OBJS=\
 	regress/unittests/test_helper/test_helper.o \
 	regress/unittests/test_helper/fuzz.o
 
-regress/unittests/test_helper/libtest_helper.a: ${UNITTESTS_TEST_HELPER_OBJS}
+regress/unittests/test_helper/libtest_helper.a: \
+    $(UNITTESTS_TEST_HELPER_OBJS)
 	$(AR) rv $@ $(UNITTESTS_TEST_HELPER_OBJS)
 	$(RANLIB) $@
 
@@ -548,11 +547,11 @@ UNITTESTS_TEST_SSHBUF_OBJS=\
 	regress/unittests/sshbuf/test_sshbuf_getput_fuzz.o \
 	regress/unittests/sshbuf/test_sshbuf_fixed.o
 
-regress/unittests/sshbuf/test_sshbuf$(EXEEXT): ${UNITTESTS_TEST_SSHBUF_OBJS} \
-    regress/unittests/test_helper/libtest_helper.a $(REGRESSLIBS)
+regress/unittests/sshbuf/test_sshbuf$(EXEEXT): \
+    $(UNITTESTS_TEST_SSHBUF_OBJS) \
+    $(UNITTESTSDEPLIBS)
 	$(LD) -o $@ $(LDFLAGS) $(UNITTESTS_TEST_SSHBUF_OBJS) \
-	    regress/unittests/test_helper/libtest_helper.a \
-	    $(SSHLIBS) $(TESTLIBS)
+	    $(UNITTESTSLIBS)
 
 UNITTESTS_TEST_SSHKEY_OBJS=\
 	regress/unittests/sshkey/test_fuzz.o \
@@ -561,20 +560,20 @@ UNITTESTS_TEST_SSHKEY_OBJS=\
 	regress/unittests/sshkey/test_file.o \
 	regress/unittests/sshkey/test_sshkey.o
 
-regress/unittests/sshkey/test_sshkey$(EXEEXT): ${UNITTESTS_TEST_SSHKEY_OBJS} \
-    regress/unittests/test_helper/libtest_helper.a $(REGRESSLIBS)
+regress/unittests/sshkey/test_sshkey$(EXEEXT): \
+    $(UNITTESTS_TEST_SSHKEY_OBJS) \
+    $(UNITTESTSDEPLIBS)
 	$(LD) -o $@ $(LDFLAGS) $(UNITTESTS_TEST_SSHKEY_OBJS) \
-	    regress/unittests/test_helper/libtest_helper.a \
-	    $(SSHLIBS) $(TESTLIBS)
+	    $(UNITTESTSLIBS)
 
 UNITTESTS_TEST_BITMAP_OBJS=\
 	regress/unittests/bitmap/tests.o
 
-regress/unittests/bitmap/test_bitmap$(EXEEXT): ${UNITTESTS_TEST_BITMAP_OBJS} \
-    regress/unittests/test_helper/libtest_helper.a $(REGRESSLIBS)
+regress/unittests/bitmap/test_bitmap$(EXEEXT): \
+    $(UNITTESTS_TEST_BITMAP_OBJS) \
+    $(UNITTESTSDEPLIBS)
 	$(LD) -o $@ $(LDFLAGS) $(UNITTESTS_TEST_BITMAP_OBJS) \
-	    regress/unittests/test_helper/libtest_helper.a \
-	    $(SSHLIBS) $(TESTLIBS)
+	    $(UNITTESTSLIBS)
 
 UNITTESTS_TEST_AUTHOPT_OBJS=\
 	regress/unittests/authopt/tests.o \
@@ -582,53 +581,49 @@ UNITTESTS_TEST_AUTHOPT_OBJS=\
 	$(SKOBJS)
 
 regress/unittests/authopt/test_authopt$(EXEEXT): \
-    ${UNITTESTS_TEST_AUTHOPT_OBJS} \
-    regress/unittests/test_helper/libtest_helper.a $(REGRESSLIBS)
+    $(UNITTESTS_TEST_AUTHOPT_OBJS) \
+    $(UNITTESTSDEPLIBS)
 	$(LD) -o $@ $(LDFLAGS) $(UNITTESTS_TEST_AUTHOPT_OBJS) \
-	    regress/unittests/test_helper/libtest_helper.a \
-	    $(SSHLIBS) $(TESTLIBS)
+	    $(UNITTESTSLIBS)
 
 UNITTESTS_TEST_CONVERSION_OBJS=\
 	regress/unittests/conversion/tests.o
 
 regress/unittests/conversion/test_conversion$(EXEEXT): \
-    ${UNITTESTS_TEST_CONVERSION_OBJS} \
-    regress/unittests/test_helper/libtest_helper.a $(REGRESSLIBS)
+    $(UNITTESTS_TEST_CONVERSION_OBJS) \
+    $(UNITTESTSDEPLIBS)
 	$(LD) -o $@ $(LDFLAGS) $(UNITTESTS_TEST_CONVERSION_OBJS) \
-	    regress/unittests/test_helper/libtest_helper.a \
-	    $(SSHLIBS) $(TESTLIBS)
+	    $(UNITTESTSLIBS)
 
 UNITTESTS_TEST_KEX_OBJS=\
 	regress/unittests/kex/tests.o \
 	regress/unittests/kex/test_kex.o \
 	regress/unittests/kex/test_proposal.o
 
-regress/unittests/kex/test_kex$(EXEEXT): ${UNITTESTS_TEST_KEX_OBJS} \
-    regress/unittests/test_helper/libtest_helper.a $(REGRESSLIBS)
+regress/unittests/kex/test_kex$(EXEEXT): \
+    $(UNITTESTS_TEST_KEX_OBJS) \
+    $(UNITTESTSDEPLIBS)
 	$(LD) -o $@ $(LDFLAGS) $(UNITTESTS_TEST_KEX_OBJS) \
-	    regress/unittests/test_helper/libtest_helper.a \
-	    $(SSHLIBS) $(TESTLIBS)
+	    $(UNITTESTSLIBS)
 
 UNITTESTS_TEST_HOSTKEYS_OBJS=\
 	regress/unittests/hostkeys/tests.o \
 	regress/unittests/hostkeys/test_iterate.o
 
 regress/unittests/hostkeys/test_hostkeys$(EXEEXT): \
-    ${UNITTESTS_TEST_HOSTKEYS_OBJS} \
-    regress/unittests/test_helper/libtest_helper.a $(REGRESSLIBS)
+    $(UNITTESTS_TEST_HOSTKEYS_OBJS) \
+    $(UNITTESTSDEPLIBS)
 	$(LD) -o $@ $(LDFLAGS) $(UNITTESTS_TEST_HOSTKEYS_OBJS) \
-	    regress/unittests/test_helper/libtest_helper.a \
-	    $(SSHLIBS) $(TESTLIBS)
+	    $(UNITTESTSLIBS)
 
 UNITTESTS_TEST_MATCH_OBJS=\
 	regress/unittests/match/tests.o
 
 regress/unittests/match/test_match$(EXEEXT): \
-    ${UNITTESTS_TEST_MATCH_OBJS} \
-    regress/unittests/test_helper/libtest_helper.a $(REGRESSLIBS)
+    $(UNITTESTS_TEST_MATCH_OBJS) \
+    $(UNITTESTSDEPLIBS)
 	$(LD) -o $@ $(LDFLAGS) $(UNITTESTS_TEST_MATCH_OBJS) \
-	    regress/unittests/test_helper/libtest_helper.a \
-	    $(SSHLIBS) $(TESTLIBS)
+	    $(UNITTESTSLIBS)
 
 UNITTESTS_TEST_MISC_OBJS=\
 	regress/unittests/misc/tests.o \
@@ -637,24 +632,25 @@ UNITTESTS_TEST_MISC_OBJS=\
 	regress/unittests/misc/test_argv.o \
 	regress/unittests/misc/test_strdelim.o \
 	regress/unittests/misc/test_hpdelim.o \
-	regress/unittests/misc/test_ptimeout.o
+	regress/unittests/misc/test_ptimeout.o \
+	regress/unittests/misc/test_xextendf.o \
+	regress/unittests/misc/test_misc.o
 
 regress/unittests/misc/test_misc$(EXEEXT): \
-    ${UNITTESTS_TEST_MISC_OBJS} \
-    regress/unittests/test_helper/libtest_helper.a $(REGRESSLIBS)
+    $(UNITTESTS_TEST_MISC_OBJS) \
+    $(UNITTESTSDEPLIBS)
 	$(LD) -o $@ $(LDFLAGS) $(UNITTESTS_TEST_MISC_OBJS) \
-	    regress/unittests/test_helper/libtest_helper.a \
-	    $(SSHLIBS) $(TESTLIBS)
+	    $(UNITTESTSLIBS)
 
 UNITTESTS_TEST_UTF8_OBJS=\
 	regress/unittests/utf8/tests.o
 
 regress/unittests/utf8/test_utf8$(EXEEXT): \
-    ${UNITTESTS_TEST_UTF8_OBJS} \
-    regress/unittests/test_helper/libtest_helper.a $(REGRESSLIBS)
+    $(UNITTESTS_TEST_UTF8_OBJS) \
+    $(UNITTESTSDEPLIBS)
 	$(LD) -o $@ $(LDFLAGS) $(UNITTESTS_TEST_UTF8_OBJS) \
-	    regress/unittests/test_helper/libtest_helper.a \
-	    $(SSHLIBS) $(TESTLIBS)
+	    $(UNITTESTSLIBS)
+
 
 regress-binaries: regress-prep \
 	regress/modpipe$(EXEEXT) \
@@ -684,10 +680,12 @@ check:
 tests: check
 
 unit: regress-unit-binaries
+	TEST_SSH_MODULI_FILE="$(abs_srcdir)/moduli"; \
 	cd $(srcdir)/regress || exit $$?; \
 	$(MAKE) \
 		.CURDIR="$(abs_srcdir)/regress" \
 		.OBJDIR="$(BUILDDIR)/regress" \
+		TEST_SSH_MODULI_FILE="$${TEST_SSH_MODULI_FILE}" \
 		$@ && echo '*** test "$@" pass'
 
 check-core: regress-unit-binaries
@@ -772,3 +770,12 @@ package: $(CONFIGFILES) $(MANPAGES) $(TARGETS)
 depend:
 	(cd openbsd-compat && $(MAKE) $@)
 	makedepend -- $(CPPFLAGS) $(CFLAGS) -- $(srcdir)/*.c
+
+
+.SUFFIXES: .i .d
+
+.c.i:
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@ -E
+
+.c.d:
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@ -MM

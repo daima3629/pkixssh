@@ -124,6 +124,14 @@ EVP_PKEY_base_id(const EVP_PKEY *pkey) {
 #endif /*ndef HAVE_EVP_PKEY_BASE_ID */
 
 
+#ifndef EVP_PKEY_EC
+# define EVP_PKEY_EC		EVP_PKEY_NONE
+#endif
+#ifndef EVP_PKEY_ED25519
+# define EVP_PKEY_ED25519	EVP_PKEY_NONE
+#endif
+
+
 int ssh_EVP_PKEY_eq(const EVP_PKEY *a, const EVP_PKEY *b);
 
 

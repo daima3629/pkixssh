@@ -1,4 +1,4 @@
-/* $OpenBSD: monitor_wrap.c,v 1.138 2024/10/22 06:13:00 dtucker Exp $ */
+/* $OpenBSD: monitor_wrap.c,v 1.142 2025/09/25 06:31:42 djm Exp $ */
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * Copyright 2002 Markus Friedl <markus@openbsd.org>
@@ -133,7 +133,7 @@ mm_request_send(int sock, enum monitor_reqtype type, struct sshbuf *m)
 
 	debug3_f("entering, type %d", type);
 
-	if (mlen >= 0xffffffff)
+	if (mlen >= MONITOR_MAX_MSGLEN)
 		fatal_f("bad length %zu", mlen);
 	POKE_U32(buf, mlen + 1);
 	buf[4] = (u_char) type;		/* 1st byte of payload is mesg-type */
@@ -158,7 +158,7 @@ mm_request_receive(int sock, struct sshbuf *m)
 		fatal_f("read: %s", strerror(errno));
 	}
 	msg_len = PEEK_U32(buf);
-	if (msg_len > 256 * 1024)
+	if (msg_len > MONITOR_MAX_MSGLEN)
 		fatal_f("read: bad msg_len %d", msg_len);
 	sshbuf_reset(m);
 	if ((r = sshbuf_reserve(m, msg_len, &p)) != 0)
@@ -306,8 +306,22 @@ mm_decode_activate_server_options(struct ssh *ssh, struct sshbuf *m)
 #undef M_CP_STRARRAYOPT
 
 	copy_set_server_options(&options, newopts, 1);
+
 	log_change_level(options.log_level);
 	log_verbose_init(options.log_verbose, options.num_log_verbose);
+
+	free(newopts->hostbased_algorithms);
+	free(newopts->pubkey_algorithms);
+	/* use the macro to clean up too */
+#define M_CP_STROPT(x) free(newopts->x)
+#define M_CP_STRARRAYOPT(x, nx) do { \
+		for (i = 0; i < newopts->nx; i++) \
+			free(newopts->x[i]); \
+		free(newopts->x); \
+	} while (0)
+	COPY_MATCH_STRING_OPTS();
+#undef M_CP_STROPT
+#undef M_CP_STRARRAYOPT
 	free(newopts);
 }
 
@@ -690,7 +704,7 @@ mm_start_pam(struct ssh *ssh)
 	UNUSED(ssh);
 	debug3_f("entering");
 	if (!options.use_pam)
-		fatal("UsePAM=no, but ended up in %s anyway", __func__);
+		fatal_f("UsePAM=no and ended here");
 	if ((m = sshbuf_new()) == NULL)
 		fatal_f("sshbuf_new failed");
 	mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_PAM_START, m);
@@ -709,7 +723,7 @@ mm_do_pam_account(void)
 
 	debug3_f("entering");
 	if (!options.use_pam)
-		fatal("UsePAM=no, but ended up in %s anyway", __func__);
+		fatal_f("UsePAM=no and ended here");
 
 	if ((m = sshbuf_new()) == NULL)
 		fatal_f("sshbuf_new failed");

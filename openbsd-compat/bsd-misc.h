@@ -154,7 +154,7 @@ void endpwent(void);
 #endif /*def KRB5*/
 
 #ifndef HAVE_PLEDGE
-int pledge(const char *promises, const char *paths[]);
+int pledge(const char *promises, const char *execpromises);
 #endif
 
 /* bsd-err.h */
@@ -190,6 +190,14 @@ int flock(int, int);
 
 #ifndef HAVE_LOCALTIME_R
 struct tm *localtime_r(const time_t *, struct tm *);
+#endif
+
+#ifndef HAVE_CLOCK_GETTIME
+typedef int clockid_t;
+#ifndef CLOCK_REALTIME
+# define CLOCK_REALTIME	0
+#endif
+int clock_gettime(clockid_t, struct timespec *);
 #endif
 
 #endif /* _BSD_MISC_H */

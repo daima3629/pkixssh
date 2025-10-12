@@ -24,11 +24,9 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef _AIX
+#include "includes.h"
 
-#ifdef HAVE_SYS_SOCKET_H
-# include <sys/socket.h>
-#endif
+#ifdef _AIX
 
 struct sshbuf;
 

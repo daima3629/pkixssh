@@ -29,8 +29,8 @@ static ERR_STRING_DATA PKCS11_str_functs[] = {
 	{ ERR_PACK(0, PKCS11_LOGIN, 0)			, "login" },
 	{ ERR_PACK(0, PKCS11_REAUTHENTICATE, 0)		, "reauthenticate" },
 	{ ERR_PACK(0, PKCS11_GET_KEY, 0)		, "get_key" },
+	{ ERR_PACK(0, PKCS11_KEY_SIGN, 0)		, "key_sign" },
 	{ ERR_PACK(0, PKCS11_RSA_PRIVATE_ENCRYPT, 0)	, "rsa_private_encrypt" },
-	{ ERR_PACK(0, PKCS11_DSA_DO_SIGN, 0)		, "dsa_do_sign" },
 	{ ERR_PACK(0, PKCS11_ECDSA_DO_SIGN, 0)		, "ecdsa_do_sign" },
 	{ 0, NULL }
 };

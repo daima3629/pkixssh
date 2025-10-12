@@ -34,7 +34,7 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: sshd_config.5,v 1.380 2024/12/06 16:24:27 djm Exp $
+.\" $OpenBSD: sshd_config.5,v 1.385 2025/10/04 21:41:35 naddy Exp $
 .\" Implement .Dd with the Mdocdate RCS keyword
 .rn Dd xD
 .de Dd
@@ -43,7 +43,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: December 27 2024 $
+.Dd $Mdocdate: October 4 2025 $
 .Dt SSHD_CONFIG 5
 .Os
 .Sh NAME
@@ -505,6 +505,11 @@ from the default set instead of replacing them.
 .Pp
 Custom certificates signed using other algorithms will not be accepted for
 public key or host-based authentication.
+.It Cm CAStoreURI
+.Dq X509 store
+option: URI as a store of certificates of certificate signers.
+Available is cryptographic library supports
+.Xr ossl_store 7 .
 .It Cm ChannelTimeout
 Specifies whether and how quickly
 .Xr sshd 8
@@ -544,7 +549,7 @@ Open connections to
 .Xr ssh-agent 1 .
 .It Cm direct-tcpip , Cm direct-streamlocal@openssh.com
 Open TCP or Unix socket (respectively) connections that have
-been established from a
+been established from an
 .Xr ssh 1
 local forwarding, i.e.\&
 .Cm LocalForward
@@ -552,9 +557,9 @@ or
 .Cm DynamicForward .
 .It Cm forwarded-tcpip , Cm forwarded-streamlocal@openssh.com
 Open TCP or Unix socket (respectively) connections that have been
-established to a
+established to an
 .Xr sshd 8
-listening on behalf of a
+listening on behalf of an
 .Xr ssh 1
 remote forwarding, i.e.\&
 .Cm RemoteForward .
@@ -1015,7 +1020,9 @@ directive may appear inside a
 block
 to perform conditional inclusion.
 .It Cm IPQoS
-Specifies the IPv4 type-of-service or DSCP class for the connection.
+Specifies the
+.Em Differentiated Services Field Codepoint Pq DSCP
+value for the connection.
 Accepted values are
 .Cm af11 ,
 .Cm af12 ,
@@ -1039,9 +1046,6 @@ Accepted values are
 .Cm cs7 ,
 .Cm ef ,
 .Cm le ,
-.Cm lowdelay ,
-.Cm throughput ,
-.Cm reliability ,
 a numeric value, or
 .Cm none
 to use the operating system default.
@@ -1050,12 +1054,19 @@ If one argument is specified, it is used as the packet class unconditionally.
 If two values are specified, the first is automatically selected for
 interactive sessions and the second for non-interactive sessions.
 The default is
-.Cm af21
-(Low-Latency Data)
+.Cm ef
+(Expedited Forwarding)
 for interactive sessions and
-.Cm cs1
-(Lower Effort)
+.Cm none
+(the operating system default)
 for non-interactive sessions.
+.Pp
+Note support for IPv4 type-of-service values of
+.Cm lowdelay ,
+.Cm throughput ,
+or
+.Cm reliability
+is removed after 16.2.1 release and system default is used instead.
 .It Cm KbdInteractiveAuthentication
 Specifies whether to allow keyboard-interactive authentication.
 All authentication styles from
@@ -1114,64 +1125,23 @@ If the specified list begins with a
 character, then the specified algorithms will be placed at the head of the
 default set.
 .Pp
-The supported algorithms are:
-.Pp
-.Bl -item -compact -offset indent
-.It
-curve25519-sha256
-.It
-curve25519-sha256@libssh.org
-.It
-curve448-sha512
-.It
-diffie-hellman-group1-sha1
-.It
-diffie-hellman-group14-sha1
-.It
-diffie-hellman-group14-sha256
-.It
-diffie-hellman-group15-sha512
-.It
-diffie-hellman-group16-sha512
-.It
-diffie-hellman-group17-sha512
-.It
-diffie-hellman-group18-sha512
-.It
-diffie-hellman-group-exchange-sha1
-.It
-diffie-hellman-group-exchange-sha256
-.It
-ecdh-sha2-nistp256
-.It
-ecdh-sha2-nistp384
-.It
-ecdh-sha2-nistp521
-.It
-sntrup761x25519-sha512 (if build)
-.It
-sntrup761x25519-sha512@openssh.com (if build)
-.It
-mlkem768x25519-sha256 (if build)
-.El
-.Pp
 The default is:
 .Bd -literal -offset indent
-curve25519-sha256,curve25519-sha256@libssh.org,
-curve448-sha512,
-ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,
-diffie-hellman-group-exchange-sha256,
-diffie-hellman-group16-sha512,
-diffie-hellman-group18-sha512,
-diffie-hellman-group14-sha256,
-sntrup761x25519-sha512,sntrup761x25519-sha512@openssh.com,
+mlkem768nistp256-sha256,
+mlkem1024nistp384-sha384,
 mlkem768x25519-sha256,
-diffie-hellman-group15-sha512,
-diffie-hellman-group17-sha512,
-diffie-hellman-group14-sha1
+curve448-sha512,
+curve25519-sha256,curve25519-sha256@libssh.org,
+ecdh-sha2-nistp256,
+ecdh-sha2-nistp384,
+ecdh-sha2-nistp521,
+diffie-hellman-group14-sha1 (*),
+sntrup761x25519-sha512,sntrup761x25519-sha512@openssh.com
 .Ed
+(*) Used as default only if system does not support SHA2 digests.
 .Pp
-The list of supported key exchange algorithms may also be obtained using
+The list of supported key exchange algorithms depends on cryptographic
+library, build flags and may also be obtained using
 .Qq ssh -Q kex .
 .It Cm KeyAllowSelfIssued
 Specifies whether only encoded public key or X.509 certificate listed in
@@ -1179,8 +1149,6 @@ Specifies whether only encoded public key or X.509 certificate listed in
 can allow self-issued X.509 certificate to be used for user authentication.
 The default is
 .Dq no .
-Unsupported if daemon is build without
-.Dq X509 store .
 .Pp
 A certificate (including self-issued) is accepted for user authentication
 if encoded public key or encoded X.509 certificate or distinguished name

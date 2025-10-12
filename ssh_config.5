@@ -34,7 +34,7 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: ssh_config.5,v 1.413 2025/03/03 06:53:09 dtucker Exp $
+.\" $OpenBSD: ssh_config.5,v 1.420 2025/10/04 21:41:35 naddy Exp $
 .\" Implement .Dd with the Mdocdate RCS keyword
 .rn Dd xD
 .de Dd
@@ -43,7 +43,7 @@
 .\}
 .el .xD \\$1 \\$2 \\$3 \\$4 \\$5 \\$6 \\$7 \\$8
 ..
-.Dd $Mdocdate: March 9 2025 $
+.Dd $Mdocdate: October 4 2025 $
 .Dt SSH_CONFIG 5
 .Os
 .Sh NAME
@@ -501,6 +501,11 @@ from the default set instead of replacing them.
 .Xr ssh 1
 will not accept custom host certificates signed using algorithms other than those
 specified.
+.It Cm CAStoreURI
+.Dq X509 store
+option: URI as a store of certificates of certificate signers.
+Available is cryptographic library supports
+.Xr ossl_store 7 .
 .It Cm CertificateFile
 Specifies a file from which the user's OpenSSH custom certificate is read.
 A corresponding private key must be provided separately in order
@@ -570,7 +575,7 @@ Open connections to
 .Xr ssh-agent 1 .
 .It Cm direct-tcpip , Cm direct-streamlocal@openssh.com
 Open TCP or Unix socket (respectively) connections that have
-been established from a
+been established from an
 .Xr ssh 1
 local forwarding, i.e.\&
 .Cm LocalForward
@@ -578,9 +583,9 @@ or
 .Cm DynamicForward .
 .It Cm forwarded-tcpip , Cm forwarded-streamlocal@openssh.com
 Open TCP or Unix socket (respectively) connections that have been
-established to a
+established to an
 .Xr sshd 8
-listening on behalf of a
+listening on behalf of an
 .Xr ssh 1
 remote forwarding, i.e.\&
 .Cm RemoteForward .
@@ -1300,7 +1305,9 @@ or
 block
 to perform conditional inclusion.
 .It Cm IPQoS
-Specifies the IPv4 type-of-service or DSCP class for connections.
+Specifies the
+.Em Differentiated Services Field Codepoint Pq DSCP
+value for connections.
 Accepted values are
 .Cm af11 ,
 .Cm af12 ,
@@ -1324,9 +1331,6 @@ Accepted values are
 .Cm cs7 ,
 .Cm ef ,
 .Cm le ,
-.Cm lowdelay ,
-.Cm throughput ,
-.Cm reliability ,
 a numeric value, or
 .Cm none
 to use the operating system default.
@@ -1335,12 +1339,19 @@ If one argument is specified, it is used as the packet class unconditionally.
 If two values are specified, the first is automatically selected for
 interactive sessions and the second for non-interactive sessions.
 The default is
-.Cm af21
-(Low-Latency Data)
+.Cm ef
+(Expedited Forwarding)
 for interactive sessions and
-.Cm cs1
-(Lower Effort)
+.Cm none
+(the operating system default)
 for non-interactive sessions.
+.Pp
+Note support for IPv4 type-of-service values of
+.Cm lowdelay ,
+.Cm throughput ,
+or
+.Cm reliability
+is removed after 16.2.1 release and system default is used instead.
 .It Cm KbdInteractiveAuthentication
 Specifies whether to use keyboard-interactive authentication.
 The argument to this keyword must be
@@ -1382,23 +1393,23 @@ default set.
 .Pp
 The default is:
 .Bd -literal -offset indent
+mlkem768nistp256-sha256,
+mlkem1024nistp384-sha384,
+mlkem768x25519-sha256,
 curve448-sha512,
 curve25519-sha256,curve25519-sha256@libssh.org,
-ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,
-diffie-hellman-group-exchange-sha256,
-diffie-hellman-group18-sha512,
-diffie-hellman-group16-sha512,
+ecdh-sha2-nistp256,
+ecdh-sha2-nistp384,
+ecdh-sha2-nistp521,
 diffie-hellman-group14-sha256,
-diffie-hellman-group17-sha512,
-diffie-hellman-group15-sha512,
-mlkem768x25519-sha256,
-sntrup761x25519-sha512,sntrup761x25519-sha512@openssh.com,
-diffie-hellman-group14-sha1
+diffie-hellman-group16-sha512,
+diffie-hellman-group14-sha1,
+diffie-hellman-group-exchange-sha256,
+sntrup761x25519-sha512,sntrup761x25519-sha512@openssh.com
 .Ed
-Note sntrup761x25519-sha512 and sntrup761x25519-sha512@openssh.com are
-used if enabled at build time.
 .Pp
-The list of supported key exchange algorithms may also be obtained using
+The list of supported key exchange algorithms depends on cryptographic
+library, build flags and may also be obtained using
 .Qq ssh -Q kex .
 .It Cm KnownHostsCommand
 Specifies a command to use to obtain a list of host keys, in addition to
@@ -1702,7 +1713,7 @@ Multiple proxies may be separated by comma characters and will be visited
 sequentially.
 Setting this option will cause
 .Xr ssh 1
-to connect to the target host by first making a
+to connect to the target host by first making an
 .Xr ssh 1
 connection to the specified
 .Cm ProxyJump
@@ -1772,6 +1783,15 @@ The argument to this keyword must be
 (the default)
 or
 .Cm no .
+.It Cm RefuseConnection
+Allows a connection to be refused by the configuration file.
+If this option is specified, then
+.Xr ssh 1
+will terminate immediately before attempting to connect to the remote
+host, display an error message that contains the argument to this keyword
+and return a non-zero exit status.
+This option may be useful to express reminders or warnings to the user via
+.Nm .
 .It Cm RekeyLimit
 Specifies the maximum amount of data that may be transmitted or received
 before the session key is renegotiated, optionally followed by a maximum

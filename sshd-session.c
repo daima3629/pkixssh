@@ -1,11 +1,11 @@
-/* $OpenBSD: sshd-session.c,v 1.9 2024/09/09 02:39:57 djm Exp $ */
+/* $OpenBSD: sshd-session.c,v 1.16 2025/09/25 06:45:50 djm Exp $ */
 /*
  * SSH2 implementation:
  * Privilege Separation:
  *
  * Copyright (c) 2000, 2001, 2002 Markus Friedl.  All rights reserved.
  * Copyright (c) 2002 Niels Provos.  All rights reserved.
- * Copyright (c) 2002-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2002-2025 Roumen Petrov.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -233,7 +233,7 @@ privsep_preauth_child(void)
 static int
 privsep_preauth(struct ssh *ssh)
 {
-	int status, r;
+	int r;
 	pid_t pid;
 	struct ssh_sandbox *box = NULL;
 
@@ -261,23 +261,7 @@ privsep_preauth(struct ssh *ssh)
 		if (box != NULL)
 			ssh_sandbox_parent_preauth(box, pid);
 		monitor_child_preauth(ssh, pmonitor);
-
-		/* Wait for the child's exit status */
-		while (waitpid(pid, &status, 0) == -1) {
-			if (errno == EINTR)
-				continue;
-			pmonitor->m_pid = -1;
-			fatal_f("waitpid: %s", strerror(errno));
-		}
 		privsep_is_preauth = 0;
-		pmonitor->m_pid = -1;
-		if (WIFEXITED(status)) {
-			if (WEXITSTATUS(status) != 0)
-				fatal_f("preauth child exited with status %d",
-				    WEXITSTATUS(status));
-		} else if (WIFSIGNALED(status))
-			fatal_f("preauth child terminated by signal %d",
-			    WTERMSIG(status));
 		if (box != NULL)
 			ssh_sandbox_parent_finish(box);
 		return 1;
@@ -366,9 +350,6 @@ get_hostkey_by_type(int type, int subtype, int need_private, struct ssh *ssh)
 	#endif
 		case KEY_ECDSA_CERT:
 		case KEY_ED25519_CERT:
-	#ifdef WITH_XMSS
-		case KEY_XMSS_CERT:
-	#endif
 			key = sensitive_data.host_certificates[i];
 			break;
 		default:

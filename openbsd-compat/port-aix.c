@@ -45,7 +45,6 @@
 #include <stdarg.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/socket.h>
 
 #ifdef WITH_AIXAUTHENTICATE
 # include <login.h>

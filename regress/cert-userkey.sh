@@ -11,7 +11,6 @@ grep -v AuthorizedKeysFile $OBJ/sshd_proxy > $OBJ/sshd_proxy_bak
 echo "AuthorizedKeysFile $OBJ/authorized_keys_%u_*" >> $OBJ/sshd_proxy_bak
 
 PLAIN_TYPES=`echo "$SSH_KEYTYPES" | sed 's/^ssh-dss/ssh-dsa/;s/^ssh-//'`
-PLAIN_TYPES=`echo "$PLAIN_TYPES" | sed 's/xmss@openssh.com//'` # TODO
 EXTRA_TYPES=
 rsa=
 

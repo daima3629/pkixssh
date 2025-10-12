@@ -1,4 +1,4 @@
-/* $OpenBSD: ssh-keygen.c,v 1.481 2025/05/24 03:37:40 dtucker Exp $ */
+/* $OpenBSD: ssh-keygen.c,v 1.486 2025/10/09 23:26:47 djm Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1994 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -38,8 +38,6 @@
 #include "includes.h"
 
 #include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/stat.h>
 
 #ifdef WITH_OPENSSL
 #include <openssl/evp.h>
@@ -50,15 +48,9 @@
 #endif
 #endif
 
-#ifdef HAVE_STDINT_H
-# include <stdint.h>
-#endif
 #include <errno.h>
 #include <fcntl.h>
 #include <netdb.h>
-#ifdef HAVE_PATHS_H
-# include <paths.h>
-#endif
 #include <pwd.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -85,13 +77,16 @@
 #include "ssh.h"
 #include "ssh2.h"
 #include "ssherr.h"
-#include "ssh-pkcs11.h"
 #include "atomicio.h"
 #include "krl.h"
 #include "digest.h"
 #include "utf8.h"
 #include "authfd.h"
 #include "cipher.h"
+
+#ifdef ENABLE_PKCS11
+# include "ssh-pkcs11.h"
+#endif
 
 static char*
 default_key_type_name(void) {
@@ -342,12 +337,6 @@ ask_filename(const struct passwd *pw, const char *prompt)
 		case KEY_ED25519_CERT:
 			name = _PATH_SSH_CLIENT_ID_ED25519;
 			break;
-#ifdef WITH_XMSS
-		case KEY_XMSS:
-		case KEY_XMSS_CERT:
-			name = _PATH_SSH_CLIENT_ID_XMSS;
-			break;
-#endif
 		default:
 			fatal("bad key type");
 		}
@@ -462,7 +451,6 @@ do_convert_to_ssh2(const struct passwd *pw, struct sshkey *k)
 	fprintf(stdout, "Comment: \"%s\"\n%s", comment, b64);
 	fprintf(stdout, "%s\n", SSH_COM_PUBLIC_END);
 	free(b64);
-	exit(0);
 }
 
 
@@ -474,12 +462,11 @@ static void
 do_convert_to(const struct passwd *pw)
 {
 	struct sshkey *k;
-	struct stat st;
 	int r;
 
 	if (!have_identity)
 		ask_filename(pw, "Enter file in which the key is");
-	if (stat(identity_file, &st) == -1)
+	if (Xstat(identity_file) == -1)
 		fatal("%s: %s: %s", __progname, identity_file, strerror(errno));
 	if ((r = sshkey_load_public(identity_file, &k, NULL)) != 0)
 		k = load_identity(identity_file, NULL);
@@ -498,7 +485,6 @@ do_convert_to(const struct passwd *pw)
 	default:
 		fatal_f("unknown key format %d", convert_format);
 	}
-	exit(0);
 }
 
 
@@ -753,7 +739,6 @@ done:
 	if (!ok)
 		fatal("key write failed");
 	sshkey_free(k);
-	exit(0);
 }
 #endif
 
@@ -778,7 +763,6 @@ do_print_public(const struct passwd *pw)
 
 	sshkey_free(prv);
 	free(comment);
-	exit(0);
 }
 
 static void
@@ -811,7 +795,6 @@ do_download(void)
 	free(comments);
 	free(keys);
 	pkcs11_terminate();
-	exit(0);
 #else
 	fatal("no pkcs11 support");
 #endif /* ENABLE_PKCS11 */
@@ -944,7 +927,7 @@ do_fingerprint(const struct passwd *pw)
 			free(line);
 			fclose(f);
 			fingerprint_private(path);
-			exit(0);
+			return;
 		}
 
 		/*
@@ -987,12 +970,12 @@ do_fingerprint(const struct passwd *pw)
 		sshkey_free(public);
 		invalid = 0; /* One good key in the file is sufficient */
 	}
-	fclose(f);
+	if (f != stdin)
+		(void)fclose(f);
 	free(line);
 
 	if (invalid)
 		fatal("%s is not a public key file.", path);
-	exit(0);
 }
 
 static void
@@ -1010,9 +993,6 @@ do_gen_all_hostkeys(const struct passwd *pw)
 #endif /* OPENSSL_HAS_ECC */
 #endif /* WITH_OPENSSL */
 		{ "ed25519", "ED25519",_PATH_HOST_ED25519_KEY_FILE },
-#ifdef WITH_XMSS
-		{ "xmss", "XMSS",_PATH_HOST_XMSS_KEY_FILE },
-#endif /* WITH_XMSS */
 		{ NULL, NULL, NULL }
 	};
 
@@ -1245,7 +1225,7 @@ known_hosts_find_delete(struct hostkey_foreach_line *l, void *_ctx)
 	return 0;
 }
 
-static void
+static int
 do_known_hosts(const struct passwd *pw, const char *name, int find_host,
     int delete_host, int hash_hosts)
 {
@@ -1318,7 +1298,7 @@ do_known_hosts(const struct passwd *pw, const char *name, int find_host,
 			    "file because of errors");
 			unlink(tmp);
 		}
-		exit(1);
+		return 1;
 	} else if (delete_host && !ctx.found_key) {
 		logit("Host %s not found in %s", name, identity_file);
 		if (inplace)
@@ -1336,7 +1316,7 @@ do_known_hosts(const struct passwd *pw, const char *name, int find_host,
 			    strerror(errno));
 			unlink(tmp);
 			unlink(old);
-			exit(1);
+			return 1;
 		}
 
 		printf("%s updated.\n", identity_file);
@@ -1348,14 +1328,14 @@ do_known_hosts(const struct passwd *pw, const char *name, int find_host,
 		}
 	}
 
-	exit (find_host && !ctx.found_key);
+	return find_host && !ctx.found_key ? 1 : 0;
 }
 
 /*
  * Perform changing a passphrase.  The argument is the passwd structure
  * for the current user.
  */
-static void
+static int
 do_change_passphrase(const struct passwd *pw)
 {
 	char *comment;
@@ -1402,10 +1382,10 @@ do_change_passphrase(const struct passwd *pw)
 
 	if (r != 0) {
 		error_r(r, "Saving key \"%s\" failed", identity_file);
-		exit(1);
+		return  1;
 	}
 	printf("Your identification has been saved with the new passphrase.\n");
-	exit(0);
+	return 0;
 }
 
 /*
@@ -1450,7 +1430,7 @@ do_print_resource_record(char *fname, char *hname,
 /*
  * Change the comment of a private key file.
  */
-static void
+static int
 do_change_comment(const struct passwd *pw, const char *identity_comment)
 {
 	char new_comment[1024], *comment, *passphrase;
@@ -1480,15 +1460,12 @@ do_change_comment(const struct passwd *pw, const char *identity_comment)
 	}
 
 	if (private->type != KEY_ED25519 &&
-#ifdef WITH_XMSS
-	    private->type != KEY_XMSS &&
-#endif
 	    private_key_format != SSHKEY_PRIVATE_OPENSSH) {
 		error("Comments are only supported for keys stored in "
 		    "the OpenSSH proprietary format.");
 		freezero(passphrase, strlen(passphrase));
 		sshkey_free(private);
-		exit(1);
+		return 1;
 	}
 	if (comment)
 		printf("Old comment: %s\n", comment);
@@ -1541,7 +1518,7 @@ do_change_comment(const struct passwd *pw, const char *identity_comment)
 	else
 		printf("Comment removed\n");
 
-	exit(0);
+	return 0;
 }
 
 static void
@@ -1682,7 +1659,7 @@ do_ca_sign(const struct passwd *pw, const char *ca_key_path, int prefer_agent,
     unsigned long long cert_serial, int cert_serial_autoinc,
     int argc, char **argv)
 {
-	int r, i, found, agent_fd = -1;
+	int r, i, key_in_agent = 0, agent_fd = -1;
 	u_int n;
 	struct sshkey *ca, *public;
 	char valid[64], *otmp, *tmp, *cp, *out, *comment, **plist = NULL;
@@ -1715,17 +1692,19 @@ do_ca_sign(const struct passwd *pw, const char *ca_key_path, int prefer_agent,
 			fatal_r(r, "Cannot use public key for CA signature");
 		if ((r = ssh_fetch_identitylist(agent_fd, &agent_ids)) != 0)
 			fatal_r(r, "Retrieve agent key list");
-		found = 0;
 		for (j = 0; j < agent_ids->nkeys; j++) {
 			if (sshkey_equal(ca, agent_ids->keys[j])) {
-				found = 1;
+				key_in_agent = 1;
+				/* Replace the CA key with the agent one */
+				sshkey_free(ca);
+				ca = agent_ids->keys[j];
+				agent_ids->keys[j] = NULL;
 				break;
 			}
 		}
-		if (!found)
+		if (!key_in_agent)
 			fatal("CA key %s not found in agent", tmp);
 		ssh_free_identitylist(agent_ids);
-		ca->flags |= SSHKEY_FLAG_EXT;
 	} else {
 		/* CA key is assumed to be a private key on the filesystem */
 		ca = load_identity(tmp, NULL);
@@ -1779,7 +1758,7 @@ do_ca_sign(const struct passwd *pw, const char *ca_key_path, int prefer_agent,
 		    &public->cert->signature_key)) != 0)
 			fatal_r(r, "sshkey_from_private (ca key)");
 
-		if (agent_fd != -1 && (ca->flags & SSHKEY_FLAG_EXT) != 0) {
+		if (key_in_agent) {
 			r = sshkey_certify_custom(public, ca, key_type_name,
 			    NULL, NULL, agent_signer, &agent_fd);
 			if (r != 0)
@@ -1815,13 +1794,14 @@ do_ca_sign(const struct passwd *pw, const char *ca_key_path, int prefer_agent,
 
 		sshkey_free(public);
 		free(out);
+		free(comment);
 		if (cert_serial_autoinc)
 			cert_serial++;
 	}
+	sshkey_free(ca);
 #ifdef ENABLE_PKCS11
 	pkcs11_terminate();
 #endif
-	exit(0);
 }
 
 static u_int64_t
@@ -2052,9 +2032,11 @@ print_cert(struct sshkey *key)
 		printf("\n");
 		show_options(key->cert->extensions, 0);
 	}
+	free(key_fp);
+	free(ca_fp);
 }
 
-static void
+static int
 do_show_cert(const struct passwd *pw)
 {
 	struct sshkey *key = NULL;
@@ -2106,8 +2088,9 @@ do_show_cert(const struct passwd *pw)
 	}
 	free(line);
 	sshkey_free(key);
-	fclose(f);
-	exit(ok ? 0 : 1);
+	if (f != stdin)
+		(void)fclose(f);
+	return ok ? 0 : 1;
 }
 
 static void
@@ -2271,6 +2254,9 @@ update_krl_from_file(const struct passwd *pw, const char *file, int wild_ca,
 				fatal("%s:%lu: unsupported hash algorithm", file, lnum);
 			if (r != 0)
 				fatal_fr(r, "revoke key failed");
+			free(blob);
+			blob = NULL;
+			blen = 0;
 		} else {
 			if (strprefixtrim(&cp, "key:", 1)) {
 				was_explicit_key = 1;
@@ -2613,10 +2599,11 @@ usage(void)
 int
 main(int argc, char **argv)
 {
-	char comment[1024], *passphrase;
+	char comment[1024];
 	char *rr_hostname = NULL, *ep, *fp, *ra;
-	struct sshkey *private, *public;
+	struct sshkey *private = NULL, *public = NULL;
 	const struct passwd *pw;
+	int exit_status = 0;
 	int r, opt, type;
 	int change_passphrase = 0, change_comment = 0, show_cert = 0;
 	int find_host = 0, delete_host = 0, hash_hosts = 0;
@@ -2663,8 +2650,6 @@ main(int argc, char **argv)
 	pw = getpwuid(getuid());
 	if (!pw)
 		fatal("No user exists for uid %lu", (u_long)getuid());
-	/* take a copy of the returned structure! */
-	pw = pwcopy(pw);
 
 	if (gethostname(hostname, sizeof(hostname)) == -1)
 		fatal("gethostname: %s", strerror(errno));
@@ -2874,22 +2859,6 @@ main(int argc, char **argv)
 	/* reinit */
 	log_init(__progname, log_level, SYSLOG_FACILITY_USER, 1);
 
-#ifdef USE_OPENSSL_ENGINE
-{	char *filename = NULL, *engconfig;
-
-	engconfig = getenv(SSH_ENGINE_CONF_ENV);
-	if (engconfig == NULL)
-		xasprintf(&filename, "%s/%s", pw->pw_dir,
-		    _PATH_SSH_ENGINE_CONFFILE); /*fatal on error*/
-	else
-		filename = engconfig;
-
-	(void)process_engconfig_file(filename);
-	if (filename != engconfig)
-		free(filename);
-}
-#endif
-
 	argv += optind;
 	argc -= optind;
 
@@ -2911,14 +2880,34 @@ main(int argc, char **argv)
 		error("Cannot use -l with -H or -R.");
 		usage();
 	}
+
+	/* processing */
+#ifdef USE_OPENSSL_ENGINE
+{	char *filename = NULL, *engconfig;
+
+	engconfig = getenv(SSH_ENGINE_CONF_ENV);
+	if (engconfig == NULL)
+		xasprintf(&filename, "%s/%s", pw->pw_dir,
+		    _PATH_SSH_ENGINE_CONFFILE); /*fatal on error*/
+	else
+		filename = engconfig;
+
+	(void)process_engconfig_file(filename);
+	if (filename != engconfig)
+		free(filename);
+}
+#endif
+	/* take a copy of the returned structure! */
+	pw = pwcopy(pw);
+
 	if (gen_krl) {
 		do_gen_krl(pw, update_krl, ca_key_path,
 		    cert_serial, identity_comment, argc, argv);
-		return (0);
+		goto done;
 	}
 	if (check_krl) {
 		do_check_krl(print_fingerprint, argc, argv);
-		return (0);
+		goto done;
 	}
 	if (ca_key_path != NULL) {
 		size_t i;
@@ -2928,32 +2917,50 @@ main(int argc, char **argv)
 			add_cert_option(opts[i]);
 		do_ca_sign(pw, ca_key_path, prefer_agent,
 		    cert_serial, cert_serial_autoinc, argc, argv);
+		goto done;
 	}
-	if (show_cert)
-		do_show_cert(pw);
+	if (show_cert) {
+		exit_status = do_show_cert(pw);
+		goto done;
+	}
 	if (delete_host || hash_hosts || find_host) {
-		do_known_hosts(pw, rr_hostname, find_host,
+		exit_status = do_known_hosts(pw, rr_hostname, find_host,
 		    delete_host, hash_hosts);
+		goto done;
 	}
-	if (pkcs11provider != NULL)
+	if (pkcs11provider != NULL) {
 		do_download();
-	if (print_fingerprint || print_bubblebabble)
+		goto done;
+	}
+	if (print_fingerprint || print_bubblebabble) {
 		do_fingerprint(pw);
-	if (change_passphrase)
-		do_change_passphrase(pw);
-	if (change_comment)
-		do_change_comment(pw, identity_comment);
+		goto done;
+	}
+	if (change_passphrase) {
+		exit_status = do_change_passphrase(pw);
+		goto done;
+	}
+	if (change_comment) {
+		exit_status = do_change_comment(pw, identity_comment);
+		goto done;
+	}
 #ifdef WITH_OPENSSL
-	if (convert_to)
+	if (convert_to) {
 		do_convert_to(pw);
-	if (convert_from)
+		goto done;
+	}
+	if (convert_from) {
 		do_convert_from(pw);
+		goto done;
+	}
 #else /* WITH_OPENSSL */
 	if (convert_to || convert_from)
 		fatal("key conversion disabled at compile time");
 #endif /* WITH_OPENSSL */
-	if (print_public)
+	if (print_public) {
 		do_print_public(pw);
+		goto done;
+	}
 	if (rr_hostname != NULL) {
 		unsigned int n = 0;
 
@@ -2979,11 +2986,6 @@ main(int argc, char **argv)
 			    _PATH_HOST_DSA_KEY_FILE, rr_hostname,
 			    print_generic, opts, nopts);
 #endif
-#ifdef WITH_XMSS
-			n += do_print_resource_record(
-			    _PATH_HOST_XMSS_KEY_FILE, rr_hostname,
-			    print_generic, opts, nopts);
-#endif
 			if (n == 0)
 				fatal("no keys found.");
 			exit(0);
@@ -2998,16 +3000,16 @@ main(int argc, char **argv)
 	}
 	if (do_gen_candidates) {
 		do_moduli_gen(argv[0], opts, nopts);
-		return 0;
+		goto done;
 	}
 	if (do_screen_candidates) {
 		do_moduli_screen(argv[0], opts, nopts);
-		return 0;
+		goto done;
 	}
 
 	if (gen_all_hostkeys) {
 		do_gen_all_hostkeys(pw);
-		return (0);
+		goto done;
 	}
 
 	if (key_type_name == NULL)
@@ -3031,11 +3033,13 @@ main(int argc, char **argv)
 	hostfile_create_user_ssh_dir(identity_file, !quiet);
 
 	/* If the file already exists, ask the user to confirm. */
-	if (!confirm_overwrite(identity_file))
-		exit(1);
+	if (!confirm_overwrite(identity_file)) {
+		exit_status = 1;
+		goto done;
+	}
 
 	/* Determine the passphrase for the private key */
-	passphrase = private_key_new_passphrase(identity_file,
+{	char *passphrase = private_key_new_passphrase(identity_file,
 	    (u_int)-1/*practically unlimited*/);
 
 	if (identity_comment) {
@@ -3050,11 +3054,12 @@ main(int argc, char **argv)
 	    comment, private_key_format, openssh_format_cipher, rounds)) != 0) {
 		error_r(r, "Saving key \"%s\" failed", identity_file);
 		freezero(passphrase, strlen(passphrase));
-		exit(1);
+		exit_status = 1;
+		goto done;
 	}
 
 	freezero(passphrase, strlen(passphrase));
-	sshkey_free(private);
+}
 
 	if (!quiet)
 		printf("Your identification has been saved in '%s'.\n",
@@ -3081,6 +3086,15 @@ main(int argc, char **argv)
 		free(fp);
 	}
 
+ done:
+	sshkey_free(private);
 	sshkey_free(public);
-	exit(0);
+	pwfree((void*)pw);
+
+	ssh_xkalg_cleanup();
+
+	ssh_module_shutdown();
+	ssh_OpenSSL_shuthdown();
+
+	return exit_status;
 }

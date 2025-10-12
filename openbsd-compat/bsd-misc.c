@@ -22,9 +22,6 @@
 #ifdef HAVE_SYS_SELECT_H
 # include <sys/select.h>
 #endif
-#ifdef HAVE_SYS_TIME_H
-# include <sys/time.h>
-#endif
 
 #include <fcntl.h>
 #include <string.h>
@@ -374,10 +371,10 @@ getpgid(pid_t pid)
 
 #ifndef HAVE_PLEDGE
 int
-pledge(const char *promises, const char *paths[])
+pledge(const char *promises, const char *execpromises)
 {
 	UNUSED(promises);
-	UNUSED(paths);
+	UNUSED(execpromises);
 	return 0;
 }
 #endif
@@ -430,5 +427,29 @@ localtime_r(const time_t *timep, struct tm *result)
 {
 	struct tm *tm = localtime(timep);
 	return memcpy(result, tm, sizeof(*tm));
+}
+#endif
+
+#ifndef HAVE_CLOCK_GETTIME
+int
+clock_gettime(clockid_t clockid, struct timespec *ts)
+{
+	struct timeval tv;
+
+	if (clockid != CLOCK_REALTIME) {
+		errno = ENOSYS;
+		return -1;
+	}
+	if (ts == NULL) {
+		errno = EFAULT;
+		return -1;
+	}
+
+	if (gettimeofday(&tv, NULL) == -1)
+		return -1;
+
+	ts->tv_sec = tv.tv_sec;
+	ts->tv_nsec = (long)tv.tv_usec * 1000;
+	return 0;
 }
 #endif

@@ -1,7 +1,7 @@
 /* $OpenBSD: ssh-ed25519.c,v 1.19 2022/10/28 00:44:44 djm Exp $ */
 /*
  * Copyright (c) 2013 Markus Friedl <markus@openbsd.org>
- * Copyright (c) 2022-2024 Roumen Petrov.  All rights reserved.
+ * Copyright (c) 2022-2025 Roumen Petrov.  All rights reserved.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -471,26 +471,32 @@ static const struct sshkey_impl_funcs sshkey_ed25519_funcs = {
 	/* .verify = */		ssh_ed25519_verify
 };
 
+static int sshkey_ed25519_enabled(void) { return 1; }
+
+static char *pkey_ed25519_typename[] = { "ED25519", NULL };
+
 const struct sshkey_impl sshkey_ed25519_impl = {
+	/* .id = */		{ KEY_ED25519, 0,
+				  EVP_PKEY_ED25519, pkey_ed25519_typename },
 	/* .name = */		"ssh-ed25519",
 	/* .shortname = */	"ED25519",
 	/* .sigalg = */		NULL,
-	/* .type = */		KEY_ED25519,
-	/* .nid = */		0,
 	/* .cert = */		0,
 	/* .sigonly = */	0,
 	/* .keybits = */	256,
+	/* .enabled = */	sshkey_ed25519_enabled,
 	/* .funcs = */		&sshkey_ed25519_funcs
 };
 
 const struct sshkey_impl sshkey_ed25519_cert_impl = {
+	/* .id = */		{ KEY_ED25519_CERT, 0,
+				  EVP_PKEY_ED25519, pkey_ed25519_typename },
 	/* .name = */		"ssh-ed25519-cert-v01@openssh.com",
 	/* .shortname = */	"ED25519-CERT",
 	/* .sigalg = */		NULL,
-	/* .type = */		KEY_ED25519_CERT,
-	/* .nid = */		0,
 	/* .cert = */		1,
 	/* .sigonly = */	0,
 	/* .keybits = */	256,
+	/* .enabled = */	sshkey_ed25519_enabled,
 	/* .funcs = */		&sshkey_ed25519_funcs
 };
